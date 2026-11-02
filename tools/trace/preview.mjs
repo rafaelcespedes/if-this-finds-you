@@ -24,7 +24,7 @@ for (const style of (styles.length ? styles : E.styleNames())) {
   body += `<h2>${st.label} <small>${style} · ${st.family} · ${st.tradition ? st.tradition.name + ', ' + st.tradition.era : ''}</small></h2>`;
   for (const seed of SEEDS) {
     const p = E.makeHand(seed, style);
-    const width = 1500, emPx = 64;
+    const width = 1500, emPx = +(opt("--em", 64));
     const page = E.layout(p, TEXT, { maxWidth: width / (emPx / E.UPM), lineHeight: 1.6 * E.UPM });
     const svg = E.renderSVG(p, page, { width, emPx });
     const miss = page.misses.length ? ` · missing: ${[...new Set(page.misses)].join(' ')}` : '';

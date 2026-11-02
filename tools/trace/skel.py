@@ -52,11 +52,70 @@ def binarize(gray, cfg=None):
     ink = g < t
     if cfg.get('open'):
         ink = binary_opening(ink, disk(cfg['open']))
+    if cfg.get('rules'):
+        ink = remove_rules(ink, cfg)
     if cfg.get('smooth'):
         ink = ndi.gaussian_filter(ink.astype(float), cfg['smooth']) > 0.5
     ink = remove_small_objects(ink, cfg.get('minArea', 12))
     ink = remove_small_holes(ink, cfg.get('holes', 6))
     return ink
+
+
+def remove_rules(ink, cfg):
+    """level ruled guide lines (a levelled plate, see trace.py warp): find rows that are mostly ink, blank a
+    band of +-ruleHalf px around each, then bridge every stroke that crossed the band with a straight run
+    from its ink just above to its ink just below, so hairlines stay whole."""
+    H, W = ink.shape
+    t = int(cfg.get('ruleHalf', 6))
+    rows = cfg['rules']
+    if rows == 'auto':
+        frac = ink.mean(1)
+        cand = [y for y in range(1, H - 1) if frac[y] > cfg.get('ruleFrac', 0.3) and frac[y] >= frac[y - 1] and frac[y] >= frac[y + 1]]
+        rows = []
+        for y in cand:
+            if rows and y - rows[-1] < 2 * t:
+                if frac[y] > frac[rows[-1]]:
+                    rows[-1] = y
+            else:
+                rows.append(y)
+    out = ink.copy()
+    for ry in rows:
+        y0, y1 = max(0, ry - t), min(H, ry + t + 1)
+        out[y0:y1] = False
+        ya, yb = y0 - 2, y1 + 1
+        if ya < 0 or yb >= H:
+            continue
+        up = np.nonzero(ink[ya])[0]
+        dn = np.nonzero(ink[yb])[0]
+        if not len(up) or not len(dn):
+            continue
+        # runs of ink just above the band; pair each with the nearest run just below
+        def runs(xs):
+            r, cur = [], [xs[0]]
+            for x in xs[1:]:
+                if x - cur[-1] <= 1:
+                    cur.append(x)
+                else:
+                    r.append(cur)
+                    cur = [x]
+            r.append(cur)
+            return [(c[0], c[-1]) for c in r]
+        ru, rd = runs(up), runs(dn)
+        for a0, a1 in ru:
+            if a1 - a0 > 3 * t + 20:
+                continue  # a remnant of the rule itself
+            ca = (a0 + a1) / 2
+            best = min(rd, key=lambda r: abs((r[0] + r[1]) / 2 - ca))
+            cb = (best[0] + best[1]) / 2
+            if abs(cb - ca) > 2.5 * t + 6 or best[1] - best[0] > 3 * t + 20:
+                continue
+            wa, wb = (a1 - a0 + 1), (best[1] - best[0] + 1)
+            for y in range(ya, yb + 1):
+                f = (y - ya) / (yb - ya)
+                c = ca + (cb - ca) * f
+                w = max(1.0, wa + (wb - wa) * f) / 2
+                out[y, max(0, int(round(c - w))):min(W, int(round(c + w)) + 1)] = True
+    return out
 
 
 # ---------------------------------------------------------------- graph
