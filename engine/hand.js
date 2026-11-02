@@ -14,6 +14,12 @@ import { choose, transform, getStyle, has as styleHas, stylesInFamily, styleName
 import { penOutline } from './pen.js';
 
 // ---------- the "writer": one consistent set of parameters per seed ----------
+// Other modules add seeded traits to every hand (e.g. style dimensions): fn(h) -> { key: value, ... }.
+// fn must be deterministic from h (seed, style, existing traits) and use its own rng namespace.
+// They run last in makeHand, so they see the tradition, archetype, traits and letters.
+const HAND_TRAITS = [];
+export function addHandTraits(fn) { HAND_TRAITS.push(fn); }
+
 //
 // A writer is built in the order real handwriting is (docs/research/hand-traditions.md "Summary"):
 //   1. tradition: a style within the requested family (print / script), i.e. the copybook they learned from
@@ -180,6 +186,7 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
   h.lineWander = clamp(1 + 0.3 * (0.6 - h.neatness) + 0.15 * rp.gauss(), 0.7, 1.3);
   h.fatigue = clamp(1 + 0.25 * (0.6 - h.neatness) + 0.15 * rp.gauss(), 0.7, 1.3);
   h.noise = makeNoise('hand:' + seed);
+  for (const fn of HAND_TRAITS) Object.assign(h, fn(h));
   return h;
 }
 
