@@ -10,6 +10,7 @@ below, kept in alphabetical order by id.
 | [arrighi-1524](sources/arrighi-1524.md) | Italian chancery italic: Arrighi, *La Operina*, Rome 1522–24 (Getty copy) | `arrighi` | Public domain |
 | [copiste-2024](sources/copiste-2024.md) | Present-day adult print: *Copiste d'un jour* volunteers, BAnQ, Québec 2024 | `quebec-print` | CC BY 4.0 |
 | [palmer-1915](sources/palmer-1915.md) | American business hand: Palmer, *The Palmer Method of Business Writing*, 1915 (Smithsonian copy) | `palmer` | Public domain |
+| [spencerian-1866](sources/spencerian-1866.md) | Spencerian ornamental business hand: Spencer, *Compendium of Spencerian Penmanship*, 1866 (Internet Archive) | `spencerian` | Public domain (PDM) |
 | [suetterlin-1917](sources/suetterlin-1917.md) | German school hand, Latin form: Sütterlin, *Neuer Leitfaden*, 1917 (Commons) | `suetterlin` | Public domain |
 
 Checked but not traced yet: [sources/_checked-not-used.md](sources/_checked-not-used.md).
