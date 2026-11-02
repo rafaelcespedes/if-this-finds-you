@@ -126,6 +126,7 @@ export function layout(p, text, opts = {}) {
     const u = clamp((x - ln.x0) / Math.max(1, maxU - ln.x0), 0, 1);
     return ln.y - (x - ln.x0) * Math.tan(ln.slope * DEG) + curveU * (ln.bow * 4 * u * (1 - u) + ln.droop * smooth((u - 0.55) / 0.45));
   };
+  const ruledSlope = Math.min(0.35, Math.atan(0.08 * xh / maxU) / DEG);
   const angleAt = (ln, x) => -Math.atan((baseAt(ln, x + 40) - baseAt(ln, x - 40)) / 80);
 
   function newLine(lp, care) {
@@ -135,7 +136,8 @@ export function layout(p, text, opts = {}) {
     const ls = wander * (0.6 + 0.8 * (1 - care)); // how much this line wanders
     const z = slopeZ(lineNo);
     const ln = {
-      slope: ruled ? clamp(0.15 * H.slope + 0.12 * ls * z, -0.35, 0.35) * kLen : clamp(H.slope * (0.6 + 0.4 * ls) + H.slopeSd * ls * z, -4, 4) * kLen,
+      // (on ruled paper the rule guides the hand: the whole line stays within ~0.08 x-height of it)
+      slope: (ruled ? clamp(0.15 * H.slope + 0.12 * ls * z, -1, 1) * ruledSlope : clamp(H.slope * (0.6 + 0.4 * ls) + H.slopeSd * ls * z, -4, 4) * kLen) * Math.min(1, wander),
       bow: ruled ? 0 : (H.bow + H.bowSd * clamp(lr.gauss(), -2.5, 2.5)) * ls,
       droop: ruled ? 0 : H.droop * ls * (0.4 + lr()),
       x0: maxU * (clamp(H.marginSd * ls * (1 + 0.9 * lr.gauss()), 0, 0.03) + Math.min(0.04, H.marginDrift * wander * lp)),
@@ -191,8 +193,8 @@ export function layout(p, text, opts = {}) {
       const wr = rng(S + 'word:' + w);
       const slant = clamp(pageSlant + 0.7 * spread * wander * N.n1(w / 11 + 41.3) + 1.4 * spread * slantZ(w), -5, 5);
       const scale = clamp(pageSize * (1 + 0.02 * spread * N.n1(w / 13 + 7.7)) * (1 + 0.04 * spread * sizeZ(w)) * (1 + 0.07 * tire * prog), 0.86, 1.16);
-      const lift = xh * 0.024 * (0.35 + 0.65 * spread) * (0.6 + 0.6 * (p.drift == null ? 0.7 : p.drift)) * baseZ(w);
-      const tilt = clamp(wr.gauss() * 0.45 * spread, -1.2, 1.2) * DEG;
+      let lift = xh * 0.024 * (0.35 + 0.65 * spread) * (0.6 + 0.6 * (p.drift == null ? 0.7 : p.drift)) * baseZ(w);
+      let tilt = clamp(wr.gauss() * 0.45 * spread, -1.2, 1.2) * DEG;
       const tempo = H.tempo * (1 + 0.12 * tire * prog) * (1.15 - 0.3 * care);
       const chars = [];
       for (let i = 0; i < tok.length;) { const ch = String.fromCodePoint(tok.codePointAt(i)); chars.push([ch, tokStart + i]); i += ch.length; }
@@ -220,7 +222,7 @@ export function layout(p, text, opts = {}) {
           if (bars[wi]) inst.bar = bars[wi];
           const g = makeGlyph(p, ch, inst, ctx);
           let gap = 0;
-          if (!connected) {
+          if (!connected && wi + 1 < chars.length) {
             const z = clamp(rng('sp:' + p.seed + ':' + ci).gauss(), -2.5, 2.5);
             gap = 2 * p.sidebearing * scale * (squeeze || 1) * (Math.exp(sigL * z - sigL * sigL / 2) - 1 + 0.1 * tire * prog);
           }
@@ -234,7 +236,7 @@ export function layout(p, text, opts = {}) {
       const sigW = clamp(0.2 * spread, 0.08, 0.32);
       const zg = clamp(wr.gauss(), -2.5, 2.5);
       const punct = /[.!?]["'’”)]*$/.test(prevEnd) ? H.stop : /[,;:]["'’”)]*$/.test(prevEnd) ? H.pause : 1;
-      let gap = pendingSpaces * spaceAdv * (line.count ? Math.exp(sigW * zg - sigW * sigW / 2) * punct * (1 + 0.08 * tire * prog) : 1);
+      let gap = pendingSpaces * spaceAdv * (line.count ? Math.max(0.7, Math.exp(sigW * zg - sigW * sigW / 2)) * punct * (1 + 0.08 * tire * prog) : 1);
       pendingSpaces = 0; // leading spaces at a paragraph start become its indent
       // ----- line end (rules 11, 12): break early, overpack, or squeeze the last word in -----
       if (line.count) {
@@ -258,12 +260,15 @@ export function layout(p, text, opts = {}) {
       x += gap;
       // ----- place the word along its line -----
       const wx0 = x;
+      // on ruled paper the whole word floats a little above the rule, or dips just below it
+      if (ruled) tilt = clamp(tilt, -1, 1) * Math.min(1, Math.atan(0.05 * xh / Math.max(1, wx)) / Math.max(1e-6, Math.abs(tilt)));
+      if (ruled) lift = clamp(baseAt(line, x + wx / 2) + lift, line.rule - 0.08 * xh, line.rule + 0.03 * xh) - baseAt(line, x + wx / 2);
       const inkIndex = chars.length ? chars[chars.length - 1][1] + 1 : tokStart;
       for (const it of glyphs) {
         const gx = x + it.dx;
         const bob = connected || it.miss ? 0 : clamp(rng('bob:' + p.seed + ':' + it.charIndex).gauss(), -2.5, 2.5) * xh * 0.015 * spread;
         let gy = baseAt(line, gx) + lift + bob - (gx - wx0) * Math.tan(tilt);
-        if (ruled) gy = clamp(gy, line.rule - 0.1 * xh, line.rule + 0.04 * xh);
+        if (ruled && !connected) gy = clamp(gy, line.rule - 0.11 * xh, line.rule + 0.05 * xh);
         const a = angleAt(line, gx) + tilt;
         if (gy > maxY) maxY = gy;
         if (it.miss) {
