@@ -13,6 +13,8 @@ engine/            the handwriting engine: plain ES modules, no build step, runs
   pen.js           pen models (centerline -> filled outline) and ink look (SVG defs, stroke opacity)
   layout.js        text -> positioned glyph instances on a page (pure data)
   render-svg.js    laid-out page -> SVG string
+  corrections.js   the writer's journey: a draft with this writer's slips and fixes (strikes, overwrites,
+                   carets, P.S.), as a layout()-shaped page plus an ink log (writeWithJourney)
   fontbuild.js     hand -> installable .otf (opentype.js passed in), calt cycling alternates
 lab/               engine test bench (plain HTML). Controls are generated from engine PARAMS
 app/               the product UI (React + shadcn). Imports ../engine

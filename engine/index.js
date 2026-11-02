@@ -6,6 +6,8 @@
 //   const svg = renderSVG(p, page, { width: 720, emPx: 58 });
 //   el.innerHTML = renderSVG(p, page, { width: 720, emPx: 58, strokeIds: true });
 //   playSVG(el.firstChild, page, { emPx: 58 }).play();     // write it, stroke by stroke
+//   const j = writeWithJourney(p, 'Dear Ada,', { maxWidth: 9000 }, { amount: 0.4 }); // a draft, with its slips
+//   renderSVG(p, j.page, { width: 720, emPx: 58 });        // j.transcript / j.events say what happened
 //
 // Sources register skeletons on import; add new source modules to the list below.
 
@@ -22,12 +24,14 @@ export { timeline, frameAt, strokeFraction, createPlayer, playSVG } from './anim
 export { renderSVG, contoursToD } from './render-svg.js';
 export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
+export { writeWithJourney, journeyAmount, fixHabits, journeyText } from './corrections.js';
 export { EXTRAS } from './sources/extras.js';
 
 import { HAND_PARAMS } from './hand.js';
 import { PEN_PARAMS, INK_PARAMS } from './pen.js';
 import { PAGE_PARAMS } from './layout.js';
+import { JOURNEY_PARAMS } from './corrections.js';
 
 // User-facing controls, grouped. Each entry: { key, label, group, min, max, step, format } or
 // { key, label, group, type: 'select', options() }. UIs render these; modules add their own.
-export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS, ...INK_PARAMS, ...PAGE_PARAMS];
+export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS, ...INK_PARAMS, ...PAGE_PARAMS, ...JOURNEY_PARAMS];

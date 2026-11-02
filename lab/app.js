@@ -80,7 +80,7 @@ function syncControls() {
   const p = params();
   for (const d of E.PARAMS) {
     const el = $('c-' + d.key); if (!el) continue;
-    const v = p[d.key] == null ? d.default : p[d.key];
+    const v = p[d.key] == null ? (d.natural ? d.natural(p) : d.default) : p[d.key]; // natural(p): this hand's own value
     el.value = v;
     if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, v);
   }
@@ -107,7 +107,7 @@ function renderLive() {
   if (ink.renderer !== 'svg') return renderLiveInk(host, W);
   const p = params();
   const ruled = state.paper === 'ruled';
-  const page = E.layout(p, $('text').value, { maxWidth: W / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled, firstBaseline: 0.95 * E.UPM });
+  const page = labLayout(p, $('text').value, { maxWidth: W / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled, firstBaseline: 0.95 * E.UPM });
   noteMisses(page.misses);
   stopWriting();
   host.innerHTML = E.renderSVG(p, page, { width: W, emPx: EM_PX, strokeIds: true, rules: ruled });
@@ -164,7 +164,7 @@ function renderLiveInk(host, W) {
   const paneW = both ? Math.floor((W - 16) / 2) : W;
   const t0 = performance.now();
   const ruled = state.paper === 'ruled';
-  const page = E.layout(p, $('text').value, { maxWidth: paneW / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled, firstBaseline: 0.95 * E.UPM });
+  const page = labLayout(p, $('text').value, { maxWidth: paneW / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled, firstBaseline: 0.95 * E.UPM });
   ink.layoutMs = performance.now() - t0;
   stopWriting(); state.page = null; // the writing animation plays on the SVG renderer
   noteMisses(page.misses);
@@ -231,6 +231,62 @@ function hashCanvas(cv) {
   let h = 0x811c9dc5;
   for (let i = 0; i < d.length; i++) { h ^= d[i]; h = Math.imul(h, 16777619); }
   return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+// ---------- the journey: the writer's own mistakes and corrections (engine/corrections.js) ----------
+// "Show journey" writes the text as a draft: slips written over, words struck and rewritten, a word
+// added above the line. The Mistakes slider (Journey group, from E.PARAMS) sets how many.
+const journey = { on: q.get('journey') === '1', last: null };
+function buildJourneyControls() {
+  let g = [...document.querySelectorAll('#controls .group')].find((el) => el.firstChild && el.firstChild.textContent === 'Journey');
+  if (!g) { g = document.createElement('div'); g.className = 'group'; g.innerHTML = '<div class="label">Journey</div>'; $('controls').appendChild(g); }
+  const row = document.createElement('label');
+  row.className = 'check';
+  row.innerHTML = '<input type="checkbox" id="journeyOn"> Show journey (the draft, with its corrections)';
+  g.insertBefore(row, g.children[1]);
+  const info = document.createElement('p');
+  info.className = 'hint'; info.id = 'journeyInfo';
+  g.appendChild(info);
+  const box = $('journeyOn');
+  box.checked = journey.on;
+  box.addEventListener('change', () => { journey.on = box.checked; render(); });
+}
+// the page the live view draws: the plain fair copy, or this writer's draft
+function labLayout(p, text, opts) {
+  const info = $('journeyInfo');
+  if (!journey.on) { journey.last = null; if (info) info.textContent = 'Off: a clean fair copy.'; return E.layout(p, text, opts); }
+  const j = E.writeWithJourney(p, text, opts);
+  journey.last = j;
+  if (info) info.textContent = (j.summary || 'No corrections this time.') + (j.ok ? '' : ' (log does not replay!)');
+  console.info('[seedhand] journey: ' + j.transcript);
+  return j.page;
+}
+// QA: one letter written by many writers, each with their own little journey (click to close)
+function journeySheet({ text = $('text').value, seeds = ['quiet-heron-17', 'maple-river-42', 'amber-comet-63', 'salt-meadow-21', 'velvet-fable-88', 'north-moth-22',
+  'ink-atlas-78', 'olive-tide-33', 'ember-lantern-91', 'linen-river-14', 'copper-willow-55', 'fern-quill-30'], styles = ['script', 'print'], cols = 3, emPx = 30, cellW = 460, amount, overrides = {} } = {}) {
+  let o = document.getElementById('journeysheet');
+  if (o) o.remove();
+  o = document.createElement('div');
+  o.id = 'journeysheet';
+  o.style.cssText = 'position:fixed;inset:0;z-index:99;overflow:auto;background:#e9e6df;padding:10px;display:grid;gap:10px;' +
+    `grid-template-columns:repeat(${cols}, ${cellW}px);font:11px/1.35 ui-sans-serif,sans-serif;color:#555;align-items:start`;
+  o.addEventListener('click', () => o.remove());
+  seeds.forEach((sd, i) => {
+    const style = styles[i % styles.length];
+    const p = E.withOverrides(E.makeHand(sd, style), overrides);
+    const j = E.writeWithJourney(p, text, { maxWidth: (cellW - 24) / (emPx / E.UPM), lineHeight: LINE * E.UPM, firstBaseline: 0.95 * E.UPM }, { amount });
+    const cell = document.createElement('div');
+    cell.style.cssText = 'background:#fffdf8;border-radius:4px;padding:10px 12px';
+    const cv = document.createElement('canvas');
+    E.renderCanvas(cv, p, j.page, { width: cellW - 24, emPx, dpr: 2, paper: { preset: 'plain', color: LAB_PAPER }, style: false });
+    cv.style.width = (cellW - 24) + 'px'; cv.style.height = (cv.height / 2) + 'px';
+    cell.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.textContent = `${sd} · ${style} · ${E.getPen(p).key} · mistakes ${Math.round(j.amount * 100)}% · ${j.summary || 'clean'}`;
+    cell.appendChild(cap);
+    o.appendChild(cell);
+  });
+  document.body.appendChild(o);
 }
 
 // ---------- glyph sheet: the 3 samples per letter that go into the font ----------
@@ -360,6 +416,7 @@ function init() {
   buildStyleSwitch();
   buildControls();
   buildInkControls();
+  buildJourneyControls();
   $('text').value = DEFAULT_TEXT;
   $('seed').value = state.seed;
   const syncStyle = seg('style', 'style', () => { state.hand = E.makeHand(state.seed, state.style); syncControls(); invalidateFont(); writeHash(); render(); });
@@ -391,4 +448,4 @@ function init() {
 }
 try { init(); } catch (e) { err(e); }
 // exposed for debugging and QA
-window.Seedhand = { state, params, ensureFont, missLog, engine: E, ink, hashCanvas, penSheet, benchInk };
+window.Seedhand = { state, params, ensureFont, missLog, engine: E, ink, hashCanvas, penSheet, benchInk, journey, journeySheet };
