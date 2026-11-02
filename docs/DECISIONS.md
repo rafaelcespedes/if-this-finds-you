@@ -26,6 +26,15 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **Latin script only for now.** No Vietnamese stacked tones, Cyrillic or Greek until later; the letters
+  collection keeps Vietnamese switched off.
+- **Sample letters:** letters only (no poems). Keep "…" for cuts, keep letters printed without greeting or
+  signature, very old spellings (1390–1659) only with older-looking hands, 51% English is fine, keep the
+  Luxemburg bird letter. Van Gogh letters held until re-checked against the 1914 printing.
+- **Concept under discussion: "lost letters".** Present the product as an archive of lost/undelivered
+  letters (true provenance shown, never invented) that anyone can browse, shuffle, reply to, and add to
+  (moderated submissions). Engine unchanged. Awaiting Rafael's answers on naming, collection, licence,
+  moderation and phase-1 go-ahead.
 - **The live web tool is the product.** Font export is secondary and honest about its limits.
 - **UI:** minimal, shadcn-style, warm tones, the letter sheet as the hero, desktop and mobile.
 - **Paper:** plain, school-ruled (US, Seyès, UK feint), grid, and dot. Writing sits on the lines, with natural drift.
