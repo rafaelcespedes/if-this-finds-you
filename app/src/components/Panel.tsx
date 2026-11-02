@@ -13,6 +13,7 @@ import { ADVANCED_GROUPS, CONTROLS, isLive, isShown, naturalValue, penSizeFactor
 import { ENGINE_TIPS, MODELLED_INK } from '@/lib/engine-features';
 import { describeHand, words } from '@/lib/hands';
 import { handSources } from '@/lib/credits';
+import { sampleById, sampleCredit } from '@/lib/samples';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
 import { PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
@@ -74,7 +75,7 @@ export function Panel(props: PanelProps) {
         <PenPaperControls {...props} />
       </Section>
       <Advanced {...props} />
-      <Credits p={props.p} />
+      <Credits p={props.p} sample={props.state.sample} />
       <section
         aria-label="Share and download"
         className="sticky bottom-0 mt-auto border-t border-border bg-[color-mix(in_oklab,var(--panel)_94%,transparent)] px-5 pt-4 pb-5 backdrop-blur-sm"
@@ -370,16 +371,31 @@ function writeOpen(v: boolean) {
 }
 
 // ---------- where the letters come from ----------
-export const Credits = memo(function Credits({ p, flush }: { p: Hand; flush?: boolean }) {
+export const Credits = memo(function Credits({ p, flush, sample: sampleId }: { p: Hand; flush?: boolean; sample?: string | null }) {
   const sources = handSources(p);
-  if (!sources.length) return null;
+  const words = sampleById(sampleId);
+  if (!sources.length && !words) return null;
   return (
     <details data-row className={cn('group py-4 text-[12px] leading-snug text-muted-foreground', !flush && 'border-t border-border px-5')}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-sm marker:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:py-2 [&::-webkit-details-marker]:hidden">
-        <span>Letter shapes: {sources.map((s) => s.name).join(', ')}</span>
+        <span>{[words && sampleCredit(words), sources.length && `Letter shapes: ${sources.map((s) => s.name).join(', ')}`].filter(Boolean).join(' · ')}</span>
         <ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform duration-200 group-open:rotate-180" />
       </summary>
       <ul className="mt-2 grid gap-1.5">
+        {words && (
+          <li>
+            <span className="text-foreground/80">{words.author}, {words.year}.</span> {words.title}
+            {words.translator && <>, translated by {words.translator.name}</>}. Public domain.
+            {words.source?.url && (
+              <>
+                {' '}
+                <a href={words.source.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">
+                  Source
+                </a>
+              </>
+            )}
+          </li>
+        )}
         {sources.map((s) => (
           <li key={s.name}>
             <span className="text-foreground/80">{s.name}.</span> {s.credit}
