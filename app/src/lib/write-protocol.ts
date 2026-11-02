@@ -23,6 +23,8 @@ export interface WriteRequest {
   writerName?: string;
   /** for the screen only: when the note is empty, this is written faintly in graphite on line 1 */
   placeholder?: string;
+  /** Ink mode: the letter's ink log (lib/ink.ts encodeInk); the page is replayed from it */
+  ink?: string | null;
 }
 
 /** Floats per laid-out character in `WriteResult.glyphs`: text offset, sheet, x, y, advance, line, kind (1 glyph, 0 missing). */

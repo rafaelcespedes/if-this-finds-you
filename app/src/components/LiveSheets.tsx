@@ -27,8 +27,8 @@ interface Props {
   handKey: string;
   /** the first visit: let the pen write the letter out */
   writeOut?: boolean;
-  /** hold back the unfinished word (fair copy) or the last 2 letters (ink) */
-  hold: 2 | 'word';
+  /** hold back the unfinished word (fair copy), a few letters, or nothing (ink: the pen already paces it) */
+  hold: number | 'word';
 }
 
 export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold }: Props) {
@@ -86,7 +86,9 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
       for (const r of c.add) inkGroup(sheetOfLine(live, r.line))?.insertAdjacentHTML('beforeend', engine.renderRun(p, page, r, opts));
       pen.current?.sync(page, now());
     }
-    prev.current = { page, key: drawKey };
+    // a copy of the runs as they are now: an engine may keep updating the same runs list (Ink mode's sheet
+    // does), so the next diff must compare against what was drawn, not against a live array
+    prev.current = { page: { ...page, runs: (page.runs as any[]).map((r) => ({ ...r })) }, key: drawKey };
     // for debugging and QA: the live pen and page
     (window as unknown as { __seedhandLive: unknown }).__seedhandLive = { pen: pen.current, page, svgs: svgs.current };
     tick();

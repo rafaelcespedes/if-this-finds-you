@@ -30,6 +30,15 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   in the provenance card), and "Blank page" starts from nothing. The first edit (typing, an underline) makes the
   text yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a
   sample.
+- **Ink mode** (the default where the engine writes in ink, `lib/ink.ts`): what's written stays. Typed letters
+  wait as faint thoughts and the pen writes them a few letters behind, at handwriting speed, so most slips
+  are fixed before ink touches paper. Change something already written and the writer corrects it their own
+  way (the engine's planner): strikes a word through and writes it again, writes a letter over another, adds
+  a word above the line with a caret; the pen hovers while they consider. Undo lifts only wet ink (3 s).
+  "Make a fair copy" writes the letter out cleanly on a fresh sheet; "Fresh sheet" starts over. The first key
+  on an untouched sample letter takes a fresh sheet. Fair copy (the switch in How it's written) edits cleanly,
+  and so does a pencil until the engine has Pencil mode. The ink log travels in links as `k=`, and the worker
+  replays it, so New hand keeps the letter, corrections and all, in the new hand.
 - **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
   about how they write.
 - **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
@@ -169,6 +178,7 @@ src/
     edits.ts              Edit events (the seed of the ink log)
     styles.ts             Print / Joined families and the school cards' names (from getStyle)
     samples.ts            the sample letters: order, pairing with styles, credits
+    ink.ts                Ink mode: the session (planner + pen), the ink page as a Live, marks and thoughts
     pens.ts, inks.ts, occasions.ts
     state.ts              the note config and the share-link format
     hands.ts              word seeds, writer names, plain-word descriptions, "very different" new hands

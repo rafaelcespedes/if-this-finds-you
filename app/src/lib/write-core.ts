@@ -7,7 +7,7 @@ import { layout, makeGlyph, makeHand, penOutline, rng, withOverrides, UPM, type 
 import { lineAfter, sheetOf } from './paginate';
 import { LIVE } from './live';
 import { lookOf } from './request';
-import { writeLive } from './write-live';
+import { writeInkLetter, writeLive } from './write-live';
 import { compose, type Sheet } from './compose';
 import type { Mark } from './doc';
 import { getPaper } from './papers';
@@ -19,6 +19,7 @@ type GlyphItem = Extract<PageItem, { kind: 'glyph' }>;
 
 export function write(req: WriteRequest): WriteResult {
   // engines with the live page: the same markup the live page draws (lib/write-live.ts)
+  if (LIVE && req.ink) return writeInkLetter(req);
   if (LIVE) return writeLive(req);
   const t0 = performance.now();
   const p = withOverrides(makeHand(req.seed, req.style), req.overrides);

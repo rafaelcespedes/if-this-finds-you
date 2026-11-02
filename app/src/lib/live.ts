@@ -55,8 +55,8 @@ const lineEntry = (page: any) => {
   return m;
 };
 
-/** `signed`: the writer signs after the text, so a line is kept for the name (on a sheet of its own if need be). */
-export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing: number, signed = false): Live {
+/** Where a hand writes on a paper at a size: the em, the lines, and the engine's layout options. */
+export function pageSetup(p: Hand, paper: PaperSpec, size: number, lineSpacing: number) {
   const xhFrac = ((p.xHeight as number) || 0.55) * 0.7;
   const emMm = (paper.xh * size) / xhFrac;
   const u = UPM / emMm;
@@ -70,6 +70,12 @@ export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number
     marginLeft: paper.text.left * u,
     ruled: !!paper.pitch,
   };
+  return { emMm, u, lines, lineMm, opts };
+}
+
+/** `signed`: the writer signs after the text, so a line is kept for the name (on a sheet of its own if need be). */
+export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing: number, signed = false): Live {
+  const { emMm, u, lines, lineMm, opts } = pageSetup(p, paper, size, lineSpacing);
   const j = JOURNEY && writeWithJourney && text ? writeWithJourney(p, text, opts, { seed: String(p.seed) }) : null;
   const page: any = j && j.ok ? j.page : layout(p, text, opts as never);
   // sheets break where the lines really are: each hand has its own pitch, and lines vary and float
