@@ -92,6 +92,183 @@
           "what": "the whole book as one PDF (259 pages, 33 MB)"
         }
       ]
+    },
+    "copiste-2024": {
+      "title": "Copiste d'un jour: ground truth of contemporary Québécois handwriting",
+      "author": "267 volunteers (anonymous), organised by Bibliothèque et Archives nationales du Québec (BAnQ)",
+      "date": "2024",
+      "place": "Québec, Canada",
+      "holder": "BAnQ, published on GitHub (banq-dcn/Copiste-d-un-jour): page images (jpg/) and line transcriptions (alto/)",
+      "page": "https://github.com/banq-dcn/Copiste-d-un-jour",
+      "rights": {
+        "statement": "Creative Commons Attribution 4.0 International (repository LICENSE and README; HTR-United metadata copiste-dun-jour.yml: license CC-BY 4.0).",
+        "where": "https://api.github.com/repos/banq-dcn/Copiste-d-un-jour (license: cc-by-4.0); README 'License' section",
+        "checked": "2026-11-02",
+        "verdict": "clean",
+        "notes": "CC BY 4.0, not share-alike: credit BAnQ and the project, keep the licence name with the data. Volunteers copied Wikipedia summaries for the project and consented to publication; we take letterforms only, never their text. tools/trace/htr.py reads all 333 ALTO files; only the pages listed here supplied letters."
+      },
+      "files": [
+        {
+          "name": "alto/imp_wikitexte_0147.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/imp_wikitexte_0147.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/imp_wikitexte_0164_1.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/imp_wikitexte_0164_1.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/imp_wikitexte_0177.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/imp_wikitexte_0177.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/imp_wikitexte_0264.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/imp_wikitexte_0264.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/oldbatch_wikitexte_0001.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/oldbatch_wikitexte_0001.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0048.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0048.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0074_1.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0074_1.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0074_2.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0074_2.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0107.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0107.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0190_1.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0190_1.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0190_2.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0190_2.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0200_1.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0200_1.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0201_1.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0201_1.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0201_2.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0201_2.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0238.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0238.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "alto/wikitexte_0244.xml",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/alto/wikitexte_0244.xml",
+          "what": "line transcriptions with baselines"
+        },
+        {
+          "name": "jpg/imp_wikitexte_0147.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/imp_wikitexte_0147.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/imp_wikitexte_0164_1.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/imp_wikitexte_0164_1.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/imp_wikitexte_0177.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/imp_wikitexte_0177.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/imp_wikitexte_0264.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/imp_wikitexte_0264.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/oldbatch_wikitexte_0001.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/oldbatch_wikitexte_0001.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0048.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0048.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0074_1.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0074_1.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0074_2.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0074_2.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0107.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0107.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0190_1.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0190_1.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0190_2.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0190_2.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0200_1.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0200_1.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0201_1.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0201_1.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0201_2.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0201_2.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0238.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0238.jpg",
+          "what": "page image, 2550 × 3300 px"
+        },
+        {
+          "name": "jpg/wikitexte_0244.jpg",
+          "url": "https://raw.githubusercontent.com/banq-dcn/Copiste-d-un-jour/main/jpg/wikitexte_0244.jpg",
+          "what": "page image, 2550 × 3300 px"
+        }
+      ]
     }
   }
 }
