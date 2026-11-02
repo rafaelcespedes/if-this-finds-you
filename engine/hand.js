@@ -10,10 +10,15 @@
 // Everything is deterministic from strings: hand seed, and an instance seed for each use.
 
 import { rng, makeNoise, lerp, clamp, mix, DEG } from './core.js';
-import { choose, getStyle, has as styleHas } from './glyphs.js';
+import { choose, transform, getStyle, has as styleHas } from './glyphs.js';
 import { penOutline } from './pen.js';
 
 // ---------- the "writer": one consistent set of parameters per seed ----------
+// Other modules add seeded traits to every hand (e.g. style dimensions): fn(h) -> { key: value, ... }.
+// fn must be deterministic from h (seed, style, existing traits) and use its own rng namespace.
+const HAND_TRAITS = [];
+export function addHandTraits(fn) { HAND_TRAITS.push(fn); }
+
 // `style` is a user choice (a style name from glyphs.js); everything else comes from the seed.
 export function makeHand(seed, style) {
   const r = rng('hand:' + seed);
@@ -52,6 +57,7 @@ export function makeHand(seed, style) {
   };
   h.capWidth = script ? h.width * r.range(0.92, 1.06) : r.range(0.78, 0.98);
   h.noise = makeNoise('hand:' + seed);
+  for (const fn of HAND_TRAITS) Object.assign(h, fn(h));
   return h;
 }
 
@@ -71,8 +77,9 @@ export const HAND_PARAMS = [
 export const CAP = 700;            // cap height in font units (UPM 1000)
 export const UPM = 1000;
 
-export const isLower = (ch) => ch >= 'a' && ch <= 'z';
-export const isUpper = (ch) => ch >= 'A' && ch <= 'Z';
+// Unicode-aware, so é ß ł get lowercase zones and Æ Ø Ł get capital sizing
+export const isLower = (ch) => /^\p{Ll}$/u.test(ch);
+export const isUpper = (ch) => /^\p{Lu}$/u.test(ch);
 export const isDigit = (ch) => ch >= '0' && ch <= '9';
 export const has = (p, ch) => styleHas(p.style, ch);
 
@@ -162,7 +169,7 @@ function smoothStroke(pts, p, step) {
 // Build the skeleton (in font units) for one glyph instance.
 function glyphSkeleton(p, ch, inst, ctx) {
   const st = getStyle(p.style);
-  const g = choose(p, ch, ctx);
+  const g = transform(p, ch, choose(p, ch, ctx), ctx); // allograph, then this hand's style dimensions
   const m = g.metrics || st.metrics;
   const S = CAP / (m.base - m.cap);
   const lower = isLower(ch);
@@ -172,7 +179,10 @@ function glyphSkeleton(p, ch, inst, ctx) {
   const step = 7;
   const strokes = [];
   const dots = [];
-  for (const s of g.s) {
+  // variant.marks: indices of source strokes that are marks (accents etc.), written after the letter
+  const markSet = new Set(g.marks || []);
+  const strokeMarks = [], dotMarks = [];
+  g.s.forEach((s, srcIndex) => {
     const xs = s.map((v) => v[0]), ys = s.map((v) => v[1]);
     const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
     const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
@@ -180,11 +190,12 @@ function glyphSkeleton(p, ch, inst, ctx) {
       let Y = zoneY(p, cy, lower, m);
       if (lower && (ch === 'i' || ch === 'j')) Y = p.xHeight * CAP + (p.ascender - p.xHeight) * CAP * p.dotHeight;
       dots.push([(cx - L) * S * wScale, Y]);
-      continue;
+      dotMarks.push(markSet.has(srcIndex));
+      return;
     }
     const mapped = s.map((v) => [(v[0] - L) * S * wScale, zoneY(p, v[1], lower, m)]);
-    for (const run of smoothStroke(mapped, p, step)) strokes.push(run);
-  }
+    for (const run of smoothStroke(mapped, p, step)) { strokes.push(run); strokeMarks.push(markSet.has(srcIndex)); }
+  });
   let advance = (g.r - g.l) * S * wScale + (p.tracking || 0);
   if (ch === ' ' || ch === ' ') advance = p.space;
   else if (!st.connected && (strokes.length || dots.length)) {
@@ -198,7 +209,7 @@ function glyphSkeleton(p, ch, inst, ctx) {
     for (const q of dots) q[0] += dx;
     advance = mx - mn + 2 * sb;
   }
-  return { strokes, dots, advance, letter, lower, variant: g, connected: !!st.connected };
+  return { strokes, dots, strokeMarks, dotMarks, advance, letter, lower, variant: g, connected: !!st.connected };
 }
 
 // ---------- instance variation + pen ----------
@@ -208,7 +219,8 @@ const charKey = (ch) => ch.charCodeAt(0);
 // ctx (optional, from layout): neighbours/position, passed to the variant chooser.
 // Returns { advance, contours, strokes, variant }:
 //   contours = filled outline polygons (font units, y up) in drawing order
-//   strokes  = [{ center, contour, dot }] — the pen path behind each contour, for animation
+//   strokes  = [{ center, contour, dot, mark }] — the pen path behind each contour, for animation;
+//              mark = an accent or other stroke written after the letter (from variant.marks)
 export function makeGlyph(p, ch, inst, ctx) {
   const sk = glyphSkeleton(p, ch, inst, ctx);
   const N = p.noise;
@@ -311,7 +323,7 @@ export function makeGlyph(p, ch, inst, ctx) {
     }
     pts = pts.map((q) => [q[0] + q[1] * tanSlant, q[1]]);
     const c = penOutline(p, pts, strokeSeedBase + si * 3.1);
-    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: false }); }
+    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: false, mark: !!sk.strokeMarks[si] }); }
   });
   for (const [di, d] of sk.dots.entries()) {
     const q = warp(d);
@@ -320,7 +332,7 @@ export function makeGlyph(p, ch, inst, ctx) {
     const c0 = [q[0] + q[1] * tanSlant, q[1]];
     const pts = [[c0[0] - Math.cos(a) * len / 2, c0[1] - Math.sin(a) * len / 2], c0, [c0[0] + Math.cos(a) * len / 2, c0[1] + Math.sin(a) * len / 2]];
     const c = penOutline(p, pts, 900 + di, { dot: true });
-    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: true }); }
+    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: true, mark: !!sk.dotMarks[di] }); }
   }
   return { advance: sk.advance, contours, strokes, variant: sk.variant };
 }

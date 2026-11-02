@@ -6,7 +6,9 @@
 //
 // Skeleton format (same as the Hershey data): { l, r, s: [[ [x,y], ... ], ...] }
 //   l / r  = left / right side bearing (source units), s = strokes as polylines, y down.
-// Variant = skeleton + { id, source, weight?, metrics?, tags? }.
+// Variant = skeleton + { id, source, weight?, metrics?, tags?, marks?, resolve? }.
+//   marks    = indices of strokes in `s` that are marks (accents...), written after the letter
+//   resolve  = (p, ctx) => concrete variant, for composed characters that depend on the hand
 //   tags     = { allograph?: 'a.double-storey' | 'seven.crossed' | ..., position?: 'initial'|'medial'|'final' }
 //              allograph names follow docs/research/hand-traditions.md §4.
 //   source  = { name, credit, url? } — shown in the provenance card; required.
@@ -19,6 +21,7 @@ import { rng } from './core.js';
 
 const STYLES = new Map();
 const COMPOSERS = [];
+const TRANSFORMS = [];
 
 // meta: { label, family, tradition, connected, metrics }
 //   family:    'print' | 'script' — what the UI's Print / Joined switch and New hand choose between
@@ -52,6 +55,19 @@ export function register(style, ch, variant) {
 
 // fn(style, ch) -> variants[] | null. Called only when a style has no direct variant for ch.
 export function addComposer(fn) { COMPOSERS.push(fn); }
+
+// Skeleton transforms reshape the chosen variant per hand before it is drawn: style dimensions such as
+// loopiness, lead-ins and end flicks, connectivity, join length, angularity. fn(p, ch, variant, ctx, metrics)
+// -> variant (same skeleton format, source units; return the input unchanged to skip). Must be deterministic,
+// keep `source` and `marks`, and never mutate the input. Applied in registration order.
+export function addTransform(fn) { TRANSFORMS.push(fn); }
+export function transform(p, ch, v, ctx) {
+  if (!v || !TRANSFORMS.length) return v;
+  const st = STYLES.get(p.style);
+  const m = v.metrics || (st && st.metrics);
+  for (const fn of TRANSFORMS) v = fn(p, ch, v, ctx, m) || v;
+  return v;
+}
 
 export function variants(style, ch) {
   const st = STYLES.get(style);
@@ -87,6 +103,7 @@ export function choose(p, ch, ctx) {
   let list = variants(p.style, ch);
   if (!list.length && CHAR_FALLBACK[ch]) list = variants(p.style, CHAR_FALLBACK[ch]);
   if (!list.length) list = variants(p.style, '?');
-  if (list.length <= 1) return list[0];
-  return rng('variant:' + p.seed + ':' + p.style + ':' + ch).weighted(list);
+  const v = list.length <= 1 ? list[0] : rng('variant:' + p.seed + ':' + p.style + ':' + ch).weighted(list);
+  // a variant may resolve per hand (e.g. é = this hand's own e + this writer's accent habit)
+  return v && v.resolve ? v.resolve(p, ctx) : v;
 }
