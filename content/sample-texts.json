@@ -1900,7 +1900,8 @@
     "traditions": [
       "french-school"
     ],
-    "enabled": true
+    "enabled": false,
+    "notes": "Disabled 2026-11-02: text follows the Van Gogh Museum 2009 transcription; re-check against the 1914 printing before enabling (possible EU scientific-edition right)."
   },
   {
     "id": "keats-1819-garden",
@@ -2144,7 +2145,8 @@
     "traditions": [
       "dutch-running"
     ],
-    "enabled": true
+    "enabled": false,
+    "notes": "Disabled 2026-11-02: text follows the Van Gogh Museum 2009 transcription; re-check against the 1914 printing before enabling (possible EU scientific-edition right)."
   },
   {
     "id": "charles-lamb-1801",
