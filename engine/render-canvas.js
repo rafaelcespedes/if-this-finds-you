@@ -374,8 +374,7 @@ function buildGeometry(p, page, pen, k, opts, pad) {
       const frac = opts.reveal ? opts.reveal(it, si) : 1;
       if (!(frac > 0)) { prev = null; continue; }
       const n = pr.n, X = pr.x, Y = pr.y, Wd = pr.w, Dn = pr.d, Sx = pr.s, Tt = pr.t, Ax = pr.aux, Hr = pr.hair;
-      let wsum = 0; for (let i = 0; i < n; i++) wsum += Wd[i];
-      const ink = walk({ item: it, strokeIndex: si, wordStart, len: pr.len, width: wsum / n, dot: pr.dot });
+      const ink = walk({ item: it, strokeIndex: si, strokeCount: sts.length, wordStart });
       if (weight !== 1) ink.mul *= weight;
       const seed = (((it.charIndex || 0) * 7 + si * 13) % 997) / 997 * 61.7;
       const shade = ink.shade == null ? 0.5 : ink.shade;
@@ -692,7 +691,7 @@ function fallback2D(ctx, p, page, pen, ink, paper, k) {
       const pr = strokeInk(p, st);
       if (!pr) return;
       let dm = 0; for (let i = 0; i < pr.n; i++) dm += pr.d[i]; dm /= pr.n;
-      const s = walk({ item: it, strokeIndex: si, wordStart, len: pr.len, width: pr.w[pr.n >> 1], dot: pr.dot });
+      const s = walk({ item: it, strokeIndex: si, strokeCount: it.g.strokes.length, wordStart });
       const wt = it.weight > 0 ? Math.pow(it.weight, 0.6) : 1;
       ctx.fillStyle = rgbHex(inkRGB(ink, dm * s.mul * wt, [255, 255, 255], s.shade));
       ctx.beginPath();

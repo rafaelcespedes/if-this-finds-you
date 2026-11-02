@@ -734,48 +734,54 @@ export function strokeInk(p, stroke) {
 }
 
 // ---------- ink supply along the text ----------
-// Call once per render; then once per stroke, in drawing order:
-//   walk({ item, strokeIndex, wordStart, len, width }) -> { mul, wet, starve, shade }
+// inkAt(p, q) -> { mul, wet, starve, shade } for one stroke, where
+//   q = { item, strokeIndex, strokeCount?, wordStart }
 //   mul: density multiplier; wet: extra pool at the stroke start; starve: 0..1 running dry;
 //   shade: 0..1 where the stroke sits in the ink's colour family (0.5 = the swatch).
+// A pure function of the item and stroke (no running state), so redrawing one word on its own gives
+// exactly the ink a full-page render gives it.
 // Ink variation (p.inkVariation, 0..1, default 0.4) sets how far shade and density wander: a slow
 // drift along the text plus a little per-stroke jitter, all seeded by the hand.
-// Dip pens drain a reservoir and re-dip every few letters (preferably at a word start); fountain
-// pens are wetter on the first stroke after a pause; a cold ballpoint skips in the first words.
-export function inkWalker(p) {
+// Dip pens re-dip every 4–8 letters and fade as the nib empties; fountain pens are wetter on the
+// first stroke after a pause; a cold ballpoint skips in its first dozen letters.
+const DIPS = new Map(); // seed -> character index where each dip starts
+function dipAt(p, ci) {
+  let st = DIPS.get(p.seed);
+  if (!st) { st = { r: rng('dip:' + p.seed), starts: [0] }; DIPS.set(p.seed, st); if (DIPS.size > 64) DIPS.delete(DIPS.keys().next().value); }
+  const a = st.starts;
+  while (a[a.length - 1] <= ci) a.push(a[a.length - 1] + 4 + Math.floor(5 * st.r()));
+  let lo = 0, hi = a.length - 1;            // last start <= ci
+  while (lo < hi - 1) { const m = (lo + hi) >> 1; if (a[m] <= ci) lo = m; else hi = m; }
+  return { from: a[lo], len: a[lo + 1] - a[lo] };
+}
+export function inkAt(p, q) {
   const pen = getPen(p);
   const kind = pen.kind;
   const N = p.noise;
-  const xh = (p.xHeight || 0.5) * CAP_U;
-  const dr = rng('dip:' + p.seed);
-  const capacity = 4 + 4.5 * dr();                 // letters of ink per dip
-  let reservoir = 1, threshold = 0.12 + 0.18 * dr(), words = 0, fresh = true;
-  const letterInk = 1.25 * xh * penWidthUnits(p, pen.key);
   const vary = clamp(p.inkVariation == null ? 0.4 : +p.inkVariation, 0, 1);
-  return function walk(q) {
-    const it = q.item || {};
-    if (q.wordStart && q.strokeIndex === 0) words++;
-    const sr = rng('shade:' + p.seed + ':' + (it.charIndex != null ? it.charIndex : it.key || 0) + ':' + (q.strokeIndex || 0));
-    const shade = clamp(0.5 + 0.5 * vary * (0.7 * N.n1((it.inkIndex || 0) * 0.09 + 7.7) + 0.45 * (2 * sr() - 1)), 0, 1);
-    let mul = (1 + (pen.drift || 0) * (0.5 + vary) * N.n1((it.inkIndex || 0) * 0.23 + 50)) * (1 + 0.07 * vary * (2 * sr() - 1)), wet = 0, starve = 0;
-    if (kind === PEN_KIND.pointed) {
-      if (q.strokeIndex === 0 && ((q.wordStart && reservoir < threshold) || reservoir < 0.03)) {
-        reservoir = 1; fresh = true; threshold = 0.12 + 0.18 * dr();
-      }
-      if (fresh) { wet = 0.9; fresh = false; }
-      mul *= 0.64 + 0.6 * Math.pow(reservoir, 0.6);
-      starve = smooth((0.4 - reservoir) / 0.38);
-      reservoir = Math.max(0, reservoir - (q.len || 0) * (q.width || p.penWidth) / (letterInk * capacity));
-    } else if (kind === PEN_KIND.fountain || kind === PEN_KIND.italic) {
-      if (q.wordStart && q.strokeIndex === 0) { wet = 0.35; mul *= 1.05; }
-    } else if (kind === PEN_KIND.gel || kind === PEN_KIND.felt) {
-      if (q.wordStart && q.strokeIndex === 0) wet = 0.15;
-    } else if (kind === PEN_KIND.ballpoint) {
-      if (words <= 2) starve = 0.35;               // a cold ball skips for the first words
-    }
-    return { mul, wet, starve, shade };
-  };
+  const it = q.item || {}, si = q.strokeIndex || 0;
+  const ci = it.charIndex != null ? it.charIndex : null;
+  const sr = rng('shade:' + p.seed + ':' + (ci != null ? ci : it.key || 0) + ':' + si);
+  const shade = clamp(0.5 + 0.5 * vary * (0.7 * N.n1((it.inkIndex || 0) * 0.09 + 7.7) + 0.45 * (2 * sr() - 1)), 0, 1);
+  let mul = (1 + (pen.drift || 0) * (0.5 + vary) * N.n1((it.inkIndex || 0) * 0.23 + 50)) * (1 + 0.07 * vary * (2 * sr() - 1)), wet = 0, starve = 0;
+  if (kind === PEN_KIND.pointed && ci != null) {
+    const d = dipAt(p, ci);
+    const used = (ci - d.from + si / Math.max(1, q.strokeCount || 1)) / d.len; // 0 fresh .. 1 empty
+    const reservoir = clamp(1 - used, 0, 1);
+    if (ci === d.from && si === 0) wet = 0.9;
+    mul *= 0.64 + 0.6 * Math.pow(reservoir, 0.6);
+    starve = smooth((0.4 - reservoir) / 0.38);
+  } else if (kind === PEN_KIND.fountain || kind === PEN_KIND.italic) {
+    if (q.wordStart && si === 0) { wet = 0.35; mul *= 1.05; }
+  } else if (kind === PEN_KIND.gel || kind === PEN_KIND.felt) {
+    if (q.wordStart && si === 0) wet = 0.15;
+  } else if (kind === PEN_KIND.ballpoint) {
+    if (ci != null && ci < 12 && it.kind !== 'mark') starve = 0.35; // a cold ball skips at first
+  }
+  return { mul, wet, starve, shade };
 }
+// The same as a function, for renderers that call it stroke by stroke.
+export const inkWalker = (p) => (q) => inkAt(p, q);
 
 // ---------- user-facing controls ----------
 // Controls. `default` is the value a hand has when makeHand doesn't set the key (a value, or p => value).
