@@ -30,11 +30,12 @@ export async function run(ctx) {
     for (const d of E.PARAMS) {
       if (d.type === 'select') {
         const opts = new Set(d.options().map((o) => o.value));
-        const bad = seeds.filter((s) => !opts.has(E.makeHand(s, style)[d.key]));
+        // a hand without its own value uses the control's default (that's what the UI shows)
+        const bad = seeds.filter((s) => { const v = E.makeHand(s, style)[d.key]; return !opts.has(v == null ? d.default : v); });
         if (bad.length) problems.push({ level: 'fail', msg: `${style}: ${bad.length}/200 hands have a '${d.key}' that isn't one of its options` });
         continue;
       }
-      const vals = seeds.map((s) => E.makeHand(s, style)[d.key]);
+      const vals = seeds.map((s) => { const v = E.makeHand(s, style)[d.key]; return v == null && d.default != null ? d.default : v; });
       const out = vals.filter((v) => !(v >= d.min && v <= d.max));
       if (out.length) problems.push({ level: 'warn', msg: `${style}: ${out.length}/200 hands have ${d.key} outside its control range ${d.min}–${d.max} (e.g. ${fmt(out[0], 2)}) — the slider can't show that hand's own value` });
     }
