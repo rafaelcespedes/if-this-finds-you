@@ -248,7 +248,7 @@ textarea {
 /* Below full height the sheet's content drags the sheet; at full height it scrolls. Rows that scroll sideways
    and sliders keep their own axis either way. */
 .control-sheet {
-  transition: background-color 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+  transition: background-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), border-color 150ms var(--ease-out);
 }
 .control-sheet .sheet-body {
   overflow-y: hidden;
@@ -269,7 +269,7 @@ textarea {
 }
 .control-sheet [data-row],
 .control-sheet [data-fade] {
-  transition: opacity 160ms ease-out, box-shadow 160ms ease-out, background-color 160ms ease-out;
+  transition: opacity 150ms var(--ease-out), box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out);
 }
 /* Full height covers the letter, so while a finger slides a control everything else steps back and the page
    shows through; the control stays put under the finger on a card of its own. */

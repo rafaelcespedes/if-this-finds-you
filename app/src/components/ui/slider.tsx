@@ -27,6 +27,9 @@ function Slider({
   const [active, setActive] = React.useState(false);
   const touch = React.useRef<{ id: number; x: number; y: number; v: number; w: number; sliding: boolean; last: number } | null>(null);
   const lastTap = React.useRef(0);
+  // the page stays shown for a moment after the finger lifts, so quick nudges don't flicker the sheet
+  const settle = React.useRef(0);
+  React.useEffect(() => () => window.clearTimeout(settle.current), []);
   const current = React.useRef(value);
   current.current = value;
 
@@ -52,8 +55,11 @@ function Slider({
       if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) {
         t.sliding = true;
         try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* fine */ }
-        setActive(true);
-        announce(e.currentTarget, true);
+        window.clearTimeout(settle.current);
+        if (!active) {
+          setActive(true);
+          announce(e.currentTarget, true);
+        }
       } else if (Math.abs(dy) > 6) {
         // up or down: the sheet's drag, or the scroll
         touch.current = null;
@@ -77,8 +83,12 @@ function Slider({
     e.preventDefault();
     touch.current = null;
     if (t.sliding) {
-      setActive(false);
-      announce(e.currentTarget, false);
+      const el = e.currentTarget;
+      window.clearTimeout(settle.current);
+      settle.current = window.setTimeout(() => {
+        setActive(false);
+        announce(el, false);
+      }, 400);
       onValueCommit?.([t.last]);
       return;
     }

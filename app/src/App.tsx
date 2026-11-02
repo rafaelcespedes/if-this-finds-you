@@ -369,7 +369,7 @@ export default function App() {
     const avoid = adjusting.current;
     const t = avoid ? 1 : Math.min(1, Math.max(0, (visible - peek) / Math.max(1, half - peek)));
     const motion = animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    el.style.transition = motion ? (avoid ? 'transform 320ms cubic-bezier(0.23, 1, 0.32, 1)' : 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)') : 'none';
+    el.style.transition = motion ? (avoid ? 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)' : 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)') : 'none';
     const header = headerRef.current;
     if (header) {
       header.style.transition = motion ? 'opacity 300ms ease-out' : 'none';
