@@ -11,7 +11,10 @@
 
 import './sources/hershey.js';
 import './sources/extras.js';
-import './sources/accents.js';
+import './sources/palmer.js';
+import './sources/suetterlin.js';
+import './sources/arrighi.js';
+import './sources/accents.js'; // composes accented letters for every style, so it comes after them
 
 export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, addTransform, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';
