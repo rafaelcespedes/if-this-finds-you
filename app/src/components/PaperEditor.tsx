@@ -162,7 +162,7 @@ export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW,
   useLayoutEffect(() => setBlinkKey((n) => n + 1), [caretPx.left, caretPx.top]);
 
   return (
-    <div ref={wrap} className="relative mx-auto cursor-text" style={{ width: sheetW * pxPerMm }} onMouseDown={onMouseDown} onClick={onClick}>
+    <div ref={wrap} className="sheet-stack relative mx-auto cursor-text" style={{ width: sheetW * pxPerMm }} onMouseDown={onMouseDown} onClick={onClick}>
       {children}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {rects.map((r, i) => (

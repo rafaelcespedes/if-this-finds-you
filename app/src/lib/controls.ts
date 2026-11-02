@@ -34,6 +34,8 @@ export interface SliderControl {
   app?: boolean;
   /** only shown for styles where it makes sense */
   when?: (ctx: { connected: boolean }) => boolean;
+  /** New hand: spread (share of the full range, 1 sigma) and the band rolls stay inside so every roll looks human */
+  roll?: { spread: number; band: [number, number] };
 }
 
 const ends = (l: string, r: string, mid = 'Medium') => (lo: number, hi: number) => (v: number) => {
@@ -56,31 +58,31 @@ function def(c: Omit<SliderControl, 'describe' | 'step'> & { step?: number; desc
 
 export const CONTROLS: SliderControl[] = [
   // ---------- primary: how it's written ----------
-  def({ key: 'neatness', code: 'ne', label: 'Neatness', ends: ['Hurried', 'Careful'], min: 0.05, max: 1, zone: 'how', tier: 'primary', fallback: 0.6, describe: words.neatness }),
-  def({ key: 'hurry', code: 'hu', label: 'Hurry', ends: ['Calm', 'Rushed'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'primary', fallback: 0.35, describe: ends('Calm', 'Rushed', 'Steady')(0, 1) }),
-  def({ key: 'pressure', code: 'pr', label: 'Pressure', ends: ['Light', 'Heavy'], min: 0, max: 0.95, zone: 'how', tier: 'primary', fallback: 0.35, describe: words.pressure }),
-  def({ key: 'slant', code: 'sl', label: 'Slant', ends: ['Back', 'Forward'], min: -15, max: 30, zone: 'who', tier: 'primary', fallback: 4, describe: words.slant }),
+  def({ key: 'neatness', code: 'ne', label: 'Neatness', ends: ['Hurried', 'Careful'], min: 0.05, max: 1, zone: 'how', tier: 'primary', fallback: 0.6, describe: words.neatness, roll: { spread: 0.14, band: [0.25, 0.95] } }),
+  def({ key: 'hurry', code: 'hu', label: 'Hurry', ends: ['Calm', 'Rushed'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'primary', fallback: 0.35, describe: ends('Calm', 'Rushed', 'Steady')(0, 1), roll: { spread: 0.2, band: [0, 0.9] } }),
+  def({ key: 'pressure', code: 'pr', label: 'Pressure', ends: ['Light', 'Heavy'], min: 0, max: 0.95, zone: 'how', tier: 'primary', fallback: 0.35, describe: words.pressure, roll: { spread: 0.16, band: [0.05, 0.85] } }),
+  def({ key: 'slant', code: 'sl', label: 'Slant', ends: ['Back', 'Forward'], min: -15, max: 30, zone: 'who', tier: 'primary', fallback: 4, describe: words.slant, roll: { spread: 0.1, band: [-8, 22] } }),
 
   // ---------- advanced: pens and ink ----------
-  def({ key: 'penWidth', code: 'pw', label: 'Tip size', ends: ['Fine', 'Bold'], min: 14, max: 110, step: 1, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 56, describe: words.penWidth }),
-  def({ key: 'inkFlow', code: 'if', label: 'Ink flow', ends: ['Dry', 'Wet'], min: 0, max: 1, step: 0.01, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 0.5 }),
-  def({ key: 'inkVariation', code: 'iv', label: 'Ink variation', ends: ['Even', 'Lively'], min: 0, max: 1, step: 0.01, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 0.4 }),
-  def({ key: 'paperTooth', code: 'pt', label: 'Paper tooth', ends: ['Smooth', 'Toothy'], min: 0, max: 1, step: 0.01, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 0.4 }),
-  def({ key: 'nibAngle', code: 'na', label: 'Nib angle', ends: ['Flat', 'Steep'], min: 0, max: 90, step: 1, zone: 'who', tier: 'advanced', group: 'Pens and ink', fallback: 38, describe: (v) => `${Math.round(v)}°` }),
+  def({ key: 'penWidth', code: 'pw', label: 'Tip size', ends: ['Fine', 'Bold'], min: 14, max: 110, step: 1, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 56, describe: words.penWidth, roll: { spread: 0.05, band: [26, 92] } }),
+  def({ key: 'inkFlow', code: 'if', label: 'Ink flow', ends: ['Dry', 'Wet'], min: 0, max: 1, step: 0.01, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 0.5, roll: { spread: 0.2, band: [0.1, 0.9] } }),
+  def({ key: 'inkVariation', code: 'iv', label: 'Ink variation', ends: ['Even', 'Lively'], min: 0, max: 1, step: 0.01, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 0.4, roll: { spread: 0.2, band: [0.1, 0.9] } }),
+  def({ key: 'paperTooth', code: 'pt', label: 'Paper tooth', ends: ['Smooth', 'Toothy'], min: 0, max: 1, step: 0.01, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 0.4, roll: { spread: 0.2, band: [0.1, 0.9] } }),
+  def({ key: 'nibAngle', code: 'na', label: 'Nib angle', ends: ['Flat', 'Steep'], min: 0, max: 90, step: 1, zone: 'who', tier: 'advanced', group: 'Pens and ink', fallback: 38, describe: (v) => `${Math.round(v)}°`, roll: { spread: 0.12, band: [15, 70] } }),
 
   // ---------- advanced: writing and page ----------
-  def({ key: 'lineSpacing', code: 'ls', label: 'Line spacing', ends: ['Tight', 'Airy'], min: 0.8, max: 1.5, step: 0.01, zone: 'who', tier: 'advanced', group: 'Writing and page', fallback: 1, app: true, describe: (v) => `${v.toFixed(2)}×` }),
-  def({ key: 'lineRhythm', code: 'lr', label: 'Line rhythm', ends: ['Even', 'Wandering'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.3 }),
-  def({ key: 'drift', code: 'bw', label: 'Baseline wobble', ends: ['Steady', 'Wavy'], min: 0, max: 1.6, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.7 }),
-  def({ key: 'marginDiscipline', code: 'md', label: 'Margins', ends: ['Strict', 'Loose'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.3 }),
-  def({ key: 'tracking', code: 'lt', label: 'Letter spacing', ends: ['Close', 'Open'], min: -30, max: 80, step: 1, zone: 'who', tier: 'advanced', group: 'Writing and page', fallback: 0, when: ({ connected }) => !connected }),
-  def({ key: 'wordSpace', code: 'ws', label: 'Word spacing', ends: ['Close', 'Open'], min: 0.6, max: 1.8, step: 0.01, zone: 'who', tier: 'advanced', group: 'Writing and page', fallback: 1.1 }),
+  def({ key: 'lineSpacing', code: 'ls', label: 'Line spacing', ends: ['Tight', 'Airy'], min: 0.8, max: 1.5, step: 0.01, zone: 'who', tier: 'advanced', group: 'Writing and page', fallback: 1, app: true, describe: (v) => `${v.toFixed(2)}×`, roll: { spread: 0.1, band: [0.9, 1.3] } }),
+  def({ key: 'lineRhythm', code: 'lr', label: 'Line rhythm', ends: ['Even', 'Wandering'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.3, roll: { spread: 0.2, band: [0, 0.8] } }),
+  def({ key: 'drift', code: 'bw', label: 'Baseline wobble', ends: ['Steady', 'Wavy'], min: 0, max: 1.6, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.7, roll: { spread: 0.12, band: [0.2, 1.3] } }),
+  def({ key: 'marginDiscipline', code: 'md', label: 'Margins', ends: ['Strict', 'Loose'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.3, roll: { spread: 0.2, band: [0, 0.8] } }),
+  def({ key: 'tracking', code: 'lt', label: 'Letter spacing', ends: ['Close', 'Open'], min: -30, max: 80, step: 1, zone: 'who', tier: 'advanced', group: 'Writing and page', fallback: 0, when: ({ connected }) => !connected, roll: { spread: 0.08, band: [-15, 50] } }),
+  def({ key: 'wordSpace', code: 'ws', label: 'Word spacing', ends: ['Close', 'Open'], min: 0.6, max: 1.8, step: 0.01, zone: 'who', tier: 'advanced', group: 'Writing and page', fallback: 1.1, roll: { spread: 0.08, band: [0.8, 1.5] } }),
 
   // ---------- advanced: letters and variety ----------
-  def({ key: 'xHeight', code: 'xh', label: 'Letter height', ends: ['Short', 'Tall'], min: 0.36, max: 0.78, step: 0.005, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 0.55 }),
-  def({ key: 'width', code: 'wd', label: 'Letter width', ends: ['Narrow', 'Wide'], min: 0.62, max: 1.12, step: 0.005, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 0.85 }),
-  def({ key: 'tremor', code: 'tr', label: 'Tremor', ends: ['Steady', 'Shaky'], min: 0, max: 5, step: 0.05, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 1.4 }),
-  def({ key: 'tiredness', code: 'ti', label: 'Tiredness', ends: ['Fresh', 'Tired'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Letters and variety', fallback: 0.25 }),
+  def({ key: 'xHeight', code: 'xh', label: 'Letter height', ends: ['Short', 'Tall'], min: 0.36, max: 0.78, step: 0.005, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 0.55, roll: { spread: 0.08, band: [0.4, 0.74] } }),
+  def({ key: 'width', code: 'wd', label: 'Letter width', ends: ['Narrow', 'Wide'], min: 0.62, max: 1.12, step: 0.005, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 0.85, roll: { spread: 0.08, band: [0.68, 1.06] } }),
+  def({ key: 'tremor', code: 'tr', label: 'Tremor', ends: ['Steady', 'Shaky'], min: 0, max: 5, step: 0.05, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 1.4, roll: { spread: 0.08, band: [0.3, 3] } }),
+  def({ key: 'tiredness', code: 'ti', label: 'Tiredness', ends: ['Fresh', 'Tired'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Letters and variety', fallback: 0.25, roll: { spread: 0.2, band: [0, 0.7] } }),
 ];
 
 export const ADVANCED_GROUPS: AdvancedGroup[] = ['Pens and ink', 'Writing and page', 'Letters and variety'];

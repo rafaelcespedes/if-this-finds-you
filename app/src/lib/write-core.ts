@@ -32,6 +32,7 @@ export function write(req: WriteRequest): WriteResult {
     id: req.id,
     handKey: req.seed + ':' + req.style,
     inkKey: req.inkKey,
+    inkColor: req.inkColor,
     paper: req.paper,
     svgs,
     emMm: comp.emMm,

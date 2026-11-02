@@ -13,6 +13,8 @@ export interface WriteRequest {
   lineSpacing: number;
   /** ink swatch key when the engine models ink; null = flat currentColor */
   inkKey: string | null;
+  /** the flat ink colour the page shows (echoed back, so ink changes land with the new writing) */
+  inkColor: string;
 }
 
 /** Floats per laid-out character in `WriteResult.glyphs`: sheet, x, y, advance, line, kind (1 glyph, 0 missing). */
@@ -24,6 +26,7 @@ export interface WriteResult {
   handKey: string;
   paper: PaperId;
   inkKey: string | null;
+  inkColor: string;
   svgs: string[];
   emMm: number;
   lineMm: number;

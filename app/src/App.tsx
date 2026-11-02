@@ -18,7 +18,9 @@ import { useWriting } from '@/hooks/useWriting';
 import { canShareLinks, copyText, exportFont, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
 import { applyEdit, EditLog, type Edit } from '@/lib/edits';
-import { pickNewHand, pickSimilarHand, writerName } from '@/lib/hands';
+import { pickSimilarHand, writerName } from '@/lib/hands';
+import { rollLook, type LockKey } from '@/lib/roll';
+import { canTransition } from '@/hooks/useWriting';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
@@ -51,6 +53,7 @@ export default function App() {
   const [editing, setEditing] = useState(false);
   const [plainText, setPlainText] = useState(() => readPref('seedhand:plain-text') === '1');
   const [variety, setVariety] = useState(() => Number(readPref('seedhand:variety') ?? 60) || 60);
+  const [locks, setLocks] = useState<Set<LockKey>>(() => new Set((readPref('seedhand:locks') ?? '').split(',').filter(Boolean) as LockKey[]));
   const coarse = useMediaQuery('(pointer: coarse)');
 
   // natural hand (seed) + your offsets + occasion -> the hand on the page
@@ -63,7 +66,7 @@ export default function App() {
 
   const request: Omit<WriteRequest, 'id'> = {
     seed: state.seed, style: state.style, overrides: eff.overrides, text: state.text, paper: state.paper,
-    size: eff.size, lineSpacing: eff.lineSpacing, inkKey: eff.inkKey,
+    size: eff.size, lineSpacing: eff.lineSpacing, inkKey: eff.inkKey, inkColor: ink,
   };
   // the page is written in a worker, so typing never waits for the hand
   const writing = useWriting(request);
@@ -85,10 +88,10 @@ export default function App() {
   }, [update]);
 
   // ---------- hands ----------
-  // a new writer: Who resets; How and With-what stay as you set them
+  // a new hand rolls the whole look (writer, style, pen, ink, paper, size, every slider), except what's locked
   const newHand = useCallback(() => {
-    update((s) => ({ ...pickNewHand({ seed: s.seed, style: s.style }, variety), offsets: offsetsForNewHand(s.offsets) }));
-  }, [update, variety]);
+    update((s) => rollLook(s, { variety, locked: locks }));
+  }, [update, variety, locks]);
   const similarHand = useCallback(() => {
     update((s) => ({ ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) }));
   }, [update]);
@@ -167,6 +170,13 @@ export default function App() {
     name,
     emMm: emForPaper(p, paper, eff.size),
     variety,
+    locks,
+    onToggleLock: (key) => setLocks((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      writePref('seedhand:locks', [...next].join(','));
+      return next;
+    }),
     busy,
     onNewHand: newHand,
     onSimilarHand: similarHand,
@@ -229,8 +239,9 @@ export default function App() {
                         paper={shownPaper}
                         pxPerMm={pxPerMm}
                         svg={svg}
-                        ink={ink}
+                        ink={writing ? writing.inkColor : ink}
                         handKey={writing ? writing.handKey : ''}
+                        intro={!canTransition()}
                         index={i}
                         count={all.length}
                       />

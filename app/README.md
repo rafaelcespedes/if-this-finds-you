@@ -23,9 +23,16 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   handwriting; Up/Down/Home/End follow the written lines; Esc finishes. "Edit as plain text" opens a
   normal text box for long edits or pasting.
 - **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
-  about how they write. **New hand** (or **R** when not typing) meets a new writer: a new word seed, a coin
-  flip between Print and Joined, and, of several candidates, the one most unlike the current hand.
-  **Similar** (or **Shift R**) gives a sibling: same words, another number, close but not a copy.
+  about how they write.
+- **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
+  of several candidates), Print or Joined, pen and tip, ink, paper, size, and a fresh offset on every
+  slider, each inside a band that stays legible. Small **locks** beside Pen, Ink and Paper keep those
+  while everything else rolls (remembered per browser). The sheet cross-fades when the look changes
+  (a View Transition; instant with reduced motion). The roll is plain note state, so the share link
+  captures all of it. `lib/roll.ts` is the local sampler; when `engine/sampler.js` exports
+  `sampleLook({ current, locked, variety })`, it takes over and the app fills in only what it leaves out.
+- **Similar** (or **Shift R**) gives a sibling and keeps the look: same words, another number, close but
+  not a copy.
 - **Controls** follow `docs/research/controls-and-feel.md`:
   - *How it's written:* Neatness, Hurry, Pressure, Slant, and an Occasion (Thank-you card, Shopping list,
     Love letter, Lecture notes, Postcard) with an Amount.
@@ -35,9 +42,8 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     Line spacing, Line rhythm, Baseline wobble, Margins, Letter spacing (print only), Word spacing,
     Letter height, Letter width, Tremor, Tiredness, Variety (how far New hand jumps).
   - **Every slider is seed-relative.** The thumb starts at this hand's natural value (the small dot on
-    the track) and moving it adds an offset; double-click a slider to go back to the dot. New hand keeps
-    your How and With-what offsets and clears the Who ones (slant, proportions, spacing), so a new writer
-    is never dragged toward the last one's settings.
+    the track) and moving it adds an offset; double-click a slider to go back to the dot. Similar hand
+    keeps your How and With-what offsets and clears the Who ones (slant, proportions, spacing).
 - **Actions.** Share link (copies a URL that restores the exact note; the toast offers the share sheet
   where there is one), Download note (JPEG at 3x the screen, paper and writing exactly as shown; on phones
   it opens the share sheet, so Save Image puts it in Photos), Export font file (.otf from the engine's

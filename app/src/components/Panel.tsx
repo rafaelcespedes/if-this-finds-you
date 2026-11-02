@@ -1,5 +1,5 @@
 import { memo, useEffect, useId, useState } from 'react';
-import { ChevronDown, Download, Link2, Loader2, Shuffle, Type, Users } from 'lucide-react';
+import { ChevronDown, Download, Link2, Loader2, Lock, LockOpen, Shuffle, Type, Users } from 'lucide-react';
 import { getStyle, styleNames, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -16,6 +16,7 @@ import { OCCASIONS } from '@/lib/occasions';
 import { PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
 import { PEN_CHOICES, PENS_LIVE, PENS_SHOWN } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
+import type { LockKey } from '@/lib/roll';
 import { AMOUNT_RANGE, SIZE_RANGE, type NoteState } from '@/lib/state';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -29,6 +30,9 @@ export interface PanelProps {
   /** em size in mm at the current paper and size (for showing the tip in mm) */
   emMm: number;
   variety: number;
+  /** kept when rolling a new hand */
+  locks: Set<LockKey>;
+  onToggleLock: (key: LockKey) => void;
   busy: { download: boolean; font: boolean };
   onNewHand: () => void;
   onSimilarHand: () => void;
@@ -101,11 +105,11 @@ export function Panel(props: PanelProps) {
       <Section label="Pen, ink and paper">
         <PenRow {...props} />
         <div className="mt-4">
-          <Row label="Ink" value={inkName(state.ink)} />
+          <Row label="Ink" value={inkName(state.ink)} lock={<LockToggle what="ink" {...props} />} />
           <InkPicker value={state.ink} pen={state.pen} onChange={props.onInk} />
         </div>
         <div className="mt-4">
-          <Row label="Paper" value={PAPERS.find((x) => x.id === state.paper)?.name} />
+          <Row label="Paper" value={PAPERS.find((x) => x.id === state.paper)?.name} lock={<LockToggle what="paper" {...props} />} />
           <PaperPicker value={state.paper} onChange={props.onPaper} />
         </div>
         <div className="mt-4">
@@ -271,10 +275,11 @@ function OccasionRow({ state, onOccasion, onAmount }: PanelProps) {
   );
 }
 
-function PenRow({ state, onPen, onPenSize }: PanelProps) {
+function PenRow(props: PanelProps) {
+  const { state, onPen, onPenSize } = props;
   return (
     <div className="grid gap-2">
-      <Row label="Pen">{PENS_SHOWN && !PENS_LIVE && <Soon />}</Row>
+      <Row label="Pen" lock={<LockToggle what="pen" {...props} />}>{PENS_SHOWN && !PENS_LIVE && <Soon />}</Row>
       {PENS_SHOWN && (
         <Segmented
           type="single"
@@ -432,12 +437,39 @@ function Section({ children, label }: { children: React.ReactNode; label: string
   );
 }
 
-function Row({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
+function Row({ label, value, children, lock }: { label: string; value?: string; children?: React.ReactNode; lock?: React.ReactNode }) {
   return (
-    <div className="flex min-h-6 items-center justify-between gap-3">
+    <div className="flex min-h-7 items-center justify-between gap-3">
       <span className="text-[13px] font-medium">{label}</span>
-      {value ? <span className="text-[13px] text-muted-foreground">{value}</span> : children}
+      <span className="flex items-center gap-1">
+        {value ? <span className="text-[13px] text-muted-foreground">{value}</span> : children}
+        {lock}
+      </span>
     </div>
+  );
+}
+
+/** Keep this pen / ink / paper when New hand rolls everything else. */
+function LockToggle({ what, locks, onToggleLock }: { what: LockKey } & PanelProps) {
+  const locked = locks.has(what);
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-pressed={locked}
+          aria-label={`Keep this ${what} for new hands`}
+          onClick={() => onToggleLock(what)}
+          className={cn(
+            '-mr-1.5 grid size-7 place-items-center rounded-md transition-[color,background-color] duration-150 hover-device:hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:size-11',
+            locked ? 'text-[var(--ink)]' : 'text-faint hover-device:hover:text-foreground',
+          )}
+        >
+          {locked ? <Lock className="size-3.5" strokeWidth={2.2} /> : <LockOpen className="size-3.5" />}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{locked ? `New hands keep this ${what}` : `Keep this ${what} for new hands`}</TooltipContent>
+    </Tooltip>
   );
 }
 

@@ -10,13 +10,15 @@ interface Props {
   ink: string;
   /** changes when the hand changes, so the writing settles in again */
   handKey: string;
+  /** play the settle-in when the hand changes (off where view transitions cross-fade the sheet) */
+  intro?: boolean;
   index: number;
   count: number;
   children?: ReactNode;
 }
 
 /** One sheet of paper with its writing. */
-export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, handKey, index, count, children }: Props) {
+export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, handKey, intro = true, index, count, children }: Props) {
   return (
     <div
       className="relative isolate shrink-0 rounded-[1.5px]"
@@ -25,7 +27,8 @@ export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, han
       role={count > 1 ? 'group' : undefined}
     >
       <PaperCanvas paper={paper} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
-      {svg && <Writing key={handKey} svg={svg} ink={ink} className="hand-in" />}
+      {/* the settle-in plays on mount: on first load always, and on each new hand where there's no cross-fade */}
+      {svg && <Writing key={intro ? handKey : 'w'} svg={svg} ink={ink} className="hand-in" />}
       {children}
     </div>
   );
