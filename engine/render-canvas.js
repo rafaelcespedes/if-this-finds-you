@@ -357,11 +357,15 @@ function buildGeometry(p, page, pen, k, opts, pad) {
   const poolAmp = (pen.pool || 0) * 1.5;
   const nib = pen.shape === 'nib';
   LAYERS.reset();
-  let prevInk = null, prev = null, chain = 0, strokes = 0, segs = 0;
+  let prevInk = null, prev = null, prevKind = null, chain = 0, strokes = 0, segs = 0;
   for (const it of page.items) {
-    if (it.kind !== 'glyph' || !it.g) { prev = null; continue; }
+    // everything with ink is drawn: letters ('glyph') and correction marks ('mark'); only a 'miss' isn't
+    if (it.kind === 'miss' || !it.g) { prev = null; continue; }
+    if (it.kind !== prevKind) prev = null;   // a mark is its own pen-down, so it darkens where it crosses letters
+    prevKind = it.kind;
     const wordStart = it.inkIndex !== prevInk;
     prevInk = it.inkIndex;
+    const weight = it.weight > 0 ? Math.pow(it.weight, 0.6) : 1; // overwritten letters carry more ink
     const ox = it.x * k, oy = it.y * k;
     const sts = it.g.strokes;
     for (let si = 0; si < sts.length; si++) {
@@ -372,7 +376,8 @@ function buildGeometry(p, page, pen, k, opts, pad) {
       const n = pr.n, X = pr.x, Y = pr.y, Wd = pr.w, Dn = pr.d, Sx = pr.s, Tt = pr.t, Ax = pr.aux, Hr = pr.hair;
       let wsum = 0; for (let i = 0; i < n; i++) wsum += Wd[i];
       const ink = walk({ item: it, strokeIndex: si, wordStart, len: pr.len, width: wsum / n, dot: pr.dot });
-      const seed = ((it.charIndex * 7 + si * 13) % 997) / 997 * 61.7;
+      if (weight !== 1) ink.mul *= weight;
+      const seed = (((it.charIndex || 0) * 7 + si * 13) % 997) / 997 * 61.7;
       const shade = ink.shade == null ? 0.5 : ink.shade;
       const w0 = Wd[0];
       // the points we keep, in device px
@@ -681,14 +686,15 @@ function fallback2D(ctx, p, page, pen, ink, paper, k) {
   const walk = inkWalker(p);
   let prevInk = null;
   for (const it of page.items) {
-    if (it.kind !== 'glyph') continue;
+    if (it.kind === 'miss' || !it.g) continue;
     const wordStart = it.inkIndex !== prevInk; prevInk = it.inkIndex;
     it.g.strokes.forEach((st, si) => {
       const pr = strokeInk(p, st);
       if (!pr) return;
       let dm = 0; for (let i = 0; i < pr.n; i++) dm += pr.d[i]; dm /= pr.n;
       const s = walk({ item: it, strokeIndex: si, wordStart, len: pr.len, width: pr.w[pr.n >> 1], dot: pr.dot });
-      ctx.fillStyle = rgbHex(inkRGB(ink, dm * s.mul, [255, 255, 255], s.shade));
+      const wt = it.weight > 0 ? Math.pow(it.weight, 0.6) : 1;
+      ctx.fillStyle = rgbHex(inkRGB(ink, dm * s.mul * wt, [255, 255, 255], s.shade));
       ctx.beginPath();
       const poly = st.contour;
       ctx.moveTo((it.x + poly[0][0]) * k, (it.y - poly[0][1]) * k);

@@ -755,7 +755,7 @@ export function inkWalker(p) {
   return function walk(q) {
     const it = q.item || {};
     if (q.wordStart && q.strokeIndex === 0) words++;
-    const sr = rng('shade:' + p.seed + ':' + (it.charIndex || 0) + ':' + (q.strokeIndex || 0));
+    const sr = rng('shade:' + p.seed + ':' + (it.charIndex != null ? it.charIndex : it.key || 0) + ':' + (q.strokeIndex || 0));
     const shade = clamp(0.5 + 0.5 * vary * (0.7 * N.n1((it.inkIndex || 0) * 0.09 + 7.7) + 0.45 * (2 * sr() - 1)), 0, 1);
     let mul = (1 + (pen.drift || 0) * (0.5 + vary) * N.n1((it.inkIndex || 0) * 0.23 + 50)) * (1 + 0.07 * vary * (2 * sr() - 1)), wet = 0, starve = 0;
     if (kind === PEN_KIND.pointed) {

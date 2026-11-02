@@ -96,7 +96,7 @@ export function renderSVG(p, page, opts) {
   const misses = [];
   let prevInk = null;
   // the pen-down being collected: its subpaths, length-weighted density, shade, and overlays
-  let chain = null, prevEnd = null, k = 0;
+  let chain = null, prevEnd = null, k = 0, prevKind = null;
   const perStroke = !!opts.strokeIds;
   const flush = (key) => {
     if (!chain) return;
@@ -112,8 +112,12 @@ export function renderSVG(p, page, opts) {
       flush(); prevEnd = null;
       continue;
     }
+    if (!it.g) continue;
+    if (it.kind !== prevKind) { flush(); prevEnd = null; } // a correction mark is its own pen-down
+    prevKind = it.kind;
     const wordStart = it.inkIndex !== prevInk;
     prevInk = it.inkIndex;
+    const weight = it.weight > 0 ? Math.pow(it.weight, 0.6) : 1; // overwritten letters carry more ink
     const ox = it.x * sc, oy = it.y * sc;
     it.g.strokes.forEach((st, ci) => {
       const pr = strokeInk(p, st);
@@ -132,6 +136,7 @@ export function renderSVG(p, page, opts) {
       for (let i = 0; i < pr.n; i++) { dm += pr.d[i]; wm += pr.w[i]; }
       dm /= pr.n; wm /= pr.n;
       const ink = walk({ item: it, strokeIndex: ci, wordStart, len: pr.len, width: wm, dot: pr.dot });
+      if (weight !== 1) ink.mul *= weight;
       const base = dm * ink.mul;
       if (!chain) chain = { d: '', dl: 0, len: 0, shade: ink.shade, over: [] };
       chain.d += d; chain.dl += base * pr.len; chain.len += pr.len;
