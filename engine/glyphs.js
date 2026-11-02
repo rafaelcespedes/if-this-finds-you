@@ -25,6 +25,8 @@ const COMPOSERS = [];
 //   tradition: { name, region, language?, era, legibility: 'modern' | 'historical' | 'specialist', notes? }
 //              (where and when this hand was taught; 'historical' = hard for today's readers, e.g. Kurrent)
 //   connected: lowercase letters join (entry/exit pinned so joins meet)
+//   fallback:  another style to borrow characters from when this one lacks them (e.g. a 1741 copybook
+//              has no € or @). Borrowed variants keep their own metrics, so they scale correctly.
 // metrics: { base, cap, xHeight, descender, descRatio } in source units, y down.
 //   base/cap: baseline and cap-height y; xHeight: lowercase x-height y; descender: lowercase
 //   descender y; descRatio: rendered descender depth as a fraction of cap height.
@@ -59,6 +61,15 @@ export function variants(style, ch) {
   for (const fn of COMPOSERS) {
     const v = fn(style, ch);
     if (v && v.length) { st.glyphs.set(ch, v); return v; } // cache
+  }
+  if (st.fallback && st.fallback !== style) {
+    const fb = STYLES.get(st.fallback);
+    const v = fb ? variants(st.fallback, ch) : [];
+    if (v.length) {
+      const borrowed = v.map((x) => ({ ...x, metrics: x.metrics || fb.metrics, borrowedFrom: st.fallback }));
+      st.glyphs.set(ch, borrowed); // cache
+      return borrowed;
+    }
   }
   return [];
 }
