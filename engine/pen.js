@@ -493,6 +493,18 @@ function nibOutline(pr) {
   const { n, x, y, tx, ty } = pr;
   const ex = pr.nib[0] / 2, ey = pr.nib[1] / 2, el = Math.hypot(ex, ey) || 1;
   const ux = ex / el, uy = ey / el, qx = -uy, qy = ux;
+  if (pr.dot) {
+    // a broad-nib dot is a short dab across the nib edge: a parallelogram one nib wide.
+    // (Swept along its own path it can run parallel to the edge and vanish into a sliver.)
+    const m = (n - 1) >> 1, cx = x[m], cy = y[m];
+    const h = Math.max(0.35 * el, 0.5 * (pr.w[m] || 0));
+    const a = [cx - ex - qx * h, cy - ey - qy * h], b = [cx + ex - qx * h, cy + ey - qy * h];
+    const c = [cx + ex + qx * h, cy + ey + qy * h], d = [cx - ex + qx * h, cy - ey + qy * h];
+    const loop = [a, b, c, d];
+    let area = 0;
+    for (let i = 0, j = 3; i < 4; j = i++) area += (loop[j][0] - loop[i][0]) * (loop[j][1] + loop[i][1]);
+    return area > 0 ? loop.reverse() : loop;
+  }
   const thin = pr.wHair / 2;
   const side = (i) => tx[i] * uy - ty[i] * ux;      // which way the nib edge faces the motion
   const runs = [];
