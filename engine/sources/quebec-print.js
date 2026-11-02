@@ -8,7 +8,7 @@
 
 import { defineStyle, register } from '../glyphs.js';
 
-defineStyle("quebec-print", {"label": "Print 2024", "family": "print", "tradition": {"name": "Present-day adult print handwriting", "region": "Québec, Canada", "language": "French", "era": "2024", "legibility": "modern", "notes": "Everyday print of several real volunteers who copied Wikipedia summaries for the Copiste d'un jour project. Each letter keeps its writer tag (tags.writer)."}, "connected": false, "metrics": {"base": 0, "cap": -200, "xHeight": -104, "descender": 110, "descRatio": 0.41}, "fallback": "print", "natural": {"slant": 6.1, "builtInSlant": 0, "xHeight": 0.52, "ascender": 1.04, "descender": 0.55, "advance": 1.154, "width": 0.904}});
+defineStyle("quebec-print", {"label": "Print 2024", "family": "print", "tradition": {"name": "Present-day adult print handwriting", "region": "Québec, Canada", "language": "French", "era": "2024", "legibility": "modern", "notes": "Everyday print of several real volunteers who copied Wikipedia summaries for the Copiste d'un jour project. Each letter keeps its writer tag (tags.writer).", "schooling": "adult-print", "slant": 0}, "connected": false, "metrics": {"base": 0, "cap": -200, "xHeight": -104, "descender": 110, "descRatio": 0.41}, "fallback": "print", "natural": {"slant": 6.1, "builtInSlant": 0, "xHeight": 0.52, "ascender": 1.04, "descender": 0.55, "advance": 1.154, "width": 0.904}});
 
 const SOURCES = {
  "main": {

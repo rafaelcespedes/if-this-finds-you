@@ -925,10 +925,12 @@ def emit(hand, results):
         deep = [max(p[1] for s in eng['s'] for p in s) for k, (ex, eng) in results.items()
                 if ex['gl']['ch'].islower() and eng['s']]
         u['descender'] = (max(deep) / C) if deep else 0.5  # the deepest descender maps to the hand's line
+    tradition = dict(hand['tradition'])
+    tradition['slant'] = u['slant']['target']  # degrees of slant built into these skeletons (the engine centres writers on it)
     meta = {
         'label': hand['label'],
         'family': hand['family'],
-        'tradition': hand['tradition'],
+        'tradition': tradition,
         'connected': hand.get('connected', False),
         'metrics': {'base': 0, 'cap': -C, 'xHeight': -round(u['xRatio'] * C),
                     'descender': round(u['descender'] * C), 'descRatio': u['descRatio']},

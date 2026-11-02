@@ -8,12 +8,17 @@
 
 import { defineStyle, register } from '../glyphs.js';
 
-defineStyle("arrighi", {"label": "Chancery 1524", "family": "script", "tradition": {"name": "Italian chancery italic (cancellaresca)", "region": "Italy", "language": "Italian, Latin", "era": "1522–1524", "legibility": "modern", "notes": "Broad-nib italic, partly joined: letters keep the plate's own lead-ins and hairline exits and sit as close as on the plate, so a c d e h i k l m n t u touch the next letter with their exit hairline while b f g o p q r s x y z lift. The model behind modern italic school hands."}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -96, "descender": 141, "descRatio": 0.41}, "fallback": "print", "natural": {"slant": 8, "builtInSlant": 6, "xHeight": 0.48, "ascender": 1.01, "descender": 0.435, "advance": 1.062, "join": {"mode": "natural"}}});
+defineStyle("arrighi", {"label": "Chancery 1524", "family": "script", "tradition": {"name": "Italian chancery italic (cancellaresca)", "region": "Italy", "language": "Italian, Latin", "era": "1522–1524", "legibility": "modern", "notes": "Broad-nib italic, partly joined: letters keep the plate's own lead-ins and hairline exits and sit as close as on the plate, so a c d e h i k l m n t u touch the next letter with their exit hairline while b f g o p q r s x y z lift. The model behind modern italic school hands.", "schooling": "italic", "slant": 6}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -96, "descender": 141, "descRatio": 0.41}, "fallback": "print", "natural": {"slant": 8, "builtInSlant": 6, "xHeight": 0.48, "ascender": 1.01, "descender": 0.46, "advance": 1.062, "join": {"mode": "natural"}}});
 
 const SOURCES = {
  "main": {
   "name": "Arrighi, La Operina (1522–24)",
   "credit": "Ludovico degli Arrighi (Vicentino), La Operina da imparare di scrivere littera cancellarescha (Rome, 1522–24), woodcuts by Ugo da Carpi. Getty Research Institute copy via the Internet Archive; public domain",
+  "url": "https://archive.org/details/laoperinadiludou00arri/page/n28/mode/1up"
+ },
+ "arrighi-composed": {
+  "name": "Arrighi, La Operina (1522–24): j composed from his i and long s",
+  "credit": "Composed from Ludovico degli Arrighi's i and long s, La Operina (Rome, 1522–24), Getty Research Institute copy; public domain",
   "url": "https://archive.org/details/laoperinadiludou00arri/page/n28/mode/1up"
  }
 };
@@ -29,6 +34,7 @@ const GLYPHS = {
   "g": [{"id":"arrighi","l":0,"r":72,"s":[[[10,-5],[-18,24],[-36,45],[-42,57],[-42,63],[-37,67],[-29,70],[-15,69],[2,65],[19,54],[34,33],[47,-5],[57,-52],[62,-83],[56,-84],[48,-84],[37,-81],[29,-76],[23,-70],[20,-61],[19,-49],[20,-40],[22,-34],[25,-30],[39,-37],[62,-48]]],"tags":{"allograph":"g.3"}},{"id":"arrighi-b","l":0,"r":60,"s":[[[49,-54],[49,-65],[48,-75],[46,-84],[42,-90],[39,-94],[35,-95],[29,-96],[22,-96],[17,-86],[13,-74],[13,-59],[17,-44],[26,-28],[24,-22],[20,-13],[16,-5],[14,2],[16,9],[20,18],[13,20],[4,25],[-7,34],[-16,45],[-21,56],[-23,64],[-22,70],[-18,75],[-10,78],[3,79],[19,78],[32,74],[42,68],[47,61],[45,52],[36,36],[23,17],[15,5],[15,-3],[25,-19],[49,-54]]],"tags":{"allograph":"g.4"}}],
   "h": [{"id":"arrighi","l":0,"r":83,"s":[[[38,-3],[56,-24],[68,-43],[72,-59],[71,-70],[67,-79],[61,-87],[51,-82],[41,-74],[32,-61],[23,-43],[16,-22],[10,-5],[16,-27],[19,-45],[19,-62],[21,-84],[26,-118],[33,-150],[44,-175],[61,-194],[85,-212]]],"tags":{"allograph":"h.2"}}],
   "i": [{"id":"arrighi","l":0,"r":47,"s":[[[30,-105],[20,-76],[13,-47],[11,-30],[11,-23],[18,-25],[27,-28],[37,-32]],[[33,-173]]],"tags":{"allograph":"i.1"}}],
+  "j": [{"id":"arrighi","l":0,"r":28,"s":[[[28,-106],[19,-67],[11,-25],[4,20],[-5,62],[-18,96],[-38,115],[-64,121],[-90,118]],[[24,-174]]],"tags":{"allograph":"j.2"},"src":"arrighi-composed"}],
   "k": [{"id":"arrighi","l":0,"r":126,"s":[[[106,-217],[92,-204],[78,-191],[68,-177],[61,-158],[54,-130],[47,-90],[41,-43],[36,-6]],[[71,-65],[76,-65],[81,-66],[84,-70],[87,-74],[88,-79],[90,-86],[83,-93],[65,-87],[46,-81],[46,-71],[45,-61],[68,-42],[90,-22],[95,-24],[101,-27],[107,-33],[116,-42]],[[10,-5],[34,-8],[63,-12]]],"tags":{"allograph":"k.3"}}],
   "l": [{"id":"arrighi","l":0,"r":50,"s":[[[40,-33],[30,-26],[20,-22],[10,-20],[11,-42],[13,-69],[17,-100],[23,-133],[33,-163],[47,-184],[64,-196]]],"tags":{"allograph":"l.2"}}],
   "m": [{"id":"arrighi","l":0,"r":139,"s":[[[10,-78],[26,-88],[42,-95],[39,-68],[34,-43],[28,-21],[22,-6]],[[27,-52],[44,-73],[61,-87],[80,-92],[78,-68],[74,-42],[69,-21],[64,-6]],[[72,-55],[87,-74],[104,-88],[122,-95],[119,-68],[114,-43],[108,-20],[115,-10],[129,-17]]],"tags":{"allograph":"m.2"}}],

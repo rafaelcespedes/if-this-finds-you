@@ -10,7 +10,8 @@
   "language": "French",
   "era": "2024",
   "legibility": "modern",
-  "notes": "Everyday print of several real volunteers who copied Wikipedia summaries for the Copiste d'un jour project. Each letter keeps its writer tag (tags.writer)."
+  "notes": "Everyday print of several real volunteers who copied Wikipedia summaries for the Copiste d'un jour project. Each letter keeps its writer tag (tags.writer).",
+  "schooling": "adult-print"
  },
  "source": {
   "manifest": "copiste-2024",
