@@ -29,6 +29,7 @@ import { canTransition } from '@/hooks/useWriting';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
+import { mapGeometry } from '@/lib/geometry';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
 import { PENS_LIVE } from '@/lib/pens';
 import '@/lib/perf';
@@ -80,6 +81,7 @@ export default function App() {
   const writing = useWriting({ ...request, placeholder: placeholderFor(state.paper) }, composing);
   // paper and writing switch together when the result arrives
   const shownPaper = writing ? getPaper(writing.paper) : paper;
+  const geometry = useMemo(() => (writing ? mapGeometry(writing) : null), [writing]);
 
   const deskRef = useRef<HTMLDivElement>(null);
   const deskW = useElementWidth(deskRef);
@@ -273,7 +275,7 @@ export default function App() {
                   onEdit={onEdit}
                   onFormat={onFormat}
                   writerName={name}
-                  result={writing}
+                  geometry={geometry}
                   pxPerMm={pxPerMm}
                   sheetW={shownPaper.w}
                   sheetH={shownPaper.h}

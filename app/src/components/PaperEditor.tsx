@@ -7,8 +7,7 @@
 // - Pen-only formatting: ⌘U/⌘I underline by hand (again for double), ⌘B press harder, ⌘↩ P.S.
 // - Up/Down/Home/End follow the written lines; IME compositions own the keys while they last.
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { buildMap, caretAt, indexOnLine, lineAtY, lineEdges, translateIndex, type Box, type TextMap } from '@/lib/caret';
-import type { WriteResult } from '@/lib/write-protocol';
+import { across, type Geometry } from '@/lib/geometry';
 import type { Edit } from '@/lib/edits';
 import { wordAt } from '@/lib/doc';
 import { isComposingKey, isMac, useEditInput, type Composition } from '@/hooks/useEditInput';
@@ -33,7 +32,8 @@ interface Props {
   /** pen-only formatting on a range (or the word at the caret) */
   onFormat: (cmd: FormatCommand, from: number, to: number) => void;
   writerName: string;
-  result: WriteResult | null;
+  /** where the written text sits (from the worker's boxes, or the engine's own geometry) */
+  geometry: Geometry | null;
   /** CSS px per mm, sheet size in mm, gap between sheets in px */
   pxPerMm: number;
   sheetW: number;
@@ -59,14 +59,13 @@ interface Sel {
 const AMBER = '#f3d27a';
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onFormat, writerName, result, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, children },
+  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const goalX = useRef<number | null>(null);
   const [sel, setSel] = useState<Sel>({ start: text.length, end: text.length, dir: 'none', focused: false });
-  const map = useMemo<TextMap | null>(() => (result ? buildMap(result) : null), [result]);
   const [composition, setComposition] = useState<Composition | null>(null);
   const onComposition = useCallback((c: Composition | null) => {
     setComposition(c);
@@ -75,9 +74,9 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   const input = useEditInput(ta, text, onEdit, 'paper', onComposition);
   const descId = useId();
   // indices in the live text <-> indices in the text the page was written from
-  const toMap = useCallback((i: number) => (map ? translateIndex(i, text, map.res.text) : i), [map, text]);
-  const fromMap = useCallback((i: number) => (map ? translateIndex(i, map.res.text, text) : i), [map, text]);
-  const u = result ? result.unitsPerMm : 1;
+  const toMap = useCallback((i: number) => (geo ? across(i, text, geo.text) : i), [geo, text]);
+  const fromMap = useCallback((i: number) => (geo ? across(i, geo.text, text) : i), [geo, text]);
+  const u = geo ? geo.unitsPerMm : 1;
   const k = pxPerMm / u; // CSS px per font unit
   const pitch = sheetH * pxPerMm + gapPx; // CSS px from one sheet's top to the next
 
@@ -136,14 +135,12 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
 
   // ---------- pointer ----------
   const pointToIndex = (clientX: number, clientY: number) => {
-    if (!map || !wrap.current) return text.length;
+    if (!geo || !wrap.current) return text.length;
     const r = wrap.current.getBoundingClientRect();
     const lx = clientX - r.left;
     const ly = clientY - r.top;
-    const sheet = Math.max(0, Math.min(map.res.svgs.length - 1, Math.floor(ly / pitch)));
-    const yU = (ly - sheet * pitch) / k;
-    const line = lineAtY(map, sheet, yU);
-    return fromMap(indexOnLine(map, line, lx / k));
+    const sheet = Math.max(0, Math.min(geo.sheets - 1, Math.floor(ly / pitch)));
+    return fromMap(geo.hit(sheet, lx / k, (ly - sheet * pitch) / k));
   };
   const drag = useRef<{ anchor: number; id: number } | null>(null);
   const lastDown = useRef<{ t: number; x: number; y: number; count: number; type: string }>({ t: 0, x: 0, y: 0, count: 0, type: '' });
@@ -170,8 +167,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       return;
     }
     if (clicks >= 3) {
-      const line = map ? caretAt(map, toMap(idx)).line : 0;
-      const edges = map ? lineEdges(map, line) : { start: 0, end: text.length };
+      const edges = geo ? geo.edges(toMap(idx)) : { start: 0, end: text.length };
       focusAt(fromMap(edges.end), true, fromMap(edges.start));
       setPointerSel(true);
       setSweep((n) => n + 1);
@@ -233,22 +229,20 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
         return;
       }
     }
-    if (!map) return;
+    if (!geo) return;
     const head = el.selectionDirection === 'backward' ? el.selectionStart : el.selectionEnd;
-    const c = caretAt(map, toMap(head));
     const lineKey = e.key === 'Home' || e.key === 'End' || (isMac() && e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight'));
     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.altKey && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
-      if (goalX.current == null) goalX.current = c.x;
-      const target = c.line + (e.key === 'ArrowUp' ? -1 : 1);
-      const idx = target < 0 ? 0 : fromMap(indexOnLine(map, target, goalX.current));
-      focusAt(idx, e.shiftKey);
+      const v = geo.vertical(toMap(head), e.key === 'ArrowUp' ? -1 : 1, goalX.current);
+      goalX.current = v.goalX;
+      focusAt(fromMap(v.o), e.shiftKey);
       return;
     }
     goalX.current = null;
     if (lineKey && !e.altKey) {
       e.preventDefault();
-      const edges = lineEdges(map, c.line);
+      const edges = geo.edges(toMap(head));
       const toEnd = e.key === 'End' || e.key === 'ArrowRight';
       focusAt(fromMap(toEnd ? edges.end : edges.start), e.shiftKey);
     }
@@ -271,49 +265,33 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
 
   // ---------- caret & selection geometry ----------
   const head = sel.dir === 'backward' ? sel.start : sel.end;
-  const caret = useMemo(() => (map ? caretAt(map, toMap(head)) : null), [map, head, toMap]);
-  const emU = result ? result.emMm * u : 1000;
-  const asc = 0.74 * emU, desc = 0.2 * emU;
+  const caret = useMemo(() => (geo ? geo.caret(toMap(head)) : null), [geo, head, toMap]);
+  const asc = geo ? geo.ascU : 740, desc = geo ? geo.descU : 200;
   const caretPx = caret ? { left: caret.x * k, top: caret.sheet * pitch + (caret.y - asc) * k } : { left: 0, top: 0 };
   const caretH = (asc + desc) * k;
   const atEnd = /^\s*$/.test(text.slice(head));
 
-  // highlighter runs: one shape per written line, following that line's own baseline
+  // highlighter ribbons: one shape per written line, following (and leaning with) that line
   const runs = useMemo(() => {
-    if (!map || sel.start === sel.end) return [];
-    const a = toMap(sel.start), b = toMap(sel.end);
-    const byLine = new Map<string, Box[]>();
-    for (const box of map.boxes) {
-      if (box.i < a || box.i >= b) continue;
-      const key = box.sheet + ':' + box.line;
-      if (!byLine.has(key)) byLine.set(key, []);
-      byLine.get(key)!.push(box);
-    }
-    return [...byLine.values()].map((boxes) => {
-      const top = boxes.map((bx) => [bx.x, bx.y - asc * 0.92] as const);
-      const end = boxes[boxes.length - 1];
-      top.push([end.x + end.adv, end.y - asc * 0.92]);
-      const bottom = [...boxes].reverse().map((bx) => [bx.x, bx.y + desc * 0.9] as const);
-      bottom.unshift([end.x + end.adv, end.y + desc * 0.9]);
-      const sheet = boxes[0].sheet;
-      const pts = [...top, ...bottom].map(([x, y]) => `${(x * k).toFixed(1)},${(sheet * pitch + y * k).toFixed(1)}`);
-      return pts.join(' ');
-    });
-  }, [map, sel.start, sel.end, toMap, k, pitch, asc, desc]);
+    if (!geo || sel.start === sel.end) return [];
+    return geo.ribbons(toMap(sel.start), toMap(sel.end)).map((rb) =>
+      rb.points.map(([x, y]) => `${(x * k).toFixed(1)},${(rb.sheet * pitch + y * k).toFixed(1)}`).join(' '),
+    );
+  }, [geo, sel.start, sel.end, toMap, k, pitch]);
 
   // the selection chip: what a pen can do with a pointer selection
   const chip = useMemo(() => {
-    if (!pointerSel || !sel.focused || sel.start === sel.end || !map) return null;
-    const a = toMap(sel.start);
-    const first = map.boxes.find((bx) => bx.i >= a);
+    if (!pointerSel || !sel.focused || sel.start === sel.end || !geo) return null;
+    const first = geo.ribbons(toMap(sel.start), toMap(sel.end))[0];
     if (!first) return null;
-    return { left: first.x * k, top: first.sheet * pitch + (first.y - asc) * k - 40 };
-  }, [pointerSel, sel, map, toMap, k, pitch, asc]);
+    const minX = Math.min(...first.points.map((q) => q[0])), minY = Math.min(...first.points.map((q) => q[1]));
+    return { left: minX * k, top: first.sheet * pitch + minY * k - 40 };
+  }, [pointerSel, sel, geo, toMap, k, pitch]);
 
   // the hidden textarea is one written line tall and runs to the line's end, so screen readers can find it
-  const lineH = Math.max(18, result ? result.lineMm * pxPerMm : caretH);
+  const lineH = Math.max(18, geo ? geo.lineMm * pxPerMm : caretH);
   const lineW = Math.max(40, sheetW * pxPerMm - caretPx.left - 8);
-  const preedit = composition && composition.text && map ? caretAt(map, toMap(composition.from)) : null;
+  const preedit = composition && composition.text && geo ? geo.caret(toMap(composition.from)) : null;
 
   // keep the caret's line above the on-screen keyboard (and on screen at all) while writing
   useEffect(() => {
@@ -371,19 +349,29 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
             {composition.text}
           </span>
         )}
-        {caret && sel.start === sel.end && !composition && (atEnd ? (
-          // the pen at rest: an ink dot on the baseline, a hairline up to the x-height
-          <div key={sel.focused ? moveKey : 'rest'} className={cn('absolute', sel.focused && 'caret-breathe')} style={{ left: caretPx.left + dot * 0.6, top: caret.sheet * pitch + caret.y * k, opacity: sel.focused ? 0.85 : 0.18 }}>
-            <span className="absolute w-px" style={{ left: -0.5, bottom: 0, height: xHeightU * k, background: ink, opacity: 0.3 }} />
-            <span className="absolute rounded-full" style={{ width: dot, height: dot, left: -dot / 2, top: -dot / 2, background: ink }} />
-          </div>
-        ) : (
-          <div
-            key={sel.focused ? moveKey : 'rest'}
-            className={cn('absolute rounded-full', sel.focused && 'caret-breathe')}
-            style={{ left: caretPx.left - 0.75, top: caretPx.top, width: 1.5, height: caretH, background: ink, opacity: sel.focused ? 0.85 : 0.18 }}
-          />
-        ))}
+        {caret && sel.start === sel.end && !composition && (() => {
+          // the caret leans with the writing when the engine knows the lean (its top point)
+          const bx = caret.x * k, by = caret.sheet * pitch + caret.y * k;
+          const lean = caret.top ? (caret.top[0] - caret.x) / Math.max(1, caret.y - caret.top[1]) : 0;
+          const opacity = sel.focused ? 0.85 : 0.18;
+          const key = sel.focused ? moveKey : 'rest';
+          if (atEnd) {
+            // the pen at rest: an ink dot on the baseline, a hairline up to the x-height
+            const hx = xHeightU * k;
+            return (
+              <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && 'caret-breathe')} width="100%" height="100%" style={{ opacity }}>
+                <line x1={bx + dot * 0.6} y1={by} x2={bx + dot * 0.6 + lean * hx} y2={by - hx} stroke={ink} strokeOpacity={0.3} strokeWidth={1} />
+                <circle cx={bx + dot * 0.6} cy={by} r={dot / 2} fill={ink} />
+              </svg>
+            );
+          }
+          const top = by - asc * k, bottom = by + desc * k;
+          return (
+            <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && 'caret-breathe')} width="100%" height="100%" style={{ opacity }}>
+              <line x1={bx - lean * desc * k} y1={bottom} x2={bx + lean * asc * k} y2={top} stroke={ink} strokeWidth={1.5} strokeLinecap="round" />
+            </svg>
+          );
+        })()}
       </div>
       {chip && (
         <div
@@ -419,7 +407,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       />
       <span id={descId} hidden>
         Fair copy: the page is rewritten cleanly as you type. Command U underlines, Command B presses harder, Command Return adds a P.S.
-        {result?.summary ? ` This draft has ${result.summary}.` : ''}
+        {geo?.summary ? ` This draft has ${geo.summary}.` : ''}
       </span>
     </div>
   );
