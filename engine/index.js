@@ -8,6 +8,7 @@
 //   playSVG(el.firstChild, page, { emPx: 58 }).play();     // write it, stroke by stroke
 //   const j = writeWithJourney(p, 'Dear Ada,', { maxWidth: 9000 }, { amount: 0.4 }); // a draft, with its slips
 //   renderSVG(p, j.page, { width: 720, emPx: 58 });        // j.transcript / j.events say what happened
+//   Ink mode (typing that behaves like ink): see sheet.js — newInkDoc, replay, plan, penStep, apply
 //
 // Sources register skeletons on import; add new source modules to the list below.
 
@@ -25,6 +26,9 @@ export { renderSVG, contoursToD } from './render-svg.js';
 export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
 export { writeWithJourney, journeyAmount, fixHabits, journeyText } from './corrections.js';
+export { newInkDoc, newView, replay, apply, plan, penStep, viewText, fairCopy, postScript, dropLast, sheetPage, INK_VERSION } from './sheet.js';
+export { logicalText, transcription, summary as inkSummary, encodeDoc, decodeDoc, encodeInkLink, decodeInkLink } from './inklog.js';
+export { coverQuality } from './marks.js';
 export { EXTRAS } from './sources/extras.js';
 
 import { HAND_PARAMS } from './hand.js';
