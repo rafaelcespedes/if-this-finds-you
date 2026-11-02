@@ -274,10 +274,9 @@ function dotShape(shape, c, p, xh, r, jit) {
 // ctx (optional, from layout): neighbours/position, passed to the variant chooser.
 // Returns { advance, contours, strokes, variant, pose }:
 //   contours = filled outline polygons (font units, y up) in drawing order
-//   strokes  = [{ center, contour, dot, mark, delayed? }], one per contour (strokes[i].contour === contours[i]):
-//              the pen path behind each contour, for animation. mark is truthy for a stroke written after
-//              the letter: 'dot' (i/j dots), 'bar' (t/f bars) or true (accents and other variant.marks);
-//              delayed = true when this writer adds such marks after the whole word.
+//   strokes  = [{ center, contour, dot, mark?, delayed? }], one per contour (strokes[i].contour === contours[i]):
+//              the pen path behind each contour, for animation. mark = 'dot' | 'bar' | 'accent' on i/j dots,
+//              t/f bars and accent strokes (variant.marks); delayed = true when this writer adds them after the word.
 //   pose     = { slant, scale, squeeze }: the lean (degrees) and size this use was drawn at (for QA)
 export function makeGlyph(p, ch, inst, ctx) {
   const sk = glyphSkeleton(p, ch, inst, ctx);
@@ -447,9 +446,9 @@ export function makeGlyph(p, ch, inst, ctx) {
     const c = penOutline(p, pts, strokeSeedBase + si * 3.1);
     if (!c) return;
     contours.push(c);
-    strokes.push(bar ? { center: pts, contour: c, dot: false, mark: 'bar', delayed: hab.delayed }
-      : accent ? { center: pts, contour: c, dot: false, mark: true, delayed: hab.delayed }
-      : { center: pts, contour: c, dot: false, mark: false });
+    if (bar) strokes.push({ center: pts, contour: c, dot: false, mark: 'bar', delayed: hab.delayed });
+    else if (sk.strokeMarks[si]) strokes.push({ center: pts, contour: c, dot: false, mark: 'accent', delayed: hab.delayed });
+    else strokes.push({ center: pts, contour: c, dot: false });
   });
   const ij = sk.lower && (ch === 'i' || ch === 'j');
   for (const [di, d] of sk.dots.entries()) {
@@ -478,9 +477,9 @@ export function makeGlyph(p, ch, inst, ctx) {
     const c = penOutline(p, pts, 900 + di, round ? { dot: true } : undefined);
     if (!c) continue;
     contours.push(c);
-    strokes.push(ij ? { center: pts, contour: c, dot: true, mark: 'dot', delayed: hab.delayed }
-      : accent ? { center: pts, contour: c, dot: true, mark: true, delayed: hab.delayed }
-      : { center: pts, contour: c, dot: true, mark: false });
+    if (ij) strokes.push({ center: pts, contour: c, dot: true, mark: 'dot', delayed: hab.delayed });
+    else if (sk.dotMarks[di]) strokes.push({ center: pts, contour: c, dot: true, mark: 'accent', delayed: hab.delayed });
+    else strokes.push({ center: pts, contour: c, dot: true });
   }
   return {
     advance: sk.advance * scale * squeeze, contours, strokes, variant: sk.variant,

@@ -1,4 +1,4 @@
-// Ink mode: frozen placements. Usage: node tools/qa/ink.mjs [--root=<checkout>]
+// Ink mode: frozen placements. Usage: node tools/qa/placement.mjs [--root=<checkout>]
 // - text committed in pieces (word by word, and split mid-word) lands where one pass would put it
 // - a draft (thought letters) from the pen sits exactly where its commit lands
 // - nothing already written moves when more is written
