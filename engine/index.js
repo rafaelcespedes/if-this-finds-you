@@ -12,7 +12,7 @@ import './sources/extras.js';
 import './sources/allographs.js';
 
 export { rng, makeNoise } from './core.js';
-export { defineStyle, register, amend, addComposer, addDeriver, variants, choose, getStyle, styleNames, stylesInFamily, families, isHistorical,
+export { defineStyle, register, amend, addComposer, addDeriver, addTransform, transform, variants, choose, getStyle, styleNames, stylesInFamily, families, isHistorical,
   allographOf, allographChar, defineSchooling, getSchooling, schoolingNames, describeHabits } from './glyphs.js';
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM,
   ARCHETYPES, archetypeOf, latentOf, baseSeed, care, hurryDelta, skeleton } from './hand.js';

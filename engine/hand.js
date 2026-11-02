@@ -10,7 +10,7 @@
 // Everything is deterministic from strings: hand seed, and an instance seed for each use.
 
 import { rng, makeNoise, lerp, clamp, mix, DEG } from './core.js';
-import { choose, getStyle, has as styleHas, stylesInFamily, styleNames, families, isHistorical, makeHabits, pickSchooling, getSchooling } from './glyphs.js';
+import { choose, transform, getStyle, has as styleHas, stylesInFamily, styleNames, families, isHistorical, makeHabits, pickSchooling, getSchooling } from './glyphs.js';
 import { penOutline } from './pen.js';
 
 // ---------- the "writer": one consistent set of parameters per seed ----------
@@ -339,7 +339,7 @@ const isLetterCh = (c) => !!c && /\p{L}/u.test(c);
 // are accents or bars written after the letter (variant.marks, from sources/accents.js), else null.
 function glyphSkeleton(p, ch, inst, ctx) {
   const st = getStyle(p.style);
-  const g = choose(p, ch, ctx);
+  const g = transform(p, ch, choose(p, ch, ctx), ctx); // the writer's form, then this hand's style dimensions
   const m = g.metrics || st.metrics;
   const S = CAP / (m.base - m.cap);
   const lower = isLower(ch);
@@ -358,7 +358,9 @@ function glyphSkeleton(p, ch, inst, ctx) {
   const yc = 0.5 * (lower ? p.xHeight : 1) * CAP;
   const hurryTan = Math.tan(8 * hd * DEG);
   const place = (x, y) => [x + (y - yc) * lq.tan + y * hurryTan, y];
-  const markOf = new Map((g.marks || []).map((mk) => [mk.i, mk])); // accents and bars named by the variant
+  // variant.marks: source strokes that are marks (accents, bars), written after the letter; entries are stroke
+  // indices, or { i, kind, dot } objects
+  const markOf = new Map((g.marks || []).map((mk) => (typeof mk === 'number' ? [mk, { i: mk }] : [mk.i, mk])));
   // A joined letter keeps its entry and exit exactly where the plain form has them, so joins still meet:
   // its quirks fade out towards both ends (the same pinning makeGlyph uses for per-use variation).
   let pinQ = null;
@@ -392,7 +394,7 @@ function glyphSkeleton(p, ch, inst, ctx) {
     const xs = s.map((v) => v[0]), ysrc = s.map((v) => v[1]);
     const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ysrc) - Math.min(...ysrc);
     const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ysrc) + Math.min(...ysrc)) / 2;
-    if (mk ? mk.dot : Math.max(bw, bh) <= 2.6 * (m.base - m.cap) / 21) { // a dot (i, j, period, colon...)
+    if (mk && mk.dot != null ? mk.dot : Math.max(bw, bh) <= 2.6 * (m.base - m.cap) / 21) { // a dot (i, j, period, colon...)
       let Y = zoneY(zp, cy, lower, m) * ys;
       if (lower && !mk && (ch === 'i' || ch === 'j')) Y = p.xHeight * CAP + (p.ascender - p.xHeight) * CAP * p.dotHeight;
       dots.push(pinQ ? [mapPt([cx, cy])[0], Y] : place((cx - L) * S * wScale, Y));
@@ -463,7 +465,8 @@ const charKey = (ch) => ch.charCodeAt(0);
 // ctx (optional, from layout): neighbours/position, passed to the variant chooser.
 // Returns { advance, contours, strokes, variant }:
 //   contours = filled outline polygons (font units, y up) in drawing order
-//   strokes  = [{ center, contour, dot }] — the pen path behind each contour, for animation
+//   strokes  = [{ center, contour, dot, mark }] — the pen path behind each contour, for animation;
+//              mark = an accent or other stroke written after the letter (from variant.marks)
 export function makeGlyph(p, ch, inst, ctx) {
   const sk = glyphSkeleton(p, ch, inst, ctx);
   const N = p.noise;
@@ -566,7 +569,7 @@ export function makeGlyph(p, ch, inst, ctx) {
     }
     pts = pts.map((q) => [q[0] + q[1] * tanSlant, q[1]]);
     const c = penOutline(p, pts, strokeSeedBase + si * 3.1);
-    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: false }); }
+    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: false, mark: !!sk.strokeMarks[si] }); }
   });
   for (const [di, d] of sk.dots.entries()) {
     const q = warp(d);
@@ -575,7 +578,7 @@ export function makeGlyph(p, ch, inst, ctx) {
     const c0 = [q[0] + q[1] * tanSlant, q[1]];
     const pts = [[c0[0] - Math.cos(a) * len / 2, c0[1] - Math.sin(a) * len / 2], c0, [c0[0] + Math.cos(a) * len / 2, c0[1] + Math.sin(a) * len / 2]];
     const c = penOutline(p, pts, 900 + di, { dot: true });
-    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: true }); }
+    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: true, mark: !!sk.dotMarks[di] }); }
   }
   return { advance: sk.advance, contours, strokes, variant: sk.variant };
 }

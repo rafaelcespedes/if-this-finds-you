@@ -6,15 +6,18 @@
 //
 // Skeleton format (same as the Hershey data): { l, r, s: [[ [x,y], ... ], ...] }
 //   l / r  = left / right side bearing (source units), s = strokes as polylines, y down.
-// Variant = skeleton + { id, source, weight?, metrics?, tags? }.
+// Variant = skeleton + { id, source, weight?, metrics?, tags?, marks?, resolve? }.
+//   marks    = indices of strokes in `s` that are marks (accents...), written after the letter
+//   resolve  = (p, ctx) => concrete variant, for composed characters that depend on the hand
 //   tags     = { allograph?: 'a.double-storey' | 'seven.crossed' | ..., position?: 'initial'|'medial'|'final',
-//                speed?: 'fast', caps?: true }
+//                speed?: 'fast', caps?: true, writer? }
 //              allograph: the letter's construction. Names follow docs/research/hand-traditions.md §4, written
 //                out ('a.double-storey', 'seven.crossed'); §4's short IDs ('a.1', '7.2') are accepted as aliases
 //                (see sources/allographs.js). Several variants may share an allograph: they are different
 //                drawings of one construction, and the chooser alternates them so neighbours differ.
 //              position: a contextual form, only used there (a word-final s). Never a writer's everyday form.
 //              speed 'fast': a simplified form that hurried writers favour. caps: reads well in a row of capitals.
+//              writer: which real writer a traced drawing came from (a hand follows one where it can).
 //   source  = { name, credit, url? } — shown in the provenance card; required.
 //   metrics = per-variant override of the style's metrics (for sources traced at another scale).
 //   weight  = how common the form is in its style (default 1; 0 = kept for provenance, never chosen).
@@ -27,6 +30,7 @@ import { rng } from './core.js';
 
 const STYLES = new Map();
 const COMPOSERS = [];
+const TRANSFORMS = [];
 
 // meta: { label, family, tradition, connected, metrics }
 //   family:    'print' | 'script' — what the UI's Print / Joined switch and New hand choose between
@@ -85,6 +89,19 @@ function derive(style) {
   if (!st || st.derived) return;
   st.derived = true;
   for (const fn of DERIVERS) fn(style);
+}
+
+// Skeleton transforms reshape the chosen variant per hand before it is drawn: style dimensions such as
+// loopiness, lead-ins and end flicks, connectivity, join length, angularity. fn(p, ch, variant, ctx, metrics)
+// -> variant (same skeleton format, source units; return the input unchanged to skip). Must be deterministic,
+// keep `source` and `marks`, and never mutate the input. Applied in registration order.
+export function addTransform(fn) { TRANSFORMS.push(fn); }
+export function transform(p, ch, v, ctx) {
+  if (!v || !TRANSFORMS.length) return v;
+  const st = STYLES.get(p.style);
+  const m = v.metrics || (st && st.metrics);
+  for (const fn of TRANSFORMS) v = fn(p, ch, v, ctx, m) || v;
+  return v;
 }
 
 export function variants(style, ch) {
