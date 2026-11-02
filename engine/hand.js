@@ -10,7 +10,7 @@
 // Everything is deterministic from strings: hand seed, and an instance seed for each use.
 
 import { rng, makeNoise, lerp, clamp, mix, DEG } from './core.js';
-import { choose, getStyle, has as styleHas } from './glyphs.js';
+import { choose, transform, getStyle, has as styleHas } from './glyphs.js';
 import { penOutline } from './pen.js';
 
 // ---------- the "writer": one consistent set of parameters per seed ----------
@@ -163,7 +163,7 @@ function smoothStroke(pts, p, step) {
 // Build the skeleton (in font units) for one glyph instance.
 function glyphSkeleton(p, ch, inst, ctx) {
   const st = getStyle(p.style);
-  const g = choose(p, ch, ctx);
+  const g = transform(p, ch, choose(p, ch, ctx), ctx); // allograph, then this hand's style dimensions
   const m = g.metrics || st.metrics;
   const S = CAP / (m.base - m.cap);
   const lower = isLower(ch);
