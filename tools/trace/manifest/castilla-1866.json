@@ -11,13 +11,13 @@
     "where": "https://bibliotecadigital.jcyl.es/es/consulta/registro.do?id=17089",
     "checked": "2026-11-02",
     "verdict": "clean",
-    "notes": "1866 publication. Downloaded the library's PDF of the whole book; not traced in this batch."
+    "notes": "1866 publication. The library's PDF of this record is the text volume only: no alphabet plates, so it can't supply the hand. The Spanish letra española is traced from Palomares 1776 instead (second tracing batch, source palomares-1776)."
   },
   "files": [
     {
       "name": "curso-completo-1866.pdf",
       "url": "https://bibliotecadigital.jcyl.es/es/catalogo_imagenes/grupo.do?path=10079796",
-      "what": "the whole book as one PDF (259 pages, 33 MB)"
+      "what": "the text volume as one PDF (259 pages, 33 MB); no plates"
     }
   ]
 }
