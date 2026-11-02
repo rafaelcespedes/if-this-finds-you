@@ -76,6 +76,18 @@ export const MOVEMENTS = [
     mu: { loops: 0.2, leadIns: 0.1, endFlicks: 0.45, flourish: 0.25, lifts: 0.1, joinLength: 0.85, angularity: -0.2, loopHeight: 0.2, bowls: 0.5, rhythm: 0.4 } },
 ];
 const MOVEMENT_BY_ID = Object.fromEntries(MOVEMENTS.map((c) => [c.id, c]));
+// Where the writer was schooled (letter-variety session's h.schooling) leans the kind of movement too:
+// American and French hands loop and lead in, italic and British hands mostly don't (hand-traditions.md §4).
+const SCHOOLING_LEAN = {
+  american: { business: 2, copperplate: 1.5, schoolroom: 1.3 },
+  french: { round: 3, schoolroom: 1.3 },
+  continental: { round: 1.5, angular: 1.5, schoolroom: 1.2 },
+  british: { italic: 2, printscript: 1.5 },
+  italic: { italic: 3, angular: 1.3 },
+  polish: { round: 2, schoolroom: 1.5 },
+  'latin-american': { business: 1.5, round: 1.5, copperplate: 1.3 },
+  'adult-print': { printscript: 3, cramped: 1.3 },
+};
 // The letter-variety session's writer archetypes (hand.js ARCHETYPES), when present, lean on these kinds.
 const ARCHETYPE_LEAN = {
   friend: { business: 1.5, scrawl: 1.2, airy: 1.2 },
@@ -122,6 +134,7 @@ export function movementOf(p) {
   if (p.movement && MOVEMENT_BY_ID[p.movement]) return MOVEMENT_BY_ID[p.movement];
   const st = getStyle(p.style);
   const lean = Object.assign({}, ARCHETYPE_LEAN[p.archetype] || {});
+  for (const [k, w] of Object.entries(SCHOOLING_LEAN[p.schooling] || {})) lean[k] = (lean[k] || 1) * w;
   const hint = st && st.tradition && st.tradition.movement; // a traced tradition may name its usual kind
   if (hint && MOVEMENT_BY_ID[hint]) lean[hint] = (lean[hint] || 1) * 3;
   const pool = MOVEMENTS.map((c) => ({ c, weight: c.weight * (lean[c.id] || 1) }));
@@ -133,7 +146,7 @@ export function movementOf(p) {
 const TRAITS = new Map();
 export function styleTraits(p) {
   const hurry0 = Number.isFinite(p.hurry0) ? p.hurry0 : Number.isFinite(p.hurry) ? p.hurry : null;
-  const key = [p.seed, p.style, hurry0, p.roundness, p.neatness0 ?? p.neatness, p.archetype, p.movement].join('|');
+  const key = [p.seed, p.style, hurry0, p.roundness, p.neatness0 ?? p.neatness, p.archetype, p.schooling, p.movement].join('|');
   let t = TRAITS.get(key);
   if (t) return t;
   const r = rng('style-dims:' + baseSeed(p.seed));
@@ -153,7 +166,7 @@ export function styleTraits(p) {
     if (k === 'angularity') v -= 0.6 * (round - 0.55);
     if (k === 'flourish') v += 0.35 * (neat - 0.6);
     if (k === 'loops') v += 0.25 * (neat - 0.6);
-    if (k === 'lifts') v -= 0.15 * (neat - 0.6);
+    if (k === 'lifts') v += -0.15 * (neat - 0.6) + (hurry0 != null ? 0.12 * (hurry0 - 0.45) : 0);
     if (!script && !PRINT_KEYS.has(k)) v = 0;
     t[k] = r2(clamp(v, RANGE[k][0], RANGE[k][1]));
   });
@@ -161,14 +174,15 @@ export function styleTraits(p) {
   TRAITS.set(key, t);
   return t;
 }
-// Once hand.js offers a traits hook, the values sit on the hand itself (the UI reads natural values from it).
-if (typeof hand.addHandTraits === 'function') hand.addHandTraits((h) => styleTraits(h));
+// The values sit on the hand itself (hand.js addHandTraits runs this last in makeHand), so the UI's sliders and
+// the New-hand sampler read each writer's natural values from it.
+if (typeof hand.addHandTraits === 'function') hand.addHandTraits((h) => ({ ...styleTraits(h) }));
 
 // Effective values: UI overrides win, then the writer's traits. Moving Hurry away from the writer's own pace
 // (hurry0, letter-variety session) speeds the movement up or slows it down.
 const DIMS = new Map();
 export function styleDims(p) {
-  const key = KEYS.map((k) => p[k]).join(',') + '|' + p.seed + '|' + p.style + '|' + p.hurry + '|' + p.hurry0 + '|' + p.roundness + '|' + (p.neatness0 ?? p.neatness) + '|' + p.archetype + '|' + p.movement;
+  const key = KEYS.map((k) => p[k]).join(',') + '|' + p.seed + '|' + p.style + '|' + p.hurry + '|' + p.hurry0 + '|' + p.roundness + '|' + (p.neatness0 ?? p.neatness) + '|' + p.archetype + '|' + p.schooling + '|' + p.movement;
   let d = DIMS.get(key);
   if (d) return d;
   const need = KEYS.some((k) => !Number.isFinite(p[k]));
