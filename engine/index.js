@@ -16,7 +16,7 @@ export { defineStyle, register, amend, addComposer, addDeriver, addTransform, tr
   allographOf, allographChar, defineSchooling, getSchooling, schoolingNames, describeHabits } from './glyphs.js';
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM,
   ARCHETYPES, archetypeOf, latentOf, baseSeed, care, hurryDelta, skeleton } from './hand.js';
-export { sampleHand, sampleLook, handDistance, chaos, seedFrom, VARIETY } from './sampler.js';
+export { sampleHand, sampleLook, lookOf, lookDistance, handDistance, chaos, seedFrom, VARIETY, LOOK_PENS, LOOK_TIPS, LOOK_PAPERS } from './sampler.js';
 export { PENS, getPen, penOutline, simplify } from './pen.js';
 export { layout } from './layout.js';
 export { kinematics } from './kinematics.js';

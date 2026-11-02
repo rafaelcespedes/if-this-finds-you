@@ -149,18 +149,203 @@ function result(b, variety) {
   return { seed: b.seed, family: b.family, style: (b.h || makeHand(b.seed, b.family)).style, archetype: arch.id, label: arch.label, variety, distance: b.d };
 }
 
-// For the product UI (app/src/lib/roll.ts asks for this shape):
-// sampleLook({ current: { seed, style }, locked: string[], variety: 0..100, history?, entropy? })
-//   -> { seed, style, family, archetype, label }. The app fills in pen, ink, paper and the sliders itself.
-//   variety 0-20 = Sibling, 21-70 = Stranger (default 60), 71-100 = Wild. locked 'style' or 'family' keeps the
-//   current family. history: the hands shown so far (as for sampleHand); defaults to the current one.
+// ---------------------------------------------------------------------------------------------------------
+// The whole look: pen, tip, ink, paper, size and the sliders, chosen together so they are believable (a fountain
+// pen with blue-black on Seyès, a pencil on squared paper, a fat felt tip big and loose), not dealt as noise.
+// lookOf(seed, family, locked) is a pure function of the seed (and the locks), so a share link that carries the
+// seed and locks reproduces the look; sampleLook() decides which seed comes next, as sampleHand() does.
+// Keys follow engine/pen.js on the pens branch (PENS, TIPS, INKS); papers are keys the UI renders.
+// ---------------------------------------------------------------------------------------------------------
+
+export const LOOK_PENS = ['ballpoint', 'gel', 'fountain', 'pointed', 'italic', 'felt', 'pencil'];
+export const LOOK_TIPS = ['fine', 'medium', 'bold'];
+export const LOOK_PAPERS = ['plain', 'us-ruled', 'seyes', 'uk-feint', 'grid', 'dots'];
+// Which inks go in which pen (mirrors pen.js SPECS[pen].inks on the pens branch)
+const PEN_INKS = {
+  ballpoint: { 'ballpoint-blue': 50, black: 38, 'blue-black': 5, red: 4, green: 3 },
+  gel: { black: 45, 'blue-black': 25, 'royal-blue': 20, red: 5, green: 5 },
+  fountain: { 'blue-black': 32, 'royal-blue': 30, black: 22, sepia: 8, 'iron-gall': 6, green: 2 },
+  pointed: { black: 40, 'iron-gall': 30, sepia: 20, 'blue-black': 10 },
+  italic: { black: 50, sepia: 18, 'blue-black': 17, 'iron-gall': 10, red: 5 },
+  felt: { black: 60, 'blue-black': 15, 'royal-blue': 12, red: 8, green: 5 },
+  pencil: { graphite: 1 },
+};
+const INK_RGB = { 'ballpoint-blue': [38, 48, 132], 'royal-blue': [45, 82, 180], 'blue-black': [35, 50, 80], 'iron-gall': [42, 46, 66], sepia: [98, 66, 40], black: [38, 38, 46], red: [176, 36, 42], green: [30, 104, 70], graphite: [82, 82, 88] };
+const PEN_TIPS = { ballpoint: { fine: 2, medium: 3, bold: 0.6 }, gel: { fine: 2, medium: 2.5, bold: 1 }, fountain: { fine: 2.2, medium: 2.5, bold: 0.8 }, pointed: { fine: 1.5, medium: 2, bold: 0.8 }, italic: { fine: 0.6, medium: 2.4, bold: 1.6 }, felt: { fine: 1.2, medium: 2.4, bold: 2.4 }, pencil: { fine: 1, medium: 3, bold: 0.8 } };
+const PEN_PAPER = {
+  pencil: { grid: 2, dots: 1.4, seyes: 1.2 }, fountain: { seyes: 2, 'uk-feint': 1.5, plain: 1.4, 'us-ruled': 0.8 },
+  ballpoint: { 'us-ruled': 2, plain: 1, grid: 1 }, felt: { plain: 1.6, grid: 1.3, dots: 1.3, seyes: 0.5 },
+  pointed: { plain: 1.8, 'uk-feint': 1.4, seyes: 1.2, grid: 0.4, dots: 0.5 }, italic: { plain: 2, 'uk-feint': 1.2, grid: 0.5 },
+  gel: { dots: 1.5, plain: 1.2, 'us-ruled': 1.2 },
+};
+// where a writer learned shows in the paper they reach for: Seyès in France, college ruled in the US, feint
+// ruled in the UK, squared paper across much of continental Europe and Latin America
+const SCHOOL_PAPER = {
+  french: { seyes: 6 }, american: { 'us-ruled': 3 }, british: { 'uk-feint': 3 }, continental: { grid: 2.2, 'uk-feint': 1.2 },
+  polish: { grid: 3 }, 'latin-american': { grid: 1.6, 'us-ruled': 1.6 }, italic: { plain: 1.4, 'uk-feint': 1.3 }, 'adult-print': { dots: 1.6, plain: 1.3, 'us-ruled': 1.2 },
+};
+// what each kind of writer writes with and on (fonts-study.md §6); size = x-height in mm
+const ARCH_LOOK = {
+  friend: { pens: { ballpoint: 4, fountain: 2, gel: 2, pencil: 0.5, felt: 0.5 }, papers: { plain: 2, 'us-ruled': 1.5, 'uk-feint': 1.2, dots: 0.8 }, size: [2.8, 3.6] },
+  thanks: { pens: { gel: 3, fountain: 3, ballpoint: 1.5, pointed: 0.6 }, papers: { plain: 4, dots: 0.6 }, size: [3, 4] },
+  architect: { pens: { felt: 2.5, ballpoint: 1.5, pencil: 2.5, gel: 1 }, papers: { grid: 3, dots: 2, plain: 1.5 }, size: [2.4, 3.2], tips: { fine: 3, medium: 1 } },
+  field: { pens: { pencil: 4, ballpoint: 2, felt: 0.8, gel: 0.8 }, papers: { dots: 2, grid: 2, plain: 1.5, 'us-ruled': 0.6 }, size: [2.2, 2.9], tips: { fine: 2, medium: 1 } },
+  whiteboard: { pens: { felt: 6, gel: 0.6, ballpoint: 0.5 }, papers: { plain: 3, grid: 1.6, dots: 1 }, size: [4.2, 6.4], tips: { bold: 3, medium: 1 } },
+  margin: { pens: { felt: 3, gel: 2, ballpoint: 1.5 }, papers: { plain: 2, 'us-ruled': 1.4, 'uk-feint': 1 }, size: [3.6, 5], inks: { red: 8, green: 3 } },
+  postcard: { pens: { fountain: 2.5, ballpoint: 2.5, gel: 1.5, felt: 0.5 }, papers: { plain: 5 }, size: [2.3, 3.1] },
+  recipe: { pens: { fountain: 3, pointed: 1.4, ballpoint: 2, pencil: 0.6 }, papers: { 'uk-feint': 2, plain: 2, 'us-ruled': 1.5, grid: 0.4 }, size: [2.8, 3.8], inks: { sepia: 3, 'iron-gall': 3, 'blue-black': 1.5 }, age: [0.35, 0.95] },
+  first: { pens: { pencil: 6, felt: 1.4, ballpoint: 0.5 }, papers: { seyes: 2, 'us-ruled': 2, 'uk-feint': 1.4, grid: 1.2 }, size: [4.4, 6.6], tips: { medium: 2, bold: 1 } },
+  italic: { pens: { italic: 5, fountain: 2, pointed: 0.8 }, papers: { plain: 3, 'uk-feint': 1.4, dots: 0.6 }, size: [3.2, 4.4] },
+  signature: { pens: { fountain: 3, gel: 2, ballpoint: 2, felt: 0.8 }, papers: { plain: 4 }, size: [3.4, 5] },
+  backhand: { pens: { gel: 3, ballpoint: 2, felt: 1.2, pencil: 1 }, papers: { dots: 2.5, plain: 2, 'us-ruled': 1.2, grid: 1 }, size: [2.4, 3.2] },
+};
+const RULED = new Set(['us-ruled', 'seyes', 'uk-feint']);
+const LOOK_KEYS = ['pen', 'tip', 'ink', 'paper', 'size', 'inkAge', 'inkVariation'];
+
+// pick a key from { key: weight } tables multiplied together (a key a table doesn't list gets its __floor, else 1);
+// flat < 1 flattens the odds (Wild: rare pairings come up)
+function draw(r, keys, tables, flat = 1) {
+  const items = keys.map((k) => {
+    let w = 1;
+    for (const t of tables) if (t) w *= t[k] == null ? (t.__floor ?? 1) : t[k];
+    return { k, weight: Math.pow(Math.max(0, w), flat) };
+  }).filter((x) => x.weight > 0);
+  return items.length ? r.weighted(items).k : keys[0];
+}
+const inkFits = (pen, ink) => (PEN_INKS[pen] && PEN_INKS[pen][ink] ? 1 : ink === 'graphite' || pen === 'pencil' ? 0 : 0.15);
+
+// The natural look of a seed (family: 'print' | 'script'; locked: { pen?, tip?, ink?, paper?, size?, inkAge? } kept
+// as given, with everything else chosen to suit them). opts.wild flattens the odds. Pure.
+//   -> { seed, family, style, archetype, label, schooling, pen, tip, ink, inkAge, inkVariation, paper, size,
+//        params: { neatness, slant, pressure, hurry, lineWander, fatigue }  (absolute values)
+//        offsets: { same keys }  (params minus this hand's natural values: the look's nudges) }
+export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
+  const h = makeHand(seed, family);
+  const base = baseSeed(seed);
+  const A = ARCH_LOOK[h.archetype] || ARCH_LOOK.friend;
+  // a sibling keeps most of the base seed's look, and re-rolls a few parts of it
+  const rFor = (part) => (String(seed).includes('~') && rng('look-sib:' + seed + ':' + part)() < 0.25 ? rng('look:' + seed + ':' + part) : rng('look:' + base + ':' + part));
+  const flat = opts.wild ? 0.45 : 1;
+  const script = h.family === 'script';
+  const L = { ...locked };
+  const famBias = script ? { fountain: 1.6, pointed: 1.8, felt: 0.6 } : { felt: 1.2 };
+  const pen = L.pen && LOOK_PENS.includes(L.pen) ? L.pen : draw(rFor('pen'), LOOK_PENS, [
+    { ...A.pens, __floor: 0.08 }, famBias,
+    L.paper ? Object.fromEntries(LOOK_PENS.map((p) => [p, (PEN_PAPER[p] || {})[L.paper] ?? 0.7])) : null,
+    L.ink ? Object.fromEntries(LOOK_PENS.map((p) => [p, inkFits(p, L.ink)])) : null,
+    L.tip ? Object.fromEntries(LOOK_PENS.map((p) => [p, PEN_TIPS[p][L.tip]])) : null,
+  ], flat);
+  const paper = L.paper && LOOK_PAPERS.includes(L.paper) ? L.paper : draw(rFor('paper'), LOOK_PAPERS, [{ ...A.papers, __floor: 0.25 }, SCHOOL_PAPER[h.schooling], { ...PEN_PAPER[pen], __floor: 0.7 }], flat);
+  const tip = L.tip && LOOK_TIPS.includes(L.tip) ? L.tip : draw(rFor('tip'), LOOK_TIPS, [PEN_TIPS[pen], A.tips ? { ...A.tips, __floor: 0.4 } : null], flat);
+  // the pen's usual inks; an archetype's own inks (red for margin notes, sepia for recipes) can go in most pens
+  const inkPool = { ...PEN_INKS[pen] };
+  if (A.inks && pen !== 'pencil') for (const k of Object.keys(A.inks)) if (!inkPool[k]) inkPool[k] = 3;
+  const ink = L.ink ? L.ink : draw(rFor('ink'), Object.keys(inkPool), [inkPool, A.inks || null], flat);
+  const ra = rFor('age');
+  const inkAge = L.inkAge != null ? L.inkAge : A.age ? +(A.age[0] + (A.age[1] - A.age[0]) * ra()).toFixed(2)
+    : ink === 'iron-gall' || ink === 'sepia' ? +(0.15 + 0.5 * ra()).toFixed(2) : +(0.12 * ra() * ra()).toFixed(2);
+  const rv = rFor('variation');
+  const VAR = { fountain: [0.45, 0.8], pointed: [0.5, 0.85], italic: [0.4, 0.7], ballpoint: [0.25, 0.5], gel: [0.2, 0.4], felt: [0.2, 0.45], pencil: [0.3, 0.5] };
+  const inkVariation = L.inkVariation != null ? L.inkVariation : +(VAR[pen][0] + (VAR[pen][1] - VAR[pen][0]) * rv()).toFixed(2);
+  const rs = rFor('size');
+  const tipMm = { fine: -0.2, medium: 0, bold: 0.45 }[tip] + (pen === 'felt' ? 0.4 : 0) + (pen === 'pencil' && h.archetype !== 'first' ? -0.1 : 0);
+  const size = L.size != null ? L.size : +clamp(A.size[0] + (A.size[1] - A.size[0]) * rs() + tipMm, 2, 6.8).toFixed(1);
+  // the sliders: this writer's own values, nudged by what they write with and on
+  const nat = { neatness: h.neatness, slant: h.slant, pressure: h.pressure, hurry: h.hurry, lineWander: h.lineWander, fatigue: h.fatigue };
+  const off = { neatness: 0, slant: 0, pressure: 0, hurry: 0, lineWander: 0, fatigue: 0 };
+  if (pen === 'felt') { off.neatness -= 0.06; off.hurry += 0.05; off.pressure -= 0.1; }
+  if (pen === 'pointed' || pen === 'italic') off.pressure += 0.25;
+  if (pen === 'pencil') off.pressure += 0.1;
+  if (pen === 'fountain') off.pressure += 0.08;
+  if (RULED.has(paper)) off.lineWander -= 0.22 * nat.lineWander; else if (paper === 'plain' || paper === 'dots') off.lineWander += 0.08 * nat.lineWander;
+  if (paper === 'seyes') off.neatness += 0.04;
+  const params = {};
+  for (const k in nat) params[k] = +(k === 'slant' ? nat[k] + off[k] : clamp(nat[k] + off[k], 0, k === 'lineWander' || k === 'fatigue' ? 1.5 : 1)).toFixed(3);
+  for (const k in off) off[k] = +(params[k] - nat[k]).toFixed(3);
+  const arch = archetypeOf(seed);
+  return { seed: String(seed), family: h.family, style: h.style, archetype: arch.id, label: arch.label, schooling: h.schooling,
+    pen, tip, ink, inkAge, inkVariation, paper, size, params, offsets: off };
+}
+
+// How different two looks are at a glance: the writer (handDistance), then pen, ink colour, paper and size.
+export function lookDistance(a, b) {
+  const dh = handDistance(a.P || profile(asHand(a)), b.P || profile(asHand(b)));
+  const ca = INK_RGB[a.ink] || [40, 40, 50], cb = INK_RGB[b.ink] || [40, 40, 50];
+  const dInk = Math.min(1, Math.hypot(ca[0] - cb[0], ca[1] - cb[1], ca[2] - cb[2]) / 150);
+  const d2 = dh * dh + (a.pen !== b.pen ? 0.25 : 0) + (0.6 * dInk) ** 2 + (a.paper !== b.paper ? 0.2 : 0) +
+    (0.7 * (a.size - b.size) / 3) ** 2 + (a.tip !== b.tip ? 0.015 : 0);
+  return Math.sqrt(d2);
+}
+
+// sampleLook(opts) -> a look (lookOf's shape) + { variety, distance }: what New hand shows next.
+//   opts.history: looks shown so far, oldest first (lookOf results, or { seed, family } and the look is rebuilt);
+//                 the last 6 count. opts.variety: 'sibling' | 'stranger' (default) | 'wild', or 0..100
+//                 (0-20 Sibling, 21-70 Stranger, 71-100 Wild). opts.locked: { family?, pen?, tip?, ink?, paper?, size?,
+//                 inkAge? } kept as given; a list of keys keeps opts.current's values. opts.entropy: any fresh string.
+//   Compatible with the earlier shape: { current: { seed, style }, locked: ['style'], variety: 60 }.
 export function sampleLook(opts = {}) {
-  const v = opts.variety == null ? 60 : opts.variety;
-  const variety = v <= 20 ? 'sibling' : v <= 70 ? 'stranger' : 'wild';
-  const cur = opts.current && opts.current.seed ? { seed: opts.current.seed, family: (getStyle(opts.current.style) || {}).family || opts.current.family || 'print' } : null;
-  const history = opts.history || (cur ? [cur] : []);
-  const locked = opts.locked || [];
-  const family = cur && (locked.includes('style') || locked.includes('family')) ? cur.family : undefined;
-  const r = sampleHand({ history, variety, family, entropy: opts.entropy == null ? (cur ? cur.seed : '') : opts.entropy });
-  return r && { seed: r.seed, style: r.style, family: r.family, archetype: r.archetype, label: r.label };
+  let variety = opts.variety == null ? 'stranger' : opts.variety;
+  if (typeof variety === 'number') variety = variety <= 20 ? 'sibling' : variety <= 70 ? 'stranger' : 'wild';
+  if (!VARIETY[variety]) variety = 'stranger';
+  const famOf = (x) => x.family || (getStyle(x.style) || {}).family || 'print';
+  const cur = opts.current && opts.current.seed ? { ...opts.current, family: famOf(opts.current) } : null;
+  const hist = (opts.history || (cur ? [cur] : [])).map((x) => (typeof x === 'string' ? { seed: x, family: 'print' } : x)).slice(-6);
+  const looks = hist.map((x) => (x.pen && x.paper && x.ink ? x : { ...lookOf(x.seed, famOf(x)), ...x }));
+  let locked = opts.locked || {};
+  if (Array.isArray(locked)) {
+    const ref = cur ? { ...lookOf(cur.seed, cur.family), ...cur } : looks[looks.length - 1] || {};
+    locked = Object.fromEntries(locked.map((k) => [k === 'style' ? 'family' : k, k === 'style' ? ref.family : ref[k]]).filter(([, v]) => v != null));
+  }
+  const family = locked.family || opts.family;
+  const lockedLook = Object.fromEntries(Object.entries(locked).filter(([k]) => LOOK_KEYS.includes(k)));
+  const r = rng('look-sampler:' + (opts.entropy == null ? '' : opts.entropy) + ':' + looks.map((x) => x.seed + '/' + x.family + '/' + x.pen + '/' + x.paper).join(',') + ':' + JSON.stringify(locked));
+  const P = looks.map((x) => ({ ...x, P: profile(asHand(x)) }));
+  const last = P[P.length - 1];
+  const finish = (best) => best && { ...best.look, variety, distance: +best.d.toFixed(3) };
+
+  if (variety === 'sibling' && last) {
+    const fam = family || last.family;
+    const lastLocks = { ...lockedLook };
+    for (const k of ['pen', 'paper']) if (lastLocks[k] == null && last[k]) lastLocks[k] = last[k]; // same desk, a relative
+    let best = null;
+    for (let i = 0; i < (opts.candidates || 12); i++) {
+      const seed = `${baseSeed(last.seed)}~${1 + Math.floor(r() * 998)}`;
+      const look = lookOf(seed, fam, lastLocks);
+      const d = lookDistance({ ...look, P: profile(makeHand(seed, fam)) }, last);
+      const score = -Math.abs(d - 0.38);
+      if (!best || score > best.score) best = { look, d, score };
+    }
+    return finish(best);
+  }
+
+  // family and archetype as sampleHand does, then 12 candidates scored on the whole look
+  const fams = families();
+  let fam = family && fams.includes(family) ? family : null;
+  if (!fam) {
+    const runOf = (f) => { let n = 0; for (let i = P.length - 1; i >= 0 && P[i].family === f; i--) n++; return n; };
+    fam = fams.length ? r.weighted(fams.map((f) => ({ f, weight: 1 / (1 + 1.5 * runOf(f)) }))).f : 'print';
+  }
+  const seen = new Set(P.map((x) => archetypeOf(x.seed).id));
+  const bag = ARCHETYPES.filter((a) => !seen.has(a.id));
+  const target = r.weighted(bag.length ? bag : ARCHETYPES).id;
+  const cfg = VARIETY[variety];
+  let best = null;
+  for (let k = 0, n = 0; n < (opts.candidates || 12) && k < 4000; k++) {
+    const seed = seedFrom(rng('look-seed:' + r() + ':' + k));
+    if (archetypeOf(seed).id !== target) continue;
+    n++;
+    const h = makeHand(seed, fam);
+    const look = lookOf(seed, fam, lockedLook, { wild: variety === 'wild' });
+    const C = { ...look, P: profile(h) };
+    const ds = P.map((x) => lookDistance(C, x));
+    const dmin = ds.length ? Math.min(...ds) : 1;
+    let score = dmin + (dmin >= cfg.dMin ? 0.25 : 0);
+    if (last && C.pen !== last.pen) score += 0.1;
+    if (last && C.paper !== last.paper) score += 0.08;
+    const ch = chaos(h);
+    if (ch > cfg.budget) score -= 2 + (ch - cfg.budget);
+    if (variety === 'wild') score += 0.12 * Object.values(latentOf(seed)).reduce((s, v) => s + Math.abs(v), 0) / 7;
+    if (!best || score > best.score) best = { look, d: dmin, score };
+  }
+  return finish(best);
 }
