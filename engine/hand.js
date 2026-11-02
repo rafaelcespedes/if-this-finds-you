@@ -71,8 +71,9 @@ export const HAND_PARAMS = [
 export const CAP = 700;            // cap height in font units (UPM 1000)
 export const UPM = 1000;
 
-export const isLower = (ch) => ch >= 'a' && ch <= 'z';
-export const isUpper = (ch) => ch >= 'A' && ch <= 'Z';
+// Unicode-aware, so é ß ł get lowercase zones and Æ Ø Ł get capital sizing
+export const isLower = (ch) => /^\p{Ll}$/u.test(ch);
+export const isUpper = (ch) => /^\p{Lu}$/u.test(ch);
 export const isDigit = (ch) => ch >= '0' && ch <= '9';
 export const has = (p, ch) => styleHas(p.style, ch);
 
@@ -172,7 +173,10 @@ function glyphSkeleton(p, ch, inst, ctx) {
   const step = 7;
   const strokes = [];
   const dots = [];
-  for (const s of g.s) {
+  // variant.marks: indices of source strokes that are marks (accents etc.), written after the letter
+  const markSet = new Set(g.marks || []);
+  const strokeMarks = [], dotMarks = [];
+  g.s.forEach((s, srcIndex) => {
     const xs = s.map((v) => v[0]), ys = s.map((v) => v[1]);
     const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
     const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2;
@@ -180,11 +184,12 @@ function glyphSkeleton(p, ch, inst, ctx) {
       let Y = zoneY(p, cy, lower, m);
       if (lower && (ch === 'i' || ch === 'j')) Y = p.xHeight * CAP + (p.ascender - p.xHeight) * CAP * p.dotHeight;
       dots.push([(cx - L) * S * wScale, Y]);
-      continue;
+      dotMarks.push(markSet.has(srcIndex));
+      return;
     }
     const mapped = s.map((v) => [(v[0] - L) * S * wScale, zoneY(p, v[1], lower, m)]);
-    for (const run of smoothStroke(mapped, p, step)) strokes.push(run);
-  }
+    for (const run of smoothStroke(mapped, p, step)) { strokes.push(run); strokeMarks.push(markSet.has(srcIndex)); }
+  });
   let advance = (g.r - g.l) * S * wScale + (p.tracking || 0);
   if (ch === ' ' || ch === ' ') advance = p.space;
   else if (!st.connected && (strokes.length || dots.length)) {
@@ -198,7 +203,7 @@ function glyphSkeleton(p, ch, inst, ctx) {
     for (const q of dots) q[0] += dx;
     advance = mx - mn + 2 * sb;
   }
-  return { strokes, dots, advance, letter, lower, variant: g, connected: !!st.connected };
+  return { strokes, dots, strokeMarks, dotMarks, advance, letter, lower, variant: g, connected: !!st.connected };
 }
 
 // ---------- instance variation + pen ----------
@@ -269,9 +274,10 @@ function dotShape(shape, c, p, xh, r, jit) {
 // ctx (optional, from layout): neighbours/position, passed to the variant chooser.
 // Returns { advance, contours, strokes, variant, pose }:
 //   contours = filled outline polygons (font units, y up) in drawing order
-//   strokes  = [{ center, contour, dot, mark?, delayed? }], one per contour (strokes[i].contour === contours[i]):
-//              the pen path behind each contour, for animation. mark = 'dot' | 'bar' on i/j dots and
-//              t/f bars; delayed = true when this writer adds them after the word.
+//   strokes  = [{ center, contour, dot, mark, delayed? }], one per contour (strokes[i].contour === contours[i]):
+//              the pen path behind each contour, for animation. mark is truthy for a stroke written after
+//              the letter: 'dot' (i/j dots), 'bar' (t/f bars) or true (accents and other variant.marks);
+//              delayed = true when this writer adds such marks after the whole word.
 //   pose     = { slant, scale, squeeze }: the lean (degrees) and size this use was drawn at (for QA)
 export function makeGlyph(p, ch, inst, ctx) {
   const sk = glyphSkeleton(p, ch, inst, ctx);
@@ -376,6 +382,7 @@ export function makeGlyph(p, ch, inst, ctx) {
   const strokeSeedBase = (inst ? (ir() * 1000) : 0) + k * 17.3;
   sk.strokes.forEach((st, si) => {
     const bar = barLetter && si > 0 && isBar(st, xh);
+    const accent = !bar && !!(sk.strokeMarks && sk.strokeMarks[si]); // accents and other variant.marks
     if (bar && inst && inst.bar === 'follow') return; // "tt": the first t's bar crosses both
     let pts;
     if (bar) {
@@ -414,6 +421,8 @@ export function makeGlyph(p, ch, inst, ctx) {
         const sr = rng('stroke:' + p.seed + ':' + k + ':' + si + ':' + (inst ? inst.seed : 'canon'));
         const m = p.strokeShift * (4 + 14 * loose) * (inst ? 0.6 + 0.6 * amt : 0.7);
         off = [sr.gauss() * m, sr.gauss() * m * 0.6];
+        // accents are added late too, landing a little to the right
+        if (accent) off[0] += (hab.delayed ? 1 : 0.4) * hab.late * xh * 0.3 * (inst ? 1 : 0.6);
       }
       pts = st.map((q) => { const w = warp(q); return [w[0] + off[0], w[1] + off[1]]; });
     }
@@ -438,11 +447,14 @@ export function makeGlyph(p, ch, inst, ctx) {
     const c = penOutline(p, pts, strokeSeedBase + si * 3.1);
     if (!c) return;
     contours.push(c);
-    strokes.push(bar ? { center: pts, contour: c, dot: false, mark: 'bar', delayed: hab.delayed } : { center: pts, contour: c, dot: false });
+    strokes.push(bar ? { center: pts, contour: c, dot: false, mark: 'bar', delayed: hab.delayed }
+      : accent ? { center: pts, contour: c, dot: false, mark: true, delayed: hab.delayed }
+      : { center: pts, contour: c, dot: false, mark: false });
   });
   const ij = sk.lower && (ch === 'i' || ch === 'j');
   for (const [di, d] of sk.dots.entries()) {
     const q = warp(d);
+    const accent = !!(sk.dotMarks && sk.dotMarks[di]); // e.g. the two dots of an umlaut
     let pts;
     if (ij) {
       // i/j dots: late, to the right, at a varying height, in the writer's habitual shape (rule 7)
@@ -453,6 +465,12 @@ export function makeGlyph(p, ch, inst, ctx) {
       const shift = clamp((hab.delayed ? 1 : 0.4) * hab.late * xh * (0.6 + 0.8 * loose) * (inst ? 1 : 0.6) + jit * mr.gauss() * 0.1 * xh * spread, -0.15 * xh, reach * xh);
       const lift = jit * clamp(mr.gauss() * 0.07 * xh * spread, -0.15 * xh, 0.15 * xh);
       pts = dotShape(hab.dot, [q[0] + shift, q[1] + lift], p, xh, mr, jit).map(finish);
+    } else if (accent) {
+      // accent dots land a little loosely too, but stay over their letter
+      const mr = rng('mark:' + p.seed + ':' + k + ':d' + di + ':' + (inst ? inst.seed : 'canon'));
+      const jit = inst ? 1 : 0;
+      const shift = (hab.delayed ? 1 : 0.4) * hab.late * xh * 0.3 * (inst ? 1 : 0.6) + jit * mr.gauss() * 0.04 * xh * (0.4 + loose);
+      pts = dotShape('dot', [q[0] + shift, q[1] + jit * mr.gauss() * 0.03 * xh], p, xh, ir, ir ? 1 : 0).map(finish);
     } else {
       pts = dotShape('dot', q, p, xh, ir, ir ? 1 : 0).map(finish);
     }
@@ -460,7 +478,9 @@ export function makeGlyph(p, ch, inst, ctx) {
     const c = penOutline(p, pts, 900 + di, round ? { dot: true } : undefined);
     if (!c) continue;
     contours.push(c);
-    strokes.push(ij ? { center: pts, contour: c, dot: true, mark: 'dot', delayed: hab.delayed } : { center: pts, contour: c, dot: true });
+    strokes.push(ij ? { center: pts, contour: c, dot: true, mark: 'dot', delayed: hab.delayed }
+      : accent ? { center: pts, contour: c, dot: true, mark: true, delayed: hab.delayed }
+      : { center: pts, contour: c, dot: true, mark: false });
   }
   return {
     advance: sk.advance * scale * squeeze, contours, strokes, variant: sk.variant,
