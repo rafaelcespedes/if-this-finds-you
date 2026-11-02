@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seedhand spike</title>
+<style>
+  :root {
+    --bg: #eeebe4;
+    --panel: #f7f5f0;
+    --line: #dcd7cc;
+    --text: #23211d;
+    --muted: #77736a;
+    --paper: #fffdf8;
+    --rule: #e7e1d3;
+    --ink: #1c2233;
+    --accent: #1c2233;
+    --ok: #3b7a4a;
+    --warn: #a2632a;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  .app { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); padding: 22px 20px 28px;
+    display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; overflow: auto; }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand b { font-size: 17px; letter-spacing: -0.01em; }
+  .brand span { color: var(--muted); font-size: 12px; }
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+  .hint { font-size: 12px; color: var(--muted); margin: 0; }
+  .seedrow { display: flex; gap: 6px; }
+  input[type=text] { flex: 1; min-width: 0; font: 500 14px/1 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 9px 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--text); }
+  input[type=text]:focus, textarea:focus { outline: 2px solid #1c223322; border-color: #b9b2a3; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--text);
+    padding: 8px 12px; transition: background .12s, transform .08s; }
+  button:hover { background: #f1eee7; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; padding: 11px 14px; width: 100%; }
+  button.primary:hover { background: #2c3550; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: #e7e3da; border-radius: 9px; padding: 3px; gap: 3px; }
+  .seg button { border: 0; background: transparent; padding: 7px 8px; border-radius: 7px; color: var(--muted); font-weight: 500; }
+  .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 2px #0000001f; }
+  .seg.tall button { text-align: left; padding: 8px 10px; line-height: 1.25; }
+  .seg.tall button small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+  .slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+  .slider label { font-weight: 500; }
+  .slider output { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
+  .slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 2px 0 6px; }
+  .linkbtn { border: 0; background: none; padding: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; font-size: 12px; align-self: flex-start; }
+  .linkbtn:hover { background: none; color: var(--text); }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .status { font: 12px/1.5 ui-monospace, Menlo, monospace; color: var(--muted); white-space: pre-line; min-height: 3em; }
+  .status .ok { color: var(--ok); } .status .warn { color: var(--warn); }
+
+  main { padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .paper { background: var(--paper); border-radius: 4px; box-shadow: 0 1px 0 #0000000d, 0 10px 30px -12px #3a2f1a33;
+    padding: 34px 44px 40px; position: relative; overflow: hidden; min-height: 300px; }
+  .paper .tag { position: absolute; top: 12px; right: 16px; font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+  #live svg { display: block; width: 100%; height: auto; overflow: visible; }
+  #live text.miss { fill: #a59f92; font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive; text-anchor: middle;
+    font-style: italic; opacity: .75; cursor: help; }
+  #fontView { color: var(--ink); white-space: pre-wrap; word-wrap: break-word; }
+  .hidden { display: none !important; }
+  textarea { width: 100%; min-height: 84px; resize: vertical; font: 15px/1.5 ui-sans-serif, -apple-system, sans-serif;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--text); }
+  .sheet { background: var(--paper); border-radius: 4px; padding: 18px 24px 22px; box-shadow: 0 1px 0 #0000000d; }
+  .sheet h3 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .sheet p { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+  #sheet svg { display: block; width: 100%; height: auto; }
+  .row2 { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    main { padding: 16px; }
+    .paper { padding: 22px 18px 26px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><b>Seedhand</b><span>spike · seed → handwriting font</span></div>
+
+    <div class="group">
+      <div class="label">Seed</div>
+      <div class="seedrow">
+        <input id="seed" type="text" spellcheck="false" autocomplete="off" aria-label="Seed">
+        <button id="reroll" title="New hand (R)">New hand</button>
+      </div>
+      <p class="hint">Same seed, same hand, every time.</p>
+    </div>
+
+    <div class="group">
+      <div class="label">Style</div>
+      <div class="seg" id="style">
+        <button data-v="print" class="on">Print</button>
+        <button data-v="script">Script</button>
+      </div>
+    </div>
+
+    <div class="group" id="sliders">
+      <div class="label">Hand</div>
+      <div class="slider"><label for="neatness">Neatness</label><output id="o-neatness"></output>
+        <input id="neatness" type="range" min="0" max="1" step="0.01"></div>
+      <div class="slider"><label for="slant">Slant</label><output id="o-slant"></output>
+        <input id="slant" type="range" min="-15" max="30" step="0.5"></div>
+      <div class="slider"><label for="penWidth">Pen width</label><output id="o-penWidth"></output>
+        <input id="penWidth" type="range" min="14" max="110" step="1"></div>
+      <div class="slider"><label for="pressure">Pressure</label><output id="o-pressure"></output>
+        <input id="pressure" type="range" min="0" max="1" step="0.01"></div>
+      <button class="linkbtn" id="resetHand">Back to this seed's natural hand</button>
+    </div>
+
+    <div class="group">
+      <div class="label">Preview</div>
+      <div class="seg tall" id="mode">
+        <button data-v="live" class="on">Live<small>every letter unique</small></button>
+        <button data-v="font">Font<small>what the export does</small></button>
+      </div>
+      <label class="check hidden" id="caltWrap"><input type="checkbox" id="calt" checked> Contextual alternates (calt)</label>
+    </div>
+
+    <div class="group">
+      <button class="primary" id="export">Export .otf</button>
+      <div class="status" id="status"></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="paper">
+      <span class="tag" id="tag"></span>
+      <div id="live"></div>
+      <div id="fontView" class="hidden"></div>
+    </div>
+    <textarea id="text" spellcheck="false" aria-label="Text to write"></textarea>
+    <div class="sheet">
+      <h3>Inside the font</h3>
+      <p>Three samples of every letter, the bounded variation that ships in the .otf (default, .alt1, .alt2).</p>
+      <div id="sheet"></div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+<script src="hershey-data.js"></script>
+<script src="extras.js"></script>
+<script src="hand.js"></script>
+<script src="fontbuild.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
