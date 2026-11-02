@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { WriteRequest, WriteResult } from '@/lib/write-protocol';
-import type { Req } from '@/lib/request';
+import { lookOf, type Req } from '@/lib/request';
 import { perf } from '@/lib/perf';
 
 /** Results kept by request, so a hand fetched ahead (or seen a moment ago) shows the instant it's asked for. */
@@ -28,6 +28,7 @@ export function useWriting(req: Req, paused = false) {
   const lastMs = useRef(0);
   const shown = useRef<WriteResult | null>(null);
   const cache = useRef(new Map<string, WriteResult>());
+  const lastLook = useRef('');
   const [, bump] = useState(0);
   // for debugging and QA: what's written ahead
   (window as unknown as { __seedhandCache: unknown }).__seedhandCache = cache.current;
@@ -52,12 +53,15 @@ export function useWriting(req: Req, paused = false) {
       const s = sent.current.get(data.id);
       if (s) {
         data.key = s.key;
-        perf.samples.push({ name: 'request→writing', ms: performance.now() - s.at });
+        perf.samples.push({ name: data.partial ? 'request→first sheet' : 'request→writing', ms: performance.now() - s.at });
       }
-      perf.samples.push({ name: 'worker write', ms: data.ms });
-      lastMs.current = data.ms;
-      for (const id of sent.current.keys()) if (id <= data.id) sent.current.delete(id);
-      remember(data);
+      perf.samples.push({ name: data.partial ? 'worker first sheet' : 'worker write', ms: data.ms });
+      // a first sheet: shown, but the whole letter is still on its way (and is what gets kept)
+      if (!data.partial) {
+        lastMs.current = data.ms;
+        for (const id of sent.current.keys()) if (id <= data.id) sent.current.delete(id);
+        remember(data);
+      }
       const prev = shown.current;
       if (prev && prev.id > data.id) return;
       shown.current = data;
@@ -88,8 +92,11 @@ export function useWriting(req: Req, paused = false) {
       sent.current.set(id, { at: performance.now(), key: reqKey });
       w.postMessage({ ...(JSON.parse(reqKey) as Req), id } satisfies WriteRequest);
     };
-    // fast writes go straight through; slow ones wait for a short pause in typing
-    const delay = lastMs.current > 70 ? Math.min(180, lastMs.current * 0.6) : 0;
+    // fast writes go straight through; slow ones wait for a short pause in typing, but a new look never waits
+    const look = lookOf(JSON.parse(reqKey) as Req);
+    const newLook = look !== lastLook.current;
+    lastLook.current = look;
+    const delay = !newLook && lastMs.current > 70 ? Math.min(180, lastMs.current * 0.6) : 0;
     if (!delay) { send(); return; }
     const t = window.setTimeout(send, delay);
     return () => window.clearTimeout(t);
