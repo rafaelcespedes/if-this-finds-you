@@ -1,17 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { SlidersHorizontal, Shuffle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CAP, makeHand } from '@engine';
 import { Panel, type PanelProps } from '@/components/Panel';
+import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
 import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
 import { PenTray } from '@/components/PenTray';
 import { ReaderView } from '@/components/ReaderView';
 import { usePosture } from '@/hooks/usePosture';
-import { Button } from '@/components/ui/button';
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
@@ -59,7 +57,7 @@ export default function App() {
   const [composing, setComposing] = useState(false);
   const [state, update] = useNoteState(composing);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detent, setDetent] = useState<Detent>('peek');
   const [busy, setBusy] = useState({ download: false, font: false });
   const [editing, setEditing] = useState(false);
   const [plainText, setPlainText] = useState(() => readPref('seedhand:plain-text') === '1');
@@ -225,6 +223,7 @@ export default function App() {
     p,
     name,
     emMm: emForPaper(p, paper, eff.size),
+    inkKey: eff.inkKey,
     variety,
     locks,
     onToggleLock: (key) => setLocks((prev) => {
@@ -262,18 +261,98 @@ export default function App() {
     onShare: share,
     onDownload: download,
     onExportFont: font,
+    onFieldFocus: () => setDetent('full'),
   };
 
   const desk = !posture.writing;
   const reader = state.reader;
 
+  // ---------- phones: the control sheet, and the letter making room above it ----------
+  const mobileSheet = !reader && !isDesktop;
+  const sheetOpen = mobileSheet && !editing;
+  const [metrics, setMetrics] = useState<SheetMetrics>({ peek: 124, half: 406, top: 8 });
+  const metricsRef = useRef(metrics);
+  const onMetrics = useCallback((m: SheetMetrics) => {
+    metricsRef.current = m;
+    setMetrics((o) => (o.peek === m.peek && o.half === m.half && o.top === m.top ? o : m));
+  }, []);
+  const fitRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const pageH = shownPaper.h * pxPerMm;
+  const pageHRef = useRef(pageH);
+  pageHRef.current = pageH;
+  const adjusting = useRef<{ top: number; bottom: number } | null>(null);
+  /**
+   * Shrink and lift the first page into the space above the sheet: fully at half height, not at all at peek.
+   * While a control is slid at full height, the page goes to the larger space above or below that control.
+   */
+  const fitLetter = useCallback((visible: number, animate: boolean) => {
+    const el = fitRef.current;
+    if (!el) return;
+    const { peek, half, top } = metricsRef.current;
+    const avoid = adjusting.current;
+    const t = avoid ? 1 : Math.min(1, Math.max(0, (visible - peek) / Math.max(1, half - peek)));
+    const motion = animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.style.transition = motion ? (avoid ? 'transform 320ms cubic-bezier(0.23, 1, 0.32, 1)' : 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)') : 'none';
+    const header = headerRef.current;
+    if (header) {
+      header.style.transition = motion ? 'opacity 300ms ease-out' : 'none';
+      header.style.opacity = t > 0 ? String(Math.max(0, 1 - t * 1.6)) : '';
+    }
+    if (t <= 0.001) {
+      el.style.transform = '';
+      return;
+    }
+    // where the letter sits untransformed (offsets ignore transforms)
+    let natTop = -window.scrollY;
+    for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null) natTop += n.offsetTop;
+    let bandTop = top + 6;
+    let bandBottom = window.innerHeight - half - 14;
+    if (avoid) {
+      const above = avoid.top - 12 - bandTop;
+      const below = window.innerHeight - 12 - (avoid.bottom + 12);
+      if (below > above) { bandTop = avoid.bottom + 12; bandBottom = window.innerHeight - 12; }
+      else bandBottom = avoid.top - 12;
+    }
+    const s = Math.min(1, (bandBottom - bandTop) / Math.max(1, pageHRef.current));
+    const fitted = bandTop + Math.max(0, (bandBottom - bandTop - pageHRef.current * s) / 2);
+    el.style.transform = `translate3d(0, ${((fitted - natTop) * t).toFixed(1)}px, 0) scale(${(1 + (s - 1) * t).toFixed(4)})`;
+  }, []);
+  const visibleAt = (d: Detent) => (d === 'peek' ? metrics.peek : d === 'half' ? metrics.half : window.innerHeight);
+  useLayoutEffect(() => {
+    if (!mobileSheet) {
+      if (fitRef.current) fitRef.current.style.transform = '';
+      if (headerRef.current) headerRef.current.style.opacity = '';
+      return;
+    }
+    fitLetter(sheetOpen ? visibleAt(detent) : 0, true);
+    // a scrolled page while the sheet is up: keep the letter where it was put
+    if (!sheetOpen || detent === 'peek') return;
+    const onScroll = () => fitLetter(visibleAt(detent), false);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [mobileSheet, sheetOpen, detent, metrics, pageH, fitLetter]);
+  const onAdjusting = useCallback((box: { top: number; bottom: number } | null) => {
+    if (!box && !adjusting.current) return;
+    adjusting.current = box;
+    fitLetter(visibleAt(detent), true);
+  }, [fitLetter, detent, metrics]);
+  const onSheetDrag = useCallback((visible: number | null) => {
+    if (visible == null) fitLetter(sheetOpen ? visibleAt(detent) : 0, true);
+    else fitLetter(visible, false);
+  }, [fitLetter, sheetOpen, detent, metrics]);
+
   return (
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
-        <main className="relative min-w-0 px-4 pt-12 pb-32 sm:px-8 lg:px-10 lg:pt-14 lg:pb-16">
+        <main
+          className="relative min-w-0 px-4 pt-[calc(3rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-14 lg:pb-16"
+          style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
+        >
           <header
+            ref={headerRef}
             className={cn(
-              'absolute inset-x-4 top-4 flex items-baseline justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
+              'absolute inset-x-4 top-[max(1rem,env(safe-area-inset-top,0px))] flex items-baseline justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
               !desk && 'opacity-0',
               !reader && 'pointer-events-none',
             )}
@@ -303,7 +382,7 @@ export default function App() {
               />
             )}
             {pxPerMm > 0 && !reader && (
-              <>
+              <div ref={fitRef} className="origin-top">
                 <PaperEditor
                   ref={editor}
                   text={state.text}
@@ -369,7 +448,7 @@ export default function App() {
                     <DraftSlip value={state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </main>
@@ -399,23 +478,17 @@ export default function App() {
               <Panel {...panelProps} />
             </div>
           </aside>
-        ) : (
-          <MobileDock name={name} seed={state.seed} onNewHand={newHand} onOpen={() => setDrawerOpen(true)} hidden={editing} />
-        ))}
+        ) : null)}
       </div>
 
-      {!reader && !isDesktop && (
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <DrawerContent aria-describedby={undefined}>
-            <DrawerTitle className="sr-only">Hand, paper and ink</DrawerTitle>
-            <DrawerDescription className="sr-only">Adjust how the note is written, then share or download it.</DrawerDescription>
-            <div className="overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
-              <Panel {...panelProps} compact />
-            </div>
-          </DrawerContent>
-        </Drawer>
+      {mobileSheet && (
+        <>
+          {/* with the sheet up, a tap on the letter folds it back down (a second tap writes) */}
+          {sheetOpen && detent !== 'peek' && <div aria-hidden className="fixed inset-0 z-30 touch-none" onClick={() => setDetent('peek')} />}
+          <ControlSheet {...panelProps} open={sheetOpen} detent={detent} onDetent={setDetent} onMetrics={onMetrics} onDragging={onSheetDrag} onAdjusting={onAdjusting} />
+        </>
       )}
-      <Toaster offset={isDesktop ? 24 : 96} mobileOffset={{ bottom: 96 }} />
+      <Toaster offset={isDesktop ? 24 : 96} mobileOffset={{ bottom: mobileSheet ? metrics.peek + 12 : 96 }} />
     </TooltipProvider>
   );
 }
@@ -443,28 +516,4 @@ function insertPS(api: PaperEditorApi, text: string, onEdit: (e: Edit) => void) 
   const ins = (t.length ? '\n\n' : '') + 'P.S. ';
   onEdit({ at: t.length, del: text.length - t.length, ins, kind: 'type', t: Date.now(), source: 'paper' });
   requestAnimationFrame(() => api.setSelection(t.length + ins.length));
-}
-
-function MobileDock({ name, seed, onNewHand, onOpen, hidden }: { name: string; seed: string; onNewHand: () => void; onOpen: () => void; hidden: boolean }) {
-  return (
-    <div
-      className={cn(
-        'fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(12px,env(safe-area-inset-bottom))] transition-[transform,opacity] duration-300 ease-[var(--ease-drawer)] motion-reduce:transition-opacity',
-        hidden && 'pointer-events-none translate-y-[120%] opacity-0 motion-reduce:translate-y-0',
-      )}
-    >
-      <div className="mx-auto flex max-w-[560px] items-center gap-2 rounded-2xl bg-[color-mix(in_oklab,var(--panel)_94%,transparent)] p-2 pl-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_12px_32px_-12px_rgba(60,45,20,0.38)] backdrop-blur-md">
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[14px] leading-tight font-medium">{name}</div>
-          <div className="tabular truncate text-[12px] text-muted-foreground">{seed}</div>
-        </div>
-        <Button onClick={onNewHand} className="h-11 px-3.5">
-          <Shuffle aria-hidden /> New hand
-        </Button>
-        <Button variant="secondary" size="icon" onClick={onOpen} aria-label="Hand, paper and ink" className="size-11">
-          <SlidersHorizontal />
-        </Button>
-      </div>
-    </div>
-  );
 }

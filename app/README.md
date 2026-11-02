@@ -33,11 +33,16 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   `sampleLook({ current, locked, variety })`, it takes over and the app fills in only what it leaves out.
 - **Similar** (or **Shift R**) gives a sibling and keeps the look: same words, another number, close but
   not a copy.
+- **Style** is two steps, so it scales to many styles: **Print or Joined**, then a row of **school cards**
+  (Everyday, Business 1915, German school, Chancery, ...), each written in this writer's hand in that
+  school, with where and when it was taught (`getStyle(name).tradition`). New styles from the engine show
+  up as cards by themselves (`lib/styles.ts`). The cards scroll sideways.
 - **Controls** follow `docs/research/controls-and-feel.md`:
   - *How it's written:* Neatness, Hurry, Pressure, Slant, and an Occasion (Thank-you card, Shopping list,
     Love letter, Lecture notes, Postcard) with an Amount.
-  - *Pen, ink and paper:* Pen (Their own, Ballpoint, Gel, Fountain, Felt tip, Pencil) with Fine / Medium /
-    Bold, ink families, Paper, Size.
+  - *Pen, ink and paper:* Pen (Their own, Ballpoint, Gel, Fountain, Dip pen, Italic nib, Felt tip, Pencil;
+    each swatch is the word "ink" written with that pen), a Fine / Medium / Bold tip, ink families, Paper.
+    Size sits with *How it's written*.
   - *More controls* (a disclosure): Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle,
     Line spacing, Line rhythm, Baseline wobble, Margins, Letter spacing (print only), Word spacing,
     Letter height, Letter width, Tremor, Tiredness, Variety (how far New hand jumps).
@@ -48,6 +53,19 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   where there is one), Download note (JPEG at 3x the screen, paper and writing exactly as shown; on phones
   it opens the share sheet, so Save Image puts it in Photos), Export font file (.otf from the engine's
   `buildFont`, opentype.js 1.3.4, loaded only when used).
+- **On phones** the controls live in a sheet that's always there, at three heights (`ControlSheet.tsx`):
+  - *peek:* the writer, New hand, a share button (Share link, Download note, Export font), and three tabs:
+    Hand, Writing, Pen & paper. Tap a tab to open it.
+  - *half:* that tab's controls. The letter shrinks to fit above the sheet, so every change shows.
+  - *full:* everything, scrolling. While a finger slides a control, the rest of the sheet fades away and
+    the letter moves into the free space above or below that control.
+  - Drag the top (or the content, below full height) to move between heights; a flick goes on to the next
+    one. A tap on the letter folds the sheet down; a second tap writes. Writing hides the sheet behind the
+    pen tray.
+  - Sliders on touch move only on a sideways drag, from where they were. A finger landing on a track never
+    changes it (scrolling past is safe), up/down goes to the sheet, and a double tap puts it back.
+  - For a moment after the sheet moves, its controls ignore touches, so the tap that opened it can't land
+    on whatever slid in under the finger.
 - Occasions set the scene once when picked: Thank-you card and Love letter on laid paper, Postcard on the
   postcard, Lecture notes on college ruled, Shopping list on squared.
 
@@ -114,16 +132,20 @@ matched by eye. On small grids (squared, dots) the writing takes every second li
 
 ```
 src/
-  App.tsx                 layout: desk + sheets, side panel (desktop) or dock + drawer (mobile), actions
+  App.tsx                 layout: desk + sheets, side panel (desktop) or control sheet (phones), actions
   components/
     Writing.tsx           THE writing renderer on screen (see "Renderer boundary")
     SheetView.tsx         one sheet: paper canvas + writing
     PaperEditor.tsx       typing on the paper: hidden textarea, caret, selection, line-aware keys
-    Panel.tsx             the controls (shared by side panel and drawer)
+    Panel.tsx             the controls, in sections the side panel and the phone sheet share
+    ControlSheet.tsx      the phone's control sheet: peek / half / full, tabs, share menu, drag
+    StylePicker.tsx       Print or Joined, then school cards with a sample in each school
+    PenPicker.tsx         pen swatches (a word in each pen) and the tip
+    Specimen.tsx          small handwriting samples, made in idle moments and kept
     PaperCanvas.tsx       paints a sheet (or a swatch crop) on a canvas
     Signature.tsx         the writer's name in their own hand
     DraftSlip.tsx         the plain-text editor
-    ui/                   shadcn-style primitives (button, slider, segmented, tooltip, drawer, toast)
+    ui/                   shadcn-style primitives (button, slider, segmented, tooltip, toast)
   lib/
     compose.ts            hand + text + paper + size -> sheets of positioned writing (mm <-> font units)
     papers.ts             paper specs + one painter used for the screen and the JPEG
@@ -134,6 +156,7 @@ src/
     params.ts             natural hand + offsets + occasion -> engine overrides
     engine-features.ts    what the engine supports now; preview flag; placeholder params
     edits.ts              Edit events (the seed of the ink log)
+    styles.ts             Print / Joined families and the school cards' names (from getStyle)
     pens.ts, inks.ts, occasions.ts
     state.ts              the note config and the share-link format
     hands.ts              word seeds, writer names, plain-word descriptions, "very different" new hands

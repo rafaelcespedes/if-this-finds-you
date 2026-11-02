@@ -38,7 +38,7 @@ function pick<T>(list: Weighted<T>): T {
 
 // how often each thing turns up (est.: everyday paper and blue/black inks are the common case)
 const PAPER_WEIGHTS: Record<PaperId, number> = { plain: 18, laid: 13, college: 14, seyes: 11, feint: 12, squared: 10, dots: 12, postcard: 8 };
-const PEN_WEIGHTS: Record<string, number> = { auto: 18, ballpoint: 26, gel: 16, fountain: 18, felt: 10, pencil: 10 };
+const PEN_WEIGHTS: Record<string, number> = { auto: 18, ballpoint: 26, gel: 16, fountain: 18, pointed: 5, italic: 5, felt: 10, pencil: 10 };
 const INK_WEIGHTS: Record<string, number> = { [AUTO_INK]: 28, 'blue-black': 18, 'royal-blue': 14, 'ballpoint-blue': 14, black: 18, sepia: 7, 'iron-gall': 6, red: 3, green: 3 };
 const TIP_WEIGHTS: Weighted<PenSize> = [['fine', 28], ['medium', 50], ['bold', 22]];
 

@@ -38,9 +38,9 @@ export const PENDING_PARAMS: Record<string, string> = {
   inkFlow: 'Dry ↔ wet 0..1: mean density, end pools, halo, ballpoint skips, felt bleed',
   inkVariation: 'Per-stroke colour jitter, along-stroke gradient, slow page drift 0..1',
   paperTooth: 'Grain depth and absorbency 0..1',
-  lineRhythm: 'Even ↔ wandering 0..1: pitch variation, per-line slope, end bend, float off the rule',
+  lineWander: 'Even ↔ wandering 0..2 (page-rhythm engine): pitch variation, per-line slope, end bend, float off the rule',
   marginDiscipline: 'Strict ↔ loose 0..1: left-start jitter, inward drift, last-word squeeze',
-  tiredness: 'Drift along the text 0..1: neatness falls, size and spacing grow',
+  fatigue: 'Drift along the text 0..2 (page-rhythm engine): neatness falls, size and spacing grow',
   mistakes: 'Journey 0..1 (mistakes session): crossings-out, overwrites and insertions over the draft',
 };
 
@@ -64,6 +64,10 @@ export const writeWithJourney = engine.writeWithJourney as
 
 /** A param's natural value for this hand, when the engine supplies one (PARAMS entries may carry natural(p)). */
 export function engineNatural(key: string, hand: unknown): number | undefined {
-  const d = E.PARAMS.find((x) => x.key === key) as { natural?: (p: unknown) => number } | undefined;
-  return typeof d?.natural === 'function' ? d.natural(hand) : undefined;
+  const d = E.PARAMS.find((x) => x.key === key) as { natural?: (p: unknown) => number; default?: unknown } | undefined;
+  if (typeof d?.natural === 'function') return d.natural(hand);
+  return typeof d?.default === 'number' ? d.default : undefined;
 }
+
+/** The engine picks a pen tip (fine / medium / bold) itself and keeps it physical across sizes. */
+export const ENGINE_TIPS = PARAM_KEYS.has('tip');

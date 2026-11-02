@@ -15,10 +15,10 @@ export interface Occasion {
 }
 
 export const OCCASIONS: Occasion[] = [
-  { id: 'thank-you', name: 'Thank-you card', deltas: { neatness: 0.25, hurry: -0.3, lineRhythm: -0.15 }, size: 0.05, pen: 'gel', paper: 'laid' },
-  { id: 'shopping', name: 'Shopping list', deltas: { neatness: -0.25, hurry: 0.4, pressure: 0.1, lineRhythm: 0.4, marginDiscipline: 0.3 }, size: 0.15, pen: 'felt', paper: 'squared' },
+  { id: 'thank-you', name: 'Thank-you card', deltas: { neatness: 0.25, hurry: -0.3, lineWander: -0.3 }, size: 0.05, pen: 'gel', paper: 'laid' },
+  { id: 'shopping', name: 'Shopping list', deltas: { neatness: -0.25, hurry: 0.4, pressure: 0.1, lineWander: 0.8, marginDiscipline: 0.3 }, size: 0.15, pen: 'felt', paper: 'squared' },
   { id: 'love', name: 'Love letter', deltas: { neatness: 0.1, hurry: -0.15, pressure: 0.15, inkVariation: 0.3 }, size: 0, pen: 'fountain', paper: 'laid' },
-  { id: 'lecture', name: 'Lecture notes', deltas: { neatness: -0.15, hurry: 0.5, tiredness: 0.5, marginDiscipline: 0.4 }, size: -0.2, pen: 'ballpoint', paper: 'college' },
+  { id: 'lecture', name: 'Lecture notes', deltas: { neatness: -0.15, hurry: 0.5, fatigue: 1, marginDiscipline: 0.4 }, size: -0.2, pen: 'ballpoint', paper: 'college' },
   { id: 'postcard', name: 'Postcard', deltas: { hurry: 0.1, wordSpace: -0.12 }, size: -0.15, pen: 'ballpoint', paper: 'postcard' },
 ];
 
