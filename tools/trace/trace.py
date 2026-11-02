@@ -238,9 +238,33 @@ def extract_glyph(hand, gl, cache):
                 strokes[i] = {**strokes[i], 'pts': A + A[k:-1][::-1] + B, 'closed': False}
                 strokes[j] = None
         strokes = [s for s in strokes if s is not None]
+        if gl.get('autoJoin', hand.get('autoJoin')):
+            strokes = auto_join(strokes, ink, x0, y0)
         for s in gl.get('add', []):  # extra hand-drawn strokes (image coords)
             strokes.append({'pts': [tuple(map(float, p)) for p in s], 'closed': False, 'dot': len(s) == 1, 'manual': True})
     return {'gl': gl, 'row': row, 'crop': crop, 'ink': ink, 'strokes': strokes, 'sw': sw}
+
+
+def auto_join(strokes, ink, x0, y0, on=0.7):
+    """keep the pen down between consecutive strokes when the jump from one's end to the next's start
+    runs along ink already drawn (the stem of a, d, g, p, q): the letter stays one gesture, so the
+    engine's per-stroke offsets can't pull bowl and stem apart."""
+    H, W = ink.shape
+    out = []
+    for s in strokes:
+        if out and not s.get('dot') and not out[-1].get('dot') and len(s['pts']) > 1:
+            a, b = out[-1]['pts'][-1], s['pts'][0]
+            n = max(2, int(math.hypot(b[0] - a[0], b[1] - a[1])))
+            hits = 0
+            for t in range(n + 1):
+                x = int(round(a[0] + (b[0] - a[0]) * t / n)) - x0
+                y = int(round(a[1] + (b[1] - a[1]) * t / n)) - y0
+                hits += 1 if (0 <= x < W and 0 <= y < H and ink[max(0, y - 1):y + 2, max(0, x - 1):x + 2].any()) else 0
+            if hits / (n + 1) >= on:
+                out[-1] = {**out[-1], 'pts': list(out[-1]['pts']) + list(s['pts']), 'closed': False}
+                continue
+        out.append(s)
+    return out
 
 
 # ---------------------------------------------------------------- normalisation to engine units
