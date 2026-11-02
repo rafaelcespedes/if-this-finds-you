@@ -21,7 +21,7 @@
 // Deterministic: no Math.random; GPU noise is a hash of the pixel position.
 
 import { UPM } from './hand.js';
-import { getPen, strokeInk, inkModel, inkWalker, inkRGB, rgbHex, srgbToLin, parseColor, PEN_KIND } from './pen.js';
+import { getPen, strokeInk, inkModel, inkWalker, inkRGB, rgbHex, srgbToLin, parseColor, penWidthUnits, PEN_KIND } from './pen.js';
 
 // Paper presets. Colours are sRGB. `lines` draws printed rules under the ink (ink multiplies over them).
 export const PAPERS = {
@@ -32,7 +32,7 @@ export const PAPERS = {
 };
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
-const FPI = 13; // floats per segment instance
+const FPI = 14; // floats per segment instance
 
 // ---------------------------------------------------------------------------------------------
 // shaders
@@ -53,9 +53,9 @@ layout(location=0) in vec2 aCorner;
 layout(location=1) in vec4 aSeg;   // x0 y0 x1 y1   (device px, y down)
 layout(location=2) in vec4 aRD;    // r0 r1 d0 d1   (half width px, density)
 layout(location=3) in vec4 aSA;    // s0 s1 a0 a1   (arclength px, pen aux)
-layout(location=4) in float aSeed;
+layout(location=4) in vec2 aSeed;  // per-stroke noise seed, ink shade (0..1)
 uniform vec2 uView; uniform float uPad; uniform int uShape; uniform vec2 uNib;
-out vec2 vP; flat out vec4 vSeg; flat out vec4 vRD; flat out vec4 vSA; flat out float vSeed;
+out vec2 vP; flat out vec4 vSeg; flat out vec4 vRD; flat out vec4 vSA; flat out vec2 vSeed;
 void main(){
   vec2 a = aSeg.xy, b = aSeg.zw, ab = b - a; float L = length(ab);
   vec2 t = L > 1e-4 ? ab / L : vec2(1.0, 0.0), n = vec2(-t.y, t.x);
@@ -70,9 +70,10 @@ void main(){
 
 const SEG_FS = `#version 300 es
 precision highp float; precision highp int;
-in vec2 vP; flat in vec4 vSeg; flat in vec4 vRD; flat in vec4 vSA; flat in float vSeed;
+in vec2 vP; flat in vec4 vSeg; flat in vec4 vRD; flat in vec4 vSA; flat in vec2 vSeed;
 uniform float uPad; uniform int uShape; uniform vec2 uNib; uniform int uKind;
 layout(location=0) out vec4 o;
+layout(location=1) out vec4 o2;   // the stroke's place in the ink's colour family
 ${NOISE}
 float cross2(vec2 a, vec2 b){ return a.x * b.y - a.y * b.x; }
 float sdSeg(vec2 p, vec2 a, vec2 b){ vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0); return length(pa - ba * h); }
@@ -102,11 +103,13 @@ void main(){
   else if ((uKind == 1 || uKind == 7) && hr > -0.02 && hr < 1.02) {
     float u = sign(cross2(ba, vP - a)) * dist / max(r, 0.35); // across the stroke, -1..1
     float rr = max(r, 0.6);
-    if (uKind == 1) tex = 0.6 * vnoise(vec2(u * 6.0 + vSeed * 7.31, s / (rr * 9.0) + vSeed * 3.1))
-                        + 0.4 * vnoise(vec2(u * 13.0 + vSeed * 1.7, s / (rr * 4.0) + 11.0));  // ballpoint striations
-    else tex = vnoise(vec2(u * 4.0 + vSeed * 5.3, s / (rr * 1.6)));                           // pencil drag
+    float sd = vSeed.x;
+    if (uKind == 1) tex = 0.6 * vnoise(vec2(u * 6.0 + sd * 7.31, s / (rr * 9.0) + sd * 3.1))
+                        + 0.4 * vnoise(vec2(u * 13.0 + sd * 1.7, s / (rr * 4.0) + 11.0));  // ballpoint striations
+    else tex = vnoise(vec2(u * 4.0 + sd * 5.3, s / (rr * 1.6)));                         // pencil drag
   }
   o = vec4(hw, d, -sdf, tex);
+  o2 = vec4(vSeed.y, 0.0, 0.0, 1.0);
 }`;
 
 const FULL_VS = `#version 300 es
@@ -114,7 +117,8 @@ void main(){ vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)
 
 const RESOLVE_FS = `#version 300 es
 precision highp float; precision highp int;
-uniform sampler2D uLayer; uniform int uKind; uniform float uH, uDpr, uGrainPx, uRough, uBleed, uPress, uRing, uRingPool;
+uniform sampler2D uLayer; uniform sampler2D uShade; uniform vec3 uKA, uKB;
+uniform int uKind; uniform float uH, uDpr, uGrainPx, uRough, uBleed, uPress, uRing, uRingPool;
 layout(location=0) out vec4 o;
 ${NOISE}
 void main(){
@@ -161,14 +165,16 @@ void main(){
     k *= mix(0.3, 1.0, dep) * (0.86 + 0.28 * (tex >= 0.0 ? tex : 0.5));
     k *= 1.0 - 0.3 * smoothstep(0.55, 1.0, e);
   }
-  o = vec4(cov * d * k, 0.0, 0.0, 0.0);
+  // optical density per channel: this stroke's density × its own absorption (its shade of the ink)
+  float sh = texelFetch(uShade, ivec2(gl_FragCoord.xy), 0).r;
+  o = vec4(cov * d * k * mix(uKA, uKB, sh), 0.0);
 }`;
 
 const FINAL_FS = `#version 300 es
 precision highp float; precision highp int;
 uniform sampler2D uAccum; uniform sampler2D uTex;
 uniform ivec2 uOrigin; uniform float uH, uDpr, uGrainPx;
-uniform vec3 uPaper, uK; uniform float uFloor, uFade, uGrainPaper, uGrainInk; uniform int uKind;
+uniform vec3 uPaper, uK; uniform float uFloor, uFade, uGrainPaper, uGrainInk; uniform int uKind;  // uK: mid-family absorption
 uniform int uLines; uniform vec2 uLineStep, uLineOff; uniform vec3 uLineCol, uMarginCol; uniform float uMarginX;
 uniform int uTexOn; uniform vec2 uTexSize; uniform int uTransparent;
 layout(location=0) out vec4 o;
@@ -182,13 +188,14 @@ float rule(float x, float step0, float off, float dpr){
 }
 void main(){
   ivec2 ip = ivec2(gl_FragCoord.xy) - uOrigin;
-  float D = max(texelFetch(uAccum, ip, 0).r, 0.0);
+  vec3 OD = max(texelFetch(uAccum, ip, 0).rgb, vec3(0.0));     // optical density per channel
+  float D = dot(OD, vec3(1.0)) / max(dot(uK, vec3(1.0)), 1e-4); // ≈ ink density
   vec2 pc = vec2(float(ip.x) + 0.5, uH - float(ip.y) - 0.5) / uDpr;
   float g = grain(pc / uGrainPx);
-  D *= 1.0 - uGrainInk * (1.0 - g) * 2.0 * (1.0 - smoothstep(0.12, 0.9, D)); // grain shows through light ink only
-  if (uKind == 7) D = 1.6 * (1.0 - exp(-D / 1.6));                           // graphite saturates
-  D *= uFade;
-  vec3 T = uFloor + (1.0 - uFloor) * exp(-uK * D);
+  float f = 1.0 - uGrainInk * (1.0 - g) * 2.0 * (1.0 - smoothstep(0.12, 0.9, D)); // grain shows through light ink only
+  if (uKind == 7) f *= D > 1e-4 ? 1.6 * (1.0 - exp(-D * f / 1.6)) / (D * f) : 1.0; // graphite saturates
+  D *= f * uFade;
+  vec3 T = uFloor + (1.0 - uFloor) * exp(-OD * f * uFade);
   vec3 paper = vec3(1.0);
   if (uTransparent == 0) {
     paper = uPaper;
@@ -252,7 +259,7 @@ function gpu() {
     for (let l = 1; l <= 4; l++) { gl.enableVertexAttribArray(l); gl.vertexAttribDivisor(l, 1); }
     G.emptyVao = gl.createVertexArray();
     gl.bindVertexArray(null);
-    G.layerTex = gl.createTexture(); G.accumTex = gl.createTexture(); G.paperTex = gl.createTexture();
+    G.layerTex = gl.createTexture(); G.shadeTex = gl.createTexture(); G.accumTex = gl.createTexture(); G.paperTex = gl.createTexture();
     G.layerFbo = gl.createFramebuffer(); G.accumFbo = gl.createFramebuffer();
     G.paperSrc = null;
     canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); GPU = null; });
@@ -282,6 +289,14 @@ function ensureTargets(G, w, h) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
   }
+  // the layer's second target: each stroke's shade (8 bits is plenty), MAX-blended like the rest
+  gl.bindTexture(gl.TEXTURE_2D, G.shadeTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, G.texW, G.texH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, G.layerFbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, G.shadeTex, 0);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
@@ -356,6 +371,7 @@ function buildGeometry(p, page, pen, k, opts, pad) {
       let wsum = 0; for (let i = 0; i < n; i++) wsum += Wd[i];
       const ink = walk({ item: it, strokeIndex: si, wordStart, len: pr.len, width: wsum / n, dot: pr.dot });
       const seed = ((it.charIndex * 7 + si * 13) % 997) / 997 * 61.7;
+      const shade = ink.shade == null ? 0.5 : ink.shade;
       const w0 = Wd[0];
       // the points we keep, in device px
       if (SCR.length < (n + 2) * FPI) SCR = new Float32Array((n + 2) * FPI * 2);
@@ -367,7 +383,7 @@ function buildGeometry(p, page, pen, k, opts, pad) {
           const o = cnt * FPI;
           SCR[o] = lx; SCR[o + 1] = ly; SCR[o + 2] = x; SCR[o + 3] = y;
           SCR[o + 4] = lr; SCR[o + 5] = r; SCR[o + 6] = ld; SCR[o + 7] = d;
-          SCR[o + 8] = ls; SCR[o + 9] = s; SCR[o + 10] = la; SCR[o + 11] = a; SCR[o + 12] = seed;
+          SCR[o + 8] = ls; SCR[o + 9] = s; SCR[o + 10] = la; SCR[o + 11] = a; SCR[o + 12] = seed; SCR[o + 13] = shade;
           cnt++;
         }
         const R = r + pad;
@@ -405,12 +421,12 @@ function buildGeometry(p, page, pen, k, opts, pad) {
       }
       if (cnt === 0 && have) { // a single kept point: draw it as a zero-length segment
         const o = 0; SCR[o] = lx; SCR[o + 1] = ly; SCR[o + 2] = lx; SCR[o + 3] = ly; SCR[o + 4] = lr; SCR[o + 5] = lr;
-        SCR[o + 6] = ld; SCR[o + 7] = ld; SCR[o + 8] = ls; SCR[o + 9] = ls; SCR[o + 10] = la; SCR[o + 11] = la; SCR[o + 12] = seed; cnt = 1;
+        SCR[o + 6] = ld; SCR[o + 7] = ld; SCR[o + 8] = ls; SCR[o + 9] = ls; SCR[o + 10] = la; SCR[o + 11] = la; SCR[o + 12] = seed; SCR[o + 13] = shade; cnt = 1;
       }
       if (!cnt) continue;
       // does this stroke continue the previous one (corner split, script join)? then same chain
       const sx = SCR[0], sy = SCR[1], sr = SCR[4];
-      if (!(prev && Math.hypot(sx - prev.x, sy - prev.y) < 0.6 * (sr + prev.r) + 1)) chain++;
+      if (!(prev && (pr.start === 'join' || Math.hypot(sx - prev.x, sy - prev.y) < 0.6 * (sr + prev.r) + 1))) chain++;
       const b = [bx0, by0, bx1, by1];
       const L = LAYERS.pick(b, chain, prev && prev.chain === chain ? prev.layer : -1);
       LAYERS.add(L, b, chain, SCR, cnt);
@@ -551,13 +567,14 @@ export function renderCanvas(canvas, p, page, opts = {}) {
       // 1. segments -> layer (MAX: one pen-down lays its ink once)
       gl.bindFramebuffer(gl.FRAMEBUFFER, G.layerFbo);
       gl.clearBufferfv(gl.COLOR, 0, [0, 0, -1000, -1]);
+      gl.clearBufferfv(gl.COLOR, 1, [0, 0, 0, 0]);
       gl.blendEquation(gl.MAX);
       gl.useProgram(G.seg.pr);
       const u = G.seg.u;
       gl.uniform2f(u.uView, pw, ph);
       gl.uniform1f(u.uPad, pad);
       gl.uniform1i(u.uShape, pen.shape === 'nib' ? 1 : 0);
-      const nibW = (p.penWidth * (pen.wScale || 1)) * k, na = (p.nibAngle == null ? 35 : p.nibAngle) * Math.PI / 180;
+      const nibW = penWidthUnits(p) * k, na = (p.nibAngle == null ? 35 : p.nibAngle) * Math.PI / 180;
       gl.uniform2f(u.uNib, Math.cos(na) * nibW, -Math.sin(na) * nibW); // y down
       gl.uniform1i(u.uKind, pen.kind);
       gl.bindVertexArray(G.vao);
@@ -566,7 +583,7 @@ export function renderCanvas(canvas, p, page, opts = {}) {
       gl.vertexAttribPointer(1, 4, gl.FLOAT, false, stride, base);
       gl.vertexAttribPointer(2, 4, gl.FLOAT, false, stride, base + 16);
       gl.vertexAttribPointer(3, 4, gl.FLOAT, false, stride, base + 32);
-      gl.vertexAttribPointer(4, 1, gl.FLOAT, false, stride, base + 48);
+      gl.vertexAttribPointer(4, 2, gl.FLOAT, false, stride, base + 48);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, l.n);
       // 2. layer -> ink density, added into the accumulator (crossings darken)
       gl.bindFramebuffer(gl.FRAMEBUFFER, G.accumFbo);
@@ -574,8 +591,10 @@ export function renderCanvas(canvas, p, page, opts = {}) {
       gl.blendFunc(gl.ONE, gl.ONE);
       gl.useProgram(G.resolve.pr);
       const r = G.resolve.u;
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.shadeTex);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G.layerTex);
-      gl.uniform1i(r.uLayer, 0);
+      gl.uniform1i(r.uLayer, 0); gl.uniform1i(r.uShade, 1);
+      gl.uniform3fv(r.uKA, ink.kA); gl.uniform3fv(r.uKB, ink.kB);
       gl.uniform1i(r.uKind, pen.kind);
       gl.uniform1f(r.uH, ph); gl.uniform1f(r.uDpr, dpr); gl.uniform1f(r.uGrainPx, grainPx);
       gl.uniform1f(r.uRough, rough); gl.uniform1f(r.uBleed, bleed);
@@ -663,7 +682,7 @@ function fallback2D(ctx, p, page, pen, ink, paper, k) {
       if (!pr) return;
       let dm = 0; for (let i = 0; i < pr.n; i++) dm += pr.d[i]; dm /= pr.n;
       const s = walk({ item: it, strokeIndex: si, wordStart, len: pr.len, width: pr.w[pr.n >> 1], dot: pr.dot });
-      ctx.fillStyle = rgbHex(inkRGB(ink, dm * s.mul, [255, 255, 255]));
+      ctx.fillStyle = rgbHex(inkRGB(ink, dm * s.mul, [255, 255, 255], s.shade));
       ctx.beginPath();
       const poly = st.contour;
       ctx.moveTo((it.x + poly[0][0]) * k, (it.y - poly[0][1]) * k);

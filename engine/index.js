@@ -13,7 +13,7 @@ import './sources/extras.js';
 export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames } from './glyphs.js';
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
-export { PENS, getPen, penKey, penOutline, strokeInk, simplify, INKS, inkModel, inkRGB, PAPER_REF } from './pen.js';
+export { PENS, getPen, penKey, penOutline, strokeInk, simplify, INKS, inkModel, inkRGB, PAPER_REF, TIPS, handSize, penWidthUnits, emPxFor } from './pen.js';
 export { layout } from './layout.js';
 export { kinematics } from './kinematics.js';
 export { renderSVG, contoursToD } from './render-svg.js';
