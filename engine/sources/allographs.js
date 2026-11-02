@@ -688,8 +688,9 @@ addDeriver((style) => {
   for (const d of DERIVED) {
     const list = variants(style, d.ch);
     if (!list.length || list.some((v) => allographOf(v) === d.allograph)) continue;
-    const base = list.find((v) => v.weight !== 0 && !(v.tags && v.tags.position));
-    if (!base) continue;
+    // only from the style's own letter (a borrowed one belongs to another tradition)
+    const base = list.find((v) => v.weight !== 0 && !(v.tags && v.tags.position) && !v.borrowedFrom);
+    if (!base || !getStyle(style).glyphs.has(d.ch)) continue;
     const mm = base.metrics || m;
     const capH = mm.base - mm.cap;
     let x0 = Infinity, x1 = -Infinity, yTop = Infinity, yLow = -Infinity, xLow = 0;

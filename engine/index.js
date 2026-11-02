@@ -22,7 +22,7 @@ export { rng, makeNoise } from './core.js';
 export { defineStyle, register, amend, addComposer, addDeriver, addTransform, transform, variants, choose, getStyle, styleNames, stylesInFamily, families, isHistorical,
   allographOf, allographChar, defineSchooling, defineContinuum, getSchooling, schoolingNames, describeHabits } from './glyphs.js';
 export { makeHand, addHandTraits, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM,
-  ARCHETYPES, archetypeOf, latentOf, baseSeed, care, hurryDelta, skeleton, traditionsOf, describeTraditions } from './hand.js';
+  ARCHETYPES, archetypeOf, latentOf, baseSeed, care, hurryDelta, skeleton, traditionsOf, describeTraditions, styleWidth } from './hand.js';
 export { sampleHand, sampleLook, lookOf, lookDistance, handDistance, chaos, seedFrom, VARIETY, LOOK_PENS, LOOK_TIPS, LOOK_PAPERS } from './sampler.js';
 export { PENS, getPen, penKey, penOutline, strokeInk, simplify, INKS, inkModel, inkRGB, PAPER_REF, TIPS, handSize, penWidthUnits, emPxFor } from './pen.js';
 export { layout, inkPage, writeAt, pageHabits, pageMetrics, spreadOf, lineBaseline, lineAngle, lineLean } from './layout.js';

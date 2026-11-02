@@ -105,21 +105,26 @@ export function transform(p, ch, v, ctx) {
   return v;
 }
 
+// Composed and borrowed characters are cached apart from the registered ones (st.lazy), so a style's own
+// letter table (st.glyphs) never depends on what was drawn earlier: writers' habits are made from it, and they
+// must come out the same in any order and in a fresh process.
 export function variants(style, ch) {
   const st = STYLES.get(style);
   if (!st) return [];
   const direct = st.glyphs.get(ch);
   if (direct && direct.length) return direct;
+  if (!st.lazy) st.lazy = new Map();
+  if (st.lazy.has(ch)) return st.lazy.get(ch);
   for (const fn of COMPOSERS) {
     const v = fn(style, ch);
-    if (v && v.length) { st.glyphs.set(ch, v); return v; } // cache
+    if (v && v.length) { st.lazy.set(ch, v); return v; }
   }
   if (st.fallback && st.fallback !== style) {
     const fb = STYLES.get(st.fallback);
     const v = fb ? variants(st.fallback, ch) : [];
     if (v.length) {
       const borrowed = v.map((x) => ({ ...x, metrics: x.metrics || fb.metrics, borrowedFrom: st.fallback }));
-      st.glyphs.set(ch, borrowed); // cache
+      st.lazy.set(ch, borrowed);
       return borrowed;
     }
   }
@@ -218,7 +223,7 @@ export function pickSchooling(seed, style) {
 }
 
 export function makeHabits(seed, style, traits = {}, opts = {}) {
-  derive(style);
+  for (const name of STYLES.keys()) derive(name); // every style at once: habits read other styles' letters too
   const st = STYLES.get(style);
   const r = rng('habits:' + seed + ':' + style);
   const schooling = opts.schooling && SCHOOLINGS.has(opts.schooling) ? opts.schooling : pickSchooling(seed, style);
