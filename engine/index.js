@@ -11,6 +11,7 @@
 
 import './sources/hershey.js';
 import './sources/extras.js';
+import './sources/accents.js';
 
 export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, addTransform, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';
