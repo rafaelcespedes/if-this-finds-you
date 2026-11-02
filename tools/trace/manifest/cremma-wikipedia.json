@@ -1,0 +1,17 @@
+{
+  "id": "cremma-wikipedia",
+  "title": "CREMMA-Wikipedia: ground truth of contemporary French handwriting",
+  "author": "Volunteers (anonymised) who each copied an excerpt of a Wikipedia page by hand; HTR-United / CREMMA project",
+  "date": "2022–2023",
+  "place": "France",
+  "holder": "HTR-United, GitHub repository HTR-United/cremma-wikipedia (page images and ALTO line transcriptions)",
+  "page": "https://github.com/HTR-United/cremma-wikipedia",
+  "rights": {
+    "statement": "Creative Commons Attribution 4.0 International (repository licence cc-by-4.0 and README \"License\" section).",
+    "where": "https://api.github.com/repos/HTR-United/cremma-wikipedia (license: cc-by-4.0); README",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "CC BY 4.0, not share-alike. Volunteers wrote for the project and the images are anonymised; we take letterforms only, never their text."
+  },
+  "files": []
+}
