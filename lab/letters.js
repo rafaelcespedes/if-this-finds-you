@@ -70,8 +70,8 @@ function describe(p) {
   const st = E.getStyle(p.style);
   const d = E.describeHabits(p, 'aegrstfkyz1479AEFGMQRT');
   const forms = Object.values(d.letters).map((x) => x.main + (x.alt ? ` (${x.alt.when}: ${x.alt.allograph})` : '')).join(', ');
-  const traits = ['neatness', 'hurry', 'slant', 'xHeight', 'width', 'penWidth'].map((k) => `${k} ${(+p[k]).toFixed(2)}`).join(' · ');
-  return `${st.label || p.style} · ${d.schooling} schooling${d.printsCapitals ? ' · prints capitals' : ''} · ${traits} — ${forms}`;
+  const traits = ['neatness', 'hurry', 'blend', 'slant', 'xHeight', 'width', 'penWidth'].map((k) => `${k} ${(+p[k]).toFixed(2)}`).join(' · ');
+  return `${st.label || p.style} · ${E.describeTraditions(p)}${d.printsCapitals ? ' · prints capitals' : ''} · ${traits} — ${forms}`;
 }
 
 function draw() {

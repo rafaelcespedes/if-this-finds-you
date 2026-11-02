@@ -13,7 +13,7 @@
 // rising through it, so joins still meet.
 // Import after sources/hershey.js and sources/extras.js.
 
-import { register, amend, variants, getStyle, allographOf, allographChar, defineSchooling, defineAllographAliases, addAffinity, addContextHabit, addDeriver } from '../glyphs.js';
+import { register, amend, variants, getStyle, allographOf, allographChar, defineSchooling, defineAllographAliases, defineContinuum, addAffinity, addContextHabit, addDeriver } from '../glyphs.js';
 
 const credit = (after) => ({ name: 'Seedhand allograph', credit: `Seedhand, after ${after}` });
 const SRC = {
@@ -635,6 +635,16 @@ for (const kind of ['looped', 'plain']) {
 addAffinity('W.rounded', 'w.rounded', 2.5);
 addAffinity('U.stem', 'u.plain', 1.6);
 addAffinity('seven.crossed', 'Z.crossed', 2.2);
+
+// Forms that are one shape drawn further or less: a writer between two schools can sit anywhere along these
+// (glyphs.js blending morphs them; different constructions are never morphed)
+for (const c of [
+  ['one.plain', 'one.flag', 'one.long-flag'], ['r.arm', 'r.hooked-arm', 'r.flick'], ['g.hooked', 'g.looped'],
+  ['y.straight', 'y.stick'], ['y.hooked', 'y.looped'], ['l.plain', 'l.tailed'], ['nine.curved', 'nine.straight', 'nine.hooked'],
+  ['t.hooked', 't.cross', 't.right-bar', 't.high-bar'], ['t.short', 't.right-bar', 't.tall'], ['e.print', 'e.looped'],
+  ['q.plain', 'q.tailed'], ['three.flat', 'three.round'], ['M.vertical', 'M.short-middle'], ['R.leg', 'R.kicked'],
+  ['A.pointed', 'A.round-top'], ['W.pointed', 'W.rounded'], ['z.plain', 'z.tailed'], ['s.print', 's.pointed', 's.looped'],
+]) defineContinuum(c);
 
 // Second forms picked by context (human-feel.md §5: 3-6 letters per writer, chosen by position and neighbours)
 addContextHabit({ ch: 's', when: 'final', forms: ['s.final', 's.round-final', '*'], weight: 2 });

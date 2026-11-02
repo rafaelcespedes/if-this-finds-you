@@ -38,7 +38,9 @@ function profile(h) {
   const letters = describeHabits(h, Object.keys(FREQ)).letters;
   return {
     seed: h.seed, family: h.family, style: h.style, archetype: h.archetype,
-    letters: Object.fromEntries(Object.keys(FREQ).map((c) => [c, letters[c] ? letters[c].main : '-'])),
+    // a letter mostly taken from the second school counts as that school's form
+    letters: Object.fromEntries(Object.keys(FREQ).map((c) => [c, !letters[c] ? '-' : letters[c].blend && letters[c].blend.t >= 0.5 ? letters[c].blend.toward : letters[c].main])),
+    blend: h.blend || 0,
     slant: clamp((h.slant + 15) / 45, 0, 1),
     size: h.family === 'script' ? clamp((h.xHeight - 0.36) / 0.26, 0, 1) : clamp((h.xHeight - 0.42) / 0.36, 0, 1),
     width: h.family === 'script' ? clamp((h.width - 0.72) / 0.52, 0, 1) : clamp((h.width - 0.6) / 0.48, 0, 1),
@@ -60,7 +62,7 @@ export function handDistance(a, b) {
   const t = (k, w) => w * (A[k] - B[k]) ** 2;
   const d2 = 1.2 * construction ** 2 * 2.2 + (A.family !== B.family ? 1 : 0) +
     t('size', 1) + t('slant', 1) + t('width', 0.8) + t('pressure', 0.6) + t('neatness', 0.6) + t('hurry', 0.5) +
-    t('weight', 0.6) + t('spacing', 0.4) + t('round', 0.3) + t('texture', 0.1);
+    t('weight', 0.6) + t('spacing', 0.4) + t('round', 0.3) + t('texture', 0.1) + t('blend', 0.3);
   return Math.sqrt(d2);
 }
 
@@ -217,7 +219,7 @@ const inkFits = (pen, ink) => (PEN_INKS[pen] && PEN_INKS[pen][ink] ? 1 : ink ===
 // The natural look of a seed (family: 'print' | 'script'; locked: { pen?, tip?, ink?, paper?, size?, inkAge? } kept
 // as given, with everything else chosen to suit them). opts.wild flattens the odds. Pure.
 //   -> { seed, family, style, archetype, label, schooling, pen, tip, ink, inkAge, inkVariation, paper, size,
-//        params: { neatness, slant, pressure, hurry, lineWander, fatigue }  (absolute values)
+//        params: { neatness, slant, pressure, hurry, blend, lineWander, fatigue }  (absolute values)
 //        offsets: { same keys }  (params minus this hand's natural values: the look's nudges) }
 export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   const h = makeHand(seed, family);
@@ -251,8 +253,8 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   const tipMm = { fine: -0.2, medium: 0, bold: 0.45 }[tip] + (pen === 'felt' ? 0.4 : 0) + (pen === 'pencil' && h.archetype !== 'first' ? -0.1 : 0);
   const size = L.size != null ? L.size : +clamp(A.size[0] + (A.size[1] - A.size[0]) * rs() + tipMm, 2, 6.8).toFixed(1);
   // the sliders: this writer's own values, nudged by what they write with and on
-  const nat = { neatness: h.neatness, slant: h.slant, pressure: h.pressure, hurry: h.hurry, lineWander: h.lineWander, fatigue: h.fatigue };
-  const off = { neatness: 0, slant: 0, pressure: 0, hurry: 0, lineWander: 0, fatigue: 0 };
+  const nat = { neatness: h.neatness, slant: h.slant, pressure: h.pressure, hurry: h.hurry, blend: h.blend, lineWander: h.lineWander, fatigue: h.fatigue };
+  const off = { neatness: 0, slant: 0, pressure: 0, hurry: 0, blend: 0, lineWander: 0, fatigue: 0 };
   if (pen === 'felt') { off.neatness -= 0.06; off.hurry += 0.05; off.pressure -= 0.1; }
   if (pen === 'pointed' || pen === 'italic') off.pressure += 0.25;
   if (pen === 'pencil') off.pressure += 0.1;
@@ -263,7 +265,7 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   for (const k in nat) params[k] = +(k === 'slant' ? nat[k] + off[k] : clamp(nat[k] + off[k], 0, k === 'lineWander' || k === 'fatigue' ? 1.5 : 1)).toFixed(3);
   for (const k in off) off[k] = +(params[k] - nat[k]).toFixed(3);
   const arch = archetypeOf(seed);
-  return { seed: String(seed), family: h.family, style: h.style, archetype: arch.id, label: arch.label, schooling: h.schooling,
+  return { seed: String(seed), family: h.family, style: h.style, archetype: arch.id, label: arch.label, schooling: h.schooling, traditions: h.traditions,
     pen, tip, ink, inkAge, inkVariation, paper, size, params, offsets: off };
 }
 

@@ -10,7 +10,7 @@
 // Everything is deterministic from strings: hand seed, and an instance seed for each use.
 
 import { rng, makeNoise, lerp, clamp, mix, DEG } from './core.js';
-import { choose, transform, getStyle, has as styleHas, stylesInFamily, styleNames, families, isHistorical, makeHabits, pickSchooling, getSchooling } from './glyphs.js';
+import { choose, transform, getStyle, has as styleHas, stylesInFamily, styleNames, families, isHistorical, makeHabits, pickSchooling, getSchooling, schoolingNames } from './glyphs.js';
 import { penOutline } from './pen.js';
 
 // ---------- the "writer": one consistent set of parameters per seed ----------
@@ -164,14 +164,49 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
   h.hurry0 = h.hurry;          // the seed's own pace and care: the Hurry and Neatness sliders act relative to them
   h.neatness0 = h.neatness;
   // letters: schooling, quirks, context forms (siblings share the base seed's letters, and re-roll a few)
-  h.habits = makeHabits(base, style, { hurry: h.hurry, neatness: h.neatness }, { schooling, sibling: isSibling(seed) ? String(seed) : null });
+  // a second school, mixed in later (glyphs.js blendWith): another schooling, and another tradition of the same
+  // family when there is one. About half of writers have none to speak of; the rest anywhere up to 60%.
+  const rb = rng('blend:' + base);
+  const sch2pool = schoolingNames().filter((n) => n !== schooling).map((n) => ({ n, weight: (getSchooling(n).weight || 1) * ((getSchooling(n).families || [family]).includes(family) ? 1 : 0) }));
+  const schooling2 = sch2pool.length ? rb.weighted(sch2pool).n : schooling;
+  const others = stylesInFamily(family).filter((n) => n !== style && !isHistorical(n));
+  const style2 = others.length && rb() < 0.6 ? others[Math.floor(rb() * others.length)] : style;
+  h.blend = rb() < 0.45 ? 0 : +(0.15 + 0.85 * rb()).toFixed(3);   // "Mixed schooling": 0 = one school only
+  h.habits = makeHabits(base, style, { hurry: h.hurry, neatness: h.neatness }, { schooling, sibling: isSibling(seed) ? String(seed) : null, second: { style: style2, schooling: schooling2 } });
   h.schooling = schooling;
+  h.traditions = traditionsOf(h);
   // page habits (layout.js reads them; own namespace so nothing above moves): loose writers wander more
   const rp = rng('page-traits:' + base);
   h.lineWander = clamp(1 + 0.3 * (0.6 - h.neatness) + 0.15 * rp.gauss(), 0.7, 1.3);
   h.fatigue = clamp(1 + 0.25 * (0.6 - h.neatness) + 0.15 * rp.gauss(), 0.7, 1.3);
   h.noise = makeNoise('hand:' + seed);
   return h;
+}
+
+// Where this writer learned, for the UI and the provenance card:
+// [{ style, tradition, schooling, label, weight }, ...] (first school first) and a sentence.
+export function traditionsOf(p) {
+  const H = p.habits || {};
+  const w2 = 0.6 * clamp(p.blend == null ? 0 : p.blend, 0, 1);
+  const entry = (style, schooling, weight) => {
+    const st = getStyle(style), sc = getSchooling(schooling);
+    return { style, tradition: st && st.tradition ? st.tradition.name : style, schooling, label: sc ? sc.label : schooling, weight: +weight.toFixed(2) };
+  };
+  const list = [entry(p.style, p.schooling || H.schooling, 1 - w2)];
+  if (H.second && w2 > 0) list.push(entry(H.second.style, H.second.schooling, w2));
+  return list;
+}
+export function describeTraditions(p) {
+  const [a, b] = traditionsOf(p);
+  // Hershey's styles stand for no school of their own, so the schooling names them; a traced tradition names
+  // itself (and its schooling only when the style doesn't fix one)
+  const name = (x) => {
+    const st = getStyle(x.style);
+    if (!st || !st.tradition || x.style === 'print' || x.style === 'script') return x.label;
+    return st.tradition.schooling ? x.tradition : `${x.tradition}, ${x.label}`;
+  };
+  if (!b) return `Schooled in: ${name(a)}.`;
+  return `Schooled in: ${name(a)}. Later habits: ${name(b)} (${Math.round(b.weight * 100)}%).`;
 }
 
 // How careful the writing is right now: Neatness, lowered by hurrying beyond the writer's own pace.
@@ -191,6 +226,7 @@ export function withOverrides(hand, o) {
 export const HAND_PARAMS = [
   { key: 'neatness', label: 'Neatness', group: 'Hand', min: 0, max: 1, step: 0.01, format: 'pct' },
   { key: 'hurry', label: 'Hurry', group: 'Hand', min: 0, max: 1, step: 0.01, format: 'pct' },
+  { key: 'blend', label: 'Mixed schooling', group: 'Hand', min: 0, max: 1, step: 0.01, format: 'pct' },
   { key: 'slant', label: 'Slant', group: 'Hand', min: -15, max: 30, step: 0.5, format: 'deg' },
 ];
 

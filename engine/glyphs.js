@@ -26,7 +26,8 @@
 // (e.g. accented letters = base letter + mark) when no direct variant exists. A composer that keeps its base's
 // tags (allograph) gets the writer's habit for free: é follows the hand's e.
 
-import { rng } from './core.js';
+import { rng, clamp } from './core.js';
+import { morph } from './blend.js';
 
 const STYLES = new Map();
 const COMPOSERS = [];
@@ -204,7 +205,8 @@ const groupWeight = (vs) => vs.reduce((s, v) => s + (v.weight == null ? 1 : v.we
 // The habits a writer brings to a style. Made once per hand (makeHand) and per style on demand.
 // seed: the writer's identity seed (siblings share it); traits: { hurry, neatness } natural values (0..1);
 // opts: { schooling?, quirks? (0..1 how many off-bundle letters), rare? (boost uncommon forms),
-//        sibling? (a sibling's seed: about 15% of its letters are re-rolled from it, the rest kept) }.
+//        sibling? (a sibling's seed: about 15% of its letters are re-rolled from it, the rest kept),
+//        second? ({ style, schooling }: the school this writer later mixed in; see blendWith) }.
 // Where this writer learned (a schooling name, or null if none is defined). A style may fix it.
 export function pickSchooling(seed, style) {
   const st = STYLES.get(style);
@@ -220,7 +222,9 @@ export function makeHabits(seed, style, traits = {}, opts = {}) {
   const st = STYLES.get(style);
   const r = rng('habits:' + seed + ':' + style);
   const schooling = opts.schooling && SCHOOLINGS.has(opts.schooling) ? opts.schooling : pickSchooling(seed, style);
-  const H = { seed: String(seed), style, schooling, traits, rare: opts.rare || 0, sibling: opts.sibling || null, quirks: new Set(), context: new Map(), letters: new Map(), borrow: new Map() };
+  const H = { seed: String(seed), style, schooling, traits, rare: opts.rare || 0, sibling: opts.sibling || null, quirks: new Set(), context: new Map(), letters: new Map(), borrow: new Map(), morphs: new Map(), second: null };
+  // the second school (opts.second: { style, schooling }): only its everyday forms matter
+  if (opts.second && STYLES.has(opts.second.style)) H.second = makeHabits(seed + '/2', opts.second.style, traits, { schooling: opts.second.schooling });
   if (!st) return H;
   // a traced style may keep several real writers (tags.writer): this hand follows one of them where it can
   const writers = new Map();
@@ -245,7 +249,7 @@ export function makeHabits(seed, style, traits = {}, opts = {}) {
       if (!/\p{L}|\p{N}/u.test(ch) || list.some((v) => v.borrowedFrom)) continue;
       const own = new Set(list.map(allographOf));
       for (const d of donors) {
-        if (/\p{Ll}/u.test(ch) && !!d.connected !== !!st.connected) continue;
+        if (/\p{Ll}/u.test(ch) && (!!d.connected !== !!st.connected || !joinsMeet(style, d.name, ch))) continue;
         for (const v of d.glyphs.get(ch) || []) if (v.weight !== 0 && !(v.tags && v.tags.position) && !v.borrowedFrom && !own.has(allographOf(v))) pool.push({ ch, d, v });
       }
     }
@@ -347,7 +351,15 @@ export function describeHabits(p, chars) {
     if (H.context.has(ch)) letters[ch].alt = H.context.get(ch);
   }
   for (const [ch, v] of H.borrow) letters[ch] = { main: allographOf(v), from: v.borrowedFrom };
-  return { schooling: H.schooling, printsCapitals: H.printCaps, quirks: [...H.quirks], letters };
+  const w = 0.6 * clamp(p.blend == null ? 0 : p.blend, 0, 1);
+  if (H.second && w > 0) for (const ch of list) {
+    const t = letterBlend(H, ch, w), B = t > 0 && secondForm(H, ch);
+    if (!B || allographOf(B.v) === mainForm(H, ch) && B.style === H.style) continue;
+    if (!letters[ch]) letters[ch] = { main: mainForm(H, ch) };
+    letters[ch].blend = { toward: allographOf(B.v), style: B.style, t: +t.toFixed(2) };
+  }
+  return { schooling: H.schooling, second: H.second && { style: H.second.style, schooling: H.second.schooling, weight: +w.toFixed(2) },
+    printsCapitals: H.printCaps, quirks: [...H.quirks], letters };
 }
 
 // Which variant does this hand use for ch here?
@@ -367,25 +379,103 @@ function pick(p, ch, ctx) {
   let list = variants(p.style, ch);
   if (!list.length && CHAR_FALLBACK[ch]) list = variants(p.style, CHAR_FALLBACK[ch]);
   if (!list.length) list = variants(p.style, '?');
-  if (list.length <= 1) return list[0];
+  if (!list.length) return undefined;
   const pin = p.pins && p.pins[ch];
   if (pin) { const v = list.find((x) => x.id === pin) || list.find((x) => allographOf(x) === canon(pin)); if (v) return v; }
   const H = habitsFor(p);
-  if (H.borrow.has(ch) && !(ctx && isUpperCh(ch) && (isUpperCh(ctx.prev) || isUpperCh(ctx.next)))) return H.borrow.get(ch);
+  const run = ctx && isUpperCh(ch) && (isUpperCh(ctx.prev) || isUpperCh(ctx.next));
+  if (H.borrow.has(ch) && !run) return blendWith(p, H, ch, H.borrow.get(ch));
+  if (list.length === 1) return blendWith(p, H, ch, list[0]);
   const { main, positional } = groupsOf(list);
-  let form = mainForm(H, ch);
+  let form = mainForm(H, ch), special = false;
   if (ctx) {
     const alt = H.context.get(ch);
-    if (isUpperCh(ch) && (isUpperCh(ctx.prev) || isUpperCh(ctx.next)) && !(main.get(form) || [])[0]?.tags?.caps) {
+    if (run && !(main.get(form) || [])[0]?.tags?.caps) {
       const capsForm = [...main.keys(), ...positional.keys()].sort().find((a) => ((main.get(a) || positional.get(a))[0].tags || {}).caps);
-      if (capsForm) form = capsForm;
-    } else if (alt && inContext(alt.when, ch, ctx)) form = alt.allograph;
+      if (capsForm) { form = capsForm; special = true; }
+    } else if (alt && inContext(alt.when, ch, ctx)) { form = alt.allograph; special = true; }
   }
   let takes = main.get(form) || positional.get(form) || main.get(mainForm(H, ch)) || list;
   if (H.writer && takes.length > 1) { const own = takes.filter((v) => v.tags && v.tags.writer === H.writer); if (own.length) takes = own; }
-  if (takes.length === 1) return takes[0];
-  // several drawings of one construction: alternate along the word so a double letter never repeats a shape
-  const off = Math.floor(rng('take:' + H.seed + ':' + ch)() * takes.length);
-  const i = ctx && Number.isFinite(ctx.index) ? ctx.index : 0;
-  return takes[(i + off) % takes.length];
+  let v = takes[0];
+  if (takes.length > 1) {
+    // several drawings of one construction: alternate along the word so a double letter never repeats a shape
+    const off = Math.floor(rng('take:' + H.seed + ':' + ch)() * takes.length);
+    const i = ctx && Number.isFinite(ctx.index) ? ctx.index : 0;
+    v = takes[(i + off) % takes.length];
+  }
+  return special ? v : blendWith(p, H, ch, v);
+}
+
+// ---------- blending: a writer schooled twice ----------
+// A hand may carry a second schooling (and, when its family has several traditions, a second tradition) with a
+// weight: 0.6 x p.blend ("Mixed schooling"). Each letter has its own blend amount around that weight: some stay
+// purely from the first school, some are fully adopted from the second, the rest sit in between. Letters built
+// the same way are morphed (blend.js); letters built differently are one or the other, by the mix.
+const CONTINUA = new Map(); // allograph -> continuum id: different names that are one shape, drawn further or less
+export function defineContinuum(names) { const id = names.map(canon).join('|'); for (const n of names) CONTINUA.set(canon(n), id); }
+const isLowerCh = (c) => /^\p{Ll}$/u.test(c);
+
+// Where a joined style's lowercase letters meet (exit height as a fraction of x-height; null if not joined).
+// Joined letters only move between traditions that meet at about the same height, or the joins break.
+function joinHeight(style) {
+  const st = STYLES.get(style);
+  if (!st || !st.connected) return null;
+  if (st.joinHeight == null) {
+    const m = st.metrics, hs = [];
+    for (const ch of 'acdehiklmnstu') {
+      const v = (st.glyphs.get(ch) || []).find((x) => x.weight !== 0 && !(x.tags && x.tags.position) && !x.borrowedFrom);
+      if (!v || !v.s.length) continue;
+      const mm = v.metrics || m, last = v.s[v.s.length - 1], e = last[last.length - 1];
+      hs.push((mm.base - e[1]) / (mm.base - mm.xHeight));
+    }
+    hs.sort((a, b) => a - b);
+    st.joinHeight = hs.length ? hs[Math.floor(hs.length / 2)] : 0.5;
+  }
+  return st.joinHeight;
+}
+const joinsMeet = (a, b, ch) => { if (!isLowerCh(ch) || a === b) return true; const ha = joinHeight(a), hb = joinHeight(b); return ha == null || hb == null || Math.abs(ha - hb) <= 0.15; };
+
+// How far this letter has moved toward the second school (0..1), for a second-school weight w.
+function letterBlend(H, ch, w) {
+  if (!(w > 0)) return 0;
+  const r = rng('blend-letter:' + H.seed + ':' + ch);
+  const u = r(), g = r.gauss();
+  if (u < 0.55 * (1 - w)) return 0;      // kept from the first school
+  if (u > 1 - 0.45 * w) return 1;        // adopted outright
+  return clamp(w * (1 + 0.55 * g), 0.05, 0.95);
+}
+
+// The second school's form of ch: { v, style } or null
+function secondForm(H, ch) {
+  const S = H.second;
+  if (!S) return null;
+  const list = variants(S.style, ch);
+  if (!list.length) return null;
+  const g = groupsOf(list).main.get(mainForm(S, ch)) || list.filter((v) => v.weight !== 0);
+  return g && g.length ? { v: g[0], style: S.style } : null;
+}
+
+function blendWith(p, H, ch, vA) {
+  const w = 0.6 * clamp(p.blend == null ? 0 : p.blend, 0, 1);
+  if (!vA || !H.second || !(w > 0) || vA.resolve) return vA;
+  const t = Math.round(letterBlend(H, ch, w) * 100) / 100;
+  if (t <= 0) return vA;
+  const B = secondForm(H, ch);
+  if (!B || B.v === vA || !joinsMeet(p.style, B.style, ch)) return vA;
+  const stA = STYLES.get(p.style), stB = STYLES.get(B.style);
+  const vB = B.style === p.style ? B.v : borrowed(stB, ch, B.v);
+  const aA = allographOf(vA), aB = allographOf(vB);
+  if (aA === aB || (CONTINUA.has(aA) && CONTINUA.get(aA) === CONTINUA.get(aB))) {
+    const key = ch + '\u0000' + vA.id + '\u0000' + B.style + '\u0000' + vB.id + '\u0000' + t;
+    if (!H.morphs.has(key)) {
+      const mA = vA.metrics || stA.metrics, mB = vB.metrics || stB.metrics;
+      const m = morph(vA, mA, vB, mB, t, isLowerCh(ch), aA === aB ? 0.26 : 0.2);
+      H.morphs.set(key, m && { ...vA, ...m, id: t < 0.5 ? vA.id : vB.id, tags: t < 0.5 ? vA.tags : vB.tags, blend: { from: vA.id, to: vB.id, style: B.style, t } });
+    }
+    const mv = H.morphs.get(key);
+    if (mv) return mv;
+  }
+  // built differently: one or the other, by the mix (never a broken in-between)
+  return rng('blend-pick:' + H.seed + ':' + ch)() < t ? vB : vA;
 }
