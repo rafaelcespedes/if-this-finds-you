@@ -42,6 +42,9 @@ import { offsetsForNewHand, shareUrl } from '@/lib/state';
 import { placeholderFor, requestFor } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
 
+/** New hands kept written ahead, so quick flipping always finds the next one ready. */
+const AHEAD = 5;
+
 /** Screen scale ceiling: about the size of real paper on a laptop screen. */
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
@@ -286,22 +289,24 @@ export default function App() {
   const base = baseOf(state);
   useEffect(() => {
     if (state.reader || editing) return;
-    // in idle moments: keep two new hands (and one sibling) rolled and written ahead of this state
+    // in idle moments: keep a few new hands (and one sibling) rolled and written ahead of this state
     let cancelled = false;
     const idle = (fn: () => void) => (typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(fn, { timeout: 600 }) : window.setTimeout(fn, 60));
     const t = window.setTimeout(() => idle(() => {
       if (cancelled) return;
       const chain: { base: string; look: Partial<NoteState> }[] = [];
+      const reqs: ReturnType<typeof requestFor>[] = [];
       let s: NoteState = state;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < AHEAD; i++) {
         const b = baseOf(s);
         const kept = ahead.current.find((a) => a.base === b);
         const look = kept?.look ?? rollHand(s, { variety, locked: locks });
         chain.push({ base: b, look });
+        // each hand ahead is the one after the hand before it
         s = { ...s, ...look };
+        reqs.push(requestFor(s));
       }
       ahead.current = chain;
-      const reqs = chain.map((a, i) => requestFor(i === 0 ? { ...state, ...a.look } : { ...state, ...chain[0].look, ...a.look }));
       prefetch(reqs);
       idle(() => {
         if (cancelled) return;
