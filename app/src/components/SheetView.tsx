@@ -25,7 +25,8 @@ interface Props {
 export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, fade, enter, index, count, play, finishToken, children }: Props) {
   return (
     <div
-      className={cn('relative isolate shrink-0 rounded-[1.5px]', enter && 'sheet-enter')}
+      // overflow clipped: a fading copy of the previous paper (another size) never pokes out of the new sheet
+      className={cn('relative isolate shrink-0 overflow-hidden rounded-[1.5px]', enter && 'sheet-enter')}
       style={{ width: paper.w * pxPerMm, height: paper.h * pxPerMm, boxShadow: 'var(--sheet-shadow)' }}
       aria-label={count > 1 ? `Page ${index + 1} of ${count}` : undefined}
       role={count > 1 ? 'group' : undefined}

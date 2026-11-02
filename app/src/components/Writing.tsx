@@ -66,6 +66,9 @@ export const Writing = memo(function Writing({ svg, ink, className, fade, play, 
     for (const a of current.getAnimations()) a.cancel();
     current.dataset.layer = 'ghost';
     current.style.opacity = String(from);
+    // the old writing keeps its own size while it fades (the sheet may have changed size under it)
+    const r = current.getBoundingClientRect();
+    if (r.width && r.height) Object.assign(current.style, { inset: 'auto', left: '0', top: '0', width: `${r.width}px`, height: `${r.height}px` });
     current.animate([{ opacity: from }, { opacity: 0 }], { duration: FADE_MS * from, easing: EASE_OUT, fill: 'forwards' }).onfinish = () => current.remove();
     layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, easing: EASE_OUT, fill: 'backwards' });
   }, [svg, ink, fade]);
