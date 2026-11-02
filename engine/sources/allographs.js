@@ -13,7 +13,7 @@
 // rising through it, so joins still meet.
 // Import after sources/hershey.js and sources/extras.js.
 
-import { register, amend, variants, getStyle, allographOf, allographChar, defineSchooling, defineAllographAliases, defineContinuum, addAffinity, addContextHabit, addDeriver } from '../glyphs.js';
+import { defineStyle, register, amend, variants, getStyle, allographOf, allographChar, defineSchooling, defineAllographAliases, defineContinuum, addAffinity, addContextHabit, addDeriver } from '../glyphs.js';
 
 const credit = (after) => ({ name: 'Seedhand allograph', credit: `Seedhand, after ${after}` });
 const SRC = {
@@ -54,6 +54,10 @@ const sg = (s, extra = {}) => {
   const exits = !extra.noExit && end && end[0] >= b - 0.5;
   return { l: Math.round(a), r: exits ? Math.round(end[0]) : Math.ceil(b + 1), s: round(t), ...extra };
 };
+
+// Hershey Simplex Script's skeletons are narrow for their cap height: hands use the joined-hand proportion ranges
+// for it. Every other style (Hershey print, traced copybooks) is drawn against the print ranges.
+defineStyle('script', { proportions: 'script' });
 
 // ---------------------------------------------------------------------------------------------------------
 // PRINT (Hershey Simplex Roman metrics)
@@ -688,8 +692,9 @@ addDeriver((style) => {
   for (const d of DERIVED) {
     const list = variants(style, d.ch);
     if (!list.length || list.some((v) => allographOf(v) === d.allograph)) continue;
-    const base = list.find((v) => v.weight !== 0 && !(v.tags && v.tags.position));
-    if (!base) continue;
+    // only from the style's own letter (a borrowed one belongs to another tradition)
+    const base = list.find((v) => v.weight !== 0 && !(v.tags && v.tags.position) && !v.borrowedFrom);
+    if (!base || !getStyle(style).glyphs.has(d.ch)) continue;
     const mm = base.metrics || m;
     const capH = mm.base - mm.cap;
     let x0 = Infinity, x1 = -Infinity, yTop = Infinity, yLow = -Infinity, xLow = 0;
