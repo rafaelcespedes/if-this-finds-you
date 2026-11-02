@@ -6,7 +6,7 @@
 //  - script: each letter's exit lands on the next letter (gap distribution, in pen widths)
 //  - layout keeps glyphs inside maxWidth
 //  - style dimensions never break a letter: in context (word starts, ends, joins, lifts), no visible letter keeps
-//    less than 40% of the ink it has with every dimension at 0, and no new specks (tiny non-dot strokes) appear
+//    less than 40% of the ink it has with every dimension at 0, and no new specks (tiny strokes touching nothing) appear
 
 import { KERNEL } from '../charsets.mjs';
 import { GEOM, RENDER, NARROW_WIDTH, TEXTS, PARAGRAPH, statSeeds } from '../config.mjs';
@@ -217,10 +217,17 @@ export async function run(ctx) {
   if (E.STYLE_NEUTRAL) {
     const text = (TEXTS.pangram + ' ' + PARAGRAPH.slice(0, 260) + ' ' + TEXTS.caps + ' bookkeeper committee minimum quite little').split(/\s+/);
     const inkOf = (g) => g.strokes.filter((st) => !st.dot).reduce((n, st) => { let L = 0; for (let i = 1; i < st.center.length; i++) L += Math.hypot(st.center[i][0] - st.center[i - 1][0], st.center[i][1] - st.center[i - 1][1]); return n + L; }, 0);
-    const specks = (g, xh) => g.strokes.filter((st) => !st.dot && !st.mark).filter((st) => {
-      let L = 0; for (let i = 1; i < st.center.length; i++) L += Math.hypot(st.center[i][0] - st.center[i - 1][0], st.center[i][1] - st.center[i - 1][1]);
-      return st.center.length <= 3 || L < 0.06 * xh;
-    }).length;
+    // a speck: a short stroke that touches no other stroke (a short piece of one continuous movement, where the
+    // pen model splits a stroke at a cusp, is ink like any other)
+    const specks = (g, xh) => {
+      const body = g.strokes.filter((st) => !st.dot && !st.mark);
+      return body.filter((st) => {
+        let L = 0; for (let i = 1; i < st.center.length; i++) L += Math.hypot(st.center[i][0] - st.center[i - 1][0], st.center[i][1] - st.center[i - 1][1]);
+        if (!(st.center.length <= 3 || L < 0.06 * xh)) return false;
+        const ends = [st.center[0], st.center[st.center.length - 1]];
+        return !body.some((o) => o !== st && o.center.some((q) => ends.some((e) => Math.hypot(q[0] - e[0], q[1] - e[1]) < 0.12 * xh)));
+      }).length;
+    };
     const lost = [], speck = [];
     let checked = 0;
     for (const style of E.styleNames()) {

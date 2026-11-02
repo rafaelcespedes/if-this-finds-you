@@ -341,11 +341,22 @@ function analyze(v, m) {
 
 // Loop width about the loop's own spine: w = 0 retraces the stem, 1 = as drawn, > 1 = fuller.
 // The downstroke (the stem) moves 30% of the way, the upstroke 70%, so a retraced stem stays near the stem.
-function reshapeLoop(s, apex, w, inside, ramp) {
+// The loop is the run of points going monotonically into its tip and out again; whatever the stroke does after
+// it turns back (a crossing, a tracing zigzag) is not part of the loop and is never moved.
+function loopRun(s, apex, tol) {
+  const away = (a, b) => Math.sign(s[b][1] - s[a][1]);
+  let i0 = apex, i1 = apex;
+  const d0 = apex > 0 ? away(apex, apex - 1) : 0, d1 = apex < s.length - 1 ? away(apex, apex + 1) : 0;
+  while (i0 > 0 && (s[i0 - 1][1] - s[i0][1]) * d0 >= -tol) i0--;
+  while (i1 < s.length - 1 && (s[i1 + 1][1] - s[i1][1]) * d1 >= -tol) i1++;
+  return [i0, i1];
+}
+function reshapeLoop(s, apex, w, inside, ramp, tol = 0) {
   if (w === 1) return s;
   const out = s.map((q) => q.slice());
   const n = s.length;
-  for (let i = 0; i < n; i++) {
+  const [i0, i1] = loopRun(s, apex, tol);
+  for (let i = i0; i <= i1; i++) {
     if (i === apex || !inside(s[i][1])) continue;
     const before = i < apex;
     const xo = before ? xAt(s, apex, n - 1, s[i][1]) : xAt(s, apex, 0, s[i][1]);
@@ -358,13 +369,14 @@ function reshapeLoop(s, apex, w, inside, ramp) {
 // Ascenders are drawn up then down (the stem is the second side); descenders down then up (the stem is the first).
 function reshapeAsc(s, t, w, m) {
   const X = m.xHeight, A = X - m.cap;
-  return reshapeLoop(s, t, w, (y) => y < X, (y) => smooth((X - y) / (0.3 * A)));
+  return reshapeLoop(s, t, w, (y) => y < X, (y) => smooth((X - y) / (0.3 * A)), 0.02 * (m.base - X));
 }
 function reshapeDesc(s, b, w, m) {
   const D = m.descender - m.base;
   const out = s.map((q) => q.slice()), n = s.length;
   if (w === 1) return out;
-  for (let i = 0; i < n; i++) {
+  const [i0, i1] = loopRun(s, b, 0.02 * (m.base - m.xHeight));
+  for (let i = i0; i <= i1; i++) {
     if (i === b || s[i][1] <= m.base) continue;
     const before = i < b; // before the bottom = the downstroke (the stem); after = the upstroke
     const xo = before ? xAt(s, b, n - 1, s[i][1]) : xAt(s, b, 0, s[i][1]);
@@ -393,7 +405,10 @@ function reshapeTurns(s, amt, U) {
     let j = i;
     while (j + 1 < s.length - 1 && Math.abs(s[j + 1][1] - s[i][1]) <= eps) j++;
     const yi = s[i][1], yp = s[i - 1][1], yn = s[j + 1][1];
-    if ((yp > yi + eps && yn > yi + eps) || (yp < yi - eps && yn < yi - eps)) turns.push({ i, j });
+    // a reversal (the stroke doubling back: a retraced stem's tip, a tracing zigzag) is not a turn to reshape
+    const u = norm([s[i][0] - s[i - 1][0], s[i][1] - s[i - 1][1]]), w = norm([s[j + 1][0] - s[j][0], s[j + 1][1] - s[j][1]]);
+    const cusp = u[0] * w[0] + u[1] * w[1] < Math.cos(140 * DEG);
+    if (!cusp && ((yp > yi + eps && yn > yi + eps) || (yp < yi - eps && yn < yi - eps))) turns.push({ i, j });
     i = j + 1;
   }
   if (!turns.length) return s;
