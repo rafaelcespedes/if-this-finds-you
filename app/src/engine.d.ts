@@ -81,6 +81,7 @@ declare module '@engine' {
   export function layout(p: Hand, text: string, opts?: LayoutOptions): Page;
   export function renderSVG(p: Hand, page: Pick<Page, 'items' | 'height'>, opts: RenderOptions): string;
   export function styleNames(): string[];
+  export function choose(p: Hand, ch: string, ctx?: unknown): unknown;
   export function getStyle(name: string): { name: string; label?: string; connected?: boolean } | undefined;
 
   export interface BuiltFont {

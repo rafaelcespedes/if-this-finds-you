@@ -10,6 +10,7 @@ import { Signature } from '@/components/Signature';
 import { ADVANCED_GROUPS, CONTROLS, PEN_SIZES, isLive, isShown, naturalValue, penSizeFactor, type SliderControl } from '@/lib/controls';
 import { MODELLED_INK } from '@/lib/engine-features';
 import { describeHand, words } from '@/lib/hands';
+import { handSources } from '@/lib/credits';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
 import { PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
@@ -113,6 +114,7 @@ export function Panel(props: PanelProps) {
       </Section>
 
       <Advanced {...props} connected={connected} />
+      <Credits p={props.p} />
 
       {!compact && (
         <section
@@ -356,6 +358,35 @@ function readOpen() {
 function writeOpen(v: boolean) {
   try { localStorage.setItem('seedhand:advanced', v ? '1' : '0'); } catch { /* fine */ }
 }
+
+// ---------- where the letters come from ----------
+const Credits = memo(function Credits({ p }: { p: Hand }) {
+  const sources = handSources(p);
+  if (!sources.length) return null;
+  return (
+    <details className="group border-t border-border px-5 py-4 text-[12px] leading-snug text-muted-foreground">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-sm marker:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:py-2 [&::-webkit-details-marker]:hidden">
+        <span>Letter shapes: {sources.map((s) => s.name).join(', ')}</span>
+        <ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform duration-200 group-open:rotate-180" />
+      </summary>
+      <ul className="mt-2 grid gap-1.5">
+        {sources.map((s) => (
+          <li key={s.name}>
+            <span className="text-foreground/80">{s.name}.</span> {s.credit}
+            {s.url && (
+              <>
+                {' '}
+                <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">
+                  Source
+                </a>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+});
 
 // ---------- actions: share, download, font ----------
 function Actions(props: PanelProps) {
