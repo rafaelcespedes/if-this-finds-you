@@ -41,6 +41,8 @@ function profile(h) {
     // a letter mostly taken from the second school counts as that school's form
     letters: Object.fromEntries(Object.keys(FREQ).map((c) => [c, !letters[c] ? '-' : letters[c].blend && letters[c].blend.t >= 0.5 ? letters[c].blend.toward : letters[c].main])),
     blend: h.blend || 0,
+    // traits other modules add to every hand (addHandTraits, e.g. style dimensions), when they are 0..1 numbers
+    extra: Object.fromEntries((h.addedTraits || []).filter((k) => typeof h[k] === 'number' && h[k] >= 0 && h[k] <= 1).map((k) => [k, h[k]])),
     slant: clamp((h.slant + 15) / 45, 0, 1),
     size: h.family === 'script' ? clamp((h.xHeight - 0.36) / 0.26, 0, 1) : clamp((h.xHeight - 0.42) / 0.36, 0, 1),
     width: h.family === 'script' ? clamp((h.width - 0.72) / 0.52, 0, 1) : clamp((h.width - 0.6) / 0.48, 0, 1),
@@ -62,8 +64,14 @@ export function handDistance(a, b) {
   const t = (k, w) => w * (A[k] - B[k]) ** 2;
   const d2 = 1.2 * construction ** 2 * 2.2 + (A.family !== B.family ? 1 : 0) +
     t('size', 1) + t('slant', 1) + t('width', 0.8) + t('pressure', 0.6) + t('neatness', 0.6) + t('hurry', 0.5) +
-    t('weight', 0.6) + t('spacing', 0.4) + t('round', 0.3) + t('texture', 0.1) + t('blend', 0.3);
+    t('weight', 0.6) + t('spacing', 0.4) + t('round', 0.3) + t('texture', 0.1) + t('blend', 0.3) + extraD2(A, B);
   return Math.sqrt(d2);
+}
+
+function extraD2(A, B) {
+  let d2 = 0;
+  for (const k in A.extra || {}) if (B.extra && k in B.extra) d2 += 0.5 * (A.extra[k] - B.extra[k]) ** 2;
+  return d2;
 }
 
 // Legibility cap (§5.2 step 6): a writer may be messy, fast, shaky, steep or extreme in proportion, not all at once.

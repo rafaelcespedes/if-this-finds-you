@@ -186,7 +186,8 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
   h.lineWander = clamp(1 + 0.3 * (0.6 - h.neatness) + 0.15 * rp.gauss(), 0.7, 1.3);
   h.fatigue = clamp(1 + 0.25 * (0.6 - h.neatness) + 0.15 * rp.gauss(), 0.7, 1.3);
   h.noise = makeNoise('hand:' + seed);
-  for (const fn of HAND_TRAITS) Object.assign(h, fn(h));
+  h.addedTraits = [];
+  for (const fn of HAND_TRAITS) { const t = fn(h) || {}; Object.assign(h, t); h.addedTraits.push(...Object.keys(t)); }
   return h;
 }
 
