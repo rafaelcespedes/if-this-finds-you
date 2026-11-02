@@ -32,7 +32,7 @@ const PAGE_GAP_MM = 8;
  * Paint every sheet of the note, paper and writing, at 3x the screen and save one JPEG.
  * Several sheets are stacked top to bottom with a little desk between them.
  */
-export async function downloadNote(req: Omit<WriteRequest, 'id'>, ink: string, cssPxPerMm: number, filename: string) {
+export async function renderNote(req: Omit<WriteRequest, 'id'>, ink: string, cssPxPerMm: number) {
   const paper = getPaper(req.paper);
   // the same SVG the screen shows (written fresh here, deterministically), drawn larger
   const res = write({ ...req, id: -1 });
@@ -59,9 +59,43 @@ export async function downloadNote(req: Omit<WriteRequest, 'id'>, ink: string, c
   }
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));
   if (!blob) throw new Error('The image could not be encoded.');
-  saveBlob(blob, `${fileSafe(filename)}.jpg`);
-  return { width: canvas.width, height: canvas.height, bytes: blob.size };
+  return { blob, width: canvas.width, height: canvas.height };
 }
+
+export type SaveResult = 'saved' | 'shared' | 'cancelled' | 'needs-tap';
+
+/**
+ * Hand the image to the person: on phones the share sheet (Save Image, Messages, ...), elsewhere a
+ * download. If the browser wants a fresh tap before sharing, returns 'needs-tap' so the UI can offer one.
+ */
+export async function saveNote(blob: Blob, filename: string, preferShare: boolean): Promise<SaveResult> {
+  const name = `${fileSafe(filename)}.jpg`;
+  if (preferShare && typeof navigator.share === 'function') {
+    const file = new File([blob], name, { type: 'image/jpeg' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return 'shared';
+      } catch (e) {
+        const n = (e as DOMException).name;
+        if (n === 'AbortError') return 'cancelled';
+        if (n === 'NotAllowedError') return 'needs-tap';
+      }
+    }
+  }
+  saveBlob(blob, name);
+  return 'saved';
+}
+
+/** Open the share sheet for a link (after it has been copied). */
+export async function shareLink(url: string, title: string) {
+  try {
+    await navigator.share({ url, title });
+  } catch {
+    /* cancelled: the link is already on the clipboard */
+  }
+}
+export const canShareLinks = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 /** Build the .otf with the engine's font builder (opentype.js is loaded only when needed). */
 export async function exportFont(p: Hand, filename: string) {

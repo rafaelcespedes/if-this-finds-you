@@ -1,15 +1,28 @@
 import type { PaperId } from './papers';
-import type { Overrides } from './state';
+import type { Mark } from './doc';
 
 /** What the page needs to be written. Ink and screen size are not part of it (see lib/writing.ts). */
 export interface WriteRequest {
   id: number;
   seed: string;
   style: string;
-  overrides: Overrides;
+  /** absolute engine overrides (lib/params.ts) */
+  overrides: Record<string, number | string>;
   text: string;
   paper: PaperId;
   size: number;
+  lineSpacing: number;
+  /** ink swatch key when the engine models ink; null = flat currentColor */
+  inkKey: string | null;
+  /** the flat ink colour the page shows (echoed back, so ink changes land with the new writing) */
+  inkColor: string;
+  /** handwriting marks: underlines, pressed letters */
+  marks?: Mark[];
+  /** sign below the last line, with this name */
+  signed?: boolean;
+  writerName?: string;
+  /** for the screen only: when the note is empty, this is written faintly in graphite on line 1 */
+  placeholder?: string;
 }
 
 /** Floats per laid-out character in `WriteResult.glyphs`: sheet, x, y, advance, line, kind (1 glyph, 0 missing). */
@@ -20,6 +33,8 @@ export interface WriteResult {
   /** seed:style the writing was made for */
   handKey: string;
   paper: PaperId;
+  inkKey: string | null;
+  inkColor: string;
   svgs: string[];
   emMm: number;
   lineMm: number;

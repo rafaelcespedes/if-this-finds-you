@@ -30,10 +30,10 @@ export function emForPaper(p: Hand, paper: PaperSpec, size: number) {
   return (paper.xh * size) / xhFrac;
 }
 
-export function compose(p: Hand, text: string, paper: PaperSpec, size: number): Composition {
+export function compose(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing = 1): Composition {
   const emMm = emForPaper(p, paper, size);
   const u = UPM / emMm; // font units per mm
-  const lines = writingLines(paper, emMm, paper.xh * size);
+  const lines = writingLines(paper, emMm, paper.xh * size, lineSpacing);
   const page = layout(p, text, {
     maxWidth: (paper.text.right - paper.text.left) * u,
     lineHeight: lines.lineMm * u,

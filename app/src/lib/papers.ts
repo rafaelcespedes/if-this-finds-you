@@ -3,7 +3,7 @@
 // Specs follow real stationery; see docs in app/README.md ("Papers") for sources.
 import { rng } from '@engine';
 
-export type PaperId = 'plain' | 'college' | 'seyes' | 'feint' | 'squared' | 'dots';
+export type PaperId = 'plain' | 'laid' | 'college' | 'seyes' | 'feint' | 'squared' | 'dots' | 'postcard';
 
 interface Rule {
   color: string;
@@ -28,6 +28,12 @@ export interface PaperSpec {
   grid?: Rule & { pitch: number; box: [number, number, number, number] };
   /** dot grid */
   dots?: { color: string; d: number; pitch: number; box: [number, number, number, number] };
+  /** laid writing paper: fine laid lines (mm apart) crossed by chain lines, seen in the sheet itself */
+  laid?: { pitch: number; chain: number; color: string };
+  /** postcard back: centre divider, address lines, stamp box */
+  postcard?: { divider: number; address: { x0: number; x1: number; ys: number[] }; stamp: [number, number, number, number]; color: string };
+  /** where the panel swatch looks (mm, top-left of a 40 x 30 mm crop) */
+  swatch?: { x: number; y: number };
   /** vertical margin line(s), x from the left edge */
   margin?: Rule & { x: number; double?: number };
   /** binder holes (centre x, centre ys, diameter) */
@@ -52,6 +58,20 @@ export const PAPERS: PaperSpec[] = [
     text: { left: 17, right: 131, first: 27, last: 194 },
     pitch: 0,
     xh: 3.1,
+  },
+  {
+    // Cream laid writing paper (A5 pad): laid lines about 1 mm apart, chain lines about 25 mm apart,
+    // as in traditional mould-made letter paper.
+    id: 'laid',
+    name: 'Laid',
+    hint: 'Cream laid writing paper, A5',
+    w: 148, h: 210,
+    tint: '#fbf5e8',
+    laid: { pitch: 0.95, chain: 25, color: '#7a6a4c' },
+    text: { left: 18, right: 130, first: 28, last: 192 },
+    pitch: 0,
+    xh: 3.1,
+    swatch: { x: 4, y: 4 },
   },
   {
     // Mead/Staples filler paper: 8 x 10.5 in, 33 rules at 9/32 in, about 25 mm of header space,
@@ -122,6 +142,19 @@ export const PAPERS: PaperSpec[] = [
     multiples: true,
     xh: 2.8,
   },
+  {
+    // The back of an A6 postcard: message on the left, a centre divider, address lines and a stamp box.
+    id: 'postcard',
+    name: 'Postcard',
+    hint: 'A6 postcard, message side',
+    w: 148, h: 105,
+    tint: '#fcf9f2',
+    postcard: { divider: 76, address: { x0: 82, x1: 140, ys: [52, 64, 76, 88] }, stamp: [117, 9, 23, 28], color: '#b6ad9c' },
+    text: { left: 9, right: 71, first: 17, last: 96 },
+    pitch: 0,
+    xh: 2.3,
+    swatch: { x: 100, y: 6 },
+  },
 ];
 
 export const DEFAULT_PAPER: PaperId = 'plain';
@@ -138,17 +171,18 @@ function gridSteps(a: number, b: number, pitch: number) {
  * Where the writing goes, given the em size (mm) of the hand at the chosen size.
  * Baselines land on the paper's rules: first baseline on a rule, pitch a whole number of rules.
  */
-export function writingLines(paper: PaperSpec, emMm: number, xhMm: number) {
+export function writingLines(paper: PaperSpec, emMm: number, xhMm: number, spacing = 1) {
   const { text } = paper;
   if (!paper.pitch) {
     // free lines: room for loops and tails, never tighter than ~3.6 x-heights
-    const lineMm = Math.max(emMm * 1.28, xhMm * 3.6);
+    const lineMm = Math.max(emMm * 1.28, xhMm * 3.6) * spacing;
     const count = Math.max(1, Math.floor((text.last - text.first) / lineMm) + 1);
     return { first: text.first, lineMm, perPage: count };
   }
+  // on rules, the writer's spacing picks how many rules a line takes (it snaps)
   let k = 1;
-  if (paper.multiples) k = Math.max(1, Math.round((emMm * 1.3) / paper.pitch));
-  else if (emMm > paper.pitch * 1.6) k = 2;
+  if (paper.multiples) k = Math.max(1, Math.round((emMm * 1.3 * spacing) / paper.pitch));
+  else if (emMm * spacing > paper.pitch * 1.6) k = 2;
   const lineMm = paper.pitch * k;
   let first = text.first;
   const box = paper.grid?.box ?? paper.dots?.box;
@@ -235,6 +269,32 @@ export function paintPaper(ctx: CanvasRenderingContext2D, paper: PaperSpec, o: P
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
+  if (paper.laid) {
+    const { pitch, chain, color } = paper.laid;
+    ctx.save();
+    ctx.strokeStyle = color;
+    // the fine laid lines only where they resolve (below ~2.5 px they would shimmer)
+    if (pitch * k >= 2.5) {
+      ctx.globalAlpha = 0.035;
+      ctx.lineWidth = Math.max(0.6, 0.22 * k);
+      ctx.beginPath();
+      for (let y = pitch / 2; y < paper.h; y += pitch) { ctx.moveTo(0, y * k); ctx.lineTo(W, y * k); }
+      ctx.stroke();
+    }
+    // chain lines: a touch darker, slightly soft, with the paper a little denser beside them
+    const r = rng('paper:laid');
+    for (let x = chain / 2 + 4; x < paper.w; x += chain) {
+      const jx = x + (r() - 0.5) * 0.6;
+      ctx.globalAlpha = 0.034;
+      ctx.lineWidth = Math.max(0.8, 0.35 * k);
+      ctx.beginPath(); ctx.moveTo(jx * k, 0); ctx.lineTo((jx + 0.3) * k, H); ctx.stroke();
+      ctx.globalAlpha = 0.012;
+      ctx.lineWidth = Math.max(2, 2.2 * k);
+      ctx.beginPath(); ctx.moveTo(jx * k, 0); ctx.lineTo((jx + 0.3) * k, H); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // a thin hairline drawn at a crisp device-pixel position; weights under 1px become lighter instead
   const hline = (y: number, x0: number, x1: number, rule: Rule) => line(ctx, x0 * k, y * k, x1 * k, y * k, rule, k);
   const vline = (x: number, y0: number, y1: number, rule: Rule) => line(ctx, x * k, y0 * k, x * k, y1 * k, rule, k);
@@ -284,6 +344,21 @@ export function paintPaper(ctx: CanvasRenderingContext2D, paper: PaperSpec, o: P
     const m = paper.margin;
     vline(m.x, 0, paper.h, m);
     if (m.double) vline(m.x + m.double, 0, paper.h, m);
+  }
+
+  if (paper.postcard) {
+    const pc = paper.postcard;
+    const rule: Rule = { color: pc.color, weight: 0.22 };
+    vline(pc.divider, 9, paper.h - 9, rule);
+    for (const y of pc.address.ys) hline(y, pc.address.x0, pc.address.x1, rule);
+    const [sx, sy, sw, sh] = pc.stamp;
+    ctx.save();
+    ctx.strokeStyle = pc.color;
+    ctx.lineWidth = Math.max(1, 0.22 * k);
+    ctx.globalAlpha = 0.9;
+    ctx.setLineDash([1.1 * k, 0.8 * k]);
+    ctx.strokeRect(Math.round(sx * k) + 0.5, Math.round(sy * k) + 0.5, Math.round(sw * k), Math.round(sh * k));
+    ctx.restore();
   }
 
   if (paper.holes) {
