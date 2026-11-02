@@ -9,7 +9,7 @@
 //
 // Everything is deterministic from strings: hand seed, and an instance seed for each use.
 
-import { rng, makeNoise, lerp, clamp, mix, DEG } from './core.js';
+import { rng, makeNoise, lerp, clamp, mix, smooth, DEG } from './core.js';
 import { choose, transform, getStyle, has as styleHas } from './glyphs.js';
 import { penOutline } from './pen.js';
 
@@ -330,12 +330,14 @@ export function makeGlyph(p, ch, inst, ctx) {
     let dx = qA * N.n2(x / qS + qox, y / qS + qoy);
     let dyv = qA * N.n2(x / qS + qox + 71.7, y / qS + qoy + 13.1);
     if (iA) {
-      dx += iA * N.n2(x / 420 + iox, y / 420 + ioy);
-      dyv += iA * N.n2(x / 420 + iox + 33.3, y / 420 + ioy + 91.7);
+      // this use's own warp: it changes widths and bulges more than lean (the word carries the lean),
+      // and it barely moves the bottoms of letters, which sit on the line
+      dx += iA * N.n2(x / 420 + iox, y / 680 + ioy);
+      dyv += iA * N.n2(x / 420 + iox + 33.3, y / 420 + ioy + 91.7) * (0.4 + 0.6 * smooth(Math.abs(y) / (0.5 * xh)));
     }
-    // instance affine about glyph centre
-    let X = x + dx - cxG, Y = y + dyv - cyG;
-    X = X * sx + Y * Math.tan(sh); Y = Y * sy;
+    // instance affine: lean and width about the glyph centre, height from the baseline, a slight turn
+    let X = x + dx - cxG, Y = y + dyv;
+    X = X * sx + (Y - cyG) * Math.tan(sh); Y = Y * sy - cyG;
     const c = Math.cos(rot), s = Math.sin(rot);
     return [c * X - s * Y + cxG, s * X + c * Y + cyG + dy];
   }
@@ -385,12 +387,12 @@ export function makeGlyph(p, ch, inst, ctx) {
   const strokeSeedBase = (inst ? (ir() * 1000) : 0) + k * 17.3;
   sk.strokes.forEach((st, si) => {
     const bar = barLetter && si > 0 && isBar(st, xh);
+    const accent = !bar && !!(sk.strokeMarks && sk.strokeMarks[si]); // accents and other variant.marks
     if (bar && inst && inst.bar === 'follow') return; // "tt": the first t's bar crosses both
     let pts;
     if (bar) {
       // t/f bars: added late, landing to the right at a varying height and angle (rule 7)
       const mr = rng('mark:' + p.seed + ':' + k + ':' + si + ':' + (inst ? inst.seed : 'canon'));
-      if (inst && mr() < 0.025 * loose * loose) return; // forgotten now and then
       const jit = inst ? 1 : 0, spread = 0.4 + loose;
       pts = st.map(warp);
       let x0 = Infinity, x1 = -Infinity;
@@ -424,6 +426,8 @@ export function makeGlyph(p, ch, inst, ctx) {
         const sr = rng('stroke:' + p.seed + ':' + k + ':' + si + ':' + (inst ? inst.seed : 'canon'));
         const m = p.strokeShift * (4 + 14 * loose) * (inst ? 0.6 + 0.6 * amt : 0.7);
         off = [sr.gauss() * m, sr.gauss() * m * 0.6];
+        // accents are added late too, landing a little to the right
+        if (accent) off[0] += (hab.delayed ? 1 : 0.4) * hab.late * xh * 0.3 * (inst ? 1 : 0.6);
       }
       pts = st.map((q) => { const w = warp(q); return [w[0] + off[0], w[1] + off[1]]; });
     }
@@ -455,17 +459,23 @@ export function makeGlyph(p, ch, inst, ctx) {
   const ij = sk.lower && (ch === 'i' || ch === 'j');
   for (const [di, d] of sk.dots.entries()) {
     const q = warp(d);
+    const accent = !!(sk.dotMarks && sk.dotMarks[di]); // e.g. the two dots of an umlaut
     let pts;
     if (ij) {
       // i/j dots: late, to the right, at a varying height, in the writer's habitual shape (rule 7)
       const mr = rng('mark:' + p.seed + ':' + k + ':d' + di + ':' + (inst ? inst.seed : 'canon'));
-      if (inst && mr() < 0.025 * loose * loose) continue;
       const jit = inst ? 1 : 0, spread = 0.4 + loose;
       // (never over a following comma or period, where it would change the punctuation)
       const reach = ctx && ctx.next && !/\p{L}/u.test(ctx.next) ? 0.12 : 0.5;
       const shift = clamp((hab.delayed ? 1 : 0.4) * hab.late * xh * (0.6 + 0.8 * loose) * (inst ? 1 : 0.6) + jit * mr.gauss() * 0.1 * xh * spread, -0.15 * xh, reach * xh);
       const lift = jit * clamp(mr.gauss() * 0.07 * xh * spread, -0.15 * xh, 0.15 * xh);
       pts = dotShape(hab.dot, [q[0] + shift, q[1] + lift], p, xh, mr, jit).map(finish);
+    } else if (accent) {
+      // accent dots land a little loosely too, but stay over their letter
+      const mr = rng('mark:' + p.seed + ':' + k + ':d' + di + ':' + (inst ? inst.seed : 'canon'));
+      const jit = inst ? 1 : 0;
+      const shift = (hab.delayed ? 1 : 0.4) * hab.late * xh * 0.3 * (inst ? 1 : 0.6) + jit * mr.gauss() * 0.04 * xh * (0.4 + loose);
+      pts = dotShape('dot', [q[0] + shift, q[1] + jit * mr.gauss() * 0.03 * xh], p, xh, ir, ir ? 1 : 0).map(finish);
     } else {
       pts = dotShape('dot', q, p, xh, ir, ir ? 1 : 0).map(finish);
     }
