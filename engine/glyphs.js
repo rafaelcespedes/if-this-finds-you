@@ -7,6 +7,8 @@
 // Skeleton format (same as the Hershey data): { l, r, s: [[ [x,y], ... ], ...] }
 //   l / r  = left / right side bearing (source units), s = strokes as polylines, y down.
 // Variant = skeleton + { id, source, weight?, metrics?, tags? }.
+//   tags     = { allograph?: 'a.double-storey' | 'seven.crossed' | ..., position?: 'initial'|'medial'|'final' }
+//              allograph names follow docs/research/hand-traditions.md §4.
 //   source  = { name, credit, url? } — shown in the provenance card; required.
 //   metrics = per-variant override of the style's metrics (for sources traced at another scale).
 //
@@ -18,6 +20,11 @@ import { rng } from './core.js';
 const STYLES = new Map();
 const COMPOSERS = [];
 
+// meta: { label, family, tradition, connected, metrics }
+//   family:    'print' | 'script' — what the UI's Print / Joined switch and New hand choose between
+//   tradition: { name, region, language?, era, legibility: 'modern' | 'historical' | 'specialist', notes? }
+//              (where and when this hand was taught; 'historical' = hard for today's readers, e.g. Kurrent)
+//   connected: lowercase letters join (entry/exit pinned so joins meet)
 // metrics: { base, cap, xHeight, descender, descRatio } in source units, y down.
 //   base/cap: baseline and cap-height y; xHeight: lowercase x-height y; descender: lowercase
 //   descender y; descRatio: rendered descender depth as a fraction of cap height.
@@ -28,6 +35,7 @@ export function defineStyle(name, meta) {
 }
 export const getStyle = (name) => STYLES.get(name);
 export const styleNames = () => [...STYLES.keys()];
+export const stylesInFamily = (family) => [...STYLES.values()].filter((s) => s.family === family).map((s) => s.name);
 
 export function register(style, ch, variant) {
   const st = STYLES.get(style);
