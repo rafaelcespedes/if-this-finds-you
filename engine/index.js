@@ -15,6 +15,7 @@ export { defineStyle, register, addComposer, variants, choose, getStyle, styleNa
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
 export { PENS, getPen, penOutline, simplify } from './pen.js';
 export { layout } from './layout.js';
+export { kinematics } from './kinematics.js';
 export { renderSVG, contoursToD } from './render-svg.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
 export { EXTRAS } from './sources/extras.js';
