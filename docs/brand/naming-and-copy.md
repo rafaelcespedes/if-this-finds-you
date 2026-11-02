@@ -3,6 +3,8 @@
 _2 November 2026. Working name so far: Seedhand. Engine measured at `e89dd3b` (main). Reference library read
 at 484 entries. Trademark and domain checks were run today and will go stale; re-run them before you commit._
 
+Review page (private): https://claude.ai/artifact/SXuJT5wnyZjKRXCsmSmZDR
+
 ## Summary
 
 - **Recommended name: Plumín** (ploo-MEEN). In Spanish it's the nib of a fountain pen, the part that touches the
@@ -36,9 +38,9 @@ at 484 entries. Trademark and domain checks were run today and will go stale; re
 6. Have a domain path: an exact `.com` is rare now, so `.ink`, `.co`, `.app` or a short prefix count.
 7. Respect Rafael's other names (Rueca, the mini series, Sombra, Trama, Matiz, Molde, Vaivén) without reusing them.
 
-### 1.2 Long list (71 candidates)
+### 1.2 Long list (79 candidates)
 
-Verdicts come from the checks in §1.4 and the appendices. "Cut" always gives the reason.
+Verdicts come from the checks in §1.4 and the appendices. "Cut" always gives the reason. A few rows group close variants (Folio, Recto), so there are 72 rows and 79 names.
 
 **The hand and the writer**
 
