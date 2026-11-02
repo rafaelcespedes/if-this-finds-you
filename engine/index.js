@@ -14,6 +14,12 @@ import './sources/suetterlin.js';
 import './sources/arrighi.js';
 import './sources/quebec-print.js';
 import './sources/spencerian.js';
+import './sources/norwegian-1849.js';
+import './sources/kurrent-1849.js';
+import './sources/polish-1906.js';
+import './sources/spanish-1776.js';
+import './sources/dutch-1618.js';
+import './sources/adult-fr-2023.js';
 
 export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, addTransform, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';
