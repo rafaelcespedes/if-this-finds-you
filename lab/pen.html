@@ -64,7 +64,7 @@ function relayout() {
     // an empty sheet; every word is then drawn by one long-lived run renderer (one ink state, so
     // pool gradients and the edge filter are defined once and never clash)
     runs = E.runRenderer(p, { emPx: EM, strokeKeys: true });
-    $('sheet').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" aria-label="Handwritten text"><defs><g data-run-defs></g></defs><g data-ink ${runs.groupAttrs}></g></svg>`;
+    $('sheet').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" aria-label="Handwritten text"><defs><g data-run-defs=""></g></defs><g data-ink="" ${runs.groupAttrs}></g></svg>`;
     svg = $('sheet').querySelector('svg');
     ink = svg.querySelector('[data-ink]');
     overlay = document.createElementNS('http://www.w3.org/2000/svg', 'g');

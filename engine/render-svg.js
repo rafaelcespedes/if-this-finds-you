@@ -134,5 +134,5 @@ export function renderSVG(p, page, opts) {
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-label="Handwritten text">` +
     `<defs>${ink.defs()}</defs>${rules}` +
-    `<g data-ink ${ink.groupAttrs}>${body}</g>${misses.join('')}</svg>`;
+    `<g data-ink="" ${ink.groupAttrs}>${body}</g>${misses.join('')}</svg>`;
 }

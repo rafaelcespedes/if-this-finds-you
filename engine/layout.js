@@ -314,9 +314,11 @@ export function layout(p, text, opts = {}) {
       drift: xh * (ruled ? 0.04 : 0.045) * ls,
       phase: lineNo * 7.31 + 0.37 + lr() * 0.5, // never on the noise's integer zeros
       wave: 20 * xh,
-      x0: marginL + maxU * (clamp(H.marginSd * ls * (1 + 0.9 * lr.gauss()), 0, 0.03) + Math.min(0.04, H.marginDrift * wander * pen.lp)),
+      // (margins wander like a paper line's: measured on at most ~36 x-heights, so a very wide box
+      // doesn't get a proportionally huge indent or early break)
+      x0: marginL + curveU * (clamp(H.marginSd * ls * (1 + 0.9 * lr.gauss()), 0, 0.03) + Math.min(0.04, H.marginDrift * wander * pen.lp)),
       x1: maxU,
-      edge: maxU * (1 - H.reach * (0.3 + 0.7 * lr()) * Math.min(1.5, ls) - (prev && prev.packed ? 0.025 : 0)),
+      edge: maxU - curveU * (H.reach * (0.3 + 0.7 * lr()) * Math.min(1.5, ls) + (prev && prev.packed ? 0.025 : 0)),
       float: 0, y: 0, rule: undefined, count: 0, packed: false,
     };
     if (ruled) {
