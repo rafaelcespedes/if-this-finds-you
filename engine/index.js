@@ -15,19 +15,21 @@ import './sources/extras.js';
 export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
-export { PENS, getPen, penOutline, simplify } from './pen.js';
+export { PENS, getPen, penKey, penOutline, strokeInk, simplify, INKS, inkModel, inkRGB, PAPER_REF, TIPS, handSize, penWidthUnits, emPxFor } from './pen.js';
 export { layout, inkPage, writeAt, pageHabits, pageMetrics, spreadOf, lineBaseline, lineAngle, lineLean } from './layout.js';
 export { geometry, pathD } from './editing.js';
 export { kinematics } from './kinematics.js';
 export { timeline, frameAt, strokeFraction, createPlayer, playSVG, createPen, paintPen } from './animate.js';
-export { renderSVG, contoursToD, renderRun, runTransform, runChanges } from './render-svg.js';
+export { renderSVG, contoursToD, renderRun, runRenderer, runTransform, runChanges } from './render-svg.js';
+export { inkSVG } from './ink-svg.js';
+export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
 export { EXTRAS } from './sources/extras.js';
 
 import { HAND_PARAMS } from './hand.js';
-import { PEN_PARAMS } from './pen.js';
+import { PEN_PARAMS, INK_PARAMS } from './pen.js';
 import { PAGE_PARAMS } from './layout.js';
 
-// User-facing controls, grouped. Each entry: { key, label, group, min, max, step, format } or
+// User-facing controls, grouped. Each entry: { key, label, group, min, max, step, format, default? } or
 // { key, label, group, type: 'select', options() }. UIs render these; modules add their own.
-export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS, ...PAGE_PARAMS];
+export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS, ...INK_PARAMS, ...PAGE_PARAMS];

@@ -40,7 +40,7 @@ import * as E from '../engine/index.js';
 const $ = (id) => document.getElementById(id);
 const h = new URLSearchParams(location.hash.slice(1));
 const EM = 52;
-let p, pen, page = null, svg = null, ink = null, overlay = null, geo = null, W = 0;
+let p, pen, page = null, svg = null, ink = null, overlay = null, geo = null, W = 0, runs = null;
 const now = () => performance.now() / 1000;
 
 function setup() {
@@ -61,22 +61,24 @@ function relayout() {
   const t1 = performance.now();
   let redrawn = 0, moved = 0;
   if (!svg) {
-    $('sheet').innerHTML = E.renderSVG(p, next, { width: W, emPx: EM, runs: true, strokeKeys: true, ink: 'var(--ink)' });
+    // an empty sheet; every word is then drawn by one long-lived run renderer (one ink state, so
+    // pool gradients and the edge filter are defined once and never clash)
+    runs = E.runRenderer(p, { emPx: EM, strokeKeys: true });
+    $('sheet').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" aria-label="Handwritten text"><defs><g data-run-defs></g></defs><g data-ink ${runs.groupAttrs}></g></svg>`;
     svg = $('sheet').querySelector('svg');
-    ink = svg.querySelector('g[fill]');
+    ink = svg.querySelector('[data-ink]');
     overlay = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     svg.appendChild(overlay);
-    redrawn = next.runs.length;
-  } else {
-    // only the words that changed are drawn again; the rest just move
-    const c = E.runChanges(page, next);
-    for (const id of c.remove) { const g = svg.querySelector(`[data-run="${id}"]`); if (g) g.remove(); }
-    for (const r of c.move) { const g = svg.querySelector(`[data-run="${r.id}"]`); if (g) { g.setAttribute('transform', E.runTransform(r, EM)); g.setAttribute('data-pid', r.pid); } }
-    for (const r of c.add) ink.insertAdjacentHTML('beforeend', E.renderRun(p, next, r, { emPx: EM, strokeKeys: true }));
-    redrawn = c.add.length; moved = c.move.length;
-    const H = Math.ceil(next.height * EM / 1000);
-    svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   }
+  // only the words that changed are drawn again; the rest just move
+  const c = E.runChanges(page, next);
+  for (const id of c.remove) { const g = svg.querySelector(`[data-run="${id}"]`); if (g) g.remove(); }
+  for (const r of c.move) { const g = svg.querySelector(`[data-run="${r.id}"]`); if (g) { g.setAttribute('transform', E.runTransform(r, EM)); g.setAttribute('data-pid', r.pid); } }
+  for (const r of c.add) ink.insertAdjacentHTML('beforeend', runs.run(next, r));
+  if (c.add.length) svg.querySelector('[data-run-defs]').innerHTML = runs.defs();
+  redrawn = c.add.length; moved = c.move.length;
+  const H = Math.ceil(next.height * EM / 1000);
+  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   page = next;
   pen.sync(page, now());
   geo = E.geometry(p, page);

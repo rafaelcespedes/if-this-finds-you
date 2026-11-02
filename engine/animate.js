@@ -425,7 +425,9 @@ export function paintPen(svg, page, s, opts = {}) {
     const id = 'sh-pen-' + (++uid);
     const defs = svg.querySelector('defs') || svg.insertBefore(doc.createElementNS(NS, 'defs'), svg.firstChild);
     const style = doc.createElementNS(NS, 'style');
-    style.textContent = `.${id} [data-s].sh-th{fill:${opts.graphite || '#6f6f78'}}`;
+    // (ink paths carry their own fill, so the graphite goes on them too; CSS beats presentation attributes)
+    const gr = opts.graphite || '#6f6f78';
+    style.textContent = `.${id} [data-s].sh-th, .${id} [data-s].sh-th *, .${id} .sh-under, .${id} .sh-under *{fill:${gr}}`;
     const mask = doc.createElementNS(NS, 'mask');
     mask.setAttribute('id', id);
     mask.setAttribute('maskUnits', 'userSpaceOnUse');
@@ -465,7 +467,9 @@ export function paintPen(svg, page, s, opts = {}) {
         // a faint copy stays underneath while the ink goes on
         st.under = el.cloneNode(true);
         st.under.removeAttribute('data-s');
-        st.under.setAttribute('fill', opts.graphite || '#6f6f78');
+        st.under.removeAttribute('mask');
+        st.under.classList.remove('sh-th');
+        st.under.classList.add('sh-under');
         st.under.style.opacity = String(thoughtOpacity);
         el.parentNode.insertBefore(st.under, el);
         el.classList.remove('sh-th'); el.style.opacity = '';
