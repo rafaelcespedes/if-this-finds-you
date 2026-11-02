@@ -224,7 +224,10 @@ function graphemes(tok, base) {
 }
 
 // opts: { maxWidth (font units), lineHeight, firstBaseline, marginLeft (font units, default 0),
-//         ruled (bool), start (a page.pen to continue from), ink ({ salt }: Ink mode seeding) }
+//         ruled (bool), start (a page.pen to continue from), ink ({ salt }: Ink mode seeding),
+//         salt (another letter by the same hand: different letter instances), size, weight }
+// Prefix-stable: with firstBaseline given, appending text never moves or changes complete earlier words
+// (only the word still being typed can change). tools/qa/prefix.mjs checks it.
 // Plain paper: lineHeight is the mean pitch (default: from the hand, pageMetrics(p).pitch) and each line
 //   varies around it. firstBaseline defaults to just below the hand's ascenders; when it's left out the
 //   page also moves down if any ink would rise above y = 0.
@@ -265,7 +268,9 @@ export function layout(p, text, opts = {}) {
   const placed = opts.firstBaseline != null;
   const firstY = placed ? opts.firstBaseline : M.firstBaseline;
   const marginL = opts.marginLeft || 0;
-  const ink = opts.ink ? { salt: String(opts.ink.salt == null ? '' : opts.ink.salt) } : null;
+  const ink = opts.ink ? { salt: String(opts.ink.salt == null ? (opts.salt == null ? '' : opts.salt) : opts.ink.salt) } : null;
+  // salt: a different letter by the same hand gets different letter instances (writing-experience §4.6)
+  const salt = opts.salt == null || opts.salt === '' ? '' : String(opts.salt) + '|';
   // size: letters bigger or smaller than the hand's own (insertions above a line); weight: a heavier pen
   // (an overwrite pressed over a wrong letter): pen width × weight, and item.weight for the ink
   const sizeK = opts.size || 1, weight = opts.weight || 1;
@@ -602,10 +607,10 @@ export function layout(p, text, opts = {}) {
       } else {
         const n = seen[tok] = (seen[tok] || 0) + 1;
         wkey = tok + '#' + (n - 1);
-        seedOf = (wi) => 'w:' + wkey + ':' + wi;
+        seedOf = (wi) => 'w:' + salt + wkey + ':' + wi;
       }
       wordsHere++;
-      const w = wordValues(wkey, ink ? 'ink:' + ink.salt + ':w' + wkey : wkey);
+      const w = wordValues(wkey, ink ? 'ink:' + ink.salt + ':w' + wkey : salt + wkey);
       pen.wp++;
       // whole words are cached (fair copy): same identity and values -> the same letters
       const wck = ink ? null : wkey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + w.prog;
