@@ -3,6 +3,7 @@
 // Works only from the worker's result (glyph boxes in reading order), so it follows whatever the
 // engine's layout does, without re-implementing it.
 import { GLYPH_STRIDE, type WriteResult } from './write-protocol';
+import { sheetOf } from './paginate';
 
 export interface Box {
   /** UTF-16 index of the character in the text */
@@ -67,8 +68,8 @@ export function buildMap(res: WriteResult): TextMap {
 export function lineBaseline(m: TextMap, line: number) {
   const { res } = m;
   const lineU = res.lineMm * res.unitsPerMm;
-  const sheet = Math.floor(line / res.perPage);
-  const nominal = (l: number) => (res.firstMm + (l - Math.floor(l / res.perPage) * res.perPage) * res.lineMm) * res.unitsPerMm;
+  const sheet = sheetOf(res, line);
+  const nominal = (l: number) => (res.firstMm + (l - res.breaks[sheet]) * res.lineMm) * res.unitsPerMm;
   const own = (l: number) => {
     const row = m.byLine[l];
     if (!row || !row.length) return null;
@@ -78,7 +79,7 @@ export function lineBaseline(m: TextMap, line: number) {
   const y = own(line);
   if (y != null) return { sheet, y };
   // an empty line: keep the drift of the nearest written line above it on the same sheet
-  for (let l = line - 1; l >= sheet * res.perPage; l--) {
+  for (let l = line - 1; l >= res.breaks[sheet]; l--) {
     const above = own(l);
     if (above != null) return { sheet, y: above + (line - l) * lineU };
   }
@@ -149,8 +150,8 @@ export function indexOnLine(m: TextMap, line: number, x: number): number {
 export function lineAtY(m: TextMap, sheet: number, y: number) {
   const { res } = m;
   const lineU = res.lineMm * res.unitsPerMm;
-  const first = sheet * res.perPage;
-  const last = Math.max(first + res.perPage - 1, m.byLine.length - 1, m.lineStart.length - 1);
+  const first = res.breaks[sheet] ?? 0;
+  const last = sheet + 1 < res.breaks.length ? res.breaks[sheet + 1] - 1 : Math.max(first, m.byLine.length - 1, m.lineStart.length - 1);
   let best = first, bestD = Infinity;
   for (let l = first; l <= last; l++) {
     const b = lineBaseline(m, l);

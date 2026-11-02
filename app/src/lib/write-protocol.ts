@@ -39,7 +39,9 @@ export interface WriteResult {
   emMm: number;
   lineMm: number;
   firstMm: number;
-  perPage: number;
+  /** the first line of each sheet, and how far up (font units) each sheet's lines were moved */
+  breaks: number[];
+  shifts: number[];
   unitsPerMm: number;
   /** one entry per written character of the text (extra ink such as struck words is left out) */
   glyphs: Float32Array;

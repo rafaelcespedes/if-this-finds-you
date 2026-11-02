@@ -3,7 +3,8 @@
 //
 // Besides the text, the writer adds what a pen adds to a letter (editor-ux.md §3.4): hand-drawn
 // underlines, letters pressed harder, a signature below the last line, and page numbers on sheets 2+.
-import { layout, makeGlyph, makeHand, penOutline, rng, withOverrides, UPM, type Glyph, type Hand, type PageItem } from '@engine';
+import { layout, makeGlyph, makeHand, penOutline, rng, withOverrides, UPM, type Glyph, type Hand, type Page, type PageItem } from '@engine';
+import { lineAfter, sheetOf } from './paginate';
 import { compose, type Sheet } from './compose';
 import type { Mark } from './doc';
 import { getPaper } from './papers';
@@ -83,8 +84,12 @@ export function write(req: WriteRequest): WriteResult {
       const psItem = boxes.find((b) => b.at === ps + 2)?.it;
       if (psItem) line = psItem.line - 1;
     }
-    const sheet = Math.floor(line / comp.perPage);
-    const y = (comp.firstMm * u) + (line - sheet * comp.perPage) * lineU;
+    // on its own line where there is one (before a P.S.), else one line below the text, on the next sheet if
+    // this one is full
+    const own = line < comp.page.lines ? lineY(comp.page, line) : null;
+    const { sheet, y } = own != null
+      ? { sheet: sheetOf(comp.pages, line), y: own - comp.pages.shifts[sheetOf(comp.pages, line)] }
+      : lineAfter(comp.pages, comp.frame, lineY(comp.page, line - 1) ?? comp.firstMm * u - lineU, Math.max(0, line - 1));
     const x0 = paper.text.left * u + lineU * 0.15;
     while (drawn.length <= sheet) { drawn.push({ items: [], height: paper.h * u }); extra.push([]); }
     for (const it of sig.items) {
@@ -141,7 +146,9 @@ export function write(req: WriteRequest): WriteResult {
     emMm: comp.emMm,
     lineMm: comp.lineMm,
     firstMm: comp.firstMm,
-    perPage: comp.perPage,
+    // a signature that went on a sheet of its own adds that sheet
+    breaks: drawn.length > comp.pages.breaks.length ? [...comp.pages.breaks, comp.page.lines] : comp.pages.breaks,
+    shifts: drawn.length > comp.pages.shifts.length ? [...comp.pages.shifts, 0] : comp.pages.shifts,
     unitsPerMm: comp.unitsPerMm,
     glyphs,
     text: req.text,
@@ -195,4 +202,10 @@ function underline(p: Hand, items: PageItem[], seed: string, pass: number) {
   }
   const pen = withOverrides(p, { pressure: (p.pressure as number) * 0.6, penWidth: (p.penWidth as number) * 0.9 });
   return penOutline(pen, pts, 700 + pass * 13);
+}
+
+/** A line's baseline on the page (before the sheets' shifts), from the engine's line info. */
+function lineY(page: Page, line: number): number | null {
+  const info = (page as unknown as { lineInfo?: { n: number; y: number }[] }).lineInfo;
+  return info?.find((l) => l.n === line)?.y ?? null;
 }

@@ -10,6 +10,7 @@ import { writingLines, type PaperSpec } from './papers';
 import type { CaretPos, Geometry, Ribbon } from './geometry';
 import { JOURNEY, writeWithJourney } from './engine-features';
 import { REF_PX_PER_MM, scopeIds } from './writing';
+import { frameFor, paginate, sheetOf, type PageFrame, type Pagination } from './paginate';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
@@ -35,8 +36,12 @@ export interface Live {
   unitsPerMm: number;
   lineMm: number;
   firstMm: number;
-  perPage: number;
+  /** where the sheets break (by the lines' real positions) */
+  pages: Pagination;
+  frame: PageFrame;
   sheets: SheetWindow[];
+  /** the signature's baseline (page units) when it goes on the line after the text */
+  tailY: number;
   /** reference emPx for drawing (the SVG is drawn at REF_PX_PER_MM and stretched by CSS) */
   emPx: number;
   widthPx: number;
@@ -50,14 +55,14 @@ const lineEntry = (page: any) => {
   return m;
 };
 
-export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing: number): Live {
+/** `signed`: the writer signs after the text, so a line is kept for the name (on a sheet of its own if need be). */
+export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing: number, signed = false): Live {
   const xhFrac = ((p.xHeight as number) || 0.55) * 0.7;
   const emMm = (paper.xh * size) / xhFrac;
   const u = UPM / emMm;
   const lines = writingLines(paper, emMm, paper.xh * size, lineSpacing);
   // plain paper: the hand's own line pitch (scaled by line spacing); rules and grids: the paper's
   const lineMm = paper.pitch ? lines.lineMm : (engine.pageMetrics(p).pitch / u) * lineSpacing;
-  const perPage = paper.pitch ? lines.perPage : Math.max(1, Math.floor((paper.text.last - lines.first) / lineMm + 1e-6) + 1);
   const opts: Record<string, unknown> = {
     maxWidth: (paper.text.right - paper.text.left) * u,
     lineHeight: lineMm * u,
@@ -67,25 +72,31 @@ export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number
   };
   const j = JOURNEY && writeWithJourney && text ? writeWithJourney(p, text, opts, { seed: String(p.seed) }) : null;
   const page: any = j && j.ok ? j.page : layout(p, text, opts as never);
-  const info = lineEntry(page);
-  const count = Math.max(1, Math.ceil((page.lines || 1) / perPage));
-  const sheets: SheetWindow[] = [];
-  for (let s = 0; s < count; s++) {
-    const fromLine = s * perPage;
-    const entry = info.get(fromLine);
-    // the sheet starts where its first line really sits, so that line lands on the sheet's first rule
-    const shiftU = s === 0 ? 0 : entry ? engine.lineBaseline(p, entry, opts.marginLeft) - lines.first * u : fromLine * lineMm * u;
-    sheets.push({ shiftU, fromLine, toLine: fromLine + perPage });
+  // sheets break where the lines really are: each hand has its own pitch, and lines vary and float
+  const frame = frameFor(paper, lines.first, lineMm, u);
+  const pages = paginate(page, frame);
+  // the signature after the last line: on this sheet if it fits, else on a sheet of its own
+  const info = (page.lineInfo ?? []) as { n: number; y: number }[];
+  const lastY = info.length ? Math.max(...info.map((l) => l.y)) : frame.firstU - frame.pitchU;
+  const tailY = lastY + frame.pitchU;
+  const closingPS = /\n\n(?=P\.\s?S\.)(?![\s\S]*\n\nP\.\s?S\.)/.test(text);
+  if (signed && !closingPS && text) {
+    const shift = pages.shifts[pages.shifts.length - 1];
+    if (tailY - shift > frame.lastU + 0.2 * frame.pitchU || tailY + 0.45 * UPM - shift > frame.inkU) {
+      pages.breaks.push(Math.max(page.lines || 0, info.length));
+      pages.shifts.push(tailY - frame.firstU);
+    }
   }
+  const sheets: SheetWindow[] = pages.breaks.map((fromLine, s) => ({ shiftU: pages.shifts[s], fromLine, toLine: pages.breaks[s + 1] ?? Infinity }));
   const emPx = emMm * REF_PX_PER_MM;
   return {
-    p, page, geo: engine.geometry(p, page), paper, emMm, unitsPerMm: u, lineMm, firstMm: lines.first, perPage, sheets, emPx,
+    p, page, geo: engine.geometry(p, page), paper, emMm, unitsPerMm: u, lineMm, firstMm: lines.first, pages, frame, sheets, tailY, emPx,
     widthPx: Math.round(paper.w * REF_PX_PER_MM), heightPx: Math.ceil(paper.h * REF_PX_PER_MM),
     summary: j && j.ok ? j.summary : undefined,
   };
 }
 
-export const sheetOfLine = (live: Live, line: number) => Math.max(0, Math.min(live.sheets.length - 1, Math.floor(line / live.perPage)));
+export const sheetOfLine = (live: Live, line: number) => sheetOf(live.pages, line);
 
 /** The engine's caret geometry, in the editor's sheet-local terms (lib/geometry.ts). */
 export function engineGeometry(live: Live): Geometry {
@@ -213,7 +224,8 @@ export function liveExtras(live: Live, x: ExtrasInput): string[] {
       if (psItem) line = psItem.line - 1;
     }
     const left = live.paper.text.left * live.unitsPerMm + 0.15 * live.lineMm * live.unitsPerMm;
-    const y = baseAt(line, left);
+    // after the text: the line liveLayout kept for it (possibly on a sheet of its own)
+    const y = line >= page.lines ? live.tailY : baseAt(line, left);
     const cs: number[][][] = [];
     const sigItems = (sig.items as any[]).filter((it) => it.kind === 'glyph');
     // measured from the name's own left edge (layout may indent a line it thinks is very wide)

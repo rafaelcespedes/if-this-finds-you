@@ -87,9 +87,9 @@ export default function App() {
   const committed = useRef(state.text);
   if (!composing) committed.current = state.text;
   const live = useMemo(
-    () => (LIVE ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing) : null),
+    () => (LIVE ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed) : null),
     // laid out from the committed text: an IME's composing text waits until it commits
-    [p, committed.current, paper, eff.size, eff.lineSpacing],
+    [p, committed.current, paper, eff.size, eff.lineSpacing, state.signed],
   );
   const extras = useMemo(
     () => (live ? liveExtras(live, { marks: state.marks, signed: state.signed, writerName: name, placeholder: placeholderFor(state.paper), text: live.page.text }) : []),

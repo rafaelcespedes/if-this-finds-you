@@ -4,6 +4,7 @@
 import { layout, UPM, type Hand, type Page, type PageItem } from '@engine';
 import { writingLines, type PaperSpec } from './papers';
 import { JOURNEY, writeWithJourney } from './engine-features';
+import { frameFor, paginate, sheetOf, type PageFrame, type Pagination } from './paginate';
 
 export interface Sheet {
   /** items positioned on this sheet, x/y in font units measured from the sheet's top-left corner */
@@ -18,7 +19,9 @@ export interface Composition {
   emMm: number;
   lineMm: number;
   firstMm: number;
-  perPage: number;
+  /** where the sheets break (first line of each) and how far each sheet's lines move up */
+  pages: Pagination;
+  frame: PageFrame;
   page: Page;
   sheets: Sheet[];
   /** font units per mm (convenience) */
@@ -40,26 +43,28 @@ export function compose(p: Hand, text: string, paper: PaperSpec, size: number, l
   const emMm = emForPaper(p, paper, size);
   const u = UPM / emMm; // font units per mm
   const lines = writingLines(paper, emMm, paper.xh * size, lineSpacing);
+  // on rules and grids the pitch is the paper's, and the writer floats a little off each rule
   const opts = {
     maxWidth: (paper.text.right - paper.text.left) * u,
     lineHeight: lines.lineMm * u,
     firstBaseline: lines.first * u,
+    ruled: !!paper.pitch,
   };
   // the writer's own mistakes and corrections over the draft, when the engine has them (amount from p.mistakes)
   const j = JOURNEY && writeWithJourney && text ? writeWithJourney(p, text, opts, { seed: String(p.seed) }) : null;
   const page = j && j.ok ? j.page : layout(p, text, opts);
 
-  const count = Math.max(1, Math.ceil(page.lines / lines.perPage));
-  const sheets: Sheet[] = Array.from({ length: count }, () => ({ items: [], height: paper.h * u }));
+  // sheets break where the lines really are (each hand has its own pitch), never inside a line
+  const frame = frameFor(paper, lines.first, lines.lineMm, u);
+  const pages = paginate(page, frame);
+  const sheets: Sheet[] = pages.breaks.map(() => ({ items: [], height: paper.h * u }));
   const left = paper.text.left * u;
-  const lineU = lines.lineMm * u;
   for (const it of page.items) {
-    const s = Math.min(count - 1, Math.floor(it.line / lines.perPage));
-    const shift = s * lines.perPage * lineU;
-    sheets[s].items.push({ ...it, x: it.x + left, y: it.y - shift });
+    const s = sheetOf(pages, it.line);
+    sheets[s].items.push({ ...it, x: it.x + left, y: it.y - pages.shifts[s] });
   }
   return {
-    paper, emMm, lineMm: lines.lineMm, firstMm: lines.first, perPage: lines.perPage, page, sheets, unitsPerMm: u,
+    paper, emMm, lineMm: lines.lineMm, firstMm: lines.first, pages, frame, page, sheets, unitsPerMm: u,
     offsetsInItems: !!(j && j.ok),
     summary: j && j.ok ? j.summary : undefined,
     transcript: j && j.ok ? j.transcript : undefined,
