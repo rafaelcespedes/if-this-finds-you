@@ -17,7 +17,7 @@ export { PENS, getPen, penKey, penOutline, strokeInk, simplify, INKS, inkModel, 
 export { layout } from './layout.js';
 export { kinematics } from './kinematics.js';
 export { renderSVG, contoursToD } from './render-svg.js';
-export { renderCanvas, PAPERS } from './render-canvas.js';
+export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
 export { EXTRAS } from './sources/extras.js';
 

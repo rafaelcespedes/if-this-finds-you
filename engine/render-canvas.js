@@ -675,5 +675,9 @@ function fallback2D(ctx, p, page, pen, ink, paper, k) {
   ctx.restore();
 }
 
+// Create the shared context and compile the shaders ahead of the first render (~0.3 s once).
+// Call it when the app loads. Returns false when only the flat 2D fallback is available.
+export function warmCanvas() { return !!gpu(); }
+
 // debugging only: the shared GL state (null until the first render)
 export const _gpu = () => GPU;
