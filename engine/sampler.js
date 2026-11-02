@@ -41,8 +41,9 @@ function profile(h) {
     // a letter mostly taken from the second school counts as that school's form
     letters: Object.fromEntries(Object.keys(FREQ).map((c) => [c, !letters[c] ? '-' : letters[c].blend && letters[c].blend.t >= 0.5 ? letters[c].blend.toward : letters[c].main])),
     blend: h.blend || 0,
-    // traits other modules add to every hand (addHandTraits, e.g. style dimensions), when they are 0..1 numbers
-    extra: Object.fromEntries((h.addedTraits || []).filter((k) => typeof h[k] === 'number' && h[k] >= 0 && h[k] <= 1).map((k) => [k, h[k]])),
+    // traits other modules add to every hand (addHandTraits, e.g. style dimensions), when they are numbers in
+    // -1..1 (movement: loops, joinLength, rhythm...) or 0..1 (lifts); compared on a 0..1 scale
+    extra: Object.fromEntries(addedNumbers(h).map((k) => [k, h[k] < 0 || k in NEG ? (h[k] + 1) / 2 : h[k]])),
     slant: clamp((h.slant + 15) / 45, 0, 1),
     size: h.family === 'script' ? clamp((h.xHeight - 0.36) / 0.26, 0, 1) : clamp((h.xHeight - 0.42) / 0.36, 0, 1),
     width: h.family === 'script' ? clamp((h.width - 0.72) / 0.52, 0, 1) : clamp((h.width - 0.6) / 0.48, 0, 1),
@@ -68,6 +69,12 @@ export function handDistance(a, b) {
   return Math.sqrt(d2);
 }
 
+const NEG = {}; // keys seen below zero: compared on the -1..1 scale from then on
+function addedNumbers(h) {
+  const ks = (h.addedTraits || []).filter((k) => typeof h[k] === 'number' && h[k] >= -1 && h[k] <= 1);
+  for (const k of ks) if (h[k] < 0) NEG[k] = true;
+  return ks;
+}
 function extraD2(A, B) {
   let d2 = 0;
   for (const k in A.extra || {}) if (B.extra && k in B.extra) d2 += 0.5 * (A.extra[k] - B.extra[k]) ** 2;
@@ -227,7 +234,8 @@ const inkFits = (pen, ink) => (PEN_INKS[pen] && PEN_INKS[pen][ink] ? 1 : ink ===
 // The natural look of a seed (family: 'print' | 'script'; locked: { pen?, tip?, ink?, paper?, size?, inkAge? } kept
 // as given, with everything else chosen to suit them). opts.wild flattens the odds. Pure.
 //   -> { seed, family, style, archetype, label, schooling, pen, tip, ink, inkAge, inkVariation, paper, size,
-//        params: { neatness, slant, pressure, hurry, blend, lineWander, fatigue }  (absolute values)
+//        params: { neatness, slant, pressure, hurry, blend, lineWander, fatigue, ...traits other modules add to
+//                  every hand, e.g. the style dimensions loops, joinLength, rhythm }  (absolute values)
 //        offsets: { same keys }  (params minus this hand's natural values: the look's nudges) }
 export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   const h = makeHand(seed, family);
@@ -269,8 +277,10 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   if (pen === 'fountain') off.pressure += 0.08;
   if (RULED.has(paper)) off.lineWander -= 0.22 * nat.lineWander; else if (paper === 'plain' || paper === 'dots') off.lineWander += 0.08 * nat.lineWander;
   if (paper === 'seyes') off.neatness += 0.04;
+  for (const k of addedNumbers(h)) { nat[k] = h[k]; off[k] = 0; } // e.g. style dimensions, as the writer has them
   const params = {};
-  for (const k in nat) params[k] = +(k === 'slant' ? nat[k] + off[k] : clamp(nat[k] + off[k], 0, k === 'lineWander' || k === 'fatigue' ? 1.5 : 1)).toFixed(3);
+  const lo = (k) => (k in NEG || nat[k] < 0 ? -1 : 0);
+  for (const k in nat) params[k] = +(k === 'slant' ? nat[k] + off[k] : clamp(nat[k] + off[k], lo(k), k === 'lineWander' || k === 'fatigue' ? 1.5 : 1)).toFixed(3);
   for (const k in off) off[k] = +(params[k] - nat[k]).toFixed(3);
   const arch = archetypeOf(seed);
   return { seed: String(seed), family: h.family, style: h.style, archetype: arch.id, label: arch.label, schooling: h.schooling, traditions: h.traditions,
