@@ -336,7 +336,9 @@ function pageOf(st, s, live) {
   const last = s.main.pages[s.main.pages.length - 1];
   const stops = live ? liveStops(st, s, live.at) : [];
   return {
-    items: s.items, runs: s.runs, stops, lineInfo: [...s.lines.values()].sort((a, b) => a.n - b.n), rules: s.rules.slice().sort((a, b) => a - b),
+    // fresh lists per page, so runChanges(oldPage, newPage) sees what a write added (the item objects
+    // themselves are shared: finish() updates their role / at / word as corrections arrive)
+    items: s.items.slice(), runs: s.runs.slice(), stops, lineInfo: [...s.lines.values()].sort((a, b) => a.n - b.n), rules: s.rules.slice().sort((a, b) => a - b),
     ruling: last ? last.ruling : undefined, lineHeight: last ? last.lineHeight : st.opts.lineHeight, width: st.opts.maxWidth || (last && last.width),
     height: Math.max(0, ...pages.map((pg) => pg.height || 0), Number.isFinite(ink.y1) ? ink.y1 + 0.35 * UPM : 0),
     ink: Number.isFinite(ink.x0) ? { top: ink.y0, bottom: ink.y1, left: ink.x0, right: ink.x1 } : null,
