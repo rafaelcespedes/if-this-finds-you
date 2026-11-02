@@ -449,13 +449,13 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   for (let i = 0; i < n; i++) {
     const a = s[i], b = S - s[i];
     let fw = 1, fd = 1;
-    if (start === 'plain') fw *= lerp(lerp(p.taperIn || 0.65, 1, 0.35), 1, smooth(a / xhs));
+    if (start === 'plain') fw *= lerp(lerp(p.taperIn || 0.65, 1, 0.6), 1, smooth(a / xhs)); // the pen lands fuller than it lifts
     else if (start === 'hook') { const h = 1 - smooth((a - hookLen * 0.5) / (hookLen * 0.6)); fw *= 1 - 0.42 * h; fd *= 1 - 0.3 * h; }
     if (end === 'fly') {
       const L = Math.min(S * 0.45, tailLen + (0.12 + 0.2 * fluency) * xh);
       const e = smooth(b / L);
       fw *= lerp(lerp(0.08, 0.2, p.taperOut || 0.5), 1, e); fd *= lerp(0.55, 1, e);
-    } else if (end === 'soft') fw *= lerp(0.82, 1, smooth(b / (0.05 * xh)));
+    } else if (end === 'soft') fw *= lerp(0.66, 1, smooth(b / (0.07 * xh))); // a stop: pressure eases off, round, no tail
     w[i] *= fw; d[i] *= fd;
     if (nibScale) nibScale[i] = fw;
   }

@@ -351,7 +351,9 @@ let SCR = new Float32Array(FPI * 1024); // one stroke's segments
 function buildGeometry(p, page, pen, k, opts, pad) {
   const walk = inkWalker(p);
   const kind = pen.kind;
-  const minSeg = opts.minSegment || 1.4;   // device px between kept points
+  // which profile points become segment ends: at least minSeg apart; on straight, even runs up to
+  // maxSeg apart (a point is kept early when the direction turns > ~5° or width/ink change)
+  const minSeg = opts.minSegment || 1.4, maxSeg = 6, minSeg2 = minSeg * minSeg, maxSeg2 = maxSeg * maxSeg;
   const poolAmp = (pen.pool || 0) * 1.5;
   const nib = pen.shape === 'nib';
   LAYERS.reset();
@@ -402,7 +404,8 @@ function buildGeometry(p, page, pen, k, opts, pad) {
         vd = d; va = a;
       };
       const rad = nib ? (i) => pr.wHair * k / 2 : (i) => Wd[i] * k / 2;
-      let pkx = 0, pky = 0;
+      let pkx = 0, pky = 0, pk = 0;
+      const TX = pr.tx, TY = pr.ty;
       for (let i = 0; i < n; i++) {
         let x = ox + X[i] * k, y = oy - Y[i] * k;
         let t = Tt[i];
@@ -414,10 +417,15 @@ function buildGeometry(p, page, pen, k, opts, pad) {
           emit(xa + (x - xa) * u, ya + (y - ya) * u, rad(i - 1) + (rad(i) - rad(i - 1)) * u, da + (vd - da) * u, (Sx[i - 1] + (Sx[i] - Sx[i - 1]) * u) * k, aa + (va - aa) * u);
           break;
         }
-        if (i > 0 && i < n - 1 && Math.hypot(x - pkx, y - pky) < minSeg) continue;
+        if (i > 0 && i < n - 1) {
+          const ddx = x - pkx, ddy = y - pky, d2 = ddx * ddx + ddy * ddy;
+          if (d2 < minSeg2) continue;
+          if (d2 < maxSeg2 && TX[i] * TX[pk] + TY[i] * TY[pk] > 0.996 &&
+            Math.abs(Wd[i] - Wd[pk]) < 0.08 * Wd[pk] && Math.abs(Dn[i] - Dn[pk]) < 0.06 && Math.abs(Ax[i] - Ax[pk]) < 0.1) continue;
+        }
         val(i);
         emit(x, y, rad(i), vd, Sx[i] * k, va);
-        pkx = x; pky = y;
+        pkx = x; pky = y; pk = i;
       }
       if (cnt === 0 && have) { // a single kept point: draw it as a zero-length segment
         const o = 0; SCR[o] = lx; SCR[o + 1] = ly; SCR[o + 2] = lx; SCR[o + 3] = ly; SCR[o + 4] = lr; SCR[o + 5] = lr;
@@ -698,5 +706,10 @@ function fallback2D(ctx, p, page, pen, ink, paper, k) {
 // Call it when the app loads. Returns false when only the flat 2D fallback is available.
 export function warmCanvas() { return !!gpu(); }
 
-// debugging only: the shared GL state (null until the first render)
+// debugging / QA only: the shared GL state (null until the first render), and the CPU half of a
+// render (profiles -> layered segment instances) so it can be timed in Node.
 export const _gpu = () => GPU;
+export function _geometry(p, page, { emPx, dpr = 2 } = {}) {
+  const pen = getPen(p);
+  return buildGeometry(p, page, pen, emPx / UPM * dpr, {}, 0.75 + (pen.rough || 0) * dpr + (pen.bleed || 0) * dpr * 1.2);
+}
