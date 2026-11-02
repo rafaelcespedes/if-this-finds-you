@@ -36,6 +36,13 @@ const suits = (s: SampleText, style: string) => {
   return !want || (s.traditions ?? []).some((t) => want.includes(t));
 };
 
+/**
+ * What the first key on an untouched sample letter does:
+ *   'reply' - a fresh sheet: the writer starts their own letter, a reply, with the found letter kept one tap away
+ *   'onto'  - writes onto the found letter (in Ink: its words are taken as already written, corrections and all)
+ */
+export const SAMPLE_FIRST_KEY: 'reply' | 'onto' = 'reply';
+
 export const sampleById = (id: string | null | undefined) => (id ? SAMPLES.find((s) => s.id === id) : undefined);
 
 /** A hand taught before 1700 (the engine's tradition era): it may write letters in the oldest spellings. */

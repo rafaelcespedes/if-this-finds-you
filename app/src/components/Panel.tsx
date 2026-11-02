@@ -66,7 +66,7 @@ export interface PanelProps {
     on: boolean;
     /** anything written in ink yet */
     letter: boolean;
-    onMode: (mode: 'ink' | 'fair') => void;
+    onMode: (mode: 'ink' | 'pencil' | 'fair') => void;
     onFairCopy: () => void;
     onFreshSheet: () => void;
   };
@@ -227,19 +227,20 @@ export function WritingControls(props: PanelProps) {
 /** Ink (what's written stays; the writer corrects by hand) or Fair copy (the page redraws cleanly). */
 function InkRow({ ink, state }: PanelProps) {
   if (!ink) return null;
-  const pencil = state.pen === 'pencil';
+  // Pencil is the pencil pen: it rubs out, so edits redraw the page (the engine's own Pencil mode comes later)
+  const value = state.pen === 'pencil' ? 'pencil' : state.mode;
   return (
     <div data-row className="mb-4 grid gap-2">
-      <Row label="Writing">
-        <Segmented type="single" aria-label="Writing mode" value={state.mode} onValueChange={(v) => v && ink.onMode(v as 'ink' | 'fair')} className="w-[168px]">
-          <SegmentedItem value="ink">Ink</SegmentedItem>
-          <SegmentedItem value="fair">Fair copy</SegmentedItem>
-        </Segmented>
-      </Row>
+      <div className="text-[13px] font-medium">Writing in</div>
+      <Segmented type="single" aria-label="Writing in" value={value} onValueChange={(v) => v && ink.onMode(v as 'ink' | 'pencil' | 'fair')}>
+        <SegmentedItem value="ink">Ink</SegmentedItem>
+        <SegmentedItem value="pencil">Pencil</SegmentedItem>
+        <SegmentedItem value="fair">Fair copy</SegmentedItem>
+      </Segmented>
       <p className="text-[12px] leading-snug text-muted-foreground">
-        {pencil && state.mode === 'ink'
-          ? 'A pencil erases: edits redraw the page cleanly.'
-          : state.mode === 'ink'
+        {value === 'pencil'
+          ? 'A pencil rubs out: change anything and the page is written again.'
+          : value === 'ink'
             ? 'What’s written stays. Change your mind and the writer crosses it out, their own way.'
             : 'Every edit redraws the page cleanly.'}
       </p>

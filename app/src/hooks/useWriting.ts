@@ -5,7 +5,9 @@ import { lookOf, type Req } from '@/lib/request';
 import { perf } from '@/lib/perf';
 
 /** Results kept by request, so a hand fetched ahead (or seen a moment ago) shows the instant it's asked for. */
-const CACHE_SIZE = 8;
+const CACHE_SIZE = 12;
+/** Workers writing hands ahead: two, so quick flipping uses them up no faster than they're written. */
+const AHEAD_WORKERS = 2;
 
 function spawn() {
   return new Worker(new URL('../workers/write.worker.ts', import.meta.url), { type: 'module' });
@@ -22,7 +24,7 @@ function spawn() {
 export function useWriting(req: Req, paused = false) {
   const [result, setResult] = useState<WriteResult | null>(null);
   const worker = useRef<Worker | null>(null);
-  const ahead = useRef<Worker | null>(null);
+  const ahead = useRef<Worker[]>([]);
   const nextId = useRef(0);
   const sent = useRef(new Map<number, { at: number; key: string }>());
   const lastMs = useRef(0);
@@ -73,9 +75,9 @@ export function useWriting(req: Req, paused = false) {
     };
     return () => {
       w.terminate();
-      ahead.current?.terminate();
+      for (const a of ahead.current) a.terminate();
       worker.current = null;
-      ahead.current = null;
+      ahead.current = [];
     };
   }, []);
 
@@ -105,7 +107,7 @@ export function useWriting(req: Req, paused = false) {
   const prefetch = useCallback((reqs: Req[]) => {
     const keys = reqs.map((r) => JSON.stringify(r)).filter((k) => !cache.current.has(k));
     if (!keys.length) return;
-    if (!ahead.current) {
+    while (ahead.current.length < AHEAD_WORKERS) {
       const w = spawn();
       w.onmessage = (e: MessageEvent<WriteResult | { id: number; error: string }>) => {
         const data = e.data;
@@ -116,14 +118,15 @@ export function useWriting(req: Req, paused = false) {
         // a hand asked for while it was being fetched shows now
         bump((n) => n + 1);
       };
-      ahead.current = w;
+      ahead.current.push(w);
     }
     const list = keys.map((key) => {
       const id = -(++nextId.current);
       pending.current.set(id, key);
       return { ...(JSON.parse(key) as Req), id } satisfies WriteRequest;
     });
-    ahead.current.postMessage({ ahead: list });
+    // the nearest hands first, shared out so both workers start at the front of the queue
+    ahead.current.forEach((w, i) => w.postMessage({ ahead: list.filter((_, j) => j % ahead.current.length === i) }));
   }, []);
   const pending = useRef(new Map<number, string>());
 
