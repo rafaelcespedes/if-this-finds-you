@@ -8,14 +8,19 @@
 //   PENS[key] = { label, kind, shape: 'disc' | 'nib', ... numbers that tune it }
 //   penOutline(p, pts, seedOff, opt) -> closed polygon (font units, y up) with polygon.ink = profile
 //   getPen(p) -> the pen this hand writes with ('auto' = the hand's own pen, chosen from its seed)
-//   inkModel(p, override?) -> { key, label, rgb, k, fade }  (Beer–Lambert absorption per channel)
-//   inkWalker(p) -> (stroke) => { mul, wet, starve }  ink supply along the text (dip pens run dry)
+//   inkModel(p, override?) -> { key, label, rgb, k, kA, kB, fade }  (Beer–Lambert absorption per
+//     channel; kA..kB is the ink's colour family, a stroke mixes them by its `shade`)
+//   inkWalker(p) -> (stroke) => { mul, wet, starve, shade }  ink along the text (dip pens run dry)
+//   penWidthUnits(p) -> the pen's width in font units: a physical tip (mm) held at the writing size
 //
-// Research behind the numbers: docs/research/human-feel.md §3 and rules 3, 4, 6, 18, 19, 20.
-// Deterministic: every random choice comes from rng() with a 'pen:' / 'ink:' / 'dip:' namespace.
+// Research behind the numbers: docs/research/human-feel.md §3 and rules 3, 4, 6, 18, 19, 20;
+// docs/research/controls-and-feel.md §1.8 and §4 (ink families, tips, physical size).
+// Deterministic: every random choice comes from rng() with a 'pen:' / 'ink:' / 'dip:' / 'shade:' /
+// 'size:' namespace, always including the hand's seed.
 
 import { rng, clamp, lerp, smooth, DEG } from './core.js';
 import { kinematics } from './kinematics.js';
+import { getStyle } from './glyphs.js';
 
 const CAP_U = 700; // cap height in font units (= hand.js CAP; not imported, to avoid an import cycle)
 
@@ -68,6 +73,33 @@ export function parseColor(c) {
 const mixRGB = (a, b, t) => [0, 1, 2].map((i) => lerp(a[i], b[i], t));
 const inkCache = new Map();
 
+// sRGB <-> OKLCH, for the ink families (perceptual jitter in lightness, chroma and hue)
+function toOklch(rgb) {
+  const [r, g, b] = rgb.map(srgbToLin);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const q = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * q;
+  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * q;
+  const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * q;
+  return [L, Math.hypot(A, B), Math.atan2(B, A)];
+}
+function fromOklch([L, C, h]) {
+  const A = C * Math.cos(h), B = C * Math.sin(h);
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const q = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  const lin = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * q, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * q, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * q];
+  return lin.map(linToSrgb);
+}
+// The two ends of an ink's family: a little darker, cooler and denser one way, lighter and warmer the
+// other (≈ ±0.03 L, ±14% chroma, ±8° hue). A stroke's `shade` (0..1) mixes their absorptions.
+const FAMILY = { dL: 0.03, dC: 0.14, dh: 8 * Math.PI / 180 };
+function familyEnds(rgb) {
+  const [L, C, h] = toOklch(rgb);
+  return [fromOklch([L - FAMILY.dL, C * (1 + FAMILY.dC), h - FAMILY.dh]), fromOklch([L + FAMILY.dL, C * (1 - FAMILY.dC), h + FAMILY.dh])];
+}
+
 // The ink this hand writes with. `override` (optional) beats p.ink: a swatch key, '#rrggbb', or [r,g,b].
 // Returns null for things Beer–Lambert can't use (e.g. a CSS variable); renderers then fall back to a flat fill.
 export function inkModel(p, override) {
@@ -84,21 +116,29 @@ export function inkModel(p, override) {
     rgb = age < 0.3 ? mixRGB(sw.rgb, sw.ripe, smooth(age / 0.3)) : mixRGB(sw.ripe, sw.aged, smooth((age - 0.3) / 0.7));
     fade = 1 - 0.12 * Math.max(0, age - 0.3);
   } else if (key === 'royal-blue') fade = 1 - 0.45 * age;
-  let k = absorption(rgb);
-  if (key !== 'iron-gall' && age > 0) { // old dye inks lose saturation as well as strength
+  const desat = (k) => { // old dye inks lose saturation as well as strength
+    if (key === 'iron-gall' || !(age > 0)) return k;
     const m = (k[0] + k[1] + k[2]) / 3;
-    k = k.map((v) => lerp(v, m, 0.3 * age));
-  }
-  const model = { key: key || 'custom', label: key ? INKS[key].label : 'Custom', rgb: rgb.map(Math.round), k, fade, floor: INK_FLOOR };
+    return k.map((v) => lerp(v, m, 0.3 * age));
+  };
+  const [ra, rb] = familyEnds(rgb);
+  const model = {
+    key: key || 'custom', label: key ? INKS[key].label : 'Custom', rgb: rgb.map(Math.round),
+    k: desat(absorption(rgb)), kA: desat(absorption(ra)), kB: desat(absorption(rb)), fade, floor: INK_FLOOR,
+  };
   inkCache.set(id, model);
   return model;
 }
 
-// Colour of ink density d over `paper` (sRGB triplet), for flat renderers (SVG).
-export function inkRGB(model, d, paper = PAPER_REF) {
+// absorption for a stroke of the given shade (0..1, 0.5 = the swatch itself)
+export const inkK = (model, shade) => (shade == null || shade === 0.5 ? model.k : [0, 1, 2].map((i) => lerp(model.kA[i], model.kB[i], shade)));
+
+// Colour of ink density d (and shade) over `paper` (sRGB triplet), for flat renderers (SVG).
+export function inkRGB(model, d, paper = PAPER_REF, shade) {
   const out = [0, 0, 0];
+  const k = inkK(model, shade);
   for (let i = 0; i < 3; i++) {
-    const T = INK_FLOOR + (1 - INK_FLOOR) * Math.exp(-model.k[i] * d * model.fade);
+    const T = INK_FLOOR + (1 - INK_FLOOR) * Math.exp(-k[i] * d * model.fade);
     out[i] = linToSrgb(srgbToLin(paper[i]) * T);
   }
   return out;
@@ -160,11 +200,13 @@ const HAND_PENS = {
   script: [['ballpoint', 28], ['fountain', 26], ['gel', 14], ['pointed', 14], ['pencil', 8], ['felt', 5], ['italic', 5]],
 };
 const weighted = (r, list) => r.weighted(list.map(([v, weight]) => ({ v, weight }))).v;
+// 'print' | 'script': styles carry a family; older style registries only had the name
+export const styleFamily = (p) => { const st = getStyle(p.style); return (st && st.family) || (p.style === 'script' ? 'script' : 'print'); };
 
 // The pen is part of the writer: derived from the seed (not stored by makeHand), so p.pen = 'auto'
 // means "this hand's own pen". Any explicit p.pen overrides it.
 export function handPen(p) {
-  return weighted(rng('pen:' + p.seed), HAND_PENS[p.style] || HAND_PENS.print);
+  return weighted(rng('pen:' + p.seed), HAND_PENS[styleFamily(p)] || HAND_PENS.print);
 }
 export function penKey(p) {
   const k = p.pen;
@@ -174,6 +216,35 @@ export function handInk(p) {
   const key = penKey(p);
   if (key === 'classic') return '#1c2233';
   return weighted(rng('ink:' + p.seed + ':' + key), SPECS[key].inks);
+}
+
+// ---------- physical pens: tips in mm, writing size in mm ----------
+// A pen's line has a real width, so scaling the writing must not scale the nib (controls-and-feel.md
+// §4.1 #3): width in font units = tip width (mm) / x-height (mm) × x-height (units).
+// Nominal line widths in mm for Fine / Medium / Bold (pointed: the hairline-to-swell base; italic: the
+// nib's edge).
+export const TIPS = ['fine', 'medium', 'bold'];
+const TIP_MM = {
+  ballpoint: [0.26, 0.36, 0.5], gel: [0.32, 0.45, 0.62], fountain: [0.36, 0.5, 0.7], pointed: [0.38, 0.52, 0.72],
+  italic: [1.1, 1.5, 2.0], felt: [0.45, 0.75, 1.2], pencil: [0.35, 0.5, 0.75],
+};
+// The writer's natural x-height in mm (2.5–4.3), from the seed; p.size overrides it.
+export const handSize = (p) => +(2.5 + 1.8 * rng('size:' + p.seed)()).toFixed(2);
+export const sizeMM = (p) => (+p.size > 0 ? +p.size : handSize(p));
+// px per em that shows this hand at its physical size (pxPerMm: 96 dpi ≈ 3.78)
+export const emPxFor = (p, pxPerMm = 3.78) => pxPerMm * sizeMM(p) / (0.7 * (p.xHeight || 0.5));
+
+// The pen's nominal width in font units. tip: 'auto' (the hand's own pen width, p.penWidth, taken as
+// physical at the hand's natural size), 'fine' | 'medium' | 'bold', or a number in mm.
+export function penWidthUnits(p, key = penKey(p)) {
+  const spec = SPECS[key];
+  if (!spec) return p.penWidth;
+  const xh = (p.xHeight || 0.5) * CAP_U;
+  const t = p.tip, i = TIPS.indexOf(t);
+  if (typeof t === 'number' && t > 0) return t / sizeMM(p) * xh;
+  if (i >= 0) return TIP_MM[key][i] / sizeMM(p) * xh;
+  const W = key === 'ballpoint' ? clamp(p.penWidth * spec.wScale, 0.075 * xh, 0.12 * xh) : p.penWidth * spec.wScale;
+  return W * handSize(p) / sizeMM(p);
 }
 
 // ---------- the stroke profile ----------
@@ -249,6 +320,9 @@ function bump(arr, s, n, s0, sig, amp) {
 //   x,y: centerline (font units, y up) incl. hook/tail; w: full width; d: ink density (1 = swatch);
 //   s: arclength; t: time 0..1 (from kinematics); aux: pen extra (dip-pen railroading 0..1);
 //   hair: 0..1 how hairline-thin this point is (pointed/italic), used when the pen runs dry.
+// opt: { dot, continuesFrom, continuesInto } — the last two mark a piece that the skeleton split at a
+// sharp corner but the pen drew without lifting: that end is a 'join' (round, full width, no taper,
+// no hook, no flying tail), so corners don't grow needle spikes.
 function strokeProfile(p, pts0, seedOff, opt, key) {
   if (!pts0 || pts0.length < 2) return null;
   const spec = SPECS[key];
@@ -258,32 +332,46 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   const xh = (p.xHeight || 0.5) * CAP_U;
   // skeletons arrive every ~7 units; ~0.035 xh is plenty for width and ink and halves the work
   if (!dot && pts0.length > 6) pts0 = thin(pts0, Math.max(9, 0.033 * xh));
+  if (dot && spec.shape === 'nib') {
+    // a broad-nib dot is a dab across the nib edge; along its own little path it could run parallel
+    // to the edge and vanish (matches nibOutline's dot parallelogram)
+    const a = (p.nibAngle == null ? 35 : p.nibAngle) * DEG, m = pts0[(pts0.length - 1) >> 1];
+    const h = 0.35 * penWidthUnits(p, key) * (p.dotSize || 1);
+    pts0 = [[m[0] + Math.sin(a) * h, m[1] - Math.cos(a) * h], m, [m[0] - Math.sin(a) * h, m[1] + Math.cos(a) * h]];
+  }
   const c = clamp(p.pressure == null ? 0.4 : p.pressure, 0, 1);
   const fluency = 1 - clamp(p.neatness == null ? 0.6 : p.neatness, 0, 1);
   const r = rng('pen:' + p.seed + ':' + key + ':' + Math.round(seedOff * 997));
-  const pw = p.penWidth;
-  const W = key === 'ballpoint' ? clamp(pw * spec.wScale, 0.075 * xh, 0.12 * xh) : pw * spec.wScale;
+  const W = penWidthUnits(p, key);
+  const pw = W / spec.wScale; // the pen's width on the old penWidth scale (hairlines, nib thickness...)
   const nibA = (p.nibAngle == null ? 35 : p.nibAngle) * DEG, cosN = Math.cos(nibA), sinN = Math.sin(nibA);
 
   // ---- how this stroke starts and ends (rule 6: asymmetric, motion-driven ends)
-  let pts = pts0, start = 'plain', end = 'soft', hookLen = 0, tailLen = 0;
+  let pts = pts0, start = 'plain', end = 'soft', hookLen = 0, tailLen = 0, mark = false;
   if (dot) { start = end = 'dot'; }
   else {
     const t0 = dirAt(pts, 0, 0.06 * xh), t1 = dirAt(pts, pts.length - 1, 0.06 * xh);
     let total = 0;
     for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    const u = r(), hookP = spec.hook * (0.45 + 0.9 * fluency);
+    // a tiny mark (an i-dot drawn as a dash, arc or tick; an accent): pressed, never a hairline
+    mark = total < 0.3 * xh && !(opt && (opt.continuesFrom || opt.continuesInto));
+    const u = r(), hookP = spec.hook * (0.45 + 0.9 * fluency), hl = r();
     if (u < hookP && total > 0.25 * xh) {
       const a = arrival(t0);
-      if (a[0] * t0[0] + a[1] * t0[1] < 0.3) { start = 'hook'; hookLen = (0.035 + 0.045 * r()) * xh; }
+      if (a[0] * t0[0] + a[1] * t0[1] < 0.3) { start = 'hook'; hookLen = (0.035 + 0.045 * hl) * xh; }
     } else if (u < hookP + spec.blob) start = 'blob';
     const v = r();
     const up = t1[1] > 0.25 || t1[0] > 0.6, down = t1[1] < -0.5;
-    const pFly = up ? 0.8 + 0.15 * fluency : down ? 0.2 + 0.35 * fluency : 0.55 + 0.25 * fluency;
+    // a downstroke that ends on the line stops there (soft or blunt); flicks fly off up or to the right
+    const pFly = up ? 0.8 + 0.15 * fluency : down ? 0.04 + 0.08 * fluency : 0.55 + 0.25 * fluency;
     const pBlunt = (down ? 0.15 : up ? 0 : 0.05) * spec.blunt;
     end = v < pFly ? 'fly' : v < pFly + pBlunt ? 'blunt' : 'soft';
+    if (opt && opt.continuesFrom) { start = 'join'; hookLen = 0; }
+    if (opt && opt.continuesInto) end = 'join';
+    if (mark) { start = start === 'join' ? start : 'plain'; end = end === 'join' ? end : 'soft'; hookLen = 0; }
     if (start === 'hook') pts = withHook(pts, arrival(t0), hookLen);
-    if (end === 'fly') { tailLen = (0.03 + 0.06 * r()) * xh * (0.6 + fluency); pts = withTail(pts, t1, tailLen); }
+    const tl = r();
+    if (end === 'fly' && !down && !mark) { tailLen = (0.03 + 0.06 * tl) * xh * (0.6 + fluency); pts = withTail(pts, t1, tailLen); }
   }
 
   const n = pts.length;
@@ -327,11 +415,12 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
       const env = smooth(s[i] / (0.12 * xh)) * smooth((S - s[i]) / (0.16 * xh));
       const sw = (acc / Math.max(1, j1 - j0)) * env * press;
       w[i] = wHair + (wMax - wHair) * sw * (1 + 0.15 * (slow[i] - 1));
+      if (mark) w[i] = Math.max(w[i], wMax * (0.3 + 0.18 * Math.sin(Math.PI * s[i] / (S || 1))));
       hair[i] = 1 - clamp((w[i] - wHair) / (wMax - wHair), 0, 1);
     }
   } else if (kind === PEN_KIND.italic) {
     // broad nib: the mark is as wide as the nib's projection across the direction of travel
-    const nx = Math.cos(nibA), ny = Math.sin(nibA), thin = Math.max(4, 0.12 * pw);
+    const nx = Math.cos(nibA), ny = Math.sin(nibA), thin = mark ? Math.max(4, 0.3 * W) : Math.max(4, 0.12 * pw);
     wHair = thin; wMax = W + thin;
     for (let i = 0; i < n; i++) {
       w[i] = W * Math.abs(tx[i] * ny - ty[i] * nx) + thin;
@@ -371,13 +460,13 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   for (let i = 0; i < n; i++) {
     const a = s[i], b = S - s[i];
     let fw = 1, fd = 1;
-    if (start === 'plain') fw *= lerp(lerp(p.taperIn || 0.65, 1, 0.35), 1, smooth(a / xhs));
+    if (start === 'plain') fw *= lerp(lerp(p.taperIn || 0.65, 1, 0.6), 1, smooth(a / xhs)); // the pen lands fuller than it lifts
     else if (start === 'hook') { const h = 1 - smooth((a - hookLen * 0.5) / (hookLen * 0.6)); fw *= 1 - 0.42 * h; fd *= 1 - 0.3 * h; }
     if (end === 'fly') {
       const L = Math.min(S * 0.45, tailLen + (0.12 + 0.2 * fluency) * xh);
       const e = smooth(b / L);
       fw *= lerp(lerp(0.08, 0.2, p.taperOut || 0.5), 1, e); fd *= lerp(0.55, 1, e);
-    } else if (end === 'soft') fw *= lerp(0.82, 1, smooth(b / (0.05 * xh)));
+    } else if (end === 'soft') fw *= lerp(0.66, 1, smooth(b / (0.07 * xh))); // a stop: pressure eases off, round, no tail
     w[i] *= fw; d[i] *= fd;
     if (nibScale) nibScale[i] = fw;
   }
@@ -425,7 +514,7 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   // ---- dots: a quick dab, round and a little wetter
   if (dot) {
     const dw = (kind === PEN_KIND.pointed ? 0.55 * wMax : kind === PEN_KIND.italic ? 0.7 * W : 1.1 * W) * (p.dotSize || 1);
-    for (let i = 0; i < n; i++) { w[i] = dw; d[i] = base * (kind === PEN_KIND.pencil ? 1.1 : 1.25); if (hair) hair[i] = 0; if (nibScale) aux[i] = 0.7; }
+    for (let i = 0; i < n; i++) { w[i] = dw; d[i] = base * (kind === PEN_KIND.pencil ? 1.1 : 1.25); if (hair) hair[i] = 0; if (nibScale) aux[i] = 1; }
   }
 
   const minW = Math.max(3, spec.minW * pw * 0.12);
@@ -434,6 +523,9 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   return {
     pen: key, kind, shape: spec.shape, n, x, y, tx, ty, w, d, s, t, aux, hair,
     start, end, dot, len: S, wMax, wHair, nib: spec.shape === 'nib' ? [Math.cos(nibA) * W, Math.sin(nibA) * W] : null,
+    // where the skeleton stroke really starts and ends (before any hook or flying tail): renderers
+    // use these to tell a continuation (corner, script join) from a new pen-down
+    a0: pts0[0], a1: pts0[pts0.length - 1],
   };
 }
 
@@ -493,6 +585,18 @@ function nibOutline(pr) {
   const { n, x, y, tx, ty } = pr;
   const ex = pr.nib[0] / 2, ey = pr.nib[1] / 2, el = Math.hypot(ex, ey) || 1;
   const ux = ex / el, uy = ey / el, qx = -uy, qy = ux;
+  if (pr.dot) {
+    // a broad-nib dot is a short dab across the nib edge: a parallelogram one nib wide.
+    // (Swept along its own path it can run parallel to the edge and vanish into a sliver.)
+    const m = (n - 1) >> 1, cx = x[m], cy = y[m];
+    const h = Math.max(0.35 * el, 0.5 * (pr.w[m] || 0));
+    const a = [cx - ex - qx * h, cy - ey - qy * h], b = [cx + ex - qx * h, cy + ey - qy * h];
+    const c = [cx + ex + qx * h, cy + ey + qy * h], d = [cx - ex + qx * h, cy - ey + qy * h];
+    const loop = [a, b, c, d];
+    let area = 0;
+    for (let i = 0, j = 3; i < 4; j = i++) area += (loop[j][0] - loop[i][0]) * (loop[j][1] + loop[i][1]);
+    return area > 0 ? loop.reverse() : loop;
+  }
   const thin = pr.wHair / 2;
   const side = (i) => tx[i] * uy - ty[i] * ux;      // which way the nib edge faces the motion
   const runs = [];
@@ -555,7 +659,7 @@ function classicProfile(p, pts, seedOff, opt) {
   const tin = Math.min(70, total * 0.3), tout = Math.min(120, total * 0.4);
   const c = clamp(p.pressure, 0, 1);
   const nib = p.nibAngle * DEG;
-  const script = p.style === 'script';
+  const script = styleFamily(p) === 'script';
   const x = new Float64Array(n), y = new Float64Array(n), tx = new Float64Array(n), ty = new Float64Array(n);
   const w = new Float64Array(n), d = new Float64Array(n), s = new Float64Array(n), t = new Float64Array(n);
   const raw = [];
@@ -577,7 +681,7 @@ function classicProfile(p, pts, seedOff, opt) {
     d[i] = 0.95;
   }
   for (let i = 0; i < n; i++) w[i] = (raw[Math.max(0, i - 2)] + 2 * raw[Math.max(0, i - 1)] + 3 * raw[i] + 2 * raw[Math.min(n - 1, i + 1)] + raw[Math.min(n - 1, i + 2)]) / 9;
-  return { pen: 'classic', kind: 0, shape: 'disc', n, x, y, tx, ty, w, d, s, t, aux: new Float64Array(n), hair: null, start: 'plain', end: 'soft', dot: !!isDot, len: total, wMax: p.penWidth * 2, wHair: 4, nib: null };
+  return { pen: 'classic', kind: 0, shape: 'disc', n, x, y, tx, ty, w, d, s, t, aux: new Float64Array(n), hair: null, start: 'plain', end: 'soft', dot: !!isDot, len: total, wMax: p.penWidth * 2, wHair: 4, nib: null, a0: pts[0], a1: pts[n - 1] };
 }
 
 // ---------- registry ----------
@@ -609,6 +713,21 @@ export function penOutline(p, pts, seedOff, opt) {
   return poly;
 }
 
+// Is stroke B one pen-down with the stroke A drawn just before it? True when B starts inside A's
+// ink: at A's end (a corner piece, a script join) or anywhere along A (a retrace back up the stroke).
+// Profiles at page offsets (ax, ay) / (bx, by); page units, y down. Dots are always their own pen-down.
+export function continuesStroke(pa, ax, ay, pb, bx, by) {
+  if (!pa || !pb || pa.dot || pb.dot) return false;
+  if (pb.start === 'join') return true;
+  const sx = bx + pb.a0[0], sy = by - pb.a0[1], wb = pb.w[0];
+  for (let i = 0; i < pa.n; i++) {
+    const dx = ax + pa.x[i] - sx, dy = ay - pa.y[i] - sy, r = 0.5 * Math.max(pa.w[i], wb) + 3;
+    if (dx * dx + dy * dy < r * r) return true;
+  }
+  const ex = ax + pa.a1[0] - sx, ey = ay - pa.a1[1] - sy, r = 0.3 * (wb + pa.w[pa.n - 1]) + 2;
+  return ex * ex + ey * ey < r * r;
+}
+
 // The profile behind a stroke from makeGlyph (recomputed if the contour didn't carry one).
 export function strokeInk(p, stroke) {
   return (stroke.contour && stroke.contour.ink) || getPen(p).profile(p, stroke.center, 0, stroke.dot ? { dot: true } : null);
@@ -616,8 +735,11 @@ export function strokeInk(p, stroke) {
 
 // ---------- ink supply along the text ----------
 // Call once per render; then once per stroke, in drawing order:
-//   walk({ item, strokeIndex, wordStart, len, width }) -> { mul, wet, starve }
-//   mul: density multiplier; wet: extra pool at the stroke start; starve: 0..1 running dry.
+//   walk({ item, strokeIndex, wordStart, len, width }) -> { mul, wet, starve, shade }
+//   mul: density multiplier; wet: extra pool at the stroke start; starve: 0..1 running dry;
+//   shade: 0..1 where the stroke sits in the ink's colour family (0.5 = the swatch).
+// Ink variation (p.inkVariation, 0..1, default 0.4) sets how far shade and density wander: a slow
+// drift along the text plus a little per-stroke jitter, all seeded by the hand.
 // Dip pens drain a reservoir and re-dip every few letters (preferably at a word start); fountain
 // pens are wetter on the first stroke after a pause; a cold ballpoint skips in the first words.
 export function inkWalker(p) {
@@ -628,11 +750,14 @@ export function inkWalker(p) {
   const dr = rng('dip:' + p.seed);
   const capacity = 4 + 4.5 * dr();                 // letters of ink per dip
   let reservoir = 1, threshold = 0.12 + 0.18 * dr(), words = 0, fresh = true;
-  const letterInk = 1.25 * xh * p.penWidth;
+  const letterInk = 1.25 * xh * penWidthUnits(p, pen.key);
+  const vary = clamp(p.inkVariation == null ? 0.4 : +p.inkVariation, 0, 1);
   return function walk(q) {
     const it = q.item || {};
     if (q.wordStart && q.strokeIndex === 0) words++;
-    let mul = 1 + (pen.drift || 0) * N.n1((it.inkIndex || 0) * 0.23 + 50), wet = 0, starve = 0;
+    const sr = rng('shade:' + p.seed + ':' + (it.charIndex || 0) + ':' + (q.strokeIndex || 0));
+    const shade = clamp(0.5 + 0.5 * vary * (0.7 * N.n1((it.inkIndex || 0) * 0.09 + 7.7) + 0.45 * (2 * sr() - 1)), 0, 1);
+    let mul = (1 + (pen.drift || 0) * (0.5 + vary) * N.n1((it.inkIndex || 0) * 0.23 + 50)) * (1 + 0.07 * vary * (2 * sr() - 1)), wet = 0, starve = 0;
     if (kind === PEN_KIND.pointed) {
       if (q.strokeIndex === 0 && ((q.wordStart && reservoir < threshold) || reservoir < 0.03)) {
         reservoir = 1; fresh = true; threshold = 0.12 + 0.18 * dr();
@@ -648,17 +773,23 @@ export function inkWalker(p) {
     } else if (kind === PEN_KIND.ballpoint) {
       if (words <= 2) starve = 0.35;               // a cold ball skips for the first words
     }
-    return { mul, wet, starve };
+    return { mul, wet, starve, shade };
   };
 }
 
 // ---------- user-facing controls ----------
+// Controls. `default` is the value a hand has when makeHand doesn't set the key (a value, or p => value).
+// Pen options marked primary are the product's main five (controls-and-feel.md §4.1).
+const PRIMARY = new Set(['ballpoint', 'gel', 'fountain', 'felt', 'pencil']);
 export const PEN_PARAMS = [
-  { key: 'pen', label: 'Pen', group: 'Pen', type: 'select', default: 'auto', options: () => Object.entries(PENS).map(([v, d]) => ({ value: v, label: d.label })) },
+  { key: 'pen', label: 'Pen', group: 'Pen', type: 'select', default: 'auto', options: () => Object.entries(PENS).map(([v, d]) => ({ value: v, label: d.label, primary: PRIMARY.has(v) })) },
+  { key: 'tip', label: 'Tip', group: 'Pen', type: 'select', default: 'auto', options: () => [{ value: 'auto', label: 'The hand’s own' }, { value: 'fine', label: 'Fine' }, { value: 'medium', label: 'Medium' }, { value: 'bold', label: 'Bold' }] },
+  { key: 'size', label: 'Size (x-height)', group: 'Pen', min: 2, max: 7, step: 0.1, format: 'mm', default: (p) => handSize(p) },
   { key: 'penWidth', label: 'Pen width', group: 'Pen', min: 14, max: 110, step: 1, format: 'int' },
   { key: 'pressure', label: 'Pressure', group: 'Pen', min: 0, max: 1, step: 0.01, format: 'pct' },
 ];
 export const INK_PARAMS = [
   { key: 'ink', label: 'Ink', group: 'Ink', type: 'select', default: 'auto', options: () => [{ value: 'auto', label: 'The hand’s own ink' }, ...Object.entries(INKS).map(([v, d]) => ({ value: v, label: d.label }))] },
+  { key: 'inkVariation', label: 'Ink variation', group: 'Ink', min: 0, max: 1, step: 0.01, format: 'pct', default: 0.4 },
   { key: 'inkAge', label: 'Ink age', group: 'Ink', min: 0, max: 1, step: 0.01, format: 'pct', default: 0 },
 ];

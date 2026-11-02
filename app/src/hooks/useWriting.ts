@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import type { WriteRequest, WriteResult } from '@/lib/write-protocol';
+import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
+import type { WriteRequest, WriteResult } from '@/lib/write-protocol';
 import { perf } from '@/lib/perf';
 
 type Req = Omit<WriteRequest, 'id'>;
 
 /**
- * The written page for a request, produced by a worker. Returns the newest finished result
- * (the page keeps showing the previous writing until the next one is ready).
+ * The written page for a request, produced by a worker. Returns the newest finished result (the page
+ * keeps showing the previous writing until the next one is ready). Requests are debounced only when
+ * writing gets slow (long letters), so short notes update on every key.
  */
-export function useWriting(req: Req) {
+export function useWriting(req: Req, paused = false) {
   const [result, setResult] = useState<WriteResult | null>(null);
   const worker = useRef<Worker | null>(null);
   const nextId = useRef(0);
   const sentAt = useRef(new Map<number, number>());
+  const lastMs = useRef(0);
+  const shown = useRef<WriteResult | null>(null);
 
   useEffect(() => {
     const w = new Worker(new URL('../workers/write.worker.ts', import.meta.url), { type: 'module' });
@@ -28,8 +32,16 @@ export function useWriting(req: Req) {
       const t = sentAt.current.get(data.id);
       if (t != null) perf.samples.push({ name: 'keystroke→writing', ms: performance.now() - t });
       perf.samples.push({ name: 'worker write', ms: data.ms });
+      lastMs.current = data.ms;
       for (const id of sentAt.current.keys()) if (id <= data.id) sentAt.current.delete(id);
-      setResult((prev) => (prev && prev.id > data.id ? prev : data));
+      const prev = shown.current;
+      if (prev && prev.id > data.id) return;
+      shown.current = data;
+      const lookChanged = prev && (prev.handKey !== data.handKey || prev.paper !== data.paper || prev.inkKey !== data.inkKey || prev.inkColor !== data.inkColor);
+      if (lookChanged && canTransition()) {
+        // the whole look changes at once: cross-fade the sheet instead of snapping
+        document.startViewTransition(() => flushSync(() => setResult(data)));
+      } else setResult(data);
     };
     w.onerror = (e) => {
       console.error('[seedhand] writer worker failed to start:', e.message || e);
@@ -41,14 +53,30 @@ export function useWriting(req: Req) {
     };
   }, []);
 
-  const { seed, style, overrides, text, paper, size } = req;
+  // the whole request travels; one stable key decides when to write again
+  const reqKey = JSON.stringify(req);
   useEffect(() => {
-    const w = worker.current;
-    if (!w) return;
-    const id = ++nextId.current;
-    sentAt.current.set(id, performance.now());
-    w.postMessage({ id, seed, style, overrides, text, paper, size } satisfies WriteRequest);
-  }, [seed, style, overrides, text, paper, size]);
+    // an IME is composing: the page waits for the committed text
+    if (paused) return;
+    const send = () => {
+      const w = worker.current;
+      if (!w) return;
+      const id = ++nextId.current;
+      sentAt.current.set(id, performance.now());
+      w.postMessage({ ...(JSON.parse(reqKey) as Req), id } satisfies WriteRequest);
+    };
+    // fast writes go straight through; slow ones wait for a short pause in typing
+    const delay = lastMs.current > 70 ? Math.min(180, lastMs.current * 0.6) : 0;
+    if (!delay) { send(); return; }
+    const t = window.setTimeout(send, delay);
+    return () => window.clearTimeout(t);
+  }, [reqKey, paused]);
 
   return result;
 }
+
+/** View transitions where the browser has them, and never when motion is reduced. */
+export const canTransition = () =>
+  typeof document !== 'undefined' &&
+  typeof document.startViewTransition === 'function' &&
+  !window.matchMedia('(prefers-reduced-motion: reduce)').matches;

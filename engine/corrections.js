@@ -32,7 +32,7 @@
 // from 'journey:' + seed + ':' + draft, marks from sheet.js's namespaces (salt 'journey:' + draft).
 
 import { rng, clamp } from './core.js';
-import { makeGlyph, has, isUpper, UPM } from './hand.js';
+import { makeGlyph, has, isUpper, UPM, addHandTraits } from './hand.js';
 import { layout } from './layout.js';
 import { fixHabits, COVER_BY_RIGHT } from './marks.js';
 import { replay, INK_VERSION } from './sheet.js';
@@ -56,6 +56,8 @@ export function journeyAmount(p) {
   const u = rng('fix:' + p.seed + ':amount')();
   return clamp(0.05 + 0.36 * (1 - neat) + 0.22 * H.hurry + 0.1 * (u - 0.5), 0.03, 0.6);
 }
+// every hand carries its own amount, so a Mistakes control starts at this writer's value (hand.mistakes)
+addHandTraits((h) => ({ mistakes: Math.round(journeyAmount(h) * 1000) / 1000 }));
 
 // QWERTY neighbours: the slip a typist's mind makes, used only where the letters get struck
 const KEYS = { q: 'wa', w: 'qes', e: 'wrd', r: 'etf', t: 'ryg', y: 'tuh', u: 'yij', i: 'uok', o: 'ipl', p: 'ol', a: 'qsz', s: 'adwx', d: 'sfec', f: 'dgrv', g: 'fhtb', h: 'gjyn', j: 'hkum', k: 'jli', l: 'ko', z: 'ax', x: 'zcs', c: 'xvd', v: 'cbf', b: 'vng', n: 'bmh', m: 'nj' };

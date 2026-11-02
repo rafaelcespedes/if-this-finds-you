@@ -47,6 +47,10 @@ export const newView = () => ({ tail: '', mid: null, pending: null, budget: 0 })
 function createState(p, doc, opts) {
   const lo = Object.assign({}, opts);
   if (lo.firstBaseline == null) lo.firstBaseline = 0.95 * UPM; // explicit, so layout stays prefix-stable
+  // Ink seeding (page-rhythm layout): letters keyed by writing order, so a word written in two goes matches
+  // the one-go layout; salt = this letter (two letters by one hand differ). Older layouts ignore both.
+  if (lo.ink == null) lo.ink = { salt: doc.salt || '' };
+  if (lo.salt == null) lo.salt = doc.salt || '';
   const st = {
     p, doc, opts: lo, H: fixHabits(p), salt: doc.salt || '',
     reader: createReader(), sheets: [], cur: null, blocks: new Map(), boost: null,

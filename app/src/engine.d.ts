@@ -21,7 +21,7 @@ declare module '@engine' {
   export interface Glyph {
     advance: number;
     contours: number[][][];
-    strokes: { center: number[][]; contour: number[][]; dot?: boolean }[];
+    strokes: { center: number[][]; contour: number[][]; dot?: boolean; mark?: boolean }[];
     variant: unknown;
   }
 
@@ -81,6 +81,9 @@ declare module '@engine' {
   export function layout(p: Hand, text: string, opts?: LayoutOptions): Page;
   export function renderSVG(p: Hand, page: Pick<Page, 'items' | 'height'>, opts: RenderOptions): string;
   export function styleNames(): string[];
+  export function choose(p: Hand, ch: string, ctx?: unknown): unknown;
+  export function penOutline(p: Hand, pts: number[][], seedOff: number, opt?: { dot?: boolean }): number[][] | null;
+  export function contoursToD(contours: number[][][], ox: number, oy: number, sc: number): string;
   export function getStyle(name: string): { name: string; label?: string; connected?: boolean } | undefined;
 
   export interface BuiltFont {

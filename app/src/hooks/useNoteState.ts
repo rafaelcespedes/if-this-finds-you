@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { decodeState, encodeState, DEFAULT_STATE, type NoteState } from '@/lib/state';
 
 /** The note configuration, kept in the URL hash so a reload or a shared link restores it exactly. */
-export function useNoteState() {
+export function useNoteState(paused = false) {
   const [state, setState] = useState<NoteState>(() =>
     window.location.hash.length > 1 ? decodeState(window.location.hash) : DEFAULT_STATE,
   );
@@ -10,13 +10,15 @@ export function useNoteState() {
 
   // write the hash (debounced, without adding history entries)
   useEffect(() => {
+    // no link updates for every composition step
+    if (paused) return;
     const id = window.setTimeout(() => {
       const h = encodeState(state);
       lastWritten.current = h;
       if (window.location.hash.slice(1) !== h) history.replaceState(null, '', '#' + h);
     }, 250);
     return () => window.clearTimeout(id);
-  }, [state]);
+  }, [state, paused]);
 
   // a link pasted into this tab
   useEffect(() => {

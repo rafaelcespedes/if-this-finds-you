@@ -168,23 +168,58 @@ textarea {
   }
 }
 
-/* Caret for typing on the paper */
-@keyframes caret-blink {
+/* The caret is the pen: solid for a moment after each move, then it breathes (editor-ux.md §3.4) */
+@keyframes caret-breathe {
   0%,
-  45% {
-    opacity: 1;
-  }
-  55%,
   100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.caret-breathe {
+  animation: caret-breathe 1.2s ease-in-out 600ms infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret-breathe {
+    animation: none;
+  }
+}
+
+/* The highlighter sweeps in left to right on pointer selections */
+@keyframes highlighter-sweep {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.highlighter-sweep {
+  animation: highlighter-sweep 120ms var(--ease-out) both;
+}
+/* the selection chip appears after a short pause, so it doesn't flash during quick selections */
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+.selection-chip {
+  animation: chip-in 140ms var(--ease-out) 200ms both;
+}
+@keyframes chip-fade {
+  from {
     opacity: 0;
   }
 }
-.paper-caret {
-  animation: caret-blink 1.05s steps(1, end) infinite;
-}
 @media (prefers-reduced-motion: reduce) {
-  .paper-caret {
+  .highlighter-sweep {
     animation: none;
+  }
+  .selection-chip {
+    animation: chip-fade 120ms linear 200ms both;
   }
 }
 
@@ -192,4 +227,43 @@ textarea {
 .writing-fill svg {
   width: 100%;
   height: 100%;
+}
+
+/* New look: the sheet cross-fades (paper swap and re-ink at once); the panel and desk hold still */
+.sheet-stack {
+  view-transition-name: sheet;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(sheet) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-in-out);
+}
+::view-transition-old(sheet),
+::view-transition-new(sheet) {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  object-position: top center;
+}
+::view-transition-old(sheet) {
+  animation: 240ms var(--ease-out) both sheet-out;
+}
+::view-transition-new(sheet) {
+  animation: 420ms var(--ease-out) both sheet-in;
+}
+@keyframes sheet-out {
+  to {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(6px);
+  }
 }

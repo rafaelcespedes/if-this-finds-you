@@ -40,10 +40,17 @@ export function randomSeed(): string {
   return `${a}-${b}-${cryptoInt(90) + 10}`;
 }
 
-/** The writer's name, fixed for the seed (style does not change who they are). */
+/** The words of a seed without its number: `quiet-heron-17` -> `quiet-heron` (a family). */
+export const seedFamily = (seed: string) => seed.trim().toLowerCase().replace(/-?\d+$/, '') || seed.trim().toLowerCase();
+
+/**
+ * The writer's name, fixed for the seed (style does not change who they are). The surname comes from
+ * the seed's words, so similar hands (same words, another number) read as one family.
+ */
 export function writerName(seed: string): string {
-  const r = rng('writer:' + seed.trim().toLowerCase());
-  return `${r.pick(FIRST)} ${r.pick(LAST)}`;
+  const first = rng('writer:' + seed.trim().toLowerCase()).pick(FIRST);
+  const last = rng('family:' + seedFamily(seed)).pick(LAST);
+  return `${first} ${last}`;
 }
 
 // ---------- plain words for the controls ----------
@@ -80,10 +87,16 @@ function distance(a: Hand, b: Hand) {
   return d;
 }
 
-export function pickNewHand(current: { seed: string; style: string } | null, candidates = 10) {
+/**
+ * New hand. `variety` 0–100 sets how far it jumps (§5.3 of controls-and-feel.md):
+ *   0–20 sibling (like Similar hand), 21–70 stranger (default), 71–100 wild (furthest of many).
+ */
+export function pickNewHand(current: { seed: string; style: string } | null, variety = 60) {
+  if (current && variety <= 20) return pickSimilarHand(current);
   const styles = styleNames();
   const style = styles[cryptoInt(styles.length)];
   const base = current ? makeHand(current.seed, current.style) : null;
+  const candidates = variety > 70 ? 28 : 10;
   let best = randomSeed();
   let bestD = -1;
   for (let i = 0; i < candidates; i++) {
@@ -93,4 +106,23 @@ export function pickNewHand(current: { seed: string; style: string } | null, can
     if (d > bestD) { best = seed; bestD = d; }
   }
   return { seed: best, style };
+}
+
+/**
+ * Similar hand: a sibling. Same words (so the same family name), same style, and of all the numbers the
+ * one whose traits sit closest to the current hand without being it.
+ */
+export function pickSimilarHand(current: { seed: string; style: string }) {
+  const fam = seedFamily(current.seed);
+  const base = makeHand(current.seed, current.style);
+  let best = `${fam}-${cryptoInt(90) + 10}`;
+  let bestD = Infinity;
+  for (let n = 10; n < 100; n++) {
+    const seed = `${fam}-${n}`;
+    if (seed === current.seed.trim().toLowerCase()) continue;
+    const d = distance(base, makeHand(seed, current.style));
+    // close, but not a copy: a sibling should still look like another person holding the pen
+    if (d >= 0.45 && d < bestD) { best = seed; bestD = d; }
+  }
+  return { seed: best, style: current.style };
 }

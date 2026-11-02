@@ -80,7 +80,7 @@ function syncControls() {
   const p = params();
   for (const d of E.PARAMS) {
     const el = $('c-' + d.key); if (!el) continue;
-    const v = p[d.key] == null ? (d.natural ? d.natural(p) : d.default) : p[d.key]; // natural(p): this hand's own value
+    const v = p[d.key] ?? (typeof d.default === 'function' ? d.default(p) : d.natural ? d.natural(p) : d.default);
     el.value = v;
     if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, v);
   }
@@ -158,8 +158,12 @@ function buildInkControls() {
   sel.addEventListener('change', () => { ink.paper = sel.value; render(); });
   sync();
 }
+// Size (x-height in mm) zooms the writing; the pen keeps its physical width (engine: penWidthUnits)
+FORMAT.mm = (v) => (+v).toFixed(1) + ' mm';
+const liveEmPx = (p) => EM_PX * (+p.size > 0 ? p.size / E.handSize(p) : 1);
 function renderLiveInk(host, W) {
   const p = params();
+  const EM_PX = liveEmPx(p);
   const both = ink.renderer === 'both';
   const paneW = both ? Math.floor((W - 16) / 2) : W;
   const t0 = performance.now();
