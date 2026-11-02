@@ -6,7 +6,11 @@
 //
 // Skeleton format (same as the Hershey data): { l, r, s: [[ [x,y], ... ], ...] }
 //   l / r  = left / right side bearing (source units), s = strokes as polylines, y down.
-// Variant = skeleton + { id, source, weight?, metrics?, tags? }.
+// Variant = skeleton + { id, source, weight?, metrics?, tags?, marks?, resolve? }.
+//   marks    = indices of strokes in `s` that are marks (accents...), written after the letter
+//   resolve  = (p, ctx) => concrete variant, for composed characters that depend on the hand
+//   tags     = { allograph?: 'a.double-storey' | 'seven.crossed' | ..., position?: 'initial'|'medial'|'final' }
+//              allograph names follow docs/research/hand-traditions.md §4.
 //   source  = { name, credit, url? } — shown in the provenance card; required.
 //   metrics = per-variant override of the style's metrics (for sources traced at another scale).
 //
@@ -18,6 +22,13 @@ import { rng } from './core.js';
 const STYLES = new Map();
 const COMPOSERS = [];
 
+// meta: { label, family, tradition, connected, metrics }
+//   family:    'print' | 'script' — what the UI's Print / Joined switch and New hand choose between
+//   tradition: { name, region, language?, era, legibility: 'modern' | 'historical' | 'specialist', notes? }
+//              (where and when this hand was taught; 'historical' = hard for today's readers, e.g. Kurrent)
+//   connected: lowercase letters join (entry/exit pinned so joins meet)
+//   fallback:  another style to borrow characters from when this one lacks them (e.g. a 1741 copybook
+//              has no € or @). Borrowed variants keep their own metrics, so they scale correctly.
 // metrics: { base, cap, xHeight, descender, descRatio } in source units, y down.
 //   base/cap: baseline and cap-height y; xHeight: lowercase x-height y; descender: lowercase
 //   descender y; descRatio: rendered descender depth as a fraction of cap height.
@@ -28,6 +39,7 @@ export function defineStyle(name, meta) {
 }
 export const getStyle = (name) => STYLES.get(name);
 export const styleNames = () => [...STYLES.keys()];
+export const stylesInFamily = (family) => [...STYLES.values()].filter((s) => s.family === family).map((s) => s.name);
 
 export function register(style, ch, variant) {
   const st = STYLES.get(style);
@@ -52,6 +64,15 @@ export function variants(style, ch) {
     const v = fn(style, ch);
     if (v && v.length) { st.glyphs.set(ch, v); return v; } // cache
   }
+  if (st.fallback && st.fallback !== style) {
+    const fb = STYLES.get(st.fallback);
+    const v = fb ? variants(st.fallback, ch) : [];
+    if (v.length) {
+      const borrowed = v.map((x) => ({ ...x, metrics: x.metrics || fb.metrics, borrowedFrom: st.fallback }));
+      st.glyphs.set(ch, borrowed); // cache
+      return borrowed;
+    }
+  }
   return [];
 }
 
@@ -68,6 +89,7 @@ export function choose(p, ch, ctx) {
   let list = variants(p.style, ch);
   if (!list.length && CHAR_FALLBACK[ch]) list = variants(p.style, CHAR_FALLBACK[ch]);
   if (!list.length) list = variants(p.style, '?');
-  if (list.length <= 1) return list[0];
-  return rng('variant:' + p.seed + ':' + p.style + ':' + ch).weighted(list);
+  const v = list.length <= 1 ? list[0] : rng('variant:' + p.seed + ':' + p.style + ':' + ch).weighted(list);
+  // a variant may resolve per hand (e.g. é = this hand's own e + this writer's accent habit)
+  return v && v.resolve ? v.resolve(p, ctx) : v;
 }

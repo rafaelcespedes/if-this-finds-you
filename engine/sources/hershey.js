@@ -10,11 +10,15 @@ const CREDIT = 'Dr. A. V. Hershey, U.S. National Bureau of Standards (1967); .jh
 
 defineStyle('print', {
   label: 'Print',
+  family: 'print',
+  tradition: { name: 'Hershey Simplex Roman', region: 'United States', era: '1967', legibility: 'modern' },
   connected: false,
   metrics: { base: 9, cap: -12, xHeight: -5, descender: 16, descRatio: 0.33 },
 });
 defineStyle('script', {
   label: 'Script',
+  family: 'script',
+  tradition: { name: 'Hershey Simplex Script', region: 'United States', era: '1967', legibility: 'modern' },
   connected: true, // lowercase letters join: entry/exit points are pinned so joins still meet
   metrics: { base: 9, cap: -12, xHeight: 0, descender: 21, descRatio: 0.45 },
 });
