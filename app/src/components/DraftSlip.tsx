@@ -6,10 +6,10 @@ import { useEditInput } from '@/hooks/useEditInput';
  * The note as plain text, for long edits, pasting, or keyboards that struggle with the paper.
  * (Typing directly on the paper is the main way to edit.)
  */
-export function DraftSlip({ value, onEdit, width }: { value: string; onEdit: (e: Edit) => void; width: number }) {
+export function DraftSlip({ value, onEdit, width, onComposingChange }: { value: string; onEdit: (e: Edit) => void; width: number; onComposingChange?: (c: boolean) => void }) {
   const id = useId();
   const ref = useRef<HTMLTextAreaElement>(null);
-  const input = useEditInput(ref, value, onEdit, 'plain');
+  const input = useEditInput(ref, value, onEdit, 'plain', (c) => onComposingChange?.(c != null));
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;

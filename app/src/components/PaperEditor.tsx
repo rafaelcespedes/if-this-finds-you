@@ -1,11 +1,12 @@
 // Typing directly on the paper. A real (invisible) textarea holds the text, the selection, undo,
 // IME and screen-reader access; this component draws the caret and selection onto the handwriting
 // and turns clicks on the sheet into caret positions. Up/Down/Home/End follow the written lines.
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { buildMap, caretAt, indexOnLine, lineAtY, lineEdges, translateIndex, type TextMap } from '@/lib/caret';
 import type { WriteResult } from '@/lib/write-protocol';
 import type { Edit } from '@/lib/edits';
-import { useEditInput } from '@/hooks/useEditInput';
+import { isComposingKey, isMac, useEditInput, type Composition } from '@/hooks/useEditInput';
+import { keepInView } from '@/hooks/useVisualViewport';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -22,6 +23,8 @@ interface Props {
   gapPx: number;
   ink: string;
   onEditingChange?: (editing: boolean) => void;
+  /** an IME is composing: the app holds page writes and link updates until it commits */
+  onComposingChange?: (composing: boolean) => void;
   children: ReactNode;
 }
 
@@ -32,13 +35,19 @@ interface Sel {
   focused: boolean;
 }
 
-export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW, sheetH, gapPx, ink, onEditingChange, children }: Props) {
+export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW, sheetH, gapPx, ink, onEditingChange, onComposingChange, children }: Props) {
   const ta = useRef<HTMLTextAreaElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const goalX = useRef<number | null>(null);
   const [sel, setSel] = useState<Sel>({ start: text.length, end: text.length, dir: 'none', focused: false });
   const map = useMemo<TextMap | null>(() => (result ? buildMap(result) : null), [result]);
-  const input = useEditInput(ta, text, onEdit, 'paper');
+  const [composition, setComposition] = useState<Composition | null>(null);
+  const onComposition = useCallback((c: Composition | null) => {
+    setComposition(c);
+    onComposingChange?.(c != null);
+  }, [onComposingChange]);
+  const input = useEditInput(ta, text, onEdit, 'paper', onComposition);
+  const descId = useId();
   // indices in the live text <-> indices in the text the page was written from
   const toMap = useCallback((i: number) => (map ? translateIndex(i, text, map.res.text) : i), [map, text]);
   const fromMap = useCallback((i: number) => (map ? translateIndex(i, map.res.text, text) : i), [map, text]);
@@ -107,6 +116,9 @@ export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW,
 
   // ---------- keys that should follow the handwriting, not the hidden textarea ----------
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // an IME owns the keys while it composes: arrows walk its candidates, Escape cancels it
+    if (isComposingKey(e)) return;
+    // Enter is never cancelled (on iOS that leaves the keyboard stuck in lowercase)
     const el = e.currentTarget;
     if (e.key === 'Escape') {
       el.blur();
@@ -116,7 +128,7 @@ export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW,
     if (!map) return;
     const head = el.selectionDirection === 'backward' ? el.selectionStart : el.selectionEnd;
     const c = caretAt(map, toMap(head));
-    const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+    const mac = isMac();
     const lineKey = e.key === 'Home' || e.key === 'End' || (mac && e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight'));
     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.altKey && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
@@ -156,13 +168,25 @@ export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW,
   // keep the hidden textarea at the caret, so mobile keyboards and IME popups appear in the right place
   const caretPx = caret ? { left: caret.x * k, top: caret.sheet * pitch + (caret.y - asc) * k } : { left: 0, top: 0 };
   const caretH = (asc + desc) * k;
+  // the hidden textarea is one written line tall and runs to the line's end, so screen readers can find it
+  const lineH = Math.max(18, result ? result.lineMm * pxPerMm : caretH);
+  const lineW = Math.max(40, sheetW * pxPerMm - caretPx.left - 8);
+  const preedit = composition && composition.text && map ? caretAt(map, toMap(composition.from)) : null;
+
+  // keep the caret's line above the on-screen keyboard (and on screen at all) while writing
+  useEffect(() => {
+    if (!sel.focused || !wrap.current || !caret) return;
+    const r = wrap.current.getBoundingClientRect();
+    keepInView(r.top + caretPx.top, r.top + caretPx.top + caretH, lineH);
+    // only when the caret moves to another line, not on every render
+  }, [sel.focused, Math.round(caretPx.top)]);
 
   // restart the blink whenever the caret moves, so it stays solid while typing
   const [blinkKey, setBlinkKey] = useState(0);
   useLayoutEffect(() => setBlinkKey((n) => n + 1), [caretPx.left, caretPx.top]);
 
   return (
-    <div ref={wrap} className="sheet-stack relative mx-auto cursor-text" style={{ width: sheetW * pxPerMm }} onMouseDown={onMouseDown} onClick={onClick}>
+    <div ref={wrap} role="group" aria-label="Letter" className="sheet-stack relative mx-auto cursor-text" style={{ width: sheetW * pxPerMm }} onMouseDown={onMouseDown} onClick={onClick}>
       {children}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {rects.map((r, i) => (
@@ -191,7 +215,21 @@ export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW,
             Start writing your note…
           </div>
         )}
-        {caret && sel.start === sel.end && (
+        {preedit && composition && (
+          <span
+            className="absolute rounded-[3px] bg-[color-mix(in_oklab,var(--paper)_88%,transparent)] px-0.5 whitespace-pre underline decoration-dotted decoration-[1.5px] underline-offset-[3px]"
+            style={{
+              left: preedit.x * k,
+              top: preedit.sheet * pitch + (preedit.y - asc * 0.62) * k,
+              fontSize: Math.max(15, asc * 0.62 * k),
+              lineHeight: 1,
+              color: `color-mix(in oklab, ${ink} 78%, transparent)`,
+            }}
+          >
+            {composition.text}
+          </span>
+        )}
+        {caret && sel.start === sel.end && !composition && (
           <div
             key={sel.focused ? blinkKey : 'rest'}
             className={cn('absolute rounded-full transition-opacity duration-200', sel.focused && 'paper-caret')}
@@ -209,15 +247,22 @@ export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW,
         onKeyUp={sync}
         onFocus={sync}
         onBlur={sync}
-        aria-label={`Letter in ${writerName}’s hand. Type to write.`}
-        spellCheck={false}
+        aria-label={`Letter in ${writerName}’s hand`}
+        aria-describedby={descId}
+        spellCheck
+        autoCorrect="on"
         autoCapitalize="sentences"
         autoComplete="off"
+        enterKeyHint="enter"
+        {...{ writingsuggestions: 'false', 'data-gramm': 'false', 'data-gramm_editor': 'false', 'data-enable-grammarly': 'false' }}
         className={cn(
           'pointer-events-none absolute m-0 resize-none overflow-hidden border-0 p-0 text-[16px] leading-none whitespace-pre opacity-0 outline-none',
         )}
-        style={{ left: caretPx.left, top: caretPx.top, width: 2, height: Math.max(16, caretH), caretColor: 'transparent' }}
+        style={{ left: caretPx.left, top: caretPx.top, width: lineW, height: lineH, caretColor: 'transparent' }}
       />
+      <span id={descId} hidden>
+        Fair copy: the page is rewritten cleanly as you type.
+      </span>
     </div>
   );
 }

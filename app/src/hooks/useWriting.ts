@@ -11,7 +11,7 @@ type Req = Omit<WriteRequest, 'id'>;
  * keeps showing the previous writing until the next one is ready). Requests are debounced only when
  * writing gets slow (long letters), so short notes update on every key.
  */
-export function useWriting(req: Req) {
+export function useWriting(req: Req, paused = false) {
   const [result, setResult] = useState<WriteResult | null>(null);
   const worker = useRef<Worker | null>(null);
   const nextId = useRef(0);
@@ -56,6 +56,8 @@ export function useWriting(req: Req) {
   const { seed, style, overrides, text, paper, size, lineSpacing, inkKey, inkColor } = req;
   const overridesKey = JSON.stringify(overrides);
   useEffect(() => {
+    // an IME is composing: the page waits for the committed text
+    if (paused) return;
     const send = () => {
       const w = worker.current;
       if (!w) return;
@@ -68,7 +70,7 @@ export function useWriting(req: Req) {
     if (!delay) { send(); return; }
     const t = window.setTimeout(send, delay);
     return () => window.clearTimeout(t);
-  }, [seed, style, overridesKey, text, paper, size, lineSpacing, inkKey, inkColor]);
+  }, [seed, style, overridesKey, text, paper, size, lineSpacing, inkKey, inkColor, paused]);
 
   return result;
 }

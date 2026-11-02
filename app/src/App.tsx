@@ -14,6 +14,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
+import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
 import { canShareLinks, copyText, exportFont, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
@@ -46,7 +47,8 @@ const editLog = new EditLog();
 (window as unknown as { __seedhandEdits: EditLog }).__seedhandEdits = editLog;
 
 export default function App() {
-  const [state, update] = useNoteState();
+  const [composing, setComposing] = useState(false);
+  const [state, update] = useNoteState(composing);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [busy, setBusy] = useState({ download: false, font: false });
@@ -55,6 +57,7 @@ export default function App() {
   const [variety, setVariety] = useState(() => Number(readPref('seedhand:variety') ?? 60) || 60);
   const [locks, setLocks] = useState<Set<LockKey>>(() => new Set((readPref('seedhand:locks') ?? '').split(',').filter(Boolean) as LockKey[]));
   const coarse = useMediaQuery('(pointer: coarse)');
+  const viewport = useVisualViewport();
 
   // natural hand (seed) + your offsets + occasion -> the hand on the page
   const natural = useMemo(() => makeHand(state.seed, state.style), [state.seed, state.style]);
@@ -69,7 +72,7 @@ export default function App() {
     size: eff.size, lineSpacing: eff.lineSpacing, inkKey: eff.inkKey, inkColor: ink,
   };
   // the page is written in a worker, so typing never waits for the hand
-  const writing = useWriting(request);
+  const writing = useWriting(request, composing);
   // paper and writing switch together when the result arrives
   const shownPaper = writing ? getPaper(writing.paper) : paper;
 
@@ -231,6 +234,7 @@ export default function App() {
                   gapPx={SHEET_GAP}
                   ink={ink}
                   onEditingChange={setEditing}
+                  onComposingChange={setComposing}
                 >
                   <div className="flex flex-col" style={{ gap: SHEET_GAP }}>
                     {(writing ? writing.svgs : [null]).map((svg, i, all) => (
@@ -260,7 +264,7 @@ export default function App() {
                 </div>
                 {plainText && (
                   <div className="mt-3 flex justify-center">
-                    <DraftSlip value={state.text} onEdit={onEdit} width={shownPaper.w * pxPerMm + 16} />
+                    <DraftSlip value={state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
                   </div>
                 )}
               </>
@@ -269,7 +273,11 @@ export default function App() {
         </main>
 
         {!isDesktop && editing && (
-          <div className="fixed top-0 right-0 z-40 p-3 pt-[max(12px,env(safe-area-inset-top))]">
+          <div
+            className="fixed top-0 right-0 z-40 p-3 pt-[max(12px,env(safe-area-inset-top))]"
+            // iOS pans the visual viewport over a fixed layout viewport while the keyboard is up
+            style={{ transform: `translateY(${Math.max(0, viewport.top)}px)` }}
+          >
             <Button
               variant="outline"
               className="h-11 rounded-full px-4 shadow-[0_6px_20px_-8px_rgba(60,45,20,0.35)] animate-in fade-in-0 slide-in-from-top-1 duration-200 motion-reduce:slide-in-from-top-0"
