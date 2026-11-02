@@ -4,6 +4,8 @@
 //   const p = withOverrides(hand, { neatness: 0.8 });
 //   const page = layout(p, 'Dear Ada,', { maxWidth: 9000 });
 //   const svg = renderSVG(p, page, { width: 720, emPx: 58 });
+//   el.innerHTML = renderSVG(p, page, { width: 720, emPx: 58, strokeIds: true });
+//   playSVG(el.firstChild, page, { emPx: 58 }).play();     // write it, stroke by stroke
 //
 // Sources register skeletons on import; add new source modules to the list below.
 
@@ -14,15 +16,17 @@ export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames } from './glyphs.js';
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
 export { PENS, getPen, penOutline, simplify } from './pen.js';
-export { layout } from './layout.js';
+export { layout, pageHabits, spreadOf } from './layout.js';
 export { kinematics } from './kinematics.js';
+export { timeline, frameAt, strokeFraction, createPlayer, playSVG } from './animate.js';
 export { renderSVG, contoursToD } from './render-svg.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
 export { EXTRAS } from './sources/extras.js';
 
 import { HAND_PARAMS } from './hand.js';
 import { PEN_PARAMS } from './pen.js';
+import { PAGE_PARAMS } from './layout.js';
 
 // User-facing controls, grouped. Each entry: { key, label, group, min, max, step, format } or
 // { key, label, group, type: 'select', options() }. UIs render these; modules add their own.
-export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS];
+export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS, ...PAGE_PARAMS];

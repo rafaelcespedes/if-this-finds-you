@@ -19,7 +19,7 @@ const randomSeed = () => {
   return `${a}-${b}-${Math.floor(Math.random() * 90 + 10)}`;
 };
 
-const state = { seed: 'maple-river-42', style: 'print', mode: 'live', calt: true, overrides: {}, hand: null, fontCache: null, fontFaceN: 0 };
+const state = { seed: 'maple-river-42', style: 'print', mode: 'live', paper: 'plain', calt: true, overrides: {}, hand: null, fontCache: null, fontFaceN: 0, player: null, page: null };
 const FORMAT = {
   pct: (v) => Math.round(v * 100) + '%',
   deg: (v) => (v > 0 ? '+' : '') + (+v).toFixed(1) + '°',
@@ -80,8 +80,9 @@ function syncControls() {
   const p = params();
   for (const d of E.PARAMS) {
     const el = $('c-' + d.key); if (!el) continue;
-    el.value = p[d.key];
-    if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, p[d.key]);
+    const v = p[d.key] == null ? d.default : p[d.key];
+    el.value = v;
+    if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, v);
   }
 }
 function buildStyleSwitch() {
@@ -104,9 +105,29 @@ function renderLive() {
   const host = $('live');
   const W = Math.max(280, host.clientWidth || 800);
   const p = params();
-  const page = E.layout(p, $('text').value, { maxWidth: W / (EM_PX / E.UPM), lineHeight: LINE * E.UPM });
+  const ruled = state.paper === 'ruled';
+  const page = E.layout(p, $('text').value, { maxWidth: W / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled, firstBaseline: 0.95 * E.UPM });
   noteMisses(page.misses);
-  host.innerHTML = E.renderSVG(p, page, { width: W, emPx: EM_PX });
+  stopWriting();
+  host.innerHTML = E.renderSVG(p, page, { width: W, emPx: EM_PX, strokeIds: true, rules: ruled });
+  state.page = page;
+}
+
+// ---------- write it: the stroke-by-stroke animation ----------
+function stopWriting() {
+  if (state.player) state.player.destroy();
+  state.player = null;
+  $('write').textContent = 'Write it';
+}
+function writeIt() {
+  const svg = $('live').querySelector('svg');
+  if (!svg || !state.page) return;
+  if (state.player && state.player.playing) { state.player.pause(); $('write').textContent = 'Resume'; return; }
+  if (!state.player) {
+    state.player = E.playSVG(svg, state.page, { emPx: EM_PX, rate: +$('speed').value, onEnd: () => { $('write').textContent = 'Write it again'; } });
+    state.player.replay();
+  } else state.player.play();
+  $('write').textContent = state.player.playing ? 'Pause' : 'Write it again';
 }
 
 // ---------- glyph sheet: the 3 samples per letter that go into the font ----------
@@ -249,6 +270,10 @@ function init() {
     if (e.key.toLowerCase() === 'r' && !/input|textarea|select/i.test(document.activeElement.tagName)) $('reroll').click();
   });
   seg('mode', 'mode', render);
+  seg('paper', 'paper', render);
+  $('write').addEventListener('click', writeIt);
+  $('skip').addEventListener('click', () => { if (state.player) state.player.skip(); });
+  $('speed').addEventListener('change', () => { if (state.player) state.player.setRate(+$('speed').value); });
   $('calt').addEventListener('change', () => { state.calt = $('calt').checked; render(); });
   $('text').addEventListener('input', render);
   $('export').addEventListener('click', exportFont);
