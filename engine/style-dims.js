@@ -227,6 +227,33 @@ function xAt(s, from, to, y) {
   return null;
 }
 
+// Where (as a fraction of its length, from its start) is the polyline part a..b first crossed by the rest of
+// the letter? A crossing means the "connector" closes a loop (an e's eye, an l's loop), so it can't be trimmed
+// past that point.
+function segX(p1, p2, p3, p4) {
+  const d = (p2[0] - p1[0]) * (p4[1] - p3[1]) - (p2[1] - p1[1]) * (p4[0] - p3[0]);
+  if (Math.abs(d) < 1e-9) return -1;
+  const t = ((p3[0] - p1[0]) * (p4[1] - p3[1]) - (p3[1] - p1[1]) * (p4[0] - p3[0])) / d;
+  const u = ((p3[0] - p1[0]) * (p2[1] - p1[1]) - (p3[1] - p1[1]) * (p2[0] - p1[0])) / d;
+  return t > 1e-6 && t < 1 - 1e-6 && u > 1e-6 && u < 1 - 1e-6 ? t : -1;
+}
+function crossedAt(strokes, si, a, b, fromEnd) {
+  const s = strokes[si], cum = lengths(s.slice(a, b + 1)), L = cum[cum.length - 1] || 1;
+  let best = fromEnd ? -1 : Infinity;
+  for (let i = a; i < b; i++) {
+    strokes.forEach((o, oi) => {
+      for (let j = 0; j + 1 < o.length; j++) {
+        if (oi === si && j >= a - 1 && j <= b) continue; // the part itself and its neighbours
+        const t = segX(s[i], s[i + 1], o[j], o[j + 1]);
+        if (t < 0) continue;
+        const f = (cum[i - a] + t * (cum[i - a + 1] - cum[i - a])) / L;
+        if (fromEnd ? f > best : f < best) best = f;
+      }
+    });
+  }
+  return best;
+}
+
 // ---------- skeleton analysis (cached per variant object) ----------
 // entry: the stroke that rises from the letter's left edge to its first top (the joining stroke in),
 // exit: the stroke that rises from the last turn to the right edge (the joining stroke out),
@@ -239,15 +266,22 @@ function analyze(v, m) {
   const marks = new Set(v.marks || []);
   const body = [];
   v.s.forEach((s, i) => { if (!marks.has(i) && s.length >= 2 && !isDotStroke(s, m)) body.push(i); });
-  let minX = Infinity, maxX = -Infinity;
-  for (const i of body) for (const q of v.s[i]) { if (q[0] < minX) minX = q[0]; if (q[0] > maxX) maxX = q[0]; }
+  let minX = Infinity, maxX = -Infinity, bandMinX = Infinity;
+  for (const i of body) for (const q of v.s[i]) {
+    if (q[0] < minX) minX = q[0]; if (q[0] > maxX) maxX = q[0];
+    if (q[1] >= X - 0.1 * U && q[1] <= m.base + 0.1 * U && q[0] < bandMinX) bandMinX = q[0];
+  }
   let entry = null, exit = null;
   if (body.length) {
     const si = body[0], s = v.s[si], q0 = s[0];
     if (q0[0] <= minX + 0.08 * U && q0[1] >= X - 0.25 * U && q0[1] <= m.base + 0.05 * U) {
+      // rises to the right up to its first top, and no higher than the x-height (above it is an ascender loop)
       let e = 0;
-      while (e + 1 < s.length && s[e + 1][0] >= s[e][0] - TOL && s[e + 1][1] <= s[e][1] + TOL) e++;
-      if (e >= 1 && e < s.length - 1 && q0[1] - s[e][1] >= 0.2 * U) entry = { si, e };
+      while (e + 1 < s.length && s[e + 1][0] >= s[e][0] - TOL && s[e + 1][1] <= s[e][1] + TOL && s[e + 1][1] >= X - 0.1 * U) e++;
+      if (e >= 1 && e < s.length - 1 && q0[1] - s[e][1] >= 0.2 * U) {
+        const x = crossedAt(v.s, si, 0, e, true); // keep everything from the last crossing on
+        entry = { si, e, minKeep: x < 0 ? 0 : Math.min(1, 1 - x + 0.08) };
+      }
     }
     let best = null;
     for (const i of body) { const s2 = v.s[i], q = s2[s2.length - 1]; if (!best || q[0] > best.q[0]) best = { si: i, q }; }
@@ -257,7 +291,10 @@ function analyze(v, m) {
       // walk back while the stroke keeps rising to the right, but not down into a descender loop
       while (T - 1 >= 0 && s2[T - 1][0] <= s2[T][0] + TOL && s2[T - 1][1] >= s2[T][1] - TOL && s2[T - 1][1] <= m.base + 0.1 * U) T--;
       const end = s2[s2.length - 1];
-      if (T < s2.length - 1 && (end[0] - s2[T][0] >= 0.2 * U || s2[T][1] - end[1] >= 0.15 * U)) exit = { si: best.si, T };
+      if (T < s2.length - 1 && (end[0] - s2[T][0] >= 0.2 * U || s2[T][1] - end[1] >= 0.15 * U)) {
+        const x = crossedAt(v.s, best.si, T, s2.length - 1, true); // keep everything up to the last crossing
+        exit = { si: best.si, T, minKeep: x < 0 ? 0 : Math.min(1, x + 0.08) };
+      }
     }
   }
   const asc = [], desc = [];
@@ -270,7 +307,7 @@ function analyze(v, m) {
       desc.push({ si: i, b, carriesExit: !!(exit && exit.si === i && exit.T > b) });
     }
   }
-  a = { m, body, marks, entry, exit, asc, desc, minX, maxX, U, A, D };
+  a = { m, body, marks, entry, exit, asc, desc, minX, maxX, bandMinX, U, A, D };
   ANALYSIS.set(v, a);
   return a;
 }
@@ -574,6 +611,19 @@ function exitLost(p, d, ch, ctx) {
   return a.desc.some((x) => x.carriesExit);
 }
 
+// Some traced letters are completed by the stroke coming in (Sütterlin's e: the join from the previous letter
+// draws its eye). Their ink in the x-height band reaches well left of their join point; the pen never lifts into them.
+function entryNeedsJoin(p, ch, ctx) {
+  if (!isLowerCh(ch)) return false;
+  const st = getStyle(p.style);
+  const v = choose(p, ch, ctx);
+  if (!v || !v.s) return false;
+  const m = v.metrics || (st && st.metrics);
+  if (!m) return false;
+  const a = analyze(v, m);
+  return v.l - a.bandMinX > 0.3 * a.U;
+}
+
 // ---------- the transform ----------
 function styleTransform(p, ch, v, ctx, m) {
   if (!v || !v.s || !m || !isLetterCh(ch)) return v;
@@ -592,12 +642,15 @@ function styleTransform(p, ch, v, ctx, m) {
 
   // joins on each side (canonical forms, without ctx, are joined on both sides)
   let joinL = false, joinR = false, liftL = false, liftR = false;
+  let nextNeedsJoin = false;
   if (connected) {
     joinL = lower && (ctx ? isLetterCh(ctx.prev) : true);
     joinR = ctx ? isLowerCh(ctx.next) : true;
-    if (ctx && joinL) liftL = liftsBetween(p, d, ctx.prev, ch, i0 - 1) ||
+    const selfNeedsJoin = lower && v.l - a.bandMinX > 0.3 * a.U;
+    nextNeedsJoin = !!(ctx && joinR && entryNeedsJoin(p, ctx.next, { prev: ch, next: null, index: i0 + 1, wordStart: false, wordEnd: false }));
+    if (ctx && joinL && !selfNeedsJoin) liftL = liftsBetween(p, d, ctx.prev, ch, i0 - 1) ||
       exitLost(p, d, ctx.prev, { prev: null, next: ch, index: i0 - 1, wordStart: i0 - 1 === 0, wordEnd: false });
-    if (ctx && joinR) liftR = liftsBetween(p, d, ch, ctx.next, i0);
+    if (ctx && joinR && !nextNeedsJoin) liftR = liftsBetween(p, d, ch, ctx.next, i0);
   }
 
   // 1. loops (lowercase): fuller, narrower or retraced; unlooped descenders end in a hook, and the pen lifts
@@ -606,7 +659,7 @@ function styleTransform(p, ch, v, ctx, m) {
     for (const L of a.asc) set(L.si, reshapeAsc(s[L.si], L.t, loopWidth(p, d, ch, false), m));
     for (const L of a.desc) {
       const w = loopWidth(p, d, ch, true);
-      if (w < HOOK_BELOW && connected) {
+      if (w < HOOK_BELOW && connected && !(L.carriesExit && nextNeedsJoin)) {
         const len = (0.16 + 0.1 * unit('hook:' + baseSeed(p.seed) + ':' + baseOf(ch))) * U;
         set(L.si, hookDesc(s[L.si], L.b, len));
         if (L.carriesExit) exitGone = true;
@@ -658,7 +711,7 @@ function styleTransform(p, ch, v, ctx, m) {
   if (connected && a.entry && lower && !joinL && d.leadIns !== 0) {
     const e = a.entry, st = s[e.si];
     const lead = clamp(d.leadIns + 0.15 * Math.min(1, 3 * Math.abs(d.leadIns)) * gauss('lead:' + seedKey), -1, 1);
-    if (lead < 0) editHead(e.si, trimHead(st, e.e, Math.max(ENTRY_FLOOR[baseOf(ch)] || 0, 1 + lead), minLen));
+    if (lead < 0) editHead(e.si, trimHead(st, e.e, Math.max(ENTRY_FLOOR[baseOf(ch)] || 0, e.minKeep, 1 + lead), minLen));
     else {
       const cl = lengths(st.slice(0, e.e + 1));
       let ns = extendHead(st, Math.min(0.9 * cl[cl.length - 1] + 0.3 * U, 0.85 * U) * lead, m);
@@ -668,19 +721,19 @@ function styleTransform(p, ch, v, ctx, m) {
     }
     leadEdited = true;
   } else if (connected && a.entry && liftL) {
-    const keep = Math.max(ENTRY_FLOOR[baseOf(ch)] || 0, clamp(0.12 + 0.2 * d.leadIns + 0.08 * gauss('restart:' + seedKey), 0, 0.5));
+    const keep = Math.max(ENTRY_FLOOR[baseOf(ch)] || 0, a.entry.minKeep, clamp(0.12 + 0.2 * d.leadIns + 0.08 * gauss('restart:' + seedKey), 0, 0.5));
     editHead(a.entry.si, trimHead(s[a.entry.si], a.entry.e, keep, minLen));
   }
   if (connected && a.exit && !exitGone) {
     const si = a.exit.si;
     // the stub left by a lift; the breve exits of b o v w are part of the letter and stay longer
-    const stubFloor = HIGH_EXIT.has(baseOf(ch)) ? 0.55 : 0.06;
+    const stubFloor = Math.max(HIGH_EXIT.has(baseOf(ch)) ? 0.55 : 0.06, a.exit.minKeep);
     if (liftR) set(si, trimTail(s[si], exitT, clamp(0.3 + 0.22 * d.endFlicks + 0.1 * gauss('stub:' + seedKey), stubFloor, 0.7), minLen));
     else if (!joinR && (d.endFlicks !== 0 || d.rhythm > 0)) {
       const flick = clamp(d.endFlicks + 0.25 * Math.max(0, d.rhythm) + 0.15 * Math.min(1, 3 * Math.abs(d.endFlicks)) * gauss('flick:' + seedKey), -1, 1);
       const st = s[si];
       let ns;
-      if (flick < 0) ns = trimTail(st, exitT, 1 + 0.95 * flick, minLen);
+      if (flick < 0) ns = trimTail(st, exitT, Math.max(a.exit.minKeep, 1 + 0.95 * flick), minLen);
       else { const cl = lengths(st.slice(exitT)); ns = extendTail(st, Math.min(0.9 * cl[cl.length - 1], 0.45 * U) * flick, U); }
       const hookRate = clamp(0.1 + 0.18 * gauss('hook-rate:' + baseSeed(p.seed)) + 0.25 * flick, 0, 0.7);
       if (flick > -0.3 && unit('hookflick:' + seedKey) < hookRate) ns = hookTail(ns, (0.2 + 0.1 * Math.max(0, flick)) * U);
