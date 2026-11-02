@@ -23,7 +23,9 @@ import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { pickSimilarHand, writerName } from '@/lib/hands';
 import { rollHand, withSample, type LockKey } from '@/lib/roll';
-import { sampleById, sampleCredit } from '@/lib/samples';
+import { SAMPLE_FIRST_KEY, sampleById, sampleCredit } from '@/lib/samples';
+import { ReplyPeek } from '@/components/ReplyPeek';
+import { DEFAULT_INK, INK_FAMILIES } from '@/lib/inks';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
@@ -220,11 +222,20 @@ export default function App() {
         else toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
         return;
       }
-      // the first key on an untouched sample letter takes a fresh sheet: the letter is yours from the start
-      const fresh = !!s.sample && !s.inkLog;
-      const ink = fresh ? inkSession(newInkDoc(s.seed, s.style)) : inkSession();
-      ink.edit(fresh ? { ...e, at: 0, del: 0 } : e);
+      // the first key on an untouched sample letter: a reply on a fresh sheet (or, 'onto', the found letter
+      // taken as already written)
+      const onSample = !!s.sample && !s.inkLog;
+      const reply = onSample && SAMPLE_FIRST_KEY === 'reply';
+      const ink = !onSample ? inkSession() : inkSession(reply ? newInkDoc(s.seed, s.style) : inkFromText(s.seed, s.style, s.text));
+      ink.edit(reply ? { ...e, at: 0, del: 0 } : e);
+      if (reply) update({ replyTo: replyOf(s) });
       syncInk();
+      return;
+    }
+    const s0 = stateNow.current;
+    if (s0.sample && SAMPLE_FIRST_KEY === 'reply') {
+      // a reply: the found letter steps aside, what was typed starts the writer's own
+      update({ text: e.ins, marks: [], sample: null, replyTo: replyOf(s0) });
       return;
     }
     update((s) => {
@@ -442,9 +453,13 @@ export default function App() {
       onMode: (mode) => {
         const s = stateNow.current;
         inkRef.current = null;
+        // Pencil is the pencil pen (it rubs out); leaving it puts the writer's own pen back
+        if (mode === 'pencil') { update({ pen: 'pencil', ink: INK_FAMILIES.some((f) => f.id === 'graphite') ? 'graphite' : s.ink }); return; }
+        const pen = s.pen === 'pencil' ? 'auto' : s.pen;
+        const inkColorId = s.ink === 'graphite' ? DEFAULT_INK : s.ink;
         // to fair copy: the letter as it reads; to ink: what's there is written as is, at the first edit
-        if (mode === 'fair') update({ mode, inkLog: null, text: s.inkLog ? inkText(decodeInk(s.inkLog)!) : s.text });
-        else update({ mode });
+        if (mode === 'fair') update({ mode, pen, ink: inkColorId, inkLog: null, text: s.inkLog ? inkText(decodeInk(s.inkLog)!) : s.text });
+        else update({ mode, pen, ink: inkColorId });
       },
       onFairCopy: () => { inkSession().fairCopy(); syncInk(); },
       onFreshSheet: () => { inkSession().freshSheet(); syncInk(); },
@@ -627,7 +642,7 @@ export default function App() {
                       <span className="mr-auto truncate pr-3 text-[12px]" title={sample.title}>{sampleCredit(sample)}</span>
                       <button
                         type="button"
-                        onClick={() => update({ text: '', marks: [], sample: null })}
+                        onClick={() => update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) }))}
                         className="mr-1 shrink-0 rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
                       >
                         Blank page
@@ -643,6 +658,9 @@ export default function App() {
                     {plainText ? 'Hide plain text' : 'Edit as plain text'}
                   </button>
                 </div>
+                {state.replyTo && !sample && (
+                  <ReplyPeek replyTo={state.replyTo} pxPerMm={pxPerMm} size={eff.size} lineSpacing={eff.lineSpacing} ink={ink} onDismiss={() => update({ replyTo: null })} />
+                )}
                 {plainText && (
                   <div className="mt-3 flex justify-center">
                     <DraftSlip value={state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
@@ -711,4 +729,9 @@ function insertPS(api: PaperEditorApi, text: string, onEdit: (e: Edit) => void) 
   const ins = (t.length ? '\n\n' : '') + 'P.S. ';
   onEdit({ at: t.length, del: text.length - t.length, ins, kind: 'type', t: Date.now(), source: 'paper' });
   requestAnimationFrame(() => api.setSelection(t.length + ins.length));
+}
+
+/** The found letter a reply answers: the sample, in the hand and on the paper it was found in. */
+function replyOf(s: NoteState): NoteState['replyTo'] {
+  return s.sample ? { id: s.sample, seed: s.seed, style: s.style, paper: s.paper } : s.replyTo;
 }

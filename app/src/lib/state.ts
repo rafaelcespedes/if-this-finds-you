@@ -38,6 +38,8 @@ export interface NoteState {
   mode: 'ink' | 'fair';
   /** Ink mode: the letter's ink log (lib/ink.ts encodeInk), once anything is written in ink; the text follows it */
   inkLog: string | null;
+  /** a reply: the found letter this note answers (its id, and the hand and paper it was found in) */
+  replyTo: { id: string; seed: string; style: string; paper: PaperId } | null;
   /** handwriting marks on the text (lib/doc.ts) */
   marks: Mark[];
   /** the writer signs below the last line */
@@ -68,6 +70,7 @@ export const DEFAULT_STATE: NoteState = {
   sample: FIRST_SAMPLE?.id ?? null,
   mode: INK ? 'ink' : 'fair',
   inkLog: null,
+  replyTo: null,
   marks: [],
   signed: false,
   reader: false,
@@ -101,6 +104,7 @@ export function encodeState(s: NoteState): string {
   if (s.inkLog) q.set('k', compressToEncodedURIComponent(s.inkLog));
   else if (sample && sample.text === s.text) q.set('s', sample.id);
   else if (s.text !== DEFAULT_TEXT) q.set('t', compressToEncodedURIComponent(s.text));
+  if (s.replyTo) q.set('re', [s.replyTo.id, s.replyTo.seed, s.replyTo.style, s.replyTo.paper].join('~'));
   if (s.marks.length) q.set('m', encodeMarks(s.marks));
   if (s.signed) q.set('sig', '1');
   if (s.reader) q.set('read', '1');
@@ -161,6 +165,10 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
     s.text = pick?.text ?? DEFAULT_TEXT;
     s.sample = pick?.id ?? null;
   }
+  const re = (q.get('re') || '').split('~');
+  s.replyTo = re.length === 4 && sampleById(re[0]) && re[1] && getStyle(re[2]) && PAPERS.some((x) => x.id === re[3])
+    ? { id: re[0], seed: re[1].slice(0, 64), style: re[2], paper: re[3] as PaperId }
+    : null;
   s.marks = decodeMarks(q.get('m'), s.text.length);
   s.signed = q.get('sig') === '1';
   s.reader = q.get('read') === '1';
