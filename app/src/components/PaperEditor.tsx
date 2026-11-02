@@ -419,6 +419,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       />
       <span id={descId} hidden>
         Fair copy: the page is rewritten cleanly as you type. Command U underlines, Command B presses harder, Command Return adds a P.S.
+        {result?.summary ? ` This draft has ${result.summary}.` : ''}
       </span>
     </div>
   );

@@ -25,8 +25,8 @@ export interface WriteRequest {
   placeholder?: string;
 }
 
-/** Floats per laid-out character in `WriteResult.glyphs`: sheet, x, y, advance, line, kind (1 glyph, 0 missing). */
-export const GLYPH_STRIDE = 6;
+/** Floats per laid-out character in `WriteResult.glyphs`: text offset, sheet, x, y, advance, line, kind (1 glyph, 0 missing). */
+export const GLYPH_STRIDE = 7;
 
 export interface WriteResult {
   id: number;
@@ -41,8 +41,10 @@ export interface WriteResult {
   firstMm: number;
   perPage: number;
   unitsPerMm: number;
-  /** one entry per written character (every non-space character, in reading order) */
+  /** one entry per written character of the text (extra ink such as struck words is left out) */
   glyphs: Float32Array;
+  /** the draft's corrections in words, for screen readers (journey) */
+  summary?: string;
   /** the text this was written from (positions map onto it) */
   text: string;
   /** one word space, font units */

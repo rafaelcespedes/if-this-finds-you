@@ -41,6 +41,29 @@ export const PENDING_PARAMS: Record<string, string> = {
   lineRhythm: 'Even ↔ wandering 0..1: pitch variation, per-line slope, end bend, float off the rule',
   marginDiscipline: 'Strict ↔ loose 0..1: left-start jitter, inward drift, last-word squeeze',
   tiredness: 'Drift along the text 0..1: neatness falls, size and spacing grow',
+  mistakes: 'Journey 0..1 (mistakes session): crossings-out, overwrites and insertions over the draft',
 };
 
 export const supports = (key: string) => PARAM_KEYS.has(key);
+
+/**
+ * Journey (mistakes session): the writer's own crossings-out, overwrites and insertions over a whole draft.
+ * writeWithJourney(p, text, layoutOpts, { amount, seed }) returns a layout()-shaped page.
+ */
+export const JOURNEY = typeof engine.writeWithJourney === 'function';
+export interface JourneyResult {
+  page: import('@engine').Page;
+  intended: string;
+  transcript: string;
+  summary: string;
+  ok: boolean;
+}
+export const writeWithJourney = engine.writeWithJourney as
+  | ((p: unknown, text: string, opts: unknown, j?: { amount?: number; seed?: string }) => JourneyResult)
+  | undefined;
+
+/** A param's natural value for this hand, when the engine supplies one (PARAMS entries may carry natural(p)). */
+export function engineNatural(key: string, hand: unknown): number | undefined {
+  const d = E.PARAMS.find((x) => x.key === key) as { natural?: (p: unknown) => number } | undefined;
+  return typeof d?.natural === 'function' ? d.natural(hand) : undefined;
+}

@@ -25,42 +25,64 @@ export interface TextMap {
   res: WriteResult;
 }
 
-/** Every character except ' ' and '\n' gets a box from layout, in reading order. */
+/** Boxes arrive with their text offsets (extra ink such as struck words isn't in the map). */
 export function buildMap(res: WriteResult): TextMap {
   const { text, glyphs } = res;
-  const boxes: Box[] = [];
+  const byAt = new Map<number, Box>();
+  for (let o = 0; o + GLYPH_STRIDE <= glyphs.length; o += GLYPH_STRIDE) {
+    const i = glyphs[o];
+    if (i < 0 || byAt.has(i)) continue;
+    const n = (text.codePointAt(i) ?? 0) > 0xffff ? 2 : 1;
+    byAt.set(i, { i, n, sheet: glyphs[o + 1], x: glyphs[o + 2], y: glyphs[o + 3], adv: glyphs[o + 4], line: glyphs[o + 5] });
+  }
+  const boxes = [...byAt.values()].sort((a, b) => a.i - b.i);
   const lineStart: number[] = [0];
-  let g = 0;
   let line = 0;
   let i = 0;
   for (const ch of text) {
-    const n = ch.length;
     if (ch === '\n') {
       line += 1;
       if (lineStart[line] == null) lineStart[line] = i + 1;
-    } else if (ch !== ' ' && g * GLYPH_STRIDE < glyphs.length) {
-      const o = g * GLYPH_STRIDE;
-      const b: Box = { i, n, sheet: glyphs[o], x: glyphs[o + 1], y: glyphs[o + 2], adv: glyphs[o + 3], line: glyphs[o + 4] };
-      boxes.push(b);
-      if (b.line !== line) {
+    } else {
+      const b = byAt.get(i);
+      if (b && b.line !== line) {
         line = b.line;
         if (lineStart[line] == null || lineStart[line] > i) lineStart[line] = i;
       }
-      g++;
     }
-    i += n;
+    i += ch.length;
   }
   const byLine: Box[][] = [];
   for (const b of boxes) (byLine[b.line] ??= []).push(b);
+  for (const row of byLine) row?.sort((a, b) => a.x - b.x);
   return { boxes, lineStart, byLine, res };
 }
 
-/** Nominal baseline of a line, font units from the sheet top, and the sheet it's on. */
+/**
+ * Where a line's baseline really is (font units from its sheet's top), and which sheet it's on. Lines drift
+ * off the nominal grid (line rhythm, words floating off the rule), so written lines use their letters' own
+ * baselines (the median, so a word written above the line doesn't pull it), and empty lines follow the
+ * nearest written line above them.
+ */
 export function lineBaseline(m: TextMap, line: number) {
   const { res } = m;
+  const lineU = res.lineMm * res.unitsPerMm;
   const sheet = Math.floor(line / res.perPage);
-  const local = line - sheet * res.perPage;
-  return { sheet, y: (res.firstMm + local * res.lineMm) * res.unitsPerMm };
+  const nominal = (l: number) => (res.firstMm + (l - Math.floor(l / res.perPage) * res.perPage) * res.lineMm) * res.unitsPerMm;
+  const own = (l: number) => {
+    const row = m.byLine[l];
+    if (!row || !row.length) return null;
+    const ys = row.map((b) => b.y).sort((a, b) => a - b);
+    return ys[Math.floor(ys.length / 2)];
+  };
+  const y = own(line);
+  if (y != null) return { sheet, y };
+  // an empty line: keep the drift of the nearest written line above it on the same sheet
+  for (let l = line - 1; l >= sheet * res.perPage; l--) {
+    const above = own(l);
+    if (above != null) return { sheet, y: above + (line - l) * lineU };
+  }
+  return { sheet, y: nominal(line) };
 }
 
 export interface Caret {
@@ -122,11 +144,21 @@ export function indexOnLine(m: TextMap, line: number, x: number): number {
   return last.i + last.n;
 }
 
-/** Which line a y position (font units, sheet-relative) falls on. */
+/** Which line a y position (font units, sheet-relative) falls on: the nearest real baseline, a click being
+ * most likely in the body of the letters just above it. */
 export function lineAtY(m: TextMap, sheet: number, y: number) {
   const { res } = m;
-  const local = Math.floor((y / res.unitsPerMm - res.firstMm) / res.lineMm + 0.72);
-  return sheet * res.perPage + Math.max(0, Math.min(res.perPage - 1, local));
+  const lineU = res.lineMm * res.unitsPerMm;
+  const first = sheet * res.perPage;
+  const last = Math.max(first + res.perPage - 1, m.byLine.length - 1, m.lineStart.length - 1);
+  let best = first, bestD = Infinity;
+  for (let l = first; l <= last; l++) {
+    const b = lineBaseline(m, l);
+    if (b.sheet !== sheet) continue;
+    const d = Math.abs(y - (b.y - 0.28 * lineU));
+    if (d < bestD) { best = l; bestD = d; }
+  }
+  return best;
 }
 
 /** Line start / end for Home and End. */

@@ -8,7 +8,7 @@
 //   with - pen, ink, paper: kept as you set them
 import { PARAMS, type Hand } from '@engine';
 import { words } from './hands';
-import { PENDING_PARAMS, PREVIEW, supports } from './engine-features';
+import { engineNatural, PENDING_PARAMS, PREVIEW, supports } from './engine-features';
 import { clamp } from './utils';
 
 export type Zone = 'who' | 'how' | 'with';
@@ -63,6 +63,8 @@ export const CONTROLS: SliderControl[] = [
   def({ key: 'pressure', code: 'pr', label: 'Pressure', ends: ['Light', 'Heavy'], min: 0, max: 0.95, zone: 'how', tier: 'primary', fallback: 0.35, describe: words.pressure, roll: { spread: 0.16, band: [0.05, 0.85] } }),
   def({ key: 'slant', code: 'sl', label: 'Slant', ends: ['Back', 'Forward'], min: -15, max: 30, zone: 'who', tier: 'primary', fallback: 4, describe: words.slant, roll: { spread: 0.1, band: [-8, 22] } }),
 
+  def({ key: 'mistakes', code: 'mi', label: 'Mistakes', ends: ['Clean', 'Messy'], min: 0, max: 1, step: 0.01, zone: 'who', tier: 'primary', fallback: 0.3, describe: (v) => (v < 0.06 ? 'Clean copy' : v < 0.28 ? 'A few' : v < 0.6 ? 'Some' : 'Many'), roll: { spread: 0.18, band: [0, 0.75] } }),
+
   // ---------- advanced: pens and ink ----------
   def({ key: 'penWidth', code: 'pw', label: 'Tip size', ends: ['Fine', 'Bold'], min: 14, max: 110, step: 1, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 56, describe: words.penWidth, roll: { spread: 0.05, band: [26, 92] } }),
   def({ key: 'inkFlow', code: 'if', label: 'Ink flow', ends: ['Dry', 'Wet'], min: 0, max: 1, step: 0.01, zone: 'with', tier: 'advanced', group: 'Pens and ink', fallback: 0.5, roll: { spread: 0.2, band: [0.1, 0.9] } }),
@@ -107,7 +109,8 @@ export const isShown = (c: SliderControl, hand: Hand, ctx: { connected: boolean 
 export function naturalValue(c: SliderControl, hand: Hand) {
   if (c.app) return c.fallback;
   const v = hand[c.key];
-  return typeof v === 'number' ? v : c.fallback;
+  if (typeof v === 'number') return v;
+  return engineNatural(c.key, hand) ?? c.fallback;
 }
 
 // ---------- pen tip sizes: Fine / Medium / Bold scale the hand's own pen width ----------
