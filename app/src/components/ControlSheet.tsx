@@ -327,7 +327,7 @@ function Pane({ tab, ...props }: PanelProps & { tab: Tab }) {
       <>
         <HandControls {...props} />
         <div className="mt-2">
-          <Credits p={props.p} flush />
+          <Credits p={props.p} sample={props.state.sample} flush />
         </div>
       </>
     );

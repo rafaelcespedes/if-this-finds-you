@@ -14,6 +14,7 @@ import { PAPERS, type PaperId } from './papers';
 import { PEN_CHOICES, PENS_LIVE } from './pens';
 import { SIZE_RANGE, type NoteState } from './state';
 import { clamp } from './utils';
+import { nextSample } from './samples';
 
 export type LockKey = 'pen' | 'ink' | 'paper';
 
@@ -111,3 +112,15 @@ function rollOffsets(natural: Hand, style: string, o: { scale: number; wild: boo
   }
   return offsets;
 }
+
+/**
+ * New hand, and while the note is still a sample letter, the next letter too (lib/samples.ts): before anyone
+ * writes, every hand comes with its own text. Once the text is yours, only the look changes.
+ */
+export function rollHand(s: NoteState, opts: { variety: number; locked: Set<LockKey> }): Partial<NoteState> {
+  const look = rollLook(s, opts);
+  if (!s.sample) return look;
+  const next = nextSample(s.sample, look.style ?? s.style);
+  return next ? { ...look, sample: next.id, text: next.text, marks: [] } : look;
+}
+

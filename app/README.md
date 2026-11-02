@@ -22,6 +22,12 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
 - **Typing on the paper.** Click (or tap) the letter and type. The caret and selection follow the
   handwriting; Up/Down/Home/End follow the written lines; Esc finishes. "Edit as plain text" opens a
   normal text box for long edits or pasting.
+- **Sample letters.** Before anyone writes, the hand writes a short real letter from `content/sample-texts.json`
+  (public domain, rights-checked; Dickinson's "Dear Peacock" first). Each New hand brings the next letter in the
+  collection's order, preferring one that suits the style (Business: American letters, German school: German,
+  Chancery: Italian). The credit sits under the sheet ("Words: Emily Dickinson, 1861", with the source in the
+  provenance card), and "Blank page" starts from nothing. The first edit (typing, an underline) makes the text
+  yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a sample.
 - **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
   about how they write.
 - **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
@@ -160,6 +166,7 @@ src/
     engine-features.ts    what the engine supports now; preview flag; placeholder params
     edits.ts              Edit events (the seed of the ink log)
     styles.ts             Print / Joined families and the school cards' names (from getStyle)
+    samples.ts            the sample letters: order, pairing with styles, credits
     pens.ts, inks.ts, occasions.ts
     state.ts              the note config and the share-link format
     hands.ts              word seeds, writer names, plain-word descriptions, "very different" new hands

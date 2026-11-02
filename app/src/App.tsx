@@ -22,7 +22,8 @@ import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { pickSimilarHand, writerName } from '@/lib/hands';
-import { rollLook, type LockKey } from '@/lib/roll';
+import { rollHand, type LockKey } from '@/lib/roll';
+import { sampleById, sampleCredit } from '@/lib/samples';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
@@ -74,6 +75,8 @@ export default function App() {
   const paper = getPaper(state.paper);
   const ink = inkColor(state.ink);
   const name = useMemo(() => writerName(state.seed), [state.seed]);
+  // the sample letter the page shows, while nobody has written (credited under the sheet)
+  const sample = state.sample && state.text ? sampleById(state.sample) : undefined;
 
   const request = requestFor(state, natural, eff);
   const reqKey = JSON.stringify(request);
@@ -134,7 +137,8 @@ export default function App() {
     if (e.source === 'paper') posture.onTyped();
     update((s) => {
       const doc = applyEdit({ text: s.text, marks: s.marks, signed: s.signed }, e);
-      return { text: doc.text, marks: doc.marks };
+      // the first edit makes a sample letter the writer's own text
+      return { text: doc.text, marks: doc.marks, sample: null };
     });
   }, [update, posture.onTyped]);
 
@@ -142,7 +146,7 @@ export default function App() {
   const editor = useRef<PaperEditorApi>(null);
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     if (cmd === 'ps') return;
-    update((s) => ({ marks: toggleMark({ text: s.text, marks: s.marks, signed: s.signed }, cmd, from, to).marks }));
+    update((s) => ({ marks: toggleMark({ text: s.text, marks: s.marks, signed: s.signed }, cmd, from, to).marks, sample: null }));
   }, [update]);
   const formatFromTray = (cmd: 'underline' | 'press') => {
     const [a, b] = editor.current?.selection() ?? [0, 0];
@@ -163,14 +167,14 @@ export default function App() {
   const lockKey = [...locks].sort().join(',');
   const ahead = useRef<{ base: string; look: Partial<NoteState> }[]>([]);
   const similarAhead = useRef<{ base: string; look: Partial<NoteState> } | null>(null);
-  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.marks, s.signed, variety, lockKey]), [variety, lockKey]);
+  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.marks, s.signed, variety, lockKey]), [variety, lockKey]);
   const stateNow = useRef(state);
   stateNow.current = state;
   const newHand = useCallback((fade = true) => {
     // for QA (window.__seedhandPerf): click → the new hand's writing in the page
     const now = ahead.current.find((a) => a.base === baseOf(stateNow.current));
     perf.lookAsked(!!now && written(requestFor({ ...stateNow.current, ...now.look })));
-    lookChange(() => update((s) => ahead.current.find((a) => a.base === baseOf(s))?.look ?? rollLook(s, { variety, locked: locks })), fade);
+    lookChange(() => update((s) => ahead.current.find((a) => a.base === baseOf(s))?.look ?? rollHand(s, { variety, locked: locks })), fade);
   }, [update, baseOf, variety, locks, lookChange, written]);
   const similarHand = useCallback((fade = true) => {
     lookChange(() => update((s) => {
@@ -191,7 +195,7 @@ export default function App() {
       for (let i = 0; i < 2; i++) {
         const b = baseOf(s);
         const kept = ahead.current.find((a) => a.base === b);
-        const look = kept?.look ?? rollLook(s, { variety, locked: locks });
+        const look = kept?.look ?? rollHand(s, { variety, locked: locks });
         chain.push({ base: b, look });
         s = { ...s, ...look };
       }
@@ -369,7 +373,7 @@ export default function App() {
     const avoid = adjusting.current;
     const t = avoid ? 1 : Math.min(1, Math.max(0, (visible - peek) / Math.max(1, half - peek)));
     const motion = animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    el.style.transition = motion ? (avoid ? 'transform 320ms cubic-bezier(0.23, 1, 0.32, 1)' : 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)') : 'none';
+    el.style.transition = motion ? (avoid ? 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)' : 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)') : 'none';
     const header = headerRef.current;
     if (header) {
       header.style.transition = motion ? 'opacity 300ms ease-out' : 'none';
@@ -510,10 +514,22 @@ export default function App() {
                   className={cn('mx-auto mt-4 flex items-center justify-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
                   style={{ width: shownPaper.w * pxPerMm }}
                 >
+                  {sample && (
+                    <>
+                      <span className="mr-auto truncate pr-3 text-[12px]" title={sample.title}>{sampleCredit(sample)}</span>
+                      <button
+                        type="button"
+                        onClick={() => update({ text: '', marks: [], sample: null })}
+                        className="mr-1 shrink-0 rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
+                      >
+                        Blank page
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
-                    className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
+                    className="shrink-0 rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
                     aria-expanded={plainText}
                   >
                     {plainText ? 'Hide plain text' : 'Edit as plain text'}

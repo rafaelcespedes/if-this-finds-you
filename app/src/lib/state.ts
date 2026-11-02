@@ -1,7 +1,7 @@
 // The whole note configuration, and how it travels in a share link.
 // Link format (URL hash, readable where it can be):
 //   #seed=quiet-heron-17&style=script&pen=fountain&tip=fine&ink=royal-blue&paper=seyes&size=1.1
-//    &o=ne0.12_sl-3&occ=love&amt=1.2&t=<lz-string>
+//    &o=ne0.12_sl-3&occ=love&amt=1.2&t=<lz-string>   (or s=<sample letter id> while the text is a sample)
 // `o` holds seed-relative offsets with two-letter codes (lib/controls.ts), so the same link always
 // writes the same note.
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
@@ -12,6 +12,7 @@ import { PEN_CHOICES } from './pens';
 import { CONTROLS, controlByCode, controlByKey, PEN_SIZES, type PenSize } from './controls';
 import { OCCASIONS } from './occasions';
 import { decodeMarks, encodeMarks, type Mark } from './doc';
+import { FIRST_SAMPLE, sampleById, sampleForSeed } from './samples';
 import { clamp } from './utils';
 
 export interface NoteState {
@@ -29,6 +30,8 @@ export interface NoteState {
   /** occasion amount, 0..1.5 */
   amount: number;
   text: string;
+  /** while nobody has written: the sample letter the text is (lib/samples.ts); null once the text is yours */
+  sample: string | null;
   /** handwriting marks on the text (lib/doc.ts) */
   marks: Mark[];
   /** the writer signs below the last line */
@@ -53,7 +56,8 @@ export const DEFAULT_STATE: NoteState = {
   paper: DEFAULT_PAPER,
   occasion: null,
   amount: 1,
-  text: DEFAULT_TEXT,
+  text: FIRST_SAMPLE?.text ?? DEFAULT_TEXT,
+  sample: FIRST_SAMPLE?.id ?? null,
   marks: [],
   signed: false,
   reader: false,
@@ -82,7 +86,9 @@ export function encodeState(s: NoteState): string {
     q.set('occ', s.occasion);
     if (Math.abs(s.amount - 1) > 0.005) q.set('amt', String(round(s.amount, 2)));
   }
-  if (s.text !== DEFAULT_TEXT) q.set('t', compressToEncodedURIComponent(s.text));
+  const sample = sampleById(s.sample);
+  if (sample && sample.text === s.text) q.set('s', sample.id);
+  else if (s.text !== DEFAULT_TEXT) q.set('t', compressToEncodedURIComponent(s.text));
   if (s.marks.length) q.set('m', encodeMarks(s.marks));
   if (s.signed) q.set('sig', '1');
   if (s.reader) q.set('read', '1');
@@ -122,11 +128,18 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
     if (Number.isFinite(amt)) s.amount = clamp(amt, AMOUNT_RANGE.min, AMOUNT_RANGE.max);
   }
   const t = q.get('t');
+  const named = sampleById(q.get('s'));
   if (t != null) {
     const text = decompressFromEncodedURIComponent(t);
-    if (text != null) s.text = text.slice(0, 20000);
+    if (text != null) { s.text = text.slice(0, 20000); s.sample = null; }
+  } else if (named) {
+    s.text = named.text;
+    s.sample = named.id;
   } else if (seed) {
-    s.text = base.text;
+    // a link from before sample letters: the seed picks one, always the same
+    const pick = sampleForSeed(s.seed, s.style);
+    s.text = pick?.text ?? DEFAULT_TEXT;
+    s.sample = pick?.id ?? null;
   }
   s.marks = decodeMarks(q.get('m'), s.text.length);
   s.signed = q.get('sig') === '1';

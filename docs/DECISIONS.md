@@ -14,6 +14,9 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **Shared links autoplay the writing animation for the recipient.**
 
 ### Writers and variety
+- **Ugly is allowed.** "Some overlap and some ugliness is acceptable. A lot of handwritings are ugly. So unless
+  it's a bug, don't fix it." Builders and QA fix only unintended behaviour (scaling mistakes, missing ink,
+  clipping). They never beautify, normalise or tighten hands. QA guards catch only values a bug could produce.
 - **New hand randomizes everything:** writer, print or joined, pen, ink, paper, size, every slider, and each
   writer's own mistakes and corrections (cross-outs, letters rewritten over others). Small locks let people keep a setting.
 - **Blend between traditions.** A writer can be schooled in one tradition and influenced by another
