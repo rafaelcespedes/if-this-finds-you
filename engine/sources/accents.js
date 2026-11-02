@@ -18,16 +18,15 @@
 // (seed, namespace 'accents:') has habits: acute angle, umlaut as dots / dash / ticks, háček as a v or a
 // swoosh, wave or flat tilde, hook or comma cedilla, how high and how far right marks land.
 //
-// Engine hooks this module uses when they exist (it degrades gracefully without them):
-//  - choose(p, ch, ctx) returning `variant.resolve(p, ctx)` when a variant has one (glyphs.js). Then each
-//    composed letter is built for the actual writer: their own base letter variant, their mark habits,
-//    their proportions. Without it, every hand gets the style's composed letters built for an average writer.
-//  - glyphSkeleton honouring `variant.marks` (hand.js): [{ i, kind, role, dot }] = which strokes of `s` are
-//    marks, so they can be drawn as delayed strokes, are never mistaken for i-dots, and stay out of the join
-//    entry/exit. Without it, marks are still drawn last (after the letter), and are kept large enough not to
-//    be read as dots.
-//  - Unicode case in hand.js isLower/isUpper (é, ß, Æ get letter proportions). This module follows whatever
-//    those functions say, so composed geometry matches either way.
+// Engine hooks this module relies on (glyphs.js / hand.js):
+//  - choose(p, ch, ctx) returns `variant.resolve(p, ctx)`: each composed letter is built for the actual
+//    writer (their own base letter variant, their mark habits, their proportions). The variant's own
+//    `s` is the same letter built for an average writer of the style (used by tools that list variants).
+//  - `variant.marks` = indices of the strokes in `s` that are marks: makeGlyph flags them `mark: true`
+//    (written after the letter). `markKinds` (same order) says which mark each one is: 'acute', 'caron',
+//    'lslash'... The engine still reads any tiny stroke as a dot, so marks that aren't dots are kept larger
+//    than its dot size, and joined letters pin entry/exit on all strokes, so marks stay inside them.
+//  - isLower / isUpper are Unicode-aware (é, ß, Æ get letter proportions); this module follows them.
 // The zone remap below mirrors hand.js glyphSkeleton (zoneY + width scale): change them together.
 
 import { addComposer, variants, choose, getStyle } from '../glyphs.js';
@@ -386,8 +385,8 @@ function markBox(shape) { return bbox(shape.strokes.map((s) => s.pts)); }
 // marks above: measure the base letter's ink, lift the mark above it (to about this writer's i-dot
 // height on x-height letters), follow the style's lean, drift a little right, keep capitals inside the line.
 // centreline, layout units: leaves room below the page top (950) for half a pen and the engine's per-use
-// stretch of the whole letter (up to ~6% at this height)
-const TOP_BUDGET = 805;
+// stretch of the whole letter, which grows with messiness (hand.js instance affine)
+const TOP_BUDGET = 830, TOP_MESSY = 90;
 function addAbove(B, W, kinds, isCap) {
   const pts = dense(ink(W), B.xh * 0.04);
   if (!pts.length) return;
@@ -425,18 +424,21 @@ function addAbove(B, W, kinds, isCap) {
     }
     // keep inside the line: tighten the gap (never below the pen clearance), then shrink the mark,
     // then (tall lowercase like ĺ) slide it right of the stem
-    let over = y + box.h * B.xh - TOP_BUDGET;
+    let over = y + box.h * B.xh - B.top;
     if (over > 0) { const g = Math.min(over, y - (top + clear)); if (g > 0) { y -= g; over -= g; } }
     // capitals: a smaller mark first (people write small accents on capitals), then tuck it in a little
     if (over > 0 && isCap) {
-      const f = Math.max(0.6, (TOP_BUDGET - y) / (box.h * B.xh));
-      shape = markShape(kind, B.H, B.fam, k * f, B); box = markBox(shape); over = y + box.h * B.xh - TOP_BUDGET;
+      const f = Math.max(0.6, (B.top - y) / (box.h * B.xh));
+      shape = markShape(kind, B.H, B.fam, k * f, B); box = markBox(shape); over = y + box.h * B.xh - B.top;
     }
     const minClear = 0.62 * B.P.penWidth + 0.02 * B.xh + 0.5 * B.jitter;
     if (over > 0 && isCap) { const g = Math.min(over, y - (top + minClear)); if (g > 0) { y -= g; over -= g; } }
     if (over > 0 && !isCap) {
-      y = TOP_BUDGET - box.h * B.xh;
-      const right = Math.max(...pts.filter((q) => q[1] >= y - 0.05 * B.xh).map((q) => q[0] - B.lean * (q[1] - y)));
+      y = B.top - box.h * B.xh;
+      // (measured along the lean from the letter's top, the same frame the mark is placed in below)
+      // (any ink within pen clearance below the lowered mark counts; measured along the lean from the
+      // letter's top, the same frame the mark is placed in below)
+      const right = Math.max(...pts.filter((q) => q[1] >= y - clear).map((q) => q[0] - B.lean * (q[1] - maxY)));
       cx = Math.max(cx, right + (box.w / 2 + 0.06) * B.xh + 0.7 * B.P.penWidth + B.jitter / 0.6);
     }
     placeMark(B, W, shape, cx + B.lean * (y - maxY), y, kind, 'above');
@@ -473,7 +475,7 @@ function addBeside(B, W) {
     : markShape('caron', B.H, B.fam, k, B);
   const box = markBox(shape);
   // just right of the stem, its top a little below the stem's top, inside the line
-  const yb = Math.min(maxY - box.h * B.xh * 0.7, TOP_BUDGET - box.h * B.xh);
+  const yb = Math.min(maxY - box.h * B.xh * 0.7, B.top - box.h * B.xh);
   const n0 = W.strokes.length;
   // sideways the engine shifts separate strokes more than up and down (jitter is the vertical share, 0.6)
   const gapX = 0.6 * B.P.penWidth + 0.05 * B.xh + 0.8 * B.jitter / 0.6;
@@ -497,21 +499,25 @@ function addBar(B, W, x, y, L, ang, kind, wave) {
 }
 
 // Joined letters must keep their entry and exit as the leftmost / rightmost ink, or joins break
-// (hand.js pins them). Keep marks inside; a mark beside the letter stretches the exit instead (addBeside).
+// (hand.js pins them on every stroke). A mark sticking out on the right lengthens the exit stroke instead,
+// the way a writer leaves room for it; one sticking out on the left moves right.
 function keepInsideJoins(B, W) {
   if (!B.connected) return;
   const base = ink(W);
   if (!base.length) return;
   const bb = bbox(base);
+  let need = 0;
   W.strokes.forEach((s, i) => {
     const r = W.roles[i];
     if (!r || r.dot) return;
     const b = bbox([s]);
-    let dx = 0;
-    if (b.x1 > bb.x1 - 0.02 * B.xh) dx = bb.x1 - 0.02 * B.xh - b.x1;
-    if (b.x0 + dx < bb.x0 + 0.02 * B.xh) dx = bb.x0 + 0.02 * B.xh - b.x0;
-    if (dx) W.strokes[i] = shift(s, dx, 0);
+    if (b.x0 < bb.x0 + 0.02 * B.xh) W.strokes[i] = shift(s, bb.x0 + 0.02 * B.xh - b.x0, 0);
+    need = Math.max(need, bbox([W.strokes[i]]).x1 + 0.06 * B.xh - bb.x1);
   });
+  if (need <= 0) return;
+  const t = exitTail(W);
+  if (t) { stretchExit(W, need); return; }
+  W.strokes.forEach((s, i) => { const r = W.roles[i]; if (r && !r.dot) W.strokes[i] = shift(s, -need, 0); });
 }
 
 // An accented letter: NFD base + marks.
@@ -578,7 +584,7 @@ const SPECIAL = {
       const tb = bbox(ink(W));
       let tp = null;
       for (const st of ink(W)) for (const q of st) if (!tp || q[1] > tp[1]) tp = q;
-      const y = Math.min(tb.y1 + 0.45 * B.P.penWidth + 0.02 * B.xh, TOP_BUDGET);
+      const y = Math.min(tb.y1 + 0.45 * B.P.penWidth + 0.02 * B.xh, B.top);
       addBar(B, W, tp[0] + B.lean * (y - tp[1]) + 0.06 * B.xh, y, 0.5 * B.xh * B.H.size, 1, 'lslash', B.H.lbarWave);
     } else {
       // print ł: the stroke crosses the stem near its middle at 20–45° (Wikipedia: Ł)
@@ -913,13 +919,13 @@ function toVariant(B, ch, built, id) {
   const l = W.l, m = W.m;
   const F = frame(B.P, m, modeOf(ch));
   const s = W.strokes.map((st) => st.map(([x, y]) => [F.ix(x, l), F.iy(y)]));
-  const marks = [];
+  const marks = [], markKinds = [];
   s.forEach((st, i) => {
     const r = W.roles[i];
     if (!r) return;
-    if (!built.lone) marks.push({ i, kind: r.kind, role: r.role, dot: r.dot });
+    if (!built.lone) { marks.push(i); markKinds.push(r.kind); }
     if (r.dot || r.soft) return;
-    // without the engine's marks hook, a stroke smaller than this would be drawn as an i-dot: keep it bigger
+    // the engine draws any stroke smaller than this as a dot: keep the other marks bigger
     const b = bbox([st]), big = Math.max(b.w, b.h);
     if (big <= F.dotT * 1.12) {
       const f = F.dotT * 1.18 / Math.max(big, 1e-6);
@@ -928,7 +934,7 @@ function toVariant(B, ch, built, id) {
   });
   const r = l + W.adv / (F.S * F.w);
   const out = { id, source: sourceFor(ch, built.bases, built.what), l, r, s };
-  if (marks.length) out.marks = marks;
+  if (marks.length) { out.marks = marks; out.markKinds = markKinds; }
   if (W.m !== B.st.metrics) out.metrics = W.m;
   if (v0.weight != null) out.weight = v0.weight;
   if (v0.tags) out.tags = v0.tags;
@@ -952,6 +958,7 @@ function build(style, ch, P, pick) {
     H: habitsFor(P, info.fam),
   };
   B.comma = (h) => commaOf(B, h);
+  B.top = TOP_BUDGET - TOP_MESSY * (1 - clamp(P.neatness == null ? 0.6 : P.neatness, 0, 1));
   // how far the engine may shift a separate stroke vertically (hand.js: strokeShift * (6 + 22 * messy) * 0.6)
   B.jitter = 1.3 * (P.strokeShift == null ? 1 : P.strokeShift) * (6 + 22 * (1 - clamp(P.neatness == null ? 0.6 : P.neatness, 0, 1))) * 0.6;
   const cp = ch.codePointAt(0);
@@ -977,9 +984,9 @@ function composer(style, ch) {
     try { built = build(style, ch, P0, pick); } catch (e) { built = null; }
     if (!built) return;
     const v = toVariant({ P: P0, st: getStyle(style) }, ch, built, bv && baseList.length > 1 ? 'composed.' + bv.id : 'composed');
-    // with the engine hook, each writer gets the letter built from their own base letter and habits
+    // each writer gets the letter built from their own base letter and habits (choose() calls this)
     v.resolve = (p, ctx) => {
-      if (!p || p.style !== style) return null;
+      if (!p || p.style !== style) return v;
       const chosen = new Map();
       const pickP = (c) => { if (!chosen.has(c)) chosen.set(c, choose(p, c, ctx)); return chosen.get(c); };
       const bv2 = lead ? pickP(lead) : null;
@@ -987,7 +994,7 @@ function composer(style, ch) {
       if (BUILT.has(key)) return BUILT.get(key);
       let b2 = null;
       try { b2 = build(style, ch, p, pickP); } catch (e) { b2 = null; }
-      const rv = b2 ? toVariant({ P: p, st: getStyle(style) }, ch, b2, v.id) : null;
+      const rv = b2 ? toVariant({ P: p, st: getStyle(style) }, ch, b2, v.id) : v;
       bounded(BUILT, 20000).set(key, rv);
       return rv;
     };
