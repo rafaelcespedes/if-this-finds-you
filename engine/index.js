@@ -11,6 +11,7 @@ import './sources/hershey.js';
 import './sources/extras.js';
 import './sources/palmer.js';
 import './sources/suetterlin.js';
+import './sources/arrighi.js';
 
 export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';

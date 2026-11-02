@@ -220,6 +220,8 @@ def extract_glyph(hand, gl, cache):
     else:
         res, sw = skel.skeleton_strokes(ink, scfg, script=script, retrace=hand.get('connected', False))
         strokes = [{**s, 'pts': [(p[0] + x0, p[1] + y0) for p in s['pts']]} for s in res]
+        if gl.get('noDots'):
+            strokes = [s for s in strokes if not s.get('dot')]
         for i in sorted(gl.get('drop', []), reverse=True):
             if i < len(strokes):
                 strokes.pop(i)
@@ -702,7 +704,7 @@ def emit(hand, results):
     if not hand.get('units', {}).get('descender'):
         # the descender line = median depth of the source's own descenders
         deep = [max(p[1] for s in eng['s'] for p in s) for k, (ex, eng) in results.items()
-                if ex['gl']['ch'] in 'fgjpqyz' and eng['s']]
+                if ex['gl']['ch'].islower() and eng['s']]
         u['descender'] = (max(deep) / C) if deep else 0.5  # the deepest descender maps to the hand's line
     meta = {
         'label': hand['label'],

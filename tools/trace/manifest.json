@@ -16,7 +16,11 @@
         "notes": "US publication of 1915 (before 1931); the author died in 1927, so the work is also out of copyright under life + 70 everywhere. Don't use the name 'Palmer Method' as a product name (trademark); describe the hand as American business writing, 1915."
       },
       "files": [
-        { "name": "n30.jpg", "url": "https://archive.org/download/palmermethodbus00palm/page/n30.jpg", "what": "page 29, 'Special studies of the capitals, small letters, and figures' (A–Z, a–z, 1–0), 3744 × 2502 px" }
+        {
+          "name": "n30.jpg",
+          "url": "https://archive.org/download/palmermethodbus00palm/page/n30.jpg",
+          "what": "page 29, 'Special studies of the capitals, small letters, and figures' (A–Z, a–z, 1–0), 3744 × 2502 px"
+        }
       ]
     },
     "suetterlin-1917": {
@@ -34,7 +38,11 @@
         "notes": "Author died 1917: public domain worldwide (life + 70 and life + 100). A faithful scan of a 2-D page adds no new rights (EU DSM Directive Art. 14; Bridgeman v. Corel in the US)."
       },
       "files": [
-        { "name": "latin-alphabet.jpg", "url": "https://upload.wikimedia.org/wikipedia/commons/9/90/S%C3%BCtterlin_%2C_lateinisches_Alphabet.jpg", "what": "Latin-alphabet form of the Sütterlin school hand: a–z with ſ and ß, A–Z, ä Ä, Roman numerals; 1155 × 998 px" }
+        {
+          "name": "latin-alphabet.jpg",
+          "url": "https://upload.wikimedia.org/wikipedia/commons/9/90/S%C3%BCtterlin_%2C_lateinisches_Alphabet.jpg",
+          "what": "Latin-alphabet form of the Sütterlin school hand: a–z with ſ and ß, A–Z, ä Ä, Roman numerals; 1155 × 998 px"
+        }
       ]
     },
     "arrighi-1524": {
@@ -51,7 +59,16 @@
         "verdict": "clean"
       },
       "files": [
-        { "name": "n28.jpg", "url": "https://archive.org/download/laoperinadiludou00arri/page/n28.jpg", "what": "leaf with capitals A–Z and the small-letter alphabet a–z (two forms of e, g, s, z), 1857 × 2948 px" }
+        {
+          "name": "n28.jpg",
+          "url": "https://archive.org/download/laoperinadiludou00arri/page/n28.jpg",
+          "what": "leaf with capitals A–Z and the small-letter alphabet a–z (two forms of e, g, s, z), 1857 × 2948 px"
+        },
+        {
+          "name": "n25.jpg",
+          "url": "https://archive.org/download/laoperinadiludou00arri/page/n25.jpg",
+          "what": "leaf with paired capitals (a swash and a plain form of each), 1857 × 2948 px"
+        }
       ]
     },
     "castilla-1866": {
@@ -69,7 +86,11 @@
         "notes": "1866 publication. Downloaded the library's PDF of the whole book; not traced in this batch."
       },
       "files": [
-        { "name": "curso-completo-1866.pdf", "url": "https://bibliotecadigital.jcyl.es/es/catalogo_imagenes/grupo.do?path=10079796", "what": "the whole book as one PDF (259 pages, 33 MB)" }
+        {
+          "name": "curso-completo-1866.pdf",
+          "url": "https://bibliotecadigital.jcyl.es/es/catalogo_imagenes/grupo.do?path=10079796",
+          "what": "the whole book as one PDF (259 pages, 33 MB)"
+        }
       ]
     }
   }

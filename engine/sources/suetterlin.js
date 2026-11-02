@@ -8,7 +8,7 @@
 
 import { defineStyle, register } from '../glyphs.js';
 
-defineStyle("suetterlin", {"label": "German school 1917", "family": "script", "tradition": {"name": "Sütterlin school hand, Latin-alphabet form", "region": "Germany", "language": "German", "era": "1915–1941", "legibility": "modern", "notes": "Upright, round, monoline (ball-point nib), proportions near 1:1:1. Taught alongside the Kurrent form; this is the Latin one, readable today."}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -92, "descender": 118, "descRatio": 0.41}, "fallback": "print"});
+defineStyle("suetterlin", {"label": "German school 1917", "family": "script", "tradition": {"name": "Sütterlin school hand, Latin-alphabet form", "region": "Germany", "language": "German", "era": "1915–1941", "legibility": "modern", "notes": "Upright, round, monoline (ball-point nib), proportions near 1:1:1. Taught alongside the Kurrent form; this is the Latin one, readable today."}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -92, "descender": 120, "descRatio": 0.41}, "fallback": "print"});
 
 const SOURCES = {
  "main": {
