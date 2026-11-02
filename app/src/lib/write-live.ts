@@ -3,9 +3,9 @@
 // (a new hand's first layout is the expensive part); the live page is only built for typing, and since both
 // draw the very same markup, switching between them changes nothing on screen.
 import * as E from '@engine';
-import { makeGlyph, makeHand, withOverrides } from '@engine';
+import { makeGlyph, makeHand, UPM, withOverrides } from '@engine';
 import { liveExtras, liveLayout, sheetFrame, sheetOfLine } from './live';
-import { getPaper } from './papers';
+import { getPaper, writingLines } from './papers';
 import { lookOf } from './request';
 import { scopeIds } from './writing';
 import { GLYPH_STRIDE, type WriteRequest, type WriteResult } from './write-protocol';
@@ -21,6 +21,43 @@ export function writeLive(req: WriteRequest): WriteResult {
   const p = withOverrides(makeHand(req.seed, req.style), req.overrides);
   const paper = getPaper(req.paper);
   const live = liveLayout(p, req.text, paper, req.size, req.lineSpacing, !!req.signed);
+  return resultOf(req, p, live, t0);
+}
+
+/**
+ * A long letter's first sheet, from a prefix of the text (layout is prefix-stable: lines that fit wholly in the
+ * prefix come out exactly as in the whole letter), with blank sheets standing in for the rest. null when the
+ * letter is short enough to write whole at once.
+ */
+export function writeFirstSheet(req: WriteRequest): WriteResult | null {
+  const t0 = performance.now();
+  if (req.text.length < 700) return null;
+  const p = withOverrides(makeHand(req.seed, req.style), req.overrides);
+  const paper = getPaper(req.paper);
+  // about how many characters a sheet holds: the line's width in average letters, times the lines
+  const xhFrac = ((p.xHeight as number) || 0.55) * 0.7;
+  const emMm = (paper.xh * req.size) / xhFrac;
+  const lines = writingLines(paper, emMm, paper.xh * req.size, req.lineSpacing);
+  const u = UPM / emMm;
+  const lineMm = paper.pitch ? lines.lineMm : (engine.pageMetrics(p).pitch / u) * req.lineSpacing;
+  const perSheet = ((paper.text.right - paper.text.left) / (0.42 * emMm)) * ((paper.text.last - lines.first) / lineMm + 1);
+  let n = Math.ceil(perSheet * 1.4);
+  if (req.text.length < n * 1.2) return null;
+  // whole words only
+  const cut = req.text.slice(n).search(/\s/);
+  n = cut < 0 ? req.text.length : n + cut;
+  const live = liveLayout(p, req.text.slice(0, n), paper, req.size, req.lineSpacing, false);
+  // the prefix must reach past the first sheet, or its last line could still change
+  if (live.sheets.length < 2) return null;
+  const firstOnNext = (live.page.items as any[]).find((it) => it.line >= live.sheets[1].fromLine && it.charIndex >= 0);
+  const held = Math.max(1, firstOnNext ? firstOnNext.charIndex : n);
+  const res = resultOf({ ...req, signed: false }, p, live, t0, 1);
+  const total = Math.max(2, Math.ceil(req.text.length / held));
+  return { ...res, svgs: [res.svgs[0], ...Array.from({ length: total - 1 }, () => '')], text: req.text, partial: true };
+}
+
+function resultOf(req: WriteRequest, p: ReturnType<typeof withOverrides>, live: ReturnType<typeof liveLayout>, t0: number, only?: number): WriteResult {
+  const paper = live.paper;
   const extras = liveExtras(live, { marks: req.marks ?? [], signed: !!req.signed, writerName: req.writerName ?? '', placeholder: req.placeholder, text: live.page.text });
   const ink = liveInk(req.inkKey);
 
@@ -28,17 +65,18 @@ export function writeLive(req: WriteRequest): WriteResult {
   const runs = live.sheets.map(() => '');
   const opts = { emPx: live.emPx, strokeKeys: true };
   for (const run of live.page.runs) runs[sheetOfLine(live, run.line)] += engine.renderRun(p, live.page, run, opts);
-  const svgs = live.sheets.map((_, s) => {
+  const svgs = live.sheets.slice(0, only ?? live.sheets.length).map((_, s) => {
     const f = sheetFrame(live, s, ink);
     return scopeIds(f.open, 'W' + s) + runs[s] + f.close.replace(/><\/g><\/svg>$/, `>${extras[s] ?? ''}</g></svg>`);
   });
 
   // the caret map: one box per written character, with its text offset
   const items = (live.page.items as any[]).filter((it) => it.charIndex >= 0 && !it.synthetic && !it.role && (it.kind === 'glyph' || it.kind === 'miss'));
-  const glyphs = new Float32Array(items.length * GLYPH_STRIDE);
+  const glyphs = new Float32Array(items.filter((it) => only == null || sheetOfLine(live, it.line) < only).length * GLYPH_STRIDE);
   let g = 0;
   for (const it of items) {
     const s = sheetOfLine(live, it.line);
+    if (only != null && s >= only) break;
     glyphs[g++] = it.charIndex;
     glyphs[g++] = s;
     glyphs[g++] = it.x;

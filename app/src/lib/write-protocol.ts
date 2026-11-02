@@ -51,6 +51,9 @@ export interface WriteResult {
   text: string;
   /** the look it was written in (lib/request.ts lookOf) */
   look: string;
+  /** only the first sheet is written yet (a long letter: the rest follows in the same request's next result);
+   * the other sheets are '' for now */
+  partial?: boolean;
   /** the request it answers, as JSON (set on the main thread; the cache key) */
   key?: string;
   /** one word space, font units */

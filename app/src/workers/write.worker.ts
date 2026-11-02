@@ -3,6 +3,8 @@
 // A second copy of this worker writes hands ahead of time (`{ ahead: [...] }`): one at a time, and a newer
 // list replaces whatever is still waiting.
 import { write } from '@/lib/write-core';
+import { LIVE } from '@/lib/live';
+import { writeFirstSheet } from '@/lib/write-live';
 import type { WriteRequest } from '@/lib/write-protocol';
 
 let pending: WriteRequest | null = null;
@@ -32,11 +34,23 @@ self.onmessage = (e: MessageEvent<WriteRequest | { ahead: WriteRequest[] }>) => 
   setTimeout(run, 0);
 };
 
-function run() {
+async function run() {
   scheduled = false;
   const req = pending;
   pending = null;
-  if (req) post(req);
+  if (!req) return;
+  // a long letter: its first sheet goes out first, so a new hand shows at once; if another request has
+  // come in meanwhile (a quick next click), the rest of this one is never written
+  if (LIVE) {
+    let first = null;
+    try { first = writeFirstSheet(req); } catch { first = null; }
+    if (first) {
+      (self as unknown as Worker).postMessage(first, [first.glyphs.buffer]);
+      await new Promise((r) => setTimeout(r, 0));
+      if (pending) return;
+    }
+  }
+  post(req);
 }
 
 function runAhead() {

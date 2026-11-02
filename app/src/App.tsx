@@ -22,7 +22,7 @@ import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { pickSimilarHand, writerName } from '@/lib/hands';
-import { rollHand, type LockKey } from '@/lib/roll';
+import { rollHand, withSample, type LockKey } from '@/lib/roll';
 import { sampleById, sampleCredit } from '@/lib/samples';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
@@ -179,7 +179,7 @@ export default function App() {
   const similarHand = useCallback((fade = true) => {
     lookChange(() => update((s) => {
       const pre = similarAhead.current;
-      return pre && pre.base === baseOf(s) ? pre.look : { ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) };
+      return pre && pre.base === baseOf(s) ? pre.look : withSample(s, { ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) });
     }), fade);
   }, [update, baseOf, lookChange]);
   const base = baseOf(state);
@@ -204,7 +204,7 @@ export default function App() {
       prefetch(reqs);
       idle(() => {
         if (cancelled) return;
-        const look = similarAhead.current?.base === base ? similarAhead.current.look : { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) };
+        const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) });
         similarAhead.current = { base, look };
         prefetch([...reqs, requestFor({ ...state, ...look })]);
       });
@@ -315,7 +315,7 @@ export default function App() {
     busy,
     onNewHand: () => newHand(true),
     onSimilarHand: () => similarHand(true),
-    onSeed: (seed) => update((s) => ({ seed, offsets: offsetsForNewHand(s.offsets) })),
+    onSeed: (seed) => update((s) => withSample(s, { seed, offsets: offsetsForNewHand(s.offsets) })),
     onStyle: (style) => lookChange(() => update({ style })),
     onControl: (key, v) => update((s) => ({ offsets: { ...s.offsets, [key]: offsetFor(key, v, natural, s) } })),
     onResetControl: (key) => update((s) => {
