@@ -1,0 +1,38 @@
+{
+  "id": "strick-1618",
+  "title": "Schat oft voorbeelt ende verthooninge van verscheyden geschriften ten dienste vande liefhebbers der hooch-loflycker konste der penne",
+  "author": "Maria Strick (1577–after 1631), schoolmistress and writing master in Delft and Rotterdam; engraved by Hans Strick",
+  "date": "1618",
+  "place": "Rotterdam",
+  "holder": "Rijksmuseum, Amsterdam, album BI-1885-1328 (sheets 1–32)",
+  "page": "https://id.rijksmuseum.nl/200612180",
+  "rights": {
+    "statement": "Image: Public Domain Mark 1.0 (digitally_carried_by referred_to_by https://creativecommons.org/publicdomain/mark/1.0/); metadata CC0 1.0. From the Rijksmuseum linked-data record.",
+    "where": "https://id.rijksmuseum.nl/200612180 (Linked Art JSON-LD, Accept: application/ld+json); album record https://id.rijksmuseum.nl/200612073",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "Engraving of 1618; public domain everywhere."
+  },
+  "files": [
+    {
+      "name": "sheet31.jpg",
+      "url": "https://iiif.micr.io/OjLts/full/max/0/default.jpg",
+      "what": "Voorbeelden van de Nederlandse kapitalen, de staande letter en cursieve hand (Dutch capitals, the upright letter and the running hand), BI-1885-1328-31"
+    },
+    {
+      "name": "sheet25.jpg",
+      "url": "https://iiif.micr.io/xscAy/full/max/0/default.jpg",
+      "what": "capital X between two alphabets, BI-1885-1328-25 (checked, textura)"
+    },
+    {
+      "name": "sheet27.jpg",
+      "url": "https://iiif.micr.io/qjMkB/full/max/0/default.jpg",
+      "what": "capital Z between two alphabets, BI-1885-1328-27 (checked, textura)"
+    },
+    {
+      "name": "sheet29.jpg",
+      "url": "https://iiif.micr.io/VYPEb/full/max/0/default.jpg",
+      "what": "Italian and Spanish letter, BI-1885-1328-29 (checked)"
+    }
+  ]
+}

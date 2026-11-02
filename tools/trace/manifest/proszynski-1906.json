@@ -1,0 +1,38 @@
+{
+  "id": "proszynski-1906",
+  "title": "Wprawy w piękne pisanie piórem, czyli Wzory kaligraficzne przenośne z objaśnieniami i radami dla uczących i uczących się (3rd edition)",
+  "author": "Konrad Prószyński, writing as Kazimierz Promyk (1851–1908)",
+  "date": "1906",
+  "place": "Warsaw: Księgarnia Krajowa Konrada Prószyńskiego",
+  "holder": "Biblioteka Narodowa (National Library of Poland), Polona, call no. 95.186; old Polona id 54432597, object d413f40b-2b1c-48c5-a05b-11899956e91f",
+  "page": "https://polona.pl/item/54432597/",
+  "rights": {
+    "statement": "Domena Publiczna. Wolno zwielokrotniać, zmieniać i rozpowszechniać oraz wykonywać utwór, nawet w celach komercyjnych, bez konieczności pytania o zgodę (Public domain: you may copy, change, distribute and perform the work, even commercially, without asking permission). copyrightProtected: false.",
+    "where": "https://polona.pl/api/library-object-query/digital-objects/d413f40b-2b1c-48c5-a05b-11899956e91f/front-office-details (rights, copyrightProtected); search record licenseName Domena Publiczna",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "Author died 1908: public domain worldwide. The library allows commercial reuse and asks that the author be credited (moral rights)."
+  },
+  "files": [
+    {
+      "name": "00007.jpg",
+      "url": "https://polona.pl/iiif/3/072c0642-8ff3-4cfa-89c3-aadc649998ce/full/3000,/0/default.jpg",
+      "what": "plate 1: small letters built up stroke by stroke (stopień 1–7) (IIIF, 3000 px wide; full TIFF 4.5k × 6.4k)"
+    },
+    {
+      "name": "00008.jpg",
+      "url": "https://polona.pl/iiif/3/eb5890cd-162e-4716-a005-1ea67b91947c/full/3000,/0/default.jpg",
+      "what": "plate 2: capitals (with second forms), numerals 1–10, letter pairs Aa–Zz and Polish words with ł ć ś ń ó ę (IIIF, 3000 px wide; full TIFF 4.5k × 6.4k)"
+    },
+    {
+      "name": "00009.jpg",
+      "url": "https://polona.pl/iiif/3/97858f91-0151-40a8-b925-8fa96a4816a2/full/3000,/0/default.jpg",
+      "what": "plate 3: joined sentences with numerals (IIIF, 3000 px wide; full TIFF 4.5k × 6.4k)"
+    },
+    {
+      "name": "00012.jpg",
+      "url": "https://polona.pl/iiif/3/c3e0c480-0314-4abd-9a4a-66ab209bf548/full/3000,/0/default.jpg",
+      "what": "plate 4: joining exercises (ł, ę, ą) (IIIF, 3000 px wide; full TIFF 4.5k × 6.4k)"
+    }
+  ]
+}
