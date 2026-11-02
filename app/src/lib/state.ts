@@ -12,7 +12,7 @@ import { PEN_CHOICES } from './pens';
 import { CONTROLS, controlByCode, controlByKey, PEN_SIZES, type PenSize } from './controls';
 import { OCCASIONS } from './occasions';
 import { decodeMarks, encodeMarks, type Mark } from './doc';
-import { FIRST_SAMPLE, sampleById, sampleForSeed } from './samples';
+import { sampleById, sampleForSeed } from './samples';
 import { clamp } from './utils';
 
 export interface NoteState {
@@ -44,6 +44,8 @@ export const DEFAULT_TEXT =
   'Dear Ada,\n\nThe little letters never quite match, and that is the point. ' +
   'Every word I write to you comes out a touch different, the way it would if I sat down with a real pen.\n\n' +
   'See you on Sunday at 7:30. Bring the old maps & a good pen!\n\nYours,\nO.';
+
+const FIRST_SAMPLE = sampleForSeed('quiet-heron-17', 'script');
 
 export const DEFAULT_STATE: NoteState = {
   seed: 'quiet-heron-17',
@@ -136,7 +138,7 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
     s.text = named.text;
     s.sample = named.id;
   } else if (seed) {
-    // a link from before sample letters: the seed picks one, always the same
+    // no letter named (a link from before sample letters): the seed picks it, always the same
     const pick = sampleForSeed(s.seed, s.style);
     s.text = pick?.text ?? DEFAULT_TEXT;
     s.sample = pick?.id ?? null;
