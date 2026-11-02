@@ -13,7 +13,7 @@ import './sources/hershey.js';
 import './sources/extras.js';
 
 export { rng, makeNoise } from './core.js';
-export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames } from './glyphs.js';
+export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
 export { PENS, getPen, penOutline, simplify } from './pen.js';
 export { layout, pageHabits, spreadOf } from './layout.js';
