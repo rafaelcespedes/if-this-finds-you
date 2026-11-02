@@ -390,11 +390,15 @@ function init() {
   const syncStyle = seg('style', 'style', () => { state.hand = E.makeHand(state.seed, state.style); syncControls(); invalidateFont(); writeHash(); render(); });
   let seedTimer;
   $('seed').addEventListener('input', () => { clearTimeout(seedTimer); seedTimer = setTimeout(() => setHand($('seed').value.trim() || 'hand', true), 120); });
-  // a new hand is a new person: the style (print / script / ...) is rolled too
-  $('reroll').addEventListener('click', () => {
-    const s = randomSeed(); $('seed').value = s;
-    const names = E.styleNames(); state.style = names[Math.floor(Math.random() * names.length)]; syncStyle();
-    setHand(s, true);
+  // a new hand is a new person: the sampler picks the family (print / joined) too, and keeps each pick far
+  // from the last few hands shown (engine/sampler.js). Shift-click: a sibling of the current hand.
+  const shown = [];
+  $('reroll').addEventListener('click', (e) => {
+    if (!shown.length) shown.push({ seed: state.seed, family: E.getStyle(state.style).family });
+    const r = E.sampleHand({ history: shown, variety: e.shiftKey ? 'sibling' : 'stranger', entropy: randomSeed() });
+    shown.push({ seed: r.seed, family: r.family }); if (shown.length > 6) shown.shift();
+    $('seed').value = r.seed; state.style = r.style; syncStyle();
+    setHand(r.seed, true);
   });
   document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'r' && !/input|textarea|select/i.test(document.activeElement.tagName)) $('reroll').click();
