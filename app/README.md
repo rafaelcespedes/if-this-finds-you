@@ -27,8 +27,11 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
 - **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
   of several candidates), Print or Joined, pen and tip, ink, paper, size, and a fresh offset on every
   slider, each inside a band that stays legible. Small **locks** beside Pen, Ink and Paper keep those
-  while everything else rolls (remembered per browser). The sheet cross-fades when the look changes
-  (a View Transition; instant with reduced motion). The roll is plain note state, so the share link
+  while everything else rolls (remembered per browser). The next two new hands (and a sibling) are
+  rolled and written ahead in a second worker while you look at the current one, so a click shows the next
+  hand at once. From the button, paper and writing cross-fade in place (170 ms, opacity only; a click
+  mid-fade takes over from where it is); from the keyboard it simply appears. The controls never move,
+  fade or reload. The roll is plain note state, so the share link
   captures all of it. `lib/roll.ts` is the local sampler; when `engine/sampler.js` exports
   `sampleLook({ current, locked, variety })`, it takes over and the app fills in only what it leaves out.
 - **Similar** (or **Shift R**) gives a sibling and keeps the look: same words, another number, close but
@@ -161,7 +164,8 @@ src/
     state.ts              the note config and the share-link format
     hands.ts              word seeds, writer names, plain-word descriptions, "very different" new hands
     actions.ts, perf.ts, utils.ts
-  workers/write.worker.ts writes the page off the main thread (newest request wins)
+  workers/write.worker.ts writes the page off the main thread (newest request wins); a second copy writes
+                          hands ahead (lib/request.ts builds both from the note state)
 ```
 
 The engine is imported from `../engine/index.js` through the `@engine` alias (see `vite.config.ts`,
@@ -191,7 +195,13 @@ work, so a reload restores the note too. Invalid values fall back to defaults.
 
 ### Performance
 
-Measured in Chrome on an M-series Mac, default letter (270 characters):
+**New hand**, production build, Chrome on an M-series Mac, 1440 px wide, letters of 1–3 pages, 20 clicks
+400 ms apart: new hand on the page in a median 46 ms (p95 77 ms) when written ahead, 78 ms (p95 145 ms)
+when not. Looks are written in a worker (lib/write-live.ts on engines with the live page, the same markup
+the live page draws); the live page is built only for typing, from the tap, and hands back to the worker's
+copy without a visible change. Painted papers are kept, so switching back to a paper is a copy.
+
+Typing, measured in Chrome on an M-series Mac, default letter (270 characters):
 
 - main thread: no long tasks while typing; the input handler takes ~8 ms (dev build, StrictMode)
 - the worker writes the page in ~56 ms, so the writing catches up ~58 ms after each key

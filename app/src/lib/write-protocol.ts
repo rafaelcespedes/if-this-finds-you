@@ -49,6 +49,10 @@ export interface WriteResult {
   summary?: string;
   /** the text this was written from (positions map onto it) */
   text: string;
+  /** the look it was written in (lib/request.ts lookOf) */
+  look: string;
+  /** the request it answers, as JSON (set on the main thread; the cache key) */
+  key?: string;
   /** one word space, font units */
   spaceU: number;
   /** writing area left edge on the sheet, font units */

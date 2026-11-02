@@ -5,6 +5,9 @@
 // underlines, letters pressed harder, a signature below the last line, and page numbers on sheets 2+.
 import { layout, makeGlyph, makeHand, penOutline, rng, withOverrides, UPM, type Glyph, type Hand, type Page, type PageItem } from '@engine';
 import { lineAfter, sheetOf } from './paginate';
+import { LIVE } from './live';
+import { lookOf } from './request';
+import { writeLive } from './write-live';
 import { compose, type Sheet } from './compose';
 import type { Mark } from './doc';
 import { getPaper } from './papers';
@@ -15,6 +18,8 @@ const MISS_ADVANCE = 560;
 type GlyphItem = Extract<PageItem, { kind: 'glyph' }>;
 
 export function write(req: WriteRequest): WriteResult {
+  // engines with the live page: the same markup the live page draws (lib/write-live.ts)
+  if (LIVE) return writeLive(req);
   const t0 = performance.now();
   const p = withOverrides(makeHand(req.seed, req.style), req.overrides);
   const paper = getPaper(req.paper);
@@ -152,6 +157,7 @@ export function write(req: WriteRequest): WriteResult {
     unitsPerMm: comp.unitsPerMm,
     glyphs,
     text: req.text,
+    look: lookOf(req),
     spaceU: makeGlyph(p, ' ', null).advance * ((p.wordSpace as number) || 1),
     leftU: paper.text.left * comp.unitsPerMm,
     lines: comp.page.lines,

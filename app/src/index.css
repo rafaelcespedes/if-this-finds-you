@@ -221,43 +221,27 @@ textarea {
   height: 100%;
 }
 
-/* New look: the sheet cross-fades (paper swap and re-ink at once); the panel and desk hold still */
-.sheet-stack {
-  view-transition-name: sheet;
+/* A sheet the letter grows while open (it ran onto a new page) rises in; the controls never move */
+.sheet-enter {
+  transition: opacity 240ms var(--ease-out), transform 300ms var(--ease-out);
 }
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-}
-::view-transition-group(sheet) {
-  animation-duration: 420ms;
-  animation-timing-function: var(--ease-in-out);
-}
-::view-transition-old(sheet),
-::view-transition-new(sheet) {
-  width: 100%;
-  height: 100%;
-  object-fit: none;
-  object-position: top center;
-}
-::view-transition-old(sheet) {
-  animation: 240ms var(--ease-out) both sheet-out;
-}
-::view-transition-new(sheet) {
-  animation: 420ms var(--ease-out) both sheet-in;
-}
-@keyframes sheet-out {
-  to {
+@starting-style {
+  .sheet-enter {
     opacity: 0;
-    filter: blur(2px);
+    transform: translateY(12px);
   }
 }
-@keyframes sheet-in {
-  from {
-    opacity: 0;
-    filter: blur(3px);
-    transform: translateY(6px);
+@media (prefers-reduced-motion: reduce) {
+  @starting-style {
+    .sheet-enter {
+      transform: none;
+    }
   }
+}
+
+/* First load: paper and writing arrive together */
+.desk-in {
+  transition: opacity 200ms var(--ease-out);
 }
 
 /* ---------- the phone's control sheet (ControlSheet.tsx) ---------- */

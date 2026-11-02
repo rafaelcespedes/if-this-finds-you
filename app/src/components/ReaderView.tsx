@@ -73,8 +73,6 @@ export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWr
             pxPerMm={pxPerMm}
             svg={svg}
             ink={writing ? writing.inkColor : ink}
-            handKey={writing ? writing.handKey : ''}
-            intro={false}
             index={i}
             count={all.length}
             play={token > 0 ? plan[i] : null}

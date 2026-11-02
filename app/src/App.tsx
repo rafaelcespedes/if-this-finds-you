@@ -23,7 +23,6 @@ import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { pickSimilarHand, writerName } from '@/lib/hands';
 import { rollLook, type LockKey } from '@/lib/roll';
-import { canTransition } from '@/hooks/useWriting';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
@@ -31,12 +30,12 @@ import { mapGeometry } from '@/lib/geometry';
 import { LIVE, engineGeometry, liveExtras, liveLayout } from '@/lib/live';
 import { LiveSheets } from '@/components/LiveSheets';
 import { renderLiveNote } from '@/lib/actions';
-import { flushSync } from 'react-dom';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
 import { PENS_LIVE } from '@/lib/pens';
-import '@/lib/perf';
+import { perf } from '@/lib/perf';
 import { offsetsForNewHand, shareUrl } from '@/lib/state';
-import type { WriteRequest } from '@/lib/write-protocol';
+import { placeholderFor, requestFor } from '@/lib/request';
+import type { NoteState } from '@/lib/state';
 
 /** Screen scale ceiling: about the size of real paper on a laptop screen. */
 const MAX_PX_PER_MM = 3.9;
@@ -76,29 +75,49 @@ export default function App() {
   const ink = inkColor(state.ink);
   const name = useMemo(() => writerName(state.seed), [state.seed]);
 
-  const request: Omit<WriteRequest, 'id'> = {
-    seed: state.seed, style: state.style, overrides: eff.overrides, text: state.text, paper: state.paper,
-    size: eff.size, lineSpacing: eff.lineSpacing, inkKey: eff.inkKey, inkColor: ink,
-    marks: state.marks, signed: state.signed, writerName: name,
-  };
-  // the page is written in a worker, so typing never waits for the hand; an empty page shows a placeholder in the hand
-  // the live page (engines with incremental layout) is written here on the main thread; otherwise a worker writes it
-  const writing = useWriting({ ...request, placeholder: placeholderFor(state.paper) }, composing || LIVE);
+  const request = requestFor(state, natural, eff);
+  const reqKey = JSON.stringify(request);
+  // for QA: the page's request, to check it against what was written ahead (window.__seedhandCache)
+  (window as unknown as { __seedhandReq: string }).__seedhandReq = reqKey;
+  // Looks are written in a worker, so a new hand never blocks a frame, and hands about to be asked for are
+  // written ahead (prefetch). With the live page (engines with incremental layout), typing is drawn on the
+  // main thread instead, from the moment the letter is tapped: same markup, so the switch shows nothing.
+  const liveWanted = LIVE && (editing || state.reader);
+  const { writing, prefetch, written } = useWriting(request, composing || liveWanted);
   const committed = useRef(state.text);
   if (!composing) committed.current = state.text;
   const live = useMemo(
-    () => (LIVE ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed) : null),
+    () => (liveWanted ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed) : null),
     // laid out from the committed text: an IME's composing text waits until it commits
-    [p, committed.current, paper, eff.size, eff.lineSpacing, state.signed],
+    [liveWanted, p, committed.current, paper, eff.size, eff.lineSpacing, state.signed],
   );
   const extras = useMemo(
     () => (live ? liveExtras(live, { marks: state.marks, signed: state.signed, writerName: name, placeholder: placeholderFor(state.paper), text: live.page.text }) : []),
     [live, state.marks, state.signed, name, state.paper],
   );
-  const firstVisit = useRef(window.location.hash.length < 2);
+  // after typing, the live page stays up until the worker has written the same thing (no flash of older text)
+  const lastLive = useRef<{ live: NonNullable<typeof live>; extras: string[] } | null>(null);
+  if (live) lastLive.current = { live, extras };
+  const workerCaughtUp = !!writing && writing.key === reqKey;
+  if (!live && workerCaughtUp) lastLive.current = null;
+  const shownLive = live ? { live, extras } : lastLive.current;
   // paper and writing switch together when the result arrives
-  const shownPaper = live ? paper : writing ? getPaper(writing.paper) : paper;
-  const geometry = useMemo(() => (live ? engineGeometry(live) : writing ? mapGeometry(writing) : null), [live, writing]);
+  const shownPaper = shownLive ? shownLive.live.paper : writing ? getPaper(writing.paper) : paper;
+  const geometry = useMemo(() => (shownLive ? engineGeometry(shownLive.live) : writing ? mapGeometry(writing) : null), [shownLive?.live, writing]);
+
+  // a new look fades in when a button asked for it (not from the keyboard, not for sliders or typing)
+  const fadeArmed = useRef(false);
+  const shownLook = useRef('');
+  const fadeNow = !!writing && !!shownLook.current && writing.look !== shownLook.current && fadeArmed.current;
+  useEffect(() => {
+    if (!writing || writing.look === shownLook.current) return;
+    shownLook.current = writing.look;
+    fadeArmed.current = false;
+  }, [writing]);
+  // the sheets that were there before a look change, so a page the letter grows rises in
+  const shownSheets = useRef(0);
+  const sheetCount = writing ? writing.svgs.length : 1;
+  useEffect(() => { if (writing) shownSheets.current = sheetCount; }, [writing, sheetCount]);
 
   const deskRef = useRef<HTMLDivElement>(null);
   const deskW = useElementWidth(deskRef);
@@ -132,19 +151,75 @@ export default function App() {
   };
   const toggleSigned = () => update((s) => ({ signed: !s.signed }));
 
-  const lookChange = useCallback((fn: () => void) => {
-    if (LIVE && canTransition()) document.startViewTransition(() => flushSync(fn));
-    else fn();
+  /** A change of look from a button: the page cross-fades to it. Keyboard and sliders swap at once. */
+  const lookChange = useCallback((fn: () => void, fade = true) => {
+    fadeArmed.current = fade;
+    fn();
   }, []);
 
   // ---------- hands ----------
-  // a new hand rolls the whole look (writer, style, pen, ink, paper, size, every slider), except what's locked
-  const newHand = useCallback(() => {
-    lookChange(() => update((s) => rollLook(s, { variety, locked: locks })));
-  }, [update, variety, locks, lookChange]);
-  const similarHand = useCallback(() => {
-    lookChange(() => update((s) => ({ ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) })));
-  }, [update, lookChange]);
+  // A new hand rolls the whole look (writer, style, pen, ink, paper, size, every slider), except what's locked.
+  // The next two are rolled and written ahead while you look at this one, so the click shows them at once.
+  const lockKey = [...locks].sort().join(',');
+  const ahead = useRef<{ base: string; look: Partial<NoteState> }[]>([]);
+  const similarAhead = useRef<{ base: string; look: Partial<NoteState> } | null>(null);
+  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.marks, s.signed, variety, lockKey]), [variety, lockKey]);
+  const stateNow = useRef(state);
+  stateNow.current = state;
+  const newHand = useCallback((fade = true) => {
+    // for QA (window.__seedhandPerf): click → the new hand's writing in the page
+    const now = ahead.current.find((a) => a.base === baseOf(stateNow.current));
+    perf.lookAsked(!!now && written(requestFor({ ...stateNow.current, ...now.look })));
+    lookChange(() => update((s) => ahead.current.find((a) => a.base === baseOf(s))?.look ?? rollLook(s, { variety, locked: locks })), fade);
+  }, [update, baseOf, variety, locks, lookChange, written]);
+  const similarHand = useCallback((fade = true) => {
+    lookChange(() => update((s) => {
+      const pre = similarAhead.current;
+      return pre && pre.base === baseOf(s) ? pre.look : { ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) };
+    }), fade);
+  }, [update, baseOf, lookChange]);
+  const base = baseOf(state);
+  useEffect(() => {
+    if (state.reader || editing) return;
+    // in idle moments: keep two new hands (and one sibling) rolled and written ahead of this state
+    let cancelled = false;
+    const idle = (fn: () => void) => (typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(fn, { timeout: 600 }) : window.setTimeout(fn, 60));
+    const t = window.setTimeout(() => idle(() => {
+      if (cancelled) return;
+      const chain: { base: string; look: Partial<NoteState> }[] = [];
+      let s: NoteState = state;
+      for (let i = 0; i < 2; i++) {
+        const b = baseOf(s);
+        const kept = ahead.current.find((a) => a.base === b);
+        const look = kept?.look ?? rollLook(s, { variety, locked: locks });
+        chain.push({ base: b, look });
+        s = { ...s, ...look };
+      }
+      ahead.current = chain;
+      const reqs = chain.map((a, i) => requestFor(i === 0 ? { ...state, ...a.look } : { ...state, ...chain[0].look, ...a.look }));
+      prefetch(reqs);
+      idle(() => {
+        if (cancelled) return;
+        const look = similarAhead.current?.base === base ? similarAhead.current.look : { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) };
+        similarAhead.current = { base, look };
+        prefetch([...reqs, requestFor({ ...state, ...look })]);
+      });
+    }), 80);
+    return () => { cancelled = true; window.clearTimeout(t); };
+    // `base` covers everything the rolls depend on
+  }, [base, editing, state.reader]);
+
+  // the live page's first layout for a hand is the slow one: do it while the page sits still, so a tap to
+  // write starts at once
+  useEffect(() => {
+    if (!LIVE || editing || state.reader) return;
+    const t = window.setTimeout(() => {
+      const run = () => { try { liveLayout(p, state.text, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 3000 });
+      else run();
+    }, 1400);
+    return () => window.clearTimeout(t);
+  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader]);
 
   // ---------- actions ----------
   const share = useCallback(async () => {
@@ -158,12 +233,12 @@ export default function App() {
   }, [state, name]);
 
   // the download never carries the empty-page placeholder
-  const requestKey = JSON.stringify(request);
+  const requestKey = JSON.stringify({ ...request, placeholder: undefined });
   const download = useCallback(async () => {
     setBusy((b) => ({ ...b, download: true }));
     try {
       const res = live
-        ? await renderLiveNote(live, extras, eff.inkKey && eff.inkKey !== 'auto' ? eff.inkKey : undefined, ink, pxPerMm || MAX_PX_PER_MM)
+        ? await renderLiveNote(live, liveExtras(live, { marks: state.marks, signed: state.signed, writerName: name, text: live.page.text }), eff.inkKey && eff.inkKey !== 'auto' ? eff.inkKey : undefined, ink, pxPerMm || MAX_PX_PER_MM)
         : await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
       const filename = `${name} note`;
       const done = (r: string) => {
@@ -184,7 +259,7 @@ export default function App() {
     } finally {
       setBusy((b) => ({ ...b, download: false }));
     }
-  }, [requestKey, ink, pxPerMm, name, coarse, live, extras, eff.inkKey]);
+  }, [requestKey, ink, pxPerMm, name, coarse, live, state.marks, state.signed, eff.inkKey]);
 
   const font = useCallback(async () => {
     setBusy((b) => ({ ...b, font: true }));
@@ -210,8 +285,9 @@ export default function App() {
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
       e.preventDefault();
-      if (e.shiftKey) similarHand();
-      else newHand();
+      // from the keyboard the new hand simply appears: no fade
+      if (e.shiftKey) similarHand(false);
+      else newHand(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -233,8 +309,8 @@ export default function App() {
       return next;
     }),
     busy,
-    onNewHand: newHand,
-    onSimilarHand: similarHand,
+    onNewHand: () => newHand(true),
+    onSimilarHand: () => similarHand(true),
     onSeed: (seed) => update((s) => ({ seed, offsets: offsetsForNewHand(s.offsets) })),
     onStyle: (style) => lookChange(() => update({ style })),
     onControl: (key, v) => update((s) => ({ offsets: { ...s.offsets, [key]: offsetFor(key, v, natural, s) } })),
@@ -244,8 +320,8 @@ export default function App() {
       return { offsets };
     }),
     onResetOffsets: () => update({ offsets: {}, penSize: 'medium' }),
-    onPen: (pen) => update({ pen }),
-    onPenSize: (penSize) => update({ penSize }),
+    onPen: (pen) => lookChange(() => update({ pen })),
+    onPenSize: (penSize) => lookChange(() => update({ penSize })),
     onInk: (ink) => lookChange(() => update({ ink })),
     onPaper: (paper) => lookChange(() => update({ paper })),
     onSize: (size) => update({ size }),
@@ -400,20 +476,20 @@ export default function App() {
                   onEditingChange={setEditing}
                   onComposingChange={setComposing}
                 >
-                  {live ? (
+                  {shownLive ? (
                     <LiveSheets
-                      live={live}
+                      live={shownLive.live}
                       pxPerMm={pxPerMm}
                       gapPx={SHEET_GAP}
                       ink={ink}
                       inkKey={eff.inkKey}
-                      extras={extras}
+                      extras={shownLive.extras}
                       handKey={state.seed + ':' + state.style}
-                      writeOut={firstVisit.current}
                       hold="word"
                     />
                   ) : (
-                    <div className="flex flex-col" style={{ gap: SHEET_GAP }}>
+                    // the first time, paper and writing arrive together
+                    <div className={cn('desk-in flex flex-col', !writing && 'opacity-0')} style={{ gap: SHEET_GAP }}>
                       {(writing ? writing.svgs : [null]).map((svg, i, all) => (
                         <SheetView
                           key={i}
@@ -421,8 +497,8 @@ export default function App() {
                           pxPerMm={pxPerMm}
                           svg={svg}
                           ink={writing ? writing.inkColor : ink}
-                          handKey={writing ? writing.handKey : ''}
-                          intro={!canTransition()}
+                          fade={fadeNow}
+                          enter={shownSheets.current > 0 && i >= shownSheets.current}
                           index={i}
                           count={all.length}
                         />
@@ -491,16 +567,6 @@ export default function App() {
       <Toaster offset={isDesktop ? 24 : 96} mobileOffset={{ bottom: mobileSheet ? metrics.peek + 12 : 96 }} />
     </TooltipProvider>
   );
-}
-
-/** What the writer pencils in on an empty page: a salutation on letter paper, the date in a notebook. */
-function placeholderFor(paper: string) {
-  if (paper === 'plain' || paper === 'laid' || paper === 'postcard') return 'Dear …,';
-  try {
-    return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-  } catch {
-    return 'Dear …,';
-  }
 }
 
 function wordAround(text: string, at: number): [number, number] {
