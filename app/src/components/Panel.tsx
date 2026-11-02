@@ -40,7 +40,16 @@ export function Panel(props: PanelProps) {
   const { state, p, compact } = props;
   return (
     <div className="flex flex-col">
-      {!compact && <WriterCard {...props} />}
+      {compact ? (
+        <section aria-label="Writer and actions" className="px-5 pt-2 pb-5">
+          <SeedField seed={state.seed} onCommit={props.onSeed} />
+          <div className="mt-3">
+            <Actions {...props} />
+          </div>
+        </section>
+      ) : (
+        <WriterCard {...props} />
+      )}
       <Section>
         <Row label="Style">
           <Segmented
@@ -103,34 +112,45 @@ export function Panel(props: PanelProps) {
         </div>
       </Section>
 
-      <Section last>
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" onClick={props.onShare}>
-            <Link2 /> Share link
-          </Button>
-          <Button variant="outline" onClick={props.onDownload} disabled={props.busy.download} aria-label="Download note as an image">
-            {props.busy.download ? <Loader2 className="animate-spin" /> : <Download />} Download note
-          </Button>
-        </div>
-        <div className="mt-4 flex items-start gap-3 rounded-lg bg-[#f1eee7] px-3 py-2.5">
-          <Type className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <div className="min-w-0">
-            <button
-              type="button"
-              onClick={props.onExportFont}
-              disabled={props.busy.font}
-              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:decoration-foreground disabled:opacity-60 pointer-coarse:py-2.5"
-            >
-              Export font file (.otf)
-              {props.busy.font && <Loader2 className="size-3.5 animate-spin" aria-hidden />}
-            </button>
-            <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
-              The font holds 3 versions of each letter. The page varies endlessly.
-            </p>
-          </div>
-        </div>
-      </Section>
+      {!compact && (
+        <Section last>
+          <Actions {...props} />
+        </Section>
+      )}
     </div>
+  );
+}
+
+// ---------- actions: share, download, font ----------
+function Actions(props: PanelProps) {
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" onClick={props.onShare}>
+          <Link2 /> Share link
+        </Button>
+        <Button variant="outline" onClick={props.onDownload} disabled={props.busy.download} aria-label="Download note as an image">
+          {props.busy.download ? <Loader2 className="animate-spin" /> : <Download />} Download note
+        </Button>
+      </div>
+      <div className="mt-4 flex items-start gap-3 rounded-lg bg-[#f1eee7] px-3 py-2.5">
+        <Type className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <div className="min-w-0">
+          <button
+            type="button"
+            onClick={props.onExportFont}
+            disabled={props.busy.font}
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:decoration-foreground disabled:opacity-60 pointer-coarse:py-2.5"
+          >
+            Export font file (.otf)
+            {props.busy.font && <Loader2 className="size-3.5 animate-spin" aria-hidden />}
+          </button>
+          <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
+            The font holds 3 versions of each letter. The page varies endlessly.
+          </p>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -167,7 +187,7 @@ function SeedField({ seed, onCommit }: { seed: string; onCommit: (s: string) => 
     else setV(seed);
   };
   return (
-    <div className="mt-3 flex items-center gap-2 text-[12.5px] text-muted-foreground">
+    <div className="mt-3 flex items-center gap-2 text-[12.5px] text-muted-foreground first:mt-0">
       <label htmlFor={id} className="shrink-0">
         Seed
       </label>

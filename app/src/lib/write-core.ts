@@ -1,6 +1,6 @@
 // Turns a WriteRequest into a WriteResult. Runs in the worker for the live page, and on the main
 // thread for the download, so both produce the very same SVG.
-import { makeHand, withOverrides } from '@engine';
+import { makeGlyph, makeHand, withOverrides } from '@engine';
 import { compose } from './compose';
 import { getPaper } from './papers';
 import { writingSVG } from './writing';
@@ -39,6 +39,10 @@ export function write(req: WriteRequest): WriteResult {
     perPage: comp.perPage,
     unitsPerMm: comp.unitsPerMm,
     glyphs,
+    text: req.text,
+    spaceU: makeGlyph(p, ' ', null).advance * ((p.wordSpace as number) || 1),
+    leftU: paper.text.left * comp.unitsPerMm,
+    lines: comp.page.lines,
     ms: performance.now() - t0,
   };
 }
