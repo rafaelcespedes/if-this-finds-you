@@ -80,8 +80,9 @@ function syncControls() {
   const p = params();
   for (const d of E.PARAMS) {
     const el = $('c-' + d.key); if (!el) continue;
-    el.value = p[d.key];
-    if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, p[d.key]);
+    const v = p[d.key] ?? d.default;
+    el.value = v;
+    if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, v);
   }
 }
 function buildStyleSwitch() {
@@ -103,10 +104,111 @@ function noteMisses(list) {
 function renderLive() {
   const host = $('live');
   const W = Math.max(280, host.clientWidth || 800);
+  if (ink.renderer !== 'svg') return renderLiveInk(host, W);
   const p = params();
   const page = E.layout(p, $('text').value, { maxWidth: W / (EM_PX / E.UPM), lineHeight: LINE * E.UPM });
   noteMisses(page.misses);
   host.innerHTML = E.renderSVG(p, page, { width: W, emPx: EM_PX });
+}
+
+// ---------- ink renderers: SVG (vector / export) vs canvas (live ink density), side by side ----------
+const ink = { renderer: q.get('renderer') || 'canvas', paper: q.get('paper') || 'plain', canvas: null, stats: null, layoutMs: 0 };
+const LAB_PAPER = [255, 253, 248]; // matches .paper so the canvas edge disappears
+function buildInkControls() {
+  const style = document.createElement('style');
+  style.textContent = `#live canvas { display: block; }
+    .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .cmp h4 { margin: 0 0 6px; font: 600 11px/1 ui-sans-serif, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .cmp svg { display: block; width: 100%; height: auto; overflow: visible; }`;
+  document.head.appendChild(style);
+  const g = document.createElement('div');
+  g.className = 'group';
+  g.innerHTML = `<div class="label">Renderer</div>
+    <div class="seg" id="renderer"><button data-v="svg">SVG</button><button data-v="canvas">Canvas</button><button data-v="both">Both</button></div>
+    <div class="slider"><label for="paperSel">Paper</label><span></span><select id="paperSel">${
+      Object.entries(E.PAPERS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('')}</select></div>`;
+  $('controls').after(g);
+  const sync = () => g.querySelectorAll('#renderer button').forEach((b) => b.classList.toggle('on', b.dataset.v === ink.renderer));
+  g.querySelector('#renderer').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    ink.renderer = b.dataset.v; sync(); render();
+  });
+  const sel = g.querySelector('#paperSel');
+  sel.value = ink.paper;
+  sel.addEventListener('change', () => { ink.paper = sel.value; render(); });
+  sync();
+}
+function renderLiveInk(host, W) {
+  const p = params();
+  const both = ink.renderer === 'both';
+  const paneW = both ? Math.floor((W - 16) / 2) : W;
+  const t0 = performance.now();
+  const page = E.layout(p, $('text').value, { maxWidth: paneW / (EM_PX / E.UPM), lineHeight: LINE * E.UPM });
+  ink.layoutMs = performance.now() - t0;
+  noteMisses(page.misses);
+  if (!ink.canvas) ink.canvas = document.createElement('canvas');
+  const paper = { preset: ink.paper, color: ink.paper === 'cream' ? undefined : LAB_PAPER };
+  if (both) {
+    if (!host.querySelector('.cmp')) host.innerHTML = '<div class="cmp"><div><h4>SVG · export</h4><div class="svgpane"></div></div><div><h4>Canvas · live ink</h4><div class="cvpane"></div></div></div>';
+    host.querySelector('.svgpane').innerHTML = E.renderSVG(p, page, { width: paneW, emPx: EM_PX });
+    const cv = host.querySelector('.cvpane');
+    if (ink.canvas.parentNode !== cv) cv.appendChild(ink.canvas);
+  } else if (ink.canvas.parentNode !== host || host.children.length !== 1) { host.innerHTML = ''; host.appendChild(ink.canvas); }
+  ink.stats = E.renderCanvas(ink.canvas, p, page, { width: paneW, emPx: EM_PX, paper });
+  const s = ink.stats;
+  $('tag').textContent = `${both ? 'SVG | CANVAS' : 'CANVAS'} · ${s.pen} · ${s.ink} · layout ${ink.layoutMs.toFixed(0)} ms · ink ${s.ms.toFixed(1)} ms` +
+    (s.fallback ? ' (2D fallback)' : ` · ${s.layers} layers`);
+}
+// QA: a magnified sheet of pens × seeds over the page (click to close). 1 device px = `zoom` CSS px.
+function penSheet({ text = 'minimum Hello, quick', pens = Object.keys(E.PENS).filter((k) => k !== 'auto' && k !== 'classic'),
+  seeds = ['maple-river-42', 'quiet-heron-17', 'amber-comet-63'], style = state.style, emPx = 64, cellW = 420, zoom = 1, ink, paper = 'plain', overrides = {} } = {}) {
+  let o = document.getElementById('pensheet');
+  if (o) o.remove();
+  o = document.createElement('div');
+  o.id = 'pensheet';
+  o.style.cssText = 'position:fixed;inset:0;z-index:99;overflow:auto;background:#e9e6df;padding:8px;display:grid;gap:6px;' +
+    `grid-template-columns:90px repeat(${seeds.length}, ${cellW * zoom}px);font:11px ui-sans-serif,sans-serif;color:#555`;
+  o.addEventListener('click', () => o.remove());
+  o.innerHTML = '<div></div>' + seeds.map((sd) => `<div>${sd}</div>`).join('');
+  for (const pen of pens) {
+    o.insertAdjacentHTML('beforeend', `<div style="align-self:center">${pen}</div>`);
+    for (const sd of seeds) {
+      const p = E.withOverrides(E.makeHand(sd, style), Object.assign({ pen }, ink ? { ink } : {}, overrides));
+      const page = E.layout(p, text, { maxWidth: cellW / (emPx / E.UPM), lineHeight: LINE * E.UPM });
+      const cv = document.createElement('canvas');
+      E.renderCanvas(cv, p, page, { width: cellW, emPx, dpr: 2, paper: { preset: paper, color: LAB_PAPER }, style: false });
+      cv.style.width = cellW * zoom + 'px'; cv.style.height = (cv.height / 2) * zoom + 'px'; cv.style.imageRendering = 'pixelated';
+      o.appendChild(cv);
+    }
+  }
+  document.body.appendChild(o);
+}
+// QA: time layout and the canvas renderer on a ~600-character paragraph (warm runs)
+function benchInk({ chars = 600, runs = 12, width = 760, emPx = EM_PX } = {}) {
+  const base = 'The quick brown fox jumps over the lazy dog. Dear Ada, the little letters never quite match, and that is the point. See you at 7:30 - bring the old maps & a good pen! ';
+  let text = ''; while (text.length < chars) text += base; text = text.slice(0, chars);
+  const p = params();
+  const cv = document.createElement('canvas');
+  const page = E.layout(p, text, { maxWidth: width / (emPx / E.UPM), lineHeight: LINE * E.UPM });
+  const read = () => cv.getContext('2d').getImageData(0, 0, 1, 1); // forces the GPU work to finish
+  for (let i = 0; i < 3; i++) { E.renderCanvas(cv, p, page, { width, emPx }); read(); }
+  const lay = [], geo = [], tot = [], sync = [];
+  for (let i = 0; i < runs; i++) {
+    let t = performance.now(); E.layout(p, text, { maxWidth: width / (emPx / E.UPM), lineHeight: LINE * E.UPM }); lay.push(performance.now() - t);
+    t = performance.now(); const s = E.renderCanvas(cv, p, page, { width, emPx }); tot.push(performance.now() - t); geo.push(s.geometryMs);
+    read(); sync.push(performance.now() - t);
+  }
+  const med = (a) => a.slice().sort((x, y) => x - y)[a.length >> 1];
+  let t = performance.now(); for (let i = 0; i < 4; i++) E.renderSVG(p, page, { width, emPx }); const svg = (performance.now() - t) / 4;
+  return { chars: text.length, emPx, dpr: devicePixelRatio, canvasPx: [cv.width, cv.height], pen: E.getPen(p).key,
+    layoutMs: +med(lay).toFixed(1), canvasMs: +med(tot).toFixed(1), geometryMs: +med(geo).toFixed(1), canvasSyncedMs: +med(sync).toFixed(1), svgMs: +svg.toFixed(1) };
+}
+// FNV-1a over the canvas pixels: same seed + same text must give the same hash, render after render
+function hashCanvas(cv) {
+  const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < d.length; i++) { h ^= d[i]; h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(16).padStart(8, '0');
 }
 
 // ---------- glyph sheet: the 3 samples per letter that go into the font ----------
@@ -186,6 +288,7 @@ function render() {
     $('fontView').classList.toggle('hidden', live);
     $('caltWrap').classList.toggle('hidden', live);
     $('tag').textContent = live ? 'LIVE · each letter drawn fresh' : (state.calt ? 'FONT · 3 samples, cycled by calt' : 'FONT · calt off (one sample per letter)');
+    $('live').classList.toggle('inkview', live && ink.renderer !== 'svg');
     if (live) renderLive();
     else { clearTimeout(fontTimer); fontTimer = setTimeout(() => renderFontView().catch(err), 60); }
     renderSheet();
@@ -234,6 +337,7 @@ function init() {
   readHash();
   buildStyleSwitch();
   buildControls();
+  buildInkControls();
   $('text').value = DEFAULT_TEXT;
   $('seed').value = state.seed;
   const syncStyle = seg('style', 'style', () => { state.hand = E.makeHand(state.seed, state.style); syncControls(); invalidateFont(); writeHash(); render(); });
@@ -261,4 +365,4 @@ function init() {
 }
 try { init(); } catch (e) { err(e); }
 // exposed for debugging and QA
-window.Seedhand = { state, params, ensureFont, missLog, engine: E };
+window.Seedhand = { state, params, ensureFont, missLog, engine: E, ink, hashCanvas, penSheet, benchInk };

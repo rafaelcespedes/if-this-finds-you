@@ -13,16 +13,17 @@ import './sources/extras.js';
 export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames } from './glyphs.js';
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
-export { PENS, getPen, penOutline, simplify } from './pen.js';
+export { PENS, getPen, penKey, penOutline, strokeInk, simplify, INKS, inkModel, inkRGB, PAPER_REF } from './pen.js';
 export { layout } from './layout.js';
 export { kinematics } from './kinematics.js';
 export { renderSVG, contoursToD } from './render-svg.js';
+export { renderCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
 export { EXTRAS } from './sources/extras.js';
 
 import { HAND_PARAMS } from './hand.js';
-import { PEN_PARAMS } from './pen.js';
+import { PEN_PARAMS, INK_PARAMS } from './pen.js';
 
 // User-facing controls, grouped. Each entry: { key, label, group, min, max, step, format } or
 // { key, label, group, type: 'select', options() }. UIs render these; modules add their own.
-export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS];
+export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS, ...INK_PARAMS];
