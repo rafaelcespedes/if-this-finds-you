@@ -148,6 +148,13 @@ for (let k = 0; k < SESSIONS; k++) {
     try { const q = E.plan(st, view, e); E.apply(st, q.events); view = q.view; const w = E.penStep(st, view, { final: true }); E.apply(st, w.events); view = w.view; }
     catch (err) { fail('hostile edit ' + JSON.stringify(e) + ' threw ' + err.message); }
   }
+  // every page has its own runs list, so a run renderer's runChanges(old, new) sees each write
+  {
+    const before = st.page;
+    E.apply(st, [{ t: 'write', text: ' Yours.' }]);
+    const ch = E.runChanges ? E.runChanges(before, st.page) : { add: [1] };
+    if (before.runs === st.page.runs || before.items === st.page.items || !ch.add.length) fail('apply() should hand back fresh runs/items lists (runChanges saw no new run)');
+  }
   // undo the wet tail
   const n = st.doc.log.length;
   const st2 = E.dropLast(st);
