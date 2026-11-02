@@ -18,7 +18,7 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 // page: result of layout(); opts: { width (px), emPx (px per em), ink (CSS color, default var(--ink)),
 //   strokeIds (wrap each pen stroke in <g data-k="k"> for the writing animation; k counts g.strokes
 //              across the page in item order, see animate.js),
-//   rules (draw the ruled lines of a `ruled` layout, CSS color, default var(--rule)) }
+//   rules (draw the paper's rules for a `ruled` layout, CSS color, default var(--rule)) }
 export function renderSVG(p, page, opts) {
   const W = opts.width;
   const emPx = opts.emPx;
@@ -30,7 +30,7 @@ export function renderSVG(p, page, opts) {
   let k = 0;
   for (const it of page.items) {
     if (it.kind === 'miss') {
-      misses.push(`<text class="miss" x="${((it.x + 280) * sc).toFixed(1)}" y="${(it.y * sc).toFixed(1)}" font-size="${(0.62 * emPx).toFixed(1)}">` +
+      misses.push(`<text class="miss" x="${((it.x + (it.advance || 560) / 2) * sc).toFixed(1)}" y="${(it.y * sc).toFixed(1)}" font-size="${(0.62 * emPx).toFixed(1)}">` +
         `<title>This hand hasn’t learned ‹${esc(it.ch)}› yet</title>${esc(it.ch)}</text>`);
       continue;
     }
@@ -45,10 +45,13 @@ export function renderSVG(p, page, opts) {
   }
   const H = Math.ceil(page.height * sc);
   let rules = '';
-  if (opts.rules && page.rules && page.rules.length) {
+  if (opts.rules && page.ruling) {
+    // the paper's rules, including any the writer skipped
     const col = typeof opts.rules === 'string' ? opts.rules : 'var(--rule)';
+    const { first, pitch } = page.ruling, ys = [];
+    for (let y = first - Math.floor(first / pitch) * pitch; y <= page.height + 1e-6; y += pitch) ys.push(y);
     rules = `<g class="rules" stroke="${col}" stroke-width="1">` +
-      page.rules.map((y) => `<line x1="0" x2="${W}" y1="${(y * sc).toFixed(1)}" y2="${(y * sc).toFixed(1)}"/>`).join('') + '</g>';
+      ys.map((y) => `<line x1="0" x2="${W}" y1="${(y * sc).toFixed(1)}" y2="${(y * sc).toFixed(1)}"/>`).join('') + '</g>';
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-label="Handwritten text">` +
     `<defs>${look.defs}</defs>${rules}` +

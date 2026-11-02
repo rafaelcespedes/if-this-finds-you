@@ -106,7 +106,9 @@ function renderLive() {
   const W = Math.max(280, host.clientWidth || 800);
   const p = params();
   const ruled = state.paper === 'ruled';
-  const page = E.layout(p, $('text').value, { maxWidth: W / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled, firstBaseline: 0.95 * E.UPM });
+  // plain paper: the hand's own line spacing; ruled: notebook rules a little roomier than the hand needs
+  const paper = ruled ? { ruled, lineHeight: Math.max(1.2 * E.UPM, 1.05 * E.pageMetrics(p).pitch), firstBaseline: 1.1 * E.UPM } : {};
+  const page = E.layout(p, $('text').value, Object.assign({ maxWidth: W / (EM_PX / E.UPM) }, paper));
   noteMisses(page.misses);
   stopWriting();
   host.innerHTML = E.renderSVG(p, page, { width: W, emPx: EM_PX, strokeIds: true, rules: ruled });

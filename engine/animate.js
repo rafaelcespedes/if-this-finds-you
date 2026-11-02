@@ -12,7 +12,8 @@
 //   A canvas player draws events[0..done) whole and the active one up to its arclength fraction:
 //     const { done, active, frac } = frameAt(tl, t)
 //
-// Determinism: all pauses come from rng('anim:' + seed); same page, same timeline.
+// Determinism: pauses come from rng('anim:' + seed + word identity); same page, same timeline, and
+// editing one word doesn't change the rhythm elsewhere.
 
 import { rng, clamp } from './core.js';
 import { kinematics } from './kinematics.js';
@@ -27,7 +28,7 @@ const STOP = /[.!?]["'’”)]*$/, PAUSE = /[,;:]["'’”)]*$/;
 //     item   = index into page.items; stroke = index into that item's g.strokes
 //     tn, sn = matching tables of normalised time and normalised arclength along the stroke (0..1)
 export function timeline(page, opts = {}) {
-  const r = rng('anim:' + (page.seed || ''));
+  let r = rng('anim:' + (page.seed || ''));
   const logn = (median, sigma, lo, hi) => clamp(median * Math.exp(sigma * clamp(r.gauss(), -2.5, 2.5)), lo, hi);
   const xh = page.xh || 400;
   const items = page.items;
@@ -54,6 +55,7 @@ export function timeline(page, opts = {}) {
     while (b < items.length && items[b].word === items[a].word) b++;
     const first = items[a];
     const tempo = first.tempo || 1;
+    r = rng('anim:' + (page.seed || '') + ':' + (first.wkey || first.word) + ':' + first.charIndex);
     if (prev) {
       let pause = logn(0.24, 0.3, 0.15, 0.4);
       if (STOP.test(prev.ch)) pause += 0.2 + 0.2 * r();

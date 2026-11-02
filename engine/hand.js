@@ -9,7 +9,7 @@
 //
 // Everything is deterministic from strings: hand seed, and an instance seed for each use.
 
-import { rng, makeNoise, lerp, clamp, mix, DEG } from './core.js';
+import { rng, makeNoise, lerp, clamp, mix, smooth, DEG } from './core.js';
 import { choose, getStyle, has as styleHas } from './glyphs.js';
 import { penOutline } from './pen.js';
 
@@ -319,12 +319,14 @@ export function makeGlyph(p, ch, inst, ctx) {
     let dx = qA * N.n2(x / qS + qox, y / qS + qoy);
     let dyv = qA * N.n2(x / qS + qox + 71.7, y / qS + qoy + 13.1);
     if (iA) {
-      dx += iA * N.n2(x / 420 + iox, y / 420 + ioy);
-      dyv += iA * N.n2(x / 420 + iox + 33.3, y / 420 + ioy + 91.7);
+      // this use's own warp: it changes widths and bulges more than lean (the word carries the lean),
+      // and it barely moves the bottoms of letters, which sit on the line
+      dx += iA * N.n2(x / 420 + iox, y / 680 + ioy);
+      dyv += iA * N.n2(x / 420 + iox + 33.3, y / 420 + ioy + 91.7) * (0.4 + 0.6 * smooth(Math.abs(y) / (0.5 * xh)));
     }
-    // instance affine about glyph centre
-    let X = x + dx - cxG, Y = y + dyv - cyG;
-    X = X * sx + Y * Math.tan(sh); Y = Y * sy;
+    // instance affine: lean and width about the glyph centre, height from the baseline, a slight turn
+    let X = x + dx - cxG, Y = y + dyv;
+    X = X * sx + (Y - cyG) * Math.tan(sh); Y = Y * sy - cyG;
     const c = Math.cos(rot), s = Math.sin(rot);
     return [c * X - s * Y + cxG, s * X + c * Y + cyG + dy];
   }
@@ -379,7 +381,6 @@ export function makeGlyph(p, ch, inst, ctx) {
     if (bar) {
       // t/f bars: added late, landing to the right at a varying height and angle (rule 7)
       const mr = rng('mark:' + p.seed + ':' + k + ':' + si + ':' + (inst ? inst.seed : 'canon'));
-      if (inst && mr() < 0.025 * loose * loose) return; // forgotten now and then
       const jit = inst ? 1 : 0, spread = 0.4 + loose;
       pts = st.map(warp);
       let x0 = Infinity, x1 = -Infinity;
@@ -446,7 +447,6 @@ export function makeGlyph(p, ch, inst, ctx) {
     if (ij) {
       // i/j dots: late, to the right, at a varying height, in the writer's habitual shape (rule 7)
       const mr = rng('mark:' + p.seed + ':' + k + ':d' + di + ':' + (inst ? inst.seed : 'canon'));
-      if (inst && mr() < 0.025 * loose * loose) continue;
       const jit = inst ? 1 : 0, spread = 0.4 + loose;
       // (never over a following comma or period, where it would change the punctuation)
       const reach = ctx && ctx.next && !/\p{L}/u.test(ctx.next) ? 0.12 : 0.5;
