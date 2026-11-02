@@ -117,7 +117,7 @@ export const PEN_KIND = { classic: 0, ballpoint: 1, gel: 2, fountain: 3, pointed
 // roughening in CSS px (renderers also cap it at 10% of the stroke width); bleed = felt spread, px.
 const SPECS = {
   ballpoint: {
-    label: 'Ballpoint', shape: 'disc', wScale: 0.5, minW: 0.5, gamma: 0.14, down: 0.16, up: 0.08, pool: 0.12,
+    label: 'Ballpoint', shape: 'disc', wScale: 0.5, minW: 0.5, gamma: 0.14, down: 0.12, up: 0.06, pool: 0.12,
     hook: 0.42, blob: 0.04, blunt: 0.7, cv: 0.07, goop: 0.07, skip: 0.32, drift: 0.05, rough: 0.12, bleed: 0,
     inks: [['ballpoint-blue', 50], ['black', 38], ['blue-black', 5], ['red', 4], ['green', 3]],
   },
@@ -132,7 +132,7 @@ const SPECS = {
     inks: [['blue-black', 32], ['royal-blue', 30], ['black', 22], ['sepia', 8], ['iron-gall', 6], ['green', 2]],
   },
   pointed: {
-    label: 'Dip pen (pointed)', shape: 'disc', wScale: 1, minW: 0.15, gamma: 0.32, down: 0.3, up: 0.14, pool: 0.4,
+    label: 'Dip pen (pointed)', shape: 'disc', wScale: 1, minW: 0.15, gamma: 0.32, down: 0.26, up: 0.14, pool: 0.4,
     hook: 0.32, blob: 0.16, blunt: 0.8, cv: 0.06, goop: 0, skip: 0, drift: 0.04, rough: 0.16, bleed: 0,
     inks: [['black', 40], ['iron-gall', 30], ['sepia', 20], ['blue-black', 10]],
   },
@@ -474,9 +474,10 @@ export function simplify(poly, tol) {
     const [a, b] = stack.pop();
     let maxD = 0, idx = -1;
     const ax = poly[a][0], ay = poly[a][1], bx = poly[b][0], by = poly[b][1];
-    const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1e-9;
+    const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy);
     for (let i = a + 1; i < b; i++) {
-      const d = Math.abs((poly[i][0] - ax) * dy - (poly[i][1] - ay) * dx) / L;
+      // distance to the chord (or to the point, when the chord has no length)
+      const d = L > 1e-9 ? Math.abs((poly[i][0] - ax) * dy - (poly[i][1] - ay) * dx) / L : Math.hypot(poly[i][0] - ax, poly[i][1] - ay);
       if (d > maxD) { maxD = d; idx = i; }
     }
     if (maxD > tol && idx > 0) { keep[idx] = 1; stack.push([a, idx], [idx, b]); }
@@ -484,25 +485,56 @@ export function simplify(poly, tol) {
   return poly.filter((_, i) => keep[i]);
 }
 
+// Broad nib: the area swept by the nib edge. Where the stroke turns through the nib's own direction
+// the simple left/right ribbon would pinch to nothing while a real nib still covers its length, so
+// the stroke is cut there into pieces (each a plain ribbon with flat chisel ends), every piece wound
+// the same way, and the pieces are chained into one contour by zero-area bridges (nonzero fill).
+function nibOutline(pr) {
+  const { n, x, y, tx, ty } = pr;
+  const ex = pr.nib[0] / 2, ey = pr.nib[1] / 2, el = Math.hypot(ex, ey) || 1;
+  const ux = ex / el, uy = ey / el, qx = -uy, qy = ux;
+  const thin = pr.wHair / 2;
+  const side = (i) => tx[i] * uy - ty[i] * ux;      // which way the nib edge faces the motion
+  const runs = [];
+  let i0 = 0, sg = 0;
+  for (let i = 0; i < n; i++) {
+    const v = side(i);
+    if (Math.abs(v) < 0.03) continue;                // moving along the nib: keep the current piece
+    const sv = Math.sign(v);
+    if (sg && sv !== sg) { runs.push([i0, i, sg]); i0 = i - 1; }
+    sg = sv;
+  }
+  runs.push([i0, n - 1, sg || 1]);
+  const out = [];
+  let first = null;
+  const starts = [];
+  for (const [a, b, sgn] of runs) {
+    const L = [], R = [];
+    for (let i = a; i <= b; i++) {
+      const m = pr.aux ? clamp(pr.aux[i], 0, 1) : 1;  // the nib lifting off at a taper
+      const tq = clamp((tx[i] * ux + ty[i] * uy) * 4, -1, 1);
+      const ox = (ex * m) * sgn + qx * thin * tq * sgn, oy = (ey * m) * sgn + qy * thin * tq * sgn;
+      L.push([x[i] + ox, y[i] + oy]); R.push([x[i] - ox, y[i] - oy]);
+    }
+    let loop = L.concat(R.reverse());
+    let area = 0;
+    for (let i = 0, j = loop.length - 1; i < loop.length; j = i++) area += (loop[j][0] - loop[i][0]) * (loop[j][1] + loop[i][1]);
+    if (area > 0) loop.reverse();                     // clockwise in y-up, like the round-pen ribbons
+    if (!first) first = loop[0];
+    starts.push(loop[0]);
+    for (const q of loop) out.push(q);
+    out.push(loop[0]);                                // close this piece, then bridge to the next
+  }
+  for (let i = starts.length - 2; i >= 0; i--) out.push(starts[i]); // walk the bridges back
+  out.pop();                                          // == out[0]; the contour closes itself
+  return out;
+}
+
 // The outline polygon of a profile. Disc pens: ribbon with round caps. Broad nib: the centerline
 // swept by the nib edge (a line at the nib angle), with flat chisel ends.
 export function profileOutline(pr) {
   const { n, x, y, tx, ty, w } = pr;
-  const poly = new Array(2 * n);
-  if (pr.shape === 'nib') {
-    const ex = pr.nib[0] / 2, ey = pr.nib[1] / 2, el = Math.hypot(ex, ey) || 1;
-    const qx = -ey / el, qy = ex / el;
-    const thin = pr.wHair / 2;
-    for (let i = 0; i < n; i++) {
-      // the nib's thickness sits on the side the stroke is moving away from (continuous, no flips)
-      const sg = clamp((tx[i] * (ey / el) - ty[i] * (ex / el)) * 4, -1, 1);
-      const m = pr.aux ? clamp(pr.aux[i], 0, 1) : 1; // nib lifting off at a taper
-      const ox = ex * m + qx * thin * sg, oy = ey * m + qy * thin * sg;
-      poly[i] = [x[i] + ox, y[i] + oy];
-      poly[2 * n - 1 - i] = [x[i] - ox, y[i] - oy];
-    }
-    return poly;
-  }
+  if (pr.shape === 'nib') return nibOutline(pr);
   const out = [];
   for (let i = 0; i < n; i++) { const h = w[i] / 2; out.push([x[i] - ty[i] * h, y[i] + tx[i] * h]); }
   capArc(out, [x[n - 1], y[n - 1]], [tx[n - 1], ty[n - 1]], w[n - 1] / 2, false);
