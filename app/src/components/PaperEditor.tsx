@@ -17,8 +17,6 @@ interface Props {
   gapPx: number;
   ink: string;
   onEditingChange?: (editing: boolean) => void;
-  /** call to focus the paper from outside (e.g. a hint) */
-  focusRef?: React.RefObject<(() => void) | null>;
   children: ReactNode;
 }
 
@@ -29,7 +27,7 @@ interface Sel {
   focused: boolean;
 }
 
-export function PaperEditor({ text, onText, result, pxPerMm, sheetW, sheetH, gapPx, ink, onEditingChange, focusRef, children }: Props) {
+export function PaperEditor({ text, onText, result, pxPerMm, sheetW, sheetH, gapPx, ink, onEditingChange, children }: Props) {
   const ta = useRef<HTMLTextAreaElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const goalX = useRef<number | null>(null);
@@ -53,6 +51,13 @@ export function PaperEditor({ text, onText, result, pxPerMm, sheetW, sheetH, gap
     );
   }, []);
 
+  // rest the caret at the end of the note, where you'd carry on writing
+  useLayoutEffect(() => {
+    const el = ta.current;
+    if (el && document.activeElement !== el) el.setSelectionRange(el.value.length, el.value.length);
+    sync();
+  }, [sync]);
+
   useEffect(() => {
     document.addEventListener('selectionchange', sync);
     return () => document.removeEventListener('selectionchange', sync);
@@ -71,12 +76,6 @@ export function PaperEditor({ text, onText, result, pxPerMm, sheetW, sheetH, gap
     }
     sync();
   }, [sync]);
-
-  useEffect(() => {
-    if (!focusRef) return;
-    focusRef.current = () => focusAt(text.length);
-    return () => { focusRef.current = null; };
-  }, [focusRef, focusAt, text.length]);
 
   // ---------- pointer: click to place the caret, shift-click to extend ----------
   const pointToIndex = (clientX: number, clientY: number) => {
@@ -173,6 +172,19 @@ export function PaperEditor({ text, onText, result, pxPerMm, sheetW, sheetH, gap
             }}
           />
         ))}
+        {result && text.length === 0 && (
+          <div
+            className="absolute text-faint italic"
+            style={{
+              left: result.leftU * k + 4,
+              top: result.firstMm * pxPerMm - Math.max(13, result.emMm * pxPerMm * 0.42) * 1.05,
+              fontSize: Math.max(13, result.emMm * pxPerMm * 0.42),
+              lineHeight: 1,
+            }}
+          >
+            Start writing your note…
+          </div>
+        )}
         {caret && sel.start === sel.end && (
           <div
             key={sel.focused ? blinkKey : 'rest'}

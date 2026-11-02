@@ -22,4 +22,6 @@ export default defineConfig({
     fs: { allow: [path.resolve(import.meta.dirname, '..')] },
   },
   preview: { host: '127.0.0.1', port: 4173 },
+  // the main chunk is React + the engine's letter data; opentype.js and the writer worker load separately
+  build: { chunkSizeWarningLimit: 700 },
 });

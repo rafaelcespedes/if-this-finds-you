@@ -41,7 +41,6 @@ export default function App() {
   const [busy, setBusy] = useState({ download: false, font: false });
   const [editing, setEditing] = useState(false);
   const [plainText, setPlainText] = useState(() => readPref('seedhand:plain-text') === '1');
-  const focusPaper = useRef<(() => void) | null>(null);
   const coarse = useMediaQuery('(pointer: coarse)');
 
   const natural = useMemo(() => makeHand(state.seed, state.style), [state.seed, state.style]);
@@ -117,7 +116,6 @@ export default function App() {
 
   const panelProps: PanelProps = {
     state,
-    natural,
     p,
     name,
     busy,
@@ -138,9 +136,12 @@ export default function App() {
     <TooltipProvider>
       <div className="min-h-dvh lg:grid lg:grid-cols-[minmax(0,1fr)_auto]">
         <main className="relative min-w-0 px-4 pt-12 pb-32 sm:px-8 lg:px-10 lg:pt-14 lg:pb-16">
-          <div className="pointer-events-none absolute top-4 left-4 text-[13px] font-medium tracking-[-0.01em] text-muted-foreground sm:left-8 lg:top-5 lg:left-10">
-            Seedhand
-          </div>
+          <header className="pointer-events-none absolute inset-x-4 top-4 flex items-baseline justify-between gap-4 text-[12.5px] text-muted-foreground sm:inset-x-8 lg:inset-x-10 lg:top-5">
+            <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">Seedhand</span>
+            <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
+              {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write on it' : 'Click the letter to write on it'}
+            </span>
+          </header>
           <div ref={deskRef} className="mx-auto w-full max-w-[820px]">
             {pxPerMm > 0 && (
               <>
@@ -154,7 +155,6 @@ export default function App() {
                   gapPx={SHEET_GAP}
                   ink={ink.color}
                   onEditingChange={setEditing}
-                  focusRef={focusPaper}
                 >
                   <div className="flex flex-col" style={{ gap: SHEET_GAP }}>
                     {(writing ? writing.svgs : [null]).map((svg, i, all) => (
@@ -171,10 +171,7 @@ export default function App() {
                     ))}
                   </div>
                 </PaperEditor>
-                <div className="mx-auto mt-5 flex items-center justify-center gap-3 text-[12.5px] text-muted-foreground" style={{ width: shownPaper.w * pxPerMm }}>
-                  <span className={cn('transition-opacity duration-200', editing ? 'opacity-0' : 'opacity-100')}>
-                    {coarse ? 'Tap the letter to write on it.' : 'Click the letter to write on it.'}
-                  </span>
+                <div className="mx-auto mt-4 flex items-center justify-center text-[12.5px] text-muted-foreground" style={{ width: shownPaper.w * pxPerMm }}>
                   <button
                     type="button"
                     onClick={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
@@ -208,7 +205,7 @@ export default function App() {
         )}
         {isDesktop ? (
           <aside className="sticky top-0 h-dvh py-3 pr-3">
-            <div className="h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.05),0_12px_32px_-16px_rgba(60,45,20,0.18)] [scrollbar-width:thin]">
+            <div className="panel-scroll h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>
           </aside>
@@ -241,7 +238,7 @@ function MobileDock({ name, seed, onNewHand, onOpen, hidden }: { name: string; s
         hidden && 'pointer-events-none translate-y-[120%] opacity-0 motion-reduce:translate-y-0',
       )}
     >
-      <div className="mx-auto flex max-w-[560px] items-center gap-2 rounded-2xl border border-border bg-[color-mix(in_oklab,var(--panel)_92%,transparent)] p-2 pl-4 shadow-[0_10px_30px_-12px_rgba(60,45,20,0.35)] backdrop-blur-md">
+      <div className="mx-auto flex max-w-[560px] items-center gap-2 rounded-2xl bg-[color-mix(in_oklab,var(--panel)_94%,transparent)] p-2 pl-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_12px_32px_-12px_rgba(60,45,20,0.38)] backdrop-blur-md">
         <div className="min-w-0 flex-1">
           <div className="truncate text-[14px] leading-tight font-medium">{name}</div>
           <div className="tabular truncate text-[12px] text-muted-foreground">{seed}</div>

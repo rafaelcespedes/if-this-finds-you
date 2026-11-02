@@ -108,6 +108,20 @@
   }
 }
 
+/* Browser surfaces in the palette */
+::selection {
+  background: color-mix(in oklab, var(--ink) 16%, transparent);
+  color: inherit;
+}
+input,
+textarea {
+  caret-color: var(--ink);
+}
+.panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d6d0c3 transparent;
+}
+
 /* Numbers in the panel line up */
 .tabular {
   font-variant-numeric: tabular-nums;

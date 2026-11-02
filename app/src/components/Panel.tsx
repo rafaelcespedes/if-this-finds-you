@@ -16,8 +16,7 @@ import { cn } from '@/lib/utils';
 
 export interface PanelProps {
   state: NoteState;
-  /** the seed's natural hand (no overrides) and the effective one */
-  natural: Hand;
+  /** the effective hand (seed + overrides) */
   p: Hand;
   name: string;
   busy: { download: boolean; font: boolean };
@@ -39,7 +38,7 @@ export interface PanelProps {
 export function Panel(props: PanelProps) {
   const { state, p, compact } = props;
   return (
-    <div className="flex flex-col">
+    <div className={cn('flex flex-col', !compact && 'min-h-full')}>
       {compact ? (
         <section aria-label="Writer and actions" className="px-5 pt-2 pb-5">
           <SeedField seed={state.seed} onCommit={props.onSeed} />
@@ -113,9 +112,12 @@ export function Panel(props: PanelProps) {
       </Section>
 
       {!compact && (
-        <Section last>
+        <section
+          aria-label="Share and download"
+          className="sticky bottom-0 mt-auto border-t border-border bg-[color-mix(in_oklab,var(--panel)_94%,transparent)] px-5 pt-4 pb-5 backdrop-blur-sm"
+        >
           <Actions {...props} />
-        </Section>
+        </section>
       )}
     </div>
   );
@@ -133,19 +135,19 @@ function Actions(props: PanelProps) {
           {props.busy.download ? <Loader2 className="animate-spin" /> : <Download />} Download note
         </Button>
       </div>
-      <div className="mt-4 flex items-start gap-3 rounded-lg bg-[#f1eee7] px-3 py-2.5">
-        <Type className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+      <div className="mt-3 px-0.5">
         <div className="min-w-0">
           <button
             type="button"
             onClick={props.onExportFont}
             disabled={props.busy.font}
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:decoration-foreground disabled:opacity-60 pointer-coarse:py-2.5"
+            className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground disabled:opacity-60 pointer-coarse:py-2.5"
           >
+            <Type className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
             Export font file (.otf)
             {props.busy.font && <Loader2 className="size-3.5 animate-spin" aria-hidden />}
           </button>
-          <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
+          <p className="mt-0.5 pl-[22px] text-[12px] leading-snug text-muted-foreground">
             The font holds 3 versions of each letter. The page varies endlessly.
           </p>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { WriteRequest, WriteResult } from '@/lib/write-protocol';
+import { toast } from 'sonner';
 import { perf } from '@/lib/perf';
 
 type Req = Omit<WriteRequest, 'id'>;
@@ -21,6 +22,7 @@ export function useWriting(req: Req) {
       const data = e.data;
       if ('error' in data) {
         console.error('[seedhand] write failed:', data.error);
+        toast.error('The hand couldn’t write this', { id: 'write-error', description: 'Try a different hand or shorten the note.' });
         return;
       }
       const t = sentAt.current.get(data.id);
@@ -28,6 +30,10 @@ export function useWriting(req: Req) {
       perf.samples.push({ name: 'worker write', ms: data.ms });
       for (const id of sentAt.current.keys()) if (id <= data.id) sentAt.current.delete(id);
       setResult((prev) => (prev && prev.id > data.id ? prev : data));
+    };
+    w.onerror = (e) => {
+      console.error('[seedhand] writer worker failed to start:', e.message || e);
+      toast.error('The page couldn’t start writing', { id: 'write-error', description: 'Reload the page to try again.' });
     };
     return () => {
       w.terminate();
