@@ -30,6 +30,8 @@ import { getPaper } from '@/lib/papers';
 import { mapGeometry } from '@/lib/geometry';
 import { LIVE, engineGeometry, liveExtras, liveLayout } from '@/lib/live';
 import { LiveSheets } from '@/components/LiveSheets';
+import { INK, InkSession, decodeInk, encodeInk, inkExtras, inkFromText, inkGeometry, inkLive, inkOpts, inkPage, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
+import { inkOn } from '@/lib/request';
 import { renderLiveNote } from '@/lib/actions';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
 import { PENS_LIVE } from '@/lib/pens';
@@ -89,14 +91,86 @@ export default function App() {
   const { writing, prefetch, written } = useWriting(request, composing || liveWanted);
   const committed = useRef(state.text);
   if (!composing) committed.current = state.text;
+
+  // ---------- Ink mode: the live ink sheet while someone writes (lib/ink.ts) ----------
+  const inkMode = inkOn(state);
+  const stateNow = useRef(state);
+  stateNow.current = state;
+  const inkRef = useRef<InkSession | null>(null);
+  const inkFor = useRef('');
+  const [inkTick, setInkTick] = useState(0);
+  // the session belongs to one look (hand, paper, size): a new look replays the log in the new hand
+  const inkLook = JSON.stringify([state.seed, state.style, lookKey, state.paper]);
+  const inkLayout = useMemo(() => inkOpts(p, paper, eff.size, eff.lineSpacing).layout, [p, paper, eff.size, eff.lineSpacing]);
+  const inkSession = useCallback((doc?: InkDoc): InkSession => {
+    if (!doc && inkRef.current && inkFor.current === inkLook) return inkRef.current;
+    const s = stateNow.current;
+    const from = doc ?? decodeInk(s.inkLog) ?? (s.sample || !s.text ? newInkDoc(s.seed, s.style) : inkFromText(s.seed, s.style, s.text));
+    inkRef.current = new InkSession(p, from, inkLayout, coarse);
+    inkFor.current = inkLook;
+    return inkRef.current;
+  }, [p, inkLayout, coarse, inkLook]);
+  /** after the session changed: the note follows it (what it says, and its log) */
+  const fullNoted = useRef(false);
+  const syncInk = useCallback(() => {
+    const ink = inkRef.current;
+    if (!ink) return;
+    update({ text: ink.text(), inkLog: encodeInk(ink.doc), sample: null, marks: [] });
+    setInkTick((n) => n + 1);
+    if (ink.full && !fullNoted.current) {
+      fullNoted.current = true;
+      toast('This sheet is full', { description: 'Make a fair copy, or start a fresh sheet.' });
+    } else if (!ink.full) fullNoted.current = false;
+  }, [update]);
+  // writing in ink: the session is up from the first tap (or, on an untouched sample letter, the first key)
+  const inkActive = inkMode && editing && !!inkRef.current && inkFor.current === inkLook;
+  useEffect(() => {
+    if (inkMode && editing && !stateNow.current.sample && !(inkRef.current && inkFor.current === inkLook)) {
+      inkSession();
+      setInkTick((n) => n + 1);
+    }
+  }, [inkMode, editing, inkLook, inkSession]);
+  // the pen catches up with the typing, at handwriting speed
+  useEffect(() => {
+    if (!inkActive) return;
+    let last = performance.now();
+    const id = window.setInterval(() => {
+      const ink = inkRef.current;
+      const now = performance.now();
+      const dt = now - last;
+      last = now;
+      if (ink && ink.waiting && ink.step(dt)) syncInk();
+    }, 130);
+    return () => window.clearInterval(id);
+  }, [inkActive, syncInk]);
+  // leaving the paper: everything typed is written down
+  useEffect(() => {
+    if (editing || !inkRef.current?.waiting) return;
+    inkRef.current.flush();
+    syncInk();
+  }, [editing, syncInk]);
+
   const live = useMemo(
-    () => (liveWanted ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed) : null),
+    () => {
+      if (inkActive) return inkLive(p, inkRef.current!.page, paper, eff.size, eff.lineSpacing);
+      // a shared ink letter: its page, corrections and all
+      if (state.reader && inkMode && state.inkLog) {
+        const doc = decodeInk(state.inkLog);
+        if (doc) return inkLive(p, inkPage(p, doc, paper, eff.size, eff.lineSpacing), paper, eff.size, eff.lineSpacing);
+      }
+      return liveWanted ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed) : null;
+    },
     // laid out from the committed text: an IME's composing text waits until it commits
-    [liveWanted, p, committed.current, paper, eff.size, eff.lineSpacing, state.signed],
+    [liveWanted, p, committed.current, paper, eff.size, eff.lineSpacing, state.signed, inkActive, inkTick, state.reader, inkMode, state.inkLog],
   );
   const extras = useMemo(
-    () => (live ? liveExtras(live, { marks: state.marks, signed: state.signed, writerName: name, placeholder: placeholderFor(state.paper), text: live.page.text }) : []),
-    [live, state.marks, state.signed, name, state.paper],
+    () => {
+      if (!live) return [];
+      if (inkActive) return inkExtras(live, { draft: inkRef.current!.draft(), signed: state.signed, writerName: name });
+      if (state.reader && inkMode && state.inkLog) return liveExtras(live, { marks: [], signed: state.signed, writerName: name, text: live.page.text });
+      return liveExtras(live, { marks: state.marks, signed: state.signed, writerName: name, placeholder: placeholderFor(state.paper), text: live.page.text });
+    },
+    [live, state.marks, state.signed, name, state.paper, inkActive, inkTick, state.reader, inkMode, state.inkLog],
   );
   // after typing, the live page stays up until the worker has written the same thing (no flash of older text)
   const lastLive = useRef<{ live: NonNullable<typeof live>; extras: string[] } | null>(null);
@@ -106,7 +180,10 @@ export default function App() {
   const shownLive = live ? { live, extras } : lastLive.current;
   // paper and writing switch together when the result arrives
   const shownPaper = shownLive ? shownLive.live.paper : writing ? getPaper(writing.paper) : paper;
-  const geometry = useMemo(() => (shownLive ? engineGeometry(shownLive.live) : writing ? mapGeometry(writing) : null), [shownLive?.live, writing]);
+  const geometry = useMemo(() => {
+    if (inkActive && live) return inkGeometry(engineGeometry(live), live, inkRef.current!.draft(), inkRef.current!.text());
+    return shownLive ? engineGeometry(shownLive.live) : writing ? mapGeometry(writing) : null;
+  }, [shownLive?.live, writing, inkActive, live, inkTick]);
 
   // a new look fades in when a button asked for it (not from the keyboard, not for sliders or typing)
   const fadeArmed = useRef(false);
@@ -135,12 +212,27 @@ export default function App() {
   const onEdit = useCallback((e: Edit) => {
     editLog.push(e);
     if (e.source === 'paper') posture.onTyped();
+    if (inkMode) {
+      const s = stateNow.current;
+      // Undo lifts only wet ink (the newest event, within 3 s)
+      if (e.kind === 'undo') {
+        if (inkRef.current?.undo()) syncInk();
+        else toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
+        return;
+      }
+      // the first key on an untouched sample letter takes a fresh sheet: the letter is yours from the start
+      const fresh = !!s.sample && !s.inkLog;
+      const ink = fresh ? inkSession(newInkDoc(s.seed, s.style)) : inkSession();
+      ink.edit(fresh ? { ...e, at: 0, del: 0 } : e);
+      syncInk();
+      return;
+    }
     update((s) => {
       const doc = applyEdit({ text: s.text, marks: s.marks, signed: s.signed }, e);
       // the first edit makes a sample letter the writer's own text
       return { text: doc.text, marks: doc.marks, sample: null };
     });
-  }, [update, posture.onTyped]);
+  }, [update, posture.onTyped, inkMode, inkSession, syncInk]);
 
   // ---------- pen-only formatting: underline by hand, press harder, sign ----------
   const editor = useRef<PaperEditorApi>(null);
@@ -167,9 +259,7 @@ export default function App() {
   const lockKey = [...locks].sort().join(',');
   const ahead = useRef<{ base: string; look: Partial<NoteState> }[]>([]);
   const similarAhead = useRef<{ base: string; look: Partial<NoteState> } | null>(null);
-  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.marks, s.signed, variety, lockKey]), [variety, lockKey]);
-  const stateNow = useRef(state);
-  stateNow.current = state;
+  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.mode, s.inkLog, s.marks, s.signed, variety, lockKey]), [variety, lockKey]);
   const newHand = useCallback((fade = true) => {
     // for QA (window.__seedhandPerf): click → the new hand's writing in the page
     const now = ahead.current.find((a) => a.base === baseOf(stateNow.current));
@@ -242,7 +332,11 @@ export default function App() {
     setBusy((b) => ({ ...b, download: true }));
     try {
       const res = live
-        ? await renderLiveNote(live, liveExtras(live, { marks: state.marks, signed: state.signed, writerName: name, text: live.page.text }), eff.inkKey && eff.inkKey !== 'auto' ? eff.inkKey : undefined, ink, pxPerMm || MAX_PX_PER_MM)
+        ? await renderLiveNote(
+          live,
+          inkActive ? inkExtras(live, { signed: state.signed, writerName: name }) : liveExtras(live, { marks: state.marks, signed: state.signed, writerName: name, text: live.page.text }),
+          eff.inkKey && eff.inkKey !== 'auto' ? eff.inkKey : undefined, ink, pxPerMm || MAX_PX_PER_MM,
+        )
         : await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
       const filename = `${name} note`;
       const done = (r: string) => {
@@ -263,7 +357,7 @@ export default function App() {
     } finally {
       setBusy((b) => ({ ...b, download: false }));
     }
-  }, [requestKey, ink, pxPerMm, name, coarse, live, state.marks, state.signed, eff.inkKey]);
+  }, [requestKey, ink, pxPerMm, name, coarse, live, state.marks, state.signed, eff.inkKey, inkActive]);
 
   const font = useCallback(async () => {
     setBusy((b) => ({ ...b, font: true }));
@@ -342,6 +436,19 @@ export default function App() {
     onDownload: download,
     onExportFont: font,
     onFieldFocus: () => setDetent('full'),
+    ink: INK ? {
+      on: inkMode,
+      letter: !!state.inkLog,
+      onMode: (mode) => {
+        const s = stateNow.current;
+        inkRef.current = null;
+        // to fair copy: the letter as it reads; to ink: what's there is written as is, at the first edit
+        if (mode === 'fair') update({ mode, inkLog: null, text: s.inkLog ? inkText(decodeInk(s.inkLog)!) : s.text });
+        else update({ mode });
+      },
+      onFairCopy: () => { inkSession().fairCopy(); syncInk(); },
+      onFreshSheet: () => { inkSession().freshSheet(); syncInk(); },
+    } : undefined,
   };
 
   const desk = !posture.writing;
@@ -465,7 +572,8 @@ export default function App() {
               <div ref={fitRef} className="origin-top">
                 <PaperEditor
                   ref={editor}
-                  text={state.text}
+                  text={inkActive ? inkRef.current!.text() : state.text}
+                  hovering={inkActive && inkRef.current!.hovering}
                   onEdit={onEdit}
                   onFormat={onFormat}
                   writerName={name}
@@ -489,7 +597,7 @@ export default function App() {
                       inkKey={eff.inkKey}
                       extras={shownLive.extras}
                       handKey={state.seed + ':' + state.style}
-                      hold="word"
+                      hold={inkActive ? 0 : 'word'}
                     />
                   ) : (
                     // the first time, paper and writing arrive together
@@ -551,9 +659,14 @@ export default function App() {
             signed={state.signed}
             onUnderline={() => formatFromTray('underline')}
             onPress={() => formatFromTray('press')}
-            onPS={() => editor.current && insertPS(editor.current, state.text, onEdit)}
+            onPS={() => {
+              if (inkMode) { inkSession().postScript(); syncInk(); return; }
+              if (editor.current) insertPS(editor.current, state.text, onEdit);
+            }}
             onSign={toggleSigned}
             onDone={() => editor.current?.blur()}
+            ink={inkMode}
+            onUndo={inkMode ? () => onEdit({ at: 0, del: 0, ins: '', kind: 'undo', t: Date.now(), source: 'paper' }) : undefined}
           />
         )}
         {!reader && (isDesktop ? (

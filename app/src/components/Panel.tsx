@@ -61,6 +61,15 @@ export interface PanelProps {
   onExportFont: () => void;
   /** a text field in the panel took focus (the phone sheet opens fully, above the keyboard) */
   onFieldFocus?: () => void;
+  /** Ink mode (when the engine writes in ink): the mode, and the letter's sheet commands */
+  ink?: {
+    on: boolean;
+    /** anything written in ink yet */
+    letter: boolean;
+    onMode: (mode: 'ink' | 'fair') => void;
+    onFairCopy: () => void;
+    onFreshSheet: () => void;
+  };
 }
 
 /** The desktop panel: every section in one column, actions pinned at the bottom. */
@@ -184,6 +193,7 @@ export function WritingControls(props: PanelProps) {
   const changed = Object.values(state.offsets).some((v) => v) || state.penSize !== 'medium';
   return (
     <>
+      {props.ink && <InkRow {...props} />}
       <div className="grid gap-3.5">
         {primary.map((c) => (
           <ControlRow key={c.key} c={c} {...props} />
@@ -211,6 +221,35 @@ export function WritingControls(props: PanelProps) {
         )}
       </div>
     </>
+  );
+}
+
+/** Ink (what's written stays; the writer corrects by hand) or Fair copy (the page redraws cleanly). */
+function InkRow({ ink, state }: PanelProps) {
+  if (!ink) return null;
+  const pencil = state.pen === 'pencil';
+  return (
+    <div data-row className="mb-4 grid gap-2">
+      <Row label="Writing">
+        <Segmented type="single" aria-label="Writing mode" value={state.mode} onValueChange={(v) => v && ink.onMode(v as 'ink' | 'fair')} className="w-[168px]">
+          <SegmentedItem value="ink">Ink</SegmentedItem>
+          <SegmentedItem value="fair">Fair copy</SegmentedItem>
+        </Segmented>
+      </Row>
+      <p className="text-[12px] leading-snug text-muted-foreground">
+        {pencil && state.mode === 'ink'
+          ? 'A pencil erases: edits redraw the page cleanly.'
+          : state.mode === 'ink'
+            ? 'What’s written stays. Change your mind and the writer crosses it out, their own way.'
+            : 'Every edit redraws the page cleanly.'}
+      </p>
+      {ink.on && ink.letter && (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={ink.onFairCopy}>Make a fair copy</Button>
+          <Button variant="ghost" size="sm" onClick={ink.onFreshSheet}>Fresh sheet</Button>
+        </div>
+      )}
+    </div>
   );
 }
 

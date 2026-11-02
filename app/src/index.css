@@ -160,6 +160,30 @@ textarea {
   }
 }
 
+/* Ink mode: the writer considers a fix at the pen head; the pen hovers just above the paper */
+@keyframes pen-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(-2px);
+    opacity: 0.55;
+  }
+}
+.pen-hover {
+  animation: pen-hover 900ms var(--ease-in-out) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes pen-hover {
+    50% {
+      transform: none;
+      opacity: 0.5;
+    }
+  }
+}
+
 /* The caret is the pen: solid for a moment after each move, then it breathes (editor-ux.md §3.4) */
 @keyframes caret-breathe {
   0%,

@@ -1,7 +1,8 @@
 // The whole note configuration, and how it travels in a share link.
 // Link format (URL hash, readable where it can be):
 //   #seed=quiet-heron-17&style=script&pen=fountain&tip=fine&ink=royal-blue&paper=seyes&size=1.1
-//    &o=ne0.12_sl-3&occ=love&amt=1.2&t=<lz-string>   (or s=<sample letter id> while the text is a sample)
+//    &o=ne0.12_sl-3&occ=love&amt=1.2&t=<lz-string>   (or s=<sample letter id> while the text is a sample,
+//    or k=<lz-string of the ink log> for a letter written in ink; mode=fair when Ink mode is off)
 // `o` holds seed-relative offsets with two-letter codes (lib/controls.ts), so the same link always
 // writes the same note.
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
@@ -13,6 +14,7 @@ import { CONTROLS, controlByCode, controlByKey, PEN_SIZES, type PenSize } from '
 import { OCCASIONS } from './occasions';
 import { decodeMarks, encodeMarks, type Mark } from './doc';
 import { sampleById, sampleForSeed } from './samples';
+import { decodeInk, INK, inkText } from './ink';
 import { clamp } from './utils';
 
 export interface NoteState {
@@ -32,6 +34,10 @@ export interface NoteState {
   text: string;
   /** while nobody has written: the sample letter the text is (lib/samples.ts); null once the text is yours */
   sample: string | null;
+  /** Ink (what's written stays; the writer corrects like a person) or Fair copy (clean editing) */
+  mode: 'ink' | 'fair';
+  /** Ink mode: the letter's ink log (lib/ink.ts encodeInk), once anything is written in ink; the text follows it */
+  inkLog: string | null;
   /** handwriting marks on the text (lib/doc.ts) */
   marks: Mark[];
   /** the writer signs below the last line */
@@ -60,6 +66,8 @@ export const DEFAULT_STATE: NoteState = {
   amount: 1,
   text: FIRST_SAMPLE?.text ?? DEFAULT_TEXT,
   sample: FIRST_SAMPLE?.id ?? null,
+  mode: INK ? 'ink' : 'fair',
+  inkLog: null,
   marks: [],
   signed: false,
   reader: false,
@@ -89,7 +97,9 @@ export function encodeState(s: NoteState): string {
     if (Math.abs(s.amount - 1) > 0.005) q.set('amt', String(round(s.amount, 2)));
   }
   const sample = sampleById(s.sample);
-  if (sample && sample.text === s.text) q.set('s', sample.id);
+  if (INK && s.mode === 'fair') q.set('mode', 'fair');
+  if (s.inkLog) q.set('k', compressToEncodedURIComponent(s.inkLog));
+  else if (sample && sample.text === s.text) q.set('s', sample.id);
   else if (s.text !== DEFAULT_TEXT) q.set('t', compressToEncodedURIComponent(s.text));
   if (s.marks.length) q.set('m', encodeMarks(s.marks));
   if (s.signed) q.set('sig', '1');
@@ -131,7 +141,15 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
   }
   const t = q.get('t');
   const named = sampleById(q.get('s'));
-  if (t != null) {
+  s.mode = q.get('mode') === 'fair' || !INK ? 'fair' : 'ink';
+  s.inkLog = null;
+  const k = q.get('k');
+  const inkDoc = k ? decodeInk(decompressFromEncodedURIComponent(k)) : null;
+  if (k && inkDoc) {
+    s.inkLog = decompressFromEncodedURIComponent(k);
+    s.text = inkText(inkDoc);
+    s.sample = null;
+  } else if (t != null) {
     const text = decompressFromEncodedURIComponent(t);
     if (text != null) { s.text = text.slice(0, 20000); s.sample = null; }
   } else if (named) {

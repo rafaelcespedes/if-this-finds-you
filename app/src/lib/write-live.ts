@@ -5,6 +5,7 @@
 import * as E from '@engine';
 import { makeGlyph, makeHand, UPM, withOverrides } from '@engine';
 import { liveExtras, liveLayout, sheetFrame, sheetOfLine } from './live';
+import { decodeInk, inkExtras, inkLive, inkPage } from './ink';
 import { getPaper, writingLines } from './papers';
 import { lookOf } from './request';
 import { scopeIds } from './writing';
@@ -31,7 +32,8 @@ export function writeLive(req: WriteRequest): WriteResult {
  */
 export function writeFirstSheet(req: WriteRequest): WriteResult | null {
   const t0 = performance.now();
-  if (req.text.length < 700) return null;
+  // ink letters are one sheet at a time already
+  if (req.text.length < 700 || req.ink) return null;
   const p = withOverrides(makeHand(req.seed, req.style), req.overrides);
   const paper = getPaper(req.paper);
   // about how many characters a sheet holds: the line's width in average letters, times the lines
@@ -56,9 +58,25 @@ export function writeFirstSheet(req: WriteRequest): WriteResult | null {
   return { ...res, svgs: [res.svgs[0], ...Array.from({ length: total - 1 }, () => '')], text: req.text, partial: true };
 }
 
-function resultOf(req: WriteRequest, p: ReturnType<typeof withOverrides>, live: ReturnType<typeof liveLayout>, t0: number, only?: number): WriteResult {
+/** An ink letter (Ink mode): replayed from its log, with its correction marks, as the ink page draws it. */
+export function writeInkLetter(req: WriteRequest): WriteResult {
+  const t0 = performance.now();
+  const p = withOverrides(makeHand(req.seed, req.style), req.overrides);
+  const paper = getPaper(req.paper);
+  const doc = decodeInk(req.ink);
+  if (!doc) return writeLive(req);
+  const live = inkLive(p, inkPage(p, doc, paper, req.size, req.lineSpacing), paper, req.size, req.lineSpacing);
+  const extras = inkExtras(live, { signed: !!req.signed, writerName: req.writerName ?? '' });
+  // ink letters carry their text offset in `at` (as the letter reads now; -1 = struck)
+  return resultOf(req, p, live, t0, undefined, extras, (it) => (typeof it.at === 'number' ? it.at : -1));
+}
+
+function resultOf(
+  req: WriteRequest, p: ReturnType<typeof withOverrides>, live: ReturnType<typeof liveLayout>, t0: number, only?: number,
+  extrasIn?: string[], offsetOf: (it: any) => number = (it) => it.charIndex,
+): WriteResult {
   const paper = live.paper;
-  const extras = liveExtras(live, { marks: req.marks ?? [], signed: !!req.signed, writerName: req.writerName ?? '', placeholder: req.placeholder, text: live.page.text });
+  const extras = extrasIn ?? liveExtras(live, { marks: req.marks ?? [], signed: !!req.signed, writerName: req.writerName ?? '', placeholder: req.placeholder, text: live.page.text });
   const ink = liveInk(req.inkKey);
 
   // the runs, sheet by sheet, exactly as LiveSheets inserts them
@@ -71,13 +89,13 @@ function resultOf(req: WriteRequest, p: ReturnType<typeof withOverrides>, live: 
   });
 
   // the caret map: one box per written character, with its text offset
-  const items = (live.page.items as any[]).filter((it) => it.charIndex >= 0 && !it.synthetic && !it.role && (it.kind === 'glyph' || it.kind === 'miss'));
+  const items = (live.page.items as any[]).filter((it) => offsetOf(it) >= 0 && !it.synthetic && !it.role && (it.kind === 'glyph' || it.kind === 'miss'));
   const glyphs = new Float32Array(items.filter((it) => only == null || sheetOfLine(live, it.line) < only).length * GLYPH_STRIDE);
   let g = 0;
   for (const it of items) {
     const s = sheetOfLine(live, it.line);
     if (only != null && s >= only) break;
-    glyphs[g++] = it.charIndex;
+    glyphs[g++] = offsetOf(it);
     glyphs[g++] = s;
     glyphs[g++] = it.x;
     glyphs[g++] = it.y - live.sheets[s].shiftU;

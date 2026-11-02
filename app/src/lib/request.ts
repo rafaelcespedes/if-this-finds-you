@@ -6,6 +6,7 @@ import { inkColor } from './inks';
 import { effective, type Effective } from './params';
 import type { NoteState } from './state';
 import type { WriteRequest } from './write-protocol';
+import { INK } from './ink';
 
 export type Req = Omit<WriteRequest, 'id'>;
 
@@ -16,6 +17,8 @@ export function requestFor(s: NoteState, natural: Hand = makeHand(s.seed, s.styl
     marks: s.marks, signed: s.signed, writerName: writerName(s.seed),
     // an empty page shows where the writing goes, in the hand, in faint graphite
     placeholder: placeholderFor(s.paper),
+    // Ink mode: the page is the ink log, replayed (left out otherwise, so fair requests keep their keys)
+    ink: inkOn(s) && s.inkLog ? s.inkLog : undefined,
   };
 }
 
@@ -33,3 +36,7 @@ export function placeholderFor(paper: string) {
     return 'Dear …,';
   }
 }
+
+/** Ink mode is on for this note: the engine has it, the note is in Ink, and the pen isn't a pencil (pencil
+ * erases: until the engine has Pencil mode, a pencil edits like a fair copy). */
+export const inkOn = (s: Pick<NoteState, 'mode' | 'pen'>) => INK && s.mode === 'ink' && s.pen !== 'pencil';
