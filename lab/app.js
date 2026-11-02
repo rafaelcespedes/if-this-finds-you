@@ -80,8 +80,9 @@ function syncControls() {
   const p = params();
   for (const d of E.PARAMS) {
     const el = $('c-' + d.key); if (!el) continue;
-    el.value = p[d.key];
-    if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, p[d.key]);
+    const v = p[d.key] ?? (typeof d.default === 'function' ? d.default(p) : d.default);
+    el.value = v;
+    if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, v);
   }
 }
 function buildStyleSwitch() {
