@@ -6,7 +6,9 @@
 //
 // Skeleton format (same as the Hershey data): { l, r, s: [[ [x,y], ... ], ...] }
 //   l / r  = left / right side bearing (source units), s = strokes as polylines, y down.
-// Variant = skeleton + { id, source, weight?, metrics?, tags? }.
+// Variant = skeleton + { id, source, weight?, metrics?, tags?, marks?, resolve? }.
+//   marks    = indices of strokes in `s` that are marks (accents...), written after the letter
+//   resolve  = (p, ctx) => concrete variant, for composed characters that depend on the hand
 //   tags     = { allograph?: 'a.double-storey' | 'seven.crossed' | ..., position?: 'initial'|'medial'|'final' }
 //              allograph names follow docs/research/hand-traditions.md §4.
 //   source  = { name, credit, url? } — shown in the provenance card; required.
@@ -87,6 +89,7 @@ export function choose(p, ch, ctx) {
   let list = variants(p.style, ch);
   if (!list.length && CHAR_FALLBACK[ch]) list = variants(p.style, CHAR_FALLBACK[ch]);
   if (!list.length) list = variants(p.style, '?');
-  if (list.length <= 1) return list[0];
-  return rng('variant:' + p.seed + ':' + p.style + ':' + ch).weighted(list);
+  const v = list.length <= 1 ? list[0] : rng('variant:' + p.seed + ':' + p.style + ':' + ch).weighted(list);
+  // a variant may resolve per hand (e.g. é = this hand's own e + this writer's accent habit)
+  return v && v.resolve ? v.resolve(p, ctx) : v;
 }
