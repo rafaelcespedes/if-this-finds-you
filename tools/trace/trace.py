@@ -66,6 +66,7 @@ def cmd_fetch(args):
             if os.path.exists(out):
                 print('have', out)
                 continue
+            os.makedirs(os.path.dirname(out), exist_ok=True)  # nested names such as alto/x.xml
             req = urllib.request.Request(f['url'], headers={'User-Agent': UA})
             with urllib.request.urlopen(req, timeout=120) as r, open(out, 'wb') as w:
                 w.write(r.read())

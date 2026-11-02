@@ -19,6 +19,12 @@ import './sources/suetterlin.js';
 import './sources/arrighi.js';
 import './sources/quebec-print.js';
 import './sources/spencerian.js';
+import './sources/norwegian-1849.js';
+import './sources/kurrent-1849.js';
+import './sources/polish-1906.js';
+import './sources/spanish-1776.js';
+import './sources/dutch-1618.js';
+import './sources/adult-fr-2023.js';
 import './sources/allographs.js';
 import './sources/accents.js'; // composes accented letters for every style, so it comes after them
 
