@@ -139,7 +139,7 @@ export async function run(ctx) {
     // ---------- script joins ----------
     if (connected) {
       const gaps = [], capGaps = [], byPair = new Map();
-      let noExit = 0;
+      let noExit = 0, lifts = 0, pairs = 0;
       for (const seed of seedsAll) {
         const p = E.makeHand(seed, style);
         const xh = p.xHeight * CAP;
@@ -149,6 +149,9 @@ export async function run(ctx) {
           const A = items[i], B = items[i + 1];
           if (B.charIndex !== A.charIndex + 1 || A.line !== B.line) continue;
           if (!isLower(B.ch) || !(isLower(A.ch) || isUpper(A.ch))) continue;
+          // deliberate pen lifts (style dimensions mark them on the variant) are the writer's habit, not broken joins
+          if (isLower(A.ch)) pairs++;
+          if ((A.g.variant && A.g.variant.lift && A.g.variant.lift.after) || (B.g.variant && B.g.variant.lift && B.g.variant.lift.before)) { if (isLower(A.ch)) lifts++; continue; }
           const zone = (q) => q[1] > -0.15 * xh && q[1] < 1.2 * xh;
           let exit = null;
           for (const s of A.g.strokes) if (!s.dot) { const q = s.center[s.center.length - 1]; if (zone(q) && (!exit || q[0] > exit[0])) exit = q; }
@@ -167,8 +170,9 @@ export async function run(ctx) {
       }
       const s = stats(gaps);
       const brokenRate = gaps.filter((g) => g > GEOM.joinBrokenPenWidths).length / Math.max(1, gaps.length);
-      D.joins = { stats: s, brokenRate, capJoinedRate: capGaps.filter((g) => g <= GEOM.joinBrokenPenWidths).length / Math.max(1, capGaps.length) };
+      D.joins = { stats: s, brokenRate, liftRate: lifts / Math.max(1, pairs), capJoinedRate: capGaps.filter((g) => g <= GEOM.joinBrokenPenWidths).length / Math.max(1, capGaps.length) };
       lines.push(`    joins lower→lower, exit-to-next-letter gap in pen widths: ${fmtStats(s, 2)}`);
+      if (lifts) lines.push(`    deliberate pen lifts (the writer's habit, marked by style dimensions): ${fmt(lifts / pairs * 100, 1)}% of ${pairs} lowercase pairs`);
       lines.push(`    joins broken (> ${GEOM.joinBrokenPenWidths} pen widths): ${fmt(brokenRate * 100, 1)}% of ${gaps.length} joins · capital→lower joined: ${fmt(D.joins.capJoinedRate * 100, 0)}% of ${capGaps.length}${noExit ? ` · ${noExit} letters without an exit in the join zone` : ''}`);
       const worstPairs = [...byPair].filter(([, e]) => e.broken).sort((a, b) => b[1].broken / b[1].n - a[1].broken / a[1].n || b[1].sum / b[1].n - a[1].sum / a[1].n).slice(0, 10);
       if (worstPairs.length) lines.push(`    pairs that break most: ${worstPairs.map(([k, e]) => `${k} ${e.broken}/${e.n} (avg ${fmt(e.sum / e.n, 1)})`).join(', ')}`);
