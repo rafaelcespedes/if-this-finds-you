@@ -892,8 +892,7 @@
     ]
    ],
    "noDots": true,
-   "own": 0.6,
-   "weight": 0.4
+   "own": 0.6
   },
   {
    "ch": "c",
@@ -2077,7 +2076,7 @@
      ]
     ]
    ],
-   "note": "Coordinator (QA): this writer dots i with a short dash; written as a dot so the engine places it as one (the engine draws dots as short ticks anyway)"
+   "note": "Coordinator (QA bug fix): this writer dots i with a short dash, which the engine read as a stroke and so drew the i without its dot; written as a dot (the engine draws dots as short slanted ticks)"
   },
   {
    "ch": "j",
@@ -2258,8 +2257,7 @@
     "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
    },
    "noDots": true,
-   "own": 0.6,
-   "weight": 0.35
+   "own": 0.6
   },
   {
    "ch": "q",
@@ -3248,8 +3246,7 @@
     ]
    ],
    "noDots": true,
-   "own": 0,
-   "weight": 0.5
+   "own": 0
   },
   {
    "ch": "t",

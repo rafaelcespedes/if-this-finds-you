@@ -8,7 +8,7 @@
 
 import { defineStyle, register } from '../glyphs.js';
 
-defineStyle("kurrent-1849", {"label": "Kurrent 1849", "family": "script", "tradition": {"name": "Kurrent (Gothic hand, gothisk eller norsk Haandskrift)", "region": "Norway and Denmark (same Kurrent family as German Kurrent)", "language": "Norwegian, Danish, German", "era": "1849", "legibility": "historical", "notes": "Everyday handwriting of German- and Scandinavian-schooled writers until the 20th century; hard for today's readers. Presented as an ordinary hand, never as \"old Germany\" styling."}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -84, "descender": 190, "descRatio": 0.45}, "fallback": "norwegian-1849", "natural": {"slant": 45, "builtInSlant": 24, "xHeight": 0.42, "ascender": 1.02, "descender": 0.93, "advance": 2.952, "join": {"height": 0.8, "angle": 24.7, "lifts": ""}}});
+defineStyle("kurrent-1849", {"label": "Kurrent 1849", "family": "script", "tradition": {"name": "Kurrent (Gothic hand, gothisk eller norsk Haandskrift)", "region": "Norway and Denmark (same Kurrent family as German Kurrent)", "language": "Norwegian, Danish, German", "era": "1849", "legibility": "historical", "notes": "Everyday handwriting of German- and Scandinavian-schooled writers until the 20th century; hard for today's readers. Presented as an ordinary hand, never as \"old Germany\" styling.", "slant": 24}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -84, "descender": 190, "descRatio": 0.45}, "fallback": "norwegian-1849", "natural": {"slant": 45, "builtInSlant": 24, "xHeight": 0.42, "ascender": 1.02, "descender": 0.93, "advance": 2.952, "join": {"height": 0.8, "angle": 24.7, "lifts": ""}}});
 
 const SOURCES = {
  "main": {

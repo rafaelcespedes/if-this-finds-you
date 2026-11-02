@@ -3217,7 +3217,7 @@
     "credit": "Francisco Javier de Santiago Palomares (1728–1796), Arte nueva de escribir, inventada por el insigne maestro Pedro Díaz Morante, e ilustrada con muestras nuevas (Madrid: Antonio de Sancha, 1776), plates engraved by Francisco Asensio y Mejorada. Biblioteca de la Universidad de Sevilla copy via the Internet Archive; Public Domain Mark",
     "url": "https://archive.org/details/A254379/page/n183/mode/1up"
    },
-   "note": "Coordinator (QA): head trimmed to the x-height line so the engine's j dot never lands on it"
+   "note": "Coordinator (QA bug fix): head trimmed to the x-height line: the engine places the j dot itself, and on short-ascender hands it landed on the head"
   },
   {
    "ch": "k",

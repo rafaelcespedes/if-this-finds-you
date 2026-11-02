@@ -14,6 +14,11 @@ import { choose, transform, getStyle, has as styleHas } from './glyphs.js';
 import { penOutline } from './pen.js';
 
 // ---------- the "writer": one consistent set of parameters per seed ----------
+// Other modules add seeded traits to every hand (e.g. style dimensions): fn(h) -> { key: value, ... }.
+// fn must be deterministic from h (seed, style, existing traits) and use its own rng namespace.
+const HAND_TRAITS = [];
+export function addHandTraits(fn) { HAND_TRAITS.push(fn); }
+
 // `style` is a user choice (a style name from glyphs.js); everything else comes from the seed.
 export function makeHand(seed, style) {
   const r = rng('hand:' + seed);
@@ -52,6 +57,7 @@ export function makeHand(seed, style) {
   };
   h.capWidth = script ? h.width * r.range(0.92, 1.06) : r.range(0.78, 0.98);
   h.noise = makeNoise('hand:' + seed);
+  for (const fn of HAND_TRAITS) Object.assign(h, fn(h));
   return h;
 }
 

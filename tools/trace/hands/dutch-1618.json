@@ -1712,7 +1712,7 @@
      ]
     ]
    ],
-   "note": "the second limb of the plate's ij, given the i's hairline entry Coordinator (QA): lead-in clamped to the x-height line so the engine's j dot never lands on it"
+   "note": "the second limb of the plate's ij, given the i's hairline entry Coordinator (QA bug fix): lead-in clamped to the x-height line: the engine places the j dot itself, and on short-ascender hands it landed on the lead-in"
   },
   {
    "ch": "ĳ",
@@ -4715,10 +4715,7 @@
     704,
     745
    ],
-   "var": "b",
-   "bearing": 0.0,
-   "note": "Coordinator (QA): no side bearing, so the flourished capital stays under the 1500-unit advance limit; scaled to 0.88 for the same reason",
-   "scale": 0.88
+   "var": "b"
   },
   {
    "ch": "N",

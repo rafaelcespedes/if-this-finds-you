@@ -8,7 +8,7 @@
 
 import { defineStyle, register } from '../glyphs.js';
 
-defineStyle("spencerian", {"label": "Spencerian 1866", "family": "script", "tradition": {"name": "Spencerian (semi-angular) ornamental business hand", "region": "United States", "language": "English", "era": "1850s–1890s", "legibility": "modern", "notes": "Pointed-pen, steep slant (about 52° from the horizontal), tall loops (ascenders three spaces above the x-height), long hairline connectors, ornate shaded capitals."}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -72, "descender": 210, "descRatio": 0.45}, "fallback": "palmer", "natural": {"slant": 38, "builtInSlant": 22, "xHeight": 0.36, "ascender": 1.08, "descender": 1.045, "advance": 1.472, "join": {"height": 0.5, "angle": 47.5, "lifts": ""}}});
+defineStyle("spencerian", {"label": "Spencerian 1866", "family": "script", "tradition": {"name": "Spencerian (semi-angular) ornamental business hand", "region": "United States", "language": "English", "era": "1850s–1890s", "legibility": "modern", "notes": "Pointed-pen, steep slant (about 52° from the horizontal), tall narrow loops (ascenders about three times the x-height), long angled hairline connectors, a p that rises above the x-height, a looped z. Capitals borrowed from the 1915 business hand for now.", "schooling": "american", "slant": 22}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -72, "descender": 210, "descRatio": 0.45}, "fallback": "palmer", "natural": {"slant": 38, "builtInSlant": 22, "xHeight": 0.36, "ascender": 1.08, "descender": 1.045, "advance": 1.472, "join": {"height": 0.5, "angle": 47.5, "lifts": ""}}});
 
 const SOURCES = {
  "main": {

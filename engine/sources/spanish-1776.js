@@ -8,7 +8,7 @@
 
 import { defineStyle, register } from '../glyphs.js';
 
-defineStyle("spanish-1776", {"label": "Spanish bastarda 1776", "family": "script", "tradition": {"name": "Letra bastarda española (Spanish school hand)", "region": "Spain and Spanish America", "language": "Spanish", "era": "1776–1900", "legibility": "modern", "notes": "Palomares restored Morante's bastarda in 1776; Servidori, Torío and Iturzaeta taught from it, and it was the official Spanish school hand through the 19th century."}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -112, "descender": 120, "descRatio": 0.48}, "fallback": "script", "natural": {"slant": 14, "builtInSlant": 10, "xHeight": 0.56, "ascender": 1.045, "descender": 0.525, "advance": 1.062, "join": {"mode": "natural"}}});
+defineStyle("spanish-1776", {"label": "Spanish bastarda 1776", "family": "script", "tradition": {"name": "Letra bastarda española (Spanish school hand)", "region": "Spain and Spanish America", "language": "Spanish", "era": "1776–1900", "legibility": "modern", "notes": "Palomares restored Morante's bastarda in 1776; Servidori, Torío and Iturzaeta taught from it, and it was the official Spanish school hand through the 19th century.", "slant": 10}, "connected": true, "metrics": {"base": 0, "cap": -200, "xHeight": -112, "descender": 120, "descRatio": 0.48}, "fallback": "script", "natural": {"slant": 14, "builtInSlant": 10, "xHeight": 0.56, "ascender": 1.045, "descender": 0.525, "advance": 1.062, "join": {"mode": "natural"}}});
 
 const SOURCES = {
  "main": {
