@@ -32,7 +32,7 @@ export { inkSVG } from './ink-svg.js';
 export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
 export { writeWithJourney, journeyAmount, fixHabits, journeyText } from './corrections.js';
-export { newInkDoc, newView, replay, apply, plan, penStep, viewText, fairCopy, postScript, dropLast, sheetPage, INK_VERSION } from './sheet.js';
+export { newInkDoc, newView, replay, apply, plan, penStep, viewText, draftPage, fairCopy, postScript, dropLast, sheetPage, INK_VERSION } from './sheet.js';
 export { logicalText, transcription, summary as inkSummary, encodeDoc, decodeDoc, encodeInkLink, decodeInkLink } from './inklog.js';
 export { coverQuality } from './marks.js';
 export { EXTRAS } from './sources/extras.js';

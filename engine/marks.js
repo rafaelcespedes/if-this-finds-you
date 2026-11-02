@@ -7,11 +7,15 @@
 //   centerlines run through penOutline(), so marks carry this hand's pen, ink, pressure and kinematics.
 //
 // Page space: x right, y down, item.y = baseline; inside an item's glyph, y is up (as layout.js).
+// Marks are items of kind 'mark' ({ kind, key, g: { contours, strokes }, x, y, line, ev }); every renderer,
+// the timeline and the pen draw them like letters, in page order. Letters written as corrections
+// (overwrites, insertions) come from layout's writeAt, so they use the same word logic as the text.
 
 import { rng, clamp, lerp, smooth, DEG } from './core.js';
-import { makeGlyph, markHabits, CAP, UPM } from './hand.js';
+import { markHabits, CAP, UPM } from './hand.js';
 import { getStyle } from './glyphs.js';
 import { penOutline, getPen, penKey, strokeInk, profileOutline } from './pen.js';
+import { lineBaseline, writeAt } from './layout.js';
 
 // ---------- the writer's correction habits ----------
 // pens that blot (wet nibs) and pens that run dry; pointed dip pens already run dry in pen.js's inkWalker
@@ -120,6 +124,16 @@ export function baselineOf(items) {
   const mx = sx / n, my = sy / n, t = Math.tan(sr / n);
   return (x) => my - t * (x - mx);
 }
+// the same, but on the line's own curve (lines: Map n -> page.lineInfo entry), lifted to where these
+// letters actually sit (their word's float)
+export function baselineFor(p, run, lines) {
+  const ln = lines && run.length && lines.get(run[0].line);
+  if (!ln) return baselineOf(run);
+  let off = 0;
+  for (const it of run) off += it.y - lineBaseline(p, ln, it.x);
+  off /= run.length;
+  return (x) => lineBaseline(p, ln, x) + off;
+}
 export const scaleOf = (items) => { let s = 0, n = 0; for (const it of items) if (it.g && it.g.pose) { s += it.g.pose.scale || 1; n++; } return n ? s / n : 1; };
 export const rotScale = (a, s) => { const c = Math.cos(a) * s, n = Math.sin(a) * s; return (q) => [c * q[0] - n * q[1], n * q[0] + c * q[1]]; };
 export const inkWidth = (p) => p.penWidth * (getPen(p).wScale || 1);
@@ -174,7 +188,7 @@ export function markItem(p, kind, strokesPage, ref, o) {
   });
   if (!strokes.length) return null;
   return {
-    kind: 'glyph', ch: '', x: ox, y: oy, rot: 0,
+    kind: 'mark', ch: '', x: ox, y: oy, rot: 0,
     g: { advance: 0, contours: strokes.map((s) => s.contour), strokes, variant: MARK_VARIANT, pose: POSE0 },
     charIndex: -1, inkIndex: ref.inkIndex, line: ref.line, para: ref.para, word: ref.word, wk: o.wk || ref.wk,
     tempo: (ref.tempo || 1) * (o.tempo || 1), role: 'mark', mark: kind, fix: o.fix, key: o.key,
@@ -251,12 +265,12 @@ export function strikeItems(p, firm, H, struck, how, r, o = {}) {
   const items = [];
   let start = null, ref = null, n = 0;
   for (const run of lines.values()) {
-    const sp = spanOf(run), base = baselineOf(run), xh = xh0 * scaleOf(run);
+    const sp = spanOf(run), base = baselineFor(p, run, o.lines), xh = xh0 * scaleOf(run);
     const small = run.some((it) => /\p{Ll}/u.test(it.ch));
     const h = small ? H.strikeY * xh * (1 + 0.08 * r.gauss()) : 0.45 * CAP * scaleOf(run);
     const strokes = strikeStrokes(H, p.noise, how, sp.x0, sp.x1, base, h, xh, W, r);
     ref = run[run.length - 1];
-    const mi = markItem(firm, how === 'scribble' ? 'scribble' : 'strike', strokes, ref, Object.assign({ delayed: true, tempo: how === 'scribble' ? 2.6 : 1.25 }, o, { seed: (o.seed || 311) + n * 13.7, key: o.key ? o.key + ':' + n : undefined }));
+    const mi = markItem(firm, how === 'scribble' ? 'scribble' : 'strike', strokes, ref, Object.assign({ delayed: true, tempo: how === 'scribble' ? 2.6 : 1.25 }, o, { lines: undefined, seed: (o.seed || 311) + n * 13.7, key: o.key ? o.key + ':' + n : undefined }));
     if (mi) items.push(mi);
     if (!start) start = strokes[0][0];
     n++;
@@ -319,59 +333,80 @@ export function blotItem(p, X, Y, ref, r, seed, o = {}) {
   c.ink = pr;
   const st = { center: pts, contour: c, dot: false, mark: 'blot', delayed: true };
   return {
-    kind: 'glyph', ch: '', x: X, y: Y, rot: 0,
+    kind: 'mark', ch: '', x: X, y: Y, rot: 0,
     g: { advance: 0, contours: [c], strokes: [st], variant: MARK_VARIANT, pose: POSE0 },
     charIndex: -1, inkIndex: ref.inkIndex, line: ref.line, para: ref.para, word: ref.word, wk: o.wk || ref.wk,
     tempo: ref.tempo || 1, role: 'mark', mark: 'blot', fix: o.fix, key: o.key,
   };
 }
 
+// ---------- writing at a place (layout's writeAt), moved as a block ----------
+function shifted(w, dx, dy) {
+  const box = (b) => (b ? [b[0] + dx, b[1] + dy, b[2] + dx, b[3] + dy] : b);
+  return {
+    items: w.items.map((it) => Object.assign({}, it, { x: it.x + dx, y: it.y + dy, box: box(it.box) })),
+    runs: w.runs.map((rn) => Object.assign({}, rn, { x: rn.x + dx, y: rn.y + dy, box: box(rn.box), pid: rn.id + '@' + Math.round(rn.x + dx) + ',' + Math.round(rn.y + dy) })),
+    stops: w.stops.map((sp) => Object.assign({}, sp, { x: sp.x + dx, y: sp.y + dy })),
+    endX: w.endX + dx,
+  };
+}
+const boxOf = (items) => {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const it of items) if (it.box) { x0 = Math.min(x0, it.box[0]); y0 = Math.min(y0, it.box[1]); x1 = Math.max(x1, it.box[2]); y1 = Math.max(y1, it.box[3]); }
+  return { x0, y0, x1, y1 };
+};
+const leanOf = (p, it) => { const pose = (it.g && it.g.pose) || {}; return clamp((pose.slant == null ? p.slant || 0 : pose.slant) - (p.slant || 0), -6, 6); };
+
 // ---------- overwrite (§5.2) ----------
-// The right letter over the wrong glyph item `wr`: heavier pen, more ink, a touch bigger, centred on the
-// wrong letter's ink and a little off so the old letter shows; messy hands go over the main stroke twice.
-// heavy: params with the overwrite's wider pen. inst: instance seed string.
-export function overItem(p, heavy, H, wr, ch, ctx, inst, r) {
-  const pose = wr.g.pose || {};
-  const lean = clamp((pose.slant == null ? p.slant || 0 : pose.slant) - (p.slant || 0), -6, 6);
-  const g0 = makeGlyph(heavy, ch, { seed: inst, amount: 1, slant: lean, scale: (pose.scale || 1) * H.overSize }, ctx);
-  const main = g0.strokes.reduce((b, st, i) => (!st.dot && st.center.length > (b < 0 ? 0 : g0.strokes[b].center.length) ? i : b), -1);
-  const again = main >= 0 && r() < H.retrace;
-  const off = (r() - 0.5) * 0.03 * UPM;
-  const g = repen(heavy, g0, rotScale(wr.rot || 0, 1), 501 + (wr.id || 0) * 0.37, again ? (src) => {
-    const st = src[main];
-    const dup = Object.assign({}, st, { center: st.center.map((q) => [q[0] + off, q[1] - off * 0.6]) });
-    return [...src.slice(0, main + 1), dup, ...src.slice(main + 1)];
-  } : null);
-  for (const st of g.strokes) if (st.contour.ink) for (let k = 0; k < st.contour.ink.n; k++) st.contour.ink.d[k] *= H.overInk;
-  const a = spanOf([Object.assign({}, wr, { x: 0, y: 0 })]), b = spanOf([{ x: 0, y: 0, g }]);
-  const dx = (a.x0 + a.x1) / 2 - (b.x0 + b.x1) / 2 + r.gauss() * 0.035 * UPM;
-  return Object.assign({}, wr, { ch, g, x: wr.x + dx, y: wr.y + r.gauss() * 0.012 * UPM, role: 'over', tempo: (wr.tempo || 1) / 1.3 });
+// The right letter over the wrong glyph item `wr`: a heavier pen (layout's weight: pen width, and the
+// renderers' ink), a touch bigger, centred on the wrong letter's ink and a little off so the old letter
+// shows; messy hands go over the main stroke twice. heavy: params with the wider pen (for the retrace).
+// Returns { item, runs } (the runs index the item as items[0]).
+export function overItem(p, heavy, H, wr, ch, seed, r) {
+  const w = writeAt(p, ch, { x: wr.x, y: wr.y, angle: wr.rot || 0, lean: leanOf(p, wr), size: ((wr.g.pose && wr.g.pose.scale) || 1) * H.overSize, weight: H.overWeight, seed, line: wr.line });
+  const it0 = w.items.find((it) => it.kind === 'glyph' && it.g);
+  if (!it0) return null;
+  let g = it0.g;
+  const main = g.strokes.reduce((b, st, i) => (!st.dot && st.center.length > (b < 0 ? 0 : g.strokes[b].center.length) ? i : b), -1);
+  if (main >= 0 && r() < H.retrace) {
+    const off = (r() - 0.5) * 0.03 * UPM, st = g.strokes[main];
+    const center = st.center.map((q) => [q[0] + off, q[1] - off * 0.6]);
+    const c = penOutline(heavy, center, 501 + main * 3.1);
+    if (c) {
+      const strokes = [...g.strokes.slice(0, main + 1), Object.assign({}, st, { center, contour: c }), ...g.strokes.slice(main + 1)];
+      g = Object.assign({}, g, { strokes, contours: strokes.map((x) => x.contour) });
+    }
+  }
+  const a = spanOf([wr]), b = spanOf([Object.assign({}, it0, { g })]);
+  const dx = (a.x0 + a.x1) / 2 - (b.x0 + b.x1) / 2 + r.gauss() * 0.035 * UPM, dy = r.gauss() * 0.012 * UPM;
+  const sh = shifted({ items: [Object.assign({}, it0, { g })], runs: w.runs, stops: [], endX: w.endX }, dx, dy);
+  const item = Object.assign({}, sh.items[0], {
+    inkIndex: wr.inkIndex, para: wr.para, word: wr.word, wk: wr.wk, tempo: (wr.tempo || 1) / 1.3, role: 'over', charIndex: -1,
+  });
+  return { item, runs: sh.runs };
 }
 
 // ---------- insertion above the line (§5.3) ----------
-// Writes `text` small above the line: over a caret in the gap between `left` and `right` (glyph items),
-// or centred over the struck run `sub` (a substitution, no caret), or continuing an earlier insertion
-// block `cont` (typing on: no new caret). above = items of the line above (for the room left).
-// seedOf(i) = instance seed of the i-th character. Returns { items, block } (block: where to continue).
-export function insertionItems(p, H, { left, right, sub, cont, above = [], text, seedOf, maxW, r, ref, caret = true }) {
-  const chars = Array.from(text);
-  const xh0 = p.xHeight * CAP;
+// Writes `text` small above the line (layout's writeAt): over a caret in the gap between `left` and
+// `right` (glyph items), or centred over the struck run `sub` (a substitution, no caret), or continuing an
+// earlier insertion block `cont` (typing on: no new caret). above = items of the line above (for the room
+// left); lines = Map n -> lineInfo (the real line curve). Returns { items, runs, stops, block, shift }:
+// items = the caret (a mark) and the letters (their charIndex = offset in `shift` + text), runs index the
+// letters as items[0..], stops use offsets within the text.
+export function insertionItems(p, H, { left, right, sub, cont, above = [], text, seed, maxW, r, ref, lines, caret = true }) {
   if (cont) {
-    const items = [];
-    let x = cont.x;
-    chars.forEach((ch, i) => {
-      const g0 = makeGlyph(p, ch, { seed: seedOf(i), amount: 1, slant: cont.lean, scale: cont.s, care: cont.care }, { prev: i ? chars[i - 1] : cont.prev, next: chars[i + 1] || null, index: cont.n + i, wordStart: false, wordEnd: false });
-      const g = repen(p, g0, rotScale(cont.slope, 1), 613 + cont.n * 2.9 + i);
-      items.push(Object.assign({}, cont.ref, { kind: 'glyph', ch, g, x, y: cont.yb - (x - cont.x0) * Math.tan(cont.slope), rot: cont.slope, role: 'insert', charIndex: -1 }));
-      x += g0.advance * Math.cos(cont.slope);
-    });
-    return { items, block: Object.assign({}, cont, { x, n: cont.n + chars.length, prev: chars[chars.length - 1] }) };
+    const lead = cont.space ? ' ' : '';
+    const y = cont.yb - Math.tan(cont.slope) * (cont.endX - cont.x0);
+    const w = writeAt(p, lead + text, { x: cont.endX, y, angle: cont.slope, lean: cont.lean, size: cont.s, seed, line: cont.line });
+    return { items: w.items, runs: w.runs, stops: w.stops.map((sp) => Object.assign({}, sp, { o: sp.o - lead.length })).filter((sp) => sp.o >= 0), shift: lead.length,
+      block: Object.assign({}, cont, { endX: w.endX, space: /\s$/.test(text) }) };
   }
+  const xh0 = p.xHeight * CAP;
   const anchor = sub && sub.length ? sub : [left];
   const line = anchor[anchor.length - 1].line;
   const onLine = anchor.filter((it) => it.line === line);
   const ls = spanOf(onLine);
-  const base = baselineOf(onLine);
+  const base = baselineFor(p, onLine, lines);
   const xh = xh0 * scaleOf(onLine);
   let cx;
   if (sub && sub.length) cx = (ls.x0 + ls.x1) / 2;
@@ -379,47 +414,30 @@ export function insertionItems(p, H, { left, right, sub, cont, above = [], text,
     const gx1 = right && right.line === left.line ? spanOf([right]).x0 : Math.min(ls.x1 + 0.3 * UPM, maxW); // at a line end: just after the word
     cx = (ls.x1 + gx1) / 2;
   }
-  const pose = left.g.pose || {};
-  const lean = clamp((pose.slant == null ? p.slant || 0 : pose.slant) - (p.slant || 0), -6, 6);
-  const care = clamp((p.neatness || 0.6) - 0.15, 0, 1);
-  const make = (s) => {
-    const gl = [];
-    let x = 0;
-    chars.forEach((ch, i) => {
-      const g = makeGlyph(p, ch, { seed: seedOf(i), amount: 1, slant: lean, scale: s, care },
-        { prev: chars[i - 1] || null, next: chars[i + 1] || null, index: i, wordStart: i === 0, wordEnd: i === chars.length - 1 });
-      gl.push({ g, dx: x, ch, i });
-      x += g.advance;
-    });
-    return { gl, width: x };
-  };
+  const lean = leanOf(p, left);
+  const slope = (left.rot || 0) + H.insertSlope * DEG * (0.5 + r());
   let s = H.insertSize * scaleOf(onLine);
-  let built = make(s);
+  const measure = () => writeAt(p, text, { x: 0, y: 0, angle: slope, lean, size: s, seed, line });
+  let w = measure(), ext = boxOf(w.items);
   // the room: from this line's x-height (plus a real gap) up to the lowest ink of the line above
   let ceil = 0.04 * UPM;
-  const half = built.width / 2;
-  const near = above.filter((it) => it.kind === 'glyph' && it.g && it.x < cx + half + 400 && it.x > cx - half - 900);
-  if (near.length) ceil = spanOf(near).y1 + 0.04 * UPM;
+  const half = w.endX / 2;
+  const near = above.filter((it) => (it.kind === 'glyph' || it.kind === 'mark') && it.g && it.x < cx + half + 400 && it.x > cx - half - 900);
+  if (near.length) ceil = (near.every((it) => it.box) ? boxOf(near).y1 : spanOf(near).y1) + 0.04 * UPM;
   // (over a struck word, also clear its tall letters: the replacement sits above the whole word)
   const floor = Math.min(base(cx) - 1.15 * xh, sub && sub.length ? ls.y0 - 0.12 * xh : Infinity);
-  const inkOf = () => spanOf(built.gl.map((q) => ({ x: q.dx, y: 0, g: q.g })));
-  let sp2 = inkOf();
-  const room = floor - ceil, need = sp2.y1 - sp2.y0;
-  if (need > room && need > 0) { s *= clamp(room / need, 0.72, 1); built = make(s); sp2 = inkOf(); } // cramped: smaller
-  let yb = Math.min(base(cx) - xh * (1.45 + 0.15 * r()), floor - sp2.y1);
-  if (yb + sp2.y0 < ceil) yb = Math.min(ceil - sp2.y0, floor - 0.5 * sp2.y1); // touch the line above before this one
-  const slope = (left.rot || 0) + H.insertSlope * DEG * (0.5 + r());
-  const x0 = clamp(cx - built.width / 2 + r.gauss() * 0.04 * UPM, 0, Math.max(0, maxW - built.width)); // stays on the paper
+  const room = floor - ceil, need = ext.y1 - ext.y0;
+  if (need > room && need > 0) { s *= clamp(room / need, 0.72, 1); w = measure(); ext = boxOf(w.items); } // cramped: smaller
+  let yb = Math.min(base(cx) - xh * (1.45 + 0.15 * r()), floor - ext.y1);
+  if (yb + ext.y0 < ceil) yb = Math.min(ceil - ext.y0, floor - 0.5 * ext.y1); // touch the line above before this one
+  const x0 = clamp(cx - w.endX / 2 + r.gauss() * 0.04 * UPM, 0, Math.max(0, maxW - w.endX)); // stays on the paper
+  const at = shifted(w, x0, yb + Math.tan(slope) * 0); // writeAt's baseline passes through (0, 0) at `slope`
   const items = [];
   if (caret && !(sub && sub.length)) {
     const c = markItem(p, 'caret', caretStrokes(H.caret, cx, base, xh, yb, r), ref, { seed: 911 + (ref.ev || 0), tempo: 1.1, wk: ref.wk, key: ref.key ? ref.key + ':caret' : undefined });
     if (c) items.push(c);
   }
-  built.gl.forEach((q) => {
-    const g = repen(p, q.g, rotScale(slope, 1), 613 + q.i * 2.9);
-    const gx = x0 + q.dx * Math.cos(slope);
-    items.push(Object.assign({}, ref, { kind: 'glyph', ch: q.ch, g, x: gx, y: yb - (gx - x0) * Math.tan(slope), rot: slope, role: 'insert', charIndex: -1 }));
-  });
-  const block = { x: x0 + built.width * Math.cos(slope), x0, yb, slope, s, lean, care, n: chars.length, prev: chars[chars.length - 1], ref };
-  return { items, block };
+  items.push(...at.items);
+  const block = { endX: at.endX, x0, yb, slope, s, lean, line, space: /\s$/.test(text) };
+  return { items, runs: at.runs, stops: at.stops, block, shift: 0, caret: items.length - at.items.length };
 }
