@@ -459,17 +459,6 @@ function glyphSkeleton(p, ch, inst, ctx) {
     for (const run of smoothStroke(mapped, p, step, messy)) { strokes.push(run); strokeMarks.push(mk); }
   });
   let advance = (g.r - g.l) * S * wScale + (p.tracking || 0);
-  if (lower && joins && advance > 0) {
-    // a joined letter's box must hold its ink, or the next letter lands on top of it (a bug: a reshaped skeleton
-    // whose box edges moved past its strokes). Nudge the ink back inside and widen the box to fit.
-    if (strokes.length) {
-      const xhU = p.xHeight * CAP;
-      let mn = Infinity, mx = -Infinity;
-      for (const s2 of strokes) for (const q of s2) { if (q[0] < mn) mn = q[0]; if (q[0] > mx) mx = q[0]; }
-      if (mn < -0.2 * xhU) { const dx = -mn - 0.05 * xhU; for (const s2 of strokes) for (const q of s2) q[0] += dx; for (const q of dots) q[0] += dx; mx += dx; advance += dx; }
-      if (advance < mx - 0.1 * xhU) advance = mx - 0.05 * xhU;
-    }
-  }
   if (ch === ' ' || ch === ' ') advance = p.space;
   else if (st.connected && isApostrophe(ch) && ctx && isLetterCh(ctx.prev) && isLetterCh(ctx.next) && (strokes.length || dots.length)) {
     // inside a joined word (don't, it's) the apostrophe floats over the join instead of breaking it (QA report #6)

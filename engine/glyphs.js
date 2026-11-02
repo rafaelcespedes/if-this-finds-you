@@ -257,7 +257,7 @@ export function makeHabits(seed, style, traits = {}, opts = {}) {
       const own = new Set(list.map(allographOf));
       for (const d of donors) {
         if (/\p{Ll}/u.test(ch) && (!!d.connected !== !!st.connected || !joinsMeet(style, d.name, ch))) continue;
-        for (const v of d.glyphs.get(ch) || []) if (v.weight !== 0 && !(v.tags && v.tags.position) && !v.borrowedFrom && !own.has(allographOf(v))) pool.push({ ch, d, v });
+        for (const v of d.glyphs.get(ch) || []) if (v.weight !== 0 && !(v.tags && v.tags.position) && !v.borrowedFrom && !own.has(allographOf(v)) && fitsHeight(v, d, list, st)) pool.push({ ch, d, v });
       }
     }
     const nb = Math.round(1.6 + r() * 1.8);
@@ -290,6 +290,17 @@ function altFor(H, c) {
     if (f !== dominant && avail.has(f)) return f;
   }
   return null;
+}
+
+// A letter may only be lent when it stays within the height of the borrower's own form of it (cap-height units
+// above and below the baseline): a lender's deep descender or tall loop would leave the borrower's page.
+function fitsHeight(v, donor, ownList, host) {
+  const span = (x, m) => { let up = 0, down = 0; for (const s of x.s) for (const [, y] of s) { up = Math.max(up, (m.base - y) / (m.base - m.cap)); down = Math.max(down, (y - m.base) / (m.base - m.cap)); } return [up, down]; };
+  const [u, dn] = span(v, v.metrics || donor.metrics);
+  const own = ownList.find((x) => x.weight !== 0 && !(x.tags && x.tags.position));
+  if (!own) return true;
+  const [ou, od] = span(own, own.metrics || host.metrics);
+  return u <= ou + 0.1 && dn <= od + 0.08;
 }
 
 // A variant lent by another style keeps that style's metrics, so it scales into this hand correctly.
