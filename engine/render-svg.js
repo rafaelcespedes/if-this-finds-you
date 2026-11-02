@@ -8,7 +8,7 @@
 
 import { UPM } from './hand.js';
 import { rng } from './core.js';
-import { getPen, strokeInk, inkModel, inkRGB, inkWalker, rgbHex, simplify, penWidthUnits, PEN_KIND } from './pen.js';
+import { getPen, strokeInk, inkModel, inkRGB, inkWalker, rgbHex, simplify, penWidthUnits, continuesStroke, PEN_KIND } from './pen.js';
 
 export function contoursToD(contours, ox, oy, sc) {
   let d = '';
@@ -66,7 +66,9 @@ function corePath(pr, i0, i1, frac, ox, oy, sc) {
   return polyD(simplify(L.concat(R.reverse()), 0.15 / sc), ox, oy, sc);
 }
 
-// page: result of layout(); opts: { width (px), emPx (px per em), ink (swatch key, '#rrggbb' or a CSS color) }
+// page: result of layout(); opts: { width (px), emPx (px per em), ink (swatch key, '#rrggbb' or a CSS color),
+//   strokeIds (wrap each pen stroke in <g data-k="n"> for the write-on animation; pen-downs then stay
+//   per stroke instead of merging), rules (draw page.rules as lines; true or a CSS colour) }
 export function renderSVG(p, page, opts) {
   const W = opts.width;
   const emPx = opts.emPx;
@@ -94,11 +96,13 @@ export function renderSVG(p, page, opts) {
   const misses = [];
   let prevInk = null;
   // the pen-down being collected: its subpaths, length-weighted density, shade, and overlays
-  let chain = null, prevEnd = null;
-  const flush = () => {
+  let chain = null, prevEnd = null, k = 0;
+  const perStroke = !!opts.strokeIds;
+  const flush = (key) => {
     if (!chain) return;
     const fill = chain.flat || rgbHex(inkRGB(model, chain.dl / Math.max(1e-6, chain.len) * 1.1, undefined, chain.shade));
-    paths.push(`<path fill="${fill}" fill-opacity="${chain.flat ? '0.92' : '0.88'}" d="${chain.d}"/>`, ...chain.over);
+    const els = `<path fill="${fill}" fill-opacity="${chain.flat ? '0.92' : '0.88'}" d="${chain.d}"/>` + chain.over.join('');
+    paths.push(key == null ? els : `<g data-k="${key}">${els}</g>`);
     chain = null;
   };
   for (const it of page.items) {
@@ -115,14 +119,14 @@ export function renderSVG(p, page, opts) {
       const pr = strokeInk(p, st);
       const d = polyD(simplify(st.contour, tol), ox, oy, sc);
       // does this stroke continue the previous one (a corner split, a script join)? then same path
-      const sx = pr ? it.x + pr.x[0] : 0, sy = pr ? it.y - pr.y[0] : 0;
-      const joins = pr && prevEnd && (pr.start === 'join' || Math.hypot(sx - prevEnd.x, sy - prevEnd.y) < 0.3 * (pr.w[0] + prevEnd.w) + 2);
+      const joins = !perStroke && prevEnd && continuesStroke(prevEnd.pr, prevEnd.x, prevEnd.y, pr, it.x, it.y);
       if (!joins) flush();
-      if (pr) prevEnd = { x: it.x + pr.x[pr.n - 1], y: it.y - pr.y[pr.n - 1], w: pr.w[pr.n - 1] };
+      const done = () => { if (perStroke) flush(k + ci); }; // animation: every stroke its own group
+      if (pr) prevEnd = { pr, x: it.x, y: it.y };
       if (!pr || !model) {
         if (!chain) chain = { d: '', flat: flat || 'currentColor', over: [] };
         chain.d += d;
-        return;
+        return done();
       }
       let dm = 0, wm = 0;
       for (let i = 0; i < pr.n; i++) { dm += pr.d[i]; wm += pr.w[i]; }
@@ -131,7 +135,7 @@ export function renderSVG(p, page, opts) {
       const base = dm * ink.mul;
       if (!chain) chain = { d: '', dl: 0, len: 0, shade: ink.shade, over: [] };
       chain.d += d; chain.dl += base * pr.len; chain.len += pr.len;
-      if (!wet) return;
+      if (!wet) return done();
       // darker core where the ink runs heavier than the stroke's mean (slow and down strokes)
       let i0 = -1;
       for (let i = 0; i <= pr.n; i++) {
@@ -157,11 +161,19 @@ export function renderSVG(p, page, opts) {
         const ang = Math.atan2(-pr.ty[i], pr.tx[i]) * 180 / Math.PI;
         chain.over.push(`<ellipse cx="${num(x)}" cy="${num(y)}" rx="${num(rx)}" ry="${num(ry)}" transform="rotate(${ang.toFixed(0)} ${num(x)} ${num(y)})" fill="url(#${grad(inkRGB(model, v * 1.2, undefined, ink.shade))})"/>`);
       }
+      done();
     });
+    k += it.g.contours.length;
   }
   flush();
   const H = Math.ceil(page.height * sc);
+  let rules = '';
+  if (opts.rules && page.rules && page.rules.length) {
+    const col = typeof opts.rules === 'string' ? opts.rules : 'var(--rule)';
+    rules = `<g class="rules" stroke="${col}" stroke-width="1">` +
+      page.rules.map((y) => `<line x1="0" x2="${W}" y1="${(y * sc).toFixed(1)}" y2="${(y * sc).toFixed(1)}"/>`).join('') + '</g>';
+  }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-label="Handwritten text">` +
-    `<defs>${look.defs}${[...grads.values()].map((g) => g.def).join('')}</defs>` +
+    `<defs>${look.defs}${[...grads.values()].map((g) => g.def).join('')}</defs>${rules}` +
     `<g ${look.groupAttrs}>${paths.join('')}</g>${misses.join('')}</svg>`;
 }

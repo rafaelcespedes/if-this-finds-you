@@ -21,7 +21,7 @@
 // Deterministic: no Math.random; GPU noise is a hash of the pixel position.
 
 import { UPM } from './hand.js';
-import { getPen, strokeInk, inkModel, inkWalker, inkRGB, rgbHex, srgbToLin, parseColor, penWidthUnits, PEN_KIND } from './pen.js';
+import { getPen, strokeInk, inkModel, inkWalker, inkRGB, rgbHex, srgbToLin, parseColor, penWidthUnits, continuesStroke, PEN_KIND } from './pen.js';
 
 // Paper presets. Colours are sRGB. `lines` draws printed rules under the ink (ink multiplies over them).
 export const PAPERS = {
@@ -432,14 +432,12 @@ function buildGeometry(p, page, pen, k, opts, pad) {
         SCR[o + 6] = ld; SCR[o + 7] = ld; SCR[o + 8] = ls; SCR[o + 9] = ls; SCR[o + 10] = la; SCR[o + 11] = la; SCR[o + 12] = seed; SCR[o + 13] = shade; cnt = 1;
       }
       if (!cnt) continue;
-      // does this stroke continue the previous one (corner split, script join)? then same chain
-      const sx = SCR[0], sy = SCR[1], sr = SCR[4];
-      if (!(prev && (pr.start === 'join' || Math.hypot(sx - prev.x, sy - prev.y) < 0.6 * (sr + prev.r) + 1))) chain++;
+      // does this stroke continue the previous one (corner piece, retrace, script join)? then same chain
+      if (!(prev && continuesStroke(prev.pr, prev.ix, prev.iy, pr, it.x, it.y))) chain++;
       const b = [bx0, by0, bx1, by1];
       const L = LAYERS.pick(b, chain, prev && prev.chain === chain ? prev.layer : -1);
       LAYERS.add(L, b, chain, SCR, cnt);
-      const e = (cnt - 1) * FPI;
-      prev = { x: SCR[e + 2], y: SCR[e + 3], r: SCR[e + 5], chain, layer: L };
+      prev = { pr, ix: it.x, iy: it.y, chain, layer: L };
       strokes++; segs += cnt;
     }
   }

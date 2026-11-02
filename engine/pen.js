@@ -523,6 +523,9 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   return {
     pen: key, kind, shape: spec.shape, n, x, y, tx, ty, w, d, s, t, aux, hair,
     start, end, dot, len: S, wMax, wHair, nib: spec.shape === 'nib' ? [Math.cos(nibA) * W, Math.sin(nibA) * W] : null,
+    // where the skeleton stroke really starts and ends (before any hook or flying tail): renderers
+    // use these to tell a continuation (corner, script join) from a new pen-down
+    a0: pts0[0], a1: pts0[pts0.length - 1],
   };
 }
 
@@ -678,7 +681,7 @@ function classicProfile(p, pts, seedOff, opt) {
     d[i] = 0.95;
   }
   for (let i = 0; i < n; i++) w[i] = (raw[Math.max(0, i - 2)] + 2 * raw[Math.max(0, i - 1)] + 3 * raw[i] + 2 * raw[Math.min(n - 1, i + 1)] + raw[Math.min(n - 1, i + 2)]) / 9;
-  return { pen: 'classic', kind: 0, shape: 'disc', n, x, y, tx, ty, w, d, s, t, aux: new Float64Array(n), hair: null, start: 'plain', end: 'soft', dot: !!isDot, len: total, wMax: p.penWidth * 2, wHair: 4, nib: null };
+  return { pen: 'classic', kind: 0, shape: 'disc', n, x, y, tx, ty, w, d, s, t, aux: new Float64Array(n), hair: null, start: 'plain', end: 'soft', dot: !!isDot, len: total, wMax: p.penWidth * 2, wHair: 4, nib: null, a0: pts[0], a1: pts[n - 1] };
 }
 
 // ---------- registry ----------
@@ -708,6 +711,21 @@ export function penOutline(p, pts, seedOff, opt) {
   const poly = profileOutline(pr);
   poly.ink = pr;
   return poly;
+}
+
+// Is stroke B one pen-down with the stroke A drawn just before it? True when B starts inside A's
+// ink: at A's end (a corner piece, a script join) or anywhere along A (a retrace back up the stroke).
+// Profiles at page offsets (ax, ay) / (bx, by); page units, y down. Dots are always their own pen-down.
+export function continuesStroke(pa, ax, ay, pb, bx, by) {
+  if (!pa || !pb || pa.dot || pb.dot) return false;
+  if (pb.start === 'join') return true;
+  const sx = bx + pb.a0[0], sy = by - pb.a0[1], wb = pb.w[0];
+  for (let i = 0; i < pa.n; i++) {
+    const dx = ax + pa.x[i] - sx, dy = ay - pa.y[i] - sy, r = 0.5 * Math.max(pa.w[i], wb) + 3;
+    if (dx * dx + dy * dy < r * r) return true;
+  }
+  const ex = ax + pa.a1[0] - sx, ey = ay - pa.a1[1] - sy, r = 0.3 * (wb + pa.w[pa.n - 1]) + 2;
+  return ex * ex + ey * ey < r * r;
 }
 
 // The profile behind a stroke from makeGlyph (recomputed if the contour didn't carry one).
