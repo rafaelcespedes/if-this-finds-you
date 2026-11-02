@@ -16,7 +16,7 @@ export { rng, makeNoise } from './core.js';
 export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';
 export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
 export { PENS, getPen, penOutline, simplify } from './pen.js';
-export { layout, inkPage, pageHabits, pageMetrics, spreadOf, lineBaseline, lineAngle, lineLean } from './layout.js';
+export { layout, inkPage, writeAt, pageHabits, pageMetrics, spreadOf, lineBaseline, lineAngle, lineLean } from './layout.js';
 export { geometry, pathD } from './editing.js';
 export { kinematics } from './kinematics.js';
 export { timeline, frameAt, strokeFraction, createPlayer, playSVG, createPen, paintPen } from './animate.js';

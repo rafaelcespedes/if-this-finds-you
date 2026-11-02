@@ -266,6 +266,10 @@ export function layout(p, text, opts = {}) {
   const firstY = placed ? opts.firstBaseline : M.firstBaseline;
   const marginL = opts.marginLeft || 0;
   const ink = opts.ink ? { salt: String(opts.ink.salt == null ? '' : opts.ink.salt) } : null;
+  // size: letters bigger or smaller than the hand's own (insertions above a line); weight: a heavier pen
+  // (an overwrite pressed over a wrong letter): pen width × weight, and item.weight for the ink
+  const sizeK = opts.size || 1, weight = opts.weight || 1;
+  const pw = weight === 1 ? p : Object.assign(Object.create(p), { penWidth: p.penWidth * weight });
 
   // ----- the pen: everything needed to keep writing (a fresh page, or opts.start) -----
   const pen = opts.start ? JSON.parse(JSON.stringify(opts.start)) : {
@@ -352,10 +356,10 @@ export function layout(p, text, opts = {}) {
     const inst = { seed: seedKey, amount: 1, slant: w.slant, scale: w.scale, care: w.care };
     if (w.squeeze) inst.squeeze = w.squeeze;
     if (ctx && ctx.bar) inst.bar = ctx.bar;
-    const ck = ch + '\u0001' + seedKey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + (w.squeeze || 1) + '\u0001' +
+    const ck = ch + '\u0001' + seedKey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + (w.squeeze || 1) + '\u0001' + weight + '\u0001' +
       (ctx ? [ctx.prev, ctx.next, ctx.index, ctx.wordStart, ctx.wordEnd, ctx.bar || ''].join('\u0002') : '');
     let g = hc.glyphs.get(ck);
-    if (!g) { g = makeGlyph(p, ch, inst, ctx && { prev: ctx.prev, next: ctx.next, index: ctx.index, wordStart: ctx.wordStart, wordEnd: ctx.wordEnd }); hc.glyphs.set(ck, g); }
+    if (!g) { g = makeGlyph(pw, ch, inst, ctx && { prev: ctx.prev, next: ctx.next, index: ctx.index, wordStart: ctx.wordStart, wordEnd: ctx.wordEnd }); hc.glyphs.set(ck, g); }
     return g;
   }
   // build a word (or the next piece of an open word in Ink mode): glyphs with offsets relative to tokStart
@@ -518,7 +522,8 @@ export function layout(p, text, opts = {}) {
         prevEndX = f.X + lxNow + it.advance;
       } else {
         // inkIndex: ink density is sampled per word position (see pen.strokeOpacity)
-        put(it, it.g, lxNow, ly, o, 'glyph', { inkIndex: ctl.inkIndex, line: line().n, para: pen.para, word: w.n, wkey: w.key, tempo: w.tempo });
+        put(it, it.g, lxNow, ly, o, 'glyph', weight === 1 ? { inkIndex: ctl.inkIndex, line: line().n, para: pen.para, word: w.n, wkey: w.key, tempo: w.tempo }
+          : { inkIndex: ctl.inkIndex, line: line().n, para: pen.para, word: w.n, wkey: w.key, tempo: w.tempo, weight });
         prevEndX = f.X + lxNow + it.g.advance;
       }
       prevIt = it;
@@ -546,7 +551,7 @@ export function layout(p, text, opts = {}) {
     return {
       key: wkey, seed: seedBase, n: pen.words++, prog, care,
       slant: q(clamp(K.pageSlant + 1.25 * spread * z.slant, -4, 4), 0.01),
-      scale: q(clamp(K.pageSize * (1 + 0.04 * spread * z.size) * (1 + 0.1 * tire * prog), 0.88, 1.16), 0.001),
+      scale: q(clamp(K.pageSize * (1 + 0.04 * spread * z.size) * (1 + 0.1 * tire * prog), 0.88, 1.16) * sizeK, 0.001),
       lift: xh * 0.006 * (0.35 + 0.65 * spread) * (0.6 + 0.6 * (p.drift == null ? 0.7 : p.drift)) * z.base,
       tilt: clamp(z.tilt * 0.3 * spread, -0.9, 0.9) * DEG, gapZ: z.gap, u1: z.u1, u2: z.u2, waveZ: z.wave,
       tempo: H.tempo * (1 + 0.12 * tire * prog) * (1.15 - 0.3 * care),
@@ -720,4 +725,31 @@ export function inkPage(p, opts = {}) {
     write(text) { const pg = layout(p, text, Object.assign({}, base, { start: pen })); pages.push(pg); pen = pg.pen; return pg; },
     draft(text) { return layout(p, text, Object.assign({}, base, { start: pen })); },
   };
+}
+
+// Letters written at a given place in this hand, for corrections: an insertion above a line (smaller),
+// a letter pressed over a wrong one (a little bigger, heavier pen), a word in the margin.
+//   writeAt(p, 'very', { x, y, angle, lean, size: 0.7, weight: 1, seed: 'fix:12', line })
+// x, y: where the first letter starts, on its baseline (page units); angle: the baseline's turn (radians,
+// + = uphill; e.g. lineAngle of the line it belongs to); lean: degrees on top of the hand's slant (lineLean);
+// size: letter size (insertions 0.55–0.8, overwrites 1.03–1.12); weight: pen width and ink (overwrites
+// 1.2–1.4; items carry .weight); seed: names this writing, so its letters are its own and stay put;
+// line: the item.line to report (default -1). Uses the same word logic as layout: gaps, word lean and size,
+// letter shapes. Returns { items, runs, stops, endX } (stops use offsets within `text`).
+export function writeAt(p, text, opts = {}) {
+  const x = opts.x || 0, y = opts.y || 0;
+  const line = {
+    n: opts.line == null ? -1 : opts.line, y, x0: x, x1: x + 1e6, slope: (opts.angle || 0) / DEG,
+    lean: opts.lean || 0, flow: 0, bow: 0, droop: 0, drift: 0, phase: 0.37, wave: 1e4, edge: Infinity,
+    float: 0, rule: undefined, count: 0, packed: false,
+  };
+  const start = {
+    lineNo: line.n, line, lp: 0, x, wp: 0, wordsBefore: 0, offset: 0, para: 0, words: 0, pending: 0,
+    prevEnd: '', seen: {}, glyphs: 0, open: null, endO: null, endX: x,
+  };
+  const page = layout(p, String(text), {
+    start, maxWidth: x + 1e6, firstBaseline: y, ink: { salt: opts.seed == null ? 'at' : opts.seed },
+    size: opts.size, weight: opts.weight,
+  });
+  return { items: page.items, runs: page.runs, stops: page.stops, endX: page.pen.x };
 }
