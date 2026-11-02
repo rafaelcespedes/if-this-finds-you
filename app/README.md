@@ -38,9 +38,12 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     the track) and moving it adds an offset; double-click a slider to go back to the dot. New hand keeps
     your How and With-what offsets and clears the Who ones (slant, proportions, spacing), so a new writer
     is never dragged toward the last one's settings.
-- **Actions.** Share link (copies a URL that restores the exact note), Download note (JPEG at 3x the
-  screen, paper and writing exactly as shown), Export font file (.otf from the engine's `buildFont`,
-  opentype.js 1.3.4, loaded only when used).
+- **Actions.** Share link (copies a URL that restores the exact note; the toast offers the share sheet
+  where there is one), Download note (JPEG at 3x the screen, paper and writing exactly as shown; on phones
+  it opens the share sheet, so Save Image puts it in Photos), Export font file (.otf from the engine's
+  `buildFont`, opentype.js 1.3.4, loaded only when used).
+- Occasions set the scene once when picked: Thank-you card and Love letter on laid paper, Postcard on the
+  postcard, Lecture notes on college ruled, Shopping list on squared.
 
 ### Controls waiting for the engine
 
@@ -88,11 +91,13 @@ work can be seen in the product UI without merging.
 | Paper | Based on |
 |---|---|
 | Letter | Plain A5 writing paper |
+| Laid | Cream laid writing paper, A5: fine laid lines about 1 mm apart, chain lines about 25 mm apart |
 | College ruled | US loose-leaf filler paper, 8 × 10½ in: 33 blue rules at 9/32 in (7.14 mm), pink-red margin 1¼ in from the left, three 5/16 in holes 4¼ in apart |
 | Seyès | French cahier 17 × 22 cm: violet writing lines and verticals every 8 mm, three light-blue interlines at 2 mm, red margin. Small letters fill one 2 mm interline, as French schools teach |
 | Feint ruled | UK exercise book, 9 × 7 in: pale blue feint rules at 8 mm, single red margin |
 | Squared | German Kästchen (DIN 16552 Lineatur 10 style): 5 mm squares on A5, plain margin on the right |
 | Dot grid | Rhodia / Leuchtturm1917 style A5: 5 mm grey dots on ivory |
+| Postcard | The message side of an A6 postcard: centre divider, four address lines, a stamp box |
 
 Pitches, sheet sizes, line counts and hole geometry come from manufacturer and retailer listings
 (Mead/Staples filler paper, Clairefontaine, Silvine, Rhodia, Leuchtturm), Wikipedia "Ruled paper" and

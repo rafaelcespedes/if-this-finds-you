@@ -17,6 +17,7 @@ import { PEN_CHOICES, PENS_LIVE, PENS_SHOWN } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
 import { AMOUNT_RANGE, SIZE_RANGE, type NoteState } from '@/lib/state';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 export interface PanelProps {
   state: NoteState;
@@ -456,6 +457,7 @@ const SliderRow = memo(function SliderRow({
 // paper swatches show a magnified corner of each sheet, where its character is
 const SWATCH = { w: 40, h: 30 };
 function swatchCrop(paper: PaperSpec) {
+  if (paper.swatch) return { ...paper.swatch, ...SWATCH };
   const x = paper.margin ? paper.margin.x - 15 : paper.grid ? paper.grid.box[0] - 2 : paper.dots ? paper.dots.box[0] - 3 : 6;
   const y = paper.lines ? paper.lines.first - 6 : paper.grid ? paper.grid.box[1] - 2 : paper.dots ? paper.dots.box[1] - 3 : 6;
   return { x: Math.max(0, x), y: Math.max(0, y), ...SWATCH };
@@ -495,8 +497,19 @@ const PaperPicker = memo(function PaperPicker({ value, onChange }: { value: Pape
 const InkPicker = memo(function InkPicker({ value, pen, onChange }: { value: string; pen: string; onChange: (id: string) => void }) {
   const families = INK_FAMILIES.filter((f) => !f.pen || f.pen === pen);
   const options = MODELLED_INK ? [{ id: AUTO_INK, name: 'The pen’s own', color: '' }, ...families] : families;
+  // balanced rows: as few rows as fit, then the same number of swatches in each
+  const coarse = useMediaQuery('(pointer: coarse)');
+  const max = coarse ? 7 : 9;
+  const cols = Math.ceil(options.length / Math.ceil(options.length / max));
   return (
-    <Segmented type="single" aria-label="Ink" value={value} onValueChange={(v) => v && onChange(v)} className="mt-1.5 flex flex-wrap justify-start gap-0.5 bg-transparent p-0">
+    <Segmented
+      type="single"
+      aria-label="Ink"
+      value={value}
+      onValueChange={(v) => v && onChange(v)}
+      className="mt-1.5 grid justify-items-center gap-0.5 bg-transparent p-0"
+      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridAutoFlow: 'row' }}
+    >
       {options.map((ink) => (
         <Tooltip key={ink.id}>
           <TooltipTrigger asChild>

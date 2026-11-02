@@ -15,7 +15,7 @@ import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
 import { useWriting } from '@/hooks/useWriting';
-import { copyText, downloadNote, exportFont } from '@/lib/actions';
+import { canShareLinks, copyText, exportFont, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
 import { applyEdit, EditLog, type Edit } from '@/lib/edits';
 import { pickNewHand, pickSimilarHand, writerName } from '@/lib/hands';
@@ -74,6 +74,10 @@ export default function App() {
   const deskW = useElementWidth(deskRef);
   const pxPerMm = deskW > 0 ? Math.min(MAX_PX_PER_MM, deskW / shownPaper.w) : 0;
 
+  useEffect(() => {
+    document.title = `${name} – Seedhand`;
+  }, [name]);
+
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
   const onEdit = useCallback((e: Edit) => {
     editLog.push(e);
@@ -91,24 +95,40 @@ export default function App() {
 
   // ---------- actions ----------
   const share = useCallback(async () => {
-    const ok = await copyText(shareUrl(state));
-    if (ok) toast.success('Link copied', { description: 'It opens this exact note: hand, pen, paper and text.' });
+    const url = shareUrl(state);
+    const ok = await copyText(url);
+    // on phones (and anywhere with a share sheet) the toast offers to send it straight on
+    const action = canShareLinks() ? { label: 'Share…', onClick: () => void shareLink(url, `A note in ${name}’s hand`) } : undefined;
+    if (ok) toast.success('Link copied', { description: 'It opens this exact note: hand, pen, paper and text.', action });
+    else if (action) void shareLink(url, `A note in ${name}’s hand`);
     else toast.error('Couldn’t copy the link', { description: 'Copy it from the address bar instead.' });
-  }, [state]);
+  }, [state, name]);
 
   const requestKey = JSON.stringify(request);
   const download = useCallback(async () => {
     setBusy((b) => ({ ...b, download: true }));
     try {
-      const res = await downloadNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM, `${name} note`);
-      toast.success('Note downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
+      const res = await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
+      const filename = `${name} note`;
+      const done = (r: string) => {
+        if (r === 'saved') toast.success('Note downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
+      };
+      const r = await saveNote(res.blob, filename, coarse);
+      // making the image took long enough that the browser wants a fresh tap before sharing
+      if (r === 'needs-tap') {
+        toast('Your note is ready', {
+          description: `JPEG, ${res.width} × ${res.height} px`,
+          action: { label: 'Save image', onClick: () => void saveNote(res.blob, filename, true).then(done) },
+          duration: 10000,
+        });
+      } else done(r);
     } catch (e) {
       console.error(e);
       toast.error('Couldn’t make the image', { description: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy((b) => ({ ...b, download: false }));
     }
-  }, [requestKey, ink, pxPerMm, name]);
+  }, [requestKey, ink, pxPerMm, name, coarse]);
 
   const font = useCallback(async () => {
     setBusy((b) => ({ ...b, font: true }));
