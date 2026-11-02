@@ -635,7 +635,8 @@ export function layout(p, text, opts = {}) {
           if (!fits && !ink) {
             const room = maxU - pad - x - gap * 0.85;
             // (a squeezed word, counting its own size, stays within 14% of the hand's normal width)
-            const least = Math.min(1, 0.86 / w.scale);
+            // (and never by more than 12% of its own width: 5–15% is what writers do)
+            const least = Math.max(0.88, Math.min(1, 0.86 / w.scale));
             if (inkEnd > maxU - pad && room / sh.ink >= least && w.u2 < H.squeeze) {
               const w2 = Object.assign({}, w, { squeeze: q(Math.max(least, room / sh.ink * 0.99), 0.001) });
               const sq = shapeWord(chars, w2, seedOf, { prev: null, index: 0, closed: true });
