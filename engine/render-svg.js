@@ -55,7 +55,10 @@ function corePath(pr, i0, i1, frac, ox, oy, sc) {
   return contoursToD([L.concat(R.reverse())], ox, oy, sc);
 }
 
-// page: result of layout(); opts: { width (px), emPx (px per em), ink (swatch key, '#rrggbb' or a CSS color) }
+// page: result of layout(); opts: { width (px), emPx (px per em), ink (swatch key, '#rrggbb' or a CSS color),
+//   strokeIds (wrap each pen stroke in <g data-k="k"> for the writing animation; k counts g.strokes
+//              across the page in item order, see animate.js),
+//   rules (draw the ruled lines of a `ruled` layout, CSS color, default var(--rule)) }
 export function renderSVG(p, page, opts) {
   const W = opts.width;
   const emPx = opts.emPx;
@@ -81,6 +84,7 @@ export function renderSVG(p, page, opts) {
   const paths = [];
   const misses = [];
   let prevInk = null;
+  let k = 0;
   for (const it of page.items) {
     if (it.kind === 'miss') {
       misses.push(`<text class="miss" x="${((it.x + 280) * sc).toFixed(1)}" y="${(it.y * sc).toFixed(1)}" font-size="${(0.62 * emPx).toFixed(1)}">` +
@@ -92,6 +96,11 @@ export function renderSVG(p, page, opts) {
     const ox = it.x * sc, oy = it.y * sc;
     // one path per pen stroke, in its own Beer–Lambert colour; fill-opacity lets crossings build up
     it.g.strokes.forEach((st, ci) => {
+      const els = []; // every element this pen stroke leaves (fill, core, pools)
+      emitStroke(st, ci, els);
+      paths.push(opts.strokeIds ? `<g data-k="${k + ci}">${els.join('')}</g>` : els.join(''));
+    });
+    function emitStroke(st, ci, paths) {
       const pr = strokeInk(p, st);
       const d = contoursToD([st.contour], ox, oy, sc);
       if (!pr || !model) { paths.push(`<path fill="${flat}" fill-opacity="0.92" d="${d}"/>`); return; }
@@ -127,10 +136,17 @@ export function renderSVG(p, page, opts) {
         const ang = Math.atan2(-pr.ty[i], pr.tx[i]) * 180 / Math.PI;
         paths.push(`<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${rx.toFixed(2)}" ry="${ry.toFixed(2)}" transform="rotate(${ang.toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})" fill="url(#${grad(inkRGB(model, v * 1.2))})"/>`);
       }
-    });
+    }
+    k += it.g.contours.length;
   }
   const H = Math.ceil(page.height * sc);
+  let rules = '';
+  if (opts.rules && page.rules && page.rules.length) {
+    const col = typeof opts.rules === 'string' ? opts.rules : 'var(--rule)';
+    rules = `<g class="rules" stroke="${col}" stroke-width="1">` +
+      page.rules.map((y) => `<line x1="0" x2="${W}" y1="${(y * sc).toFixed(1)}" y2="${(y * sc).toFixed(1)}"/>`).join('') + '</g>';
+  }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-label="Handwritten text">` +
-    `<defs>${look.defs}${[...grads.values()].map((g) => g.def).join('')}</defs>` +
+    `<defs>${look.defs}${[...grads.values()].map((g) => g.def).join('')}</defs>${rules}` +
     `<g ${look.groupAttrs}>${paths.join('')}</g>${misses.join('')}</svg>`;
 }
