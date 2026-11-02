@@ -9,10 +9,14 @@
 
 import './sources/hershey.js';
 import './sources/extras.js';
+import './sources/allographs.js';
 
 export { rng, makeNoise } from './core.js';
-export { defineStyle, register, addComposer, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';
-export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
+export { defineStyle, register, amend, addComposer, addDeriver, variants, choose, getStyle, styleNames, stylesInFamily, families, isHistorical,
+  allographOf, allographChar, defineSchooling, getSchooling, schoolingNames, describeHabits } from './glyphs.js';
+export { makeHand, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM,
+  ARCHETYPES, archetypeOf, latentOf, baseSeed, care, hurryDelta, skeleton } from './hand.js';
+export { sampleHand, sampleLook, handDistance, chaos, seedFrom, VARIETY } from './sampler.js';
 export { PENS, getPen, penOutline, simplify } from './pen.js';
 export { layout } from './layout.js';
 export { kinematics } from './kinematics.js';

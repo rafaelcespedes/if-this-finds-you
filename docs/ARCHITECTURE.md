@@ -4,12 +4,15 @@
 engine/            the handwriting engine: plain ES modules, no build step, runs in browsers and Node
   index.js         public API. UIs import from here only
   core.js          seeded randomness (rng), smooth noise, math helpers
-  glyphs.js        skeleton library: styles, letter variants (allographs), composers, choose()
+  glyphs.js        skeleton library: styles, letter variants (allographs), composers, a writer's habits, choose()
   sources/         skeleton data that registers itself into glyphs.js
     hershey.js       'print' + 'script' styles from the public-domain Hershey fonts
     extras.js        smart quotes, dashes, € £ ¥ ¢ © ® ™ ° × ÷ … (GF Latin Kernel extras)
+    allographs.js    alternative letter constructions (§4 of hand-traditions.md) + schooling bundles
     data/            raw source files + their license notes
-  hand.js          seed -> writer params (makeHand); one letter instance -> outlines (makeGlyph)
+  hand.js          seed -> writer params (makeHand: tradition, archetype, correlated traits, letters);
+                   one letter instance -> outlines (makeGlyph)
+  sampler.js       New hand: which seed to show next (archetype bag, farthest of 12, legibility cap, Variety)
   pen.js           pen models (centerline -> filled outline) and ink look (SVG defs, stroke opacity)
   layout.js        text -> positioned glyph instances on a page (pure data)
   render-svg.js    laid-out page -> SVG string
@@ -31,7 +34,7 @@ seed ──makeHand──► hand (writer params)  ──withOverrides(ui)──
 text ──layout(p)──► page.items[] ──renderSVG──► SVG
            │
            └─ for each character occurrence: makeGlyph(p, ch, inst, ctx)
-                choose(p, ch, ctx) picks a skeleton variant  (glyphs.js)
+                choose(p, ch, ctx) picks a skeleton variant from the writer's habits  (glyphs.js)
                 → zone remap, smoothing, per-hand quirk + per-use warp, bow/tremor, slant  (hand.js)
                 → penOutline(p, centerline)  (pen.js)
 ```
@@ -46,6 +49,12 @@ text ──layout(p)──► page.items[] ──renderSVG──► SVG
 - **makeGlyph(p, ch, inst, ctx)** returns `{ advance, contours, strokes, variant }`.
   - `strokes[i] = { center, contour, dot }`, in drawing order (for animation).
   - `inst = null` is the canonical form; `{ seed, amount, baseline? }` is one specific use.
+- **Writers.** `makeHand(seed, family | style | { family, style, historical })` picks a tradition (style) in the
+  family first, never a `legibility: 'historical'` one unless asked by name. `seed~k` is a sibling of `seed`.
+  `p.habits` holds the writer's letters (schooling, quirks, context forms); `choose()` reads it. Variants tag
+  their construction (`tags.allograph`, §4 names or short IDs); see the header of `glyphs.js`.
+- **Skeleton pieces.** A stroke split where the pen turns back carries `joinFrom` / `joinInto`: one pen
+  movement, so pens don't taper there and the pieces mustn't drift apart.
 - **Variants.** Every variant registered in `glyphs.js` must carry
   `source: { name, credit, url? }`. That is how the provenance card and the reference library stay honest.
 - **PARAMS.** User-facing controls are declared as data (`HAND_PARAMS`, `PEN_PARAMS`, ...) and
