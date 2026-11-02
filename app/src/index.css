@@ -1,0 +1,181 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/instrument-sans';
+
+@custom-variant hover-device (@media (hover: hover) and (pointer: fine));
+
+/* Warm stationery palette. The ink is the only accent: the UI is set in the same blue-black the hand writes with. */
+:root {
+  --desk: #eeebe4;
+  --paper: #fffdf8;
+  --ink: #1c2233;
+  --ink-soft: #2c3550;
+  --text: #23211d;
+  --text-muted: #6c685f;
+  --text-faint: #8f8a80;
+  --panel: #f8f6f1;
+  --hairline: #e2ddd2;
+  --chip: #ece8df;
+  --chip-hover: #e4dfd4;
+
+  --background: var(--desk);
+  --foreground: var(--text);
+  --card: var(--panel);
+  --card-foreground: var(--text);
+  --popover: #fbfaf6;
+  --popover-foreground: var(--text);
+  --primary: var(--ink);
+  --primary-foreground: #fbfaf6;
+  --secondary: var(--chip);
+  --secondary-foreground: var(--text);
+  --muted: var(--chip);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--chip-hover);
+  --accent-foreground: var(--text);
+  --border: var(--hairline);
+  --input: #d6d0c3;
+  --ring: color-mix(in oklab, var(--ink) 42%, transparent);
+  --radius: 0.625rem;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --sheet-shadow:
+    0 0.5px 0 rgba(60, 45, 20, 0.08),
+    0 1px 2px rgba(60, 45, 20, 0.06),
+    0 6px 14px -6px rgba(60, 45, 20, 0.12),
+    0 24px 48px -20px rgba(60, 45, 20, 0.2);
+}
+
+@theme inline {
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-desk: var(--desk);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-faint: var(--text-faint);
+  --color-panel: var(--panel);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.45;
+    font-feature-settings: 'ss01' 0;
+    overscroll-behavior-y: none;
+  }
+  button,
+  [role='button'],
+  [role='radio'],
+  [role='slider'] {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Numbers in the panel line up */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The writing layer: engine SVG output */
+.writing svg {
+  display: block;
+  overflow: visible;
+}
+.writing text.miss {
+  fill: #a59f92;
+  font-family: 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive;
+  text-anchor: middle;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* A new hand: the old writing softens out, the new one settles in. Opacity-only when motion is reduced. */
+@keyframes hand-in {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.hand-in {
+  animation: hand-in 420ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes hand-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .hand-in {
+    animation-duration: 200ms;
+  }
+}
+
+/* Caret for typing on the paper */
+@keyframes caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+.paper-caret {
+  animation: caret-blink 1.05s steps(1, end) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-caret {
+    animation: none;
+  }
+}
+
+/* sheet writing is drawn at a reference scale and stretched to the sheet */
+.writing-fill svg {
+  width: 100%;
+  height: 100%;
+}
