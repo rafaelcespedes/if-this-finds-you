@@ -21,6 +21,7 @@ import { rng } from './core.js';
 
 const STYLES = new Map();
 const COMPOSERS = [];
+const TRANSFORMS = [];
 
 // meta: { label, family, tradition, connected, metrics }
 //   family:    'print' | 'script' — what the UI's Print / Joined switch and New hand choose between
@@ -54,6 +55,19 @@ export function register(style, ch, variant) {
 
 // fn(style, ch) -> variants[] | null. Called only when a style has no direct variant for ch.
 export function addComposer(fn) { COMPOSERS.push(fn); }
+
+// Skeleton transforms reshape the chosen variant per hand before it is drawn: style dimensions such as
+// loopiness, lead-ins and end flicks, connectivity, join length, angularity. fn(p, ch, variant, ctx, metrics)
+// -> variant (same skeleton format, source units; return the input unchanged to skip). Must be deterministic,
+// keep `source` and `marks`, and never mutate the input. Applied in registration order.
+export function addTransform(fn) { TRANSFORMS.push(fn); }
+export function transform(p, ch, v, ctx) {
+  if (!v || !TRANSFORMS.length) return v;
+  const st = STYLES.get(p.style);
+  const m = v.metrics || (st && st.metrics);
+  for (const fn of TRANSFORMS) v = fn(p, ch, v, ctx, m) || v;
+  return v;
+}
 
 export function variants(style, ch) {
   const st = STYLES.get(style);

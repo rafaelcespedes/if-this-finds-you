@@ -4,16 +4,21 @@
 //   skeleton variant (glyphs.js, chosen per hand)  ->  zone remap (x-height / ascender / descender) + width
 //   -> corner-aware smoothing (centripetal Catmull-Rom, optional corner fillets)
 //   -> per-letter "quirk" warp (fixed for the hand)  +  per-instance warp & affine (varies each use)
-//   -> gentle bow + slow tremor along each stroke  ->  slant shear
+//   -> gentle bow + slow drift along each stroke (no fine wobble)  ->  slant shear + word size
 //   -> pen model (pen.js)  ->  filled outline polygons
 //
 // Everything is deterministic from strings: hand seed, and an instance seed for each use.
 
 import { rng, makeNoise, lerp, clamp, mix, DEG } from './core.js';
-import { choose, getStyle, has as styleHas } from './glyphs.js';
+import { choose, transform, getStyle, has as styleHas } from './glyphs.js';
 import { penOutline } from './pen.js';
 
 // ---------- the "writer": one consistent set of parameters per seed ----------
+// Other modules add seeded traits to every hand (e.g. style dimensions): fn(h) -> { key: value, ... }.
+// fn must be deterministic from h (seed, style, existing traits) and use its own rng namespace.
+const HAND_TRAITS = [];
+export function addHandTraits(fn) { HAND_TRAITS.push(fn); }
+
 // `style` is a user choice (a style name from glyphs.js); everything else comes from the seed.
 export function makeHand(seed, style) {
   const r = rng('hand:' + seed);
@@ -52,6 +57,7 @@ export function makeHand(seed, style) {
   };
   h.capWidth = script ? h.width * r.range(0.92, 1.06) : r.range(0.78, 0.98);
   h.noise = makeNoise('hand:' + seed);
+  for (const fn of HAND_TRAITS) Object.assign(h, fn(h));
   return h;
 }
 
@@ -163,7 +169,7 @@ function smoothStroke(pts, p, step) {
 // Build the skeleton (in font units) for one glyph instance.
 function glyphSkeleton(p, ch, inst, ctx) {
   const st = getStyle(p.style);
-  const g = choose(p, ch, ctx);
+  const g = transform(p, ch, choose(p, ch, ctx), ctx); // allograph, then this hand's style dimensions
   const m = g.metrics || st.metrics;
   const S = CAP / (m.base - m.cap);
   const lower = isLower(ch);
@@ -209,12 +215,75 @@ function glyphSkeleton(p, ch, inst, ctx) {
 // ---------- instance variation + pen ----------
 const charKey = (ch) => ch.charCodeAt(0);
 
-// inst: null -> canonical hand form; or { seed, amount, baseline? } -> a specific use of the letter.
+// The writer's habits for secondary marks (i/j dots, t/f bars), fixed per seed ('marks:' namespace).
+// human-feel.md §4.4 / rule 7: they land late and to the right, at varying height; the dot shape is a habit.
+const DOT_SHAPES = [
+  { id: 'dot', weight: 0.45 }, { id: 'dash', weight: 0.25 }, { id: 'arc', weight: 0.13 },
+  { id: 'tick', weight: 0.12 }, { id: 'circle', weight: 0.05 },
+];
+const markCache = new WeakMap();
+export function markHabits(p) {
+  let h = markCache.get(p);
+  if (h) return h;
+  const r = rng('marks:' + p.seed);
+  const st = getStyle(p.style);
+  h = {
+    dot: r.weighted(DOT_SHAPES).id,
+    late: r.range(0.1, 0.45),                          // x-heights right of the stem
+    delayed: r() < (st && st.connected ? 0.92 : 0.55), // dotted / crossed after the word (else right away)
+    barAngle: r.range(-2, 7),                          // degrees: t-bars tend to rise
+    barLen: r.range(0.85, 1.25),
+    shareTT: r() < 0.7,                                // one bar across "tt"
+  };
+  markCache.set(p, h);
+  return h;
+}
+
+// a t/f crossbar: a later stroke that is long and flat (skeleton space, before any warp)
+function isBar(st, xh) {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const q of st) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; }
+  return x1 - x0 >= 0.2 * xh && y1 - y0 <= 0.3 * (x1 - x0);
+}
+
+// centerline of an i/j dot in the writer's habitual shape, around c (font units, y up)
+function dotShape(shape, c, p, xh, r, jit) {
+  const j = (s) => 1 + jit * r.gauss() * s;
+  const seg = (L, a, n) => {
+    const out = [];
+    for (let i = 0; i < n; i++) { const t = i / (n - 1) - 0.5; out.push([c[0] + Math.cos(a) * L * t, c[1] + Math.sin(a) * L * t]); }
+    return out;
+  };
+  const arc = (R, a0, a1, cy, n) => {
+    const out = [];
+    for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * i / (n - 1); out.push([c[0] + R * Math.cos(a), c[1] + R * (Math.sin(a) - cy)]); }
+    return out;
+  };
+  switch (shape) {
+    case 'dash': return seg(0.16 * xh * j(0.15), (22 + jit * r.gauss() * 8) * DEG, 5);
+    case 'tick': return seg(0.11 * xh * j(0.15), (-55 + jit * r.gauss() * 10) * DEG, 4);
+    case 'arc': return arc(0.09 * xh * j(0.15), Math.PI * 0.85, Math.PI * 0.15, 0.6, 7);
+    case 'circle': return arc(0.055 * xh * j(0.12), Math.PI / 2, Math.PI / 2 + 2 * Math.PI + 0.35, 0, 13);
+    default: {
+      const a = (jit ? r() : 0.5) * 0.9 + 0.3 + (p.slant || 0) * DEG;
+      const len = p.penWidth * 0.35 * p.dotSize;
+      return [[c[0] - Math.cos(a) * len / 2, c[1] - Math.sin(a) * len / 2], c, [c[0] + Math.cos(a) * len / 2, c[1] + Math.sin(a) * len / 2]];
+    }
+  }
+}
+
+// inst: null -> canonical hand form; or one specific use of the letter:
+//   { seed, amount, baseline?,              (seed = identity of this use, amount = 0..1 variation)
+//     slant?, scale?, care?, squeeze?, bar? } (from layout: the word's shared lean in degrees and size,
+//                                              the care at this point of the page, a line-end squeeze,
+//                                              and 'lead' | 'follow' when a "tt" shares one bar)
 // ctx (optional, from layout): neighbours/position, passed to the variant chooser.
-// Returns { advance, contours, strokes, variant }:
+// Returns { advance, contours, strokes, variant, pose }:
 //   contours = filled outline polygons (font units, y up) in drawing order
-//   strokes  = [{ center, contour, dot, mark }] — the pen path behind each contour, for animation;
-//              mark = an accent or other stroke written after the letter (from variant.marks)
+//   strokes  = [{ center, contour, dot, mark?, delayed? }], one per contour (strokes[i].contour === contours[i]):
+//              the pen path behind each contour, for animation. mark = 'dot' | 'bar' | 'accent' on i/j dots,
+//              t/f bars and accent strokes (variant.marks); delayed = true when this writer adds them after the word.
+//   pose     = { slant, scale, squeeze }: the lean (degrees) and size this use was drawn at (for QA)
 export function makeGlyph(p, ch, inst, ctx) {
   const sk = glyphSkeleton(p, ch, inst, ctx);
   const N = p.noise;
@@ -225,19 +294,38 @@ export function makeGlyph(p, ch, inst, ctx) {
   // per-letter quirk offsets (fixed for this hand + letter)
   const qox = k * 3.71 + 11.3, qoy = k * 5.13 + 47.9;
   const qA = p.quirk * (0.55 + 0.75 * messy), qS = p.quirkScale;
-  // per-instance warp + affine
+
+  // ----- per-instance variation: this one use of the letter -----
+  // Layout passes what the whole word shares (lean, size) and the care at this point of the page; the
+  // letter itself varies only a little around that (human-feel.md rule 2). Care = Neatness (rule 16).
+  const xh = p.xHeight * CAP;
+  const care = inst && inst.care != null ? clamp(inst.care, 0, 1) : 1 - messy;
+  const loose = 1 - care;
+  const wordSlant = (inst && inst.slant) || 0;
+  const scale = (inst && inst.scale) || 1;
+  const squeeze = (inst && inst.squeeze) || 1;
+  const cxG = sk.advance / 2, cyG = (sk.lower ? p.xHeight : 0.5) * CAP / 2;
   let iox = 0, ioy = 0, iA = 0, rot = 0, sx = 1, sy = 1, dy = 0, sh = 0;
   if (ir) {
     iox = ir() * 200; ioy = ir() * 200 + 300;
-    const v = amt * (0.25 + 1.1 * messy);
-    iA = 14 * v;
-    rot = ir.gauss() * 1.6 * v * DEG;
-    sx = 1 + ir.gauss() * 0.035 * v;
-    sy = 1 + ir.gauss() * 0.06 * v;
-    sh = ir.gauss() * 2.2 * v * DEG;
+    // shape varies freely from use to use; the lean only a little (the word carries most of it)
+    const vs = amt * (0.3 + 1.0 * loose), v = amt * (0.2 + 0.9 * loose);
+    iA = 16 * vs;
+    rot = ir.gauss() * 0.7 * v * DEG;
+    sx = 1 + ir.gauss() * 0.035 * vs;
+    sy = 1 + ir.gauss() * 0.055 * vs;
+    sh = ir.gauss() * 1.1 * v * DEG;
     dy = inst.baseline ? ir.gauss() * 7 * v : 0;
+    // legibility guard (rule 23): this use's deformation stays within ~6% of the x-height (RMS)...
+    let n = 0, vx = 0, vy = 0;
+    for (const st of sk.strokes) for (let i = 0; i < st.length; i += 3) { const X = st[i][0] - cxG, Y = st[i][1] - cyG; vx += X * X; vy += Y * Y; n++; }
+    const rx = Math.sqrt(vx / (n || 1)), ry = Math.sqrt(vy / (n || 1));
+    const dev = Math.hypot(0.7 * iA, rot * Math.hypot(rx, ry), (sx - 1) * rx, (sy - 1) * ry, Math.tan(sh) * ry);
+    if (dev > 0.06 * xh) { const f = 0.06 * xh / dev; iA *= f; rot *= f; sh *= f; sx = 1 + (sx - 1) * f; sy = 1 + (sy - 1) * f; }
+    // ...and its lean stays within ±8° of the writer's slant
+    const lean = wordSlant + (sh - rot) / DEG;
+    if (Math.abs(lean) > 8) sh -= (lean - Math.sign(lean) * 8) * DEG;
   }
-  const cxG = sk.advance / 2, cyG = (sk.lower ? p.xHeight : 0.5) * CAP / 2;
   function displace(x, y) {
     let dx = qA * N.n2(x / qS + qox, y / qS + qoy);
     let dyv = qA * N.n2(x / qS + qox + 71.7, y / qS + qoy + 13.1);
@@ -284,49 +372,113 @@ export function makeGlyph(p, ch, inst, ctx) {
     return [q[0] + ox, q[1] + oy];
   }
 
-  const tanSlant = Math.tan((p.slant || 0) * DEG);
-  const tremorA = p.tremor * (0.25 + 0.9 * messy);
+  // last steps for every point: the writer's slant plus the word's lean, then the word's size
+  const tanSlant = Math.tan(((p.slant || 0) + wordSlant) * DEG);
+  const finish = (q) => [(q[0] + q[1] * tanSlant) * scale * squeeze, q[1] * scale];
+  // slow drift only: wobble wavelength >= 0.5 x-height, amplitude 0.3–1.2% of it (rule 8)
+  const tremorA = xh * Math.min(0.012, (0.003 + 0.009 * loose) * (p.tremor || 1.5) / 1.5);
+  const tremorL = 0.7 * xh;
+  const hab = markHabits(p);
+  const barLetter = ch === 't' || ch === 'f';
   const contours = [];
   const strokes = [];
   const strokeSeedBase = (inst ? (ir() * 1000) : 0) + k * 17.3;
   sk.strokes.forEach((st, si) => {
-    let off = [0, 0];
-    if (si > 0) {
-      const sr = rng('stroke:' + p.seed + ':' + k + ':' + si + ':' + (inst ? inst.seed : 'canon'));
-      const m = p.strokeShift * (6 + 22 * messy) * (inst ? 0.6 + 0.6 * amt : 0.7);
-      off = [sr.gauss() * m, sr.gauss() * m * 0.6];
+    const bar = barLetter && si > 0 && isBar(st, xh);
+    if (bar && inst && inst.bar === 'follow') return; // "tt": the first t's bar crosses both
+    let pts;
+    if (bar) {
+      // t/f bars: added late, landing to the right at a varying height and angle (rule 7)
+      const mr = rng('mark:' + p.seed + ':' + k + ':' + si + ':' + (inst ? inst.seed : 'canon'));
+      if (inst && mr() < 0.025 * loose * loose) return; // forgotten now and then
+      const jit = inst ? 1 : 0, spread = 0.4 + loose;
+      pts = st.map(warp);
+      let x0 = Infinity, x1 = -Infinity;
+      for (const q of pts) { if (q[0] < x0) x0 = q[0]; if (q[0] > x1) x1 = q[0]; }
+      if (inst && inst.bar === 'lead') { const W = Math.max(1, x1 - x0), f = (W + sk.advance) / W; pts = pts.map((q) => [x0 + (q[0] - x0) * f, q[1]]); x1 = x0 + (x1 - x0) * f; }
+      let my = 0;
+      for (const q of pts) my += q[1];
+      const mx = (x0 + x1) / 2; my /= pts.length;
+      const a = (hab.barAngle + jit * mr.gauss() * 3 * spread) * DEG;
+      const L = hab.barLen * (1 + jit * mr.gauss() * 0.08 * spread);
+      let shift = (hab.delayed ? 1 : 0.4) * hab.late * xh * (0.6 + 0.8 * loose) * (inst ? 1 : 0.6) + jit * mr.gauss() * 0.08 * xh * spread;
+      const lift = jit * clamp(mr.gauss() * 0.06 * xh * spread, -0.15 * xh, 0.15 * xh);
+      // ...but it still crosses its stem, with some bar on each side, or the t stops reading as a t
+      let stemX = null, near = Infinity;
+      sk.strokes.forEach((o, oi) => {
+        if (oi === si) return;
+        for (let i = 0; i < o.length; i += 2) { const q = warp(o[i]), d = Math.abs(q[1] - (my + lift)); if (d < near) { near = d; stemX = q[0]; } }
+      });
+      if (stemX != null) {
+        const half = L * (x1 - x0) / 2;
+        shift = clamp(shift, stemX - mx - 0.7 * half, stemX - mx + 0.7 * half);
+      }
+      const ca = Math.cos(a), sa = Math.sin(a);
+      pts = pts.map((q) => {
+        const X = (q[0] - mx) * L, Y = q[1] - my;
+        return [mx + shift + ca * X - sa * Y, my + lift + sa * X + ca * Y];
+      });
+    } else {
+      let off = [0, 0];
+      if (si > 0) {
+        const sr = rng('stroke:' + p.seed + ':' + k + ':' + si + ':' + (inst ? inst.seed : 'canon'));
+        const m = p.strokeShift * (4 + 14 * loose) * (inst ? 0.6 + 0.6 * amt : 0.7);
+        off = [sr.gauss() * m, sr.gauss() * m * 0.6];
+      }
+      pts = st.map((q) => { const w = warp(q); return [w[0] + off[0], w[1] + off[1]]; });
     }
-    let pts = st.map((q) => { const w = warp(q); return [w[0] + off[0], w[1] + off[1]]; });
-    // a stroke is a single gesture: it bows gently (one arc), plus a faint slow tremor.
-    // (High-frequency wobble reads as fake/shaky, so it's deliberately kept small.)
+    // a stroke is a single gesture: it bows gently (one arc), plus a faint, slow drift.
     if (pts.length > 2) {
       let total = 0;
       for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
       const br = rng('bow:' + p.seed + ':' + k + ':' + si + ':' + (inst ? inst.seed : 'canon'));
-      const bow = br.gauss() * Math.min(1, total / 500) * (3 + 9 * messy) * (inst ? 1 : 0.5);
+      const bow = br.gauss() * Math.min(1, total / 500) * (3 + 9 * loose) * (inst ? 1 : 0.5);
       let s = 0; const o = strokeSeedBase + si * 9.7;
       const out = [];
       for (let i = 0; i < pts.length; i++) {
         if (i) s += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
         const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
         let tx = b[0] - a[0], ty = b[1] - a[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
-        const m = bow * Math.sin(Math.PI * s / total) + tremorA * N.n1(s / 85 + o);
+        const m = bow * Math.sin(Math.PI * s / total) + tremorA * N.n1(s / tremorL + o);
         out.push([pts[i][0] - ty * m, pts[i][1] + tx * m]);
       }
       pts = out;
     }
-    pts = pts.map((q) => [q[0] + q[1] * tanSlant, q[1]]);
+    pts = pts.map(finish);
     const c = penOutline(p, pts, strokeSeedBase + si * 3.1);
-    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: false, mark: !!sk.strokeMarks[si] }); }
+    if (!c) return;
+    contours.push(c);
+    if (bar) strokes.push({ center: pts, contour: c, dot: false, mark: 'bar', delayed: hab.delayed });
+    else if (sk.strokeMarks[si]) strokes.push({ center: pts, contour: c, dot: false, mark: 'accent', delayed: hab.delayed });
+    else strokes.push({ center: pts, contour: c, dot: false });
   });
+  const ij = sk.lower && (ch === 'i' || ch === 'j');
   for (const [di, d] of sk.dots.entries()) {
     const q = warp(d);
-    const a = (ir ? ir() : 0.5) * 0.9 + 0.3 + (p.slant || 0) * DEG;
-    const len = p.penWidth * 0.35 * p.dotSize;
-    const c0 = [q[0] + q[1] * tanSlant, q[1]];
-    const pts = [[c0[0] - Math.cos(a) * len / 2, c0[1] - Math.sin(a) * len / 2], c0, [c0[0] + Math.cos(a) * len / 2, c0[1] + Math.sin(a) * len / 2]];
-    const c = penOutline(p, pts, 900 + di, { dot: true });
-    if (c) { contours.push(c); strokes.push({ center: pts, contour: c, dot: true, mark: !!sk.dotMarks[di] }); }
+    let pts;
+    if (ij) {
+      // i/j dots: late, to the right, at a varying height, in the writer's habitual shape (rule 7)
+      const mr = rng('mark:' + p.seed + ':' + k + ':d' + di + ':' + (inst ? inst.seed : 'canon'));
+      if (inst && mr() < 0.025 * loose * loose) continue;
+      const jit = inst ? 1 : 0, spread = 0.4 + loose;
+      // (never over a following comma or period, where it would change the punctuation)
+      const reach = ctx && ctx.next && !/\p{L}/u.test(ctx.next) ? 0.12 : 0.5;
+      const shift = clamp((hab.delayed ? 1 : 0.4) * hab.late * xh * (0.6 + 0.8 * loose) * (inst ? 1 : 0.6) + jit * mr.gauss() * 0.1 * xh * spread, -0.15 * xh, reach * xh);
+      const lift = jit * clamp(mr.gauss() * 0.07 * xh * spread, -0.15 * xh, 0.15 * xh);
+      pts = dotShape(hab.dot, [q[0] + shift, q[1] + lift], p, xh, mr, jit).map(finish);
+    } else {
+      pts = dotShape('dot', q, p, xh, ir, ir ? 1 : 0).map(finish);
+    }
+    const round = !ij || hab.dot === 'dot';
+    const c = penOutline(p, pts, 900 + di, round ? { dot: true } : undefined);
+    if (!c) continue;
+    contours.push(c);
+    if (ij) strokes.push({ center: pts, contour: c, dot: true, mark: 'dot', delayed: hab.delayed });
+    else if (sk.dotMarks[di]) strokes.push({ center: pts, contour: c, dot: true, mark: 'accent', delayed: hab.delayed });
+    else strokes.push({ center: pts, contour: c, dot: true });
   }
-  return { advance: sk.advance, contours, strokes, variant: sk.variant };
+  return {
+    advance: sk.advance * scale * squeeze, contours, strokes, variant: sk.variant,
+    pose: { slant: (p.slant || 0) + wordSlant + (sh - rot) / DEG, scale, squeeze },
+  };
 }

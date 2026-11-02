@@ -24,6 +24,7 @@ export async function run(ctx) {
   for (const style of E.styleNames()) {
     const connected = !!(E.getStyle(style) && E.getStyle(style).connected);
     const D = (data[style] = {});
+    const ijUses = { n: 0, skipped: [] };
     const bad = { nan: [], empty: [], degenerate: 0, adv: [], top: [], bottom: [], overhang: [], dots: [], dotCount: new Map() };
     const worst = new Map(); // ch -> { top, bottom, seedTop, seedBottom }
     const dotGaps = [];
@@ -71,7 +72,10 @@ export async function run(ctx) {
                 bad.dotCount.set(k, (bad.dotCount.get(k) || 0) + 1);
               }
               if ((ch === 'i' || ch === 'j')) {
-                if (!dots.length) bad.dots.push(`${tag} has no dot`);
+                // real writers occasionally forget a dot (human-feel rule 7: 0–3% of uses); the canonical form never does
+                ijUses.n++;
+                if (!dots.length && tag.includes('#qa')) ijUses.skipped.push(tag);
+                else if (!dots.length) bad.dots.push(`${tag} has no dot`);
                 else {
                   const stem = g.strokes.filter((s) => !s.dot).map((s) => s.contour);
                   const gap = bboxOf(dots.map((s) => s.contour)).y0 - bboxOf(stem).y1;
@@ -94,6 +98,11 @@ export async function run(ctx) {
     if (bad.top.length) problems.push({ level: 'fail', key: `${style}:top`, count: bad.top.length, msg: `${style}: ${bad.top.length} glyphs rise above the page top (> ${GEOM.topLimit}): ${list(bad.top)}` });
     if (bad.bottom.length) problems.push({ level: 'fail', key: `${style}:bottom`, count: bad.bottom.length, msg: `${style}: ${bad.bottom.length} glyphs drop below the page bottom (< ${GEOM.bottomLimit}): ${list(bad.bottom)}` });
     if (bad.overhang.length) problems.push({ level: 'warn', msg: `${style}: ${bad.overhang.length} print glyphs overhang their advance by > ${GEOM.overhangWarn * 100}%: ${list(bad.overhang)}` });
+    if (ijUses.skipped.length) {
+      const rate = ijUses.skipped.length / Math.max(1, ijUses.n);
+      lines.push(`${style}: forgotten i/j dots ${ijUses.skipped.length}/${ijUses.n} uses (${(rate * 100).toFixed(1)}%, allowed ≤ 3%)`);
+      if (rate > 0.03) bad.dots.push(`forgotten dots on ${(rate * 100).toFixed(1)}% of uses (> 3%): ${ijUses.skipped.slice(0, 3).join('; ')}`);
+    }
     if (bad.dots.length) problems.push({ level: 'fail', key: `${style}:dots`, count: bad.dots.length, msg: `${style}: i/j dot problems in ${bad.dots.length} instances: ${list(bad.dots)}` });
     for (const [k, n] of bad.dotCount) problems.push({ level: 'warn', msg: `${style}: ${k} (${n} instances)` });
     const tops = [...worst].sort((a, b) => b[1].top - a[1].top).slice(0, 4).map(([c, w]) => `${showCh(c)} ${fmt(w.top, 0)}`);

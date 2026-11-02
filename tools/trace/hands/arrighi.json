@@ -1,0 +1,1099 @@
+{
+ "style": "arrighi",
+ "label": "Chancery 1524",
+ "family": "print",
+ "connected": false,
+ "fallback": "print",
+ "tradition": {
+  "name": "Italian chancery italic (cancellaresca)",
+  "region": "Italy",
+  "language": "Italian, Latin",
+  "era": "1522–1524",
+  "legibility": "modern",
+  "notes": "Broad-nib italic; letters written separately with short hairline exits, so it behaves as a print-family hand. The model behind modern italic school hands."
+ },
+ "source": {
+  "manifest": "arrighi-1524",
+  "name": "Arrighi, La Operina (1522–24)",
+  "credit": "Ludovico degli Arrighi (Vicentino), La Operina da imparare di scrivere littera cancellarescha (Rome, 1522–24), woodcuts by Ugo da Carpi. Getty Research Institute copy via the Internet Archive; public domain",
+  "url": "https://archive.org/details/laoperinadiludou00arri/page/n28/mode/1up"
+ },
+ "images": {
+  "n28": "n28.jpg",
+  "n25": "n25.jpg"
+ },
+ "binarize": {
+  "flatten": 61,
+  "threshold": 0.55,
+  "minArea": 30,
+  "holes": 12,
+  "smooth": 0.8
+ },
+ "skeleton": {},
+ "own": 0.6,
+ "units": {
+  "cap": 200,
+  "xRatio": 0.48,
+  "slant": {
+   "source": 8,
+   "target": 6
+  },
+  "descRatio": 0.41,
+  "maxDepth": 0.4,
+  "maxDepthLower": 1.2,
+  "lowerTop": 1.12,
+  "bearing": 0.06
+ },
+ "rows": {
+  "L1": {
+   "img": "n28",
+   "base": [
+    340,
+    643,
+    1350,
+    662
+   ],
+   "xH": 41
+  },
+  "L2": {
+   "img": "n28",
+   "base": 772,
+   "xH": 33
+  },
+  "C1": {
+   "img": "n28",
+   "base": [
+    399,
+    315,
+    1246,
+    334
+   ]
+  },
+  "C2": {
+   "img": "n28",
+   "base": [
+    440,
+    446,
+    926,
+    459
+   ]
+  }
+ },
+ "glyphs": [
+  {
+   "ch": "a",
+   "row": "L1",
+   "box": [
+    318,
+    596,
+    357,
+    648
+   ],
+   "tags": {
+    "allograph": "a.2"
+   }
+  },
+  {
+   "ch": "b",
+   "row": "L1",
+   "box": [
+    365,
+    550,
+    405,
+    646
+   ],
+   "tags": {
+    "allograph": "b.2"
+   }
+  },
+  {
+   "ch": "c",
+   "row": "L1",
+   "box": [
+    415,
+    598,
+    447,
+    654
+   ]
+  },
+  {
+   "ch": "d",
+   "row": "L1",
+   "box": [
+    461,
+    553,
+    517,
+    658
+   ],
+   "tags": {
+    "allograph": "d.2"
+   }
+  },
+  {
+   "ch": "e",
+   "row": "L1",
+   "box": [
+    514,
+    598,
+    546,
+    650
+   ],
+   "tags": {
+    "allograph": "e.1"
+   }
+  },
+  {
+   "ch": "f",
+   "row": "L1",
+   "box": [
+    570,
+    575,
+    644,
+    691
+   ],
+   "tags": {
+    "allograph": "f.2"
+   }
+  },
+  {
+   "ch": "g",
+   "row": "L1",
+   "box": [
+    621,
+    602,
+    690,
+    689
+   ],
+   "tags": {
+    "allograph": "g.3"
+   }
+  },
+  {
+   "ch": "g",
+   "row": "L1",
+   "box": [
+    686,
+    602,
+    737,
+    692
+   ],
+   "var": "b",
+   "tags": {
+    "allograph": "g.4"
+   }
+  },
+  {
+   "ch": "h",
+   "row": "L1",
+   "box": [
+    748,
+    556,
+    791,
+    654
+   ],
+   "tags": {
+    "allograph": "h.2"
+   }
+  },
+  {
+   "ch": "i",
+   "row": "L1",
+   "box": [
+    796,
+    565,
+    827,
+    656
+   ],
+   "tags": {
+    "allograph": "i.1"
+   },
+   "skeleton": {
+    "dotMax": 26
+   }
+  },
+  {
+   "ch": "k",
+   "row": "L1",
+   "box": [
+    824,
+    557,
+    876,
+    656
+   ],
+   "tags": {
+    "allograph": "k.3"
+   }
+  },
+  {
+   "ch": "l",
+   "row": "L1",
+   "box": [
+    884,
+    560,
+    923,
+    658
+   ],
+   "tags": {
+    "allograph": "l.2"
+   }
+  },
+  {
+   "ch": "m",
+   "row": "L1",
+   "box": [
+    914,
+    607,
+    977,
+    658
+   ],
+   "tags": {
+    "allograph": "m.2"
+   },
+   "manual": [
+    [
+     [
+      918,
+      621
+     ],
+     [
+      925,
+      616
+     ],
+     [
+      932,
+      614
+     ],
+     [
+      931,
+      625
+     ],
+     [
+      928,
+      637
+     ],
+     [
+      925,
+      647
+     ],
+     [
+      922,
+      652
+     ]
+    ],
+    [
+     [
+      925,
+      632
+     ],
+     [
+      932,
+      622
+     ],
+     [
+      940,
+      615
+     ],
+     [
+      948,
+      615
+     ],
+     [
+      948,
+      625
+     ],
+     [
+      945,
+      637
+     ],
+     [
+      942,
+      647
+     ],
+     [
+      940,
+      652
+     ]
+    ],
+    [
+     [
+      944,
+      631
+     ],
+     [
+      950,
+      622
+     ],
+     [
+      958,
+      615
+     ],
+     [
+      966,
+      614
+     ],
+     [
+      965,
+      625
+     ],
+     [
+      962,
+      637
+     ],
+     [
+      959,
+      646
+     ],
+     [
+      962,
+      650
+     ],
+     [
+      968,
+      647
+     ]
+    ]
+   ],
+   "note": "drawn over the woodcut: the broad nib merges strokes the skeleton cannot separate"
+  },
+  {
+   "ch": "n",
+   "row": "L1",
+   "box": [
+    977,
+    610,
+    1025,
+    661
+   ],
+   "manual": [
+    [
+     [
+      988,
+      622
+     ],
+     [
+      995,
+      616
+     ],
+     [
+      1002,
+      616
+     ],
+     [
+      1000,
+      627
+     ],
+     [
+      997,
+      638
+     ],
+     [
+      994,
+      652
+     ]
+    ],
+    [
+     [
+      997,
+      630
+     ],
+     [
+      1004,
+      622
+     ],
+     [
+      1012,
+      617
+     ],
+     [
+      1018,
+      617
+     ],
+     [
+      1017,
+      627
+     ],
+     [
+      1014,
+      638
+     ],
+     [
+      1012,
+      648
+     ],
+     [
+      1016,
+      652
+     ],
+     [
+      1022,
+      648
+     ]
+    ]
+   ],
+   "note": "drawn over the woodcut: the broad nib merges strokes the skeleton cannot separate"
+  },
+  {
+   "ch": "o",
+   "row": "L1",
+   "box": [
+    1022,
+    611,
+    1057,
+    660
+   ]
+  },
+  {
+   "ch": "p",
+   "row": "L1",
+   "box": [
+    1030,
+    606,
+    1103,
+    705
+   ],
+   "tags": {
+    "allograph": "p.3"
+   },
+   "manual": [
+    [
+     [
+      1066,
+      626
+     ],
+     [
+      1074,
+      620
+     ],
+     [
+      1080,
+      614
+     ],
+     [
+      1080,
+      625
+     ],
+     [
+      1078,
+      645
+     ],
+     [
+      1076,
+      665
+     ],
+     [
+      1073,
+      682
+     ],
+     [
+      1068,
+      692
+     ],
+     [
+      1058,
+      696
+     ],
+     [
+      1045,
+      694
+     ]
+    ],
+    [
+     [
+      1079,
+      632
+     ],
+     [
+      1086,
+      622
+     ],
+     [
+      1094,
+      616
+     ],
+     [
+      1100,
+      617
+     ],
+     [
+      1099,
+      630
+     ],
+     [
+      1093,
+      642
+     ],
+     [
+      1084,
+      650
+     ],
+     [
+      1077,
+      651
+     ]
+    ]
+   ],
+   "note": "drawn over the woodcut: the broad nib merges strokes the skeleton cannot separate"
+  },
+  {
+   "ch": "q",
+   "row": "L1",
+   "box": [
+    1077,
+    610,
+    1143,
+    707
+   ]
+  },
+  {
+   "ch": "r",
+   "row": "L1",
+   "box": [
+    1142,
+    611,
+    1184,
+    663
+   ],
+   "tags": {
+    "allograph": "r.3"
+   },
+   "manual": [
+    [
+     [
+      1146,
+      627
+     ],
+     [
+      1152,
+      621
+     ],
+     [
+      1157,
+      616
+     ],
+     [
+      1156,
+      628
+     ],
+     [
+      1153,
+      640
+     ],
+     [
+      1150,
+      650
+     ],
+     [
+      1148,
+      656
+     ]
+    ],
+    [
+     [
+      1155,
+      632
+     ],
+     [
+      1162,
+      624
+     ],
+     [
+      1170,
+      618
+     ],
+     [
+      1177,
+      619
+     ],
+     [
+      1178,
+      628
+     ]
+    ]
+   ],
+   "note": "drawn over the woodcut: the broad nib merges strokes the skeleton cannot separate"
+  },
+  {
+   "ch": "s",
+   "row": "L1",
+   "box": [
+    1179,
+    614,
+    1219,
+    665
+   ],
+   "tags": {
+    "allograph": "s.2"
+   }
+  },
+  {
+   "ch": "ſ",
+   "row": "L1",
+   "box": [
+    1180,
+    585,
+    1266,
+    709
+   ],
+   "tags": {
+    "allograph": "s.3"
+   },
+   "manual": [
+    [
+     [
+      1262,
+      593
+     ],
+     [
+      1255,
+      589
+     ],
+     [
+      1246,
+      590
+     ],
+     [
+      1239,
+      598
+     ],
+     [
+      1237,
+      610
+     ],
+     [
+      1235,
+      630
+     ],
+     [
+      1233,
+      650
+     ],
+     [
+      1230,
+      670
+     ],
+     [
+      1226,
+      685
+     ],
+     [
+      1220,
+      693
+     ],
+     [
+      1208,
+      696
+     ],
+     [
+      1196,
+      698
+     ],
+     [
+      1186,
+      700
+     ]
+    ]
+   ],
+   "note": "drawn over the woodcut: the broad nib merges strokes the skeleton cannot separate"
+  },
+  {
+   "ch": "t",
+   "row": "L1",
+   "box": [
+    1249,
+    605,
+    1286,
+    667
+   ]
+  },
+  {
+   "ch": "u",
+   "row": "L1",
+   "box": [
+    1285,
+    616,
+    1332,
+    669
+   ],
+   "tags": {
+    "allograph": "u.1"
+   }
+  },
+  {
+   "ch": "x",
+   "row": "L1",
+   "box": [
+    1326,
+    617,
+    1387,
+    670
+   ],
+   "tags": {
+    "allograph": "x.1"
+   }
+  },
+  {
+   "ch": "x",
+   "row": "L2",
+   "box": [
+    573,
+    737,
+    662,
+    828
+   ],
+   "var": "b",
+   "tags": {
+    "allograph": "x.1"
+   }
+  },
+  {
+   "ch": "y",
+   "row": "L2",
+   "box": [
+    634,
+    737,
+    713,
+    822
+   ],
+   "tags": {
+    "allograph": "y.2"
+   }
+  },
+  {
+   "ch": "z",
+   "row": "L2",
+   "box": [
+    713,
+    734,
+    759,
+    778
+   ],
+   "tags": {
+    "allograph": "z.1"
+   }
+  },
+  {
+   "ch": "A",
+   "img": "n25",
+   "box": [
+    698,
+    366,
+    780,
+    442
+   ],
+   "base": 435,
+   "cap": 373
+  },
+  {
+   "ch": "B",
+   "box": [
+    357,
+    253,
+    441,
+    322
+   ],
+   "cap": 260,
+   "row": "C1"
+  },
+  {
+   "ch": "C",
+   "box": [
+    470,
+    239,
+    540,
+    328
+   ],
+   "cap": 247,
+   "row": "C1"
+  },
+  {
+   "ch": "D",
+   "box": [
+    561,
+    260,
+    634,
+    327
+   ],
+   "cap": 267,
+   "row": "C1"
+  },
+  {
+   "ch": "E",
+   "img": "n25",
+   "box": [
+    1312,
+    333,
+    1384,
+    440
+   ],
+   "base": 433,
+   "cap": 340
+  },
+  {
+   "ch": "F",
+   "box": [
+    732,
+    265,
+    822,
+    331
+   ],
+   "cap": 272,
+   "row": "C1"
+  },
+  {
+   "ch": "G",
+   "box": [
+    805,
+    246,
+    894,
+    387
+   ],
+   "cap": 253,
+   "row": "C1"
+  },
+  {
+   "ch": "H",
+   "box": [
+    905,
+    226,
+    1005,
+    335
+   ],
+   "cap": 233,
+   "row": "C1"
+  },
+  {
+   "ch": "I",
+   "box": [
+    995,
+    228,
+    1054,
+    385
+   ],
+   "cap": 235,
+   "row": "C1"
+  },
+  {
+   "ch": "K",
+   "box": [
+    1058,
+    231,
+    1158,
+    338
+   ],
+   "cap": 238,
+   "row": "C1"
+  },
+  {
+   "ch": "L",
+   "img": "n25",
+   "box": [
+    1268,
+    479,
+    1319,
+    623
+   ],
+   "base": 616,
+   "cap": 486
+  },
+  {
+   "ch": "M",
+   "box": [
+    1201,
+    278,
+    1291,
+    341
+   ],
+   "cap": 285,
+   "row": "C1"
+  },
+  {
+   "ch": "N",
+   "box": [
+    268,
+    384,
+    402,
+    457
+   ],
+   "cap": 394,
+   "row": "C2"
+  },
+  {
+   "ch": "O",
+   "box": [
+    411,
+    390,
+    467,
+    453
+   ],
+   "cap": 397,
+   "row": "C2"
+  },
+  {
+   "ch": "P",
+   "box": [
+    485,
+    395,
+    547,
+    455
+   ],
+   "cap": 402,
+   "row": "C2"
+  },
+  {
+   "ch": "Q",
+   "box": [
+    563,
+    393,
+    735,
+    527
+   ],
+   "cap": 400,
+   "row": "C2",
+   "erase": [
+    [
+     634,
+     395,
+     725,
+     457
+    ]
+   ]
+  },
+  {
+   "ch": "R",
+   "box": [
+    630,
+    393,
+    727,
+    458
+   ],
+   "cap": 400,
+   "row": "C2"
+  },
+  {
+   "ch": "S",
+   "box": [
+    728,
+    392,
+    782,
+    459
+   ],
+   "cap": 399,
+   "row": "C2"
+  },
+  {
+   "ch": "T",
+   "box": [
+    786,
+    399,
+    870,
+    464
+   ],
+   "cap": 406,
+   "row": "C2"
+  },
+  {
+   "ch": "V",
+   "box": [
+    879,
+    397,
+    973,
+    466
+   ],
+   "cap": 404,
+   "row": "C2"
+  },
+  {
+   "ch": "X",
+   "box": [
+    996,
+    398,
+    1092,
+    472
+   ],
+   "cap": 410,
+   "own": 0,
+   "row": "C2",
+   "erase": [
+    [
+     1078,
+     400,
+     1094,
+     472
+    ]
+   ],
+   "noDots": true
+  },
+  {
+   "ch": "Y",
+   "box": [
+    1076,
+    400,
+    1176,
+    540
+   ],
+   "cap": 410,
+   "own": 0,
+   "row": "C2",
+   "erase": [
+    [
+     1074,
+     438,
+     1100,
+     472
+    ]
+   ],
+   "noDots": true
+  },
+  {
+   "ch": "Z",
+   "box": [
+    1264,
+    396,
+    1444,
+    527
+   ],
+   "cap": 403,
+   "base": 450,
+   "img": "n28"
+  },
+  {
+   "ch": "U",
+   "box": [
+    879,
+    397,
+    973,
+    466
+   ],
+   "cap": 404,
+   "var": "from-V",
+   "note": "Arrighi writes U and V as one letter (V); the same form serves U",
+   "tags": {
+    "allograph": "U.as-V"
+   },
+   "row": "C2"
+  },
+  {
+   "ch": "J",
+   "box": [
+    995,
+    228,
+    1054,
+    385
+   ],
+   "cap": 235,
+   "note": "Arrighi has no separate J; his I with its long tail is the form J grew from",
+   "row": "C1"
+  },
+  {
+   "ch": "&",
+   "row": "L2",
+   "box": [
+    834,
+    720,
+    924,
+    786
+   ],
+   "note": "et-ligature"
+  }
+ ]
+}
