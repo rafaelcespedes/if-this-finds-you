@@ -11,7 +11,7 @@
 
 import { rng, makeNoise, lerp, clamp, mix, smooth, DEG } from './core.js';
 import { choose, transform, getStyle, has as styleHas, stylesInFamily, styleNames, families, isHistorical, makeHabits, pickSchooling, getSchooling, schoolingNames } from './glyphs.js';
-import { penOutline } from './pen.js';
+import { penOutline, handSize } from './pen.js';
 
 // ---------- the "writer": one consistent set of parameters per seed ----------
 // Other modules add seeded traits to every hand (e.g. style dimensions): fn(h) -> { key: value, ... }.
@@ -122,8 +122,13 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
   // S-curves instead of hard clamps, so extreme writers thin out instead of piling up at a limit
   const sig = (x) => 1 / (1 + Math.exp(-x));
   const hurry = sig(-0.3 + 1.05 * L.hurry);
-  const xHeight = script ? clamp(0.48 + 0.058 * L.xh, 0.36, 0.62) : clamp(0.6 + 0.072 * L.xh, 0.42, 0.78);
-  const width = script ? clamp(0.98 + 0.1 * L.width, 0.72, 1.24) : clamp(0.84 + 0.095 * L.width, 0.6, 1.08);
+  // x-height and width ranges are calibrated to the skeletons a style was drawn against: Hershey script's are
+  // narrow for their cap height, so the joined-hand ranges widen them; every other style so far (Hershey print
+  // and the traced copybooks) was drawn against the print ranges, and gets those whatever its family
+  // (st.proportions: 'print' | 'script'). Giving a traced joined copybook the script ranges drew it ~1.45x too wide.
+  const sr = (st.proportions || 'print') === 'script';
+  const xHeight = sr ? clamp(0.48 + 0.058 * L.xh, 0.36, 0.62) : clamp(0.6 + 0.072 * L.xh, 0.42, 0.78);
+  const width = sr ? clamp(0.98 + 0.1 * L.width, 0.72, 1.24) : clamp(0.84 + 0.095 * L.width, 0.6, 1.08);
   // stroke width / x-height stays within 0.06-0.22 (legibility, §5.2 step 6)
   const xhU = xHeight * CAP;
   // a traced tradition with its own slant built in (tradition.slant) centres the writer on it; Hershey's styles
@@ -166,7 +171,7 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
     dotHeight: r.range(0.35, 0.62),                          // where i/j dots sit above x-height
     dotSize: r.range(0.9, 1.35),
   };
-  h.capWidth = script ? h.width * r.range(0.92, 1.06) : clamp(r.range(0.8, 0.98) * (0.86 + 0.16 * h.width / 0.84), 0.66, 1.06);
+  h.capWidth = sr ? h.width * r.range(0.92, 1.06) : clamp(r.range(0.8, 0.98) * (0.86 + 0.16 * h.width / 0.84), 0.66, 1.06);
   h.hurry0 = h.hurry;          // the seed's own pace and care: the Hurry and Neatness sliders act relative to them
   h.neatness0 = h.neatness;
   // letters: schooling, quirks, context forms (siblings share the base seed's letters, and re-roll a few)
@@ -186,6 +191,7 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
   h.lineWander = clamp(1 + 0.3 * (0.6 - h.neatness) + 0.15 * rp.gauss(), 0.7, 1.3);
   h.fatigue = clamp(1 + 0.25 * (0.6 - h.neatness) + 0.15 * rp.gauss(), 0.7, 1.3);
   h.noise = makeNoise('hand:' + seed);
+  h.size = handSize(h);   // x-height in mm (pen.js; own 'size:' namespace, nothing above moves)
   h.addedTraits = [];
   for (const fn of HAND_TRAITS) { const t = fn(h) || {}; Object.assign(h, t); h.addedTraits.push(...Object.keys(t)); }
   return h;
@@ -394,7 +400,10 @@ function glyphSkeleton(p, ch, inst, ctx) {
   // the writer's own proportions for this letter (letters and digits; punctuation keeps the style's)
   const lq = letter || isDigit(ch) ? letterQuirk(p, ch, messy) : { sx: 1, sy: 1, tan: 0 };
   const dc = p.neatness0 == null ? 0 : careDrop(p);
-  const wBase = (lower ? p.width : isUpper(ch) ? p.capWidth : isDigit(ch) ? (p.width + 1) / 2 : 0.5 + p.width / 2) * (1 + 0.1 * hd) * (1 + 0.14 * dc);
+  // a letter borrowed from another tradition is written at this hand's proportions (by the two traditions'
+  // typical letter widths), not at the lender's: a narrow chancery o doesn't belong in a round Sütterlin hand
+  const kStyle = g.borrowedFrom ? Math.pow(styleMedian(p.style) / styleMedian(g.borrowedFrom), 0.85) : 1;
+  const wBase = (lower ? p.width : isUpper(ch) ? p.capWidth : isDigit(ch) ? (p.width + 1) / 2 : 0.5 + p.width / 2) * (1 + 0.1 * hd) * (1 + 0.14 * dc) * kStyle;
   const wScale = wBase * (joins ? 1 : lq.sx);
   const zp = lower ? { xHeight: p.xHeight * lq.sy, ascender: p.ascender, descender: p.descender } : p;
   const ys = lower ? 1 : 1 + (lq.sy - 1) * 0.6;            // capitals and digits: scale about the baseline
@@ -450,6 +459,17 @@ function glyphSkeleton(p, ch, inst, ctx) {
     for (const run of smoothStroke(mapped, p, step, messy)) { strokes.push(run); strokeMarks.push(mk); }
   });
   let advance = (g.r - g.l) * S * wScale + (p.tracking || 0);
+  if (lower && joins && advance > 0) {
+    // a joined letter's box must hold its ink, or the next letter lands on top of it (a bug: a reshaped skeleton
+    // whose box edges moved past its strokes). Nudge the ink back inside and widen the box to fit.
+    if (strokes.length) {
+      const xhU = p.xHeight * CAP;
+      let mn = Infinity, mx = -Infinity;
+      for (const s2 of strokes) for (const q of s2) { if (q[0] < mn) mn = q[0]; if (q[0] > mx) mx = q[0]; }
+      if (mn < -0.2 * xhU) { const dx = -mn - 0.05 * xhU; for (const s2 of strokes) for (const q of s2) q[0] += dx; for (const q of dots) q[0] += dx; mx += dx; advance += dx; }
+      if (advance < mx - 0.1 * xhU) advance = mx - 0.05 * xhU;
+    }
+  }
   if (ch === ' ' || ch === ' ') advance = p.space;
   else if (st.connected && isApostrophe(ch) && ctx && isLetterCh(ctx.prev) && isLetterCh(ctx.next) && (strokes.length || dots.length)) {
     // inside a joined word (don't, it's) the apostrophe floats over the join instead of breaking it (QA report #6)
@@ -481,6 +501,24 @@ function glyphSkeleton(p, ch, inst, ctx) {
     advance = mx - mn + 2 * sb;
   }
   return { strokes, dots, advance, letter, lower, variant: g, connected: !!st.connected, joins, strokeMarks, dotMarks };
+}
+
+// A tradition's typical small-letter advance as a fraction of its cap height (its own drawing, nothing borrowed)
+function styleMedian(name) {
+  const st = getStyle(name);
+  if (!st) return 0.8;
+  if (st.widthMedian == null) {
+    const m = st.metrics, ws = [];
+    for (const ch of 'noua eh c m'.replace(/ /g, '')) {
+      const v = (st.glyphs.get(ch) || []).find((x) => x.weight !== 0 && !(x.tags && x.tags.position) && !x.borrowedFrom);
+      if (!v) continue;
+      const mm = v.metrics || m;
+      ws.push((v.r - v.l) / (mm.base - mm.cap) / (ch === 'm' ? 1.5 : 1));
+    }
+    ws.sort((a, b) => a - b);
+    st.widthMedian = ws.length ? ws[Math.floor(ws.length / 2)] : 0.8;
+  }
+  return st.widthMedian;
 }
 
 // The canonical skeleton of ch for this hand (before per-use variation, slant and pen), for tools and tests.
