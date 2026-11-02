@@ -122,8 +122,13 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
   // S-curves instead of hard clamps, so extreme writers thin out instead of piling up at a limit
   const sig = (x) => 1 / (1 + Math.exp(-x));
   const hurry = sig(-0.3 + 1.05 * L.hurry);
-  const xHeight = script ? clamp(0.48 + 0.058 * L.xh, 0.36, 0.62) : clamp(0.6 + 0.072 * L.xh, 0.42, 0.78);
-  const width = script ? clamp(0.98 + 0.1 * L.width, 0.72, 1.24) : clamp(0.84 + 0.095 * L.width, 0.6, 1.08);
+  // x-height and width ranges are calibrated to the skeletons a style was drawn against: Hershey script's are
+  // narrow for their cap height, so the joined-hand ranges widen them; every other style so far (Hershey print
+  // and the traced copybooks) was drawn against the print ranges, and gets those whatever its family
+  // (st.proportions: 'print' | 'script'). Giving a traced joined copybook the script ranges drew it ~1.45x too wide.
+  const sr = (st.proportions || 'print') === 'script';
+  const xHeight = sr ? clamp(0.48 + 0.058 * L.xh, 0.36, 0.62) : clamp(0.6 + 0.072 * L.xh, 0.42, 0.78);
+  const width = sr ? clamp(0.98 + 0.1 * L.width, 0.72, 1.24) : clamp(0.84 + 0.095 * L.width, 0.6, 1.08);
   // stroke width / x-height stays within 0.06-0.22 (legibility, §5.2 step 6)
   const xhU = xHeight * CAP;
   // a traced tradition with its own slant built in (tradition.slant) centres the writer on it; Hershey's styles
@@ -153,8 +158,7 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
     roundness: sig(0.2 + 1.1 * L.round),                     // corner softening
     tracking: 0,
     sidebearing: clamp(44 + 14 * g() + 10 * (also.sidebearing || 0) + 5 * L.hurry, 16, 86), // print: gap each side of the ink
-    // word space (font units), about an x-height; joined hands a little more, as exit strokes reach into it
-    space: xhU * (script ? clamp(0.95 + 0.13 * g() + 0.06 * L.hurry, 0.68, 1.35) : clamp(0.8 + 0.13 * g() + 0.06 * L.hurry, 0.5, 1.2)),
+    space: xhU * clamp(0.8 + 0.13 * g() + 0.06 * L.hurry, 0.5, 1.2), // word space (font units), about an x-height
     strokeShift: clamp(1 + 0.22 * g() + 0.2 * L.hurry, 0.45, 1.8), // how loosely separate strokes land (t-bars, i-dots)
     wordSpace: clamp(1.06 + 0.08 * g(), 0.88, 1.25),
     quirk: clamp(33 + 6 * g() - 3 * L.neat, 18, 50),         // amplitude of the fixed per-letter distortion
@@ -167,7 +171,7 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
     dotHeight: r.range(0.35, 0.62),                          // where i/j dots sit above x-height
     dotSize: r.range(0.9, 1.35),
   };
-  h.capWidth = script ? h.width * r.range(0.92, 1.06) : clamp(r.range(0.8, 0.98) * (0.86 + 0.16 * h.width / 0.84), 0.66, 1.06);
+  h.capWidth = sr ? h.width * r.range(0.92, 1.06) : clamp(r.range(0.8, 0.98) * (0.86 + 0.16 * h.width / 0.84), 0.66, 1.06);
   h.hurry0 = h.hurry;          // the seed's own pace and care: the Hurry and Neatness sliders act relative to them
   h.neatness0 = h.neatness;
   // letters: schooling, quirks, context forms (siblings share the base seed's letters, and re-roll a few)
@@ -396,9 +400,9 @@ function glyphSkeleton(p, ch, inst, ctx) {
   // the writer's own proportions for this letter (letters and digits; punctuation keeps the style's)
   const lq = letter || isDigit(ch) ? letterQuirk(p, ch, messy) : { sx: 1, sy: 1, tan: 0 };
   const dc = p.neatness0 == null ? 0 : careDrop(p);
-  // each tradition drawn at its own proportions, brought into a legible band (styleWidth); a letter borrowed or
-  // blended from another tradition is scaled by its own tradition's factor, so it sits right in this hand
-  const kStyle = g.borrowedFrom ? styleWidth(p.style) * Math.pow(styleMedian(p.style) / styleMedian(g.borrowedFrom), 0.85) : styleWidth(p.style);
+  // a letter borrowed from another tradition is written at this hand's proportions (by the two traditions'
+  // typical letter widths), not at the lender's: a narrow chancery o doesn't belong in a round Sütterlin hand
+  const kStyle = g.borrowedFrom ? Math.pow(styleMedian(p.style) / styleMedian(g.borrowedFrom), 0.85) : 1;
   const wBase = (lower ? p.width : isUpper(ch) ? p.capWidth : isDigit(ch) ? (p.width + 1) / 2 : 0.5 + p.width / 2) * (1 + 0.1 * hd) * (1 + 0.14 * dc) * kStyle;
   const wScale = wBase * (joins ? 1 : lq.sx);
   const zp = lower ? { xHeight: p.xHeight * lq.sy, ascender: p.ascender, descender: p.descender } : p;
@@ -455,20 +459,10 @@ function glyphSkeleton(p, ch, inst, ctx) {
     for (const run of smoothStroke(mapped, p, step, messy)) { strokes.push(run); strokeMarks.push(mk); }
   });
   let advance = (g.r - g.l) * S * wScale + (p.tracking || 0);
-  // a soft ceiling on how wide a small letter may be next to its x-height, whatever widened it (a copybook's long
-  // connectors, a wide writer, movement settings): beyond it, extra width is mostly taken back. Joins still meet:
-  // the whole letter, entry to exit, scales about its left edge.
   if (lower && joins && advance > 0) {
-    const R = advance / (p.xHeight * CAP), lim = widthCeiling(ch, !!st.connected), low = widthFloor(ch, !!st.connected);
-    if (R > lim || R < low) {
-      const f = R > lim ? lim * Math.pow(R / lim, 0.12) / R : low * Math.pow(R / low, 0.3) / R;
-      for (const s2 of strokes) for (const q of s2) q[0] *= f;
-      for (const q of dots) q[0] *= f;
-      advance *= f;
-    }
-    // and a floor: a joined letter's box must hold its ink, or the next letter lands on top of it (a reshaped
-    // skeleton whose box edges moved past its strokes). Nudge the ink back inside and widen the box to fit.
-    if (joins && strokes.length) {
+    // a joined letter's box must hold its ink, or the next letter lands on top of it (a bug: a reshaped skeleton
+    // whose box edges moved past its strokes). Nudge the ink back inside and widen the box to fit.
+    if (strokes.length) {
       const xhU = p.xHeight * CAP;
       let mn = Infinity, mx = -Infinity;
       for (const s2 of strokes) for (const q of s2) { if (q[0] < mn) mn = q[0]; if (q[0] > mx) mx = q[0]; }
@@ -476,7 +470,7 @@ function glyphSkeleton(p, ch, inst, ctx) {
       if (advance < mx - 0.1 * xhU) advance = mx - 0.05 * xhU;
     }
   }
-  if (ch === ' ' || ch === ' ') advance = wordSpace(p);
+  if (ch === ' ' || ch === ' ') advance = p.space;
   else if (st.connected && isApostrophe(ch) && ctx && isLetterCh(ctx.prev) && isLetterCh(ctx.next) && (strokes.length || dots.length)) {
     // inside a joined word (don't, it's) the apostrophe floats over the join instead of breaking it (QA report #6)
     let mn = Infinity, mx = -Infinity;
@@ -501,17 +495,6 @@ function glyphSkeleton(p, ch, inst, ctx) {
     if (!Number.isFinite(mn)) { mn = mnAll; mx = mxAll; }
     mn = Math.min(mn, mnAll + tuck); mx = Math.max(mx, mxAll - tuck);
     const sb = p.sidebearing * (letter || isDigit(ch) ? 1 : 0.7) * clamp(1 + 0.45 * dc, 0.6, 1.6) + p.penWidth * 0.5;
-    if (lower && mx > mn) {
-      // the same soft ceiling and floor as joined letters, on the letter as it will be spaced
-      const R = (mx - mn + 2 * sb) / xhU, lim = widthCeiling(ch, false), low = widthFloor(ch, false);
-      if (R > lim || R < low) {
-        const target = (R > lim ? lim * Math.pow(R / lim, 0.12) : low * Math.pow(R / low, 0.3)) * xhU - 2 * sb;
-        const f = Math.max(0.2, target / (mx - mn));
-        for (const s2 of strokes) for (const q of s2) q[0] = mn + (q[0] - mn) * f;
-        for (const q of dots) q[0] = mn + (q[0] - mn) * f;
-        mx = mn + (mx - mn) * f;
-      }
-    }
     const dx = sb - mn;
     for (const s of strokes) for (const q of s) q[0] += dx;
     for (const q of dots) q[0] += dx;
@@ -520,22 +503,6 @@ function glyphSkeleton(p, ch, inst, ctx) {
   return { strokes, dots, advance, letter, lower, variant: g, connected: !!st.connected, joins, strokeMarks, dotMarks };
 }
 
-// How wide a tradition's small letters are drawn, as a factor on the writer's width: 1 when the tradition's
-// typical letter (median of n o u a e h c, m counted as 1.5 letters) already sits in the band for its family at
-// the family's typical x-height; otherwise pulled most of the way into it. Keeps part of each tradition's
-// character (Arrighi stays narrow, Sütterlin round) while a copybook with long traced connectors can't come out
-// twice as wide as its writing. Cached per style.
-const WIDTH_BAND = { print: { xh: 0.6, lo: 0.95, hi: 1.55 }, script: { xh: 0.48, lo: 1.0, hi: 1.6 } };
-export function styleWidth(name) {
-  const st = getStyle(name);
-  if (!st) return 1;
-  if (st.widthNorm == null) {
-    const band = WIDTH_BAND[st.family] || WIDTH_BAND.print;
-    const R = styleMedian(name) / band.xh;
-    st.widthNorm = R > band.hi ? Math.pow(band.hi / R, 0.85) : R < band.lo ? Math.pow(band.lo / R, 0.6) : 1;
-  }
-  return st.widthNorm;
-}
 // A tradition's typical small-letter advance as a fraction of its cap height (its own drawing, nothing borrowed)
 function styleMedian(name) {
   const st = getStyle(name);
@@ -552,19 +519,6 @@ function styleMedian(name) {
     st.widthMedian = ws.length ? ws[Math.floor(ws.length / 2)] : 0.8;
   }
   return st.widthMedian;
-}
-// The soft ceiling on a small letter's advance, in x-heights (joined letters carry their connectors)
-const widthCeiling = (ch, joined) => (/[mwMW]/.test(ch) ? (joined ? 2.7 : 2.3) : /[ijlrtfs]/.test(ch) ? (joined ? 1.25 : 0.95) : joined ? 1.72 : 1.5);
-// ...and the soft floor for round-bodied letters (narrow letters such as i l t are left alone)
-const widthFloor = (ch, joined) => (/[mwMW]/.test(ch) ? (joined ? 1.05 : 0.85) : /[ijlrtfs]/.test(ch) ? 0 : joined ? 0.5 : 0.45);
-
-// The word space: the writer's own (about an x-height), widened when their letters are wide, so words written
-// with long joins and flicks (a wide copybook, long-join movement) don't run together. Measured on this hand's
-// own n between two letters; 1.2 x-heights is the n the base space was tuned for.
-function wordSpace(p) {
-  if (!has(p, 'n')) return p.space;
-  const n = glyphSkeleton(p, 'n', null, { prev: 'a', next: 'a', index: 1 }).advance / (p.xHeight * CAP);
-  return p.space * clamp(n / 1.2, 0.9, 1.7);
 }
 
 // The canonical skeleton of ch for this hand (before per-use variation, slant and pen), for tools and tests.

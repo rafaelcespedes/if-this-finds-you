@@ -43,6 +43,8 @@ const TRANSFORMS = [];
 //   fallback:  another style to borrow characters from when this one lacks them (e.g. a 1741 copybook
 //              has no € or @). Borrowed variants keep their own metrics, so they scale correctly.
 //   weight:    how often New hand picks this style within its family (default 1).
+//   proportions: 'print' | 'script' — which x-height and width ranges the skeletons were drawn against
+//              (default 'print'; Hershey script's narrow skeletons are the only 'script' ones so far).
 // metrics: { base, cap, xHeight, descender, descRatio } in source units, y down.
 //   base/cap: baseline and cap-height y; xHeight: lowercase x-height y; descender: lowercase
 //   descender y; descRatio: rendered descender depth as a fraction of cap height.
