@@ -332,6 +332,13 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   const xh = (p.xHeight || 0.5) * CAP_U;
   // skeletons arrive every ~7 units; ~0.035 xh is plenty for width and ink and halves the work
   if (!dot && pts0.length > 6) pts0 = thin(pts0, Math.max(9, 0.033 * xh));
+  if (dot && spec.shape === 'nib') {
+    // a broad-nib dot is a dab across the nib edge; along its own little path it could run parallel
+    // to the edge and vanish (matches nibOutline's dot parallelogram)
+    const a = (p.nibAngle == null ? 35 : p.nibAngle) * DEG, m = pts0[(pts0.length - 1) >> 1];
+    const h = 0.35 * penWidthUnits(p, key) * (p.dotSize || 1);
+    pts0 = [[m[0] + Math.sin(a) * h, m[1] - Math.cos(a) * h], m, [m[0] - Math.sin(a) * h, m[1] + Math.cos(a) * h]];
+  }
   const c = clamp(p.pressure == null ? 0.4 : p.pressure, 0, 1);
   const fluency = 1 - clamp(p.neatness == null ? 0.6 : p.neatness, 0, 1);
   const r = rng('pen:' + p.seed + ':' + key + ':' + Math.round(seedOff * 997));
@@ -340,12 +347,14 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   const nibA = (p.nibAngle == null ? 35 : p.nibAngle) * DEG, cosN = Math.cos(nibA), sinN = Math.sin(nibA);
 
   // ---- how this stroke starts and ends (rule 6: asymmetric, motion-driven ends)
-  let pts = pts0, start = 'plain', end = 'soft', hookLen = 0, tailLen = 0;
+  let pts = pts0, start = 'plain', end = 'soft', hookLen = 0, tailLen = 0, mark = false;
   if (dot) { start = end = 'dot'; }
   else {
     const t0 = dirAt(pts, 0, 0.06 * xh), t1 = dirAt(pts, pts.length - 1, 0.06 * xh);
     let total = 0;
     for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    // a tiny mark (an i-dot drawn as a dash, arc or tick; an accent): pressed, never a hairline
+    mark = total < 0.3 * xh && !(opt && (opt.continuesFrom || opt.continuesInto));
     const u = r(), hookP = spec.hook * (0.45 + 0.9 * fluency), hl = r();
     if (u < hookP && total > 0.25 * xh) {
       const a = arrival(t0);
@@ -359,9 +368,10 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
     end = v < pFly ? 'fly' : v < pFly + pBlunt ? 'blunt' : 'soft';
     if (opt && opt.continuesFrom) { start = 'join'; hookLen = 0; }
     if (opt && opt.continuesInto) end = 'join';
+    if (mark) { start = start === 'join' ? start : 'plain'; end = end === 'join' ? end : 'soft'; hookLen = 0; }
     if (start === 'hook') pts = withHook(pts, arrival(t0), hookLen);
     const tl = r();
-    if (end === 'fly' && !down) { tailLen = (0.03 + 0.06 * tl) * xh * (0.6 + fluency); pts = withTail(pts, t1, tailLen); }
+    if (end === 'fly' && !down && !mark) { tailLen = (0.03 + 0.06 * tl) * xh * (0.6 + fluency); pts = withTail(pts, t1, tailLen); }
   }
 
   const n = pts.length;
@@ -405,11 +415,12 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
       const env = smooth(s[i] / (0.12 * xh)) * smooth((S - s[i]) / (0.16 * xh));
       const sw = (acc / Math.max(1, j1 - j0)) * env * press;
       w[i] = wHair + (wMax - wHair) * sw * (1 + 0.15 * (slow[i] - 1));
+      if (mark) w[i] = Math.max(w[i], wMax * (0.3 + 0.18 * Math.sin(Math.PI * s[i] / (S || 1))));
       hair[i] = 1 - clamp((w[i] - wHair) / (wMax - wHair), 0, 1);
     }
   } else if (kind === PEN_KIND.italic) {
     // broad nib: the mark is as wide as the nib's projection across the direction of travel
-    const nx = Math.cos(nibA), ny = Math.sin(nibA), thin = Math.max(4, 0.12 * pw);
+    const nx = Math.cos(nibA), ny = Math.sin(nibA), thin = mark ? Math.max(4, 0.3 * W) : Math.max(4, 0.12 * pw);
     wHair = thin; wMax = W + thin;
     for (let i = 0; i < n; i++) {
       w[i] = W * Math.abs(tx[i] * ny - ty[i] * nx) + thin;
@@ -503,7 +514,7 @@ function strokeProfile(p, pts0, seedOff, opt, key) {
   // ---- dots: a quick dab, round and a little wetter
   if (dot) {
     const dw = (kind === PEN_KIND.pointed ? 0.55 * wMax : kind === PEN_KIND.italic ? 0.7 * W : 1.1 * W) * (p.dotSize || 1);
-    for (let i = 0; i < n; i++) { w[i] = dw; d[i] = base * (kind === PEN_KIND.pencil ? 1.1 : 1.25); if (hair) hair[i] = 0; if (nibScale) aux[i] = 0.7; }
+    for (let i = 0; i < n; i++) { w[i] = dw; d[i] = base * (kind === PEN_KIND.pencil ? 1.1 : 1.25); if (hair) hair[i] = 0; if (nibScale) aux[i] = 1; }
   }
 
   const minW = Math.max(3, spec.minW * pw * 0.12);
@@ -571,6 +582,18 @@ function nibOutline(pr) {
   const { n, x, y, tx, ty } = pr;
   const ex = pr.nib[0] / 2, ey = pr.nib[1] / 2, el = Math.hypot(ex, ey) || 1;
   const ux = ex / el, uy = ey / el, qx = -uy, qy = ux;
+  if (pr.dot) {
+    // a broad-nib dot is a short dab across the nib edge: a parallelogram one nib wide.
+    // (Swept along its own path it can run parallel to the edge and vanish into a sliver.)
+    const m = (n - 1) >> 1, cx = x[m], cy = y[m];
+    const h = Math.max(0.35 * el, 0.5 * (pr.w[m] || 0));
+    const a = [cx - ex - qx * h, cy - ey - qy * h], b = [cx + ex - qx * h, cy + ey - qy * h];
+    const c = [cx + ex + qx * h, cy + ey + qy * h], d = [cx - ex + qx * h, cy - ey + qy * h];
+    const loop = [a, b, c, d];
+    let area = 0;
+    for (let i = 0, j = 3; i < 4; j = i++) area += (loop[j][0] - loop[i][0]) * (loop[j][1] + loop[i][1]);
+    return area > 0 ? loop.reverse() : loop;
+  }
   const thin = pr.wHair / 2;
   const side = (i) => tx[i] * uy - ty[i] * ux;      // which way the nib edge faces the motion
   const runs = [];
