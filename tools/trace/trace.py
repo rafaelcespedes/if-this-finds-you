@@ -280,7 +280,7 @@ def normalise(hand, ex):
             for p in s['pts']:
                 p[1] += gl['dy']
     C = u['cap']
-    lower = ch.isalpha() and ch.islower() and ch.isascii()
+    lower = ch.isalpha() and ch.islower()
     # vertical limits: capitals/digits linear in cap height (engine); compress what would clip
     limit_vertical(strokes, C, u, lower)
     out = {'strokes': strokes}
@@ -288,7 +288,7 @@ def normalise(hand, ex):
     if script and lower and not gl.get('noJoin'):
         J = -u['join'] * u['xRatio'] * C
         fix_joins(strokes, J, u, gl)
-    place(strokes, out, hand, u, gl, script and lower)
+    place(strokes, out, hand, u, gl, script and lower and not gl.get('noJoin'))
     return out
 
 
