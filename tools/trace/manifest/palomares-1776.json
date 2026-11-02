@@ -1,0 +1,58 @@
+{
+  "id": "palomares-1776",
+  "title": "Arte nueva de escribir, inventada por el insigne maestro Pedro Díaz Morante, e ilustrada con muestras nuevas y varios discursos conducentes al verdadero magisterio de primeras letras",
+  "author": "Francisco Javier de Santiago Palomares (1728–1796), after Pedro Díaz Morante (1565–1636); plates engraved by Francisco Asensio y Mejorada",
+  "date": "1776",
+  "place": "Madrid: Imprenta de Antonio de Sancha",
+  "holder": "Biblioteca de la Universidad de Sevilla (A 254/379), digitised by the library and published on the Internet Archive",
+  "page": "https://archive.org/details/A254379",
+  "rights": {
+    "statement": "Public Domain Mark 1.0 (licenseurl http://creativecommons.org/publicdomain/mark/1.0/ on the library's Internet Archive record).",
+    "where": "https://archive.org/metadata/A254379 (licenseurl, contributor Biblioteca de la Universidad de Sevilla)",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "Work of 1776, public domain everywhere. Chosen over the items the research named: the Castilla Benavides (1866, JCyL) PDF and the Getty Iturzaeta (1835) and Sevilla Servidori (1789) copies are text volumes without their plates. Palomares' bastarda is the model Servidori, Torío and Iturzaeta taught from."
+  },
+  "files": [
+    {
+      "name": "n165.jpg",
+      "url": "https://archive.org/download/A254379/page/n165.jpg",
+      "what": "plate 1: minims and basic strokes, 3184 × 4638 px"
+    },
+    {
+      "name": "n167.jpg",
+      "url": "https://archive.org/download/A254379/page/n167.jpg",
+      "what": "plate 2: letter exercises, 3184 × 4638 px"
+    },
+    {
+      "name": "n169.jpg",
+      "url": "https://archive.org/download/A254379/page/n169.jpg",
+      "what": "plate 3: letter exercises, 3184 × 4638 px"
+    },
+    {
+      "name": "n171.jpg",
+      "url": "https://archive.org/download/A254379/page/n171.jpg",
+      "what": "plate 4: small alphabet and exercises, 3184 × 4638 px"
+    },
+    {
+      "name": "n175.jpg",
+      "url": "https://archive.org/download/A254379/page/n175.jpg",
+      "what": "plate 6: capitals with their small letters (Aa–Zz), long-s and ct ligatures, accented vowels (á à â ã ẽ ...), ç, æ, œ, w, g forms, 3184 × 4638 px"
+    },
+    {
+      "name": "n177.jpg",
+      "url": "https://archive.org/download/A254379/page/n177.jpg",
+      "what": "plate 7: capitals in words, 3184 × 4638 px"
+    },
+    {
+      "name": "n183.jpg",
+      "url": "https://archive.org/download/A254379/page/n183.jpg",
+      "what": "plate: paired capitals and the small alphabet, 3184 × 4638 px"
+    },
+    {
+      "name": "n189.jpg",
+      "url": "https://archive.org/download/A254379/page/n189.jpg",
+      "what": "plate: running text, 3184 × 4638 px"
+    }
+  ]
+}

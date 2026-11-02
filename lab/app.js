@@ -107,7 +107,9 @@ function renderLive() {
   if (ink.renderer !== 'svg') return renderLiveInk(host, W);
   const p = params();
   const ruled = state.paper === 'ruled';
-  const page = E.layout(p, $('text').value, { maxWidth: W / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled, firstBaseline: 0.95 * E.UPM });
+  // plain paper: the hand's own line spacing; ruled: notebook rules a little roomier than the hand needs
+  const paper = ruled ? { ruled, lineHeight: Math.max(1.2 * E.UPM, 1.05 * E.pageMetrics(p).pitch), firstBaseline: 1.1 * E.UPM } : {};
+  const page = E.layout(p, $('text').value, Object.assign({ maxWidth: W / (EM_PX / E.UPM) }, paper));
   noteMisses(page.misses);
   stopWriting();
   host.innerHTML = E.renderSVG(p, page, { width: W, emPx: EM_PX, strokeIds: true, rules: ruled });
@@ -121,11 +123,28 @@ function stopWriting() {
   $('write').textContent = 'Write it';
 }
 function writeIt() {
-  const svg = $('live').querySelector('svg');
-  if (!svg || !state.page) return;
+  const svg = ink.renderer === 'svg' ? $('live').querySelector('svg') : null;
+  if (!state.page || (ink.renderer === 'svg' && !svg)) return;
   if (state.player && state.player.playing) { state.player.pause(); $('write').textContent = 'Resume'; return; }
   if (!state.player) {
-    state.player = E.playSVG(svg, state.page, { emPx: EM_PX, rate: +$('speed').value, onEnd: () => { $('write').textContent = 'Write it again'; } });
+    const onEnd = () => { $('write').textContent = 'Write it again'; };
+    if (svg) state.player = E.playSVG(svg, state.page, { emPx: EM_PX, rate: +$('speed').value, onEnd });
+    else {
+      // canvas: the same timeline, drawn through renderCanvas's reveal(item, stroke) -> 0..1
+      const { p, page, paneW, EM_PX: em } = ink.last;
+      const tl = E.timeline(page);
+      const idx = new Map(page.items.map((it, i) => [it, i]));
+      const evOf = new Map(tl.events.map((e, n) => [e.item + ':' + e.stroke, n]));
+      const paper = { preset: ink.paper, color: ink.paper === 'cream' ? undefined : LAB_PAPER };
+      state.player = E.createPlayer(tl, (t) => {
+        const f = E.frameAt(tl, t);
+        const reveal = (it, si) => {
+          const n = evOf.get(idx.get(it) + ':' + si);
+          return n == null ? 1 : n < f.done ? 1 : f.active && n === f.done ? f.frac : 0;
+        };
+        E.renderCanvas(ink.canvas, p, page, { width: paneW, emPx: em, paper, reveal });
+      }, { rate: +$('speed').value, onEnd });
+    }
     state.player.replay();
   } else state.player.play();
   $('write').textContent = state.player.playing ? 'Pause' : 'Write it again';
@@ -168,10 +187,12 @@ function renderLiveInk(host, W) {
   const paneW = both ? Math.floor((W - 16) / 2) : W;
   const t0 = performance.now();
   const ruled = state.paper === 'ruled';
-  const page = E.layout(p, $('text').value, { maxWidth: paneW / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled, firstBaseline: 0.95 * E.UPM });
+  const paperOpts = ruled ? { ruled, lineHeight: Math.max(1.2 * E.UPM, 1.05 * E.pageMetrics(p).pitch), firstBaseline: 1.1 * E.UPM } : {};
+  const page = E.layout(p, $('text').value, Object.assign({ maxWidth: paneW / (EM_PX / E.UPM) }, paperOpts));
   ink.layoutMs = performance.now() - t0;
-  stopWriting(); state.page = null; // the writing animation plays on the SVG renderer
   noteMisses(page.misses);
+  stopWriting();
+  state.page = page; ink.last = { p, page, paneW, EM_PX };
   if (!ink.canvas) ink.canvas = document.createElement('canvas');
   const paper = { preset: ink.paper, color: ink.paper === 'cream' ? undefined : LAB_PAPER };
   if (both) {
@@ -369,11 +390,15 @@ function init() {
   const syncStyle = seg('style', 'style', () => { state.hand = E.makeHand(state.seed, state.style); syncControls(); invalidateFont(); writeHash(); render(); });
   let seedTimer;
   $('seed').addEventListener('input', () => { clearTimeout(seedTimer); seedTimer = setTimeout(() => setHand($('seed').value.trim() || 'hand', true), 120); });
-  // a new hand is a new person: the style (print / script / ...) is rolled too
-  $('reroll').addEventListener('click', () => {
-    const s = randomSeed(); $('seed').value = s;
-    const names = E.styleNames(); state.style = names[Math.floor(Math.random() * names.length)]; syncStyle();
-    setHand(s, true);
+  // a new hand is a new person: the sampler picks the family (print / joined) too, and keeps each pick far
+  // from the last few hands shown (engine/sampler.js). Shift-click: a sibling of the current hand.
+  const shown = [];
+  $('reroll').addEventListener('click', (e) => {
+    if (!shown.length) shown.push({ seed: state.seed, family: E.getStyle(state.style).family });
+    const r = E.sampleHand({ history: shown, variety: e.shiftKey ? 'sibling' : 'stranger', entropy: randomSeed() });
+    shown.push({ seed: r.seed, family: r.family }); if (shown.length > 6) shown.shift();
+    $('seed').value = r.seed; state.style = r.style; syncStyle();
+    setHand(r.seed, true);
   });
   document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'r' && !/input|textarea|select/i.test(document.activeElement.tagName)) $('reroll').click();

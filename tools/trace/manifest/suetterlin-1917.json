@@ -1,0 +1,23 @@
+{
+  "id": "suetterlin-1917",
+  "title": "Neuer Leitfaden für den Schreibunterricht",
+  "author": "Ludwig Sütterlin (1865–1917)",
+  "date": "1917",
+  "place": "Berlin: Albrecht-Dürer-Haus",
+  "holder": "Wikimedia Commons scan of page 85, figure 33 ('Lateinisches Alphabet mit Schnurzug')",
+  "page": "https://commons.wikimedia.org/wiki/File:S%C3%BCtterlin_,_lateinisches_Alphabet.jpg",
+  "rights": {
+    "statement": "Public domain (Commons: LicenseShortName 'Public domain', Copyrighted: False; author died 1917).",
+    "where": "Commons API extmetadata for File:Sütterlin_,_lateinisches_Alphabet.jpg",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "Author died 1917: public domain worldwide (life + 70 and life + 100). A faithful scan of a 2-D page adds no new rights (EU DSM Directive Art. 14; Bridgeman v. Corel in the US)."
+  },
+  "files": [
+    {
+      "name": "latin-alphabet.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/90/S%C3%BCtterlin_%2C_lateinisches_Alphabet.jpg",
+      "what": "Latin-alphabet form of the Sütterlin school hand: a–z with ſ and ß, A–Z, ä Ä, Roman numerals; 1155 × 998 px"
+    }
+  ]
+}

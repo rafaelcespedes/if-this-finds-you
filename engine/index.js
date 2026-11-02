@@ -14,24 +14,33 @@ import './sources/extras.js';
 import './sources/palmer.js';
 import './sources/suetterlin.js';
 import './sources/arrighi.js';
+import './sources/quebec-print.js';
+import './sources/allographs.js';
 import './sources/accents.js'; // composes accented letters for every style, so it comes after them
 
 export { rng, makeNoise } from './core.js';
-export { defineStyle, register, addComposer, addTransform, variants, choose, getStyle, styleNames, stylesInFamily } from './glyphs.js';
-export { makeHand, addHandTraits, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM } from './hand.js';
+export { defineStyle, register, amend, addComposer, addDeriver, addTransform, transform, variants, choose, getStyle, styleNames, stylesInFamily, families, isHistorical,
+  allographOf, allographChar, defineSchooling, defineContinuum, getSchooling, schoolingNames, describeHabits } from './glyphs.js';
+export { makeHand, addHandTraits, withOverrides, makeGlyph, has, isLower, isUpper, isDigit, CAP, UPM,
+  ARCHETYPES, archetypeOf, latentOf, baseSeed, care, hurryDelta, skeleton, traditionsOf, describeTraditions } from './hand.js';
+export { sampleHand, sampleLook, lookOf, lookDistance, handDistance, chaos, seedFrom, VARIETY, LOOK_PENS, LOOK_TIPS, LOOK_PAPERS } from './sampler.js';
 export { PENS, getPen, penKey, penOutline, strokeInk, simplify, INKS, inkModel, inkRGB, PAPER_REF, TIPS, handSize, penWidthUnits, emPxFor } from './pen.js';
-export { layout, pageHabits, spreadOf } from './layout.js';
+export { layout, inkPage, writeAt, pageHabits, pageMetrics, spreadOf, lineBaseline, lineAngle, lineLean } from './layout.js';
+export { geometry, pathD } from './editing.js';
 export { kinematics } from './kinematics.js';
-export { timeline, frameAt, strokeFraction, createPlayer, playSVG } from './animate.js';
-export { renderSVG, contoursToD } from './render-svg.js';
+export { timeline, frameAt, strokeFraction, createPlayer, playSVG, createPen, paintPen } from './animate.js';
+export { renderSVG, contoursToD, renderRun, runRenderer, runTransform, runChanges } from './render-svg.js';
+export { inkSVG } from './ink-svg.js';
 export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, verify, glyphName } from './fontbuild.js';
 export { EXTRAS } from './sources/extras.js';
+export { STYLE_DIMS, STYLE_PARAMS, STYLE_NEUTRAL, MOVEMENTS, movementOf, styleTraits, styleDims } from './style-dims.js';
 
 import { HAND_PARAMS } from './hand.js';
 import { PEN_PARAMS, INK_PARAMS } from './pen.js';
 import { PAGE_PARAMS } from './layout.js';
+import { STYLE_PARAMS } from './style-dims.js'; // per-writer style dimensions (registers a skeleton transform)
 
-// User-facing controls, grouped. Each entry: { key, label, group, min, max, step, format } or
+// User-facing controls, grouped. Each entry: { key, label, group, min, max, step, format, default? } or
 // { key, label, group, type: 'select', options() }. UIs render these; modules add their own.
-export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS, ...INK_PARAMS, ...PAGE_PARAMS];
+export const PARAMS = [...HAND_PARAMS, ...PEN_PARAMS, ...INK_PARAMS, ...PAGE_PARAMS, ...STYLE_PARAMS];

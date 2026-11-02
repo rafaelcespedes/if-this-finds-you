@@ -41,8 +41,7 @@
   "descRatio": 0.41,
   "maxDepth": 0.4,
   "maxDepthLower": 1.0,
-  "lowerTop": 1.08,
-  "entryAngle": 50
+  "lowerTop": 1.08
  },
  "rows": {
   "L1": {
