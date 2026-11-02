@@ -30,6 +30,10 @@ import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
 import { mapGeometry } from '@/lib/geometry';
+import { LIVE, engineGeometry, liveExtras, liveLayout } from '@/lib/live';
+import { LiveSheets } from '@/components/LiveSheets';
+import { renderLiveNote } from '@/lib/actions';
+import { flushSync } from 'react-dom';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
 import { PENS_LIVE } from '@/lib/pens';
 import '@/lib/perf';
@@ -66,7 +70,9 @@ export default function App() {
 
   // natural hand (seed) + your offsets + occasion -> the hand on the page
   const natural = useMemo(() => makeHand(state.seed, state.style), [state.seed, state.style]);
-  const eff = useMemo(() => effective(natural, state), [natural, state]);
+  const lookKey = JSON.stringify([state.offsets, state.pen, state.penSize, state.ink, state.occasion, state.amount, state.size]);
+  // keyed on the look only: typing must keep the same hand object, so the engine's caches stay warm
+  const eff = useMemo(() => effective(natural, state), [natural, lookKey]);
   const p = useMemo(() => effectiveHand(natural, eff), [natural, eff]);
   const paper = getPaper(state.paper);
   const ink = inkColor(state.ink);
@@ -78,10 +84,23 @@ export default function App() {
     marks: state.marks, signed: state.signed, writerName: name,
   };
   // the page is written in a worker, so typing never waits for the hand; an empty page shows a placeholder in the hand
-  const writing = useWriting({ ...request, placeholder: placeholderFor(state.paper) }, composing);
+  // the live page (engines with incremental layout) is written here on the main thread; otherwise a worker writes it
+  const writing = useWriting({ ...request, placeholder: placeholderFor(state.paper) }, composing || LIVE);
+  const committed = useRef(state.text);
+  if (!composing) committed.current = state.text;
+  const live = useMemo(
+    () => (LIVE ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing) : null),
+    // laid out from the committed text: an IME's composing text waits until it commits
+    [p, committed.current, paper, eff.size, eff.lineSpacing],
+  );
+  const extras = useMemo(
+    () => (live ? liveExtras(live, { marks: state.marks, signed: state.signed, writerName: name, placeholder: placeholderFor(state.paper), text: live.page.text }) : []),
+    [live, state.marks, state.signed, name, state.paper],
+  );
+  const firstVisit = useRef(window.location.hash.length < 2);
   // paper and writing switch together when the result arrives
-  const shownPaper = writing ? getPaper(writing.paper) : paper;
-  const geometry = useMemo(() => (writing ? mapGeometry(writing) : null), [writing]);
+  const shownPaper = live ? paper : writing ? getPaper(writing.paper) : paper;
+  const geometry = useMemo(() => (live ? engineGeometry(live) : writing ? mapGeometry(writing) : null), [live, writing]);
 
   const deskRef = useRef<HTMLDivElement>(null);
   const deskW = useElementWidth(deskRef);
@@ -115,14 +134,19 @@ export default function App() {
   };
   const toggleSigned = () => update((s) => ({ signed: !s.signed }));
 
+  const lookChange = useCallback((fn: () => void) => {
+    if (LIVE && canTransition()) document.startViewTransition(() => flushSync(fn));
+    else fn();
+  }, []);
+
   // ---------- hands ----------
   // a new hand rolls the whole look (writer, style, pen, ink, paper, size, every slider), except what's locked
   const newHand = useCallback(() => {
-    update((s) => rollLook(s, { variety, locked: locks }));
-  }, [update, variety, locks]);
+    lookChange(() => update((s) => rollLook(s, { variety, locked: locks })));
+  }, [update, variety, locks, lookChange]);
   const similarHand = useCallback(() => {
-    update((s) => ({ ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) }));
-  }, [update]);
+    lookChange(() => update((s) => ({ ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) })));
+  }, [update, lookChange]);
 
   // ---------- actions ----------
   const share = useCallback(async () => {
@@ -140,7 +164,9 @@ export default function App() {
   const download = useCallback(async () => {
     setBusy((b) => ({ ...b, download: true }));
     try {
-      const res = await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
+      const res = live
+        ? await renderLiveNote(live, extras, eff.inkKey && eff.inkKey !== 'auto' ? eff.inkKey : undefined, ink, pxPerMm || MAX_PX_PER_MM)
+        : await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
       const filename = `${name} note`;
       const done = (r: string) => {
         if (r === 'saved') toast.success('Note downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
@@ -160,7 +186,7 @@ export default function App() {
     } finally {
       setBusy((b) => ({ ...b, download: false }));
     }
-  }, [requestKey, ink, pxPerMm, name, coarse]);
+  }, [requestKey, ink, pxPerMm, name, coarse, live, extras, eff.inkKey]);
 
   const font = useCallback(async () => {
     setBusy((b) => ({ ...b, font: true }));
@@ -211,7 +237,7 @@ export default function App() {
     onNewHand: newHand,
     onSimilarHand: similarHand,
     onSeed: (seed) => update((s) => ({ seed, offsets: offsetsForNewHand(s.offsets) })),
-    onStyle: (style) => update({ style }),
+    onStyle: (style) => lookChange(() => update({ style })),
     onControl: (key, v) => update((s) => ({ offsets: { ...s.offsets, [key]: offsetFor(key, v, natural, s) } })),
     onResetControl: (key) => update((s) => {
       const offsets = { ...s.offsets };
@@ -221,8 +247,8 @@ export default function App() {
     onResetOffsets: () => update({ offsets: {}, penSize: 'medium' }),
     onPen: (pen) => update({ pen }),
     onPenSize: (penSize) => update({ penSize }),
-    onInk: (ink) => update({ ink }),
-    onPaper: (paper) => update({ paper }),
+    onInk: (ink) => lookChange(() => update({ ink })),
+    onPaper: (paper) => lookChange(() => update({ paper })),
     onSize: (size) => update({ size }),
     onOccasion: (id) => update((s) => {
       const occ = getOccasion(id);
@@ -265,7 +291,16 @@ export default function App() {
           </header>
           <div ref={deskRef} className="mx-auto w-full max-w-[820px]">
             {pxPerMm > 0 && reader && (
-              <ReaderView writing={writing} paper={shownPaper} pxPerMm={pxPerMm} gap={SHEET_GAP} ink={ink} name={name} onWriteYourOwn={() => update({ reader: false })} />
+              <ReaderView
+                writing={writing}
+                live={live ? { live, extras, inkKey: eff.inkKey } : null}
+                paper={shownPaper}
+                pxPerMm={pxPerMm}
+                gap={SHEET_GAP}
+                ink={ink}
+                name={name}
+                onWriteYourOwn={() => update({ reader: false })}
+              />
             )}
             {pxPerMm > 0 && !reader && (
               <>
@@ -286,21 +321,35 @@ export default function App() {
                   onEditingChange={setEditing}
                   onComposingChange={setComposing}
                 >
-                  <div className="flex flex-col" style={{ gap: SHEET_GAP }}>
-                    {(writing ? writing.svgs : [null]).map((svg, i, all) => (
-                      <SheetView
-                        key={i}
-                        paper={shownPaper}
-                        pxPerMm={pxPerMm}
-                        svg={svg}
-                        ink={writing ? writing.inkColor : ink}
-                        handKey={writing ? writing.handKey : ''}
-                        intro={!canTransition()}
-                        index={i}
-                        count={all.length}
-                      />
-                    ))}
-                  </div>
+                  {live ? (
+                    <LiveSheets
+                      live={live}
+                      pxPerMm={pxPerMm}
+                      gapPx={SHEET_GAP}
+                      ink={ink}
+                      inkKey={eff.inkKey}
+                      extras={extras}
+                      handKey={state.seed + ':' + state.style}
+                      writeOut={firstVisit.current}
+                      hold="word"
+                    />
+                  ) : (
+                    <div className="flex flex-col" style={{ gap: SHEET_GAP }}>
+                      {(writing ? writing.svgs : [null]).map((svg, i, all) => (
+                        <SheetView
+                          key={i}
+                          paper={shownPaper}
+                          pxPerMm={pxPerMm}
+                          svg={svg}
+                          ink={writing ? writing.inkColor : ink}
+                          handKey={writing ? writing.handKey : ''}
+                          intro={!canTransition()}
+                          index={i}
+                          count={all.length}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </PaperEditor>
                 <div
                   className={cn('mx-auto mt-4 flex items-center justify-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
