@@ -168,23 +168,58 @@ textarea {
   }
 }
 
-/* Caret for typing on the paper */
-@keyframes caret-blink {
+/* The caret is the pen: solid for a moment after each move, then it breathes (editor-ux.md §3.4) */
+@keyframes caret-breathe {
   0%,
-  45% {
-    opacity: 1;
-  }
-  55%,
   100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.caret-breathe {
+  animation: caret-breathe 1.2s ease-in-out 600ms infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret-breathe {
+    animation: none;
+  }
+}
+
+/* The highlighter sweeps in left to right on pointer selections */
+@keyframes highlighter-sweep {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.highlighter-sweep {
+  animation: highlighter-sweep 120ms var(--ease-out) both;
+}
+/* the selection chip appears after a short pause, so it doesn't flash during quick selections */
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+.selection-chip {
+  animation: chip-in 140ms var(--ease-out) 200ms both;
+}
+@keyframes chip-fade {
+  from {
     opacity: 0;
   }
 }
-.paper-caret {
-  animation: caret-blink 1.05s steps(1, end) infinite;
-}
 @media (prefers-reduced-motion: reduce) {
-  .paper-caret {
+  .highlighter-sweep {
     animation: none;
+  }
+  .selection-chip {
+    animation: chip-fade 120ms linear 200ms both;
   }
 }
 

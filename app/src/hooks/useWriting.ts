@@ -53,8 +53,8 @@ export function useWriting(req: Req, paused = false) {
     };
   }, []);
 
-  const { seed, style, overrides, text, paper, size, lineSpacing, inkKey, inkColor } = req;
-  const overridesKey = JSON.stringify(overrides);
+  // the whole request travels; one stable key decides when to write again
+  const reqKey = JSON.stringify(req);
   useEffect(() => {
     // an IME is composing: the page waits for the committed text
     if (paused) return;
@@ -63,14 +63,14 @@ export function useWriting(req: Req, paused = false) {
       if (!w) return;
       const id = ++nextId.current;
       sentAt.current.set(id, performance.now());
-      w.postMessage({ id, seed, style, overrides: JSON.parse(overridesKey), text, paper, size, lineSpacing, inkKey, inkColor } satisfies WriteRequest);
+      w.postMessage({ ...(JSON.parse(reqKey) as Req), id } satisfies WriteRequest);
     };
     // fast writes go straight through; slow ones wait for a short pause in typing
     const delay = lastMs.current > 70 ? Math.min(180, lastMs.current * 0.6) : 0;
     if (!delay) { send(); return; }
     const t = window.setTimeout(send, delay);
     return () => window.clearTimeout(t);
-  }, [seed, style, overridesKey, text, paper, size, lineSpacing, inkKey, inkColor, paused]);
+  }, [reqKey, paused]);
 
   return result;
 }

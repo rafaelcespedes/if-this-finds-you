@@ -2,11 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { SlidersHorizontal, Shuffle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { makeHand } from '@engine';
+import { CAP, makeHand } from '@engine';
 import { Panel, type PanelProps } from '@/components/Panel';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
-import { PaperEditor } from '@/components/PaperEditor';
+import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
+import { PenTray } from '@/components/PenTray';
+import { ReaderView } from '@/components/ReaderView';
+import { usePosture } from '@/hooks/usePosture';
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import { Toaster } from '@/components/ui/sonner';
@@ -18,7 +21,8 @@ import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
 import { canShareLinks, copyText, exportFont, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
-import { applyEdit, EditLog, type Edit } from '@/lib/edits';
+import { EditLog, type Edit } from '@/lib/edits';
+import { applyEdit, toggleMark } from '@/lib/doc';
 import { pickSimilarHand, writerName } from '@/lib/hands';
 import { rollLook, type LockKey } from '@/lib/roll';
 import { canTransition } from '@/hooks/useWriting';
@@ -70,9 +74,10 @@ export default function App() {
   const request: Omit<WriteRequest, 'id'> = {
     seed: state.seed, style: state.style, overrides: eff.overrides, text: state.text, paper: state.paper,
     size: eff.size, lineSpacing: eff.lineSpacing, inkKey: eff.inkKey, inkColor: ink,
+    marks: state.marks, signed: state.signed, writerName: name,
   };
-  // the page is written in a worker, so typing never waits for the hand
-  const writing = useWriting(request, composing);
+  // the page is written in a worker, so typing never waits for the hand; an empty page shows a placeholder in the hand
+  const writing = useWriting({ ...request, placeholder: placeholderFor(state.paper) }, composing);
   // paper and writing switch together when the result arrives
   const shownPaper = writing ? getPaper(writing.paper) : paper;
 
@@ -85,10 +90,28 @@ export default function App() {
   }, [name]);
 
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
+  const posture = usePosture(editing);
   const onEdit = useCallback((e: Edit) => {
     editLog.push(e);
-    update((s) => ({ text: applyEdit(s.text, e) }));
+    if (e.source === 'paper') posture.onTyped();
+    update((s) => {
+      const doc = applyEdit({ text: s.text, marks: s.marks, signed: s.signed }, e);
+      return { text: doc.text, marks: doc.marks };
+    });
+  }, [update, posture.onTyped]);
+
+  // ---------- pen-only formatting: underline by hand, press harder, sign ----------
+  const editor = useRef<PaperEditorApi>(null);
+  const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
+    if (cmd === 'ps') return;
+    update((s) => ({ marks: toggleMark({ text: s.text, marks: s.marks, signed: s.signed }, cmd, from, to).marks }));
   }, [update]);
+  const formatFromTray = (cmd: 'underline' | 'press') => {
+    const [a, b] = editor.current?.selection() ?? [0, 0];
+    const [from, to] = a === b ? wordAround(state.text, a) : [a, b];
+    onFormat(cmd, from, to);
+  };
+  const toggleSigned = () => update((s) => ({ signed: !s.signed }));
 
   // ---------- hands ----------
   // a new hand rolls the whole look (writer, style, pen, ink, paper, size, every slider), except what's locked
@@ -110,6 +133,7 @@ export default function App() {
     else toast.error('Couldn’t copy the link', { description: 'Copy it from the address bar instead.' });
   }, [state, name]);
 
+  // the download never carries the empty-page placeholder
   const requestKey = JSON.stringify(request);
   const download = useCallback(async () => {
     setBusy((b) => ({ ...b, download: true }));
@@ -151,9 +175,10 @@ export default function App() {
     }
   }, [p, name, state.style]);
 
-  // R for a new hand, Shift R for a similar one, when not typing
+  // R for a new hand, Shift R for a similar one, when not typing; ⌘\\ shows or hides the desk while writing
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === '\\' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); posture.toggle(); return; }
       if (e.key !== 'r' && e.key !== 'R') return;
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       const t = e.target as HTMLElement | null;
@@ -164,7 +189,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [newHand, similarHand]);
+  }, [newHand, similarHand, posture.toggle]);
 
   const panelProps: PanelProps = {
     state,
@@ -204,35 +229,58 @@ export default function App() {
       return { occasion: occ.id, amount: s.occasion === occ.id ? s.amount : 1, paper: occ.paper ?? s.paper, pen: PENS_LIVE && occ.pen ? occ.pen : s.pen };
     }),
     onAmount: (amount) => update({ amount }),
+    onSign: toggleSigned,
     onVariety: (v) => { setVariety(v); writePref('seedhand:variety', String(Math.round(v))); },
     onShare: share,
     onDownload: download,
     onExportFont: font,
   };
 
+  const desk = !posture.writing;
+  const reader = state.reader;
+
   return (
     <TooltipProvider>
-      <div className="min-h-dvh lg:grid lg:grid-cols-[minmax(0,1fr)_auto]">
+      <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main className="relative min-w-0 px-4 pt-12 pb-32 sm:px-8 lg:px-10 lg:pt-14 lg:pb-16">
-          <header className="pointer-events-none absolute inset-x-4 top-4 flex items-baseline justify-between gap-4 text-[12.5px] text-muted-foreground sm:inset-x-8 lg:inset-x-10 lg:top-5">
+          <header
+            className={cn(
+              'absolute inset-x-4 top-4 flex items-baseline justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
+              !desk && 'opacity-0',
+              !reader && 'pointer-events-none',
+            )}
+          >
             <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">Seedhand</span>
-            <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
-              {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write on it' : 'Click the letter to write on it'}
-            </span>
+            {reader ? (
+              <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
+                Write your own
+              </button>
+            ) : (
+              <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
+                {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write on it' : 'Click the letter to write on it'}
+              </span>
+            )}
           </header>
           <div ref={deskRef} className="mx-auto w-full max-w-[820px]">
-            {pxPerMm > 0 && (
+            {pxPerMm > 0 && reader && (
+              <ReaderView writing={writing} paper={shownPaper} pxPerMm={pxPerMm} gap={SHEET_GAP} ink={ink} name={name} onWriteYourOwn={() => update({ reader: false })} />
+            )}
+            {pxPerMm > 0 && !reader && (
               <>
                 <PaperEditor
+                  ref={editor}
                   text={state.text}
                   onEdit={onEdit}
+                  onFormat={onFormat}
                   writerName={name}
                   result={writing}
                   pxPerMm={pxPerMm}
                   sheetW={shownPaper.w}
                   sheetH={shownPaper.h}
                   gapPx={SHEET_GAP}
-                  ink={ink}
+                  ink={writing ? writing.inkColor : ink}
+                  penWidthU={p.penWidth as number}
+                  xHeightU={(p.xHeight as number) * CAP}
                   onEditingChange={setEditing}
                   onComposingChange={setComposing}
                 >
@@ -252,7 +300,10 @@ export default function App() {
                     ))}
                   </div>
                 </PaperEditor>
-                <div className="mx-auto mt-4 flex items-center justify-center text-[12.5px] text-muted-foreground" style={{ width: shownPaper.w * pxPerMm }}>
+                <div
+                  className={cn('mx-auto mt-4 flex items-center justify-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
+                  style={{ width: shownPaper.w * pxPerMm }}
+                >
                   <button
                     type="button"
                     onClick={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
@@ -272,34 +323,37 @@ export default function App() {
           </div>
         </main>
 
-        {!isDesktop && editing && (
-          <div
-            className="fixed top-0 right-0 z-40 p-3 pt-[max(12px,env(safe-area-inset-top))]"
-            // iOS pans the visual viewport over a fixed layout viewport while the keyboard is up
-            style={{ transform: `translateY(${Math.max(0, viewport.top)}px)` }}
-          >
-            <Button
-              variant="outline"
-              className="h-11 rounded-full px-4 shadow-[0_6px_20px_-8px_rgba(60,45,20,0.35)] animate-in fade-in-0 slide-in-from-top-1 duration-200 motion-reduce:slide-in-from-top-0"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => (document.activeElement as HTMLElement | null)?.blur()}
-            >
-              Done
-            </Button>
-          </div>
+        {!reader && !isDesktop && editing && (
+          <PenTray
+            viewport={viewport}
+            signed={state.signed}
+            onUnderline={() => formatFromTray('underline')}
+            onPress={() => formatFromTray('press')}
+            onPS={() => editor.current && insertPS(editor.current, state.text, onEdit)}
+            onSign={toggleSigned}
+            onDone={() => editor.current?.blur()}
+          />
         )}
-        {isDesktop ? (
-          <aside className="sticky top-0 h-dvh py-3 pr-3">
+        {!reader && (isDesktop ? (
+          // while writing, the desk steps back: faded and nudged aside, out of the way of the pointer and keys
+          <aside
+            aria-hidden={!desk || undefined}
+            inert={!desk}
+            className={cn(
+              'sticky top-0 h-dvh py-3 pr-3 transition-[opacity,transform] ease-out',
+              desk ? 'duration-[180ms]' : 'pointer-events-none translate-x-3 opacity-0 duration-[240ms] motion-reduce:translate-x-0',
+            )}
+          >
             <div className="panel-scroll h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>
           </aside>
         ) : (
           <MobileDock name={name} seed={state.seed} onNewHand={newHand} onOpen={() => setDrawerOpen(true)} hidden={editing} />
-        )}
+        ))}
       </div>
 
-      {!isDesktop && (
+      {!reader && !isDesktop && (
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerContent aria-describedby={undefined}>
             <DrawerTitle className="sr-only">Hand, paper and ink</DrawerTitle>
@@ -313,6 +367,31 @@ export default function App() {
       <Toaster offset={isDesktop ? 24 : 96} mobileOffset={{ bottom: 96 }} />
     </TooltipProvider>
   );
+}
+
+/** What the writer pencils in on an empty page: a salutation on letter paper, the date in a notebook. */
+function placeholderFor(paper: string) {
+  if (paper === 'plain' || paper === 'laid' || paper === 'postcard') return 'Dear …,';
+  try {
+    return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+  } catch {
+    return 'Dear …,';
+  }
+}
+
+function wordAround(text: string, at: number): [number, number] {
+  let a = at, b = at;
+  while (a > 0 && /\S/.test(text[a - 1])) a--;
+  while (b < text.length && /\S/.test(text[b])) b++;
+  return [a, b];
+}
+
+/** P.S. from the tray: the same edit ⌘↩ makes, then the caret at its end. */
+function insertPS(api: PaperEditorApi, text: string, onEdit: (e: Edit) => void) {
+  const t = text.replace(/\s+$/, '');
+  const ins = (t.length ? '\n\n' : '') + 'P.S. ';
+  onEdit({ at: t.length, del: text.length - t.length, ins, kind: 'type', t: Date.now(), source: 'paper' });
+  requestAnimationFrame(() => api.setSelection(t.length + ins.length));
 }
 
 function MobileDock({ name, seed, onNewHand, onOpen, hidden }: { name: string; seed: string; onNewHand: () => void; onOpen: () => void; hidden: boolean }) {

@@ -1,4 +1,5 @@
 import type { PaperId } from './papers';
+import type { Mark } from './doc';
 
 /** What the page needs to be written. Ink and screen size are not part of it (see lib/writing.ts). */
 export interface WriteRequest {
@@ -15,6 +16,13 @@ export interface WriteRequest {
   inkKey: string | null;
   /** the flat ink colour the page shows (echoed back, so ink changes land with the new writing) */
   inkColor: string;
+  /** handwriting marks: underlines, pressed letters */
+  marks?: Mark[];
+  /** sign below the last line, with this name */
+  signed?: boolean;
+  writerName?: string;
+  /** for the screen only: when the note is empty, this is written faintly in graphite on line 1 */
+  placeholder?: string;
 }
 
 /** Floats per laid-out character in `WriteResult.glyphs`: sheet, x, y, advance, line, kind (1 glyph, 0 missing). */

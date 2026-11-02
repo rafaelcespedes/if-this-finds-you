@@ -1,5 +1,5 @@
 import { memo, useEffect, useId, useState } from 'react';
-import { ChevronDown, Download, Link2, Loader2, Lock, LockOpen, Shuffle, Type, Users } from 'lucide-react';
+import { Check, ChevronDown, Download, Link2, Loader2, Lock, LockOpen, PenLine, Shuffle, Type, Users } from 'lucide-react';
 import { getStyle, styleNames, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -48,6 +48,8 @@ export interface PanelProps {
   onSize: (v: number) => void;
   onOccasion: (id: string | null) => void;
   onAmount: (v: number) => void;
+  /** the writer signs below the last line (or stops signing) */
+  onSign: () => void;
   onVariety: (v: number) => void;
   onShare: () => void;
   onDownload: () => void;
@@ -89,6 +91,14 @@ export function Panel(props: PanelProps) {
           ))}
         </div>
         <OccasionRow {...props} />
+        <div className="mt-3">
+          <Row label="Signature">
+            <Button variant={state.signed ? 'secondary' : 'outline'} size="sm" onClick={props.onSign} aria-pressed={state.signed}>
+              {state.signed ? <Check aria-hidden /> : <PenLine aria-hidden />}
+              {state.signed ? 'Signed' : 'Sign it'}
+            </Button>
+          </Row>
+        </div>
         <div className="mt-3 min-h-5">
           {changed && (
             <button

@@ -1,31 +1,132 @@
 // Turns a WriteRequest into a WriteResult. Runs in the worker for the live page, and on the main
 // thread for the download, so both produce the very same SVG.
-import { makeGlyph, makeHand, withOverrides } from '@engine';
-import { compose } from './compose';
+//
+// Besides the text, the writer adds what a pen adds to a letter (editor-ux.md §3.4): hand-drawn
+// underlines, letters pressed harder, a signature below the last line, and page numbers on sheets 2+.
+import { layout, makeGlyph, makeHand, penOutline, rng, withOverrides, UPM, type Glyph, type Hand, type PageItem } from '@engine';
+import { compose, type Sheet } from './compose';
+import type { Mark } from './doc';
 import { getPaper } from './papers';
 import { writingSVG } from './writing';
 import { GLYPH_STRIDE, type WriteRequest, type WriteResult } from './write-protocol';
 
 const MISS_ADVANCE = 560;
+type GlyphItem = Extract<PageItem, { kind: 'glyph' }>;
 
 export function write(req: WriteRequest): WriteResult {
   const t0 = performance.now();
   const p = withOverrides(makeHand(req.seed, req.style), req.overrides);
   const paper = getPaper(req.paper);
   const comp = compose(p, req.text, paper, req.size, req.lineSpacing);
-  const svgs = comp.sheets.map((sheet, i) => writingSVG(p, sheet, comp.emMm, paper.w, 'w' + i, req.inkKey));
+  const u = comp.unitsPerMm;
+  const lineU = comp.lineMm * u;
+
+  // text offset of every laid-out item (every character except ' ' and '\n' has one, in reading order)
+  const offsets: number[] = [];
+  {
+    let i = 0;
+    for (const ch of req.text) {
+      if (ch !== ' ' && ch !== '\n') offsets.push(i);
+      i += ch.length;
+    }
+  }
+  const marks = req.marks ?? [];
+  const pressed = withOverrides(p, { penWidth: (p.penWidth as number) * 1.3, pressure: Math.min(1, (p.pressure as number) + 0.2) });
+
+  // sheets as drawn: pressed letters swapped in; extra ink (underlines, signature, page numbers) alongside
+  let k = 0;
+  const drawn: Sheet[] = comp.sheets.map((sheet) => ({
+    height: sheet.height,
+    items: sheet.items.map((it) => {
+      const at = offsets[k++];
+      if (it.kind === 'glyph' && inMarks(marks, 'press', at)) return { ...it, g: pressGlyph(pressed, it.g) };
+      return it;
+    }),
+  }));
+  const extra: number[][][][] = drawn.map(() => []);
+
+  // underlines: one stroke per line run, drawn after the words like an afterthought
+  const boxes: { at: number; it: PageItem; sheet: number }[] = [];
+  {
+    let j = 0;
+    comp.sheets.forEach((sheet, si) => sheet.items.forEach((it) => boxes.push({ at: offsets[j++], it, sheet: si })));
+  }
+  marks.forEach((m, mi) => {
+    if (m.kind === 'press') return;
+    const runs = new Map<string, { sheet: number; items: PageItem[] }>();
+    for (const b of boxes) {
+      if (b.at < m.from || b.at >= m.to) continue;
+      const key = b.sheet + ':' + b.it.line;
+      if (!runs.has(key)) runs.set(key, { sheet: b.sheet, items: [] });
+      runs.get(key)!.items.push(b.it);
+    }
+    let ri = 0;
+    for (const run of runs.values()) {
+      const passes = m.kind === 'underline2' ? 2 : 1;
+      for (let pass = 0; pass < passes; pass++) {
+        const c = underline(p, run.items, `${req.seed}:${mi}:${ri}:${pass}`, pass);
+        if (c) extra[run.sheet].push(c);
+      }
+      ri++;
+    }
+  });
+
+  // the signature: the writer's name in their own hand, a touch larger and quicker, on the line after the text
+  if (req.signed && req.writerName) {
+    const signer = withOverrides(p, { neatness: Math.max(0.15, (p.neatness as number) - 0.18), slant: (p.slant as number) + 4 });
+    const sig = layout(signer, req.writerName, { maxWidth: 1e7, firstBaseline: 0, lineHeight: UPM });
+    // a letter is signed before its P.S.: use the empty line above a closing "P.S." if there is one
+    let line = comp.page.lines;
+    const ps = req.text.search(/\n\n(?=P\.\s?S\.)(?![\s\S]*\n\nP\.\s?S\.)/);
+    if (ps >= 0) {
+      const at = offsets.indexOf(ps + 2);
+      const psItem = at >= 0 ? boxes[at]?.it : undefined;
+      if (psItem) line = psItem.line - 1;
+    }
+    const sheet = Math.floor(line / comp.perPage);
+    const y = (comp.firstMm * u) + (line - sheet * comp.perPage) * lineU;
+    const x0 = paper.text.left * u + lineU * 0.15;
+    while (drawn.length <= sheet) { drawn.push({ items: [], height: paper.h * u }); extra.push([]); }
+    for (const it of sig.items) {
+      if (it.kind !== 'glyph') continue;
+      drawn[sheet].items.push({ ...it, x: x0 + it.x * 1.12, y: y + it.y * 1.12, g: scaleGlyph(it.g, 1.12), inkIndex: 9000 + it.charIndex });
+    }
+  }
+
+  // page numbers: the hand numbers each sheet after the first, top right
+  for (let si = 1; si < drawn.length; si++) {
+    const num = layout(p, String(si + 1), { maxWidth: 1e7, firstBaseline: 0, lineHeight: UPM });
+    const items = num.items.filter((it): it is GlyphItem => it.kind === 'glyph');
+    const w = items.reduce((a, it) => Math.max(a, it.x + it.g.advance), 0) * 0.82;
+    const x0 = paper.text.right * u - w;
+    const y = Math.max(9 * u, comp.firstMm * u - lineU * 0.95);
+    for (const it of items) drawn[si].items.push({ ...it, x: x0 + it.x * 0.82, y, g: scaleGlyph(it.g, 0.82), inkIndex: 9500 + it.charIndex });
+  }
+
+  // an empty note: the writer's hand shows where the writing goes, in faint graphite (never ink)
+  let ghost: Sheet | undefined;
+  if (!req.text && req.placeholder) {
+    const ph = layout(p, req.placeholder, { maxWidth: (paper.text.right - paper.text.left) * u, lineHeight: lineU, firstBaseline: comp.firstMm * u });
+    ghost = { height: paper.h * u, items: ph.items.map((it) => ({ ...it, x: it.x + paper.text.left * u })) };
+  }
+
+  const inkFill = req.inkKey ? req.inkColor : 'currentColor';
+  const svgs = drawn.map((sheet, i) =>
+    writingSVG(p, sheet, comp.emMm, paper.w, 'w' + i, req.inkKey, { contours: extra[i], fill: inkFill, ghost: i === 0 ? ghost : undefined }),
+  );
+
   const n = comp.sheets.reduce((a, s) => a + s.items.length, 0);
   const glyphs = new Float32Array(n * GLYPH_STRIDE);
-  // items keep reading order within and across sheets
-  let k = 0;
+  // the caret map covers the text only, in reading order within and across sheets
+  let g = 0;
   comp.sheets.forEach((sheet, si) => {
     for (const it of sheet.items) {
-      glyphs[k++] = si;
-      glyphs[k++] = it.x;
-      glyphs[k++] = it.y;
-      glyphs[k++] = it.kind === 'glyph' ? it.g.advance : MISS_ADVANCE;
-      glyphs[k++] = it.line;
-      glyphs[k++] = it.kind === 'glyph' ? 1 : 0;
+      glyphs[g++] = si;
+      glyphs[g++] = it.x;
+      glyphs[g++] = it.y;
+      glyphs[g++] = it.kind === 'glyph' ? it.g.advance : MISS_ADVANCE;
+      glyphs[g++] = it.line;
+      glyphs[g++] = it.kind === 'glyph' ? 1 : 0;
     }
   });
   return {
@@ -47,4 +148,48 @@ export function write(req: WriteRequest): WriteResult {
     lines: comp.page.lines,
     ms: performance.now() - t0,
   };
+}
+
+const inMarks = (marks: Mark[], kind: Mark['kind'], at: number) => marks.some((m) => m.kind === kind && at >= m.from && at < m.to);
+
+/** The same strokes, written with more pressure: the pen re-traces each centreline heavier and a touch larger. */
+function pressGlyph(p: Hand, g: Glyph): Glyph {
+  const s = 1.06;
+  const contours: number[][][] = [];
+  g.strokes.forEach((st, si) => {
+    const pts = st.center.map(([x, y]) => [x * s, y * s]);
+    const c = penOutline(p, pts, 37 + si * 3.1, st.dot ? { dot: true } : undefined);
+    if (c) contours.push(c);
+  });
+  return { ...g, contours: contours.length ? contours : g.contours, advance: g.advance * s };
+}
+
+function scaleGlyph(g: Glyph, s: number): Glyph {
+  return { ...g, advance: g.advance * s, contours: g.contours.map((c) => c.map(([x, y]) => [x * s, y * s])) };
+}
+
+/**
+ * One hand-drawn underline under a run of letters on one line: starts a little before the first letter,
+ * runs a little past the last, sits just under the baseline with a slight bow and rise, lighter than the
+ * writing (a quick stroke). Returned in page font units with y up (negated page y), ready for contoursToD.
+ */
+function underline(p: Hand, items: PageItem[], seed: string, pass: number) {
+  if (!items.length) return null;
+  const r = rng('underline:' + seed);
+  const first = items[0], last = items[items.length - 1];
+  const adv = (it: PageItem) => (it.kind === 'glyph' ? it.g.advance : MISS_ADVANCE);
+  const x0 = first.x - 40 - r() * 50;
+  const x1 = last.x + adv(last) + 10 + r() * 60;
+  const base = items.reduce((a, it) => a + it.y, 0) / items.length + 120 + pass * 85;
+  const rise = (r() - 0.35) * 40;
+  const bow = (r() - 0.5) * 30;
+  const n = Math.max(12, Math.round((x1 - x0) / 60));
+  const pts: number[][] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const y = base - rise * t + bow * Math.sin(Math.PI * t) + (r() - 0.5) * 4;
+    pts.push([x0 + (x1 - x0) * t, -y]);
+  }
+  const pen = withOverrides(p, { pressure: (p.pressure as number) * 0.6, penWidth: (p.penWidth as number) * 0.9 });
+  return penOutline(pen, pts, 700 + pass * 13);
 }

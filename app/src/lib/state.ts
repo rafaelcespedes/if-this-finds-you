@@ -11,6 +11,7 @@ import { AUTO_INK, DEFAULT_INK, INK_FAMILIES } from './inks';
 import { PEN_CHOICES } from './pens';
 import { CONTROLS, controlByCode, controlByKey, PEN_SIZES, type PenSize } from './controls';
 import { OCCASIONS } from './occasions';
+import { decodeMarks, encodeMarks, type Mark } from './doc';
 import { clamp } from './utils';
 
 export interface NoteState {
@@ -28,6 +29,12 @@ export interface NoteState {
   /** occasion amount, 0..1.5 */
   amount: number;
   text: string;
+  /** handwriting marks on the text (lib/doc.ts) */
+  marks: Mark[];
+  /** the writer signs below the last line */
+  signed: boolean;
+  /** opened from a shared link: the reader view, where the letter writes itself */
+  reader: boolean;
 }
 
 export const DEFAULT_TEXT =
@@ -47,6 +54,9 @@ export const DEFAULT_STATE: NoteState = {
   occasion: null,
   amount: 1,
   text: DEFAULT_TEXT,
+  marks: [],
+  signed: false,
+  reader: false,
 };
 
 export const SIZE_RANGE = { min: 0.7, max: 1.45, step: 0.01 };
@@ -73,13 +83,16 @@ export function encodeState(s: NoteState): string {
     if (Math.abs(s.amount - 1) > 0.005) q.set('amt', String(round(s.amount, 2)));
   }
   if (s.text !== DEFAULT_TEXT) q.set('t', compressToEncodedURIComponent(s.text));
+  if (s.marks.length) q.set('m', encodeMarks(s.marks));
+  if (s.signed) q.set('sig', '1');
+  if (s.reader) q.set('read', '1');
   return q.toString();
 }
 
 /** Parse a hash/query string. Anything missing or invalid falls back to the defaults. */
 export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): NoteState {
   const q = new URLSearchParams(hash.replace(/^#/, ''));
-  const s: NoteState = { ...base, offsets: {}, occasion: null, amount: 1 };
+  const s: NoteState = { ...base, offsets: {}, occasion: null, amount: 1, marks: [], signed: false, reader: false };
   const seed = q.get('seed');
   if (seed && seed.trim()) s.seed = seed.trim().slice(0, 64);
   const style = q.get('style');
@@ -115,13 +128,17 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
   } else if (seed) {
     s.text = base.text;
   }
+  s.marks = decodeMarks(q.get('m'), s.text.length);
+  s.signed = q.get('sig') === '1';
+  s.reader = q.get('read') === '1';
   return s;
 }
 
+/** The link a recipient opens: the exact note, in the reader view, where it writes itself. */
 export function shareUrl(s: NoteState) {
   const u = new URL(window.location.href);
   u.search = ''; // never share preview flags
-  u.hash = encodeState(s);
+  u.hash = encodeState({ ...s, reader: true });
   return u.toString();
 }
 

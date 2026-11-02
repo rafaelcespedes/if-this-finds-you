@@ -6,7 +6,7 @@
 // The JPEG uses the very same SVG, drawn larger, so the download matches the screen exactly
 // (the engine's ink filter depends on the drawing scale, so re-rendering at another size would not).
 // Ink colour is `currentColor`, so changing ink is instant and needs no re-render.
-import { renderSVG, UPM, type Hand } from '@engine';
+import { contoursToD, renderSVG, UPM, type Hand } from '@engine';
 import type { Sheet } from './compose';
 
 export const REF_PX_PER_MM = 4;
@@ -34,9 +34,25 @@ export function scopeIds(svg: string, uid: string) {
  * inkKey: a swatch key when the engine models ink itself (pens & ink); otherwise the ink is
  * `currentColor` and the page sets the colour.
  */
-export function writingSVG(p: Hand, sheet: Sheet, emMm: number, wMm: number, uid: string, inkKey: string | null = null) {
+export function writingSVG(
+  p: Hand, sheet: Sheet, emMm: number, wMm: number, uid: string, inkKey: string | null = null,
+  extra?: { contours: number[][][]; fill: string; ghost?: Sheet },
+) {
   const ink = inkKey && inkKey !== 'auto' ? inkKey : inkKey === 'auto' ? undefined : 'currentColor';
-  const svg = renderSVG(p, sheet, { width: Math.round(wMm * REF_PX_PER_MM), emPx: emMm * REF_PX_PER_MM, ink });
+  const emPx = emMm * REF_PX_PER_MM;
+  let svg = renderSVG(p, sheet, { width: Math.round(wMm * REF_PX_PER_MM), emPx, ink });
+  if (extra && extra.contours.length) {
+    // extra ink (underlines) in page font units, y up; same ink edge as the writing when there is one
+    const d = contoursToD(extra.contours, 0, 0, emPx / UPM);
+    const filter = /id="inkEdge"/.test(svg) ? ' filter="url(#inkEdge)"' : '';
+    svg = svg.replace(/<\/svg>\s*$/, `<g fill="${extra.fill}" fill-opacity="0.92"${filter}><path d="${d}"/></g></svg>`);
+  }
+  if (extra?.ghost && extra.ghost.items.length) {
+    // the placeholder: same hand, graphite at 22%, no ink effects
+    const g = renderSVG(p, extra.ghost, { width: Math.round(wMm * REF_PX_PER_MM), emPx, ink: '#6f6b66' });
+    const inner = g.replace(/^[\s\S]*?<\/defs>/, '').replace(/<\/svg>\s*$/, '').replace(/\sfilter="[^"]*"/g, '');
+    svg = svg.replace(/<\/svg>\s*$/, `<g class="placeholder" opacity="0.22">${inner}</g></svg>`);
+  }
   return scopeIds(svg, uid);
 }
 

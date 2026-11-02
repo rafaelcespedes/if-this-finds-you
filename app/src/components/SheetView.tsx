@@ -1,7 +1,7 @@
 import { memo, type ReactNode } from 'react';
 import type { PaperSpec } from '@/lib/papers';
 import { PaperCanvas } from '@/components/PaperCanvas';
-import { Writing } from '@/components/Writing';
+import { Writing, type Play } from '@/components/Writing';
 
 interface Props {
   paper: PaperSpec;
@@ -14,11 +14,14 @@ interface Props {
   intro?: boolean;
   index: number;
   count: number;
+  /** write the sheet out in front of the reader */
+  play?: Play | null;
+  finishToken?: number;
   children?: ReactNode;
 }
 
 /** One sheet of paper with its writing. */
-export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, handKey, intro = true, index, count, children }: Props) {
+export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, handKey, intro = true, index, count, play, finishToken, children }: Props) {
   return (
     <div
       className="relative isolate shrink-0 rounded-[1.5px]"
@@ -28,7 +31,7 @@ export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, han
     >
       <PaperCanvas paper={paper} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
       {/* the settle-in plays on mount: on first load always, and on each new hand where there's no cross-fade */}
-      {svg && <Writing key={intro ? handKey : 'w'} svg={svg} ink={ink} className="hand-in" />}
+      {svg && <Writing key={intro ? handKey : 'w'} svg={svg} ink={ink} className={play ? undefined : 'hand-in'} play={play} finishToken={finishToken} />}
       {children}
     </div>
   );
