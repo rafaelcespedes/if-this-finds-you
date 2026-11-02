@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { PenLine, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SheetView } from '@/components/SheetView';
+import { LiveSheets } from '@/components/LiveSheets';
+import type { Live } from '@/lib/live';
 import type { PaperSpec } from '@/lib/papers';
 import { GLYPH_STRIDE, type WriteResult } from '@/lib/write-protocol';
 
 interface Props {
   writing: WriteResult | null;
+  /** the live page (engines with a pen): the pen writes the letter out for the recipient */
+  live?: { live: Live; extras: string[]; inkKey: string | null } | null;
   paper: PaperSpec;
   pxPerMm: number;
   gap: number;
@@ -19,13 +23,13 @@ interface Props {
  * A shared letter (editor-ux.md §3.4, "the letter arrives being written"): no panel, the sheet centred,
  * and on open the letter is written in front of the recipient at about 3x, tap to finish.
  */
-export function ReaderView({ writing, paper, pxPerMm, gap, ink, name, onWriteYourOwn }: Props) {
+export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWriteYourOwn }: Props) {
   const [token, setToken] = useState(0);
   const [finish, setFinish] = useState(0);
   // play once the writing has arrived, and again on Replay
   useEffect(() => {
-    if (writing && token === 0) setToken(1);
-  }, [writing, token]);
+    if ((writing || live) && token === 0) setToken(1);
+  }, [writing, live, token]);
 
   // pace: about 3x a real hand, between 2.5 and 6.5 seconds for the whole letter, sheets in turn
   const plan = useMemo(() => {
@@ -45,6 +49,22 @@ export function ReaderView({ writing, paper, pxPerMm, gap, ink, name, onWriteYou
 
   return (
     <>
+      {live ? (
+        <div className="flex flex-col items-center">
+          <LiveSheets
+            key={token}
+            live={live.live}
+            pxPerMm={pxPerMm}
+            gapPx={gap}
+            ink={ink}
+            inkKey={live.inkKey}
+            extras={live.extras}
+            handKey={`reader:${token}`}
+            writeOut
+            hold="word"
+          />
+        </div>
+      ) : (
       <div className="flex flex-col items-center" style={{ gap }} onClick={() => setFinish((n) => n + 1)}>
         {(writing ? writing.svgs : [null]).map((svg, i, all) => (
           <SheetView
@@ -62,6 +82,7 @@ export function ReaderView({ writing, paper, pxPerMm, gap, ink, name, onWriteYou
           />
         ))}
       </div>
+      )}
       <div className="mx-auto mt-6 flex max-w-[480px] flex-col items-center gap-3 text-center">
         <p className="text-[13px] text-muted-foreground">A letter in {name}’s hand.</p>
         <div className="flex gap-2">

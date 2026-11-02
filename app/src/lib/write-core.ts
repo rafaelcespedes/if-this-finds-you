@@ -21,25 +21,29 @@ export function write(req: WriteRequest): WriteResult {
   const u = comp.unitsPerMm;
   const lineU = comp.lineMm * u;
 
-  // text offset of every laid-out item (every character except ' ' and '\n' has one, in reading order)
-  const offsets: number[] = [];
+  // the text offset of every laid-out item (-1 for extra ink, such as a struck word in a journey draft).
+  // A journey page carries offsets in charIndex; a plain layout() page has one item per character except
+  // ' ' and '\n', in reading order.
+  const ats: number[][] = [];
   {
+    const offsets: number[] = [];
     let i = 0;
     for (const ch of req.text) {
       if (ch !== ' ' && ch !== '\n') offsets.push(i);
       i += ch.length;
     }
+    let k = 0;
+    for (const sheet of comp.sheets) ats.push(sheet.items.map((it) => (comp.offsetsInItems ? (it.charIndex ?? -1) : offsets[k++] ?? -1)));
   }
   const marks = req.marks ?? [];
   const pressed = withOverrides(p, { penWidth: (p.penWidth as number) * 1.3, pressure: Math.min(1, (p.pressure as number) + 0.2) });
 
   // sheets as drawn: pressed letters swapped in; extra ink (underlines, signature, page numbers) alongside
-  let k = 0;
-  const drawn: Sheet[] = comp.sheets.map((sheet) => ({
+  const drawn: Sheet[] = comp.sheets.map((sheet, si) => ({
     height: sheet.height,
-    items: sheet.items.map((it) => {
-      const at = offsets[k++];
-      if (it.kind === 'glyph' && inMarks(marks, 'press', at)) return { ...it, g: pressGlyph(pressed, it.g) };
+    items: sheet.items.map((it, ii) => {
+      const at = ats[si][ii];
+      if (it.kind === 'glyph' && at >= 0 && inMarks(marks, 'press', at)) return { ...it, g: pressGlyph(pressed, it.g) };
       return it;
     }),
   }));
@@ -47,10 +51,7 @@ export function write(req: WriteRequest): WriteResult {
 
   // underlines: one stroke per line run, drawn after the words like an afterthought
   const boxes: { at: number; it: PageItem; sheet: number }[] = [];
-  {
-    let j = 0;
-    comp.sheets.forEach((sheet, si) => sheet.items.forEach((it) => boxes.push({ at: offsets[j++], it, sheet: si })));
-  }
+  comp.sheets.forEach((sheet, si) => sheet.items.forEach((it, ii) => { if (ats[si][ii] >= 0) boxes.push({ at: ats[si][ii], it, sheet: si }); }));
   marks.forEach((m, mi) => {
     if (m.kind === 'press') return;
     const runs = new Map<string, { sheet: number; items: PageItem[] }>();
@@ -79,8 +80,7 @@ export function write(req: WriteRequest): WriteResult {
     let line = comp.page.lines;
     const ps = req.text.search(/\n\n(?=P\.\s?S\.)(?![\s\S]*\n\nP\.\s?S\.)/);
     if (ps >= 0) {
-      const at = offsets.indexOf(ps + 2);
-      const psItem = at >= 0 ? boxes[at]?.it : undefined;
+      const psItem = boxes.find((b) => b.at === ps + 2)?.it;
       if (psItem) line = psItem.line - 1;
     }
     const sheet = Math.floor(line / comp.perPage);
@@ -115,19 +115,21 @@ export function write(req: WriteRequest): WriteResult {
     writingSVG(p, sheet, comp.emMm, paper.w, 'w' + i, req.inkKey, { contours: extra[i], fill: inkFill, ghost: i === 0 ? ghost : undefined }),
   );
 
-  const n = comp.sheets.reduce((a, s) => a + s.items.length, 0);
-  const glyphs = new Float32Array(n * GLYPH_STRIDE);
-  // the caret map covers the text only, in reading order within and across sheets
+  const glyphs = new Float32Array(boxes.length * GLYPH_STRIDE);
+  // the caret map covers the text only: one box per written character, each with its text offset
   let g = 0;
   comp.sheets.forEach((sheet, si) => {
-    for (const it of sheet.items) {
+    sheet.items.forEach((it, ii) => {
+      const at = ats[si][ii];
+      if (at < 0) return;
+      glyphs[g++] = at;
       glyphs[g++] = si;
       glyphs[g++] = it.x;
       glyphs[g++] = it.y;
       glyphs[g++] = it.kind === 'glyph' ? it.g.advance : MISS_ADVANCE;
       glyphs[g++] = it.line;
       glyphs[g++] = it.kind === 'glyph' ? 1 : 0;
-    }
+    });
   });
   return {
     id: req.id,
@@ -146,6 +148,7 @@ export function write(req: WriteRequest): WriteResult {
     spaceU: makeGlyph(p, ' ', null).advance * ((p.wordSpace as number) || 1),
     leftU: paper.text.left * comp.unitsPerMm,
     lines: comp.page.lines,
+    summary: comp.summary,
     ms: performance.now() - t0,
   };
 }

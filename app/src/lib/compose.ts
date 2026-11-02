@@ -3,6 +3,7 @@
 // The screen and the JPEG both draw from this, so the download matches what's on screen.
 import { layout, UPM, type Hand, type Page, type PageItem } from '@engine';
 import { writingLines, type PaperSpec } from './papers';
+import { JOURNEY, writeWithJourney } from './engine-features';
 
 export interface Sheet {
   /** items positioned on this sheet, x/y in font units measured from the sheet's top-left corner */
@@ -22,6 +23,11 @@ export interface Composition {
   sheets: Sheet[];
   /** font units per mm (convenience) */
   unitsPerMm: number;
+  /** items carry their text offset in charIndex (-1 for extra ink like struck words); else infer by reading order */
+  offsetsInItems: boolean;
+  /** the draft's corrections, in words ("2 words crossed out, 1 letter written over"), when the engine writes a journey */
+  summary?: string;
+  transcript?: string;
 }
 
 /** The em size (mm) that gives this hand the paper's comfortable x-height, scaled by `size`. */
@@ -34,11 +40,14 @@ export function compose(p: Hand, text: string, paper: PaperSpec, size: number, l
   const emMm = emForPaper(p, paper, size);
   const u = UPM / emMm; // font units per mm
   const lines = writingLines(paper, emMm, paper.xh * size, lineSpacing);
-  const page = layout(p, text, {
+  const opts = {
     maxWidth: (paper.text.right - paper.text.left) * u,
     lineHeight: lines.lineMm * u,
     firstBaseline: lines.first * u,
-  });
+  };
+  // the writer's own mistakes and corrections over the draft, when the engine has them (amount from p.mistakes)
+  const j = JOURNEY && writeWithJourney && text ? writeWithJourney(p, text, opts, { seed: String(p.seed) }) : null;
+  const page = j && j.ok ? j.page : layout(p, text, opts);
 
   const count = Math.max(1, Math.ceil(page.lines / lines.perPage));
   const sheets: Sheet[] = Array.from({ length: count }, () => ({ items: [], height: paper.h * u }));
@@ -49,5 +58,10 @@ export function compose(p: Hand, text: string, paper: PaperSpec, size: number, l
     const shift = s * lines.perPage * lineU;
     sheets[s].items.push({ ...it, x: it.x + left, y: it.y - shift });
   }
-  return { paper, emMm, lineMm: lines.lineMm, firstMm: lines.first, perPage: lines.perPage, page, sheets, unitsPerMm: u };
+  return {
+    paper, emMm, lineMm: lines.lineMm, firstMm: lines.first, perPage: lines.perPage, page, sheets, unitsPerMm: u,
+    offsetsInItems: !!(j && j.ok),
+    summary: j && j.ok ? j.summary : undefined,
+    transcript: j && j.ok ? j.transcript : undefined,
+  };
 }

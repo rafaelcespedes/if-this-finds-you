@@ -3,6 +3,7 @@ import { buildFont, verify, type Hand } from '@engine';
 import { getPaper, paintPaper } from './papers';
 import { rasterizeWriting } from './writing';
 import { write } from './write-core';
+import { sheetSVG, type Live } from './live';
 import type { WriteRequest } from './write-protocol';
 import { fileSafe, saveBlob } from './utils';
 
@@ -54,6 +55,34 @@ export async function renderNote(req: Omit<WriteRequest, 'id'>, ink: string, css
     ctx.translate(0, i * (sheetH + gap));
     paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK });
     const img = await rasterizeWriting(res.svgs[i], sheetW, sheetH, ink);
+    ctx.drawImage(img, 0, 0, sheetW, sheetH);
+    ctx.restore();
+  }
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));
+  if (!blob) throw new Error('The image could not be encoded.');
+  return { blob, width: canvas.width, height: canvas.height };
+}
+
+/** The live page as a JPEG: each sheet's whole SVG (windowed onto the page), at 3x the screen. */
+export async function renderLiveNote(live: Live, extras: string[], inkKey: string | undefined, ink: string, cssPxPerMm: number) {
+  const paper = live.paper;
+  let k = cssPxPerMm * 3;
+  k = Math.max(k, 1800 / paper.w);
+  k = Math.min(k, 3600 / paper.w);
+  const n = live.sheets.length;
+  const sheetW = Math.round(paper.w * k), sheetH = Math.round(paper.h * k), gap = Math.round(PAGE_GAP_MM * k);
+  const canvas = document.createElement('canvas');
+  canvas.width = sheetW;
+  canvas.height = sheetH * n + gap * (n - 1);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('This browser could not create an image.');
+  ctx.fillStyle = DESK;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < n; i++) {
+    ctx.save();
+    ctx.translate(0, i * (sheetH + gap));
+    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK });
+    const img = await rasterizeWriting(sheetSVG(live, i, inkKey ?? 'currentColor', extras[i] ?? ''), sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
     ctx.restore();
   }

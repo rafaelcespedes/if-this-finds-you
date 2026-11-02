@@ -56,9 +56,14 @@ export function writingSVG(
   return scopeIds(svg, uid);
 }
 
+/** Attributes written HTML-style without a value (`<g data-ink>`) are invalid in a standalone SVG image. */
+const xmlSafe = (svg: string) => svg.replace(/(<[a-zA-Z][^<>]*?\s)([a-zA-Z_:][\w:.-]*)(?=[\s/>])(?!=)/g, (m, head: string, name: string) =>
+  // leave words inside a quoted value alone (an odd number of quotes so far means we're inside one)
+  /=\s*$/.test(head) || (head.match(/"/g) || []).length % 2 === 1 ? m : `${head}${name}=""`);
+
 /** Rasterise a sheet's writing SVG at w x h device pixels, in the given ink. */
 export async function rasterizeWriting(svg: string, w: number, h: number, ink: string): Promise<HTMLImageElement> {
-  const sized = svg
+  const sized = xmlSafe(svg)
     .replace(/<svg([^>]*?)\swidth="[^"]*"/, '<svg$1')
     .replace(/<svg([^>]*?)\sheight="[^"]*"/, '<svg$1')
     .replace('<svg', `<svg width="${w}" height="${h}" preserveAspectRatio="none" style="color:${ink}"`)
@@ -68,7 +73,11 @@ export async function rasterizeWriting(svg: string, w: number, h: number, ink: s
     const img = new Image();
     img.decoding = 'async';
     img.src = url;
-    await img.decode();
+    // never hang on a drawing the browser can't decode: fail with a reason instead
+    await Promise.race([
+      img.decode(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('The writing could not be turned into an image.')), 15000)),
+    ]);
     return img;
   } finally {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
