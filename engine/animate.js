@@ -35,7 +35,9 @@ export function timeline(page, opts = {}) {
   const events = [];
   const kOf = [];
   let k = 0;
-  for (const it of items) { kOf.push(k); if (it.kind === 'glyph') k += it.g.strokes.length; }
+  // letters and correction marks are written; placeholders aren't
+  const inks = (it) => it.kind === 'glyph' || it.kind === 'mark';
+  for (const it of items) { kOf.push(k); if (inks(it)) k += it.g.strokes.length; }
 
   const event = (it, j, si) => {
     const st = it.g.strokes[si];
@@ -68,7 +70,7 @@ export function timeline(page, opts = {}) {
     let drawn = false;
     for (let j = a; j < b; j++) {
       const it = items[j];
-      if (it.kind !== 'glyph') { t += 0.2; continue; } // a placeholder: the writer hesitates
+      if (!inks(it)) { t += 0.2; continue; } // a placeholder: the writer hesitates
       for (let si = 0; si < it.g.strokes.length; si++) {
         const ev = event(it, j, si);
         if (ev.delayed) { later.push(ev); continue; }
@@ -292,10 +294,15 @@ export function createPen(opts = {}) {
   };
 
   function sync(pg, now) {
+    // first catch the pen up to this moment with what was on the page until now, so its progress
+    // depends only on time, never on how often someone asked for a frame
+    if (clock == null) clock = now; // the pen's clock starts when the first letters arrive
+    else advance(now, reduce);
     page = pg;
     const xh = pg.xh || 400;
     const present = new Set();
-    const glyphs = pg.items.filter((it) => it.kind === 'glyph');
+    // letters and correction marks (kind 'mark'), in page order: marks are written where they appear
+    const glyphs = pg.items.filter((it) => it.kind === 'glyph' || it.kind === 'mark');
     // the end of the text is still being typed: which letters to hold back
     const open = !/[\s]$/.test(pg.text || '') && glyphs.length;
     heldKeys = new Set();

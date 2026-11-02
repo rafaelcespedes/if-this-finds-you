@@ -83,8 +83,20 @@ export function renderSVG(p, page, opts) {
   const paths = [];
   const misses = [];
   let k = 0;
-  if (opts.runs && page.runs) for (const run of page.runs) paths.push(renderRun(p, page, run, opts));
-  else for (const it of page.items) {
+  if (opts.runs && page.runs) {
+    for (const run of page.runs) paths.push(renderRun(p, page, run, opts));
+    // items outside word runs (correction marks) are drawn where they are, keyed for live updates
+    const inRun = new Uint8Array(page.items.length);
+    for (const run of page.runs) for (let i = run.from; i < run.to; i++) inRun[i] = 1;
+    page.items.forEach((it, i) => {
+      if (inRun[i] || it.kind === 'miss' || !it.g) return;
+      const els = it.g.contours.map((c, ci) => {
+        const el = `<path d="${contoursToD([c], it.x * sc, it.y * sc, sc)}"/>`;
+        return opts.strokeKeys && it.key ? `<g data-s="${it.key}#${ci}">${el}</g>` : el;
+      }).join('');
+      paths.push(`<g data-item="${it.key || i}">${els}</g>`);
+    });
+  } else for (const it of page.items) {
     if (it.kind === 'miss') {
       misses.push(missMark(it.ch, (it.x + (it.advance || 560) / 2) * sc, it.y * sc, emPx));
       continue;
