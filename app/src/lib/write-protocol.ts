@@ -1,15 +1,18 @@
 import type { PaperId } from './papers';
-import type { Overrides } from './state';
 
 /** What the page needs to be written. Ink and screen size are not part of it (see lib/writing.ts). */
 export interface WriteRequest {
   id: number;
   seed: string;
   style: string;
-  overrides: Overrides;
+  /** absolute engine overrides (lib/params.ts) */
+  overrides: Record<string, number | string>;
   text: string;
   paper: PaperId;
   size: number;
+  lineSpacing: number;
+  /** ink swatch key when the engine models ink; null = flat currentColor */
+  inkKey: string | null;
 }
 
 /** Floats per laid-out character in `WriteResult.glyphs`: sheet, x, y, advance, line, kind (1 glyph, 0 missing). */
@@ -20,6 +23,7 @@ export interface WriteResult {
   /** seed:style the writing was made for */
   handKey: string;
   paper: PaperId;
+  inkKey: string | null;
   svgs: string[];
   emMm: number;
   lineMm: number;

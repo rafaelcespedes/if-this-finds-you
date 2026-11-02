@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { SlidersHorizontal, Shuffle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { makeHand, withOverrides } from '@engine';
+import { makeHand } from '@engine';
 import { Panel, type PanelProps } from '@/components/Panel';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -16,12 +16,17 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
 import { useWriting } from '@/hooks/useWriting';
 import { copyText, downloadNote, exportFont } from '@/lib/actions';
-import { clampOverride } from '@/lib/controls';
-import { pickNewHand, writerName } from '@/lib/hands';
-import { getInk } from '@/lib/inks';
+import { emForPaper } from '@/lib/compose';
+import { applyEdit, EditLog, type Edit } from '@/lib/edits';
+import { pickNewHand, pickSimilarHand, writerName } from '@/lib/hands';
+import { inkColor } from '@/lib/inks';
+import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
+import { effective, effectiveHand, offsetFor } from '@/lib/params';
+import { PENS_LIVE } from '@/lib/pens';
 import '@/lib/perf';
-import { shareUrl } from '@/lib/state';
+import { offsetsForNewHand, shareUrl } from '@/lib/state';
+import type { WriteRequest } from '@/lib/write-protocol';
 
 /** Screen scale ceiling: about the size of real paper on a laptop screen. */
 const MAX_PX_PER_MM = 3.9;
@@ -34,6 +39,10 @@ function writePref(key: string, v: string) {
   try { localStorage.setItem(key, v); } catch { /* private mode: fine */ }
 }
 
+/** Every edit to the note, in order: the seed of the ink log (see lib/edits.ts). */
+const editLog = new EditLog();
+(window as unknown as { __seedhandEdits: EditLog }).__seedhandEdits = editLog;
+
 export default function App() {
   const [state, update] = useNoteState();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -41,18 +50,23 @@ export default function App() {
   const [busy, setBusy] = useState({ download: false, font: false });
   const [editing, setEditing] = useState(false);
   const [plainText, setPlainText] = useState(() => readPref('seedhand:plain-text') === '1');
+  const [variety, setVariety] = useState(() => Number(readPref('seedhand:variety') ?? 60) || 60);
   const coarse = useMediaQuery('(pointer: coarse)');
 
+  // natural hand (seed) + your offsets + occasion -> the hand on the page
   const natural = useMemo(() => makeHand(state.seed, state.style), [state.seed, state.style]);
-  const p = useMemo(() => withOverrides(natural, state.overrides), [natural, state.overrides]);
+  const eff = useMemo(() => effective(natural, state), [natural, state]);
+  const p = useMemo(() => effectiveHand(natural, eff), [natural, eff]);
   const paper = getPaper(state.paper);
-  const ink = getInk(state.ink);
+  const ink = inkColor(state.ink);
   const name = useMemo(() => writerName(state.seed), [state.seed]);
 
+  const request: Omit<WriteRequest, 'id'> = {
+    seed: state.seed, style: state.style, overrides: eff.overrides, text: state.text, paper: state.paper,
+    size: eff.size, lineSpacing: eff.lineSpacing, inkKey: eff.inkKey,
+  };
   // the page is written in a worker, so typing never waits for the hand
-  const writing = useWriting({
-    seed: state.seed, style: state.style, overrides: state.overrides, text: state.text, paper: state.paper, size: state.size,
-  });
+  const writing = useWriting(request);
   // paper and writing switch together when the result arrives
   const shownPaper = writing ? getPaper(writing.paper) : paper;
 
@@ -60,22 +74,33 @@ export default function App() {
   const deskW = useElementWidth(deskRef);
   const pxPerMm = deskW > 0 ? Math.min(MAX_PX_PER_MM, deskW / shownPaper.w) : 0;
 
-  // ---------- actions ----------
-  const newHand = useCallback(() => {
-    update((s) => ({ ...pickNewHand({ seed: s.seed, style: s.style }), overrides: {} }));
+  // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
+  const onEdit = useCallback((e: Edit) => {
+    editLog.push(e);
+    update((s) => ({ text: applyEdit(s.text, e) }));
   }, [update]);
 
+  // ---------- hands ----------
+  // a new writer: Who resets; How and With-what stay as you set them
+  const newHand = useCallback(() => {
+    update((s) => ({ ...pickNewHand({ seed: s.seed, style: s.style }, variety), offsets: offsetsForNewHand(s.offsets) }));
+  }, [update, variety]);
+  const similarHand = useCallback(() => {
+    update((s) => ({ ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) }));
+  }, [update]);
+
+  // ---------- actions ----------
   const share = useCallback(async () => {
     const ok = await copyText(shareUrl(state));
-    if (ok) toast.success('Link copied', { description: 'It opens this exact note: hand, paper, ink and text.' });
+    if (ok) toast.success('Link copied', { description: 'It opens this exact note: hand, pen, paper and text.' });
     else toast.error('Couldn’t copy the link', { description: 'Copy it from the address bar instead.' });
   }, [state]);
 
+  const requestKey = JSON.stringify(request);
   const download = useCallback(async () => {
     setBusy((b) => ({ ...b, download: true }));
     try {
-      const req = { seed: state.seed, style: state.style, overrides: state.overrides, text: state.text, paper: state.paper, size: state.size };
-      const res = await downloadNote(req, ink.color, pxPerMm || MAX_PX_PER_MM, `${name} note`);
+      const res = await downloadNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM, `${name} note`);
       toast.success('Note downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
     } catch (e) {
       console.error(e);
@@ -83,7 +108,7 @@ export default function App() {
     } finally {
       setBusy((b) => ({ ...b, download: false }));
     }
-  }, [state, ink.color, pxPerMm, name]);
+  }, [requestKey, ink, pxPerMm, name]);
 
   const font = useCallback(async () => {
     setBusy((b) => ({ ...b, font: true }));
@@ -100,7 +125,7 @@ export default function App() {
     }
   }, [p, name, state.style]);
 
-  // R for a new hand, when not typing
+  // R for a new hand, Shift R for a similar one, when not typing
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'r' && e.key !== 'R') return;
@@ -108,25 +133,45 @@ export default function App() {
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
       e.preventDefault();
-      newHand();
+      if (e.shiftKey) similarHand();
+      else newHand();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [newHand]);
+  }, [newHand, similarHand]);
 
   const panelProps: PanelProps = {
     state,
+    natural,
     p,
     name,
+    emMm: emForPaper(p, paper, eff.size),
+    variety,
     busy,
     onNewHand: newHand,
-    onSeed: (seed) => update({ seed, overrides: {} }),
+    onSimilarHand: similarHand,
+    onSeed: (seed) => update((s) => ({ seed, offsets: offsetsForNewHand(s.offsets) })),
     onStyle: (style) => update({ style }),
-    onOverride: (key, v) => update((s) => ({ overrides: { ...s.overrides, [key]: clampOverride(key, v) } })),
-    onResetOverrides: () => update({ overrides: {} }),
-    onSize: (size) => update({ size }),
-    onPaper: (paper) => update({ paper }),
+    onControl: (key, v) => update((s) => ({ offsets: { ...s.offsets, [key]: offsetFor(key, v, natural, s) } })),
+    onResetControl: (key) => update((s) => {
+      const offsets = { ...s.offsets };
+      delete offsets[key];
+      return { offsets };
+    }),
+    onResetOffsets: () => update({ offsets: {}, penSize: 'medium' }),
+    onPen: (pen) => update({ pen }),
+    onPenSize: (penSize) => update({ penSize }),
     onInk: (ink) => update({ ink }),
+    onPaper: (paper) => update({ paper }),
+    onSize: (size) => update({ size }),
+    onOccasion: (id) => update((s) => {
+      const occ = getOccasion(id);
+      if (!occ) return { occasion: null };
+      // an occasion sets the scene once: its paper, and its pen when the engine has pens
+      return { occasion: occ.id, amount: s.occasion === occ.id ? s.amount : 1, paper: occ.paper ?? s.paper, pen: PENS_LIVE && occ.pen ? occ.pen : s.pen };
+    }),
+    onAmount: (amount) => update({ amount }),
+    onVariety: (v) => { setVariety(v); writePref('seedhand:variety', String(Math.round(v))); },
     onShare: share,
     onDownload: download,
     onExportFont: font,
@@ -147,13 +192,14 @@ export default function App() {
               <>
                 <PaperEditor
                   text={state.text}
-                  onText={(t) => update({ text: t })}
+                  onEdit={onEdit}
+                  writerName={name}
                   result={writing}
                   pxPerMm={pxPerMm}
                   sheetW={shownPaper.w}
                   sheetH={shownPaper.h}
                   gapPx={SHEET_GAP}
-                  ink={ink.color}
+                  ink={ink}
                   onEditingChange={setEditing}
                 >
                   <div className="flex flex-col" style={{ gap: SHEET_GAP }}>
@@ -163,7 +209,7 @@ export default function App() {
                         paper={shownPaper}
                         pxPerMm={pxPerMm}
                         svg={svg}
-                        ink={ink.color}
+                        ink={ink}
                         handKey={writing ? writing.handKey : ''}
                         index={i}
                         count={all.length}
@@ -183,7 +229,7 @@ export default function App() {
                 </div>
                 {plainText && (
                   <div className="mt-3 flex justify-center">
-                    <DraftSlip value={state.text} onChange={(t) => update({ text: t })} width={shownPaper.w * pxPerMm + 16} />
+                    <DraftSlip value={state.text} onEdit={onEdit} width={shownPaper.w * pxPerMm + 16} />
                   </div>
                 )}
               </>

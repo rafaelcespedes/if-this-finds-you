@@ -12,8 +12,8 @@ export function write(req: WriteRequest): WriteResult {
   const t0 = performance.now();
   const p = withOverrides(makeHand(req.seed, req.style), req.overrides);
   const paper = getPaper(req.paper);
-  const comp = compose(p, req.text, paper, req.size);
-  const svgs = comp.sheets.map((sheet, i) => writingSVG(p, sheet, comp.emMm, paper.w, 'w' + i));
+  const comp = compose(p, req.text, paper, req.size, req.lineSpacing);
+  const svgs = comp.sheets.map((sheet, i) => writingSVG(p, sheet, comp.emMm, paper.w, 'w' + i, req.inkKey));
   const n = comp.sheets.reduce((a, s) => a + s.items.length, 0);
   const glyphs = new Float32Array(n * GLYPH_STRIDE);
   // items keep reading order within and across sheets
@@ -31,6 +31,7 @@ export function write(req: WriteRequest): WriteResult {
   return {
     id: req.id,
     handKey: req.seed + ':' + req.style,
+    inkKey: req.inkKey,
     paper: req.paper,
     svgs,
     emMm: comp.emMm,

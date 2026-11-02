@@ -22,14 +22,66 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
 - **Typing on the paper.** Click (or tap) the letter and type. The caret and selection follow the
   handwriting; Up/Down/Home/End follow the written lines; Esc finishes. "Edit as plain text" opens a
   normal text box for long edits or pasting.
-- **The writer.** Their name in their own hand, a name derived from the seed, and one plain line about
-  how they write. **New hand** (or **R** when not typing) meets a new writer: a new word seed, a coin
-  flip between print and script, and, of ten candidates, the one most unlike the current hand.
-- **Controls.** Style, Neatness, Slant, Pen width, Pressure (ranges from the engine's `PARAMS`, trimmed to
-  the part that still looks human, described in words), Paper, Size, Ink.
+- **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
+  about how they write. **New hand** (or **R** when not typing) meets a new writer: a new word seed, a coin
+  flip between Print and Joined, and, of several candidates, the one most unlike the current hand.
+  **Similar** (or **Shift R**) gives a sibling: same words, another number, close but not a copy.
+- **Controls** follow `docs/research/controls-and-feel.md`:
+  - *How it's written:* Neatness, Hurry, Pressure, Slant, and an Occasion (Thank-you card, Shopping list,
+    Love letter, Lecture notes, Postcard) with an Amount.
+  - *Pen, ink and paper:* Pen (Their own, Ballpoint, Gel, Fountain, Felt tip, Pencil) with Fine / Medium /
+    Bold, ink families, Paper, Size.
+  - *More controls* (a disclosure): Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle,
+    Line spacing, Line rhythm, Baseline wobble, Margins, Letter spacing (print only), Word spacing,
+    Letter height, Letter width, Tremor, Tiredness, Variety (how far New hand jumps).
+  - **Every slider is seed-relative.** The thumb starts at this hand's natural value (the small dot on
+    the track) and moving it adds an offset; double-click a slider to go back to the dot. New hand keeps
+    your How and With-what offsets and clears the Who ones (slant, proportions, spacing), so a new writer
+    is never dragged toward the last one's settings.
 - **Actions.** Share link (copies a URL that restores the exact note), Download note (JPEG at 3x the
   screen, paper and writing exactly as shown), Export font file (.otf from the engine's `buildFont`,
   opentype.js 1.3.4, loaded only when used).
+
+### Controls waiting for the engine
+
+Controls the engine can't draw yet are built and wired, but hidden until the engine supports them, so
+nothing ships dead. `?preview` in the URL (or `localStorage['seedhand:preview'] = '1'`) shows them with a
+"soon" tag. Each lights up by itself once the engine lists the key in `PARAMS` (or, for pens and inks,
+exports `PENS`/`INKS`/`inkModel`):
+
+| Control | Placeholder param | What the engine should do |
+|---|---|---|
+| Pen | `p.pen`: `ballpoint` `gel` `fountain` `felt` `pencil` (+ `auto`) | the pens & ink branch has these |
+| Ink | `p.ink`: `blue-black` `royal-blue` `ballpoint-blue` `black` `sepia` `iron-gall` `red` `green` `graphite` (+ `auto`) | the pens & ink branch has these; the app then passes the key to `renderSVG` instead of a colour |
+| Hurry | `hurry` 0..1 | slant +0–8°, width +0–10%, longer tapers, more stroke shift, lighter ink, looser lines, neatness −0.3× |
+| Ink flow | `inkFlow` 0..1 | dry ↔ wet: density, end pools, halo, ballpoint skips, felt bleed |
+| Ink variation | `inkVariation` 0..1 | per-stroke colour jitter, along-stroke gradient, page drift |
+| Paper tooth | `paperTooth` 0..1 | grain depth and absorbency |
+| Line rhythm | `lineRhythm` 0..1 | pitch variation, per-line slope, end bend, float off the rule |
+| Margins | `marginDiscipline` 0..1 | left-start jitter, inward drift, last-word squeeze |
+| Tiredness | `tiredness` 0..1 | neatness falls and size grows along the text |
+
+Tested against the pens & ink branch with `SEEDHAND_ENGINE` (below): the pen picker and modelled inks
+switch on without code changes, and the JPEG keeps the modelled ink.
+
+### Edits are events
+
+Every change to the text, from the paper or from the plain-text box, arrives as one
+`Edit { at, del, ins, kind, t, source }` (`lib/edits.ts`, `hooks/useEditInput.ts`). The browser applies the
+edit (so IME, autocorrect, dictation and undo keep working); `beforeinput` supplies the kind, and a diff of
+the old and new value is the truth. Today's document model simply applies each edit ("fair copy"); the
+ink mode in `docs/research/writing-experience.md` can replace it with an append-only ink log without
+touching the inputs. The textarea always holds the logical text, labelled with the writer's name, for
+screen readers. `window.__seedhandEdits.events` shows the stream.
+
+### Previewing another engine
+
+```bash
+cd app && SEEDHAND_ENGINE=/path/to/another/worktree/engine npx vite --port 5175
+```
+
+Points the `@engine` alias at another engine folder (for example a parallel session's branch), so its
+work can be seen in the product UI without merging.
 
 ## Papers
 
@@ -67,9 +119,14 @@ src/
     writing.ts            engine SVG at a fixed reference scale, id scoping, rasterising for the JPEG
     write-core.ts         request -> result (runs in the worker, and on the main thread for downloads)
     caret.ts              text index <-> position on the handwriting
+    controls.ts           the control registry: ranges, zones (who / how / with), tiers, placeholders
+    params.ts             natural hand + offsets + occasion -> engine overrides
+    engine-features.ts    what the engine supports now; preview flag; placeholder params
+    edits.ts              Edit events (the seed of the ink log)
+    pens.ts, inks.ts, occasions.ts
     state.ts              the note config and the share-link format
     hands.ts              word seeds, writer names, plain-word descriptions, "very different" new hands
-    controls.ts, inks.ts, actions.ts, perf.ts, utils.ts
+    actions.ts, perf.ts, utils.ts
   workers/write.worker.ts writes the page off the main thread (newest request wins)
 ```
 
@@ -90,11 +147,12 @@ animation, means changing those three files only.
 Everything lives in the URL hash, readable where it can be:
 
 ```
-#seed=quiet-heron-17&style=script&paper=seyes&ink=royal&size=1.1&o=n0.72_s4.5_w50_p0.3&t=<lz-string>
+#seed=quiet-heron-17&style=script&pen=fountain&tip=fine&ink=royal-blue&paper=seyes&size=1.1&o=ne0.12_sl-3&occ=love&amt=1.2&t=<lz-string>
 ```
 
-`o` holds slider overrides (n = neatness, s = slant, w = pen width, p = pressure); `t` is the text,
-compressed with lz-string (omitted when it's the default letter). The hash is kept up to date while you
+`o` holds the seed-relative offsets, each a two-letter code from `lib/controls.ts` plus a number
+(ne = neatness, sl = slant, pw = tip size, ...); `t` is the text, compressed with lz-string (omitted when
+it's the default letter). Preview flags are never put in a shared link. The hash is kept up to date while you
 work, so a reload restores the note too. Invalid values fall back to defaults.
 
 ### Performance

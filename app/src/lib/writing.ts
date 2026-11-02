@@ -29,9 +29,14 @@ export function scopeIds(svg: string, uid: string) {
   return out;
 }
 
-/** The writing of one sheet as an SVG string covering the whole sheet, at the reference scale. */
-export function writingSVG(p: Hand, sheet: Sheet, emMm: number, wMm: number, uid: string) {
-  const svg = renderSVG(p, sheet, { width: Math.round(wMm * REF_PX_PER_MM), emPx: emMm * REF_PX_PER_MM, ink: 'currentColor' });
+/**
+ * The writing of one sheet as an SVG string covering the whole sheet, at the reference scale.
+ * inkKey: a swatch key when the engine models ink itself (pens & ink); otherwise the ink is
+ * `currentColor` and the page sets the colour.
+ */
+export function writingSVG(p: Hand, sheet: Sheet, emMm: number, wMm: number, uid: string, inkKey: string | null = null) {
+  const ink = inkKey && inkKey !== 'auto' ? inkKey : inkKey === 'auto' ? undefined : 'currentColor';
+  const svg = renderSVG(p, sheet, { width: Math.round(wMm * REF_PX_PER_MM), emPx: emMm * REF_PX_PER_MM, ink });
   return scopeIds(svg, uid);
 }
 

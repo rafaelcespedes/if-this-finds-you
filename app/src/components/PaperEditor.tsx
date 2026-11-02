@@ -4,11 +4,16 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { buildMap, caretAt, indexOnLine, lineAtY, lineEdges, translateIndex, type TextMap } from '@/lib/caret';
 import type { WriteResult } from '@/lib/write-protocol';
+import type { Edit } from '@/lib/edits';
+import { useEditInput } from '@/hooks/useEditInput';
 import { cn } from '@/lib/utils';
 
 interface Props {
+  /** the logical text (also what screen readers read) */
   text: string;
-  onText: (t: string) => void;
+  /** every change, as one Edit (see lib/edits.ts) */
+  onEdit: (e: Edit) => void;
+  writerName: string;
   result: WriteResult | null;
   /** CSS px per mm, sheet size in mm, gap between sheets in px */
   pxPerMm: number;
@@ -27,12 +32,13 @@ interface Sel {
   focused: boolean;
 }
 
-export function PaperEditor({ text, onText, result, pxPerMm, sheetW, sheetH, gapPx, ink, onEditingChange, children }: Props) {
+export function PaperEditor({ text, onEdit, writerName, result, pxPerMm, sheetW, sheetH, gapPx, ink, onEditingChange, children }: Props) {
   const ta = useRef<HTMLTextAreaElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const goalX = useRef<number | null>(null);
   const [sel, setSel] = useState<Sel>({ start: text.length, end: text.length, dir: 'none', focused: false });
   const map = useMemo<TextMap | null>(() => (result ? buildMap(result) : null), [result]);
+  const input = useEditInput(ta, text, onEdit, 'paper');
   // indices in the live text <-> indices in the text the page was written from
   const toMap = useCallback((i: number) => (map ? translateIndex(i, text, map.res.text) : i), [map, text]);
   const fromMap = useCallback((i: number) => (map ? translateIndex(i, map.res.text, text) : i), [map, text]);
@@ -196,13 +202,14 @@ export function PaperEditor({ text, onText, result, pxPerMm, sheetW, sheetH, gap
       <textarea
         ref={ta}
         value={text}
-        onChange={(e) => { onText(e.target.value); sync(); }}
+        {...input}
+        onChange={(e) => { input.onChange(e); sync(); }}
         onSelect={sync}
         onKeyDown={onKeyDown}
         onKeyUp={sync}
         onFocus={sync}
         onBlur={sync}
-        aria-label="Your note. Type to write it in this hand."
+        aria-label={`Letter in ${writerName}’s hand. Type to write.`}
         spellCheck={false}
         autoCapitalize="sentences"
         autoComplete="off"

@@ -138,17 +138,18 @@ function gridSteps(a: number, b: number, pitch: number) {
  * Where the writing goes, given the em size (mm) of the hand at the chosen size.
  * Baselines land on the paper's rules: first baseline on a rule, pitch a whole number of rules.
  */
-export function writingLines(paper: PaperSpec, emMm: number, xhMm: number) {
+export function writingLines(paper: PaperSpec, emMm: number, xhMm: number, spacing = 1) {
   const { text } = paper;
   if (!paper.pitch) {
     // free lines: room for loops and tails, never tighter than ~3.6 x-heights
-    const lineMm = Math.max(emMm * 1.28, xhMm * 3.6);
+    const lineMm = Math.max(emMm * 1.28, xhMm * 3.6) * spacing;
     const count = Math.max(1, Math.floor((text.last - text.first) / lineMm) + 1);
     return { first: text.first, lineMm, perPage: count };
   }
+  // on rules, the writer's spacing picks how many rules a line takes (it snaps)
   let k = 1;
-  if (paper.multiples) k = Math.max(1, Math.round((emMm * 1.3) / paper.pitch));
-  else if (emMm > paper.pitch * 1.6) k = 2;
+  if (paper.multiples) k = Math.max(1, Math.round((emMm * 1.3 * spacing) / paper.pitch));
+  else if (emMm * spacing > paper.pitch * 1.6) k = 2;
   const lineMm = paper.pitch * k;
   let first = text.first;
   const box = paper.grid?.box ?? paper.dots?.box;
