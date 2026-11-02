@@ -269,6 +269,215 @@
           "what": "page image, 2550 × 3300 px"
         }
       ]
+    },
+    "steensballe-1849": {
+      "title": "Skjønskrivningsregler for de engelsk-latinske og gothiske eller norske Haandskrifter, med oplysende Exempler i otte lithographerede Plader",
+      "author": "Brandt, writing master (Skrivelærer) at the Borgerskole in Christiania; published by P. F. Steensballe",
+      "date": "1849",
+      "place": "Christiania (Oslo), Norway",
+      "holder": "Nasjonalbiblioteket (National Library of Norway), digitised book URN:NBN:no-nb_digibok_2016101928012",
+      "page": "https://www.nb.no/items/URN:NBN:no-nb_digibok_2016101928012",
+      "rights": {
+        "statement": "isPublicDomain: true, license 'publicdomain' (NB.no catalogue API accessInfo); IIIF manifest licence https://www.nb.no/lisens/#public-domain with attribution text 'Du kan kopiere, endre, spre, vise og fremføre dette verket, selv for kommersielle formål, uten å spørre om tillatelse' (you may copy, change, distribute and display this work, even for commercial purposes, without asking permission).",
+        "where": "https://api.nb.no/catalog/v1/items/URN:NBN:no-nb_digibok_2016101928012 (accessInfo) ; https://api.nb.no/catalog/v1/iiif/URN:NBN:no-nb_digibok_2016101928012/manifest (license, attribution)",
+        "checked": "2026-11-02",
+        "verdict": "clean",
+        "notes": "Published 1849: the author cannot have lived past 1956, so the work is public domain everywhere. The library marks the scan public domain and allows commercial use. The research note credits the book to Steensballe, who was its publisher; the title page names the writing master Brandt."
+      },
+      "files": [
+        {
+          "name": "p02.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0001/full/full/0/default.jpg",
+          "what": "title page (author Brandt, writing master at the Borgerskole in Christiania; published by P. F. Steensballe), 3231 × 2692 px"
+        },
+        {
+          "name": "p10.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0009/full/full/0/default.jpg",
+          "what": "Example 1–2: joined Latin words, correct vs faulty (Malmöe, Lydighed), 3231 × 2692 px"
+        },
+        {
+          "name": "p12.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0011/full/full/0/default.jpg",
+          "what": "Example 3: Gothic words (Död, Dom, Kairo), 3231 × 2692 px"
+        },
+        {
+          "name": "p14.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0013/full/full/0/default.jpg",
+          "what": "Examples 3–4: Gothic and Latin words, 3231 × 2692 px"
+        },
+        {
+          "name": "p16.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0015/full/full/0/default.jpg",
+          "what": "Example 5: Latin words (Jesus, Gotfried), 3231 × 2692 px"
+        },
+        {
+          "name": "p18.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0017/full/full/0/default.jpg",
+          "what": "Latin small letters a–z with æ, grouped by basic stroke (engelsk-latinsk hand), 3231 × 2692 px"
+        },
+        {
+          "name": "p20.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0019/full/full/0/default.jpg",
+          "what": "Latin capitals, 3231 × 2692 px"
+        },
+        {
+          "name": "p22.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0021/full/full/0/default.jpg",
+          "what": "Gothic (Kurrent) small letters, 3231 × 2692 px"
+        },
+        {
+          "name": "p24.jpg",
+          "url": "https://www.nb.no/services/image/resolver/URN:NBN:no-nb_digibok_2016101928012_0023/full/full/0/default.jpg",
+          "what": "Gothic (Kurrent) capitals, 3231 × 2692 px"
+        }
+      ]
+    },
+    "proszynski-1906": {
+      "title": "Wprawy w piękne pisanie piórem, czyli Wzory kaligraficzne przenośne z objaśnieniami i radami dla uczących i uczących się (3rd edition)",
+      "author": "Konrad Prószyński, writing as Kazimierz Promyk (1851–1908)",
+      "date": "1906",
+      "place": "Warsaw: Księgarnia Krajowa Konrada Prószyńskiego",
+      "holder": "Biblioteka Narodowa (National Library of Poland), Polona, call no. 95.186; old Polona id 54432597, object d413f40b-2b1c-48c5-a05b-11899956e91f",
+      "page": "https://polona.pl/item/54432597/",
+      "rights": {
+        "statement": "Domena Publiczna. Wolno zwielokrotniać, zmieniać i rozpowszechniać oraz wykonywać utwór, nawet w celach komercyjnych, bez konieczności pytania o zgodę (Public domain: you may copy, change, distribute and perform the work, even commercially, without asking permission). copyrightProtected: false.",
+        "where": "https://polona.pl/api/library-object-query/digital-objects/d413f40b-2b1c-48c5-a05b-11899956e91f/front-office-details (rights, copyrightProtected); search record licenseName Domena Publiczna",
+        "checked": "2026-11-02",
+        "verdict": "clean",
+        "notes": "Author died 1908: public domain worldwide. The library allows commercial reuse and asks that the author be credited (moral rights)."
+      },
+      "files": [
+        {
+          "name": "00007.jpg",
+          "url": "https://polona.pl/iiif/3/072c0642-8ff3-4cfa-89c3-aadc649998ce/full/3000,/0/default.jpg",
+          "what": "plate 1: small letters built up stroke by stroke (stopień 1–7) (IIIF, 3000 px wide; full TIFF 4.5k × 6.4k)"
+        },
+        {
+          "name": "00008.jpg",
+          "url": "https://polona.pl/iiif/3/eb5890cd-162e-4716-a005-1ea67b91947c/full/3000,/0/default.jpg",
+          "what": "plate 2: capitals (with second forms), numerals 1–10, letter pairs Aa–Zz and Polish words with ł ć ś ń ó ę (IIIF, 3000 px wide; full TIFF 4.5k × 6.4k)"
+        },
+        {
+          "name": "00009.jpg",
+          "url": "https://polona.pl/iiif/3/97858f91-0151-40a8-b925-8fa96a4816a2/full/3000,/0/default.jpg",
+          "what": "plate 3: joined sentences with numerals (IIIF, 3000 px wide; full TIFF 4.5k × 6.4k)"
+        },
+        {
+          "name": "00012.jpg",
+          "url": "https://polona.pl/iiif/3/c3e0c480-0314-4abd-9a4a-66ab209bf548/full/3000,/0/default.jpg",
+          "what": "plate 4: joining exercises (ł, ę, ą) (IIIF, 3000 px wide; full TIFF 4.5k × 6.4k)"
+        }
+      ]
+    },
+    "palomares-1776": {
+      "title": "Arte nueva de escribir, inventada por el insigne maestro Pedro Díaz Morante, e ilustrada con muestras nuevas y varios discursos conducentes al verdadero magisterio de primeras letras",
+      "author": "Francisco Javier de Santiago Palomares (1728–1796), after Pedro Díaz Morante (1565–1636); plates engraved by Francisco Asensio y Mejorada",
+      "date": "1776",
+      "place": "Madrid: Imprenta de Antonio de Sancha",
+      "holder": "Biblioteca de la Universidad de Sevilla (A 254/379), digitised by the library and published on the Internet Archive",
+      "page": "https://archive.org/details/A254379",
+      "rights": {
+        "statement": "Public Domain Mark 1.0 (licenseurl http://creativecommons.org/publicdomain/mark/1.0/ on the library's Internet Archive record).",
+        "where": "https://archive.org/metadata/A254379 (licenseurl, contributor Biblioteca de la Universidad de Sevilla)",
+        "checked": "2026-11-02",
+        "verdict": "clean",
+        "notes": "Work of 1776, public domain everywhere. Chosen over the items the research named: the Castilla Benavides (1866, JCyL) PDF and the Getty Iturzaeta (1835) and Sevilla Servidori (1789) copies are text volumes without their plates. Palomares' bastarda is the model Servidori, Torío and Iturzaeta taught from."
+      },
+      "files": [
+        {
+          "name": "n165.jpg",
+          "url": "https://archive.org/download/A254379/page/n165.jpg",
+          "what": "plate 1: minims and basic strokes, 3184 × 4638 px"
+        },
+        {
+          "name": "n167.jpg",
+          "url": "https://archive.org/download/A254379/page/n167.jpg",
+          "what": "plate 2: letter exercises, 3184 × 4638 px"
+        },
+        {
+          "name": "n169.jpg",
+          "url": "https://archive.org/download/A254379/page/n169.jpg",
+          "what": "plate 3: letter exercises, 3184 × 4638 px"
+        },
+        {
+          "name": "n171.jpg",
+          "url": "https://archive.org/download/A254379/page/n171.jpg",
+          "what": "plate 4: small alphabet and exercises, 3184 × 4638 px"
+        },
+        {
+          "name": "n175.jpg",
+          "url": "https://archive.org/download/A254379/page/n175.jpg",
+          "what": "plate 6: capitals with their small letters (Aa–Zz), long-s and ct ligatures, accented vowels (á à â ã ẽ ...), ç, æ, œ, w, g forms, 3184 × 4638 px"
+        },
+        {
+          "name": "n177.jpg",
+          "url": "https://archive.org/download/A254379/page/n177.jpg",
+          "what": "plate 7: capitals in words, 3184 × 4638 px"
+        },
+        {
+          "name": "n183.jpg",
+          "url": "https://archive.org/download/A254379/page/n183.jpg",
+          "what": "plate: paired capitals and the small alphabet, 3184 × 4638 px"
+        },
+        {
+          "name": "n189.jpg",
+          "url": "https://archive.org/download/A254379/page/n189.jpg",
+          "what": "plate: running text, 3184 × 4638 px"
+        }
+      ]
+    },
+    "strick-1618": {
+      "title": "Schat oft voorbeelt ende verthooninge van verscheyden geschriften ten dienste vande liefhebbers der hooch-loflycker konste der penne",
+      "author": "Maria Strick (1577–after 1631), schoolmistress and writing master in Delft and Rotterdam; engraved by Hans Strick",
+      "date": "1618",
+      "place": "Rotterdam",
+      "holder": "Rijksmuseum, Amsterdam, album BI-1885-1328 (sheets 1–32)",
+      "page": "https://id.rijksmuseum.nl/200612180",
+      "rights": {
+        "statement": "Image: Public Domain Mark 1.0 (digitally_carried_by referred_to_by https://creativecommons.org/publicdomain/mark/1.0/); metadata CC0 1.0. From the Rijksmuseum linked-data record.",
+        "where": "https://id.rijksmuseum.nl/200612180 (Linked Art JSON-LD, Accept: application/ld+json); album record https://id.rijksmuseum.nl/200612073",
+        "checked": "2026-11-02",
+        "verdict": "clean",
+        "notes": "Engraving of 1618; public domain everywhere."
+      },
+      "files": [
+        {
+          "name": "sheet31.jpg",
+          "url": "https://iiif.micr.io/OjLts/full/max/0/default.jpg",
+          "what": "Voorbeelden van de Nederlandse kapitalen, de staande letter en cursieve hand (Dutch capitals, the upright letter and the running hand), BI-1885-1328-31"
+        },
+        {
+          "name": "sheet25.jpg",
+          "url": "https://iiif.micr.io/xscAy/full/max/0/default.jpg",
+          "what": "capital X between two alphabets, BI-1885-1328-25 (checked, textura)"
+        },
+        {
+          "name": "sheet27.jpg",
+          "url": "https://iiif.micr.io/qjMkB/full/max/0/default.jpg",
+          "what": "capital Z between two alphabets, BI-1885-1328-27 (checked, textura)"
+        },
+        {
+          "name": "sheet29.jpg",
+          "url": "https://iiif.micr.io/VYPEb/full/max/0/default.jpg",
+          "what": "Italian and Spanish letter, BI-1885-1328-29 (checked)"
+        }
+      ]
+    },
+    "cremma-wikipedia": {
+      "title": "CREMMA-Wikipedia: ground truth of contemporary French handwriting",
+      "author": "Volunteers (anonymised) who each copied an excerpt of a Wikipedia page by hand; HTR-United / CREMMA project",
+      "date": "2022–2023",
+      "place": "France",
+      "holder": "HTR-United, GitHub repository HTR-United/cremma-wikipedia (page images and ALTO line transcriptions)",
+      "page": "https://github.com/HTR-United/cremma-wikipedia",
+      "rights": {
+        "statement": "Creative Commons Attribution 4.0 International (repository licence cc-by-4.0 and README \"License\" section).",
+        "where": "https://api.github.com/repos/HTR-United/cremma-wikipedia (license: cc-by-4.0); README",
+        "checked": "2026-11-02",
+        "verdict": "clean",
+        "notes": "CC BY 4.0, not share-alike. Volunteers wrote for the project and the images are anonymised; we take letterforms only, never their text."
+      },
+      "files": []
     }
   }
 }
