@@ -1,0 +1,23 @@
+{
+  "id": "palmer-1915",
+  "title": "The Palmer Method of Business Writing",
+  "author": "Austin Norman Palmer (1859–1927)",
+  "date": "1915",
+  "place": "New York, Chicago, Portland and Cedar Rapids: The A. N. Palmer Company",
+  "holder": "Smithsonian Libraries; scanned for the Biodiversity Heritage Library, hosted by the Internet Archive",
+  "page": "https://archive.org/details/palmermethodbus00palm",
+  "rights": {
+    "statement": "Public domain. The Library considers that this work is no longer under copyright protection.",
+    "where": "https://archive.org/metadata/palmermethodbus00palm (possible-copyright-status)",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "US publication of 1915 (before 1931); the author died in 1927, so the work is also out of copyright under life + 70 everywhere. Don't use the name 'Palmer Method' as a product name (trademark); describe the hand as American business writing, 1915."
+  },
+  "files": [
+    {
+      "name": "n30.jpg",
+      "url": "https://archive.org/download/palmermethodbus00palm/page/n30.jpg",
+      "what": "page 29, 'Special studies of the capitals, small letters, and figures' (A–Z, a–z, 1–0), 3744 × 2502 px"
+    }
+  ]
+}

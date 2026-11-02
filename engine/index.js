@@ -14,6 +14,7 @@ import './sources/extras.js';
 import './sources/palmer.js';
 import './sources/suetterlin.js';
 import './sources/arrighi.js';
+import './sources/quebec-print.js';
 import './sources/allographs.js';
 import './sources/accents.js'; // composes accented letters for every style, so it comes after them
 

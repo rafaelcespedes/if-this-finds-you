@@ -1,7 +1,7 @@
 """trace.py — turn public-domain handwriting scans into engine skeletons. See tools/trace/README.md.
 
     PY=tools/trace/.venv/bin/python
-    $PY -I tools/trace/trace.py fetch  <source-id>             download a source's files (manifest.json)
+    $PY -I tools/trace/trace.py fetch  <source-id>             download a source's files (manifest/<id>.json)
     $PY -I tools/trace/trace.py grid   <image> x0 y0 x1 y1 [--scale 2] [--step 20] [--out f.png]
                                                                 a zoomed crop with a coordinate grid
     $PY -I tools/trace/trace.py comps  <hand.json> <image-key> x0 y0 x1 y1 [--out f.png]
@@ -11,7 +11,7 @@
 
 A hand file (tools/trace/hands/<style>.json) holds the style's metadata, the crop box and guide lines
 of every glyph, and any hand fixes. Images are read from tools/trace/raw/<source-id>/ (gitignored;
-`fetch` re-downloads them from the URLs recorded in manifest.json).
+`fetch` re-downloads them from the URLs recorded in tools/trace/manifest/<source-id>.json).
 """
 import json
 import math
@@ -27,7 +27,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 import skel  # noqa: E402
 
-MANIFEST = os.path.join(HERE, 'manifest.json')
+MANIFEST_DIR = os.path.join(HERE, 'manifest')  # one <source-id>.json per source
 UA = 'seedhand-trace/0.1 (handwriting research; https://github.com/)'
 
 
@@ -37,7 +37,17 @@ def load_json(p):
 
 
 def manifest():
-    return load_json(MANIFEST)
+    """{'sources': {id: entry}} from tools/trace/manifest/*.json (and a legacy manifest.json, if present)."""
+    out = {}
+    legacy = os.path.join(HERE, 'manifest.json')
+    if os.path.exists(legacy):
+        out.update(load_json(legacy).get('sources', {}))
+    if os.path.isdir(MANIFEST_DIR):
+        for f in sorted(os.listdir(MANIFEST_DIR)):
+            if f.endswith('.json'):
+                e = load_json(os.path.join(MANIFEST_DIR, f))
+                out[e.get('id', f[:-5])] = e
+    return {'sources': out}
 
 
 def raw_dir(src_id):
@@ -238,9 +248,33 @@ def extract_glyph(hand, gl, cache):
                 strokes[i] = {**strokes[i], 'pts': A + A[k:-1][::-1] + B, 'closed': False}
                 strokes[j] = None
         strokes = [s for s in strokes if s is not None]
+        if gl.get('autoJoin', hand.get('autoJoin')):
+            strokes = auto_join(strokes, ink, x0, y0)
         for s in gl.get('add', []):  # extra hand-drawn strokes (image coords)
             strokes.append({'pts': [tuple(map(float, p)) for p in s], 'closed': False, 'dot': len(s) == 1, 'manual': True})
     return {'gl': gl, 'row': row, 'crop': crop, 'ink': ink, 'strokes': strokes, 'sw': sw}
+
+
+def auto_join(strokes, ink, x0, y0, on=0.7):
+    """keep the pen down between consecutive strokes when the jump from one's end to the next's start
+    runs along ink already drawn (the stem of a, d, g, p, q): the letter stays one gesture, so the
+    engine's per-stroke offsets can't pull bowl and stem apart."""
+    H, W = ink.shape
+    out = []
+    for s in strokes:
+        if out and not s.get('dot') and not out[-1].get('dot') and len(s['pts']) > 1:
+            a, b = out[-1]['pts'][-1], s['pts'][0]
+            n = max(2, int(math.hypot(b[0] - a[0], b[1] - a[1])))
+            hits = 0
+            for t in range(n + 1):
+                x = int(round(a[0] + (b[0] - a[0]) * t / n)) - x0
+                y = int(round(a[1] + (b[1] - a[1]) * t / n)) - y0
+                hits += 1 if (0 <= x < W and 0 <= y < H and ink[max(0, y - 1):y + 2, max(0, x - 1):x + 2].any()) else 0
+            if hits / (n + 1) >= on:
+                out[-1] = {**out[-1], 'pts': list(out[-1]['pts']) + list(s['pts']), 'closed': False}
+                continue
+        out.append(s)
+    return out
 
 
 # ---------------------------------------------------------------- normalisation to engine units
@@ -287,11 +321,29 @@ def normalise(hand, ex):
     limit_vertical(strokes, C, u, lower)
     out = {'strokes': strokes}
     script = hand.get('connected', False)
-    if script and lower and not gl.get('noJoin'):
+    natural_joins = hand.get('joins') == 'natural'
+    if script and lower and not gl.get('noJoin') and not natural_joins:
         J = -u['join'] * u['xRatio'] * C
         fix_joins(strokes, J, u, gl)
-    place(strokes, out, hand, u, gl, script and lower and not gl.get('noJoin'))
+    if natural_joins and lower:
+        place_natural(strokes, out, u, gl)
+    else:
+        place(strokes, out, hand, u, gl, script and lower and not gl.get('noJoin'))
     return out
+
+
+def place_natural(strokes, out, u, gl):
+    """'joins: natural' hands (partly joined italic): letters keep their own lead-ins and hairline exits, and
+    sit as close as on the plate: spacing is measured inside the x-height band, so a hairline exit reaches the
+    next letter where the copybook's does, and ascender flags and descender tails overhang their neighbours."""
+    xh = u['xRatio'] * u['cap']
+    pts = [p for s in strokes for p in s['pts']]
+    band = [p[0] for p in pts if -1.05 * xh <= p[1] <= 0.05 * xh] or [p[0] for p in pts]
+    gap = gl.get('gap', u.get('naturalGap', 0.0)) * u['cap']
+    l, r = min(band) - gap, max(band) + gap
+    for s in strokes:
+        s['pts'] = [[p[0] - l, p[1]] for p in s['pts']]
+    out['l'], out['r'] = 0, round(r - l)
 
 
 def limit_vertical(strokes, C, u, lower):
@@ -367,6 +419,18 @@ def fix_joins(strokes, J, u, gl):
         es['pts'] = join_head(es['pts'], J, u, gl)
 
 
+MEASURED = []  # rising angles (degrees) of the source's own lead-ins, where they cross the join height
+
+
+def entry_angle(u, gl):
+    """angle of a lead-in we have to add: the glyph's or the hand's own setting, else the angle measured
+    from this source's real connectors (build runs twice to measure first), else 35°."""
+    a = gl.get('entryAngle', u.get('entryAngle', 'auto'))
+    if a == 'auto':
+        a = u.get('_measuredEntry') or 35
+    return max(15.0, min(70.0, float(a)))
+
+
 def join_head(pts, J, u, gl):
     """make the stroke START at height J. A start below J (a connector rising from the baseline) is cut
     where it rises through J; a start above J (oval letters a c d g o q, which begin at the top) gets
@@ -378,15 +442,18 @@ def join_head(pts, J, u, gl):
             if b[0] < a[0] - 0.5 and i > 0:
                 break
             if (a[1] - J) * (b[1] - J) <= 0 and a[1] > b[1]:
+                p0, p1 = pts[max(0, i - 2)], pts[min(len(pts) - 1, i + 3)]
+                if p1[0] > p0[0]:
+                    MEASURED.append(math.degrees(math.atan2(p0[1] - p1[1], p1[0] - p0[0])))
                 return [_cross(pts, J, i)] + pts[i + 1:]
         # never rises through J: extend backwards down-left along a connector
         h = s[1] - J
-        ang = math.radians(gl.get('entryAngle', u.get('entryAngle', 35)))
+        ang = math.radians(entry_angle(u, gl))
         return [[s[0] - h / math.tan(ang), J]] + pts
     h = J - s[1]
     if h <= 0.5:
         return pts
-    ang = math.radians(gl.get('entryAngle', u.get('entryAngle', 35)))
+    ang = math.radians(entry_angle(u, gl))
     lead = math.atan2(-(pts[min(3, len(pts) - 1)][1] - s[1]), pts[min(3, len(pts) - 1)][0] - s[0])
     half = pts[:max(2, int(len(pts) * 0.6))]
     oval = min(p[0] for p in half) < s[0] - 0.25 * u['xRatio'] * u['cap']
@@ -697,6 +764,37 @@ def js_header(hand):
     return '\n'.join(lines)
 
 
+def natural(hand, u, results):
+    """the tradition's own proportions and movement, measured from the traced letters, for the engine's
+    hand sampler: slant (the copybook's) vs builtInSlant (already in these skeletons); x-height, ascender and
+    descender as fractions of cap height; width and advance of n o u in x-heights; joins."""
+    C = u['cap']
+    xh = u['xRatio'] * C
+    med = lambda v: round(sorted(v)[len(v) // 2], 3) if v else None
+    by = {}
+    for k, (ex, eng) in results.items():
+        by.setdefault(ex['gl']['ch'], []).append(eng)
+    tops = [-min(p[1] for s in e['s'] for p in s) / C for c in 'bdhkl' for e in by.get(c, []) if e['s']]
+    deps = [max(p[1] for s in e['s'] for p in s) / C for c in 'gjpqy' for e in by.get(c, []) if e['s']]
+    wids = [(max(p[0] for s in e['s'] for p in s) - min(p[0] for s in e['s'] for p in s)) / xh for c in 'nou' for e in by.get(c, []) if e['s']]
+    advs = [(e['r'] - e['l']) / xh for c in 'nou' for e in by.get(c, [])]
+    sl = u['slant']
+    src_slant = sl['source']
+    if hand.get('writers'):
+        ws = [w.get('slant') for w in hand['writers'].values() if w.get('slant')]
+        src_slant = med(ws) if ws else src_slant
+    out = {'slant': src_slant, 'builtInSlant': sl['target'], 'xHeight': round(u['xRatio'], 3),
+           'ascender': med(tops), 'descender': med(deps), 'advance': med(advs)}
+    if not hand.get('connected'):
+        out['width'] = med(wids)  # (in a joined hand the ink spans the connectors: see advance)
+    if hand.get('joins') == 'natural':
+        out['join'] = {'mode': 'natural'}  # letters keep the plate's own lead-ins and exits; no common join height
+    elif hand.get('connected'):
+        lifts = sorted({g['ch'] for g in hand['glyphs'] if g.get('noJoin') and not g.get('skip')})
+        out['join'] = {'height': u['join'], 'angle': u.get('_measuredEntry') or u.get('entryAngle'), 'lifts': ''.join(lifts)}
+    return out
+
+
 def emit(hand, results):
     u = U(hand)
     C = u['cap']
@@ -716,6 +814,7 @@ def emit(hand, results):
     }
     if hand.get('fallback'):
         meta['fallback'] = hand['fallback']
+    meta['natural'] = natural(hand, u, results)
     src = hand['source']
     data = {}
     sources = {'main': {k: src[k] for k in ('name', 'credit', 'url') if src.get(k)}}
@@ -767,12 +866,29 @@ def cmd_build(args):
     cache = {}
     results = {}
     cells = []
+    extracted = {}
+    if hand.get('connected'):
+        # pass 1: measure the source's own connector angle from the lead-ins we only had to cut
+        MEASURED.clear()
+        for gl in hand['glyphs']:
+            if gl.get('skip'):
+                continue
+            try:
+                ex = extract_glyph(hand, gl, cache)
+                extracted[glyph_key(gl)] = ex
+                normalise(hand, ex)
+            except Exception:
+                pass
+        if len(MEASURED) >= 6:  # too few natural lead-ins: keep the hand's own setting
+            m = sorted(MEASURED)[len(MEASURED) // 2]
+            hand.setdefault('units', {})['_measuredEntry'] = round(m, 1)
+            print(f'connector angle measured from {len(MEASURED)} lead-ins: {m:.1f}°')
     for gl in hand['glyphs']:
         if gl.get('skip'):
             continue
         key = glyph_key(gl)
         try:
-            ex = extract_glyph(hand, gl, cache)
+            ex = extracted.get(key) or extract_glyph(hand, gl, cache)
             norm = normalise(hand, ex)
             eng = to_engine(norm)
         except Exception as e:  # keep going; report

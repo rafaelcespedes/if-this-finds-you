@@ -1,8 +1,8 @@
 {
  "style": "arrighi",
  "label": "Chancery 1524",
- "family": "print",
- "connected": false,
+ "family": "script",
+ "connected": true,
  "fallback": "print",
  "tradition": {
   "name": "Italian chancery italic (cancellaresca)",
@@ -10,7 +10,7 @@
   "language": "Italian, Latin",
   "era": "1522–1524",
   "legibility": "modern",
-  "notes": "Broad-nib italic; letters written separately with short hairline exits, so it behaves as a print-family hand. The model behind modern italic school hands."
+  "notes": "Broad-nib italic, partly joined: letters keep the plate's own lead-ins and hairline exits and sit as close as on the plate, so a c d e h i k l m n t u touch the next letter with their exit hairline while b f g o p q r s x y z lift. The model behind modern italic school hands."
  },
  "source": {
   "manifest": "arrighi-1524",
@@ -42,7 +42,8 @@
   "maxDepth": 0.4,
   "maxDepthLower": 1.2,
   "lowerTop": 1.12,
-  "bearing": 0.06
+  "bearing": 0.06,
+  "naturalGap": 0.05
  },
  "rows": {
   "L1": {
@@ -1095,5 +1096,6 @@
    ],
    "note": "et-ligature"
   }
- ]
+ ],
+ "joins": "natural"
 }
