@@ -12,7 +12,8 @@
 //   A canvas player draws events[0..done) whole and the active one up to its arclength fraction:
 //     const { done, active, frac } = frameAt(tl, t)
 //
-// Determinism: all pauses come from rng('anim:' + seed); same page, same timeline.
+// Determinism: pauses come from rng('anim:' + seed + word identity); same page, same timeline, and
+// editing one word doesn't change the rhythm elsewhere.
 
 import { rng, clamp } from './core.js';
 import { kinematics } from './kinematics.js';
@@ -27,14 +28,16 @@ const STOP = /[.!?]["'’”)]*$/, PAUSE = /[,;:]["'’”)]*$/;
 //     item   = index into page.items; stroke = index into that item's g.strokes
 //     tn, sn = matching tables of normalised time and normalised arclength along the stroke (0..1)
 export function timeline(page, opts = {}) {
-  const r = rng('anim:' + (page.seed || ''));
+  let r = rng('anim:' + (page.seed || ''));
   const logn = (median, sigma, lo, hi) => clamp(median * Math.exp(sigma * clamp(r.gauss(), -2.5, 2.5)), lo, hi);
   const xh = page.xh || 400;
   const items = page.items;
   const events = [];
   const kOf = [];
   let k = 0;
-  for (const it of items) { kOf.push(k); if (it.kind === 'glyph') k += it.g.strokes.length; }
+  // letters and correction marks are written; placeholders aren't
+  const inks = (it) => it.kind === 'glyph' || it.kind === 'mark';
+  for (const it of items) { kOf.push(k); if (inks(it)) k += it.g.strokes.length; }
 
   const event = (it, j, si) => {
     const st = it.g.strokes[si];
@@ -54,6 +57,7 @@ export function timeline(page, opts = {}) {
     while (b < items.length && items[b].word === items[a].word) b++;
     const first = items[a];
     const tempo = first.tempo || 1;
+    r = rng('anim:' + (page.seed || '') + ':' + (first.wkey || first.word) + ':' + first.charIndex);
     if (prev) {
       let pause = logn(0.24, 0.3, 0.15, 0.4);
       if (STOP.test(prev.ch)) pause += 0.2 + 0.2 * r();
@@ -66,7 +70,7 @@ export function timeline(page, opts = {}) {
     let drawn = false;
     for (let j = a; j < b; j++) {
       const it = items[j];
-      if (it.kind !== 'glyph') { t += 0.2; continue; } // a placeholder: the writer hesitates
+      if (!inks(it)) { t += 0.2; continue; } // a placeholder: the writer hesitates
       for (let si = 0; si < it.g.strokes.length; si++) {
         const ev = event(it, j, si);
         if (ev.delayed) { later.push(ev); continue; }
@@ -240,4 +244,246 @@ export function playSVG(svg, page, opts = {}) {
     mask.remove();
   };
   return player;
+}
+
+// ---------- the pen catching up: ink the newest letters behind the typing ----------
+// While someone types, letters appear first as a faint "thought" in their final places, and the
+// writer's pen inks over them a few letters behind, at handwriting speed (writing-experience §3.2,
+// editor-ux §3.4). Renderer-agnostic and clock-free: the caller passes `now` (seconds).
+//
+//   const pen = createPen({ hold: 2 });           // Ink mode: hold back the last 2 typed letters
+//   pen.sync(page, now);                          // after every layout (keys must be stable: Ink mode)
+//   const s = pen.at(now);
+//   s.ink(item.key, strokeIndex)  -> 0..1   how much of that stroke is inked (renderCanvas `reveal`)
+//   s.thought(item.key)           -> 0..1   how strongly to show the faint thought letter (60 ms fade-in)
+//   s.writing                     -> { key, stroke, frac } | null, the pen tip
+//   s.busy                        -> letters still to ink
+//   pen.finish(now)                         ink everything now
+//
+// opts: { hold (letters held back, or 'word' to hold an unfinished last word: right for fair copy,
+//   where the word being typed changes as it grows), holdMs (after this pause the held letters are
+//   written anyway, default 0.7 s), speed (× handwriting speed, default 1.5), fast (top speed when far
+//   behind, default 4), behind (letters behind before speeding up, default 12), reducedMotion }
+// Items keep their place in the queue by item.key. A key that disappears (deleted before it was
+// inked) is dropped cleanly; one that appears is queued after everything already waiting.
+// Dots, bars and accents (delayed strokes) are added once the rest of their word is written.
+export function createPen(opts = {}) {
+  const hold = opts.hold == null ? 2 : opts.hold;
+  const holdMs = opts.holdMs == null ? 0.7 : opts.holdMs;
+  const base = opts.speed || 1.5, top = opts.fast || 4, behind = opts.behind == null ? 12 : opts.behind;
+  const reduce = opts.reducedMotion == null ? prefersReducedMotion() : !!opts.reducedMotion;
+  const inked = new Map();   // key -> number of strokes fully inked (Infinity = whole letter)
+  let queue = [];            // { key, si, dur, word, delayed, tn, sn }
+  const seenAt = new Map();  // key -> time first seen (thought fade-in)
+  const kin = new WeakMap();
+  let cur = null;            // the stroke being written: { s, t0 }
+  let clock = null, gapLeft = 0, typedAt = -Infinity, lastWord = null, page = null, closed = new Set();
+  let heldKeys = new Set();
+
+  const timing = (center, xh) => {
+    let k = kin.get(center);
+    if (!k) {
+      const K = kinematics(center, { xh });
+      const n = center.length, T = K.duration || 1, L = n > 1 ? K.s[n - 1] || 1 : 1;
+      const tn = new Float32Array(n), sn = new Float32Array(n);
+      for (let i = 0; i < n; i++) { tn[i] = K.t[i] / T; sn[i] = n > 1 ? K.s[i] / L : 1; }
+      k = { dur: K.duration, tn, sn };
+      kin.set(center, k);
+    }
+    return k;
+  };
+
+  function sync(pg, now) {
+    // first catch the pen up to this moment with what was on the page until now, so its progress
+    // depends only on time, never on how often someone asked for a frame
+    if (clock == null) clock = now; // the pen's clock starts when the first letters arrive
+    else advance(now, reduce);
+    page = pg;
+    const xh = pg.xh || 400;
+    const present = new Set();
+    // letters and correction marks (kind 'mark'), in page order: marks are written where they appear
+    const glyphs = pg.items.filter((it) => it.kind === 'glyph' || it.kind === 'mark');
+    // the end of the text is still being typed: which letters to hold back
+    const open = !/[\s]$/.test(pg.text || '') && glyphs.length;
+    heldKeys = new Set();
+    if (open && hold) {
+      if (hold === 'word') { const w = glyphs[glyphs.length - 1].wkey; for (const it of glyphs) if (it.wkey === w) heldKeys.add(it.key); }
+      else for (const it of glyphs.slice(-hold)) heldKeys.add(it.key);
+    }
+    closed = new Set();
+    let wPrev = null;
+    for (const it of glyphs) { if (wPrev && wPrev !== it.wkey) closed.add(wPrev); wPrev = it.wkey; }
+    if (!open && wPrev) closed.add(wPrev);
+    // strokes already waiting, or on the pen right now, are not queued again
+    const queued = new Set(queue.map((q) => q.key + '#' + q.si));
+    if (cur) queued.add(cur.s.key + '#' + cur.s.si);
+    for (const it of glyphs) {
+      present.add(it.key);
+      if (!seenAt.has(it.key)) seenAt.set(it.key, now);
+      if (inked.get(it.key) === Infinity) continue;
+      const g = it.glyph || it.g;
+      g.strokes.forEach((st, si) => {
+        if ((inked.get(it.key) || 0) > si || queued.has(it.key + '#' + si)) return;
+        const t = timing(st.center, xh);
+        queue.push({ key: it.key, si, word: it.wkey, delayed: !!st.delayed, dur: Math.max(st.dot ? 0.05 : 0.04, t.dur) / (it.tempo || 1), tn: t.tn, sn: t.sn });
+      });
+    }
+    // letters deleted before the pen reached them simply go (they were only a thought)
+    queue = queue.filter((q) => present.has(q.key));
+    if (cur && !present.has(cur.s.key)) cur = null;
+    for (const k of [...seenAt.keys()]) if (!present.has(k)) seenAt.delete(k);
+    typedAt = now;
+    if (reduce) advance(now, true);
+  }
+
+  // the next stroke the pen may write, or null
+  function next(now, force) {
+    const idle = force || now - typedAt >= holdMs;
+    for (let i = 0; i < queue.length; i++) {
+      const q = queue[i];
+      if (heldKeys.has(q.key) && !idle) return null; // everything after a held letter waits too
+      if (q.delayed) {
+        // dots, bars and accents: after the rest of the word, once the word is finished (or typing paused)
+        if (queue.some((o) => o.word === q.word && !o.delayed)) continue;
+        if (!closed.has(q.word) && !idle) continue;
+      }
+      return i;
+    }
+    return null;
+  }
+
+  // move the pen forward from its clock to `now` (instantly: write everything it may write now;
+  // force: also what it is holding back)
+  function advance(now, instant, force) {
+    const budget = instant ? Infinity : 0;
+    if (clock == null) clock = now;
+    let t = budget === Infinity ? Infinity : Math.max(0, now - clock);
+    clock = now;
+    let guard = 0;
+    while (t > 0 && guard++ < 100000) {
+      if (!cur) {
+        if (gapLeft > 0) { const d = Math.min(gapLeft, t); gapLeft -= d; t -= d; continue; }
+        const i = next(now, force);
+        if (i == null) break;
+        const s = queue.splice(i, 1)[0];
+        cur = { s, done: 0 };
+      }
+      // speed: a little faster than a person, much faster when far behind
+      const waiting = new Set(queue.map((q) => q.key)).size;
+      const speed = budget === Infinity ? Infinity : base + (top - base) * clamp((waiting - behind) / behind, 0, 1);
+      const need = (cur.s.dur - cur.done) / speed;
+      if (t >= need) {
+        t -= need;
+        inked.set(cur.s.key, Math.max(inked.get(cur.s.key) || 0, cur.s.si + 1));
+        if (!queue.some((q) => q.key === cur.s.key)) inked.set(cur.s.key, Infinity);
+        // pen up: a short lift between strokes, longer between words
+        const ni = next(now, force), nextQ = ni == null ? null : queue[ni];
+        gapLeft = budget === Infinity ? 0 : (nextQ && nextQ.word !== cur.s.word ? 0.18 : 0.07) / speed;
+        lastWord = cur.s.word;
+        cur = null;
+      } else { cur.done += t * speed; t = 0; }
+    }
+  }
+
+  function at(now) {
+    advance(now, reduce);
+    const c = cur;
+    return {
+      ink: (key, si) => {
+        const n = inked.get(key);
+        if (n === Infinity || (n || 0) > si) return 1;
+        if (c && c.s.key === key && c.s.si === si) return strokeFraction(c.s, c.done / c.s.dur);
+        return 0;
+      },
+      thought: (key) => {
+        if (inked.get(key) === Infinity) return 0;
+        const t0 = seenAt.get(key);
+        return t0 == null ? 0 : clamp((now - t0) / 0.06, 0, 1);
+      },
+      writing: c ? { key: c.s.key, stroke: c.s.si, frac: strokeFraction(c.s, c.done / c.s.dur) } : null,
+      busy: queue.length + (c ? 1 : 0),
+    };
+  }
+
+  return {
+    sync, at,
+    finish(now) { advance(now, true, true); },
+    reducedMotion: reduce,
+    // for renderCanvas({ reveal }): (item, strokeIndex) -> 0..1 at the time of the last at()
+    reveal(now) { const s = at(now); return (item, si) => s.ink(item.key, si); },
+  };
+}
+
+// Paint a pen state onto an SVG drawn with renderSVG(p, page, { runs: true, strokeKeys: true }).
+// Thought letters are the same strokes in faint graphite; inked strokes are normal ink; the stroke being
+// written is revealed along its centerline over a faint copy of itself, so nothing flickers.
+// opts: { emPx, thought (opacity of a thought letter, default 0.16), graphite (colour, default #6f6f78) }
+export function paintPen(svg, page, s, opts = {}) {
+  const doc = svg.ownerDocument;
+  let st = svg.__shPen;
+  if (!st) {
+    const id = 'sh-pen-' + (++uid);
+    const defs = svg.querySelector('defs') || svg.insertBefore(doc.createElementNS(NS, 'defs'), svg.firstChild);
+    const style = doc.createElementNS(NS, 'style');
+    // (ink paths carry their own fill, so the graphite goes on them too; CSS beats presentation attributes)
+    const gr = opts.graphite || '#6f6f78';
+    style.textContent = `.${id} [data-s].sh-th, .${id} [data-s].sh-th *, .${id} .sh-under, .${id} .sh-under *{fill:${gr}}`;
+    const mask = doc.createElementNS(NS, 'mask');
+    mask.setAttribute('id', id);
+    mask.setAttribute('maskUnits', 'userSpaceOnUse');
+    for (const [k, v] of [['x', -1e5], ['y', -1e5], ['width', 2e5], ['height', 2e5]]) mask.setAttribute(k, v);
+    const tip = doc.createElementNS(NS, 'path');
+    for (const [k, v] of [['fill', 'none'], ['stroke', '#fff'], ['stroke-linecap', 'round'], ['stroke-linejoin', 'round'], ['pathLength', '1'], ['stroke-dasharray', '1 2']]) tip.setAttribute(k, v);
+    mask.appendChild(tip);
+    defs.appendChild(style); defs.appendChild(mask);
+    svg.classList.add(id);
+    st = svg.__shPen = { id, tip, active: null, under: null };
+  }
+  const sc = (opts.emPx || 58) / 1000;
+  const thoughtOpacity = opts.thought == null ? 0.16 : opts.thought;
+  const byKey = new Map(page.items.map((it) => [it.key, it]));
+  const w = s.writing;
+  const activeKey = w ? w.key + '#' + w.stroke : null;
+  if (st.active && st.active !== activeKey) {
+    const old = svg.querySelector(`[data-s="${st.active}"]`);
+    if (old) old.removeAttribute('mask');
+    if (st.under) st.under.remove();
+    st.active = null; st.under = null;
+  }
+  svg.querySelectorAll('[data-s]').forEach((el) => {
+    if (el === st.under) return;
+    const ks = el.getAttribute('data-s'), cut = ks.lastIndexOf('#');
+    const key = ks.slice(0, cut), si = +ks.slice(cut + 1);
+    const f = s.ink(key, si);
+    if (ks === activeKey) return;
+    if (f >= 1) { el.classList.remove('sh-th'); el.style.opacity = ''; }
+    else { el.classList.add('sh-th'); el.style.opacity = String(thoughtOpacity * s.thought(key)); }
+  });
+  if (w) {
+    const el = svg.querySelector(`[data-s="${activeKey}"]`);
+    const it = byKey.get(w.key);
+    if (el && it) {
+      if (st.active !== activeKey) {
+        // a faint copy stays underneath while the ink goes on
+        st.under = el.cloneNode(true);
+        st.under.removeAttribute('data-s');
+        st.under.removeAttribute('mask');
+        st.under.classList.remove('sh-th');
+        st.under.classList.add('sh-under');
+        st.under.style.opacity = String(thoughtOpacity);
+        el.parentNode.insertBefore(st.under, el);
+        el.classList.remove('sh-th'); el.style.opacity = '';
+        // the reveal follows the stroke's centerline in the run's own frame
+        const g = it.glyph || it.g, stroke = g.strokes[w.stroke], [lx, ly] = it.local || [0, 0];
+        let d = '';
+        for (const q of stroke.center) d += (d ? 'L' : 'M') + ((lx + q[0]) * sc).toFixed(1) + ' ' + ((-ly - q[1]) * sc).toFixed(1);
+        st.tip.setAttribute('d', d);
+        st.tip.setAttribute('stroke-width', ((2 * halfWidth(stroke) + 8) * sc + 2).toFixed(2));
+        // (the mask is drawn in the masked element's own space, which already includes the run's transform)
+        el.setAttribute('mask', `url(#${st.id})`);
+        st.active = activeKey;
+      }
+      st.tip.setAttribute('stroke-dashoffset', (1 - w.frac).toFixed(4));
+    }
+  }
 }

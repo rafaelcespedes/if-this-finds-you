@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seedhand: the pen catches up</title>
+<style>
+  :root { --bg: #eeebe4; --paper: #fffdf8; --ink: #1c2a4a; --muted: #77736a; --line: #dcd7cc; --amber: #f5b642; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: #23211d; font: 14px/1.45 ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 14px; }
+  header { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  header b { font-size: 17px; }
+  header a, header span { color: var(--muted); font-size: 12px; }
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .bar select, .bar input, .bar button { font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  .paper { background: var(--paper); border-radius: 4px; box-shadow: 0 1px 0 #0000000d, 0 10px 30px -12px #3a2f1a33; padding: 28px 32px; min-height: 260px; position: relative; }
+  #sheet svg { display: block; width: 100%; height: auto; overflow: visible; }
+  textarea { width: 100%; min-height: 90px; font: 16px/1.5 ui-sans-serif, -apple-system, sans-serif; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .stat { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
+  .hint { color: var(--muted); font-size: 12px; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <header><b>The pen catches up</b><span>type below: your words appear as a faint thought, then the writer inks them</span><a href="index.html">← engine lab</a></header>
+  <div class="bar">
+    <input id="seed" aria-label="Seed" size="16">
+    <select id="style" aria-label="Style"></select>
+    <select id="mode" aria-label="Mode"><option value="ink">Ink mode (letters fixed once written)</option><option value="fair">Fair copy (edits anywhere)</option></select>
+    <button id="finish">Finish writing</button>
+    <span class="stat" id="stat"></span>
+  </div>
+  <div class="paper"><div id="sheet"></div></div>
+  <textarea id="text" spellcheck="false" aria-label="Text to write" placeholder="Dear Ada,"></textarea>
+  <p class="hint">In Ink mode, type at the end (letters already written never change; crossing out and inserting come with the corrections work). Select text in the box to see the highlighter on the page.</p>
+</main>
+<script type="module">
+import * as E from '../engine/index.js';
+const $ = (id) => document.getElementById(id);
+const h = new URLSearchParams(location.hash.slice(1));
+const EM = 52;
+let p, pen, page = null, svg = null, ink = null, overlay = null, geo = null, W = 0, runs = null;
+const now = () => performance.now() / 1000;
+
+function setup() {
+  p = E.makeHand($('seed').value || 'quiet-heron-17', $('style').value); // the same params object every key: caches stay warm
+  pen = E.createPen({ hold: $('mode').value === 'ink' ? 2 : 'word' });
+  page = null; svg = null;
+  $('sheet').innerHTML = '';
+  history.replaceState(null, '', '#' + new URLSearchParams({ seed: $('seed').value, style: $('style').value }));
+  relayout();
+}
+
+function relayout() {
+  W = $('sheet').clientWidth || 800;
+  const t0 = performance.now();
+  const opts = { maxWidth: W / (EM / 1000), firstBaseline: 1100 };
+  if ($('mode').value === 'ink') opts.ink = { salt: $('seed').value };
+  const next = E.layout(p, $('text').value, opts);
+  const t1 = performance.now();
+  let redrawn = 0, moved = 0;
+  if (!svg) {
+    // an empty sheet; every word is then drawn by one long-lived run renderer (one ink state, so
+    // pool gradients and the edge filter are defined once and never clash)
+    runs = E.runRenderer(p, { emPx: EM, strokeKeys: true });
+    $('sheet').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" aria-label="Handwritten text"><defs><g data-run-defs=""></g></defs><g data-ink="" ${runs.groupAttrs}></g></svg>`;
+    svg = $('sheet').querySelector('svg');
+    ink = svg.querySelector('[data-ink]');
+    overlay = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    svg.appendChild(overlay);
+  }
+  // only the words that changed are drawn again; the rest just move
+  const c = E.runChanges(page, next);
+  for (const id of c.remove) { const g = svg.querySelector(`[data-run="${id}"]`); if (g) g.remove(); }
+  for (const r of c.move) { const g = svg.querySelector(`[data-run="${r.id}"]`); if (g) { g.setAttribute('transform', E.runTransform(r, EM)); g.setAttribute('data-pid', r.pid); } }
+  for (const r of c.add) ink.insertAdjacentHTML('beforeend', runs.run(next, r));
+  if (c.add.length) svg.querySelector('[data-run-defs]').innerHTML = runs.defs();
+  redrawn = c.add.length; moved = c.move.length;
+  const H = Math.ceil(next.height * EM / 1000);
+  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  page = next;
+  pen.sync(page, now());
+  geo = E.geometry(p, page);
+  const t2 = performance.now();
+  $('stat').textContent = `${page.text.length} chars · layout ${(t1 - t0).toFixed(1)} ms · keystroke ${(t2 - t0).toFixed(1)} ms · ${redrawn} words drawn, ${moved} moved`;
+  drawOverlay();
+}
+
+// the caret (a slanted pen tip on the line's own baseline) and the amber highlighter
+function drawOverlay() {
+  if (!geo || !overlay) return;
+  const sc = EM / 1000, a = $('text').selectionStart, b = $('text').selectionEnd;
+  let html = '';
+  if (b > a) for (const r of geo.selection(a, b)) html += `<path d="${E.pathD(r.points, sc)}" fill="var(--amber)" fill-opacity="0.38" stroke="var(--amber)" stroke-opacity="0.38" stroke-width="3" stroke-linejoin="round" style="mix-blend-mode:multiply"/>`;
+  else if (document.activeElement === $('text')) {
+    const c = geo.caretAt(a, 'after');
+    if (c) html += `<line x1="${(c.bottom[0] * sc).toFixed(1)}" y1="${(c.bottom[1] * sc).toFixed(1)}" x2="${(c.top[0] * sc).toFixed(1)}" y2="${(c.top[1] * sc).toFixed(1)}" stroke="var(--ink)" stroke-opacity="0.6" stroke-width="1.5" stroke-linecap="round"/>`;
+  }
+  overlay.innerHTML = html;
+}
+
+function frame() {
+  if (svg && page) E.paintPen(svg, page, pen.at(now()), { emPx: EM });
+  requestAnimationFrame(frame);
+}
+
+for (const n of E.styleNames()) $('style').add(new Option(E.getStyle(n).label || n, n));
+$('seed').value = h.get('seed') || 'quiet-heron-17';
+if (h.get('style')) $('style').value = h.get('style'); else $('style').value = E.styleNames().includes('script') ? 'script' : E.styleNames()[0];
+$('seed').addEventListener('change', setup);
+$('style').addEventListener('change', setup);
+$('mode').addEventListener('change', setup);
+$('text').addEventListener('input', relayout);
+for (const ev of ['select', 'keyup', 'click', 'focus', 'blur']) $('text').addEventListener(ev, drawOverlay);
+document.addEventListener('selectionchange', drawOverlay);
+$('finish').addEventListener('click', () => pen.finish(now()));
+window.addEventListener('resize', setup);
+setup();
+requestAnimationFrame(frame);
+$('text').focus();
+window.Seedhand = { E, get page() { return page; }, get pen() { return pen; }, relayout };
+</script>
+</body>
+</html>
