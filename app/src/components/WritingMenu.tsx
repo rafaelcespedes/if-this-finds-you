@@ -2,6 +2,7 @@
 // what you can do with the sheet (a fair copy, a fresh sheet, a blank page instead of a found letter), the
 // signature, and editing the text plainly. The look lives in the panel; this is about the writing.
 import { Check, ChevronDown } from 'lucide-react';
+import { useRef } from 'react';
 import { DropdownMenu } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +23,8 @@ interface Props {
   onSign: () => void;
   plainText: boolean;
   onPlainText: () => void;
+  /** after a choice: back to the letter if it was in use (true when it took the focus from the menu's button) */
+  onAfter?: () => boolean;
 }
 
 const LABEL: Record<WritingMode, string> = { ink: 'In ink', pencil: 'In pencil', fair: 'Fair copy' };
@@ -32,7 +35,10 @@ const HINT: Record<WritingMode, string> = {
 };
 
 export function WritingMenu(p: Props) {
-  const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-[10px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
+  // a choice made (not Escape, not a click away): the writing carries on where it was
+  const chose = useRef(false);
+  const pick = (fn: () => void) => () => { chose.current = true; fn(); };
+  const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -50,11 +56,15 @@ export function WritingMenu(p: Props) {
           align="end"
           sideOffset={6}
           collisionPadding={12}
+          onCloseAutoFocus={(e) => {
+            if (chose.current && p.onAfter?.()) e.preventDefault();
+            chose.current = false;
+          }}
           className="z-50 w-[272px] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,#fdfcf9_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
         >
           {p.inkAvailable && (
             <>
-              <DropdownMenu.RadioGroup value={p.mode} onValueChange={(v) => p.onMode(v as WritingMode)}>
+              <DropdownMenu.RadioGroup value={p.mode} onValueChange={(v) => pick(() => p.onMode(v as WritingMode))()}>
                 {(['ink', 'pencil', 'fair'] as WritingMode[]).map((m) => (
                   <DropdownMenu.RadioItem key={m} value={m} className={cn(item, 'items-start')}>
                     <span className="mt-0.5 grid size-4 shrink-0 place-items-center">
@@ -72,12 +82,12 @@ export function WritingMenu(p: Props) {
           )}
           {p.inkAvailable && p.mode === 'ink' && p.inkLetter && (
             <>
-              <DropdownMenu.Item className={item} onSelect={p.onFairCopy}><span className="w-4" />Make a fair copy</DropdownMenu.Item>
-              <DropdownMenu.Item className={item} onSelect={p.onFreshSheet}><span className="w-4" />Fresh sheet</DropdownMenu.Item>
+              <DropdownMenu.Item className={item} onSelect={pick(p.onFairCopy)}><span className="w-4" />Make a fair copy</DropdownMenu.Item>
+              <DropdownMenu.Item className={item} onSelect={pick(p.onFreshSheet)}><span className="w-4" />Fresh sheet</DropdownMenu.Item>
             </>
           )}
-          {p.onBlankPage && <DropdownMenu.Item className={item} onSelect={p.onBlankPage}><span className="w-4" />Blank page</DropdownMenu.Item>}
-          <DropdownMenu.Item className={item} onSelect={p.onSign}>
+          {p.onBlankPage && <DropdownMenu.Item className={item} onSelect={pick(p.onBlankPage)}><span className="w-4" />Blank page</DropdownMenu.Item>}
+          <DropdownMenu.Item className={item} onSelect={pick(p.onSign)}>
             <span className="grid w-4 place-items-center">{p.signed && <Check className="size-4 text-[var(--ink)]" aria-hidden />}</span>
             {p.signed ? 'Signed' : 'Sign it'}
           </DropdownMenu.Item>

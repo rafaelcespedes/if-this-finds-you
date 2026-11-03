@@ -59,6 +59,8 @@ export interface PanelProps {
   onNewHand: () => void;
   /** the same letter in another writer's hand (stationery kept) */
   onChangeWriter: () => void;
+  /** after a choice in a popover (Change writer): back to the letter if it was in use; true when it took the focus */
+  resumeWriting?: () => boolean;
   onSimilarHand: () => void;
   onSeed: (seed: string) => void;
   onStyle: (style: string) => void;
@@ -145,6 +147,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
   const sources = handSources(p);
   const letter = state.sample ? sampleById(state.sample) : undefined;
   const dt = 'text-[11.5px] text-muted-foreground';
+  const changed = useRef(false);
   return (
     <Popover.Root>
       <Popover.Trigger asChild>{children}</Popover.Trigger>
@@ -158,7 +161,11 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           // scrolls it rather than dragging the sheet it opened from (React events bubble through the portal)
           onPointerDown={(e) => e.stopPropagation()}
           onPointerMove={(e) => e.stopPropagation()}
-          className="z-50 max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-24px))] w-[min(320px,calc(100vw-24px))] origin-(--radix-popover-content-transform-origin) overflow-y-auto overscroll-contain rounded-2xl border border-border bg-[#fdfcf9] p-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
+          onCloseAutoFocus={(e) => {
+            if (changed.current && props.resumeWriting?.()) e.preventDefault();
+            changed.current = false;
+          }}
+          className="z-50 max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-24px))] w-[min(320px,calc(100vw-24px))] origin-(--radix-popover-content-transform-origin) overflow-y-auto overscroll-contain rounded-2xl border border-border bg-[var(--field)] p-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
         >
           <div style={{ color: inkColor(state.ink) }}>
             <Signature p={p} name={name} ink="currentColor" emPx={30} className="-ml-1 h-[46px] overflow-visible" />
@@ -166,7 +173,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           <div className="mt-1 text-[15px] leading-tight font-medium">{name}</div>
           <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{describeHand(p)}</p>
           <Popover.Close asChild>
-            <Button variant="secondary" onClick={props.onChangeWriter} className="mt-3 w-full">
+            <Button variant="secondary" onClick={() => { changed.current = true; props.onChangeWriter(); }} className="mt-3 w-full">
               <Shuffle aria-hidden /> Change writer
             </Button>
           </Popover.Close>
@@ -182,7 +189,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
                   {letter.author}, {letter.year}{letter.title ? `. ${letter.title}` : ''}
                   {letter.translator && <>, translated by {letter.translator.name}</>}. Public domain.
                   {letter.source?.url && (
-                    <> <a href={letter.source.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">Source</a></>
+                    <> <a href={letter.source.url} target="_blank" rel="noreferrer" className="underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:text-foreground">Source</a></>
                   )}
                 </dd>
               </div>
@@ -194,7 +201,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
                   {sources.map((s) => (
                     <span key={s.name}>
                       {sourceLine(s.name, readerCredit(s.credit))}
-                      {s.url && <> <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">Source</a></>}
+                      {s.url && <> <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:text-foreground">Source</a></>}
                     </span>
                   ))}
                 </dd>
@@ -274,7 +281,7 @@ function MenuItem({ children, icon, onSelect, disabled, quiet, hint }: { childre
       disabled={disabled}
       onSelect={onSelect}
       className={cn(
-        'flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[10px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
+        'flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
         quiet ? 'text-[13px]' : 'text-[14px]',
         hint && 'py-2',
       )}
@@ -296,7 +303,7 @@ function MenuItem({ children, icon, onSelect, disabled, quiet, hint }: { childre
  */
 export function LetterStatus({ letter, className }: PanelProps & { className?: string; compact?: boolean }) {
   if (!letter) return null;
-  const link = 'shrink-0 rounded-md px-1 py-0.5 font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5';
+  const link = 'shrink-0 rounded-md px-1 py-0.5 font-medium text-foreground underline decoration-[var(--rule-link)] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5';
   return (
     // what the letter is lives on the sheet now (its label); here, only the ways to the others
     <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted-foreground', className)}>
@@ -366,7 +373,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
             <button
               type="button"
               onClick={props.onNewHand}
-              className="justify-self-start rounded-md px-1 py-0.5 text-[12.5px] font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
+              className="justify-self-start rounded-md px-1 py-0.5 text-[12.5px] font-medium text-foreground underline decoration-[var(--rule-link)] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
             >
               Roll a neat one
             </button>
@@ -431,6 +438,8 @@ function Group({ label, value, aside, children, className, first, lock }: { labe
     <section data-row aria-labelledby={id} className={cn('grid grid-cols-[minmax(0,1fr)] gap-2 py-3.5', !first && 'border-t border-border/70', className)}>
       <div className="flex min-h-7 items-center justify-between gap-3">
         <h3 id={id} className="flex min-w-0 items-baseline gap-2 text-[13px] font-medium">
+          {/* the rubric: a vermilion paragraph mark, the way scribes marked where each part begins */}
+          <span aria-hidden className="-mr-1.5 text-[var(--mark)]">¶</span>
           {label}
           {value && <span className="truncate font-normal text-muted-foreground"><span className="sr-only">: </span>{value}</span>}
           {lock && (
@@ -564,7 +573,7 @@ function Switch({ label, hint, tip, checked, onChange, words: say }: { label: st
         onClick={() => onChange(!checked)}
         className={cn(
           "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring after:absolute after:-inset-2 after:content-['']",
-          checked ? 'bg-[var(--ink)]' : 'bg-[#dcd6ca] shadow-[inset_0_0_0_1.5px_#8a8478]',
+          checked ? 'bg-[var(--mark)]' : 'bg-[var(--switch-off)] shadow-[inset_0_0_0_1.5px_#8a8478]',
         )}
       >
         <span
@@ -643,7 +652,7 @@ function SeedField({ seed, onCommit, onFocus }: { seed: string; onCommit: (s: st
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           if (e.key === 'Escape') { setV(seed); (e.target as HTMLInputElement).blur(); }
         }}
-        className="tabular min-w-0 flex-1 rounded-md border border-border bg-[#fdfcf9] px-2 py-1.5 text-[13px] text-foreground transition-[border-color,background-color] duration-150 focus:border-input focus:bg-[#fffefb] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:px-2.5 pointer-coarse:py-2.5 pointer-coarse:text-[16px]"
+        className="tabular min-w-0 flex-1 rounded-md border border-border bg-[var(--field)] px-2 py-1.5 text-[13px] text-foreground transition-[border-color,background-color] duration-150 focus:border-input focus:bg-[#fffefb] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:px-2.5 pointer-coarse:py-2.5 pointer-coarse:text-[16px]"
       />
     </div>
   );
@@ -684,7 +693,7 @@ function OccasionRow({ state, onOccasion, onAmount }: PanelProps) {
             id={id}
             value={state.occasion ?? ''}
             onChange={(e) => onOccasion(e.target.value || null)}
-            className="h-8 cursor-pointer appearance-none rounded-md border border-border bg-[#fdfcf9] py-0 pr-7 pl-2.5 text-[13px] text-foreground shadow-[0_1px_1px_rgba(60,45,20,0.04)] transition-colors duration-150 hover-device:hover:bg-[#f4f1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:h-11 pointer-coarse:text-[16px]"
+            className="h-8 cursor-pointer appearance-none rounded-md border border-border bg-[var(--field)] py-0 pr-7 pl-2.5 text-[13px] text-foreground shadow-[0_1px_1px_rgba(60,45,20,0.04)] transition-colors duration-150 hover-device:hover:bg-[#f4f1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:h-11 pointer-coarse:text-[16px]"
           >
             <option value="">Everyday</option>
             {OCCASIONS.map((o) => (
@@ -787,7 +796,7 @@ function PaperVariants({ value, onChange }: { value: PaperId; onChange: (id: Pap
             <SegmentedItem
               value={v.id}
               aria-label={`${v.variant}: ${v.hint}`}
-              className="h-7 rounded-full bg-secondary px-2.5 text-[12px] aria-checked:bg-[#fffefb] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-11 pointer-coarse:px-3.5"
+              className="h-7 rounded-[3px] bg-secondary px-2.5 text-[12px] aria-checked:bg-[var(--tile-on)] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-11 pointer-coarse:px-3.5"
             >
               {v.variant}
             </SegmentedItem>
@@ -825,7 +834,7 @@ const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value
               aria-label={`${paper.name}: ${paper.hint}`}
               className={cn(
                 // chosen: the whole tile lifts and takes the ink's ring, as the pens do (a variant keeps its family's tile chosen)
-                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] aria-checked:bg-[#fffefb] aria-checked:text-foreground aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)] pointer-coarse:h-auto',
+                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] aria-checked:bg-[var(--tile-on)] aria-checked:text-foreground aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)] pointer-coarse:h-auto',
                 rows && 'w-[86px] shrink-0 snap-start bg-secondary',
               )}
             >

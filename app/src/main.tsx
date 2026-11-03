@@ -3,12 +3,15 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './density.css';
-import './themes.css';
+import { applyLook } from './lib/look';
+import './themes/reading-room.css';
+import './themes/postmarked.css';
 import './controls.css';
-import { applyThemeLab } from './theme-lab';
 import { applyControlsLab } from './controls-lab';
 
-applyThemeLab();
+// the look being compared (?look=…); today's design when none
+applyLook();
+// control patterns being tried (?controls=1…6)
 applyControlsLab();
 
 createRoot(document.getElementById('root')!).render(

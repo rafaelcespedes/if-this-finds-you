@@ -1,6 +1,6 @@
 // Controls research prototype (Nov 2026): ?controls=1…6 (combine with commas, e.g. ?controls=1,2,3) tries the
-// control patterns in controls.css, on direction 2 (Rubric) unless ?theme says otherwise. Kept for the tab like
-// ?theme, never in share links. Temporary.
+// control patterns in controls.css, on the Rubric palette. Kept for the tab like ?look, never in share links.
+// Temporary.
 //   1 ink-bar sliders: the row is the slider, its name and word inside the bar
 //   2 the writer's own value catches: a detent at the natural mark, a settle on a tap, a give at the ends
 //   3 a sliding face: Print/Joined, the pen tip and the paper kinds move one face between choices
@@ -31,7 +31,6 @@ export function applyControlsLab() {
   if (!on.size) return;
   const root = document.documentElement;
   root.dataset.controls = [...on].join(' ');
-  if (!root.dataset.theme) root.dataset.theme = '2';
   if (on.has('3')) slidingFaces();
 }
 

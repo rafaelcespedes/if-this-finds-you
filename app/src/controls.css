@@ -1,5 +1,5 @@
 /* Controls research prototype (Nov 2026): ?controls=1…6 (controls-lab.ts). Patterns learned from tuning panels
-   (DialKit and friends), dressed in the panel's own colours. Unlayered, like density.css and themes.css.
+   (DialKit and friends), dressed in the panel's own colours. Unlayered, like density.css.
    Compact sizes stay (density.css); only the feel of each control changes. Temporary. */
 
 /* ---------- 1 · ink-bar sliders: the row is the slider ---------- */
@@ -28,7 +28,7 @@
   --track: 100%;
 }
 :root[data-controls~='1'] [data-slot='slider'] > span:first-child {
-  border-radius: var(--btn-r, 6px);
+  border-radius: var(--radius);
   background-color: var(--chip) !important;
 }
 :root[data-controls~='1'] [data-slot='slider'] > span:first-child > span {
@@ -125,19 +125,13 @@
   left: 0;
   z-index: 0;
   pointer-events: none;
-  border-radius: var(--btn-r, 6px);
+  border-radius: var(--radius);
   background: var(--tile-on, #fffefb);
   box-shadow: 0 1px 2px rgba(40, 30, 10, 0.12), 0 0 0 0.5px rgba(40, 30, 10, 0.06);
   transition: transform 220ms cubic-bezier(0.25, 1, 0.5, 1), width 220ms cubic-bezier(0.25, 1, 0.5, 1), height 220ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 :root[data-controls~='3'] :is([aria-label^='Kind of'], [aria-label='Tip']) > .lab-face {
   box-shadow: 0 0 0 1.5px var(--ink);
-}
-:root[data-controls~='3'] [aria-label^='Kind of'] > .lab-face {
-  border-radius: 999px;
-}
-:root[data-theme='2'][data-controls~='3'] [aria-label^='Kind of'] > .lab-face {
-  border-radius: 3px;
 }
 :root[data-controls~='3'] :is([data-slot='segmented']:is([aria-label='Print or joined'], [aria-label^='Kind of'], [data-lab-words]), [role='radiogroup'][aria-label='Tip']) > :not(.lab-face) {
   position: relative;

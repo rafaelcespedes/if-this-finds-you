@@ -24,7 +24,7 @@ const base = (import.meta.env.BASE_URL ?? '/').replace(/\/?$/, '/');
 // the header is 22-26 px tall: #32's one-line cut (the stacked mark needs 56 px or more, brand/wordmark/README.md)
 export const logoSrc = LOGO === '5' ? `${base}brand/wordmark-5.svg` : `${base}brand/wordmark-small.svg`;
 /** Heights that give both logos the same letter size (#5 is a single heavier line, so a touch shorter). */
-export const logoHeight = LOGO === '5' ? 'h-[19px] lg:h-[22px]' : 'h-[22px] lg:h-[26px]';
+export const logoHeight = LOGO === '5' ? 'h-[21px] lg:h-[22px]' : 'h-[22px] lg:h-[26px]';
 export const faviconSrc = LOGO === '5' ? `${base}brand/favicon-5.svg` : `${base}brand/favicon.svg`;
 /** The library link, keeping a logo that isn't the default. */
 /** A link to our other pages, keeping a logo that isn't the default. */

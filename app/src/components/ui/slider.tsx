@@ -157,8 +157,8 @@ function Slider({
       onPointerCancel={onPointerEnd}
       {...props}
     >
-      <SliderPrimitive.Track className="relative h-[3px] w-full grow overflow-hidden rounded-full bg-[#a39c8f]">
-        <SliderPrimitive.Range className="absolute h-full bg-[color-mix(in_oklab,var(--ink)_78%,transparent)]" />
+      <SliderPrimitive.Track className="relative h-[3px] w-full grow overflow-hidden rounded-full bg-[#928a7d]">
+        <SliderPrimitive.Range className="absolute h-full bg-[var(--mark)]" />
       </SliderPrimitive.Track>
       {markPct != null && (
         <span
