@@ -211,6 +211,14 @@ forces one), the letter's number, and a cancellation where given. Placement, rot
 under or over the handwriting are seeded by the letter and the hand. Nothing is printed without a look asking.
 `/papers.html?view=marks` shows every badge on several papers.
 
+Three sets, picked with `?marks=` (`DEFAULT_MARK_MODE` in marks.ts sets the default): `plain` (clean impressions),
+`organic` (a seeded minority of stamps hand-applied, with one or two flaws: ink feathering into soft paper, over-inking,
+a starved rim, a ghost strike, a thumb smudge, the pad's weave, a numbering wheel off its line) and `adorned` (organic,
+plus the letter's era in `lib/paper/adorn.ts`: fold creases, a wafer or wax seal's fragment, a pin's or a paperclip's
+rust, the archivist's pencilled folio, foxing and a tide line; no rubber stamp before 1870). Review switches:
+`?flaw=bleed` puts a flaw on every stamp, `?adorn=all` gives a letter everything its era allows.
+`/papers.html?view=compare` shows letters across the eras in all three.
+
 Sizes come from makers' and retailers' listings, DIN 5008, USPS and Wikipedia; colours and line weights are matched
 by eye. Everything is painted by `lib/paper/paint.ts` from small textures made once (grain, formation, cockle)
 and stretched, so a sheet paints in a few milliseconds; shared textures and outlines are made in idle time.

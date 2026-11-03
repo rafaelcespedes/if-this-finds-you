@@ -4,6 +4,7 @@ import { paintHere, paintOff, paintsOffThread, warmPaper, type PaperBitmap, type
 import { hideMarks, markBox, planMarks, printMarks, setNoteWriter, showMarks, type MarkInput } from '@/lib/paper/marks';
 import { writeNote } from '@/lib/paper/pencil-note';
 import { perf } from '@/lib/perf';
+import { sampleById } from '@/lib/samples';
 import { cn } from '@/lib/utils';
 
 /**
@@ -84,12 +85,17 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     return () => io.disconnect();
   }, [crop]);
   const guide = useContext(PaperGuide);
-  const markInput = useContext(PaperMarks);
+  const given = useContext(PaperMarks);
+  // a found letter's provenance and kind come from its record, for the marks of its era
+  const markInput = useMemo(() => {
+    if (!given || (given.origin !== undefined && given.kind !== undefined)) return given;
+    const s = sampleById(given.id) as { origin?: string; kind?: string } | undefined;
+    return { ...given, origin: given.origin ?? s?.origin ?? null, kind: given.kind ?? s?.kind ?? null };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [given?.id, given?.hand, given?.place, given?.year, given?.number, given?.cancel, given?.look, given?.badge, given?.origin, given?.kind, given?.mode]);
   const plan = useMemo(
     () => (markInput && !crop && sheet === 0 ? planMarks(paper, markInput) : null),
-    // the input object may be new each render: plan from what it says
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [paper, crop, sheet, markInput?.id, markInput?.hand, markInput?.place, markInput?.year, markInput?.number, markInput?.cancel, markInput?.look, markInput?.badge],
+    [paper, crop, sheet, markInput],
   );
   const under = plan?.marks.filter((m) => m.layer === 'under') ?? [];
   const over = plan?.marks.filter((m) => m.layer === 'over') ?? [];
