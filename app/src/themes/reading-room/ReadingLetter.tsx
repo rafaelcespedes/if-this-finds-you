@@ -1,5 +1,5 @@
 // The Reading Room's letter page (archive/LetterPage.tsx renders this when ?look=reading-room): the sheet on the left
-// like an object on a desk, with its number stamped on it and a postmark; a narrow catalogue card on the right that
+// like an object on a desk, with its number and a location badge printed into the paper; a narrow catalogue card on the right that
 // stays put while you read, carrying the title, the facts, the hand menu and Share, with numbered notes. On phones the
 // card is a slip under the sheet. The dock becomes a request slip along the bottom edge (SlipDock).
 import { useId, type ReactNode, type RefObject } from 'react';
@@ -14,7 +14,7 @@ import type { ArchiveLetter } from '@/archive/model';
 import { CatalogueCard } from './CatalogueCard';
 import { callNo, type CardRecord } from './catalogue';
 import { useMarks } from './useCatalogue';
-import { SheetMarks } from './SheetMarks';
+import { LetterMarks } from './SheetMarks';
 
 const languages = (() => {
   try { return new Intl.DisplayNames(['en'], { type: 'language' }); } catch { return null; }
@@ -50,6 +50,8 @@ function recordOf(l: ArchiveLetter, no?: number): CardRecord {
 interface Props {
   letter: ArchiveLetter;
   name: string;
+  /** the hand's seed: with the letter, it seeds where the printed marks land */
+  hand: string;
   /** the sheet, as the letter page builds it (write-on, tap to finish, swipe to turn) */
   sheet: ReactNode;
   /** the column the sheet fills (the page measures it) */
@@ -96,8 +98,7 @@ export function ReadingLetter(p: Props) {
         {!wide && <p aria-hidden className="rr-letter-kicker">{record.title}</p>}
         <div ref={p.colRef} className="min-w-0">
           <div className="relative mx-auto" style={{ width: p.paperW * p.pxPerMm || undefined }}>
-            {p.sheet}
-            <SheetMarks key={letter.id} marks={marks} pxPerMm={p.pxPerMm} />
+            <LetterMarks id={letter.id} hand={p.hand}>{p.sheet}</LetterMarks>
           </div>
         </div>
         {!wide && <div className="mt-8">{card}</div>}

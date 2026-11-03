@@ -98,7 +98,6 @@ html[data-look='reading-room'] {
   --rr-faint: #666052; /* 4.9:1 on the room */
   --rr-edge: #d6ccb7; /* a card's cut edge */
   --rr-rule: color-mix(in oklab, var(--rr-ink) 15%, transparent); /* an index card's ruled lines */
-  --rr-postmark: #2b3443;
   --rr-book: 'RR Book', 'Iowan Old Style', Georgia, serif;
   --rr-caps: 'RR Caps', 'RR Book', Georgia, serif;
 
@@ -645,91 +644,34 @@ html[data-look='reading-room'] .rr-under-sheet {
   color: var(--rr-ink);
 }
 
-/* ---------- the stamps on a sheet: the number (signature) and the postmark (from Postmarked) ---------- */
-html[data-look='reading-room'] .rr-marks {
-  z-index: 2;
-}
-html[data-look='reading-room'] .rr-stamp {
+/* ---------- the number on a library card: a small paper tag on the sheet's top edge, clear of the writing ----------
+   (the marks on a letter's own sheets are printed into the paper: SheetMarks.tsx, lib/paper/marks.ts) */
+html[data-look='reading-room'] .rr-card-tag {
   position: absolute;
+  top: 0;
+  left: 9%;
+  z-index: 1;
   display: inline-flex;
   align-items: baseline;
   gap: 0.3em;
-  padding: 0.16em 0.5em 0.2em;
-  border: 1.5px solid currentColor;
-  outline: 0.75px solid currentColor;
-  outline-offset: 1.5px;
+  padding: 0.14em 0.5em 0.18em;
+  border: 1px solid var(--rr-edge);
   border-radius: 2px;
+  background: var(--rr-slip);
+  box-shadow: 0 1px 2px rgba(30, 39, 51, 0.12);
   color: var(--rr-red);
   font-family: var(--rr-caps);
+  font-size: 0.65625rem;
   letter-spacing: 0.06em;
   line-height: 1.1;
   white-space: nowrap;
-  opacity: 0.86;
-  transform: rotate(-2.5deg);
-  transform-origin: left top;
-  animation: rr-stamp 260ms var(--ease-out) 380ms both;
+  transform: translateY(-62%) rotate(-1.5deg);
 }
-html[data-look='reading-room'] .rr-stamp-n {
+html[data-look='reading-room'] .rr-card-tag-n {
   font-family: var(--rr-book);
   font-weight: 600;
   letter-spacing: 0.05em;
   font-variant-numeric: oldstyle-nums tabular-nums;
-}
-/* on a library card the number is a small tag pinned to the sheet's top edge, clear of the writing */
-html[data-look='reading-room'] .rr-stamp--card {
-  top: 0;
-  left: 9%;
-  z-index: 1;
-  font-size: 0.6562rem;
-  padding: 0.14em 0.5em 0.18em;
-  border: 1px solid var(--rr-edge);
-  outline: 0;
-  background: var(--rr-slip);
-  box-shadow: 0 1px 2px rgba(30, 39, 51, 0.12);
-  opacity: 1;
-  transform: translateY(-62%) rotate(-1.5deg);
-  animation: rr-fade 200ms var(--ease-out) 120ms both;
-}
-html[data-look='reading-room'] .rr-postmark {
-  position: absolute;
-  color: var(--rr-postmark);
-  opacity: 0.68;
-  transform: rotate(-11deg);
-  overflow: visible;
-  animation: rr-postmark 300ms var(--ease-out) 620ms both;
-}
-html[data-look='reading-room'] .rr-postmark-text {
-  font-family: var(--rr-caps);
-  font-weight: 500;
-}
-html[data-look='reading-room'] .rr-postmark-year {
-  font-family: var(--rr-book);
-  font-weight: 700;
-  font-variant-numeric: lining-nums;
-  letter-spacing: 0.04em;
-}
-@keyframes rr-stamp {
-  from {
-    opacity: 0;
-    transform: rotate(-2.5deg) scale(1.14);
-  }
-}
-@keyframes rr-postmark {
-  from {
-    opacity: 0;
-    transform: rotate(-11deg) scale(1.12);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-look='reading-room'] .rr-stamp,
-  html[data-look='reading-room'] .rr-postmark {
-    animation-name: rr-fade;
-    animation-duration: 160ms;
-  }
-  html[data-look='reading-room'] .rr-slip-body,
-  html[data-look='reading-room'] .rr-slip-chev {
-    transition: none;
-  }
 }
 @keyframes rr-fade {
   from {
@@ -928,10 +870,6 @@ html[data-look='reading-room'] .rr-dock-reply svg {
 
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
-  html[data-look='reading-room'] .rr-stamp,
-  html[data-look='reading-room'] .rr-postmark {
-    forced-color-adjust: auto;
-  }
   html[data-look='reading-room'] .rr-card,
   html[data-look='reading-room'] .rr-dock,
   html[data-look='reading-room'] .rr-slip {
