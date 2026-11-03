@@ -6,10 +6,13 @@
 // the sheet too, at full height it scrolls. The sheet is never modal: focus and the page stay free, so a tap
 // on the letter always starts writing.
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Shuffle } from 'lucide-react';
+import { ChevronRight, ChevronUp, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AboutHand, LetterStatus, LookControls, MoreControls, type PanelProps } from '@/components/Panel';
 import { cn } from '@/lib/utils';
+import { Signature } from '@/components/Signature';
+import { describeHand } from '@/lib/hands';
+import { inkColor } from '@/lib/inks';
 // the look being compared (?look=reading-room): "Bring another" in words (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { BringAnother } from '@/themes/reading-room/BringAnother';
@@ -266,15 +269,17 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
         </div>
         {/* large text: Find another goes under the name rather than squeezing it to nothing */}
         <div className="flex flex-wrap items-center gap-2 pt-1.5 pb-2.5">
+          {/* the writer's name in their own hand, as on desktop: it connects the sheet to the letter. It still opens
+              what's known about the hand (a quiet extra; the Writer row in the sheet is the way in that says so) */}
           <AboutHand {...props}>
             <button
               type="button"
               aria-label={`${props.name}: about this hand`}
-              className="group min-h-11 min-w-[7.5rem] flex-1 rounded-lg py-0.5 pl-1 text-left select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="peek-name min-h-11 min-w-[7.5rem] flex-1 rounded-lg py-0.5 select-none transition-transform duration-100 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              <span className="flex items-center gap-1 truncate text-[0.9375rem] leading-tight font-medium tracking-[-0.01em]">
-                <span className="truncate">{props.name}</span>
-                <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              <span key={props.state.seed + props.state.style} className="hand-in block min-w-0" style={{ color: inkColor(props.state.ink) }}>
+                {/* a long name scales down to fit the row, never cut short */}
+                <Signature p={props.p} name={props.name} ink="currentColor" emPx={32} className="-ml-0.5 [&_svg]:max-h-[46px] [&_svg]:w-auto [&_svg]:overflow-visible" />
               </span>
             </button>
           </AboutHand>
@@ -312,6 +317,26 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
         style={{ paddingBottom: safe.bottom + 24 }}
         inert={!expanded}
       >
+        {/* the writer: who they are in words, and the ways to another writer and to what's known about the hand */}
+        <section aria-label="Writer" className="sheet-writer border-b border-border/70 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-[0.8125rem] font-medium">{props.name}</h3>
+              <p className="mt-0.5 text-[0.75rem] leading-snug text-muted-foreground">{describeHand(props.p)}</p>
+            </div>
+            <AboutHand {...props}>
+              <button
+                type="button"
+                className="-mr-1.5 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-md px-1.5 text-[0.78rem] text-muted-foreground transition-[color,transform] duration-100 active:scale-[0.97] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                About this hand <ChevronRight aria-hidden className="size-3.5" />
+              </button>
+            </AboutHand>
+          </div>
+          <Button variant="secondary" onClick={props.onChangeWriter} className="mt-2 h-11 w-full">
+            <Shuffle aria-hidden /> Change writer
+          </Button>
+        </section>
         <LookControls {...props} rows flush />
         <MoreControls {...props} flush />
       </div>
