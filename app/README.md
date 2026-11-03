@@ -37,6 +37,20 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   sample. There's always a way back: under New hand the page says what it holds ("A found letter" or "Your
   letter"), with "Another letter" / "Read a found letter"; your own letter is kept on this device (never in a
   link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter doesn't come back within ten hands.
+- **Replying** (`components/TheirLetter.tsx`, `lib/found.ts`). The first key on a found letter starts your reply
+  on a fresh sheet, and their letter stays on the desk in its own hand, pen, ink and paper (exactly as it was
+  read; a link's `re=` carries its look, so it comes back the same). **Your letter never moves**: theirs comes
+  to you and goes back, so the caret and anything being composed stay put.
+  - *Desktop:* theirs slides off your sheet and is put down beside it, smaller and a little turned (tucked
+    under its edge when the desk is narrow). On wide desks (about 1366 px and up) both are readable side by
+    side, for answering line by line. Pick it up by clicking it, starting a scroll on it, ⌘[ or Tab + Enter: it
+    comes forward at your writing size over your sheet, which waits behind, dimmed. Put it down by typing,
+    clicking your sheet, ⌘], Esc or "Back to your letter". 300 ms on `--ease-drawer`, transform and opacity
+    only; reduced motion swaps without travelling.
+  - *Phones and tablets:* one letter at a time. "In reply to …" under your sheet (or "Their letter" in the pen
+    tray while writing) pulls theirs down from the top, above the keyboard, which stays up. Typing, a tap on
+    your letter, swiping it up or "Your letter" puts it away.
+  - Their words are there for screen readers too (the handwriting is a picture).
 - **Ink mode** (the default where the engine writes in ink, `lib/ink.ts`): what's written stays. Typed letters
   wait as faint thoughts and the pen writes them a few letters behind, at handwriting speed, so most slips
   are fixed before ink touches paper. Change something already written and the writer corrects it their own

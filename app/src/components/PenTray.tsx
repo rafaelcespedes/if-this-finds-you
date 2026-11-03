@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, PenLine, Undo2 } from 'lucide-react';
+import { Check, MailOpen, PenLine, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -20,13 +20,16 @@ interface Props {
   onMode?: (m: 'ink' | 'pencil' | 'fair') => void;
   /** Ink mode, with something written: a clean copy on a fresh sheet */
   onFairCopy?: () => void;
+  /** a reply: their letter pulls down above the keyboard (and goes back up) */
+  onTheirLetter?: () => void;
+  theirOpen?: boolean;
 }
 
 /**
  * The pen tray (editor-ux.md §3.4): one 44 px row floating 8 px above the phone keyboard while writing.
  * Pen (formatting a pen can do), undo, and Done. Its buttons never take focus from the paper.
  */
-export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, onDone, ink, onUndo, mode, onMode, onFairCopy }: Props) {
+export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, onDone, ink, onUndo, mode, onMode, onFairCopy, onTheirLetter, theirOpen }: Props) {
   const [menu, setMenu] = useState(false);
   const keep = (e: React.PointerEvent | React.MouseEvent) => e.preventDefault(); // the keyboard stays up
   const top = Math.max(8, viewport.top + viewport.height - 44 - 8);
@@ -94,6 +97,18 @@ export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, 
         >
           <Undo2 className="size-4" aria-hidden />
         </button>
+        {onTheirLetter && (
+          <button
+            type="button"
+            aria-expanded={theirOpen}
+            onPointerDown={keep}
+            onMouseDown={keep}
+            onClick={onTheirLetter}
+            className={cn("relative flex h-9 items-center gap-1.5 rounded-full px-3 text-[14px] transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-1 after:content-['']", theirOpen ? 'bg-accent' : 'active:bg-accent')}
+          >
+            <MailOpen className="size-4" aria-hidden /> Their letter
+          </button>
+        )}
         <span className="flex-1" />
         <Button size="sm" className="h-9 rounded-full px-4" onPointerDown={keep} onMouseDown={keep} onClick={onDone}>
           <Check aria-hidden /> Done
