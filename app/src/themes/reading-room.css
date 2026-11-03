@@ -269,7 +269,7 @@ html[data-look='reading-room'] .rr-icon svg {
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-icon:hover {
-    background: var(--chip);
+    background: var(--st-hover);
     color: var(--rr-ink);
   }
 }
@@ -316,8 +316,7 @@ html[data-look='reading-room'] .sheet-surface [data-site-menu] [data-site-link] 
 }
 /* a place you can go, under the pointer: a faint underline (the place you're in keeps its own mark) */
 @media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] [data-site-header] a[data-site-link]:not([aria-current]):hover [data-site-words],
-  html[data-look='reading-room'] .rr-full-head:hover .rr-sc {
+  html[data-look='reading-room'] [data-site-header] a[data-site-link]:not([aria-current]):hover [data-site-words] {
     text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
     text-underline-offset: 3px;
   }
@@ -331,8 +330,18 @@ html[data-look='reading-room'] [data-site-number] {
    their size is the shared header's own */
 html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]) {
   border-color: transparent;
-  background: transparent;
   box-shadow: none;
+}
+html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]):not(:hover, :active, [data-state='open']) {
+  background: transparent;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]):hover {
+    background: var(--st-hover);
+  }
+}
+html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]):is(:active, [data-state='open']) {
+  background: var(--st-press);
 }
 /* with no box, the Menu's lines end where the running head's rule ends */
 html[data-look='reading-room'] [data-site-header] [data-site-chip] {
@@ -374,21 +383,24 @@ html[data-look='reading-room'] .rr-card-actions [data-slot='button'] {
   box-shadow: none;
   border: 0;
 }
-/* at rest it stays a bare icon at the row's end, never a filled or ringed box (the controls' resting look, rr-color.css,
-   is for controls in a group); hovered, it takes their wash */
-html[data-look='reading-room'] .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary:not([aria-checked='true']):not(:hover) {
+/* a bare icon at the row's end, never a filled or ringed box (the controls' resting look is for controls in a group):
+   under the pointer the room's plain wash, pressed its press wash, like every icon button here */
+html[data-look='reading-room'] .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary:not([aria-checked='true']) {
   background: transparent;
   box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary:not([aria-checked='true']):hover {
+    background: var(--st-hover);
+    color: var(--rr-ink);
+  }
+}
+html[data-look='reading-room'] .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary:active {
+  background: var(--st-press);
 }
 html[data-look='reading-room'] .rr-card-actions [data-slot='button'] svg {
   width: 1.0625rem;
   height: 1.0625rem;
-}
-@media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .rr-card-actions [data-slot='button']:hover {
-    background: var(--chip);
-    color: var(--rr-ink);
-  }
 }
 html[data-look='reading-room'] .rr-card-title {
   margin: 12px 0 12px;
@@ -464,7 +476,7 @@ html[data-look='reading-room'] .rr-sig .writing svg {
 
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-sig:hover {
-    background: var(--chip);
+    background: var(--st-hover);
   }
 }
 
@@ -581,9 +593,9 @@ html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring {
   padding: 0 0.375rem 0 0.75rem;
   border: 0;
   border-radius: var(--radius);
-  background: color-mix(in oklab, var(--rr-red) 8%, transparent);
+  background: var(--st-accent);
   color: var(--rr-red);
-  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-bring-label {
   text-decoration: none;
@@ -594,14 +606,19 @@ html[data-look='reading-room'] .rr-desk .rr-bring .rr-key {
   background: color-mix(in oklab, var(--rr-red) 10%, transparent);
   color: color-mix(in oklab, var(--rr-red) 75%, var(--rr-ink));
 }
+/* (hover and press at the resting rule's weight, or it outranks them) pressed, the deeper red: red on its press wash
+   would be 4.3:1 */
 @media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .rr-desk .rr-bring:hover {
-    background: color-mix(in oklab, var(--rr-red) 12%, transparent);
+  html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring:hover {
+    background: var(--st-accent-hover);
     color: var(--rr-red-deep);
   }
 }
-html[data-look='reading-room'] .rr-desk .rr-bring:active {
-  background: color-mix(in oklab, var(--rr-red) 16%, transparent);
+html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring:active {
+  background: var(--st-accent-press);
+  color: var(--rr-red-deep);
+  scale: var(--st-scale-row);
+  transition-duration: var(--dur-press);
 }
 html[data-look='reading-room'] .rr-desk .rr-bring:focus-visible {
   outline: 2px solid var(--rr-red);
@@ -658,6 +675,14 @@ html[data-look='reading-room'] .rr-ref-button {
 }
 html[data-look='reading-room'] .rr-ref-button[aria-expanded='true'] {
   background: color-mix(in oklab, var(--rr-red) 12%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-ref-button:hover {
+    background: var(--st-accent-hover);
+  }
+}
+html[data-look='reading-room'] .rr-ref-button:active {
+  background: var(--st-accent-press);
 }
 /* a small red number, a bigger target: 24 px with a mouse, 44 px to a finger */
 html[data-look='reading-room'] .rr-ref-button::after {
@@ -847,11 +872,12 @@ html[data-look='reading-room'] :is(.control-sheet, .sheet-surface) {
   background: var(--rc-surface-1);
 }
 html[data-look='reading-room'] :is(.sheet-surface, .control-sheet) .sheet-row:active {
-  background: var(--rc-ctl-press);
+  background: var(--st-press);
 }
 /* the controls you operate: fills, edges, the held-down state */
 html[data-look='reading-room'] :is(
     [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+    [data-slot='segmented-item'][data-chip],
     [role='radiogroup']:is([aria-label='Pen'], [aria-label='School']) > button,
     [data-slot='button'].bg-secondary
   ):not([aria-checked='true']) {
@@ -861,10 +887,11 @@ html[data-look='reading-room'] :is(
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] :is(
       [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+      [data-slot='segmented-item'][data-chip],
       [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
       [data-slot='button'].bg-secondary
     ):not([aria-checked='true']):hover {
-    background-color: var(--rc-ctl-hover);
+    background-color: var(--st-hover);
   }
 }
 html[data-look='reading-room'] :is(
@@ -872,7 +899,7 @@ html[data-look='reading-room'] :is(
     [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
     [data-slot='button'].bg-secondary
   ):not([aria-checked='true']):not([data-state='on']):active {
-  background-color: var(--rc-ctl-press);
+  background-color: var(--st-press);
 }
 /* Print / Joined: its track is a control at rest, its chosen half the chosen face */
 html[data-look='reading-room'] [data-slot='segmented']:not(.bg-transparent):not([aria-label='Ink']):not([aria-label='Paper']):not([aria-label^='Kind of']) {
@@ -957,9 +984,6 @@ html[data-look='reading-room'] .sheet-surface .sheet-title {
 html[data-look='reading-room'] .sheet-surface .sheet-row {
   border-radius: 0;
   border-top: 1px solid var(--rr-rule);
-}
-html[data-look='reading-room'] .sheet-surface .sheet-row:active {
-  background: color-mix(in oklab, var(--rr-ink) 6%, transparent);
 }
 /* between groups, a little space: the rows' own rules do the separating */
 html[data-look='reading-room'] .sheet-surface [role='presentation'][class*='h-px'] {
@@ -1305,9 +1329,6 @@ html[data-look='reading-room'] .dock-primary {
     text-decoration-color: currentColor;
   }
 }
-html[data-look='reading-room'] .dock-primary:active {
-  transform: translateY(0.5px);
-}
 @media (max-width: 380px) {
   html[data-look='reading-room'] .dock-primary {
     padding-inline: 6px;
@@ -1476,9 +1497,42 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
     --rr-hair: color-mix(in oklab, var(--rr-ink) 60%, transparent);
   }
 }
+/* the ruled rows that open things (Full record, Writing materials, Handwriting and more): under the pointer their
+   name underlines faintly, pressed the row takes the press wash. TEMPORARY, the same as ui/controls.css's shared
+   .ruled-row from the components owner: delete this once that lands */
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .ruled-row:hover > :first-child {
+    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
+    text-underline-offset: 3px;
+  }
+}
+html[data-look='reading-room'] .ruled-row:active {
+  background: var(--st-press);
+}
+/* pressed, every control answers, phones included (the tap highlight is off everywhere): icons and quiet words on the
+   ink press wash, red words on their red one in the deeper red (red on the ink wash would be 4.4:1) */
+html[data-look='reading-room'] :is(.rr-icon, .rr-dock-word):active {
+  background: var(--st-press);
+  scale: var(--st-scale);
+  transition-duration: var(--dur-press);
+}
+html[data-look='reading-room'] :is(.rr-dock-reply, .dock-primary, .control-sheet .rr-bring, .rr-hand-link):active {
+  color: var(--rr-red-deep);
+  background: var(--st-accent);
+}
+html[data-look='reading-room'] .control-sheet button[aria-expanded]:active > span[data-pill] {
+  background: var(--st-press);
+}
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
   html[data-look='reading-room'] .rr-dock {
     border: 1px solid CanvasText;
+  }
+  /* (at the desk button's own weight, which a plainer selector loses to) */
+  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring, .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary.bg-secondary) {
+    border: 1px solid ButtonText;
+  }
+  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring, .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary.bg-secondary):hover {
+    outline: 1px solid Highlight;
   }
 }

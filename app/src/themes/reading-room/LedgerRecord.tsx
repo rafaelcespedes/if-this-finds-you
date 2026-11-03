@@ -115,7 +115,7 @@ export function LedgerRecord({ record: r, hand, handAction, handName, actions, h
         ))}
       </dl>
       <div className="rr-full">
-        <button type="button" className="rr-full-head" aria-expanded={full} aria-controls={`${id}-full`} onClick={() => setFull((f) => !f)}>
+        <button type="button" className="rr-full-head ruled-row" aria-expanded={full} aria-controls={`${id}-full`} onClick={() => setFull((f) => !f)}>
           <span className="rr-sc">Full record</span>
           <span aria-hidden className="rr-full-sign">{full ? '−' : '+'}</span>
         </button>

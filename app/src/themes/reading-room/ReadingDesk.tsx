@@ -140,7 +140,7 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
   return (
     <section className={cn('rr-drawer', mode === 'open' && 'is-open', mode === 'peek' && 'is-peek')} aria-labelledby={`${id}-h`}>
       <h2 id={`${id}-h`} className="m-0">
-        <button type="button" aria-expanded={shown} aria-controls={`${id}-b`} onClick={() => put(shown ? 'closed' : 'open')} className="rr-drawer-head">
+        <button type="button" aria-expanded={shown} aria-controls={`${id}-b`} onClick={() => put(shown ? 'closed' : 'open')} className="rr-drawer-head ruled-row">
           <span className="rr-sc">Writing materials</span>
           <ChevronUp aria-hidden className="rr-drawer-chev" />
         </button>
@@ -151,8 +151,8 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
           <MoreControls {...props} />
         </div>
         {mode === 'peek' && (
-          <button type="button" className="rr-drawer-all" aria-controls={`${id}-b`} onClick={() => put('open')}>
-            Handwriting and more<ChevronUp aria-hidden />
+          <button type="button" className="rr-drawer-all ruled-row" aria-controls={`${id}-b`} onClick={() => put('open')}>
+            <span>Handwriting and more</span><ChevronUp aria-hidden />
           </button>
         )}
       </div>
