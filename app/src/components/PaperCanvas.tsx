@@ -1,7 +1,8 @@
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ALL_PAPERS, isShaped, SHADOW_BLEED, type PaperSpec } from '@/lib/papers';
 import { paintHere, paintOff, paintsOffThread, warmPaper, type PaperBitmap, type PaperJob } from '@/lib/paper/client';
-import { hideMarks, markBox, planMarks, printMarks, showMarks, type MarkInput } from '@/lib/paper/marks';
+import { hideMarks, markBox, planMarks, printMarks, setNoteWriter, showMarks, type MarkInput } from '@/lib/paper/marks';
+import { writeNote } from '@/lib/paper/pencil-note';
 import { perf } from '@/lib/perf';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +11,9 @@ import { cn } from '@/lib/utils';
  * when the letter is sent, so the reader view and the found letter set this to false (and the JPEG has none).
  */
 export const PaperGuide = createContext(true);
+
+// the archivist's pencilled notes are written in a real hand, here on the page
+setNoteWriter(writeNote);
 
 /**
  * Printed marks for the letter on these sheets (a look's datestamp, number, cancellation; lib/paper/marks.ts). Wrap a
