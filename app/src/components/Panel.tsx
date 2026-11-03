@@ -117,7 +117,8 @@ export interface PanelProps {
 }
 
 /** The desktop panel: the writer and New hand, then the look, then More. */
-export function Panel(props: PanelProps) {
+/** The panel, skipped when nothing it shows changed (App passes stable props: hooks/useStableProps). */
+export const Panel = memo(function Panel(props: PanelProps) {
   return (
     <div className="flex min-h-full flex-col">
       <WriterHeader {...props} />
@@ -125,7 +126,7 @@ export function Panel(props: PanelProps) {
       <MoreControls {...props} />
     </div>
   );
-}
+});
 
 // ---------- always there: the writer, New hand, share, what's on the page ----------
 function WriterHeader(props: PanelProps) {
