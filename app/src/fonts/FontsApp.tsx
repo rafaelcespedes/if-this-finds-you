@@ -180,7 +180,7 @@ export function FontsApp() {
               {/* "Fonts" in the logo's hand (#5: Québec school print, felt marker; heading.mjs) */}
               <span aria-hidden className="block h-[50px] [&_svg]:h-full [&_svg]:w-auto sm:h-[64px]" dangerouslySetInnerHTML={{ __html: heading }} />
             </h1>
-            <p className="mt-4 max-w-[36rem] text-[0.9375rem] leading-[1.55] text-muted-foreground text-pretty sm:text-[1rem]">
+            <p className="fonts-intro mt-4 max-w-[36rem] text-[0.9375rem] leading-[1.55] text-muted-foreground text-pretty sm:text-[1rem]">
               {route.view === 'saved' ? 'The hands you saved, kept in this browser. Each one downloads as a free, open-source font.' : INTRO}
             </p>
           </section>
