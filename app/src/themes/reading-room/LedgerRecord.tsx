@@ -17,6 +17,8 @@ interface Props {
   handName: string;
   /** beside the number: Share */
   actions?: ReactNode;
+  /** the head's last line, under the title (the desk: Bring another) */
+  headAction?: ReactNode;
   /** "laid paper · dip pen · blue-black ink" */
   physical?: string;
   className?: string;
@@ -24,7 +26,7 @@ interface Props {
 
 type NoteKey = 'story' | 'hand' | 'source';
 
-export function LedgerRecord({ record: r, hand, handAction, handName, actions, physical, className }: Props) {
+export function LedgerRecord({ record: r, hand, handAction, handName, actions, headAction, physical, className }: Props) {
   const id = useId();
   const [open, setOpen] = useState<NoteKey | null>(null);
   const [full, setFull] = useState(false);
@@ -103,6 +105,7 @@ export function LedgerRecord({ record: r, hand, handAction, handName, actions, p
       </div>
       <h2 ref={titleRef} id={`${id}-t`} title={cut ? r.title : undefined} aria-label={cut ? r.title : undefined} className="rr-card-title text-balance">{cut ?? r.title}</h2>
       <span ref={measureRef} aria-hidden className="rr-card-title rr-title-measure text-balance" />
+      {headAction}
       <dl className="rr-facts">
         {rows.map((row) => (
           <div key={row.term} className="rr-fact">
