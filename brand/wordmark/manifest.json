@@ -1,0 +1,1480 @@
+{
+  "name": "If This Finds You",
+  "generated": "brand/wordmark/build.mjs",
+  "howToRedraw": "wordmark(lines) from brand/wordmark/wordmark.mjs; each hand is withOverrides(makeHand(seed, { style }), { pen, tip, slant, neatness })",
+  "howToMakeFont": "buildFontPackage(withOverrides(makeHand(seed, { style }), overrides), { name }) from engine/index.js",
+  "ink": "#1c2233",
+  "options": [
+    {
+      "number": 1,
+      "id": "01-print-upright-fountain",
+      "family": "print",
+      "note": "Upright, even print with a fountain pen. The clearest at small sizes.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "amber-lantern-85",
+          "style": "print",
+          "resolved": {
+            "style": "print",
+            "pen": "fountain",
+            "slant": -1.8,
+            "neatness": 0.71
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "amber-lantern-85",
+              "style": "print"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/01-print-upright-fountain.svg",
+        "mono": "svg/01-print-upright-fountain-mono.svg",
+        "icon": "svg/01-print-upright-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 2,
+      "id": "02-print-felt-chunky",
+      "family": "print",
+      "note": "Felt tip, sturdy and friendly, like a label on a jar.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "corvid-marten-21",
+          "style": "print",
+          "resolved": {
+            "style": "print",
+            "pen": "felt",
+            "slant": -1.1,
+            "neatness": 0.62
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "corvid-marten-21",
+              "style": "print"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/02-print-felt-chunky.svg",
+        "mono": "svg/02-print-felt-chunky-mono.svg",
+        "icon": "svg/02-print-felt-chunky-icon.svg"
+      }
+    },
+    {
+      "number": 3,
+      "id": "03-print-felt-leaning",
+      "family": "print",
+      "note": "Leans hard to the right and moves fast; a note written on the way out.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "willow-heron-58",
+          "style": "print",
+          "resolved": {
+            "style": "print",
+            "pen": "felt",
+            "slant": 18.1,
+            "neatness": 0.71
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "willow-heron-58",
+              "style": "print"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/03-print-felt-leaning.svg",
+        "mono": "svg/03-print-felt-leaning-mono.svg",
+        "icon": "svg/03-print-felt-leaning-icon.svg"
+      }
+    },
+    {
+      "number": 4,
+      "id": "04-print-italic-nib",
+      "family": "print",
+      "note": "Print with a broad italic nib, so thick and thin come for free.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "harbor-sparrow-37",
+          "style": "print",
+          "resolved": {
+            "style": "print",
+            "pen": "italic",
+            "slant": 10.4,
+            "neatness": 0.86
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "harbor-sparrow-37",
+              "style": "print"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/04-print-italic-nib.svg",
+        "mono": "svg/04-print-italic-nib-mono.svg",
+        "icon": "svg/04-print-italic-nib-icon.svg"
+      }
+    },
+    {
+      "number": 5,
+      "id": "05-quebec-felt-marker",
+      "family": "print",
+      "note": "Québec school print in a heavy marker. Big personality, a little clumsy.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "linen-thistle-82",
+          "style": "quebec-print",
+          "resolved": {
+            "style": "quebec-print",
+            "pen": "felt",
+            "slant": 6.5,
+            "neatness": 0.62
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "linen-thistle-82",
+              "style": "quebec-print"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/05-quebec-felt-marker.svg",
+        "mono": "svg/05-quebec-felt-marker-mono.svg",
+        "icon": "svg/05-quebec-felt-marker-icon.svg"
+      }
+    },
+    {
+      "number": 6,
+      "id": "06-quebec-gel-backslant",
+      "family": "print",
+      "note": "Rounded school print leaning backwards, careful and young.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "fallow-sparrow-19",
+          "style": "quebec-print",
+          "resolved": {
+            "style": "quebec-print",
+            "pen": "gel",
+            "slant": -12.4,
+            "neatness": 0.68
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "fallow-sparrow-19",
+              "style": "quebec-print"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/06-quebec-gel-backslant.svg",
+        "mono": "svg/06-quebec-gel-backslant-mono.svg",
+        "icon": "svg/06-quebec-gel-backslant-icon.svg"
+      }
+    },
+    {
+      "number": 7,
+      "id": "07-adultfr-felt",
+      "family": "print",
+      "note": "A grown-up French print hand with a felt pen. Modern, plain, honest.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "ember-marten-99",
+          "style": "adult-fr-2023",
+          "resolved": {
+            "style": "adult-fr-2023",
+            "pen": "felt",
+            "slant": -3.1,
+            "neatness": 0.83
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "ember-marten-99",
+              "style": "adult-fr-2023"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/07-adultfr-felt.svg",
+        "mono": "svg/07-adultfr-felt-mono.svg",
+        "icon": "svg/07-adultfr-felt-icon.svg"
+      }
+    },
+    {
+      "number": 8,
+      "id": "08-adultfr-gel-loose",
+      "family": "print",
+      "note": "Looser adult print, gel pen. Uneven heights, very human.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "tidal-wren-20",
+          "style": "adult-fr-2023",
+          "resolved": {
+            "style": "adult-fr-2023",
+            "pen": "gel",
+            "slant": -2.3,
+            "neatness": 0.75
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "tidal-wren-20",
+              "style": "adult-fr-2023"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/08-adultfr-gel-loose.svg",
+        "mono": "svg/08-adultfr-gel-loose-mono.svg",
+        "icon": "svg/08-adultfr-gel-loose-icon.svg"
+      }
+    },
+    {
+      "number": 9,
+      "id": "09-script-fountain-classic",
+      "family": "joined",
+      "note": "Classic joined script with a fountain pen. Reads like the top of a letter.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "meadow-finch-75",
+          "style": "script",
+          "resolved": {
+            "style": "script",
+            "pen": "fountain",
+            "slant": 5.2,
+            "neatness": 0.37
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "meadow-finch-75",
+              "style": "script"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/09-script-fountain-classic.svg",
+        "mono": "svg/09-script-fountain-classic-mono.svg",
+        "icon": "svg/09-script-fountain-classic-icon.svg"
+      }
+    },
+    {
+      "number": 10,
+      "id": "10-script-ballpoint-light",
+      "family": "joined",
+      "note": "The same school of script in a fine ballpoint: light and quiet.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "hazel-wren-38",
+          "style": "script",
+          "resolved": {
+            "style": "script",
+            "pen": "ballpoint",
+            "slant": -2.8,
+            "neatness": 0.66
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "hazel-wren-38",
+              "style": "script"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/10-script-ballpoint-light.svg",
+        "mono": "svg/10-script-ballpoint-light-mono.svg",
+        "icon": "svg/10-script-ballpoint-light-icon.svg"
+      }
+    },
+    {
+      "number": 11,
+      "id": "11-palmer-fountain",
+      "family": "joined",
+      "note": "American Palmer method, upright for a Palmer writer, with a confident fountain pen.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "juniper-river-86",
+          "style": "palmer",
+          "resolved": {
+            "style": "palmer",
+            "pen": "fountain",
+            "slant": -15,
+            "neatness": 0.59
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "juniper-river-86",
+              "style": "palmer"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/11-palmer-fountain.svg",
+        "mono": "svg/11-palmer-fountain-mono.svg",
+        "icon": "svg/11-palmer-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 12,
+      "id": "12-palmer-pointed-flourish",
+      "family": "joined",
+      "note": "Pointed pen with swelling downstrokes. Dramatic, a bit theatrical.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "saffron-pebble-17",
+          "style": "palmer",
+          "resolved": {
+            "style": "palmer",
+            "pen": "pointed",
+            "slant": 12.9,
+            "neatness": 0.58
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "saffron-pebble-17",
+              "style": "palmer"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/12-palmer-pointed-flourish.svg",
+        "mono": "svg/12-palmer-pointed-flourish-mono.svg",
+        "icon": "svg/12-palmer-pointed-flourish-icon.svg"
+      }
+    },
+    {
+      "number": 13,
+      "id": "13-spencerian-fountain",
+      "family": "joined",
+      "note": "Spencerian, the 19th-century American business hand. Tall capitals, small body.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "russet-maple-90",
+          "style": "spencerian",
+          "resolved": {
+            "style": "spencerian",
+            "pen": "fountain",
+            "slant": 1.2,
+            "neatness": 0.9
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "russet-maple-90",
+              "style": "spencerian"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/13-spencerian-fountain.svg",
+        "mono": "svg/13-spencerian-fountain-mono.svg",
+        "icon": "svg/13-spencerian-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 14,
+      "id": "14-polish-fountain-bold",
+      "family": "joined",
+      "note": "Polish 1906 copybook, bold fountain pen. Rounded, warm and very legible.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "corvid-marten-81",
+          "style": "polish-1906",
+          "resolved": {
+            "style": "polish-1906",
+            "pen": "fountain",
+            "slant": 4.4,
+            "neatness": 0.88
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "corvid-marten-81",
+              "style": "polish-1906"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/14-polish-fountain-bold.svg",
+        "mono": "svg/14-polish-fountain-bold-mono.svg",
+        "icon": "svg/14-polish-fountain-bold-icon.svg"
+      }
+    },
+    {
+      "number": 15,
+      "id": "15-polish-gel",
+      "family": "joined",
+      "note": "The Polish hand again in gel ink: lighter, more even, a touch formal.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "juniper-maple-12",
+          "style": "polish-1906",
+          "resolved": {
+            "style": "polish-1906",
+            "pen": "gel",
+            "slant": 1.8,
+            "neatness": 0.64
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "juniper-maple-12",
+              "style": "polish-1906"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/15-polish-gel.svg",
+        "mono": "svg/15-polish-gel-mono.svg",
+        "icon": "svg/15-polish-gel-icon.svg"
+      }
+    },
+    {
+      "number": 16,
+      "id": "16-spanish-fountain",
+      "family": "joined",
+      "note": "Spanish 1776 copybook. Big looping capitals, an 18th-century accent.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "saffron-pebble-77",
+          "style": "spanish-1776",
+          "resolved": {
+            "style": "spanish-1776",
+            "pen": "fountain",
+            "slant": -10.2,
+            "neatness": 0.58
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "saffron-pebble-77",
+              "style": "spanish-1776"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/16-spanish-fountain.svg",
+        "mono": "svg/16-spanish-fountain-mono.svg",
+        "icon": "svg/16-spanish-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 17,
+      "id": "17-spanish-felt",
+      "family": "joined",
+      "note": "Spanish capitals in a modern felt pen, old shapes with today’s tool.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "willow-heron-34",
+          "style": "spanish-1776",
+          "resolved": {
+            "style": "spanish-1776",
+            "pen": "felt",
+            "slant": 4.7,
+            "neatness": 0.7
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "willow-heron-34",
+              "style": "spanish-1776"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/17-spanish-felt.svg",
+        "mono": "svg/17-spanish-felt-mono.svg",
+        "icon": "svg/17-spanish-felt-icon.svg"
+      }
+    },
+    {
+      "number": 18,
+      "id": "18-norwegian-fountain",
+      "family": "joined",
+      "note": "Norwegian 1849 school hand. Strong slant, distinctive T and F.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "linen-maple-42",
+          "style": "norwegian-1849",
+          "resolved": {
+            "style": "norwegian-1849",
+            "pen": "fountain",
+            "slant": -0.5,
+            "neatness": 0.87
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "linen-maple-42",
+              "style": "norwegian-1849"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/18-norwegian-fountain.svg",
+        "mono": "svg/18-norwegian-fountain-mono.svg",
+        "icon": "svg/18-norwegian-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 19,
+      "id": "19-suetterlin-fountain",
+      "family": "old",
+      "note": "Sütterlin, the 1920s German school hand, in its Latin form. Upright and round; the n reads close to an r.",
+      "text": "if this finds you",
+      "hands": [
+        {
+          "seed": "fallow-pebble-59",
+          "style": "suetterlin",
+          "resolved": {
+            "style": "suetterlin",
+            "pen": "fountain",
+            "slant": 1.9,
+            "neatness": 0.91
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "if this finds you",
+              "seed": "fallow-pebble-59",
+              "style": "suetterlin"
+            }
+          ]
+        }
+      ],
+      "icon": "if",
+      "files": {
+        "ink": "svg/19-suetterlin-fountain.svg",
+        "mono": "svg/19-suetterlin-fountain-mono.svg",
+        "icon": "svg/19-suetterlin-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 20,
+      "id": "20-suetterlin-italic",
+      "family": "old",
+      "note": "Sütterlin with an italic nib: heavier, almost a poster hand.",
+      "text": "if this finds you",
+      "hands": [
+        {
+          "seed": "saffron-finch-27",
+          "style": "suetterlin",
+          "resolved": {
+            "style": "suetterlin",
+            "pen": "italic",
+            "slant": 1.2,
+            "neatness": 0.6
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "if this finds you",
+              "seed": "saffron-finch-27",
+              "style": "suetterlin"
+            }
+          ]
+        }
+      ],
+      "icon": "if",
+      "files": {
+        "ink": "svg/20-suetterlin-italic.svg",
+        "mono": "svg/20-suetterlin-italic-mono.svg",
+        "icon": "svg/20-suetterlin-italic-icon.svg"
+      }
+    },
+    {
+      "number": 21,
+      "id": "21-arrighi-fountain",
+      "family": "old",
+      "note": "Arrighi’s 1522 chancery italic. The oldest model here; its y and u are strange to modern eyes.",
+      "text": "if this finds you",
+      "hands": [
+        {
+          "seed": "corvid-quill-71",
+          "style": "arrighi",
+          "resolved": {
+            "style": "arrighi",
+            "pen": "fountain",
+            "slant": -0.7,
+            "neatness": 0.73
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "if this finds you",
+              "seed": "corvid-quill-71",
+              "style": "arrighi"
+            }
+          ]
+        }
+      ],
+      "icon": "if",
+      "files": {
+        "ink": "svg/21-arrighi-fountain.svg",
+        "mono": "svg/21-arrighi-fountain-mono.svg",
+        "icon": "svg/21-arrighi-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 22,
+      "id": "22-kurrent-fountain",
+      "family": "old",
+      "note": "German Kurrent, 1849. Hard to read for most people today; striking as a shape.",
+      "text": "if this finds you",
+      "hands": [
+        {
+          "seed": "corvid-marten-87",
+          "style": "kurrent-1849",
+          "resolved": {
+            "style": "kurrent-1849",
+            "pen": "fountain",
+            "slant": -7,
+            "neatness": 0.5
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "if this finds you",
+              "seed": "corvid-marten-87",
+              "style": "kurrent-1849"
+            }
+          ]
+        }
+      ],
+      "icon": "if",
+      "files": {
+        "ink": "svg/22-kurrent-fountain.svg",
+        "mono": "svg/22-kurrent-fountain-mono.svg",
+        "icon": "svg/22-kurrent-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 23,
+      "id": "23-dutch-fountain",
+      "family": "old",
+      "note": "A Dutch writing master, 1618. The h and s are from another century.",
+      "text": "if this finds you",
+      "hands": [
+        {
+          "seed": "tidal-heron-16",
+          "style": "dutch-1618",
+          "resolved": {
+            "style": "dutch-1618",
+            "pen": "fountain",
+            "slant": 0.1,
+            "neatness": 0.91
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "if this finds you",
+              "seed": "tidal-heron-16",
+              "style": "dutch-1618"
+            }
+          ]
+        }
+      ],
+      "icon": "if",
+      "files": {
+        "ink": "svg/23-dutch-fountain.svg",
+        "mono": "svg/23-dutch-fountain-mono.svg",
+        "icon": "svg/23-dutch-fountain-icon.svg"
+      }
+    },
+    {
+      "number": 24,
+      "id": "24-stacked-polish",
+      "family": "comp",
+      "note": "Stacked, second line stepped in, like the opening of a letter. Fits a square.",
+      "text": "If this / finds you",
+      "hands": [
+        {
+          "seed": "corvid-marten-81",
+          "style": "polish-1906",
+          "resolved": {
+            "style": "polish-1906",
+            "pen": "fountain",
+            "slant": 4.4,
+            "neatness": 0.88
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If this",
+              "seed": "corvid-marten-81",
+              "style": "polish-1906"
+            }
+          ]
+        },
+        {
+          "indent": 0.55,
+          "leading": 0.95,
+          "runs": [
+            {
+              "text": "finds you",
+              "seed": "corvid-marten-81",
+              "style": "polish-1906",
+              "salt": "l2"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/24-stacked-polish.svg",
+        "mono": "svg/24-stacked-polish-mono.svg",
+        "icon": "svg/24-stacked-polish-icon.svg"
+      }
+    },
+    {
+      "number": 25,
+      "id": "25-stacked-print",
+      "family": "comp",
+      "note": "Stacked upright print, flush left. Compact and calm.",
+      "text": "If this / finds you",
+      "hands": [
+        {
+          "seed": "amber-lantern-85",
+          "style": "print",
+          "resolved": {
+            "style": "print",
+            "pen": "fountain",
+            "slant": -1.8,
+            "neatness": 0.71
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If this",
+              "seed": "amber-lantern-85",
+              "style": "print"
+            }
+          ]
+        },
+        {
+          "leading": 0.92,
+          "runs": [
+            {
+              "text": "finds you",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "l2"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/25-stacked-print.svg",
+        "mono": "svg/25-stacked-print-mono.svg",
+        "icon": "svg/25-stacked-print-icon.svg"
+      }
+    },
+    {
+      "number": 26,
+      "id": "26-lower-palmer",
+      "family": "comp",
+      "note": "All lowercase in Palmer script. Softer, less of a title.",
+      "text": "if this finds you",
+      "hands": [
+        {
+          "seed": "juniper-river-86",
+          "style": "palmer",
+          "resolved": {
+            "style": "palmer",
+            "pen": "fountain",
+            "slant": -15,
+            "neatness": 0.59
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "if this finds you",
+              "seed": "juniper-river-86",
+              "style": "palmer"
+            }
+          ]
+        }
+      ],
+      "icon": "if",
+      "files": {
+        "ink": "svg/26-lower-palmer.svg",
+        "mono": "svg/26-lower-palmer-mono.svg",
+        "icon": "svg/26-lower-palmer-icon.svg"
+      }
+    },
+    {
+      "number": 27,
+      "id": "27-lower-felt",
+      "family": "comp",
+      "note": "All lowercase in felt print. Casual, like a sticky note.",
+      "text": "if this finds you",
+      "hands": [
+        {
+          "seed": "corvid-marten-21",
+          "style": "print",
+          "resolved": {
+            "style": "print",
+            "pen": "felt",
+            "slant": -1.1,
+            "neatness": 0.62
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "if this finds you",
+              "seed": "corvid-marten-21",
+              "style": "print"
+            }
+          ]
+        }
+      ],
+      "icon": "if",
+      "files": {
+        "ink": "svg/27-lower-felt.svg",
+        "mono": "svg/27-lower-felt-mono.svg",
+        "icon": "svg/27-lower-felt-icon.svg"
+      }
+    },
+    {
+      "number": 28,
+      "id": "28-caps-quebec",
+      "family": "comp",
+      "note": "All capitals in Québec print. Reads like the outside of an envelope.",
+      "text": "IF THIS FINDS YOU",
+      "hands": [
+        {
+          "seed": "juniper-river-56",
+          "style": "quebec-print",
+          "resolved": {
+            "style": "quebec-print",
+            "pen": "felt",
+            "slant": -9.2,
+            "neatness": 0.67
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "IF THIS FINDS YOU",
+              "seed": "juniper-river-56",
+              "style": "quebec-print"
+            }
+          ]
+        }
+      ],
+      "icon": "IF",
+      "files": {
+        "ink": "svg/28-caps-quebec.svg",
+        "mono": "svg/28-caps-quebec-mono.svg",
+        "icon": "svg/28-caps-quebec-icon.svg"
+      }
+    },
+    {
+      "number": 29,
+      "id": "29-smallcaps-print",
+      "family": "comp",
+      "note": "Small capitals written by hand: big first letters, smaller rest. Bookish.",
+      "text": "I F T HIS F INDS Y OU",
+      "hands": [
+        {
+          "seed": "amber-lantern-85",
+          "style": "print",
+          "salt": "sc0",
+          "resolved": {
+            "style": "print",
+            "pen": "fountain",
+            "slant": -1.8,
+            "neatness": 0.71
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "I",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "sc0",
+              "gap": 0
+            },
+            {
+              "text": "F",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "sc0b",
+              "size": 0.74,
+              "gap": 0.04
+            },
+            {
+              "text": "T",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "sc1",
+              "gap": 0.34
+            },
+            {
+              "text": "HIS",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "sc1b",
+              "size": 0.74,
+              "gap": 0.04
+            },
+            {
+              "text": "F",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "sc2",
+              "gap": 0.34
+            },
+            {
+              "text": "INDS",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "sc2b",
+              "size": 0.74,
+              "gap": 0.04
+            },
+            {
+              "text": "Y",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "sc3",
+              "gap": 0.34
+            },
+            {
+              "text": "OU",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "salt": "sc3b",
+              "size": 0.74,
+              "gap": 0.04
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/29-smallcaps-print.svg",
+        "mono": "svg/29-smallcaps-print-mono.svg",
+        "icon": "svg/29-smallcaps-print-icon.svg"
+      }
+    },
+    {
+      "number": 30,
+      "id": "30-big-you-polish",
+      "family": "comp",
+      "note": "The same writer, but \"you\" is written larger. You are the one it found.",
+      "text": "If this finds you",
+      "hands": [
+        {
+          "seed": "corvid-marten-81",
+          "style": "polish-1906",
+          "resolved": {
+            "style": "polish-1906",
+            "pen": "fountain",
+            "slant": 4.4,
+            "neatness": 0.88
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If this finds",
+              "seed": "corvid-marten-81",
+              "style": "polish-1906"
+            },
+            {
+              "text": "you",
+              "seed": "corvid-marten-81",
+              "style": "polish-1906",
+              "salt": "you",
+              "size": 1.6,
+              "gap": 0.22
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/30-big-you-polish.svg",
+        "mono": "svg/30-big-you-polish-mono.svg",
+        "icon": "svg/30-big-you-polish-icon.svg"
+      }
+    },
+    {
+      "number": 31,
+      "id": "31-you-other-hand",
+      "family": "comp",
+      "note": "Two writers: neat print (#1), then \"you\" in the joined script of #9. Two people on one page.",
+      "text": "If this finds you",
+      "hands": [
+        {
+          "seed": "amber-lantern-85",
+          "style": "print",
+          "resolved": {
+            "style": "print",
+            "pen": "fountain",
+            "slant": -1.8,
+            "neatness": 0.71
+          }
+        },
+        {
+          "seed": "meadow-finch-75",
+          "style": "script",
+          "salt": "you",
+          "resolved": {
+            "style": "script",
+            "pen": "fountain",
+            "slant": 5.2,
+            "neatness": 0.37
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If this finds",
+              "seed": "amber-lantern-85",
+              "style": "print"
+            },
+            {
+              "text": "you",
+              "seed": "meadow-finch-75",
+              "style": "script",
+              "salt": "you",
+              "size": 1.5,
+              "gap": 0.24
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/31-you-other-hand.svg",
+        "mono": "svg/31-you-other-hand-mono.svg",
+        "icon": "svg/31-you-other-hand-icon.svg"
+      }
+    },
+    {
+      "number": 32,
+      "id": "32-stacked-big-you-spanish",
+      "family": "comp",
+      "note": "Spanish copybook, \"you\" alone on a second line, large and stepped in.",
+      "text": "If this finds / you",
+      "hands": [
+        {
+          "seed": "saffron-pebble-77",
+          "style": "spanish-1776",
+          "resolved": {
+            "style": "spanish-1776",
+            "pen": "fountain",
+            "slant": -10.2,
+            "neatness": 0.58
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If this finds",
+              "seed": "saffron-pebble-77",
+              "style": "spanish-1776"
+            }
+          ]
+        },
+        {
+          "indent": 1.6,
+          "leading": 1.25,
+          "runs": [
+            {
+              "text": "you",
+              "seed": "saffron-pebble-77",
+              "style": "spanish-1776",
+              "salt": "you",
+              "size": 1.7
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/32-stacked-big-you-spanish.svg",
+        "mono": "svg/32-stacked-big-you-spanish-mono.svg",
+        "icon": "svg/32-stacked-big-you-spanish-icon.svg"
+      }
+    },
+    {
+      "number": 33,
+      "id": "33-pencil-print",
+      "family": "comp",
+      "note": "Option #1’s writer in pencil: grainy and soft, like a first draft.",
+      "text": "If This Finds You",
+      "hands": [
+        {
+          "seed": "amber-lantern-85",
+          "style": "print",
+          "pen": "pencil",
+          "resolved": {
+            "style": "print",
+            "pen": "pencil",
+            "slant": -1.8,
+            "neatness": 0.71
+          }
+        }
+      ],
+      "layout": [
+        {
+          "runs": [
+            {
+              "text": "If This Finds You",
+              "seed": "amber-lantern-85",
+              "style": "print",
+              "pen": "pencil"
+            }
+          ]
+        }
+      ],
+      "icon": "If",
+      "files": {
+        "ink": "svg/33-pencil-print.svg",
+        "mono": "svg/33-pencil-print-mono.svg",
+        "icon": "svg/33-pencil-print-icon.svg"
+      }
+    },
+    {
+      "number": 34,
+      "id": "34-ref-eb-garamond",
+      "family": "ref",
+      "note": "EB Garamond italic. Bookish and graceful, the safe literary choice.",
+      "font": "EB Garamond",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:'EB Garamond',Garamond,serif;font-style:italic;font-weight:500",
+      "text": "If This Finds You",
+      "hands": [],
+      "files": {}
+    },
+    {
+      "number": 35,
+      "id": "35-ref-cormorant",
+      "family": "ref",
+      "note": "Cormorant Garamond. Fine, high-contrast display serif; elegant, a bit fragile small.",
+      "font": "Cormorant Garamond",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:'Cormorant Garamond',Garamond,serif;font-weight:500",
+      "text": "If This Finds You",
+      "hands": [],
+      "files": {}
+    },
+    {
+      "number": 36,
+      "id": "36-ref-fraunces",
+      "family": "ref",
+      "note": "Fraunces with its soft, wonky settings. Warm and slightly odd, in a good way.",
+      "font": "Fraunces",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:Fraunces,Georgia,serif;font-weight:400;font-variation-settings:'SOFT' 100,'WONK' 1",
+      "text": "If This Finds You",
+      "hands": [],
+      "files": {}
+    },
+    {
+      "number": 37,
+      "id": "37-ref-im-fell",
+      "family": "ref",
+      "note": "IM Fell English italic, from 17th-century type. Inky and old-fashioned.",
+      "font": "IM Fell English",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:'IM Fell English',Georgia,serif;font-style:italic",
+      "text": "If This Finds You",
+      "hands": [],
+      "files": {}
+    },
+    {
+      "number": 38,
+      "id": "38-ref-instrument-serif",
+      "family": "ref",
+      "note": "Instrument Serif italic, the sister of the app’s UI font. Pairs without effort.",
+      "font": "Instrument Serif",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:'Instrument Serif',Georgia,serif;font-style:italic",
+      "text": "If This Finds You",
+      "hands": [],
+      "files": {}
+    },
+    {
+      "number": 39,
+      "id": "39-ref-special-elite",
+      "family": "ref",
+      "note": "Special Elite, a worn typewriter. Archival and a little cliché.",
+      "font": "Special Elite",
+      "licence": "Apache 2.0",
+      "css": "font-family:'Special Elite','Courier New',monospace",
+      "text": "If This Finds You",
+      "hands": [],
+      "files": {}
+    },
+    {
+      "number": 40,
+      "id": "40-ref-courier-prime",
+      "family": "ref",
+      "note": "Courier Prime, a clean typewriter. Reads like a transcript of the letter.",
+      "font": "Courier Prime",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:'Courier Prime','Courier New',monospace",
+      "text": "If This Finds You",
+      "hands": [],
+      "files": {}
+    },
+    {
+      "number": 41,
+      "id": "41-hybrid-garamond-polish",
+      "family": "ref",
+      "note": "Garamond italic, then \"you\" handwritten by the Polish writer of #14.",
+      "font": "EB Garamond",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:'EB Garamond',Garamond,serif;font-style:italic;font-weight:500",
+      "text": "If this finds + handwritten \"you\"",
+      "hands": [
+        {
+          "seed": "corvid-marten-81",
+          "style": "polish-1906",
+          "salt": "you",
+          "resolved": {
+            "style": "polish-1906",
+            "pen": "fountain",
+            "slant": 4.4,
+            "neatness": 0.88
+          }
+        }
+      ],
+      "files": {
+        "you": "svg/41-hybrid-garamond-polish-you.svg"
+      }
+    },
+    {
+      "number": 42,
+      "id": "42-hybrid-fell-palmer",
+      "family": "ref",
+      "note": "Old type, then a fountain-pen Palmer \"you\" (#11’s writer). A printed page meets a pen.",
+      "font": "IM Fell English",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:'IM Fell English',Georgia,serif",
+      "text": "If this finds + handwritten \"you\"",
+      "hands": [
+        {
+          "seed": "juniper-river-86",
+          "style": "palmer",
+          "salt": "you",
+          "resolved": {
+            "style": "palmer",
+            "pen": "fountain",
+            "slant": -15,
+            "neatness": 0.59
+          }
+        }
+      ],
+      "files": {
+        "you": "svg/42-hybrid-fell-palmer-you.svg"
+      }
+    },
+    {
+      "number": 43,
+      "id": "43-hybrid-courier-print",
+      "family": "ref",
+      "note": "Typed capitals, then \"you\" in #1’s print hand. A form somebody filled in.",
+      "font": "Courier Prime",
+      "licence": "SIL OFL 1.1",
+      "css": "font-family:'Courier Prime','Courier New',monospace",
+      "text": "IF THIS FINDS + handwritten \"you\"",
+      "hands": [
+        {
+          "seed": "amber-lantern-85",
+          "style": "print",
+          "salt": "you",
+          "resolved": {
+            "style": "print",
+            "pen": "fountain",
+            "slant": -1.8,
+            "neatness": 0.71
+          }
+        }
+      ],
+      "files": {
+        "you": "svg/43-hybrid-courier-print-you.svg"
+      }
+    }
+  ]
+}
