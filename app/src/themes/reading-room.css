@@ -257,7 +257,7 @@ html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site
   color: var(--rr-ink);
 }
 /* the phone header's chips (Menu, Share): only their drawn icons, no box (the paper is the only thing with an edge);
-   the 44px target stays */
+   their size is the shared header's own */
 html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]) {
   border-color: transparent;
   background: transparent;
