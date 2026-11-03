@@ -1,0 +1,27 @@
+{
+  "id": "arrighi-1524",
+  "title": "La operina di Ludouico Vicentino, da imparare di scriuere littera cancellarescha",
+  "author": "Ludovico degli Arrighi, called Vicentino (1475–1527); woodcuts by Ugo da Carpi",
+  "date": "1522–1524",
+  "place": "Rome",
+  "holder": "Getty Research Institute, scanned by the Internet Archive (2013); the Houghton Library copy on Commons is marked Public Domain Mark",
+  "page": "https://archive.org/details/laoperinadiludou00arri",
+  "rights": {
+    "statement": "1524 work, public domain everywhere. Internet Archive record has no rights restriction (Getty Research Institute contribution); the Houghton copy of the same book is published on Commons under the Public Domain Mark.",
+    "where": "https://archive.org/metadata/laoperinadiludou00arri ; https://commons.wikimedia.org/wiki/File:Houghton_TypW_525.24.162_-_La_operina,_3.jpg (Category:CC-PD-Mark)",
+    "checked": "2026-11-02",
+    "verdict": "clean"
+  },
+  "files": [
+    {
+      "name": "n28.jpg",
+      "url": "https://archive.org/download/laoperinadiludou00arri/page/n28.jpg",
+      "what": "leaf with capitals A–Z and the small-letter alphabet a–z (two forms of e, g, s, z), 1857 × 2948 px"
+    },
+    {
+      "name": "n25.jpg",
+      "url": "https://archive.org/download/laoperinadiludou00arri/page/n25.jpg",
+      "what": "leaf with paired capitals (a swash and a plain form of each), 1857 × 2948 px"
+    }
+  ]
+}

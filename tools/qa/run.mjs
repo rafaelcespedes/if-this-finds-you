@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { resolveRoot, loadEngine, QA_DIR } from './lib/engine.mjs';
 import { esc } from './lib/util.mjs';
 
-const CHECKS = ['determinism', 'coverage', 'contracts', 'geometry', 'perf', 'variety', 'feel', 'sheets'];
+const CHECKS = ['determinism', 'coverage', 'contracts', 'geometry', 'proportions', 'perf', 'variety', 'feel', 'sheets'];
 const BASELINE = path.join(QA_DIR, 'baseline.json');
 
 function parseArgs(argv) {

@@ -1,0 +1,23 @@
+{
+  "id": "servidori-1789",
+  "title": "Reflexiones sobre la verdadera arte de escribir",
+  "author": "Domingo María de Servidori (c.1724–1790)",
+  "date": "1789",
+  "place": "Madrid: Imprenta Real",
+  "holder": "Biblioteca de la Universidad de Sevilla (Internet Archive A212107); one plate of the Láminas at the Metropolitan Museum of Art (356985)",
+  "page": "https://archive.org/details/A212107",
+  "rights": {
+    "statement": "Sevilla copy: Public Domain Mark 1.0 (licenseurl on the Internet Archive record). Met object 356985: Open Access, isPublicDomain true.",
+    "where": "https://archive.org/metadata/A212107 ; https://collectionapi.metmuseum.org/public/collection/v1/objects/356985",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "Checked, not traced: the Sevilla copy is the text volume only (324 leaves, no plates); the Met has one text plate (Lám. 98, engraved by Francisco Asensio, 1784), used to compare the bastarda's movement. The research's BIVALDI copy timed out repeatedly."
+  },
+  "files": [
+    {
+      "name": "MM10691.jpg",
+      "url": "https://images.metmuseum.org/CRDImages/dp/original/MM10691.jpg",
+      "what": "Met 356985, Lám. 98 (Quousque tandem…), 2940 × 4000 px; comparison only."
+    }
+  ]
+}
