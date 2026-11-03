@@ -14,6 +14,7 @@ const state = {
   seed: q.get('seed') || 'maple-river-42',
   size: +q.get('size') || 6,
   variety: q.get('variety') || 'stranger',
+  neat: q.get('neat') || 'on',
   text: q.get('text') || DEFAULT_TEXT,
 };
 
@@ -89,14 +90,14 @@ function draw() {
     // (style 'any' = the sampler also picks the family)
     const fam = state.style === 'any' ? undefined : E.getStyle(state.style).family;
     if (q.get('seeds')) {
-      for (const seed of q.get('seeds').split(',')) { const p = E.makeHand(seed.trim(), fam || 'print'); html += handCell(p, `${seed} · ${p.family} · ${p.archetype}`, describe(p)); }
+      for (const seed of q.get('seeds').split(',')) { const p = E.makeHand(seed.trim(), fam || 'print', { neatOnly: state.neat !== 'off' }); html += handCell(p, `${seed} · ${p.family} · ${p.archetype}`, describe(p)); }
       out.innerHTML = html; return;
     }
     let history = [];
     for (let i = 0; i < 12; i++) {
-      const r = E.sampleHand({ history, family: fam, variety: state.variety, entropy: state.seed + ':' + i });
+      const r = E.sampleHand({ history, family: fam, variety: state.variety, entropy: state.seed + ':' + i, neatOnly: state.neat !== 'off' });
       history = [...history, { seed: r.seed, family: r.family }].slice(-6);
-      const p = E.makeHand(r.seed, r.family);
+      const p = E.makeHand(r.seed, r.family, { neatOnly: state.neat !== 'off' });
       html += handCell(p, `${r.seed} · ${r.family} · ${r.label} · ${r.distance.toFixed(2)} from the last 6`, describe(p));
     }
   }
@@ -108,7 +109,8 @@ function draw() {
 function init() {
   $('style').innerHTML = E.styleNames().map((n) => `<option value="${n}">${n}</option>`).join('') + '<option value="any">any (hands view)</option>';
   $('variety').innerHTML = Object.entries(E.VARIETY).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
-  for (const k of ['view', 'style', 'chars', 'seed', 'size', 'text', 'variety']) {
+  $('neat').innerHTML = '<option value="on">on</option><option value="off">off</option>';
+  for (const k of ['view', 'style', 'chars', 'seed', 'size', 'text', 'variety', 'neat']) {
     $(k).value = state[k];
     $(k).addEventListener('change', () => { state[k] = k === 'size' ? +$(k).value : $(k).value; draw(); });
   }

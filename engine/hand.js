@@ -194,6 +194,47 @@ export function makeHand(seed, styleOrFamily, opts = {}) {
   h.size = handSize(h);   // x-height in mm (pen.js; own 'size:' namespace, nothing above moves)
   h.addedTraits = [];
   for (const fn of HAND_TRAITS) { const t = fn(h) || {}; Object.assign(h, t); h.addedTraits.push(...Object.keys(t)); }
+  // Neat only (on unless opts.neatOnly is false / 'off'): the few traits that push a hand past easy reading are
+  // pulled back. h.untidied keeps the seed's own values; neatOnly 'off' restores them exactly (withOverrides).
+  h.neatOnly = opts.neatOnly === false || opts.neatOnly === 'off' ? 'off' : 'on';
+  h.untidied = {};
+  if (h.neatOnly === 'on') tidyHand(h);
+  return h;
+}
+
+// What Neat only clamps, as [min, max] on the hand's own values (a trait already inside is left alone). Slant is
+// the total lean with the copybook's own built in; x-height and width follow the ranges the style was drawn
+// against; the pen may not fill the letters' counters; the movement dimensions lose their extremes (huge loops,
+// long lead-ins, flourishes, hard angles, very long joins).
+const TIDY_DIMS = { loops: [-1, 0.6], leadIns: [-1, 0.5], endFlicks: [-1, 0.6], flourish: [-1, 0.4], joinLength: [-1, 0.6],
+  angularity: [-1, 0.55], loopHeight: [-1, 0.6], bowls: [-0.7, 0.7], rhythm: [-0.6, 0.6] };
+export function builtInSlant(style) {
+  const st = getStyle(style);
+  if (st && st.tradition && Number.isFinite(st.tradition.slant)) return st.tradition.slant;
+  return st && st.proportions === 'script' ? 15.6 : 0;
+}
+export function tidyHand(h) {
+  const st = getStyle(h.style) || {};
+  const sr = st.proportions === 'script';
+  const xhU = (v) => v * CAP;
+  const set = (k, lo, hi) => {
+    if (typeof h[k] !== 'number') return;
+    const v = clamp(h[k], lo, hi);
+    if (v !== h[k]) { if (!(k in h.untidied)) h.untidied[k] = h[k]; h[k] = v; }
+  };
+  set('neatness', 0.5, 1); set('neatness0', 0.5, 1);
+  set('hurry', 0, 0.7); set('hurry0', 0, 0.7);
+  const b = builtInSlant(h.style);
+  set('slant', -8 - b, 28 - b);
+  set('xHeight', sr ? 0.4 : 0.48, 1);
+  set('width', sr ? 0.8 : 0.66, sr ? 1.15 : 1.0);
+  set('capWidth', 0.6, 1.1);
+  set('penWidth', 0, 0.16 * xhU(h.xHeight));
+  set('space', 0.85 * xhU(h.xHeight), Infinity);   // words stand apart
+  set('wordSpace', 1, Infinity);
+  set('tremor', 0, 2);
+  set('quirk', 0, 40);
+  for (const [k, [lo, hi]] of Object.entries(TIDY_DIMS)) set(k, lo, hi);
   return h;
 }
 
@@ -231,9 +272,14 @@ export const care = (p) => clamp((p.neatness == null ? 0.6 : p.neatness) - 0.3 *
 const careDrop = (p) => (p.neatness0 == null ? 0 : clamp(p.neatness0, 0, 1) - care(p));
 
 // Effective params = hand + overrides from the UI.
+// Neat only can be switched either way here: 'off' gives back the seed's own values, 'on' tidies a hand made without
+// it. Values the UI sets explicitly always win.
 export function withOverrides(hand, o) {
   const p = Object.assign(Object.create(null), hand);
-  if (o) for (const k in o) if (o[k] !== undefined && o[k] !== null) p[k] = o[k];
+  const want = o && o.neatOnly != null ? (o.neatOnly === false || o.neatOnly === 'off' ? 'off' : 'on') : hand.neatOnly;
+  if (want === 'off' && hand.neatOnly === 'on') { Object.assign(p, hand.untidied); p.untidied = {}; p.neatOnly = 'off'; }
+  else if (want === 'on' && hand.neatOnly === 'off') { p.untidied = {}; p.neatOnly = 'on'; tidyHand(p); }
+  if (o) for (const k in o) if (o[k] !== undefined && o[k] !== null && k !== 'neatOnly') p[k] = o[k];
   return p;
 }
 
@@ -242,6 +288,8 @@ export const HAND_PARAMS = [
   { key: 'hurry', label: 'Hurry', group: 'Hand', min: 0, max: 1, step: 0.01, format: 'pct' },
   { key: 'blend', label: 'Mixed schooling', group: 'Hand', min: 0, max: 1, step: 0.01, format: 'pct' },
   { key: 'slant', label: 'Slant', group: 'Hand', min: -15, max: 30, step: 0.5, format: 'deg' },
+  { key: 'neatOnly', label: 'Neat only', group: 'Hand', type: 'select', default: 'on',
+    options: () => [{ value: 'on', label: 'On: readable at a glance' }, { value: 'off', label: 'Off: every hand, ugly ones too' }] },
 ];
 
 // ---------- glyph geometry ----------

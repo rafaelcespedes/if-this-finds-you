@@ -29,10 +29,12 @@ const fmt = (d, v) => (FORMAT[d.format] || ((x) => (+x).toFixed(2)))(v);
 
 // ---------- hand + params ----------
 const params = () => E.withOverrides(state.hand, state.overrides);
+// Neat only is a preference, not part of a hand: it survives New hand and the reset button
+const keepNeat = () => (state.overrides.neatOnly ? { neatOnly: state.overrides.neatOnly } : {});
 function setHand(seed, resetControls) {
   state.seed = seed;
   state.hand = E.makeHand(seed, state.style);
-  if (resetControls) state.overrides = {};
+  if (resetControls) state.overrides = keepNeat();
   syncControls();
   invalidateFont();
   writeHash();
@@ -57,7 +59,7 @@ function buildControls() {
       wrap.innerHTML = `<label for="c-${d.key}">${d.label}</label><span></span><select id="c-${d.key}"></select>`;
       const sel = wrap.querySelector('select');
       for (const o of d.options()) sel.add(new Option(o.label, o.value));
-      sel.addEventListener('change', () => { state.overrides[d.key] = sel.value; invalidateFont(); render(); });
+      sel.addEventListener('change', () => { state.overrides[d.key] = sel.value; if (d.key === 'neatOnly') writeHash(); invalidateFont(); render(); });
     } else {
       wrap.className = 'slider';
       wrap.innerHTML = `<label for="c-${d.key}">${d.label}</label><output id="o-${d.key}"></output>` +
@@ -73,7 +75,7 @@ function buildControls() {
   }
   const reset = document.createElement('button');
   reset.className = 'linkbtn'; reset.textContent = 'Back to this seed’s natural hand';
-  reset.addEventListener('click', () => { state.overrides = {}; syncControls(); invalidateFont(); render(); });
+  reset.addEventListener('click', () => { state.overrides = keepNeat(); syncControls(); invalidateFont(); render(); });
   host.appendChild(reset);
 }
 function syncControls() {
@@ -517,12 +519,14 @@ function exportFont() {
 // ---------- URL hash ----------
 function writeHash() {
   const h = new URLSearchParams({ seed: state.seed, style: state.style });
+  if (state.overrides.neatOnly === 'off') h.set('neat', 'off');
   history.replaceState(null, '', '#' + h.toString());
 }
 function readHash() {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get('seed')) state.seed = h.get('seed');
   if (E.getStyle(h.get('style'))) state.style = h.get('style');
+  if (h.get('neat') === 'off') state.overrides.neatOnly = 'off';
 }
 
 // ---------- wire up ----------
@@ -553,7 +557,7 @@ function init() {
   const shown = [];
   $('reroll').addEventListener('click', (e) => {
     if (!shown.length) shown.push({ seed: state.seed, family: E.getStyle(state.style).family });
-    const r = E.sampleHand({ history: shown, variety: e.shiftKey ? 'sibling' : 'stranger', entropy: randomSeed() });
+    const r = E.sampleHand({ history: shown, variety: e.shiftKey ? 'sibling' : 'stranger', entropy: randomSeed(), neatOnly: state.overrides.neatOnly !== 'off' });
     shown.push({ seed: r.seed, family: r.family }); if (shown.length > 6) shown.shift();
     $('seed').value = r.seed; state.style = r.style; syncStyle();
     setHand(r.seed, true);

@@ -46,6 +46,8 @@ export interface NoteState {
   signed: boolean;
   /** opened from a shared link: the reader view, where the letter writes itself */
   reader: boolean;
+  /** New hand skips the hard-to-read writers (on unless turned off; in links as neat=0) */
+  neatOnly: boolean;
 }
 
 /** The found letter a reply answers, and the look it was found in. The look came later: links from before it
@@ -88,6 +90,7 @@ export const DEFAULT_STATE: NoteState = {
   marks: [],
   signed: false,
   reader: false,
+  neatOnly: true,
 };
 
 export const SIZE_RANGE = { min: 0.7, max: 1.45, step: 0.01 };
@@ -144,6 +147,7 @@ export function encodeState(s: NoteState): string {
   if (s.marks.length) q.set('m', encodeMarks(s.marks));
   if (s.signed) q.set('sig', '1');
   if (s.reader) q.set('read', '1');
+  if (!s.neatOnly) q.set('neat', '0');
   return q.toString();
 }
 
@@ -226,6 +230,7 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
   s.marks = decodeMarks(q.get('m'), s.text.length);
   s.signed = q.get('sig') === '1';
   s.reader = q.get('read') === '1';
+  s.neatOnly = q.get('neat') !== '0';
   return s;
 }
 

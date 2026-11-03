@@ -31,12 +31,18 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   (public domain, rights-checked). The seed picks it (a hash over the enabled letters, so a seed always writes
   the same one), preferring letters that suit the style (Business and Spencerian: American letters, German
   school: German, Chancery: Italian, Québec print: French); the oldest spellings (before 1660) only come with
-  historical hands (Chancery). The credit sits under the sheet ("Letter: Kamma Rahbek, 1813", with the source
-  in the provenance card), and "Blank page" starts from nothing. The first edit (typing, an underline) makes the
+  historical hands (Chancery). "Blank page" starts from nothing. The first edit (typing, an underline) makes the
   text yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a
-  sample. There's always a way back: under New hand the page says what it holds ("A found letter" or "Your
-  letter"), with "Another letter" / "Read a found letter"; your own letter is kept on this device (never in a
-  link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter doesn't come back within ten hands.
+  sample. There's always a way back: under New hand, "Another letter" / "Read a found letter"; your own letter
+  is kept on this device (never in a link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter
+  doesn't come back within ten hands.
+- **The sheet's label** (`components/SheetLabel.tsx`), like an artboard's name: one quiet line above the first
+  sheet's top-left corner, in the app's type. Which letter it is ("Kamma Rahbek, 1813", the credit; the source
+  is in About this hand) and how the hand writes ("A meticulous joined hand, upright"). On your first key it
+  becomes yours ("Your reply to Kamma Rahbek", or "A letter from you"), a 200 ms cross-fade in place; going
+  back to a found letter brings its name back. On the reply desk each sheet has its own. Where the sheet is too
+  narrow for both (phones), only the name shows. A translated letter still credits its translator under the
+  sheet.
 - **Replying** (`components/TheirLetter.tsx`, `lib/found.ts`). The first key on a found letter starts your reply
   on a fresh sheet, and their letter stays on the desk in its own hand, pen, ink and paper (exactly as it was
   read; a link's `re=` carries its look, so it comes back the same). **Your letter never moves**: theirs comes
@@ -84,9 +90,15 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   - *Always there:* the writer's name (opens About this hand), **New hand**, "Another letter" while a found
     letter is on the page, and one **Share** icon. Under the sheet: the letter's credit and the writing menu
     (In ink / In pencil / Fair copy, Make a fair copy, Fresh sheet, Blank page, Sign it, Edit as plain text).
-  - *The look,* one scrolling column, no tabs, in this order: **Paper** (a row of swatches), **Pen** (each
+  - *The look,* one scrolling column, no tabs, in this order: **Paper** (a row of swatches, and under it the chosen paper's kinds as small chips: a pad in white A5,
+    British blue, binsen or German A4; going on past one sheet the way that stationery does: a postcard's next
+    card is numbered, a notecard says "over" and goes on to its plain back, a second aerogramme follows), **Pen** (each
     swatch is the word "ink" written with that pen; Fine / Medium / Bold beside it), **Ink**, **Handwriting**
-    (Print or Joined, the school cards, Similar), **How they write** (Neatness, Hurry, Size, each with plain
+    (Print or Joined, the school cards, Similar, and **Neat hands only**: on by default, the engine tidies a
+    hand a little (slant, pen width, spacing, hurry, capitals) and New hand skips writers below its `NEAT_MIN`
+    readability; switched off, the page shows the hand exactly as its seed wrote it (a cross-fade) and New
+    hand picks from everyone. "Roll a neat one" appears when the hand on the page still isn't easy to read;
+    `neat=0` in links when it's off), **How they write** (Neatness, Hurry, Size, each with plain
     words at its ends: Messy / Neat, Calm / Rushed, Small / Large).
   - *More* (folded): the other sliders (Pressure, Slant), an Occasion with an Amount, Keep my
     paper, pen and ink, Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle, Line spacing,
@@ -97,8 +109,11 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     keeps your How and With-what offsets and clears the Who ones (slant, proportions, spacing).
 - **Share** (one icon): Copy link (a URL that restores the exact note; the toast offers the share sheet
   where there is one), Download image (JPEG at 3x the screen, paper and writing exactly as shown; on phones
-  it opens the share sheet, so Save Image puts it in Photos), and under More formats, Font file (.otf from
-  the engine's `buildFont`, opentype.js 1.3.4, loaded only when used).
+  it opens the share sheet, so Save Image puts it in Photos), Download video (the letter writing itself out:
+  MP4, 4:5, the first lines, made in a few seconds by `src/export`, loaded when first used; progress and Stop in
+  a toast; on phones a Save button opens the share sheet), and under More formats, Animated GIF and Font file
+  (.otf from the engine's `buildFont`, opentype.js 1.3.4, loaded only when used). Formats the browser can't
+  make are greyed out.
 - **On phones** the controls live in a sheet that's always there, at three heights (`ControlSheet.tsx`):
   - *peek:* the writer's name (About this hand), New hand, Share, what's on the page ("A found letter" /
     "Another letter") and "Paper, pen & ink" to open it.

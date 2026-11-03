@@ -7,10 +7,11 @@ import { effective, type Effective } from './params';
 import type { NoteState } from './state';
 import type { WriteRequest } from './write-protocol';
 import { INK } from './ink';
+import { handOpts } from './engine-features';
 
 export type Req = Omit<WriteRequest, 'id'>;
 
-export function requestFor(s: NoteState, natural: Hand = makeHand(s.seed, s.style), eff: Effective = effective(natural, s)): Req {
+export function requestFor(s: NoteState, natural: Hand = makeHand(s.seed, s.style, handOpts(s)), eff: Effective = effective(natural, s)): Req {
   return {
     seed: s.seed, style: s.style, overrides: eff.overrides, text: s.text, paper: s.paper,
     size: eff.size, lineSpacing: eff.lineSpacing, inkKey: eff.inkKey, inkColor: inkColor(s.ink),
@@ -24,7 +25,7 @@ export function requestFor(s: NoteState, natural: Hand = makeHand(s.seed, s.styl
 
 /** The look of a request, coarsely: who writes, on what, with what. A change here is a new look (it may fade). */
 export function lookOf(r: Pick<Req, 'seed' | 'style' | 'paper' | 'overrides' | 'inkKey' | 'inkColor'>) {
-  return [r.seed, r.style, r.paper, r.overrides.pen ?? '', r.overrides.tip ?? '', r.inkKey ?? '', r.inkColor].join('|');
+  return [r.seed, r.style, r.paper, r.overrides.pen ?? '', r.overrides.tip ?? '', r.overrides.neatOnly ?? '', r.inkKey ?? '', r.inkColor].join('|');
 }
 
 /** What the writer pencils in on an empty page: a salutation on letter paper, the date in a notebook. */

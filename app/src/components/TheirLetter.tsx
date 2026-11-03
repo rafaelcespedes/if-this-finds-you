@@ -10,6 +10,7 @@
 // answer line by line; picking theirs up there just brings it to full size.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PaperGuide } from '@/components/PaperCanvas';
+import { SheetLabel } from '@/components/SheetLabel';
 import { SheetView } from '@/components/SheetView';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { FoundLetter } from '@/lib/found';
@@ -67,9 +68,12 @@ interface DeskProps {
   onDismiss: () => void;
   /** the reply just started: theirs lies on your fresh sheet, and slides off it to the side */
   arriving?: boolean;
+  /** its name above its corner, as on your sheet: whose letter, and how their hand writes */
+  title: string;
+  hand?: string;
 }
 
-export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, onDismiss, arriving }: DeskProps) {
+export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, onDismiss, arriving, title, hand }: DeskProps) {
   const { letter, paper, svgs, ink } = found;
   const sheetW = paper.w * pxPerMm;
   const sheetH = paper.h * pxPerMm;
@@ -80,7 +84,7 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
     window.addEventListener('resize', on);
     return () => window.removeEventListener('resize', on);
   }, []);
-  const TOP = 56;
+  const TOP = 72;
   const CAPTION = 40;
   const cardH = Math.min(stackH, vh - TOP - 16 - CAPTION);
   const side = layout.mode === 'side';
@@ -208,13 +212,15 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
         )}
       </div>
 
-      {/* under the letter, wherever it is: who wrote it, and the way back */}
+      <SheetLabel title={title} hand={hand} width={forward ? sheetW : aside * sheetW} className="absolute bottom-full left-0 mb-2" />
+
+      {/* under the letter, wherever it is: the way back (or that it isn't a reply) */}
       <div
         ref={captionRef}
         className="absolute top-0 left-0 flex items-center gap-1 text-[12px] text-muted-foreground motion-reduce:transition-none"
         style={{ width: forward ? sheetW : Math.max(140, aside * sheetW), transform: `translateY(${(forward ? cardH : aside * cardH) + 10}px)`, transition: move }}
       >
-        <span className="min-w-0 flex-1 truncate" title={letter.title || undefined}>{sampleCredit(letter)}</span>
+        <span className="flex-1" />
         {forward ? (
           <button
             type="button"

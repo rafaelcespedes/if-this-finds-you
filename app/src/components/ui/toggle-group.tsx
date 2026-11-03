@@ -18,7 +18,7 @@ function SegmentedItem({ className, ...props }: React.ComponentProps<typeof Togg
     <ToggleGroupPrimitive.Item
       data-slot="segmented-item"
       className={cn(
-        'inline-flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-[13px] font-medium text-muted-foreground transition-[background-color,color,box-shadow] duration-150 ease-out pointer-coarse:h-11 hover-device:hover:text-foreground data-[state=on]:bg-[#fffefb] data-[state=on]:text-foreground data-[state=on]:shadow-[0_1px_2px_rgba(40,30,10,0.12),0_0_0_0.5px_rgba(40,30,10,0.06)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
+        'inline-flex h-8 items-center justify-center gap-1.5 rounded-md px-3 text-[13px] font-medium text-muted-foreground transition-[background-color,color,box-shadow] duration-150 ease-out pointer-coarse:h-11 hover-device:hover:text-foreground data-[state=on]:bg-[#fffefb] data-[state=on]:text-foreground data-[state=on]:shadow-[0_1px_2px_rgba(40,30,10,0.12),0_0_0_0.5px_rgba(40,30,10,0.06)] aria-checked:bg-[#fffefb] aria-checked:text-foreground aria-checked:shadow-[0_1px_2px_rgba(40,30,10,0.12),0_0_0_0.5px_rgba(40,30,10,0.06)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
         className,
       )}
       {...props}

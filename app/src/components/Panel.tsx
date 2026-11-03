@@ -4,7 +4,7 @@
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useEffect, useId, useState } from 'react';
-import { CaseSensitive, ChevronDown, Download, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
+import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ import { branded } from '@/lib/brand';
 import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
-import { getPaper, PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
+import { getPaper, PAPERS, variantsOf, type PaperId, type PaperSpec } from '@/lib/papers';
 import { PENS_LIVE, PENS_SHOWN, penName } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
 import type { LockKey } from '@/lib/roll';
@@ -47,7 +47,12 @@ export interface PanelProps {
   locks: Set<LockKey>;
   /** keep the paper, pen and ink (all three) when rolling a new hand, or not */
   onKeepLook: (keep: boolean) => void;
-  busy: { download: boolean; font: boolean };
+  busy: { download: boolean; font: boolean; video: boolean };
+  /** the letter writing itself out, as a video or a GIF (null until the browser's been asked what it can make) */
+  onExportVideo: (kind: 'video' | 'gif') => void;
+  exportable: { video: boolean; gif: boolean } | null;
+  /** the share menu opened: a moment to ask the browser */
+  onShareOpen: () => void;
   onNewHand: () => void;
   onSimilarHand: () => void;
   onSeed: (seed: string) => void;
@@ -65,6 +70,10 @@ export interface PanelProps {
   /** the writer signs below the last line (or stops signing) */
   onSign: () => void;
   onVariety: (v: number) => void;
+  /** New hand skips the hard-to-read writers */
+  onNeatOnly: (v: boolean) => void;
+  /** the hand on the page is easy to read */
+  neatNow: boolean;
   onShare: () => void;
   onDownload: () => void;
   onExportFont: () => void;
@@ -194,10 +203,10 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
 }
 
 /** Share: copy a link, save the image; the font file is a quieter extra. One icon wherever it sits. */
-export function ShareMenu({ busy, onShare, onDownload, onExportFont, size }: PanelProps & { size?: 'lg' }) {
-  const working = busy.download || busy.font;
+export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVideo, exportable, onShareOpen, size }: PanelProps & { size?: 'lg' }) {
+  const working = busy.download || busy.font || busy.video;
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root onOpenChange={(o) => o && onShareOpen()}>
       <DropdownMenu.Trigger asChild>
         <Button variant="secondary" size="icon" aria-label="Share" className={cn('size-11', size === 'lg' && 'size-11')}>
           {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}
@@ -215,8 +224,15 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, size }: Pan
           <MenuItem onSelect={onDownload} icon={busy.download ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />} disabled={busy.download}>
             Download image
           </MenuItem>
+          {/* the letter writing itself out: made in a few seconds, saved when it's done */}
+          <MenuItem onSelect={() => onExportVideo('video')} icon={busy.video ? <Loader2 className="animate-spin" aria-hidden /> : <Film aria-hidden />} disabled={busy.video || exportable?.video === false}>
+            Download video
+          </MenuItem>
           <DropdownMenu.Separator className="mx-2 my-1 h-px bg-border" />
           <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[11.5px] text-muted-foreground">More formats</DropdownMenu.Label>
+          <MenuItem onSelect={() => onExportVideo('gif')} icon={<ImagePlay aria-hidden />} disabled={busy.video || exportable?.gif === false} quiet>
+            Animated GIF
+          </MenuItem>
           <MenuItem onSelect={onExportFont} icon={busy.font ? <Loader2 className="animate-spin" aria-hidden /> : <CaseSensitive aria-hidden />} disabled={busy.font} quiet>
             Font file (.otf)
           </MenuItem>
@@ -246,17 +262,13 @@ function MenuItem({ children, icon, onSelect, disabled, quiet }: { children: Rea
  * Which letter is on the page, and a way to the other kind: "A found letter · Another letter" (and "Back to my
  * letter" when one is kept), or "Your letter · Read a found letter" (yours is kept on this device).
  */
-export function LetterStatus({ letter, className, compact }: PanelProps & { className?: string; compact?: boolean }) {
+export function LetterStatus({ letter, className }: PanelProps & { className?: string; compact?: boolean }) {
   if (!letter) return null;
   const link = 'shrink-0 rounded-md px-1 py-0.5 font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5';
   return (
+    // what the letter is lives on the sheet now (its label); here, only the ways to the others
     <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted-foreground', className)}>
-      <span className="inline-flex items-center gap-1.5">
-        <span aria-hidden className={cn('size-1.5 rounded-full', letter.found ? 'bg-[#b89a62]' : 'bg-[var(--ink)]')} />
-        {letter.found ? 'A found letter' : letter.own ? 'Your letter' : 'A blank page'}
-      </span>
-      {!compact && letter.own && <span className="text-faint">kept as you change hands</span>}
-      <span className="ml-auto flex items-center gap-1">
+      <span className="-ml-1 flex items-center gap-1">
         {letter.found && letter.drafts > 0 && (
           <button type="button" onClick={letter.onBackToMine} className={link}>Back to my letter</button>
         )}
@@ -278,6 +290,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
     <>
       <Group label="Paper" value={getPaper(state.paper).name} className={pad} first>
         <PaperPicker value={getPaper(state.paper).family} onChange={props.onPaper} rows />
+        <PaperVariants value={state.paper} onChange={props.onPaper} />
       </Group>
       {PENS_SHOWN && (
         <Group
@@ -308,6 +321,24 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
         }
       >
         <StylePicker seed={state.seed} style={state.style} ink={ink} onStyle={props.onStyle} />
+        <div className="mt-3.5 grid gap-1.5">
+          <Switch
+            label="Neat hands only"
+            hint="Tidies messy hands a little, and New hand skips the hard-to-read ones"
+            checked={state.neatOnly}
+            onChange={props.onNeatOnly}
+          />
+          {/* the hand on the page came before the switch (or from a link): one tap to a neat one */}
+          {state.neatOnly && !props.neatNow && (
+            <button
+              type="button"
+              onClick={props.onNewHand}
+              className="justify-self-start rounded-md px-1 py-0.5 text-[12.5px] font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
+            >
+              Roll a neat one
+            </button>
+          )}
+        </div>
       </Group>
       <Group label="How they write" className={pad}>
         <div className="grid gap-3.5">
@@ -641,6 +672,36 @@ const SWATCH = { w: 40, h: 30 };
 const swatchCrop = (paper: PaperSpec) => ({ ...paper.swatch, ...SWATCH });
 
 /** Papers as a grid (desktop panel) or one row that scrolls sideways (phone sheet). */
+/** The kinds of the chosen paper (a pad: white A5, British blue, binsen, German A4), as small chips. */
+function PaperVariants({ value, onChange }: { value: PaperId; onChange: (id: PaperId) => void }) {
+  const variants = variantsOf(value);
+  if (variants.length < 2) return null;
+  return (
+    <Segmented
+      type="single"
+      aria-label={`Kind of ${getPaper(value).name.toLowerCase()}`}
+      value={getPaper(value).id}
+      onValueChange={(v) => v && onChange(v as PaperId)}
+      className="mt-2 flex flex-wrap justify-start gap-1.5 bg-transparent p-0"
+    >
+      {variants.map((v) => (
+        <Tooltip key={v.id}>
+          <TooltipTrigger asChild>
+            <SegmentedItem
+              value={v.id}
+              aria-label={`${v.variant}: ${v.hint}`}
+              className="h-7 rounded-full bg-secondary px-2.5 text-[12px] aria-checked:bg-[#fffefb] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-9 pointer-coarse:px-3"
+            >
+              {v.variant}
+            </SegmentedItem>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{v.hint}</TooltipContent>
+        </Tooltip>
+      ))}
+    </Segmented>
+  );
+}
+
 const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value: PaperId; onChange: (id: PaperId) => void; rows?: boolean }) {
   return (
     <Segmented
@@ -662,11 +723,11 @@ const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value
               value={paper.id}
               aria-label={`${paper.name}: ${paper.hint}`}
               className={cn(
-                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] data-[state=on]:bg-[#fffefb] pointer-coarse:h-auto',
+                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] aria-checked:bg-[#fffefb] pointer-coarse:h-auto',
                 rows && 'w-[86px] shrink-0 snap-start bg-secondary',
               )}
             >
-              <span className="relative block overflow-hidden rounded-[5px] shadow-[0_0_0_0.5px_rgba(60,45,20,0.16),0_1px_2px_rgba(60,45,20,0.08)] transition-shadow duration-150 group-data-[state=on]:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(60,45,20,0.08)]">
+              <span className="relative block overflow-hidden rounded-[5px] shadow-[0_0_0_0.5px_rgba(60,45,20,0.16),0_1px_2px_rgba(60,45,20,0.08)] transition-shadow duration-150 group-aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(60,45,20,0.08)]">
                 <PaperCanvas paper={paper} pxPerMm={2.1} crop={swatchCrop(paper)} className="h-auto! w-full!" />
               </span>
               <span className="truncate px-0.5 text-center leading-tight">{paper.name}</span>
@@ -703,10 +764,10 @@ const InkPicker = memo(function InkPicker({ value, pen, onChange }: { value: str
             <SegmentedItem
               value={ink.id}
               aria-label={ink.name}
-              className="size-8 rounded-full p-0 data-[state=on]:bg-transparent data-[state=on]:shadow-none pointer-coarse:size-11"
+              className="size-8 rounded-full p-0 aria-checked:bg-transparent aria-checked:shadow-none pointer-coarse:size-11"
             >
               <span
-                className="block size-[22px] rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-offset-2 ring-offset-panel transition-[box-shadow] duration-150 [[data-state=on]>&]:ring-[1.5px] [[data-state=on]>&]:ring-[var(--ink)]"
+                className="block size-[22px] rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-offset-2 ring-offset-panel transition-[box-shadow] duration-150 [[aria-checked=true]>&]:ring-[1.5px] [[aria-checked=true]>&]:ring-[var(--ink)]"
                 style={{
                   background: ink.color
                     ? `radial-gradient(circle at 40% 36%, color-mix(in oklab, ${ink.color} 84%, white) 0 22%, transparent 62%), radial-gradient(circle at 66% 70%, color-mix(in oklab, ${ink.color} 86%, black) 0 26%, transparent 64%), ${ink.color}`
