@@ -26,6 +26,64 @@ Review page (private): https://claude.ai/artifact/SXuJT5wnyZjKRXCsmSmZDR
 
 ---
 
+## Round 2: names for the letters concept (2 November 2026, evening)
+
+**The brief, confirmed with the lead session.** The product is now also an archive of real letters by ordinary
+people (1395 to 1914, mostly women, many never delivered), each written out on letter stationery in a random
+fictional hand. The loop: find a letter, watch a stranger write it out, write a reply. Rafael calls the archive
+"Lost Letters" and sees it as the front door and the marketing; the typing tool is the engine. He hasn't decided
+whether they share a name, so this round offers one unifying name plus some tool + archive pairs. Domains had to
+be buyable and cheap.
+
+**Prices** come from Vercel's registrar on 2 November 2026, in US dollars, read-only (nothing bought). "Per year"
+is the renewal price, which is what you pay every year after the first. `.ink` looks cheap ($2.99) but renews at
+$28.75; `.com` is $12.03 every year.
+
+### Recommended: Stray Letters
+
+| | |
+|---|---|
+| Domain | **strayletters.com: $12.03 a year** (also strayletter.com, $12.03, worth holding) |
+| Why | Two meanings in one name. Letters that went astray: the undelivered, unclaimed and lost letters in the archive. And stray letters in the handwriting sense: no two alike, drifting off the line, ugly allowed. It covers the archive and the tool, so one name can do both jobs |
+| Checks | No app, archive or brand by that name found on the web. US register: 0 marks. TMview: 0 marks. Near-names: a "Stray" typeface (Tour de Force) and *Stray*, a video game |
+| Watch out | "Stray" also suggests stray animals. In Spanish it would be *cartas extraviadas*, so it doesn't travel as a word, though it's easy to say |
+
+### Other single names
+
+| Name | What it is | Domain, per year | Checks | Read |
+|---|---|---|---|---|
+| **Letters Remaining** | The heading post offices printed in newspapers for unclaimed mail ("List of letters remaining in the post office"), a practice reported to start in Franklin's *Pennsylvania Gazette* in 1738. Also simply: the letters that remain | lettersremaining.com $12.03; .org $10.99 | US 0, TMview 0 live | Strongest for the archive, weaker for the tool |
+| **Poste Restante** | The international postal term for mail held at a post office until collected; plenty never was | posterestante.app $15 (.com taken; .ink $28.75) | US: one dead mark. TMview: 2 live in France (classes 16, 41/35) | Lovely and multilingual, but the French marks are a caution |
+| **Dear Hand** | A letter's opening, addressed to the writer | dearhand.com $12.03 | US 0; TMview only unrelated near-names | Better as the tool's name than the archive's |
+
+### Tool + archive pairs
+
+| Tool | Archive | Domains, per year |
+|---|---|---|
+| Plumín | Stray Letters | strayletters.com $12.03 + pluminletters.com $12.03 (plumin.ink renews at $28.75) |
+| Plumín | Letters Remaining | lettersremaining.com $12.03 + pluminletters.com $12.03 |
+| Dear Hand | Lost Letters | dearhand.com $12.03 + lostlettersarchive.com $12.03 (lostletters.com, .org and .app are taken; lostletters.ink $28.75) |
+| Seedhand | Poste Restante | seedhand.app $15 + posterestante.app $15 |
+
+"Lost Letters" itself: one live US mark, *Lost Letters of the American Revolution* (printed books, class 16).
+That's a different field, but it's a reminder the phrase is common, and the short domains are gone.
+
+### Checked and dropped
+
+- **Reply Paid:** an active Australia Post service name (and other postal operators use it). replypaid.app was $15.
+- **Fermo Posta, Restante, Unopened:** the `.co` versions are premium at $123.20 a year.
+- **Estafeta** (Spanish: courier): the name of a large Mexican courier company.
+- **Ever Yours:** everyours.ink only ($28.75/yr), and it's the title of a well-known Van Gogh letters book.
+- Taken outright as `.com`: Lost Letters, Poste Restante, Ever Yours, Write Back, Dear Stranger, Penny Post,
+  Slow Post, Unsent, Found Letters, Second Post.
+
+### Decision for Rafael
+
+One name (**Stray Letters**, about $24 a year for both spellings), or a pair. If a pair, my pick is
+**Plumín + Stray Letters**. Before buying, run a lawyer's clearance as in Round 1; this is a sanity check, not legal advice.
+
+---
+
 ## 1. Naming
 
 ### 1.1 What the name has to do
