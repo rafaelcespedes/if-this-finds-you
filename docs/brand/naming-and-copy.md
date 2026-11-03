@@ -548,8 +548,8 @@ and a simulated pen and ink. It isn't a model trained on people's handwriting, a
 AI helped build the engine and research the sources. **[NEED: Rafael, confirm you want the AI-assisted build
 mentioned here; it matches "using AI in ways I think is clever".]**
 
-**What the fonts can't do.** A font file can only carry a few versions of each letter. Ours carries three and
-rotates them, and some apps switch that rotation off. So a downloaded font repeats in a way the page never does.
+**What the fonts can't do.** A font file can only carry a few versions of each letter. Ours carries four or five
+(four for joined hands, five for print) and rotates them, and some apps switch that rotation off. So a downloaded font repeats in a way the page never does.
 
 **Whose hand it is.** The handwriting is never the original writer's. A fictional hand writes each letter out.
 
@@ -577,8 +577,8 @@ Share the link. Whoever opens it watches your letter being written, then can wri
 Not yet. Submissions are planned: you'll choose whether to be credited, and each letter is read before it goes in.
 
 **Can I download the handwriting?**
-Yes, as a free, open-source font. A font can only rotate three versions of each letter, so it won't vary the way the
-page does. **[NEED: licence name, e.g. SIL Open Font License]**
+Yes, as a free, open-source font. It keeps four or five versions of each letter, so it won't vary the way the
+page does. Free to use under the SIL Open Font License.
 
 **Which languages can it write?**
 The archive holds letters in fourteen languages **[count]**, all in Latin script. The hands write English and common
@@ -607,7 +607,7 @@ It's how a letter in a bottle begins. These letters were meant for someone else.
 | Pencil | Pencil: you can erase. |
 | Share · button / after | **Share** · Link copied. Whoever opens it will watch this being written. |
 | Download | **Download image** · Saved. |
-| Download font · before | A font holds three versions of each letter, so it repeats in a way this page never will. It's free to use. |
+| Download font · before | A font holds four or five versions of each letter, so it repeats in a way this page never will. It's free to use. |
 | Missing character | This hand hasn't learned ‹ç› yet. |
 | Empty archive search | No letter like that yet. Try another word, or shuffle. |
 | Footer | Real letters, public domain, sources for every one. Handwriting by fictional writers. Free and open source. |
@@ -632,8 +632,8 @@ Short form for tight spots: *Real letters, by hand.* Avoid an abbreviation ("IFT
 Longer, for the page intro:
 
 > Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download,
-> free and open source. Each one is named after its writer. A font can only keep a few versions of each letter,
-> so it won't vary the way the page does, but it's the same hand. **[NEED: licence name]**
+> free and open source. Each one is named after its writer. A font keeps four or five versions of each letter,
+> so it won't vary the way the page does, but it's the same hand. Free to use under the SIL Open Font License.
 
 Row label pattern, already close to what the page shows: *Ottilie Marsh · joined · fountain pen*.
 
