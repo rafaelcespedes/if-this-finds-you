@@ -74,6 +74,22 @@ only the chosen one loaded, all SIL Open Font License 1.1 via @fontsource:
 
 `window.__lostLetters.stats` has the timings (first card written and shown, per-card render times, cache hits).
 
+## Offline (`offline.ts`, `public/letters-sw.js`)
+
+Once the library has been opened with a connection, it opens again without one: the index, the cards it has
+shown, and every letter page once one letter has been opened (they share one chunk). A small service worker,
+registered in production builds only, scoped to the library's address (`/letters`, `/letters.html`), so the tool at
+`/` never passes through it. The page is fetched fresh whenever there's a connection and its last good copy kept;
+the build's files (`/assets/`, named by their content) are kept as they're used, the oldest let go past 160; icons
+and the manifest are fresh when online, kept for offline. Not kept ahead: the letter page before any letter was
+opened (about 300 kB, most visitors never need it offline); without it, a letter says "This letter couldn't open"
+with the way back. Cards not yet written need the card worker, which the browser fetches outside the service
+worker's reach (its own HTTP cache keeps `/assets/` for a year on the host).
+
+A broken link (`#/letter/%`, a link cut mid-escape) reads as a letter that isn't in the library (`route.ts`), and a
+letter page that can't load at all (offline, or a new version of the site has replaced its files) says so, with
+All letters and Back working (`ArchiveApp.tsx`).
+
 ## Shared code it uses (owned by the tool; not edited here)
 
 `ReaderSheets`, `PaperCanvas`, `ui/*`, `lib/live.ts`, `lib/papers.ts`, `lib/actions.ts` (JPEG, share, copy),

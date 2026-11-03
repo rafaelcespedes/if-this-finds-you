@@ -24,3 +24,14 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
     </header>
   );
 }
+
+/** A page that has no letter to show: why, and the way on. */
+export function Missing({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex max-w-[30rem] flex-col items-start gap-3 py-10">
+      <h1 className="text-[22px] font-medium tracking-[-0.015em] text-foreground">{title}</h1>
+      <p className="text-[14px] leading-[1.55] text-muted-foreground">{children}</p>
+      {action}
+    </div>
+  );
+}

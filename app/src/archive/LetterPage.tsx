@@ -2,7 +2,7 @@
 // the engine's timeline + playSVG, about 3x a real hand, a tap finishes it), what is known about it, and what you
 // can do with it: write a reply, turn to the next one, share it, keep it as an image.
 // Loaded on demand (its own chunk, with the engine); the index never waits for it.
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PaperCanvas, PaperGuide } from '@/components/PaperCanvas';
@@ -17,14 +17,14 @@ import { DEFAULT_STATE, encodeState, type ReplyTo } from '@/lib/state';
 import { writerName } from '@/lib/hands';
 import { LIVE, liveExtras, liveLayout, type Live } from '@/lib/live';
 import { sheetShadow } from '@/lib/papers';
-import { clamp, cn } from '@/lib/utils';
+import { clamp } from '@/lib/utils';
 import { cards } from './cards';
 import { filterLetters } from './data';
 import { DETAIL, Editorial, HandMenu, LetterDock, TitleBlock } from './LetterParts';
 import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
-import { ARCHIVE_URL, headerLink, SiteHeader, toolHref } from './SiteHeader';
+import { ARCHIVE_URL, headerLink, Missing, SiteHeader, toolHref } from './SiteHeader';
 
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
@@ -316,12 +316,3 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   );
 }
 
-function Missing({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
-  return (
-    <div className={cn('flex max-w-[30rem] flex-col items-start gap-3 py-10')}>
-      <h1 className="text-[22px] font-medium tracking-[-0.015em] text-foreground">{title}</h1>
-      <p className="text-[14px] leading-[1.55] text-muted-foreground">{children}</p>
-      {action}
-    </div>
-  );
-}
