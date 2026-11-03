@@ -17,6 +17,7 @@
   --about-label-size: 0.6875rem;
   --about-label-spacing: 0.09em;
   --about-label-case: uppercase;
+  --about-label-caps: normal;
   background: var(--desk);
   color: var(--about-text);
 }
@@ -63,6 +64,7 @@
   font-size: var(--about-label-size);
   letter-spacing: var(--about-label-spacing);
   text-transform: var(--about-label-case);
+  font-variant-caps: var(--about-label-caps);
   font-weight: 500;
   line-height: 1.4;
 }
@@ -387,11 +389,82 @@
   font-size: var(--about-label-size);
   letter-spacing: var(--about-label-spacing);
   text-transform: var(--about-label-case);
+  font-variant-caps: var(--about-label-caps);
   color: var(--about-number);
 }
 .about-contact dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+/* give back: ruled rows like the ledger; who and what they kept on the left, their own donation page on the right */
+.about-give {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--about-rule);
+}
+.about-subhead + .about-give {
+  margin-top: 0.5rem !important;
+}
+.about-give li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.25rem 1.25rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--about-rule);
+}
+.about-give-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+.about-give-name {
+  font-weight: 500;
+  color: var(--about-text);
+}
+.about-give-kept {
+  font-size: 0.9375em;
+  line-height: 1.5;
+  color: var(--about-muted);
+}
+.about-give-link {
+  position: relative;
+  font-family: var(--about-label-font);
+  font-size: var(--about-label-size);
+  letter-spacing: var(--about-label-spacing);
+  text-transform: var(--about-label-case);
+  font-variant-caps: var(--about-label-caps);
+  font-weight: 500;
+  color: var(--about-number);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 40%, transparent);
+  text-underline-offset: 0.25em;
+  white-space: nowrap;
+}
+/* a 44px target without a taller row */
+.about-give-link::after {
+  content: '';
+  position: absolute;
+  inset: -0.75rem -0.5rem;
+}
+.about-give-link::before {
+  content: '↗';
+  display: inline-block;
+  margin-right: 0.3em;
+  text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .about-give-link:hover {
+    text-decoration-color: currentColor;
+  }
+}
+.about-give-note {
+  margin-top: 0.75rem !important;
+  font-size: 0.8125em;
+  color: var(--about-muted);
 }
 
 .about-list {
@@ -493,7 +566,7 @@
   }
 }
 
-/* ---------- the Reading Room: book face, true small capitals, archival red for the numbers ---------- */
+/* ---------- the Reading Room: its book face and label role (true small capitals), archival red for the numbers ---------- */
 html[data-look='reading-room'] .about {
   --about-text: var(--rr-ink);
   --about-muted: var(--rr-muted);
@@ -502,10 +575,12 @@ html[data-look='reading-room'] .about {
   --about-slip: var(--rr-card);
   --about-slip-edge: var(--rr-edge);
   --about-book: var(--rr-book);
-  --about-label-font: var(--rr-caps);
-  --about-label-size: 0.9375rem;
-  --about-label-spacing: 0.055em;
-  --about-label-case: lowercase;
+  /* the theme's label role: the book face's own small capitals (house rules, themes/reading-room.css) */
+  --about-label-font: var(--rr-label-face, var(--rr-caps));
+  --about-label-size: var(--rr-label-size, 0.8125rem);
+  --about-label-spacing: var(--rr-label-tracking, 0.05em);
+  --about-label-case: none;
+  --about-label-caps: var(--rr-label-caps, all-small-caps);
 }
 html[data-look='reading-room'] .about-main {
   font-variant-numeric: oldstyle-nums proportional-nums;
@@ -516,7 +591,8 @@ html[data-look='reading-room'] .about-facts dt,
 html[data-look='reading-room'] .about-line-meta,
 html[data-look='reading-room'] .about-subhead,
 html[data-look='reading-room'] .about-contents a,
-html[data-look='reading-room'] .about-contact dt {
+html[data-look='reading-room'] .about-contact dt,
+html[data-look='reading-room'] .about-give-link {
   font-weight: 400;
 }
 html[data-look='reading-room'] .about-facts dd,

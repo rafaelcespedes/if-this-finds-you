@@ -57,6 +57,25 @@ const LETTER_SOURCES: { href: string; text: ReactNode }[] = [
   { href: 'https://www.gutenberg.org/ebooks/42239', text: <>The Paston, Stonor and Verney family letters, printed 1899–1919</> },
 ];
 
+/**
+ * Give back: the sources this project leans on most that take donations online, each checked on the organisation's
+ * own site on 3 November 2026 (only their own donation pages; nothing is collected here). Counts from
+ * content/sample-texts.json (letters whose source links there) and engine/sources/*.js (copybooks).
+ */
+const GIVE: { name: string; href: string; kept: ReactNode }[] = [
+  { name: 'Internet Archive', href: 'https://archive.org/donate/', kept: <>77 of the 127 letters were read from its scans, and so were four of the copybooks the hands were traced from.</> },
+  { name: 'Project Gutenberg', href: 'https://www.gutenberg.org/donate/', kept: <>Its volunteers’ transcriptions carry 22 of the letters, from the Paston family to a homesteader in Wyoming.</> },
+  { name: 'Wikimedia Foundation', href: 'https://donate.wikimedia.org/', kept: <>Wikisource holds the transcriptions of six letters, and Wikimedia Commons the Sütterlin alphabet.</> },
+  { name: 'Fondation de BAnQ', href: 'https://www.jedonneenligne.org/fondationdebanq/', kept: <>It supports Québec’s national library, whose <cite>Copiste d’un jour</cite> volunteers gave the everyday print hand. The logo is written in it.</> },
+  { name: 'Project Runeberg', href: 'https://runeberg.org/admin/sponsors.html', kept: <>A volunteer library of Nordic texts at Linköping University. Two of the letters come from it.</> },
+];
+/** One related cause, not a source: the people who still carry letters between families separated by war. */
+const GIVE_ALSO = {
+  name: 'International Committee of the Red Cross',
+  href: 'https://www.icrc.org/en/donate',
+  kept: <>Not one of our sources, but the same work today: the Red Cross still carries messages between families separated by war, and searches for people who have gone missing.</>,
+};
+
 const SECTIONS = [
   { id: 'what', title: 'What this is' },
   { id: 'letters', title: 'The letters' },
@@ -65,6 +84,7 @@ const SECTIONS = [
   { id: 'made', title: 'How it was made' },
   { id: 'credits', title: 'Credits and sources' },
   { id: 'contact', title: 'Contact' },
+  { id: 'give', title: 'Give back' },
 ] as const;
 type SectionId = (typeof SECTIONS)[number]['id'];
 
@@ -93,6 +113,21 @@ function Note({ n }: { n: number }) {
 
 function Out({ href, children }: { href: string; children: ReactNode }) {
   return <a className="about-link" href={href} target="_blank" rel="noopener">{children}</a>;
+}
+
+/** One place to give: who, what it kept for this project, and its own donation page in a new tab. */
+function GiveRow({ name, href, kept }: { name: string; href: string; kept: ReactNode }) {
+  return (
+    <li>
+      <span className="about-give-text">
+        <span className="about-give-name">{name}</span>
+        <span className="about-give-kept">{kept}</span>
+      </span>
+      <a className="about-give-link" href={href} target="_blank" rel="noopener" aria-label={`Donate to ${name} (opens in a new tab)`}>
+        Donate
+      </a>
+    </li>
+  );
 }
 
 export function AboutApp() {
@@ -264,6 +299,12 @@ export function AboutApp() {
         </Section>
 
         <Section id="made">
+          {/* Rafael's own story (his words, 3 Nov 2026). Rueca has no public address in the repo, so it isn't linked */}
+          <p>
+            It started as a search for a font. Rafael was looking for a handwritten face for Rueca, another project of
+            his, and couldn’t find the hand he had in mind, so he tried making one. The experiment grew from there: a happy
+            accident that got a little out of hand.
+          </p>
           <p>
             {APP_NAME} is a lab experiment by Rafael Cespedes, a designer. It’s free, and it isn’t a business.
           </p>
@@ -352,6 +393,24 @@ export function AboutApp() {
             <div><dt>Site</dt><dd><Out href="https://rafaelcespedes.com">rafaelcespedes.com</Out></dd></div>
             <div><dt>X</dt><dd><Out href="https://x.com/rafcespedes">@rafcespedes</Out></dd></div>
           </dl>
+        </Section>
+
+        <Section id="give">
+          <p>
+            Found this useful? It exists because these people kept the letters and the hands, and each of them takes
+            donations. If you’d like to give back, give to them.
+          </p>
+          <ul className="about-give">
+            {GIVE.map((g) => <GiveRow key={g.name} {...g} />)}
+          </ul>
+          <h3 className="about-subhead">For letters still being written</h3>
+          <ul className="about-give">
+            <GiveRow {...GIVE_ALSO} />
+          </ul>
+          <p className="about-give-note">
+            Each link opens the organisation’s own donation page. We aren’t connected to any of them and get nothing
+            from them.
+          </p>
         </Section>
 
         <footer className="about-colophon">
