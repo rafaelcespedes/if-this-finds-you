@@ -721,20 +721,28 @@ export default function App() {
     // `base` covers everything the rolls depend on
   }, [base, editing, state.reader]);
 
-  // the live page's first layout for a hand is the slow one: do it once the page has sat still on this hand a
-  // while (not between quick clicks: on a slow phone it's most of a second), so a tap to write starts at once.
-  // On a found letter the first key starts a reply on a fresh sheet: a few words warm the hand, not their letter.
+  // the live page's first layout for a hand is the slow one: done when you're about to write (the pointer over the
+  // letter, a finger on it), so a tap to write starts at once, and never between quick clicks; else, once the page
+  // has sat still a good while, in a truly idle moment. Once per hand. On a found letter the first key starts a reply
+  // on a fresh sheet: a few words warm the hand, not their letter.
+  const warmed = useRef('');
+  const warmKey = JSON.stringify([state.seed, state.style, lookKey, state.paper, eff.size, eff.lineSpacing, state.signed, replyPending]);
+  const warmInputs = useRef({ p, paper, size: eff.size, lineSpacing: eff.lineSpacing, signed: state.signed, words: '' });
+  warmInputs.current = { p, paper, size: eff.size, lineSpacing: eff.lineSpacing, signed: state.signed, words: replyPending ? 'Dear friend, thank you' : state.text };
+  const warmHand = useCallback(() => {
+    if (!LIVE || warmed.current === warmKey) return;
+    warmed.current = warmKey;
+    const w = warmInputs.current;
+    try { liveLayout(w.p, w.words, w.paper, w.size, w.lineSpacing, w.signed); } catch { /* fine */ }
+  }, [warmKey]);
   useEffect(() => {
     if (!LIVE || editing || state.reader) return;
-    const words = replyPending ? 'Dear friend, thank you' : state.text;
     const t = window.setTimeout(() => {
-      const run = () => { try { liveLayout(p, words, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
-      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 4000 });
-      else run();
-    }, 3000);
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(warmHand);
+      else warmHand();
+    }, 8000);
     return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader, replyPending]);
+  }, [warmHand, editing, state.reader]);
 
   // ---------- actions ----------
   const share = useCallback(async () => {
@@ -1105,7 +1113,6 @@ export default function App() {
       action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
       // the running head's middle: a found letter's number, place and year (the Reading Room's catalogue)
       centre={folio.centre}
-      centreShort={folio.centreShort}
       // over the whole window, the middle centred over the letter's side (the aside: the desk and its pr-3)
       beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + 0.75rem)' : undefined}
       quiet={editing && !isDesktop}
@@ -1232,6 +1239,7 @@ export default function App() {
                 <LetterMarks id={sample && !replyDesk ? sample.id : null} hand={state.seed}>
                 <PaperEditor
                   ref={editor}
+                  onIntent={warmHand}
                   text={replyPending ? '' : inkActive ? inkRef.current!.text() : state.text}
                   blank={replyPending}
                   hovering={inkActive && inkRef.current!.hovering}
