@@ -6,7 +6,7 @@ import { APP_NAME, withLogo } from '@/lib/brand';
 import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
 import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
-import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
+import { AboutHand, MyLetters, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -1085,6 +1085,8 @@ export default function App() {
               {/* the whole library of found letters (the archive); on phones a small chip, with Share beside it */}
               {!isDesktop && !reader ? (
                 <span className={cn('pointer-events-auto flex items-center gap-1.5 transition-opacity duration-150', editing && 'pointer-events-none opacity-0')}>
+                  {/* your letters kept on this device: only when there's one */}
+                  <MyLetters letter={letterActions} variant="chip" />
                   <a
                     href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                     aria-label="All letters"
@@ -1105,6 +1107,7 @@ export default function App() {
                 </span>
               ) : (
               <>
+              {!reader && <MyLetters letter={letterActions} variant="link" />}
               <a
                 href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                 className={cn(
