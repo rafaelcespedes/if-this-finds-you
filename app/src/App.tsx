@@ -1187,7 +1187,7 @@ export default function App() {
                         <button
                           type="button"
                           aria-label={`${name}: about this hand`}
-                          className="group -ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] font-medium tracking-[-0.01em] text-foreground transition-colors duration-150 hover-device:hover:bg-[#e6e2d8] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+                          className="group relative -ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] font-medium tracking-[-0.01em] text-foreground transition-colors duration-150 after:absolute after:-inset-y-1.5 after:inset-x-0 after:content-[''] hover-device:hover:bg-[var(--chip-hover)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
                         >
                           {name}
                           <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
