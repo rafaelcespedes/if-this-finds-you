@@ -601,7 +601,7 @@ html[data-look='reading-room'] .about-contents-no,
 html[data-look='reading-room'] .about-section-no {
   font-variant-numeric: oldstyle-nums tabular-nums;
 }
-/* an index card's one red rule under the head */
+/* an index card's one red rule under the head, soft like every divider in the room */
 html[data-look='reading-room'] .about-line-caption {
-  border-top-color: color-mix(in oklab, var(--rr-red) 55%, transparent);
+  border-top-color: color-mix(in oklab, var(--rr-red) 25%, transparent);
 }
