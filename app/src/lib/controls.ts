@@ -74,7 +74,7 @@ export const CONTROLS: SliderControl[] = [
 
   // ---------- advanced: writing and page ----------
   def({ key: 'lineSpacing', code: 'ls', label: 'Line spacing', ends: ['Tight', 'Airy'], min: 0.8, max: 1.5, step: 0.01, zone: 'who', tier: 'advanced', group: 'Writing and page', fallback: 1, app: true, describe: (v) => `${v.toFixed(2)}×`, roll: { spread: 0.1, band: [0.9, 1.3] } }),
-  def({ key: 'lineRhythm', code: 'lr', label: 'Line rhythm', ends: ['Even', 'Wandering'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.3, roll: { spread: 0.2, band: [0, 0.8] } }),
+  def({ key: 'lineWander', code: 'lr', label: 'Line rhythm', ends: ['Even', 'Wandering'], min: 0, max: 2, step: 0.05, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 1, roll: { spread: 0.2, band: [0.3, 1.6] } }),
   def({ key: 'drift', code: 'bw', label: 'Baseline wobble', ends: ['Steady', 'Wavy'], min: 0, max: 1.6, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.7, roll: { spread: 0.12, band: [0.2, 1.3] } }),
   def({ key: 'marginDiscipline', code: 'md', label: 'Margins', ends: ['Strict', 'Loose'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Writing and page', fallback: 0.3, roll: { spread: 0.2, band: [0, 0.8] } }),
   def({ key: 'tracking', code: 'lt', label: 'Letter spacing', ends: ['Close', 'Open'], min: -30, max: 80, step: 1, zone: 'who', tier: 'advanced', group: 'Writing and page', fallback: 0, when: ({ connected }) => !connected, roll: { spread: 0.08, band: [-15, 50] } }),
@@ -84,7 +84,7 @@ export const CONTROLS: SliderControl[] = [
   def({ key: 'xHeight', code: 'xh', label: 'Letter height', ends: ['Short', 'Tall'], min: 0.36, max: 0.78, step: 0.005, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 0.55, roll: { spread: 0.08, band: [0.4, 0.74] } }),
   def({ key: 'width', code: 'wd', label: 'Letter width', ends: ['Narrow', 'Wide'], min: 0.62, max: 1.12, step: 0.005, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 0.85, roll: { spread: 0.08, band: [0.68, 1.06] } }),
   def({ key: 'tremor', code: 'tr', label: 'Tremor', ends: ['Steady', 'Shaky'], min: 0, max: 5, step: 0.05, zone: 'who', tier: 'advanced', group: 'Letters and variety', fallback: 1.4, roll: { spread: 0.08, band: [0.3, 3] } }),
-  def({ key: 'tiredness', code: 'ti', label: 'Tiredness', ends: ['Fresh', 'Tired'], min: 0, max: 1, step: 0.01, zone: 'how', tier: 'advanced', group: 'Letters and variety', fallback: 0.25, roll: { spread: 0.2, band: [0, 0.7] } }),
+  def({ key: 'fatigue', code: 'ti', label: 'Tiredness', ends: ['Fresh', 'Tired'], min: 0, max: 2, step: 0.05, zone: 'how', tier: 'advanced', group: 'Letters and variety', fallback: 1, roll: { spread: 0.2, band: [0.2, 1.5] } }),
 ];
 
 export const ADVANCED_GROUPS: AdvancedGroup[] = ['Pens and ink', 'Writing and page', 'Letters and variety'];

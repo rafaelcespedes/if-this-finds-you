@@ -22,22 +22,49 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
 - **Typing on the paper.** Click (or tap) the letter and type. The caret and selection follow the
   handwriting; Up/Down/Home/End follow the written lines; Esc finishes. "Edit as plain text" opens a
   normal text box for long edits or pasting.
+- **Sample letters.** Before anyone writes, the hand writes a short real letter from `content/sample-texts.json`
+  (public domain, rights-checked). The seed picks it (a hash over the enabled letters, so a seed always writes
+  the same one), preferring letters that suit the style (Business and Spencerian: American letters, German
+  school: German, Chancery: Italian, Québec print: French); the oldest spellings (before 1660) only come with
+  historical hands (Chancery). The credit sits under the sheet ("Letter: Kamma Rahbek, 1813", with the source
+  in the provenance card), and "Blank page" starts from nothing. The first edit (typing, an underline) makes the
+  text yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a
+  sample. There's always a way back: under New hand the page says what it holds ("A found letter" or "Your
+  letter"), with "Another letter" / "Read a found letter"; your own letter is kept on this device (never in a
+  link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter doesn't come back within ten hands.
+- **Ink mode** (the default where the engine writes in ink, `lib/ink.ts`): what's written stays. Typed letters
+  wait as faint thoughts and the pen writes them a few letters behind, at handwriting speed, so most slips
+  are fixed before ink touches paper. Change something already written and the writer corrects it their own
+  way (the engine's planner): strikes a word through and writes it again, writes a letter over another, adds
+  a word above the line with a caret; the pen hovers while they consider. Undo lifts only wet ink (3 s).
+  "Make a fair copy" writes the letter out cleanly on a fresh sheet; "Fresh sheet" starts over. The first key
+  on an untouched sample letter takes a fresh sheet. Fair copy (the switch in How it's written) edits cleanly,
+  and so does a pencil until the engine has Pencil mode. The ink log travels in links as `k=`, and the worker
+  replays it, so New hand keeps the letter, corrections and all, in the new hand.
 - **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
   about how they write.
 - **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
   of several candidates), Print or Joined, pen and tip, ink, paper, size, and a fresh offset on every
   slider, each inside a band that stays legible. Small **locks** beside Pen, Ink and Paper keep those
-  while everything else rolls (remembered per browser). The sheet cross-fades when the look changes
-  (a View Transition; instant with reduced motion). The roll is plain note state, so the share link
+  while everything else rolls (remembered per browser). The next two new hands (and a sibling) are
+  rolled and written ahead in a second worker while you look at the current one, so a click shows the next
+  hand at once. From the button, paper and writing cross-fade in place (170 ms, opacity only; a click
+  mid-fade takes over from where it is); from the keyboard it simply appears. The controls never move,
+  fade or reload. The roll is plain note state, so the share link
   captures all of it. `lib/roll.ts` is the local sampler; when `engine/sampler.js` exports
   `sampleLook({ current, locked, variety })`, it takes over and the app fills in only what it leaves out.
 - **Similar** (or **Shift R**) gives a sibling and keeps the look: same words, another number, close but
   not a copy.
+- **Style** is two steps, so it scales to many styles: **Print or Joined**, then a row of **school cards**
+  (Everyday, Business 1915, German school, Chancery, ...), each written in this writer's hand in that
+  school, with where and when it was taught (`getStyle(name).tradition`). New styles from the engine show
+  up as cards by themselves (`lib/styles.ts`). The cards scroll sideways.
 - **Controls** follow `docs/research/controls-and-feel.md`:
   - *How it's written:* Neatness, Hurry, Pressure, Slant, and an Occasion (Thank-you card, Shopping list,
     Love letter, Lecture notes, Postcard) with an Amount.
-  - *Pen, ink and paper:* Pen (Their own, Ballpoint, Gel, Fountain, Felt tip, Pencil) with Fine / Medium /
-    Bold, ink families, Paper, Size.
+  - *Pen, ink and paper:* Pen (Their own, Ballpoint, Gel, Fountain, Dip pen, Italic nib, Felt tip, Pencil;
+    each swatch is the word "ink" written with that pen), a Fine / Medium / Bold tip, ink families, Paper.
+    Size sits with *How it's written*.
   - *More controls* (a disclosure): Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle,
     Line spacing, Line rhythm, Baseline wobble, Margins, Letter spacing (print only), Word spacing,
     Letter height, Letter width, Tremor, Tiredness, Variety (how far New hand jumps).
@@ -48,6 +75,19 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   where there is one), Download note (JPEG at 3x the screen, paper and writing exactly as shown; on phones
   it opens the share sheet, so Save Image puts it in Photos), Export font file (.otf from the engine's
   `buildFont`, opentype.js 1.3.4, loaded only when used).
+- **On phones** the controls live in a sheet that's always there, at three heights (`ControlSheet.tsx`):
+  - *peek:* the writer, New hand, a share button (Share link, Download note, Export font), and three tabs:
+    Hand, Writing, Pen & paper. Tap a tab to open it.
+  - *half:* that tab's controls. The letter shrinks to fit above the sheet, so every change shows.
+  - *full:* everything, scrolling. While a finger slides a control, the rest of the sheet fades away and
+    the letter moves into the free space above or below that control.
+  - Drag the top (or the content, below full height) to move between heights; a flick goes on to the next
+    one. A tap on the letter folds the sheet down; a second tap writes. Writing hides the sheet behind the
+    pen tray.
+  - Sliders on touch move only on a sideways drag, from where they were. A finger landing on a track never
+    changes it (scrolling past is safe), up/down goes to the sheet, and a double tap puts it back.
+  - For a moment after the sheet moves, its controls ignore touches, so the tap that opened it can't land
+    on whatever slid in under the finger.
 - Occasions set the scene once when picked: Thank-you card and Love letter on laid paper, Postcard on the
   postcard, Lecture notes on college ruled, Shopping list on squared.
 
@@ -114,16 +154,20 @@ matched by eye. On small grids (squared, dots) the writing takes every second li
 
 ```
 src/
-  App.tsx                 layout: desk + sheets, side panel (desktop) or dock + drawer (mobile), actions
+  App.tsx                 layout: desk + sheets, side panel (desktop) or control sheet (phones), actions
   components/
     Writing.tsx           THE writing renderer on screen (see "Renderer boundary")
     SheetView.tsx         one sheet: paper canvas + writing
     PaperEditor.tsx       typing on the paper: hidden textarea, caret, selection, line-aware keys
-    Panel.tsx             the controls (shared by side panel and drawer)
+    Panel.tsx             the controls, in sections the side panel and the phone sheet share
+    ControlSheet.tsx      the phone's control sheet: peek / half / full, tabs, share menu, drag
+    StylePicker.tsx       Print or Joined, then school cards with a sample in each school
+    PenPicker.tsx         pen swatches (a word in each pen) and the tip
+    Specimen.tsx          small handwriting samples, made in idle moments and kept
     PaperCanvas.tsx       paints a sheet (or a swatch crop) on a canvas
     Signature.tsx         the writer's name in their own hand
     DraftSlip.tsx         the plain-text editor
-    ui/                   shadcn-style primitives (button, slider, segmented, tooltip, drawer, toast)
+    ui/                   shadcn-style primitives (button, slider, segmented, tooltip, toast)
   lib/
     compose.ts            hand + text + paper + size -> sheets of positioned writing (mm <-> font units)
     papers.ts             paper specs + one painter used for the screen and the JPEG
@@ -134,11 +178,16 @@ src/
     params.ts             natural hand + offsets + occasion -> engine overrides
     engine-features.ts    what the engine supports now; preview flag; placeholder params
     edits.ts              Edit events (the seed of the ink log)
+    styles.ts             Print / Joined families and the school cards' names (from getStyle)
+    samples.ts            the sample letters: pick by seed, pairing with styles, no repeats, credits
+    drafts.ts             your own letters, kept on this device while you read found ones
+    ink.ts                Ink mode: the session (planner + pen), the ink page as a Live, marks and thoughts
     pens.ts, inks.ts, occasions.ts
     state.ts              the note config and the share-link format
     hands.ts              word seeds, writer names, plain-word descriptions, "very different" new hands
     actions.ts, perf.ts, utils.ts
-  workers/write.worker.ts writes the page off the main thread (newest request wins)
+  workers/write.worker.ts writes the page off the main thread (newest request wins); a second copy writes
+                          hands ahead (lib/request.ts builds both from the note state)
 ```
 
 The engine is imported from `../engine/index.js` through the `@engine` alias (see `vite.config.ts`,
@@ -168,7 +217,13 @@ work, so a reload restores the note too. Invalid values fall back to defaults.
 
 ### Performance
 
-Measured in Chrome on an M-series Mac, default letter (270 characters):
+**New hand**, production build, Chrome on an M-series Mac, 1440 px wide, letters of 1–3 pages, 20 clicks
+400 ms apart: new hand on the page in a median 46 ms (p95 77 ms) when written ahead, 78 ms (p95 145 ms)
+when not. Looks are written in a worker (lib/write-live.ts on engines with the live page, the same markup
+the live page draws); the live page is built only for typing, from the tap, and hands back to the worker's
+copy without a visible change. Painted papers are kept, so switching back to a paper is a copy.
+
+Typing, measured in Chrome on an M-series Mac, default letter (270 characters):
 
 - main thread: no long tasks while typing; the input handler takes ~8 ms (dev build, StrictMode)
 - the worker writes the page in ~56 ms, so the writing catches up ~58 ms after each key

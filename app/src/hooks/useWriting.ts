@@ -1,26 +1,49 @@
-import { useEffect, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { WriteRequest, WriteResult } from '@/lib/write-protocol';
+import { lookOf, type Req } from '@/lib/request';
 import { perf } from '@/lib/perf';
 
-type Req = Omit<WriteRequest, 'id'>;
+/** Results kept by request, so a hand fetched ahead (or seen a moment ago) shows the instant it's asked for. */
+const CACHE_SIZE = 12;
+/** Workers writing hands ahead: two, so quick flipping uses them up no faster than they're written. */
+const AHEAD_WORKERS = 2;
+
+function spawn() {
+  return new Worker(new URL('../workers/write.worker.ts', import.meta.url), { type: 'module' });
+}
 
 /**
- * The written page for a request, produced by a worker. Returns the newest finished result (the page
- * keeps showing the previous writing until the next one is ready). Requests are debounced only when
- * writing gets slow (long letters), so short notes update on every key.
+ * The written page for a request, produced by a worker. Returns the newest finished result (the page keeps
+ * showing the previous writing until the next one is ready), or a cached one at once. Requests are debounced
+ * only when writing gets slow (long letters), so short notes update on every key.
+ *
+ * `prefetch(reqs)` writes the given requests ahead of time in a second worker, so the page's worker is never
+ * busy with them; a newer call replaces the older list.
  */
 export function useWriting(req: Req, paused = false) {
   const [result, setResult] = useState<WriteResult | null>(null);
   const worker = useRef<Worker | null>(null);
+  const ahead = useRef<Worker[]>([]);
   const nextId = useRef(0);
-  const sentAt = useRef(new Map<number, number>());
+  const sent = useRef(new Map<number, { at: number; key: string }>());
   const lastMs = useRef(0);
   const shown = useRef<WriteResult | null>(null);
+  const cache = useRef(new Map<string, WriteResult>());
+  const lastLook = useRef('');
+  const [, bump] = useState(0);
+  // for debugging and QA: what's written ahead
+  (window as unknown as { __seedhandCache: unknown }).__seedhandCache = cache.current;
+
+  const remember = (r: WriteResult) => {
+    if (!r.key) return;
+    cache.current.delete(r.key);
+    cache.current.set(r.key, r);
+    while (cache.current.size > CACHE_SIZE) cache.current.delete(cache.current.keys().next().value!);
+  };
 
   useEffect(() => {
-    const w = new Worker(new URL('../workers/write.worker.ts', import.meta.url), { type: 'module' });
+    const w = spawn();
     worker.current = w;
     w.onmessage = (e: MessageEvent<WriteResult | { id: number; error: string }>) => {
       const data = e.data;
@@ -29,19 +52,22 @@ export function useWriting(req: Req, paused = false) {
         toast.error('The hand couldn’t write this', { id: 'write-error', description: 'Try a different hand or shorten the note.' });
         return;
       }
-      const t = sentAt.current.get(data.id);
-      if (t != null) perf.samples.push({ name: 'keystroke→writing', ms: performance.now() - t });
-      perf.samples.push({ name: 'worker write', ms: data.ms });
-      lastMs.current = data.ms;
-      for (const id of sentAt.current.keys()) if (id <= data.id) sentAt.current.delete(id);
+      const s = sent.current.get(data.id);
+      if (s) {
+        data.key = s.key;
+        perf.samples.push({ name: data.partial ? 'request→first sheet' : 'request→writing', ms: performance.now() - s.at });
+      }
+      perf.samples.push({ name: data.partial ? 'worker first sheet' : 'worker write', ms: data.ms });
+      // a first sheet: shown, but the whole letter is still on its way (and is what gets kept)
+      if (!data.partial) {
+        lastMs.current = data.ms;
+        for (const id of sent.current.keys()) if (id <= data.id) sent.current.delete(id);
+        remember(data);
+      }
       const prev = shown.current;
       if (prev && prev.id > data.id) return;
       shown.current = data;
-      const lookChanged = prev && (prev.handKey !== data.handKey || prev.paper !== data.paper || prev.inkKey !== data.inkKey || prev.inkColor !== data.inkColor);
-      if (lookChanged && canTransition()) {
-        // the whole look changes at once: cross-fade the sheet instead of snapping
-        document.startViewTransition(() => flushSync(() => setResult(data)));
-      } else setResult(data);
+      setResult(data);
     };
     w.onerror = (e) => {
       console.error('[seedhand] writer worker failed to start:', e.message || e);
@@ -49,34 +75,63 @@ export function useWriting(req: Req, paused = false) {
     };
     return () => {
       w.terminate();
+      for (const a of ahead.current) a.terminate();
       worker.current = null;
+      ahead.current = [];
     };
   }, []);
 
   // the whole request travels; one stable key decides when to write again
   const reqKey = JSON.stringify(req);
+  const hit = cache.current.get(reqKey) ?? null;
   useEffect(() => {
-    // an IME is composing: the page waits for the committed text
-    if (paused) return;
+    // an IME is composing (or the live page is drawing the typing): the worker waits
+    if (paused || cache.current.has(reqKey)) return;
     const send = () => {
       const w = worker.current;
       if (!w) return;
       const id = ++nextId.current;
-      sentAt.current.set(id, performance.now());
+      sent.current.set(id, { at: performance.now(), key: reqKey });
       w.postMessage({ ...(JSON.parse(reqKey) as Req), id } satisfies WriteRequest);
     };
-    // fast writes go straight through; slow ones wait for a short pause in typing
-    const delay = lastMs.current > 70 ? Math.min(180, lastMs.current * 0.6) : 0;
+    // fast writes go straight through; slow ones wait for a short pause in typing, but a new look never waits
+    const look = lookOf(JSON.parse(reqKey) as Req);
+    const newLook = look !== lastLook.current;
+    lastLook.current = look;
+    const delay = !newLook && lastMs.current > 70 ? Math.min(180, lastMs.current * 0.6) : 0;
     if (!delay) { send(); return; }
     const t = window.setTimeout(send, delay);
     return () => window.clearTimeout(t);
   }, [reqKey, paused]);
 
-  return result;
-}
+  const prefetch = useCallback((reqs: Req[]) => {
+    const keys = reqs.map((r) => JSON.stringify(r)).filter((k) => !cache.current.has(k));
+    if (!keys.length) return;
+    while (ahead.current.length < AHEAD_WORKERS) {
+      const w = spawn();
+      w.onmessage = (e: MessageEvent<WriteResult | { id: number; error: string }>) => {
+        const data = e.data;
+        if ('error' in data) return;
+        data.key = pending.current.get(data.id);
+        pending.current.delete(data.id);
+        remember(data);
+        // a hand asked for while it was being fetched shows now
+        bump((n) => n + 1);
+      };
+      ahead.current.push(w);
+    }
+    const list = keys.map((key) => {
+      const id = -(++nextId.current);
+      pending.current.set(id, key);
+      return { ...(JSON.parse(key) as Req), id } satisfies WriteRequest;
+    });
+    // the nearest hands first, shared out so both workers start at the front of the queue
+    ahead.current.forEach((w, i) => w.postMessage({ ahead: list.filter((_, j) => j % ahead.current.length === i) }));
+  }, []);
+  const pending = useRef(new Map<number, string>());
 
-/** View transitions where the browser has them, and never when motion is reduced. */
-export const canTransition = () =>
-  typeof document !== 'undefined' &&
-  typeof document.startViewTransition === 'function' &&
-  !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /** this request is already written (a cached or prefetched result) */
+  const written = useCallback((r: Req) => cache.current.has(JSON.stringify(r)), []);
+
+  return { writing: hit ?? result, prefetch, written };
+}

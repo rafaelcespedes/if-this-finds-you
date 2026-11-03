@@ -797,8 +797,23 @@ export function makeGlyph(p, ch, inst, ctx) {
       pts = dotShape('dot', q, p, xh, ir, ir ? 1 : 0).map(finish);
     }
     const round = !ij || hab.dot === 'dot';
-    const c = penOutline(p, pts, 900 + di, round ? { dot: true } : undefined);
+    const opt = round ? { dot: true } : undefined;
+    let c = penOutline(p, pts, 900 + di, opt);
     if (!c) continue;
+    if (ij) {
+      // however it lands, the dot's ink stays clear of the stem's ink (a broad nib makes both thicker)
+      let top = -Infinity;
+      for (const s of strokes) if (!s.dot) for (const v of s.contour) if (v[1] > top) top = v[1];
+      for (let t = 0; t < 3; t++) {
+        let low = Infinity;
+        for (const v of c) if (v[1] < low) low = v[1];
+        const dy = top + 0.06 * xh * scale - low;
+        if (!(dy > 0)) break;
+        const dx = dy * tanSlant * squeeze; // straight up the letter's slant
+        pts = pts.map((v) => [v[0] + dx, v[1] + dy]);
+        c = penOutline(p, pts, 900 + di, opt) || c;
+      }
+    }
     contours.push(c);
     if (ij) strokes.push({ center: pts, contour: c, dot: true, mark: 'dot', delayed: hab.delayed });
     else if (sk.dotMarks[di]) strokes.push({ center: pts, contour: c, dot: true, mark: 'accent', delayed: hab.delayed });

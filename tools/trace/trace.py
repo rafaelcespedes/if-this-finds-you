@@ -66,6 +66,7 @@ def cmd_fetch(args):
             if os.path.exists(out):
                 print('have', out)
                 continue
+            os.makedirs(os.path.dirname(out), exist_ok=True)  # nested names such as alto/x.xml
             req = urllib.request.Request(f['url'], headers={'User-Agent': UA})
             with urllib.request.urlopen(req, timeout=120) as r, open(out, 'wb') as w:
                 w.write(r.read())
@@ -151,8 +152,40 @@ def cmd_comps(args):
 def image_path(hand, key):
     src = hand['images'][key]
     if isinstance(src, str):
-        return os.path.join(raw_dir(hand['source']['manifest']), src)
-    return os.path.join(raw_dir(src['source']), src['file'])
+        path = os.path.join(raw_dir(hand['source']['manifest']), src)
+    else:
+        path = os.path.join(raw_dir(src['source']), src['file'])
+    warp = isinstance(src, dict) and src.get('warp')
+    if not warp:
+        return path
+    return warped(path, warp, os.path.join(HERE, 'out', hand['style'], f'img-{key}.png'))
+
+
+def warped(path, warp, out):
+    """a levelled, de-slanted copy of a plate (cached): {'crop': [x0, y0, x1, y1], 'rotate': degrees
+    (counter-clockwise, to level a tilted baseline), 'shear': degrees (the hand's slant, to stand letters
+    upright)}. Joined letters then separate along vertical cuts, and boxes and guides are read in this copy.
+    Set the hand's units.slant.source to 0 for such images (the slant is already removed)."""
+    if os.path.exists(out) and os.path.getmtime(out) >= os.path.getmtime(path):
+        meta = out + '.json'
+        if os.path.exists(meta) and load_json(meta) == warp:
+            return out
+    im = Image.open(path).convert('L')
+    if warp.get('crop'):
+        im = im.crop(tuple(warp['crop']))
+    if warp.get('rotate'):
+        im = im.rotate(warp['rotate'], resample=Image.BICUBIC, expand=False, fillcolor=255)
+    if warp.get('shear'):
+        t = math.tan(math.radians(warp['shear']))
+        W, H = im.size
+        pad = int(abs(t) * H)
+        # x_out = x_in - t * (H - y): letters leaning right stand upright; the baseline row stays put
+        im = im.transform((W + pad, H), Image.AFFINE, (1, -t, -pad + t * H, 0, 1, 0), resample=Image.BICUBIC, fillcolor=255)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    im.save(out)
+    with open(out + '.json', 'w') as f:
+        json.dump(warp, f)
+    return out
 
 
 def guides(hand, gl):
@@ -183,6 +216,13 @@ def extract_glyph(hand, gl, cache):
         cache[path] = open_gray(path)
     full = cache[path]
     x0, y0, x1, y1 = gl['box']
+    if gl.get('via'):  # snapped strokes may run outside the box (connectors): read ink around every waypoint
+        H_, W_ = full.shape
+        wps = [p for s in gl['via'] for p in (s['line'] if isinstance(s, dict) else s)]
+        wx = [p[0] for p in wps]
+        wy = [p[1] for p in wps]
+        x0, y0 = max(0, min(x0, int(min(wx)) - 25)), max(0, min(y0, int(min(wy)) - 25))
+        x1, y1 = min(W_, max(x1, int(max(wx)) + 25)), min(H_, max(y1, int(max(wy)) + 25))
     crop = full[y0:y1, x0:x1].copy()
     bcfg = dict(hand.get('binarize', {}))
     bcfg.update(gl.get('binarize', {}))
@@ -221,7 +261,13 @@ def extract_glyph(hand, gl, cache):
     scfg = dict(hand.get('skeleton', {}))
     scfg.update(gl.get('skeleton', {}))
     script = hand.get('connected', False) and gl['ch'].islower()
-    if gl.get('manual'):
+    if gl.get('via'):
+        # a via stroke is waypoints to snap through the ink, or {"line": [[x, y], ...]} drawn as given
+        strokes = [{'pts': [tuple(map(float, p)) for p in wp['line']] if isinstance(wp, dict) else snap_path(ink, x0, y0, wp, gl.get('gapCost', 40)),
+                    'closed': False, 'dot': (not isinstance(wp, dict)) and len(wp) == 1, 'manual': True}
+                   for wp in gl['via']]
+        sw = 3.0
+    elif gl.get('manual'):
         strokes = []
         for s in gl['manual']:
             pts = [(float(p[0]), float(p[1])) for p in s]
@@ -252,7 +298,75 @@ def extract_glyph(hand, gl, cache):
             strokes = auto_join(strokes, ink, x0, y0)
         for s in gl.get('add', []):  # extra hand-drawn strokes (image coords)
             strokes.append({'pts': [tuple(map(float, p)) for p in s], 'closed': False, 'dot': len(s) == 1, 'manual': True})
-    return {'gl': gl, 'row': row, 'crop': crop, 'ink': ink, 'strokes': strokes, 'sw': sw}
+    return {'gl': gl, 'row': row, 'crop': crop, 'ink': ink, 'strokes': strokes, 'sw': sw, 'origin': (x0, y0)}
+
+
+def snap_path(ink, x0, y0, waypoints, gap_cost=40):
+    """a stroke from rough waypoints (image coords): between each pair, the cheapest path through the ink,
+    where a pixel costs less the further it is from the ink's edge (so the path runs down the stroke's
+    centre) and crossing paper costs gap_cost per pixel (so a broken hairline is bridged, not detoured).
+    One waypoint = a dot. Put waypoints where the pen really goes: at a crossing, one on each side."""
+    from scipy import ndimage as ndi
+    from skimage.graph import route_through_array
+    if len(waypoints) == 1:
+        return [tuple(map(float, waypoints[0]))]
+    d = ndi.distance_transform_edt(ink)
+    cost = np.where(ink, 1.0 / (0.6 + d) ** 1.5, float(gap_cost))
+    H, W = ink.shape
+    # move each waypoint onto the nearest ink centre (within 14 px), so an off-ink click makes no spur
+    _, (iy, ix) = ndi.distance_transform_edt(~ink, return_indices=True)
+    snapped = []
+    for p in waypoints:
+        r = min(H - 1, max(0, int(round(p[1] - y0))))
+        c = min(W - 1, max(0, int(round(p[0] - x0))))
+        r2, c2 = iy[r, c], ix[r, c]
+        if (r2 - r) ** 2 + (c2 - c) ** 2 <= 14 ** 2:
+            # then climb to the local ridge of the stroke (its centre)
+            for _ in range(6):
+                win = d[max(0, r2 - 2):r2 + 3, max(0, c2 - 2):c2 + 3]
+                k = np.unravel_index(np.argmax(win), win.shape)
+                nr, nc = max(0, r2 - 2) + k[0], max(0, c2 - 2) + k[1]
+                if (nr, nc) == (r2, c2):
+                    break
+                r2, c2 = nr, nc
+            snapped.append((c2 + x0, r2 + y0))
+        else:
+            snapped.append((p[0], p[1]))
+    waypoints = snapped
+    pts = []
+    for a, b in zip(waypoints, waypoints[1:]):
+        ra = (min(H - 1, max(0, int(round(a[1] - y0)))), min(W - 1, max(0, int(round(a[0] - x0)))))
+        rb = (min(H - 1, max(0, int(round(b[1] - y0)))), min(W - 1, max(0, int(round(b[0] - x0)))))
+        path, _ = route_through_array(cost, ra, rb, fully_connected=True, geometric=True)
+        seg = [(float(c + x0), float(r + y0)) for r, c in path]
+        pts.extend(seg if not pts else seg[1:])
+    return smooth_path(pts, sigma=max(2.0, 0.9 * float(np.median(d[ink])) if ink.any() else 2.0))
+
+
+def smooth_path(pts, sigma=3.0, step=1.5):
+    """pixel path -> smooth pen path: resample evenly, gaussian-smooth (ends pinned, so entries, exits and
+    cusps at the ends stay put), then simplify. Keeps sharp turns that last longer than ~2 sigma."""
+    from scipy.ndimage import gaussian_filter1d
+    P = np.array(pts, dtype=float)
+    if len(P) < 4:
+        return [tuple(p) for p in P]
+    seg = np.hypot(*np.diff(P, axis=0).T)
+    t = np.concatenate([[0], np.cumsum(seg)])
+    if t[-1] < 3 * step:
+        return [tuple(P[0]), tuple(P[-1])]
+    n = max(4, int(t[-1] / step))
+    u = np.linspace(0, t[-1], n)
+    Q = np.stack([np.interp(u, t, P[:, 0]), np.interp(u, t, P[:, 1])], 1)
+    s = sigma / step
+    S = np.stack([gaussian_filter1d(Q[:, 0], s, mode='nearest'), gaussian_filter1d(Q[:, 1], s, mode='nearest')], 1)
+    k = int(min(len(Q) // 3, 2 * s))
+    w = np.ones(len(Q))
+    if k > 0:
+        ramp = np.linspace(0, 1, k + 1)[1:]
+        w[:k] = ramp
+        w[-k:] = ramp[::-1]
+    S = S * w[:, None] + Q * (1 - w[:, None])
+    return skel.simplify([tuple(p) for p in S], 0.6)
 
 
 def auto_join(strokes, ink, x0, y0, on=0.7):
@@ -384,9 +498,14 @@ def fix_joins(strokes, J, u, gl):
     if not live:
         return
     ends = []
+    body = -0.7 * u['xRatio'] * u['cap']  # a stroke that never comes down into the letter's body (a t-bar) is no entry or exit
     for s in live:
+        if max(p[1] for p in s['pts']) < body:
+            continue
         ends.append((s['pts'][0][0], s, 0))
         ends.append((s['pts'][-1][0], s, 1))
+    if len(ends) < 2:
+        return
     # exit: rightmost endpoint; entry: leftmost endpoint (of a different stroke-end)
     ex = max(ends, key=lambda e: e[0])
     en = min([e for e in ends if e is not ex], key=lambda e: e[0])
@@ -437,10 +556,12 @@ def join_head(pts, J, u, gl):
     the lead-in the copybook draws: a straight connector rising from the lower left."""
     s = pts[0]
     if s[1] > J:  # starts below the join height: cut at the first rising crossing in the head
+        far = s[0]
         for i in range(0, len(pts) - 1):
             a, b = pts[i], pts[i + 1]
-            if b[0] < a[0] - 0.5 and i > 0:
-                break
+            far = max(far, a[0])
+            if b[0] < far - 0.04 * u['cap'] and i > 0:
+                break  # the head turned back left: it is no longer a lead-in
             if (a[1] - J) * (b[1] - J) <= 0 and a[1] > b[1]:
                 p0, p1 = pts[max(0, i - 2)], pts[min(len(pts) - 1, i + 3)]
                 if p1[0] > p0[0]:
@@ -504,18 +625,19 @@ def join_tail(pts, J, u):
                     return pts[:i + 1] + [cut]
                 break
         return top_exit(pts, J, u)
-    # tail ends below J: extend
+    # tail ends below J: extend it as this hand's own connector, rising at its measured angle
     tx, ty = tangent_end(pts)
     h = end[1] - J  # > 0
-    if ty < -0.35:  # rising: straight on
-        L = h / -ty
-        return pts + [[end[0] + tx * L, J]]
-    P0 = end
-    d = max(h * 1.0, 0.1 * C)
-    P1 = [end[0] + tx * d * 0.4, end[1] + ty * d * 0.4]
-    P3 = [end[0] + d * 0.9, J]
-    P2 = [P3[0] - d * 0.3, J + h * 0.35]
-    return pts + bezier(P0, P1, P2, P3, 6)[1:]
+    ang = math.radians(entry_angle(u, {}))
+    P3 = [end[0] + h / math.tan(ang), J]
+    if ty < -math.sin(ang * 0.8) and tx > 0:  # already rising about as steeply: straight on
+        return pts + [P3]
+    d = math.hypot(P3[0] - end[0], h)
+    if tx <= 0.2:
+        tx, ty = 0.8, -0.3
+    P1 = [end[0] + tx * d * 0.35, end[1] + ty * d * 0.35]
+    P2 = [P3[0] - math.cos(ang) * d * 0.35, P3[1] + math.sin(ang) * d * 0.35]
+    return pts + bezier(end, P1, P2, P3, 6)[1:]
 
 
 def tail_ok(head, cut, tail, C):
@@ -686,7 +808,7 @@ def panel(hand, ex, eng, H=230):
     # fade the paper, keep the ink visible under the strokes
     left = Image.blend(left, Image.new('RGB', left.size, (255, 255, 255)), 0.35)
     d = ImageDraw.Draw(left)
-    x0, y0 = gl['box'][0], gl['box'][1]
+    x0, y0 = ex.get('origin', gl['box'][:2])
     draw_strokes(d, [s['pts'] for s in ex['strokes']], lambda p: ((p[0] - x0) * sc, (p[1] - y0) * sc), 2, True, font(11))
     # normalised view
     C = u['cap']
@@ -779,7 +901,7 @@ def natural(hand, u, results):
     wids = [(max(p[0] for s in e['s'] for p in s) - min(p[0] for s in e['s'] for p in s)) / xh for c in 'nou' for e in by.get(c, []) if e['s']]
     advs = [(e['r'] - e['l']) / xh for c in 'nou' for e in by.get(c, [])]
     sl = u['slant']
-    src_slant = sl['source']
+    src_slant = sl.get('natural', sl['source'])  # 'natural': the copybook's slant when a warp already removed it
     if hand.get('writers'):
         ws = [w.get('slant') for w in hand['writers'].values() if w.get('slant')]
         src_slant = med(ws) if ws else src_slant
@@ -804,10 +926,12 @@ def emit(hand, results):
         deep = [max(p[1] for s in eng['s'] for p in s) for k, (ex, eng) in results.items()
                 if ex['gl']['ch'].islower() and eng['s']]
         u['descender'] = (max(deep) / C) if deep else 0.5  # the deepest descender maps to the hand's line
+    tradition = dict(hand['tradition'])
+    tradition['slant'] = u['slant']['target']  # degrees of slant built into these skeletons (the engine centres writers on it)
     meta = {
         'label': hand['label'],
         'family': hand['family'],
-        'tradition': hand['tradition'],
+        'tradition': tradition,
         'connected': hand.get('connected', False),
         'metrics': {'base': 0, 'cap': -C, 'xHeight': -round(u['xRatio'] * C),
                     'descender': round(u['descender'] * C), 'descRatio': u['descRatio']},

@@ -286,13 +286,19 @@ function analyze(v, m) {
     if (q[1] >= X - 0.1 * U && q[1] <= m.base + 0.1 * U && q[0] < bandMinX) bandMinX = q[0];
   }
   let entry = null, exit = null;
+  const pathLen = (st, i0, i1) => { let L = 0; for (let k = i0 + 1; k <= i1; k++) L += dist(st[k - 1], st[k]); return L; };
+  let ink = 0;
+  for (const i of body) ink += pathLen(v.s[i], 0, v.s[i].length - 1);
+  // A joining stroke is a modest diagonal, not a steep stem (traced skeletons may draw stems bottom-up) and not a
+  // large share of the letter. Parts that fail this are structure: no transform may trim them.
+  const plausible = (rise, dx, len) => !(rise > 0.75 * U && dx < 0.6 * rise) && len <= 0.45 * ink;
   if (body.length) {
     const si = body[0], s = v.s[si], q0 = s[0];
     if (q0[0] <= minX + 0.08 * U && q0[1] >= X - 0.25 * U && q0[1] <= m.base + 0.05 * U) {
       // rises to the right up to its first top, and no higher than the x-height (above it is an ascender loop)
       let e = 0;
       while (e + 1 < s.length && s[e + 1][0] >= s[e][0] - TOL && s[e + 1][1] <= s[e][1] + TOL && s[e + 1][1] >= X - 0.1 * U) e++;
-      if (e >= 1 && e < s.length - 1 && q0[1] - s[e][1] >= 0.2 * U) {
+      if (e >= 1 && e < s.length - 1 && q0[1] - s[e][1] >= 0.2 * U && plausible(q0[1] - s[e][1], s[e][0] - q0[0], pathLen(s, 0, e))) {
         const x = crossedAt(v.s, si, 0, e, true); // keep everything from the last crossing on
         entry = { si, e, minKeep: x < 0 ? 0 : Math.min(1, 1 - x + 0.08) };
       }
@@ -305,7 +311,12 @@ function analyze(v, m) {
       // walk back while the stroke keeps rising to the right, but not down into a descender loop
       while (T - 1 >= 0 && s2[T - 1][0] <= s2[T][0] + TOL && s2[T - 1][1] >= s2[T][1] - TOL && s2[T - 1][1] <= m.base + 0.1 * U) T--;
       const end = s2[s2.length - 1];
-      if (T < s2.length - 1 && (end[0] - s2[T][0] >= 0.2 * U || s2[T][1] - end[1] >= 0.15 * U)) {
+      const len = pathLen(s2, T, s2.length - 1);
+      // it rises from the last turn near the baseline, or it is a short breve (b o v w); a long stroke ending
+      // high up is something else (Arrighi's t ends with its crossbar)
+      const lowTurn = s2[T][1] > X + 0.6 * U;
+      if (T < s2.length - 1 && (end[0] - s2[T][0] >= 0.2 * U || s2[T][1] - end[1] >= 0.15 * U) &&
+        (lowTurn || len <= 0.6 * U) && plausible(s2[T][1] - end[1], end[0] - s2[T][0], len)) {
         const x = crossedAt(v.s, best.si, T, s2.length - 1, true); // keep everything up to the last crossing
         exit = { si: best.si, T, minKeep: x < 0 ? 0 : Math.min(1, x + 0.08) };
       }
@@ -321,7 +332,7 @@ function analyze(v, m) {
       desc.push({ si: i, b, carriesExit: !!(exit && exit.si === i && exit.T > b) });
     }
   }
-  a = { m, body, marks, entry, exit, asc, desc, minX, maxX, bandMinX, U, A, D };
+  a = { m, body, marks, entry, exit, asc, desc, minX, maxX, bandMinX, U, A, D, ink };
   ANALYSIS.set(v, a);
   return a;
 }
@@ -330,11 +341,22 @@ function analyze(v, m) {
 
 // Loop width about the loop's own spine: w = 0 retraces the stem, 1 = as drawn, > 1 = fuller.
 // The downstroke (the stem) moves 30% of the way, the upstroke 70%, so a retraced stem stays near the stem.
-function reshapeLoop(s, apex, w, inside, ramp) {
+// The loop is the run of points going monotonically into its tip and out again; whatever the stroke does after
+// it turns back (a crossing, a tracing zigzag) is not part of the loop and is never moved.
+function loopRun(s, apex, tol) {
+  const away = (a, b) => Math.sign(s[b][1] - s[a][1]);
+  let i0 = apex, i1 = apex;
+  const d0 = apex > 0 ? away(apex, apex - 1) : 0, d1 = apex < s.length - 1 ? away(apex, apex + 1) : 0;
+  while (i0 > 0 && (s[i0 - 1][1] - s[i0][1]) * d0 >= -tol) i0--;
+  while (i1 < s.length - 1 && (s[i1 + 1][1] - s[i1][1]) * d1 >= -tol) i1++;
+  return [i0, i1];
+}
+function reshapeLoop(s, apex, w, inside, ramp, tol = 0) {
   if (w === 1) return s;
   const out = s.map((q) => q.slice());
   const n = s.length;
-  for (let i = 0; i < n; i++) {
+  const [i0, i1] = loopRun(s, apex, tol);
+  for (let i = i0; i <= i1; i++) {
     if (i === apex || !inside(s[i][1])) continue;
     const before = i < apex;
     const xo = before ? xAt(s, apex, n - 1, s[i][1]) : xAt(s, apex, 0, s[i][1]);
@@ -347,13 +369,14 @@ function reshapeLoop(s, apex, w, inside, ramp) {
 // Ascenders are drawn up then down (the stem is the second side); descenders down then up (the stem is the first).
 function reshapeAsc(s, t, w, m) {
   const X = m.xHeight, A = X - m.cap;
-  return reshapeLoop(s, t, w, (y) => y < X, (y) => smooth((X - y) / (0.3 * A)));
+  return reshapeLoop(s, t, w, (y) => y < X, (y) => smooth((X - y) / (0.3 * A)), 0.02 * (m.base - X));
 }
 function reshapeDesc(s, b, w, m) {
   const D = m.descender - m.base;
   const out = s.map((q) => q.slice()), n = s.length;
   if (w === 1) return out;
-  for (let i = 0; i < n; i++) {
+  const [i0, i1] = loopRun(s, b, 0.02 * (m.base - m.xHeight));
+  for (let i = i0; i <= i1; i++) {
     if (i === b || s[i][1] <= m.base) continue;
     const before = i < b; // before the bottom = the downstroke (the stem); after = the upstroke
     const xo = before ? xAt(s, b, n - 1, s[i][1]) : xAt(s, b, 0, s[i][1]);
@@ -382,7 +405,10 @@ function reshapeTurns(s, amt, U) {
     let j = i;
     while (j + 1 < s.length - 1 && Math.abs(s[j + 1][1] - s[i][1]) <= eps) j++;
     const yi = s[i][1], yp = s[i - 1][1], yn = s[j + 1][1];
-    if ((yp > yi + eps && yn > yi + eps) || (yp < yi - eps && yn < yi - eps)) turns.push({ i, j });
+    // a reversal (the stroke doubling back: a retraced stem's tip, a tracing zigzag) is not a turn to reshape
+    const u = norm([s[i][0] - s[i - 1][0], s[i][1] - s[i - 1][1]]), w = norm([s[j + 1][0] - s[j][0], s[j + 1][1] - s[j][1]]);
+    const cusp = u[0] * w[0] + u[1] * w[1] < Math.cos(140 * DEG);
+    if (!cusp && ((yp > yi + eps && yn > yi + eps) || (yp < yi - eps && yn < yi - eps))) turns.push({ i, j });
     i = j + 1;
   }
   if (!turns.length) return s;
@@ -443,26 +469,39 @@ function reshapeTurns(s, amt, U) {
   return out;
 }
 
-// Keep `keep` (0..1) of the stroke's tail after index T (by arc length). Never leaves fewer than 2 points.
+// Keep `keep` (0..1) of the stroke's tail after index T (by arc length). The stroke keeps at least 40% of its
+// length and never ends up shorter than min(its own length, minLen): a trim thins a connector, never a letter.
+// A short leftover beyond a sharp corner would be a speck of its own (the pen model splits strokes at hard
+// corners), so a cut that lands just past one snaps to the corner itself.
+function sharpAt(s, i) {
+  if (i <= 0 || i >= s.length - 1) return false;
+  const u = norm([s[i][0] - s[i - 1][0], s[i][1] - s[i - 1][1]]), w = norm([s[i + 1][0] - s[i][0], s[i + 1][1] - s[i][1]]);
+  return u[0] * w[0] + u[1] * w[1] < Math.cos(100 * DEG);
+}
 function trimTail(s, T, keep, minLen) {
   const tail = s.slice(T);
   const cum = lengths(tail);
-  const L = Math.max(minLen, keep * cum[cum.length - 1]);
+  const headLen = lengths(s.slice(0, T + 1)).pop() || 0, total = headLen + cum[cum.length - 1];
+  const floor = Math.max(Math.min(total, minLen), 0.4 * total) - headLen;
+  let L = Math.max(keep * cum[cum.length - 1], floor, minLen / 6);
+  if (L < 0.8 * minLen && floor <= 0 && sharpAt(s, T)) return s.slice(0, T + 1).map((q) => q.slice());
   if (L >= cum[cum.length - 1]) return s.map((q) => q.slice());
   const e = at(tail, cum, L);
   const head = s.slice(0, T + 1).map((q) => q.slice());
   const out = [...head, ...tail.slice(1, e.i + 1).map((q) => q.slice()), e.q];
   return out.length >= 2 ? out : s.map((q) => q.slice());
 }
-// Keep `keep` (0..1) of the stroke's head before index e (measured back from e).
+// Keep `keep` (0..1) of the stroke's head before index e (measured back from e). Same floor as trimTail.
 function trimHead(s, e, keep, minLen) {
   const head = s.slice(0, e + 1).reverse();
   const cum = lengths(head);
-  const L = Math.max(minLen, keep * cum[cum.length - 1]);
+  const restLen = lengths(s.slice(e)).pop() || 0, total = restLen + cum[cum.length - 1];
+  const floor = Math.max(Math.min(total, minLen), 0.4 * total) - restLen;
+  const L = Math.max(keep * cum[cum.length - 1], floor, minLen / 6);
+  if (L < 0.8 * minLen && floor <= 0 && sharpAt(s, e)) return s.slice(e).map((q) => q.slice());
   if (L >= cum[cum.length - 1]) return s.map((q) => q.slice());
-  const b = at(head, cum, L);
-  const kept = [b.q, ...head.slice(1, b.i + 1).map((q) => q.slice())].reverse();
-  const out = [...kept, ...s.slice(e + 1).map((q) => q.slice())];
+  const b = at(head, cum, L); // head runs backward from s[e]; b.q lies between head[b.i] and head[b.i + 1]
+  const out = [b.q, ...head.slice(0, b.i + 1).reverse().map((q) => q.slice()), ...s.slice(e + 1).map((q) => q.slice())];
   return out.length >= 2 ? out : s.map((q) => q.slice());
 }
 // Carry the exit on past its end: `ext` source units, trailing out flatter (toward a gentle rise) as it flies.
@@ -639,10 +678,30 @@ function entryNeedsJoin(p, ch, ctx) {
 }
 
 // ---------- the transform ----------
+// A letter must survive its writer: no visible letter loses more than 60% of its ink, and no stroke of real
+// length shrinks to a speck. If the full reshape breaks that, it is redone without any trimming (no lifts,
+// hooks, cut lead-ins or blunt ends); if that still breaks it, the letter is left as the source draws it.
+function intact(v, out, a) {
+  if (out === v) return true;
+  const len = (st) => { let L = 0; for (let k = 1; k < st.length; k++) L += dist(st[k - 1], st[k]); return L; };
+  let before = 0, after = 0;
+  for (const i of a.body) {
+    const b = len(v.s[i]), o = out.s[i] ? len(out.s[i]) : 0;
+    before += b; after += o;
+    if (!out.s[i] || out.s[i].length < 2 || o < Math.min(b, Math.max(0.25 * a.U, 0.3 * b)) - 1e-9) return false;
+  }
+  return after >= 0.4 * before;
+}
 function styleTransform(p, ch, v, ctx, m) {
   if (!v || !v.s || !m || !isLetterCh(ch)) return v;
   const d = styleDims(p);
   if (d.neutral) return v;
+  const a = analyze(v, m);
+  let out = reshape(p, ch, v, ctx, m, d, true);
+  if (!intact(v, out, a)) { out = reshape(p, ch, v, ctx, m, d, false); if (!intact(v, out, a)) out = v; }
+  return out;
+}
+function reshape(p, ch, v, ctx, m, d, trims) {
   const lower = isLowerCh(ch), upper = !lower;
   const connected = connectedStyle(p.style) && familyOf(p.style) === 'script';
   const a = analyze(v, m);
@@ -652,6 +711,15 @@ function styleTransform(p, ch, v, ctx, m) {
   let s = v.s.slice();
   let changed = false;
   const set = (i, ns) => { if (ns !== s[i]) { s[i] = ns; changed = true; } };
+  // dots and marks (i-dots, accents) move with the letter as a whole; stretching them could turn a dot into a dash
+  const rigid = new Set(v.s.map((_, i) => i).filter((i) => !a.body.includes(i)));
+  const moveStroke = (st, i, f) => {
+    if (!rigid.has(i)) return st.map(f);
+    let cx = 0, cy = 0; for (const q of st) { cx += q[0]; cy += q[1]; }
+    cx /= st.length; cy /= st.length;
+    const c = f([cx, cy]);
+    return st.map((q) => [q[0] + c[0] - cx, q[1] + c[1] - cy]);
+  };
   let exitT = a.exit ? a.exit.T : -1; // the exit's turn index, kept current while the same stroke is edited
 
   // joins on each side (canonical forms, without ctx, are joined on both sides)
@@ -662,9 +730,9 @@ function styleTransform(p, ch, v, ctx, m) {
     joinR = ctx ? isLowerCh(ctx.next) : true;
     const selfNeedsJoin = lower && v.l - a.bandMinX > 0.3 * a.U;
     nextNeedsJoin = !!(ctx && joinR && entryNeedsJoin(p, ctx.next, { prev: ch, next: null, index: i0 + 1, wordStart: false, wordEnd: false }));
-    if (ctx && joinL && !selfNeedsJoin) liftL = liftsBetween(p, d, ctx.prev, ch, i0 - 1) ||
+    if (trims && ctx && joinL && !selfNeedsJoin) liftL = liftsBetween(p, d, ctx.prev, ch, i0 - 1) ||
       exitLost(p, d, ctx.prev, { prev: null, next: ch, index: i0 - 1, wordStart: i0 - 1 === 0, wordEnd: false });
-    if (ctx && joinR && !nextNeedsJoin) liftR = liftsBetween(p, d, ch, ctx.next, i0);
+    if (trims && ctx && joinR && !nextNeedsJoin) liftR = liftsBetween(p, d, ch, ctx.next, i0);
   }
 
   // 1. loops (lowercase): fuller, narrower or retraced; unlooped descenders end in a hook, and the pen lifts
@@ -673,7 +741,7 @@ function styleTransform(p, ch, v, ctx, m) {
     for (const L of a.asc) set(L.si, reshapeAsc(s[L.si], L.t, loopWidth(p, d, ch, false), m));
     for (const L of a.desc) {
       const w = loopWidth(p, d, ch, true);
-      if (w < HOOK_BELOW && connected && !(L.carriesExit && nextNeedsJoin)) {
+      if (trims && w < HOOK_BELOW && connected && !(L.carriesExit && nextNeedsJoin)) {
         const len = (0.16 + 0.1 * unit('hook:' + baseSeed(p.seed) + ':' + baseOf(ch))) * U;
         set(L.si, hookDesc(s[L.si], L.b, len));
         if (L.carriesExit) exitGone = true;
@@ -686,8 +754,12 @@ function styleTransform(p, ch, v, ctx, m) {
   if (lower && d.loopHeight !== 0) {
     const asc = Number.isFinite(p.ascender) ? p.ascender : 1.06, xh = Number.isFinite(p.xHeight) ? p.xHeight : 0.5;
     const desc = Number.isFinite(p.descender) ? p.descender : 1;
-    const kA = Math.min(Math.exp(0.16 * d.loopHeight), (1.2 - xh) / Math.max(0.1, asc - xh));
-    const kD = Math.min(Math.exp(0.18 * d.loopHeight), 1.2 / Math.max(0.5, desc));
+    // this letter's own extremes (traced ascenders can already sit above the cap line), mapped like hand.js zoneY
+    let top = X, bot = m.base;
+    for (const i of a.body) for (const q of s[i]) { if (q[1] < top) top = q[1]; if (q[1] > bot) bot = q[1]; }
+    const upH = (X - top) / Math.max(1e-9, X - m.cap) * (asc - xh), downD = (bot - m.base) / Math.max(1e-9, m.descender - m.base) * desc;
+    const kA = Math.min(Math.exp(0.16 * d.loopHeight), Math.max(1, (1.2 - xh) / Math.max(1e-9, upH)));
+    const kD = Math.min(Math.exp(0.18 * d.loopHeight), Math.max(1, 1.2 / Math.max(1e-9, downD)));
     for (const i of a.body) set(i, s[i].map((q) => [q[0], q[1] < X ? X - (X - q[1]) * kA : q[1] > m.base ? m.base + (q[1] - m.base) * kD : q[1]]));
   }
 
@@ -719,13 +791,14 @@ function styleTransform(p, ch, v, ctx, m) {
   }
 
   // 5. connectors: lifts inside words, lead-ins at word starts, end flicks at word ends
-  const minLen = 0.05 * U;
+  const minLen = 0.3 * U; // the shortest a trimmed stroke may become (or its own length, if shorter)
   const editHead = (si, ns) => { if (a.exit && a.exit.si === si) exitT += ns.length - s[si].length; set(si, ns); };
   let leadEdited = false, flickEdited = false;
   if (connected && a.entry && lower && !joinL && d.leadIns !== 0) {
     const e = a.entry, st = s[e.si];
     const lead = clamp(d.leadIns + 0.15 * Math.min(1, 3 * Math.abs(d.leadIns)) * gauss('lead:' + seedKey), -1, 1);
-    if (lead < 0) editHead(e.si, trimHead(st, e.e, Math.max(ENTRY_FLOOR[baseOf(ch)] || 0, e.minKeep, 1 + lead), minLen));
+    if (lead < 0 && !trims) { /* no trimming in the safe retry */ }
+    else if (lead < 0) editHead(e.si, trimHead(st, e.e, Math.max(ENTRY_FLOOR[baseOf(ch)] || 0, e.minKeep, 1 + lead), minLen));
     else {
       const cl = lengths(st.slice(0, e.e + 1));
       let ns = extendHead(st, Math.min(0.9 * cl[cl.length - 1] + 0.3 * U, 0.85 * U) * lead, m);
@@ -747,7 +820,8 @@ function styleTransform(p, ch, v, ctx, m) {
       const flick = clamp(d.endFlicks + 0.25 * Math.max(0, d.rhythm) + 0.15 * Math.min(1, 3 * Math.abs(d.endFlicks)) * gauss('flick:' + seedKey), -1, 1);
       const st = s[si];
       let ns;
-      if (flick < 0) ns = trimTail(st, exitT, Math.max(a.exit.minKeep, 1 + 0.95 * flick), minLen);
+      if (flick < 0 && !trims) ns = st;
+      else if (flick < 0) ns = trimTail(st, exitT, Math.max(a.exit.minKeep, 1 + 0.95 * flick), minLen);
       else { const cl = lengths(st.slice(exitT)); ns = extendTail(st, Math.min(0.9 * cl[cl.length - 1], 0.45 * U) * flick, U); }
       const hookRate = clamp(0.1 + 0.18 * gauss('hook-rate:' + baseSeed(p.seed)) + 0.25 * flick, 0, 0.7);
       if (flick > -0.3 && unit('hookflick:' + seedKey) < hookRate) ns = hookTail(ns, (0.2 + 0.1 * Math.max(0, flick)) * U);
@@ -778,7 +852,7 @@ function styleTransform(p, ch, v, ctx, m) {
     if (connected && a.exit && !exitGone) xX = s[a.exit.si][Math.min(exitT, s[a.exit.si].length - 1)][0];
     const x0 = Math.min(xE, xX), x1 = Math.max(xE, xX);
     const f = (x) => (x < x0 ? x0 - (x0 - x) * kJ : x > x1 ? x0 + (x1 - x0) * sB + (x - x1) * kJ : x0 + (x - x0) * sB);
-    s = s.map((st) => st.map((q) => [f(q[0]), q[1]]));
+    s = s.map((st, i) => moveStroke(st, i, (q) => [f(q[0]), q[1]]));
     l = f(l); r = f(r);
     changed = true;
   }
@@ -814,7 +888,7 @@ function styleTransform(p, ch, v, ctx, m) {
   // 8. lean at speed: a little extra slant in the movement itself (joins keep their height, so they still meet)
   if (fast !== 0) {
     const t = Math.tan(3.5 * DEG * fast);
-    s = s.map((st) => st.map((q) => [q[0] + (m.base - q[1]) * t, q[1]]));
+    s = s.map((st, i) => moveStroke(st, i, (q) => [q[0] + (m.base - q[1]) * t, q[1]]));
     changed = true;
   }
 

@@ -141,30 +141,46 @@ textarea {
 }
 
 /* A new hand: the old writing softens out, the new one settles in. Opacity-only when motion is reduced. */
+/* Writing arriving: opacity only. (A blur here made the browser redraw the whole page of writing every frame,
+   so on phones the letter sat blurred for seconds before it settled.) */
 @keyframes hand-in {
   from {
     opacity: 0;
-    filter: blur(3px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
   }
 }
 .hand-in {
-  animation: hand-in 420ms var(--ease-out) both;
+  animation: hand-in 260ms var(--ease-out) both;
 }
 @media (prefers-reduced-motion: reduce) {
-  @keyframes hand-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
   .hand-in {
-    animation-duration: 200ms;
+    animation-duration: 160ms;
+  }
+}
+
+/* Ink mode: the writer considers a fix at the pen head; the pen hovers just above the paper */
+@keyframes pen-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(-2px);
+    opacity: 0.55;
+  }
+}
+.pen-hover {
+  animation: pen-hover 900ms var(--ease-in-out) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes pen-hover {
+    50% {
+      transform: none;
+      opacity: 0.5;
+    }
   }
 }
 
@@ -229,41 +245,68 @@ textarea {
   height: 100%;
 }
 
-/* New look: the sheet cross-fades (paper swap and re-ink at once); the panel and desk hold still */
-.sheet-stack {
-  view-transition-name: sheet;
+/* A sheet the letter grows while open (it ran onto a new page) rises in; the controls never move */
+.sheet-enter {
+  transition: opacity 240ms var(--ease-out), transform 300ms var(--ease-out);
 }
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-}
-::view-transition-group(sheet) {
-  animation-duration: 420ms;
-  animation-timing-function: var(--ease-in-out);
-}
-::view-transition-old(sheet),
-::view-transition-new(sheet) {
-  width: 100%;
-  height: 100%;
-  object-fit: none;
-  object-position: top center;
-}
-::view-transition-old(sheet) {
-  animation: 240ms var(--ease-out) both sheet-out;
-}
-::view-transition-new(sheet) {
-  animation: 420ms var(--ease-out) both sheet-in;
-}
-@keyframes sheet-out {
-  to {
+@starting-style {
+  .sheet-enter {
     opacity: 0;
-    filter: blur(2px);
+    transform: translateY(12px);
   }
 }
-@keyframes sheet-in {
-  from {
-    opacity: 0;
-    filter: blur(3px);
-    transform: translateY(6px);
+@media (prefers-reduced-motion: reduce) {
+  @starting-style {
+    .sheet-enter {
+      transform: none;
+    }
   }
+}
+
+/* First load: paper and writing arrive together */
+.desk-in {
+  transition: opacity 200ms var(--ease-out);
+}
+
+/* ---------- the phone's control sheet (ControlSheet.tsx) ---------- */
+/* Below full height the sheet's content drags the sheet; at full height it scrolls. Rows that scroll sideways
+   and sliders keep their own axis either way. */
+.control-sheet {
+  transition: background-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+.control-sheet .sheet-body {
+  overflow-y: hidden;
+  touch-action: pan-x;
+}
+.control-sheet[data-detent='full'] .sheet-body {
+  overflow-y: auto;
+  touch-action: pan-x pan-y;
+}
+.control-sheet .sheet-row {
+  touch-action: pan-x;
+}
+.control-sheet[data-detent='full'] .sheet-row {
+  touch-action: pan-x pan-y;
+}
+.control-sheet[data-detent='full'] [data-slot='slider'] {
+  touch-action: pan-y;
+}
+.control-sheet [data-row],
+.control-sheet [data-fade] {
+  transition: opacity 150ms var(--ease-out), box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out);
+}
+/* Full height covers the letter, so while a finger slides a control everything else steps back and the page
+   shows through; the control stays put under the finger on a card of its own. */
+.control-sheet[data-detent='full']:has([data-slot='slider'][data-active]) {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.control-sheet[data-detent='full']:has([data-slot='slider'][data-active]) :is([data-fade], [data-row]:not(:has([data-slot='slider'][data-active]))) {
+  opacity: 0;
+}
+.control-sheet[data-detent='full'] [data-row]:has(> [data-slot='slider'][data-active]) {
+  border-radius: 12px;
+  background-color: var(--panel);
+  box-shadow: 0 0 0 10px var(--panel), 0 14px 36px -6px rgba(40, 30, 10, 0.38);
 }

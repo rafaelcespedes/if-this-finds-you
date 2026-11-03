@@ -46,6 +46,8 @@ interface Props {
   onEditingChange?: (editing: boolean) => void;
   /** an IME is composing: the app holds page writes and link updates until it commits */
   onComposingChange?: (composing: boolean) => void;
+  /** Ink mode: the writer is considering a fix at the pen head; the pen hovers instead of resting */
+  hovering?: boolean;
   children: ReactNode;
 }
 
@@ -59,7 +61,7 @@ interface Sel {
 const AMBER = '#f3d27a';
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, children },
+  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -312,7 +314,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       ref={wrap}
       role="group"
       aria-label="Letter"
-      className="sheet-stack relative mx-auto cursor-text touch-manipulation"
+      className="relative mx-auto cursor-text touch-manipulation"
       style={{ width: sheetW * pxPerMm }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -359,7 +361,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
             // the pen at rest: an ink dot on the baseline, a hairline up to the x-height
             const hx = xHeightU * k;
             return (
-              <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && 'caret-breathe')} width="100%" height="100%" style={{ opacity }}>
+              <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && (hovering ? 'pen-hover' : 'caret-breathe'))} width="100%" height="100%" style={{ opacity }}>
                 <line x1={bx + dot * 0.6} y1={by} x2={bx + dot * 0.6 + lean * hx} y2={by - hx} stroke={ink} strokeOpacity={0.3} strokeWidth={1} />
                 <circle cx={bx + dot * 0.6} cy={by} r={dot / 2} fill={ink} />
               </svg>

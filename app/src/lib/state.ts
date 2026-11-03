@@ -1,7 +1,8 @@
 // The whole note configuration, and how it travels in a share link.
 // Link format (URL hash, readable where it can be):
 //   #seed=quiet-heron-17&style=script&pen=fountain&tip=fine&ink=royal-blue&paper=seyes&size=1.1
-//    &o=ne0.12_sl-3&occ=love&amt=1.2&t=<lz-string>
+//    &o=ne0.12_sl-3&occ=love&amt=1.2&t=<lz-string>   (or s=<sample letter id> while the text is a sample,
+//    or k=<lz-string of the ink log> for a letter written in ink; mode=fair when Ink mode is off)
 // `o` holds seed-relative offsets with two-letter codes (lib/controls.ts), so the same link always
 // writes the same note.
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
@@ -12,6 +13,8 @@ import { PEN_CHOICES } from './pens';
 import { CONTROLS, controlByCode, controlByKey, PEN_SIZES, type PenSize } from './controls';
 import { OCCASIONS } from './occasions';
 import { decodeMarks, encodeMarks, type Mark } from './doc';
+import { sampleById, sampleForSeed } from './samples';
+import { decodeInk, INK, inkText } from './ink';
 import { clamp } from './utils';
 
 export interface NoteState {
@@ -29,6 +32,14 @@ export interface NoteState {
   /** occasion amount, 0..1.5 */
   amount: number;
   text: string;
+  /** while nobody has written: the sample letter the text is (lib/samples.ts); null once the text is yours */
+  sample: string | null;
+  /** Ink (what's written stays; the writer corrects like a person) or Fair copy (clean editing) */
+  mode: 'ink' | 'fair';
+  /** Ink mode: the letter's ink log (lib/ink.ts encodeInk), once anything is written in ink; the text follows it */
+  inkLog: string | null;
+  /** a reply: the found letter this note answers (its id, and the hand and paper it was found in) */
+  replyTo: { id: string; seed: string; style: string; paper: PaperId } | null;
   /** handwriting marks on the text (lib/doc.ts) */
   marks: Mark[];
   /** the writer signs below the last line */
@@ -42,6 +53,8 @@ export const DEFAULT_TEXT =
   'Every word I write to you comes out a touch different, the way it would if I sat down with a real pen.\n\n' +
   'See you on Sunday at 7:30. Bring the old maps & a good pen!\n\nYours,\nO.';
 
+const FIRST_SAMPLE = sampleForSeed('quiet-heron-17', 'script');
+
 export const DEFAULT_STATE: NoteState = {
   seed: 'quiet-heron-17',
   style: 'script',
@@ -53,7 +66,11 @@ export const DEFAULT_STATE: NoteState = {
   paper: DEFAULT_PAPER,
   occasion: null,
   amount: 1,
-  text: DEFAULT_TEXT,
+  text: FIRST_SAMPLE?.text ?? DEFAULT_TEXT,
+  sample: FIRST_SAMPLE?.id ?? null,
+  mode: INK ? 'ink' : 'fair',
+  inkLog: null,
+  replyTo: null,
   marks: [],
   signed: false,
   reader: false,
@@ -82,7 +99,12 @@ export function encodeState(s: NoteState): string {
     q.set('occ', s.occasion);
     if (Math.abs(s.amount - 1) > 0.005) q.set('amt', String(round(s.amount, 2)));
   }
-  if (s.text !== DEFAULT_TEXT) q.set('t', compressToEncodedURIComponent(s.text));
+  const sample = sampleById(s.sample);
+  if (INK && s.mode === 'fair') q.set('mode', 'fair');
+  if (s.inkLog) q.set('k', compressToEncodedURIComponent(s.inkLog));
+  else if (sample && sample.text === s.text) q.set('s', sample.id);
+  else if (s.text !== DEFAULT_TEXT) q.set('t', compressToEncodedURIComponent(s.text));
+  if (s.replyTo) q.set('re', [s.replyTo.id, s.replyTo.seed, s.replyTo.style, s.replyTo.paper].join('~'));
   if (s.marks.length) q.set('m', encodeMarks(s.marks));
   if (s.signed) q.set('sig', '1');
   if (s.reader) q.set('read', '1');
@@ -122,12 +144,31 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
     if (Number.isFinite(amt)) s.amount = clamp(amt, AMOUNT_RANGE.min, AMOUNT_RANGE.max);
   }
   const t = q.get('t');
-  if (t != null) {
+  const named = sampleById(q.get('s'));
+  s.mode = q.get('mode') === 'fair' || !INK ? 'fair' : 'ink';
+  s.inkLog = null;
+  const k = q.get('k');
+  const inkDoc = k ? decodeInk(decompressFromEncodedURIComponent(k)) : null;
+  if (k && inkDoc) {
+    s.inkLog = decompressFromEncodedURIComponent(k);
+    s.text = inkText(inkDoc);
+    s.sample = null;
+  } else if (t != null) {
     const text = decompressFromEncodedURIComponent(t);
-    if (text != null) s.text = text.slice(0, 20000);
+    if (text != null) { s.text = text.slice(0, 20000); s.sample = null; }
+  } else if (named) {
+    s.text = named.text;
+    s.sample = named.id;
   } else if (seed) {
-    s.text = base.text;
+    // no letter named (a link from before sample letters): the seed picks it, always the same
+    const pick = sampleForSeed(s.seed, s.style);
+    s.text = pick?.text ?? DEFAULT_TEXT;
+    s.sample = pick?.id ?? null;
   }
+  const re = (q.get('re') || '').split('~');
+  s.replyTo = re.length === 4 && sampleById(re[0]) && re[1] && getStyle(re[2]) && PAPERS.some((x) => x.id === re[3])
+    ? { id: re[0], seed: re[1].slice(0, 64), style: re[2], paper: re[3] as PaperId }
+    : null;
   s.marks = decodeMarks(q.get('m'), s.text.length);
   s.signed = q.get('sig') === '1';
   s.reader = q.get('read') === '1';

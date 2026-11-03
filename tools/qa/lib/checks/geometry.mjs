@@ -5,6 +5,8 @@
 //  - i / j have a dot, separate from the stem; other dotted punctuation has the expected number of dots
 //  - script: each letter's exit lands on the next letter (gap distribution, in pen widths)
 //  - layout keeps glyphs inside maxWidth
+//  - style dimensions never break a letter: in context (word starts, ends, joins, lifts), no visible letter keeps
+//    less than 40% of the ink it has with every dimension at 0, and no new specks (tiny strokes touching nothing) appear
 
 import { KERNEL } from '../charsets.mjs';
 import { GEOM, RENDER, NARROW_WIDTH, TEXTS, PARAGRAPH, statSeeds } from '../config.mjs';
@@ -208,6 +210,53 @@ export async function run(ctx) {
       if (!e) seen.set(k, { ...iss, n: 1 }); else { e.n++; if (iss.amt > e.amt) { e.amt = iss.amt; e.msg = iss.msg; } }
     }
     for (const v of seen.values()) problems.push({ level: v.level, key: v.key, count: v.n, msg: v.msg + (v.n > 1 ? ` (worst of ${v.n} seeds)` : '') });
+  }
+
+  // ---------- style dimensions: bugs only (ugly is allowed, broken letters are not) ----------
+  // Every tradition (style), each letter in word context, against the same letter with every dimension at 0.
+  if (E.STYLE_NEUTRAL) {
+    const text = (TEXTS.pangram + ' ' + PARAGRAPH.slice(0, 260) + ' ' + TEXTS.caps + ' bookkeeper committee minimum quite little').split(/\s+/);
+    const inkOf = (g) => g.strokes.filter((st) => !st.dot).reduce((n, st) => { let L = 0; for (let i = 1; i < st.center.length; i++) L += Math.hypot(st.center[i][0] - st.center[i - 1][0], st.center[i][1] - st.center[i - 1][1]); return n + L; }, 0);
+    // a speck: a short stroke that touches no other stroke (a short piece of one continuous movement, where the
+    // pen model splits a stroke at a cusp, is ink like any other)
+    const specks = (g, xh) => {
+      const body = g.strokes.filter((st) => !st.dot && !st.mark);
+      return body.filter((st) => {
+        let L = 0; for (let i = 1; i < st.center.length; i++) L += Math.hypot(st.center[i][0] - st.center[i - 1][0], st.center[i][1] - st.center[i - 1][1]);
+        if (!(st.center.length <= 3 || L < 0.06 * xh)) return false;
+        const ends = [st.center[0], st.center[st.center.length - 1]];
+        return !body.some((o) => o !== st && o.center.some((q) => ends.some((e) => Math.hypot(q[0] - e[0], q[1] - e[1]) < 0.12 * xh)));
+      }).length;
+    };
+    const lost = [], speck = [];
+    let checked = 0;
+    for (const style of E.styleNames()) {
+      for (const seed of statSeeds(24).slice(0, 12)) {
+        let p;
+        try { p = E.makeHand(seed, { style }); } catch { p = E.makeHand(seed, style); }
+        if (p.style !== style) continue;
+        const p0 = E.withOverrides(p, E.STYLE_NEUTRAL);
+        const xh = p.xHeight * CAP;
+        for (const word of text) {
+          const chars = [...word];
+          chars.forEach((ch, i) => {
+            if (!/^\p{L}$/u.test(ch) || !E.has(p, ch)) return;
+            const ctx = { prev: chars[i - 1] || null, next: chars[i + 1] || null, index: i, wordStart: i === 0, wordEnd: i === chars.length - 1 };
+            const g = E.makeGlyph(p, ch, null, ctx), g0 = E.makeGlyph(p0, ch, null, ctx);
+            checked++;
+            const a = inkOf(g), b = inkOf(g0);
+            const tag = `${seed} '${ch}' in "${word}"`;
+            if (b > 0 && a < 0.4 * b) lost.push(`${tag} keeps ${Math.round(a / b * 100)}% of its ink`);
+            const n = specks(g, xh), n0 = specks(g0, xh);
+            if (n > n0) speck.push(`${tag} has ${n - n0} new speck${n - n0 > 1 ? 's' : ''}`);
+          });
+        }
+      }
+    }
+    lines.push(`style dimensions: ${checked} letters in context across ${E.styleNames().length} traditions · letters that lost > 60% of their ink: ${lost.length} · new specks: ${speck.length}`);
+    const list = (arr, n = 6) => arr.slice(0, n).join('; ') + (arr.length > n ? ` … (+${arr.length - n})` : '');
+    if (lost.length) problems.push({ level: 'fail', key: 'dims:ink-lost', count: lost.length, msg: `style dimensions broke ${lost.length} letters (ink lost): ${list(lost)}` });
+    if (speck.length) problems.push({ level: 'fail', key: 'dims:specks', count: speck.length, msg: `style dimensions left specks in ${speck.length} letters: ${list(speck)}` });
   }
   return { id: 'geometry', title: 'Geometry sanity', lines, problems, data };
 }

@@ -3,6 +3,7 @@ import { PenLine, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SheetView } from '@/components/SheetView';
 import { LiveSheets } from '@/components/LiveSheets';
+import { CAN_PLAY, ReaderSheets } from '@/components/ReaderSheets';
 import type { Live } from '@/lib/live';
 import type { PaperSpec } from '@/lib/papers';
 import { GLYPH_STRIDE, type WriteResult } from '@/lib/write-protocol';
@@ -24,12 +25,15 @@ interface Props {
  * and on open the letter is written in front of the recipient at about 3x, tap to finish.
  */
 export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWriteYourOwn }: Props) {
-  const [token, setToken] = useState(0);
+  // the writing plays as soon as it's there, and again on Replay
+  const [token, setToken] = useState(1);
   const [finish, setFinish] = useState(0);
-  // play once the writing has arrived, and again on Replay
+  // any key finishes the writing too
   useEffect(() => {
-    if ((writing || live) && token === 0) setToken(1);
-  }, [writing, live, token]);
+    const on = (e: KeyboardEvent) => { if (!e.metaKey && !e.ctrlKey && !e.altKey) setFinish((n) => n + 1); };
+    window.addEventListener('keydown', on);
+    return () => window.removeEventListener('keydown', on);
+  }, []);
 
   // pace: about 3x a real hand, between 2.5 and 6.5 seconds for the whole letter, sheets in turn
   const plan = useMemo(() => {
@@ -49,7 +53,11 @@ export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWr
 
   return (
     <>
-      {live ? (
+      {live && CAN_PLAY ? (
+        <div className="flex flex-col items-center" onClick={() => setFinish((n) => n + 1)}>
+          <ReaderSheets live={live.live} extras={live.extras} inkKey={live.inkKey} ink={ink} pxPerMm={pxPerMm} gapPx={gap} token={token} finishToken={finish} />
+        </div>
+      ) : live ? (
         <div className="flex flex-col items-center">
           <LiveSheets
             key={token}
@@ -73,8 +81,6 @@ export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWr
             pxPerMm={pxPerMm}
             svg={svg}
             ink={writing ? writing.inkColor : ink}
-            handKey={writing ? writing.handKey : ''}
-            intro={false}
             index={i}
             count={all.length}
             play={token > 0 ? plan[i] : null}

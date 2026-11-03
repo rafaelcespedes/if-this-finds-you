@@ -6,7 +6,7 @@
 // The JPEG uses the very same SVG, drawn larger, so the download matches the screen exactly
 // (the engine's ink filter depends on the drawing scale, so re-rendering at another size would not).
 // Ink colour is `currentColor`, so changing ink is instant and needs no re-render.
-import { contoursToD, renderSVG, UPM, type Hand } from '@engine';
+import { contoursToD, layout, renderSVG, UPM, type Hand } from '@engine';
 import type { Sheet } from './compose';
 
 export const REF_PX_PER_MM = 4;
@@ -84,9 +84,24 @@ export async function rasterizeWriting(svg: string, w: number, h: number, ink: s
   }
 }
 
-/** A small one-line SVG of some text in a hand (used for the writer's signature). */
-export function inlineSVG(p: Hand, items: Sheet['items'], widthU: number, heightU: number, emPx: number, uid: string) {
+/**
+ * A small one-line SVG of some text in a hand (the writer's signature, picker samples), tight to the writing.
+ * Layout places a line the way a page would (indent, a wandering baseline), so the words are moved back to
+ * the left edge and onto one baseline here. `ink`: 'currentColor', an engine ink key, or undefined (the pen's own).
+ */
+export function inlineSVG(p: Hand, text: string, emPx: number, uid: string, ink: string | undefined = 'currentColor') {
+  const first = 0.92 * UPM;
+  const page = layout(p, text, { maxWidth: 60 * UPM, firstBaseline: first, lineHeight: 1.6 * UPM });
+  if (!page.items.length) return '';
+  let left = Infinity, right = -Infinity;
+  for (const it of page.items) {
+    left = Math.min(left, it.x);
+    right = Math.max(right, it.x + (it.kind === 'glyph' ? it.g.advance : 560));
+  }
+  const dx = 60 - left;
+  const dy = first - page.items[0].y;
+  const items = page.items.map((it) => ({ ...it, x: it.x + dx, y: it.y + dy }));
   const sc = emPx / UPM;
-  const svg = renderSVG(p, { items, height: heightU }, { width: Math.ceil(widthU * sc), emPx, ink: 'currentColor' });
+  const svg = renderSVG(p, { items, height: first + 0.42 * UPM }, { width: Math.ceil((right - left + 220) * sc), emPx, ink });
   return scopeIds(svg, uid);
 }

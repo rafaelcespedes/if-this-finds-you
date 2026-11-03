@@ -23,6 +23,8 @@ export interface WriteRequest {
   writerName?: string;
   /** for the screen only: when the note is empty, this is written faintly in graphite on line 1 */
   placeholder?: string;
+  /** Ink mode: the letter's ink log (lib/ink.ts encodeInk); the page is replayed from it */
+  ink?: string | null;
 }
 
 /** Floats per laid-out character in `WriteResult.glyphs`: text offset, sheet, x, y, advance, line, kind (1 glyph, 0 missing). */
@@ -39,7 +41,9 @@ export interface WriteResult {
   emMm: number;
   lineMm: number;
   firstMm: number;
-  perPage: number;
+  /** the first line of each sheet, and how far up (font units) each sheet's lines were moved */
+  breaks: number[];
+  shifts: number[];
   unitsPerMm: number;
   /** one entry per written character of the text (extra ink such as struck words is left out) */
   glyphs: Float32Array;
@@ -47,6 +51,13 @@ export interface WriteResult {
   summary?: string;
   /** the text this was written from (positions map onto it) */
   text: string;
+  /** the look it was written in (lib/request.ts lookOf) */
+  look: string;
+  /** only the first sheet is written yet (a long letter: the rest follows in the same request's next result);
+   * the other sheets are '' for now */
+  partial?: boolean;
+  /** the request it answers, as JSON (set on the main thread; the cache key) */
+  key?: string;
   /** one word space, font units */
   spaceU: number;
   /** writing area left edge on the sheet, font units */

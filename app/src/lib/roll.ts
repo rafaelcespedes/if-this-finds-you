@@ -14,6 +14,7 @@ import { PAPERS, type PaperId } from './papers';
 import { PEN_CHOICES, PENS_LIVE } from './pens';
 import { SIZE_RANGE, type NoteState } from './state';
 import { clamp } from './utils';
+import { sampleForSeed } from './samples';
 
 export type LockKey = 'pen' | 'ink' | 'paper';
 
@@ -38,7 +39,7 @@ function pick<T>(list: Weighted<T>): T {
 
 // how often each thing turns up (est.: everyday paper and blue/black inks are the common case)
 const PAPER_WEIGHTS: Record<PaperId, number> = { plain: 18, laid: 13, college: 14, seyes: 11, feint: 12, squared: 10, dots: 12, postcard: 8 };
-const PEN_WEIGHTS: Record<string, number> = { auto: 18, ballpoint: 26, gel: 16, fountain: 18, felt: 10, pencil: 10 };
+const PEN_WEIGHTS: Record<string, number> = { auto: 18, ballpoint: 26, gel: 16, fountain: 18, pointed: 5, italic: 5, felt: 10, pencil: 10 };
 const INK_WEIGHTS: Record<string, number> = { [AUTO_INK]: 28, 'blue-black': 18, 'royal-blue': 14, 'ballpoint-blue': 14, black: 18, sepia: 7, 'iron-gall': 6, red: 3, green: 3 };
 const TIP_WEIGHTS: Weighted<PenSize> = [['fine', 28], ['medium', 50], ['bold', 22]];
 
@@ -110,4 +111,29 @@ function rollOffsets(natural: Hand, style: string, o: { scale: number; wild: boo
     if (Math.abs(off) > span * 0.004) offsets[c.key] = +off.toFixed(4);
   }
   return offsets;
+}
+
+/**
+ * New hand, and while the note is still a sample letter, the new seed's letter too (lib/samples.ts): before
+ * anyone writes, every hand comes with its own text. Once the text is yours, only the look changes.
+ */
+export function rollHand(s: NoteState, opts: { variety: number; locked: Set<LockKey>; avoid?: ReadonlySet<string> }): Partial<NoteState> {
+  const look = rollLook(s, opts);
+  if (!s.sample) return look;
+  const next = sampleForSeed(look.seed ?? s.seed, look.style ?? s.style, withCurrent(opts.avoid, s.sample));
+  return next ? { ...look, sample: next.id, text: next.text, marks: [] } : look;
+}
+
+/** A sibling (or any new seed) on an untouched sample letter brings that seed's letter. */
+export function withSample(s: NoteState, look: Partial<NoteState>, avoid?: ReadonlySet<string>): Partial<NoteState> {
+  if (!s.sample) return look;
+  const next = sampleForSeed(look.seed ?? s.seed, look.style ?? s.style, withCurrent(avoid, s.sample));
+  return next ? { ...look, sample: next.id, text: next.text, marks: [] } : look;
+}
+
+/** the letters to steer clear of: the ones just shown, and the one on the page now */
+function withCurrent(avoid: ReadonlySet<string> | undefined, current: string | null) {
+  const out = new Set(avoid ?? []);
+  if (current) out.add(current);
+  return out;
 }

@@ -9,7 +9,8 @@
   "region": "United States",
   "language": "English",
   "era": "1915",
-  "legibility": "modern"
+  "legibility": "modern",
+  "schooling": "american"
  },
  "source": {
   "manifest": "palmer-1915",
@@ -33,7 +34,7 @@
   "join": 0.5,
   "slant": {
    "source": 30,
-   "target": 18
+   "target": 22
   },
   "descRatio": 0.41,
   "maxDepth": 0.4,
@@ -677,10 +678,7 @@
     1169,
     2974,
     1225
-   ],
-   "tags": {
-    "allograph": "m.3"
-   }
+   ]
   },
   {
    "ch": "o",

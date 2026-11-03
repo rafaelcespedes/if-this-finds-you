@@ -10,7 +10,8 @@
   "language": "German",
   "era": "1915–1941",
   "legibility": "modern",
-  "notes": "Upright, round, monoline (ball-point nib), proportions near 1:1:1. Taught alongside the Kurrent form; this is the Latin one, readable today."
+  "notes": "Upright, round, monoline (ball-point nib), proportions near 1:1:1. Taught alongside the Kurrent form; this is the Latin one, readable today.",
+  "schooling": "continental"
  },
  "source": {
   "manifest": "suetterlin-1917",
@@ -39,7 +40,7 @@
    "target": 0
   },
   "descRatio": 0.41,
-  "maxDepth": 0.4,
+  "maxDepth": 0.33,
   "maxDepthLower": 1.0,
   "lowerTop": 1.08
  },

@@ -25,5 +25,16 @@ function report() {
   return out;
 }
 
-export const perf = { time, report, samples, clear: () => samples.splice(0) };
+/** A look change asked for (New hand, Similar, a swatch): timed until its writing is in the page. */
+let lookAt: { t: number; ahead: boolean } | null = null;
+function lookAsked(ahead: boolean) {
+  lookAt = { t: performance.now(), ahead };
+}
+function lookShown() {
+  if (!lookAt) return;
+  samples.push({ name: lookAt.ahead ? 'click→new hand (written ahead)' : 'click→new hand', ms: performance.now() - lookAt.t });
+  lookAt = null;
+}
+
+export const perf = { time, report, samples, clear: () => samples.splice(0), lookAsked, lookShown };
 (window as unknown as { __seedhandPerf: typeof perf }).__seedhandPerf = perf;

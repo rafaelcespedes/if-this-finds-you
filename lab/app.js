@@ -80,7 +80,7 @@ function syncControls() {
   const p = params();
   for (const d of E.PARAMS) {
     const el = $('c-' + d.key); if (!el) continue;
-    const v = p[d.key] ?? (typeof d.default === 'function' ? d.default(p) : d.default);
+    const v = p[d.key] ?? (typeof d.default === 'function' ? d.default(p) : d.natural ? d.natural(p) : d.default);
     el.value = v;
     if (d.type !== 'select') $('o-' + d.key).textContent = fmt(d, v);
   }
@@ -109,7 +109,7 @@ function renderLive() {
   const ruled = state.paper === 'ruled';
   // plain paper: the hand's own line spacing; ruled: notebook rules a little roomier than the hand needs
   const paper = ruled ? { ruled, lineHeight: Math.max(1.2 * E.UPM, 1.05 * E.pageMetrics(p).pitch), firstBaseline: 1.1 * E.UPM } : {};
-  const page = E.layout(p, $('text').value, Object.assign({ maxWidth: W / (EM_PX / E.UPM) }, paper));
+  const page = labLayout(p, $('text').value, Object.assign({ maxWidth: W / (EM_PX / E.UPM) }, paper));
   noteMisses(page.misses);
   stopWriting();
   host.innerHTML = E.renderSVG(p, page, { width: W, emPx: EM_PX, strokeIds: true, rules: ruled });
@@ -188,7 +188,7 @@ function renderLiveInk(host, W) {
   const t0 = performance.now();
   const ruled = state.paper === 'ruled';
   const paperOpts = ruled ? { ruled, lineHeight: Math.max(1.2 * E.UPM, 1.05 * E.pageMetrics(p).pitch), firstBaseline: 1.1 * E.UPM } : {};
-  const page = E.layout(p, $('text').value, Object.assign({ maxWidth: paneW / (EM_PX / E.UPM) }, paperOpts));
+  const page = labLayout(p, $('text').value, Object.assign({ maxWidth: paneW / (EM_PX / E.UPM) }, paperOpts));
   ink.layoutMs = performance.now() - t0;
   noteMisses(page.misses);
   stopWriting();
@@ -256,6 +256,160 @@ function hashCanvas(cv) {
   let h = 0x811c9dc5;
   for (let i = 0; i < d.length; i++) { h ^= d[i]; h = Math.imul(h, 16777619); }
   return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+// ---------- the journey: the writer's own mistakes and corrections (engine/corrections.js) ----------
+// "Show journey" writes the text as a draft: slips written over, words struck and rewritten, a word
+// added above the line. The Mistakes slider (Journey group, from E.PARAMS) sets how many.
+const journey = { on: q.get('journey') === '1', last: null };
+function buildJourneyControls() {
+  let g = [...document.querySelectorAll('#controls .group')].find((el) => el.firstChild && el.firstChild.textContent === 'Journey');
+  if (!g) { g = document.createElement('div'); g.className = 'group'; g.innerHTML = '<div class="label">Journey</div>'; $('controls').appendChild(g); }
+  const row = document.createElement('label');
+  row.className = 'check';
+  row.innerHTML = '<input type="checkbox" id="journeyOn"> Show journey (the draft, with its corrections)';
+  g.insertBefore(row, g.children[1]);
+  const info = document.createElement('p');
+  info.className = 'hint'; info.id = 'journeyInfo';
+  g.appendChild(info);
+  const box = $('journeyOn');
+  box.checked = journey.on;
+  box.addEventListener('change', () => { journey.on = box.checked; render(); });
+}
+// the page the live view draws: the plain fair copy, or this writer's draft
+function labLayout(p, text, opts) {
+  const info = $('journeyInfo');
+  if (!journey.on) { journey.last = null; if (info) info.textContent = 'Off: a clean fair copy.'; return E.layout(p, text, opts); }
+  const j = E.writeWithJourney(p, text, opts);
+  journey.last = j;
+  if (info) info.textContent = (j.summary || 'No corrections this time.') + (j.ok ? '' : ' (log does not replay!)');
+  console.info('[seedhand] journey: ' + j.transcript);
+  return j.page;
+}
+// QA: one letter written by many writers, each with their own little journey (click to close)
+function journeySheet({ text = $('text').value, seeds = ['quiet-heron-17', 'maple-river-42', 'amber-comet-63', 'salt-meadow-21', 'velvet-fable-88', 'north-moth-22',
+  'ink-atlas-78', 'olive-tide-33', 'ember-lantern-91', 'linen-river-14', 'copper-willow-55', 'fern-quill-30'], styles = ['script', 'print'], cols = 3, emPx = 30, cellW = 460, amount, overrides = {} } = {}) {
+  let o = document.getElementById('journeysheet');
+  if (o) o.remove();
+  o = document.createElement('div');
+  o.id = 'journeysheet';
+  o.style.cssText = 'position:fixed;inset:0;z-index:99;overflow:auto;background:#e9e6df;padding:10px;display:grid;gap:10px;' +
+    `grid-template-columns:repeat(${cols}, ${cellW}px);font:11px/1.35 ui-sans-serif,sans-serif;color:#555;align-items:start`;
+  o.addEventListener('click', () => o.remove());
+  seeds.forEach((sd, i) => {
+    const style = styles[i % styles.length];
+    const p = E.withOverrides(E.makeHand(sd, style), overrides);
+    const j = E.writeWithJourney(p, text, { maxWidth: (cellW - 24) / (emPx / E.UPM), lineHeight: LINE * E.UPM, firstBaseline: 0.95 * E.UPM }, { amount });
+    const cell = document.createElement('div');
+    cell.style.cssText = 'background:#fffdf8;border-radius:4px;padding:10px 12px';
+    const cv = document.createElement('canvas');
+    E.renderCanvas(cv, p, j.page, { width: cellW - 24, emPx, dpr: 2, paper: { preset: 'plain', color: LAB_PAPER }, style: false });
+    cv.style.width = (cellW - 24) + 'px'; cv.style.height = (cv.height / 2) + 'px';
+    cell.appendChild(cv);
+    const cap = document.createElement('div');
+    cap.textContent = `${sd} · ${style} · ${E.getPen(p).key} · mistakes ${Math.round(j.amount * 100)}% · ${j.summary || 'clean'}`;
+    cell.appendChild(cap);
+    o.appendChild(cell);
+  });
+  document.body.appendChild(o);
+}
+
+// ---------- Ink mode: typing that behaves like ink (engine/sheet.js) ----------
+// Preview → Ink. The text box becomes the pen: what's already written stays written. Backspace on ink at
+// the end gets crossed out (or written over) the writer's way; typing in the middle goes above the line
+// with a caret; select + delete strikes; select all + delete takes a fresh sheet. The pen trails your
+// typing a little (Forgiving), so quick fixes never reach the paper.
+const inkm = { st: null, doc: null, view: null, sig: '', value: '', kind: 'type', timer: 0, last: 0, lastKey: 0, forgiving: true, lastEventAt: 0 };
+function buildInkBench() {
+  $('mode').insertAdjacentHTML('beforeend', '<button data-v="ink">Ink<small>what’s written stays</small></button>');
+  const g = document.createElement('div');
+  g.className = 'group hidden'; g.id = 'inkGroup';
+  g.innerHTML = `<div class="label">Ink</div>
+    <label class="check"><input type="checkbox" id="inkForgiving" checked> Forgiving (the pen trails a little)</label>
+    <div class="row2"><button id="inkFair">Make a fair copy</button><button id="inkPS">Add a P.S.</button><button id="inkUndo">Undo (while the ink is wet)</button><button id="inkNew">Start again</button></div>
+    <p class="hint" id="inkInfo"></p>`;
+  $('mode').parentNode.after(g);
+  $('inkForgiving').addEventListener('change', (e) => { inkm.forgiving = e.target.checked; });
+  $('inkFair').addEventListener('click', () => { inkFlush(); E.apply(inkm.st, E.fairCopy(inkm.st)); inkSync(); });
+  $('inkPS').addEventListener('click', () => { inkFlush(); E.apply(inkm.st, E.postScript(inkm.st)); inkSync(); $('text').focus(); });
+  $('inkUndo').addEventListener('click', () => {
+    if (performance.now() - inkm.lastEventAt > 3000 || !inkm.doc.log.length) { $('inkInfo').textContent = 'The ink is dry. Cross it out, or start a fresh sheet.'; return; }
+    inkm.st = E.dropLast(inkm.st); inkSync();
+  });
+  $('inkNew').addEventListener('click', () => { inkm.doc = null; inkStart(); });
+  const ta = $('text');
+  ta.addEventListener('beforeinput', (e) => {
+    const t = e.inputType || '';
+    inkm.kind = t.startsWith('delete') ? (t === 'deleteByCut' ? 'cut' : 'delete') : t === 'insertFromPaste' ? 'paste' : t === 'insertReplacementText' ? 'replace' : t.startsWith('insertComposition') ? 'compose' : 'type';
+  });
+  ta.addEventListener('input', () => { if (state.mode === 'ink') inkInput(); });
+}
+const inkParams = () => params();
+const inkOpts = () => ({ maxWidth: Math.max(280, $('live').clientWidth || 800) / (EM_PX / E.UPM), lineHeight: LINE * E.UPM, ruled: state.paper === 'ruled', firstBaseline: 0.95 * E.UPM });
+// enter Ink: the text that's in the box is already written; from now on, edits are ink
+function inkStart() {
+  const p = inkParams();
+  inkm.doc = E.newInkDoc({ seed: state.seed, style: state.style, overrides: state.overrides, salt: 'lab' });
+  inkm.st = E.replay(p, inkm.doc, inkOpts());
+  inkm.view = E.newView();
+  const r = E.plan(inkm.st, inkm.view, { at: 0, del: 0, ins: $('text').value, kind: 'paste' });
+  E.apply(inkm.st, r.events); inkm.view = r.view;
+  inkFlush();
+  inkm.sig = inkSig();
+  inkm.value = $('text').value;
+  clearInterval(inkm.timer);
+  inkm.last = performance.now();
+  inkm.timer = setInterval(inkTick, 120);
+}
+const inkSig = () => JSON.stringify([state.seed, state.style, state.overrides, state.paper, Math.round(inkOpts().maxWidth)]);
+function inkFlush() { const r = E.penStep(inkm.st, inkm.view, { final: true }); E.apply(inkm.st, r.events); inkm.view = r.view; if (r.events.length) inkm.lastEventAt = performance.now(); }
+function inkInput() {
+  const ta = $('text'), now = ta.value, old = inkm.value;
+  if (now === old) return;
+  let a = 0; while (a < old.length && a < now.length && old[a] === now[a]) a++;
+  let b = 0; while (b < old.length - a && b < now.length - a && old[old.length - 1 - b] === now[now.length - 1 - b]) b++;
+  const edit = { at: a, del: old.length - a - b, ins: now.slice(a, now.length - b), kind: inkm.kind, t: performance.now() };
+  const r = E.plan(inkm.st, inkm.view, edit);
+  E.apply(inkm.st, r.events); inkm.view = r.view;
+  if (r.events.length) inkm.lastEventAt = performance.now();
+  inkm.lastKey = performance.now();
+  inkSync(true);
+}
+function inkTick() {
+  if (state.mode !== 'ink' || !inkm.st) return;
+  const t = performance.now(), dt = t - inkm.last; inkm.last = t;
+  const r = E.penStep(inkm.st, inkm.view, { dt, idle: t - inkm.lastKey, forgiving: inkm.forgiving });
+  if (r.events.length) { E.apply(inkm.st, r.events); inkm.lastEventAt = t; }
+  const changed = r.events.length || JSON.stringify(r.view) !== JSON.stringify(inkm.view);
+  inkm.view = r.view;
+  if (changed) inkSync(true);
+}
+// keep the text box on the engine's view of the text (logical text + what the pen hasn't reached)
+function inkSync(keepCaret) {
+  const ta = $('text'), want = E.viewText(inkm.st, inkm.view);
+  if (ta.value !== want) {
+    const s0 = ta.selectionStart, s1 = ta.selectionEnd;
+    ta.value = want;
+    if (keepCaret) ta.setSelectionRange(Math.min(s0, want.length), Math.min(s1, want.length));
+  }
+  inkm.value = want;
+  render();
+}
+function renderInkMode() {
+  $('live').classList.remove('hidden');
+  $('fontView').classList.add('hidden');
+  $('caltWrap').classList.add('hidden');
+  $('inkGroup').classList.remove('hidden');
+  if (!inkm.doc) inkStart();
+  if (inkSig() !== inkm.sig) { inkm.st = E.replay(inkParams(), inkm.doc, inkOpts()); inkm.sig = inkSig(); }
+  const st = inkm.st, host = $('live');
+  const W = Math.max(280, host.clientWidth || 800);
+  stopWriting();
+  host.innerHTML = E.renderSVG(st.p, st.page, { width: W, emPx: EM_PX, strokeIds: true, rules: state.paper === 'ruled' });
+  state.page = st.page;
+  const v = inkm.view, waiting = v.tail.length + (v.mid ? v.mid.text.length : 0);
+  $('tag').textContent = `INK · sheet ${st.page.sheet + 1} · ${inkm.doc.log.length} events · ` + (v.pending ? 'the pen hovers…' : waiting ? `${waiting} to write` : 'all written');
+  $('inkInfo').textContent = (E.inkSummary(st) || 'No corrections yet.') + ' — ' + E.transcription(st).replace(/\n+/g, ' ¶ ').slice(-160);
 }
 
 // ---------- glyph sheet: the 3 samples per letter that go into the font ----------
@@ -330,6 +484,8 @@ let raf = 0;
 function render() {
   cancelAnimationFrame(raf);
   raf = requestAnimationFrame(() => {
+    if (state.mode === 'ink') { renderInkMode(); renderSheet(); return; } // Ink mode draws its own sheet
+    if ($('inkGroup')) $('inkGroup').classList.add('hidden');
     const live = state.mode === 'live';
     $('live').classList.toggle('hidden', !live);
     $('fontView').classList.toggle('hidden', live);
@@ -385,6 +541,8 @@ function init() {
   buildStyleSwitch();
   buildControls();
   buildInkControls();
+  buildJourneyControls();
+  buildInkBench();
   $('text').value = DEFAULT_TEXT;
   $('seed').value = state.seed;
   const syncStyle = seg('style', 'style', () => { state.hand = E.makeHand(state.seed, state.style); syncControls(); invalidateFont(); writeHash(); render(); });
@@ -420,4 +578,4 @@ function init() {
 }
 try { init(); } catch (e) { err(e); }
 // exposed for debugging and QA
-window.Seedhand = { state, params, ensureFont, missLog, engine: E, ink, hashCanvas, penSheet, benchInk };
+window.Seedhand = { state, params, ensureFont, missLog, engine: E, ink, hashCanvas, penSheet, benchInk, journey, journeySheet, inkm };

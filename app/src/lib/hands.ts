@@ -1,6 +1,7 @@
 // Hands as fictional writers: word seeds, a name derived from the seed, plain-word descriptions,
 // and a "new hand" that always lands somewhere clearly different from the current one.
 import { makeHand, rng, styleNames, type Hand } from '@engine';
+import { familyOf } from './styles';
 
 const ADJECTIVES = [
   'quiet', 'amber', 'salt', 'misty', 'lunar', 'velvet', 'cedar', 'honey', 'wild', 'copper', 'olive', 'north',
@@ -66,7 +67,7 @@ export const words = {
 /** One short line about the hand, from its actual params: "A careful script, leaning forward". */
 export function describeHand(p: Hand): string {
   const neat = words.neatness(p.neatness).toLowerCase();
-  const style = p.style === 'script' ? 'script' : 'print';
+  const style = familyOf(String(p.style)) === 'script' ? 'joined hand' : 'print';
   const s = p.slant;
   const lean = s < -2 ? 'leaning back' : s <= 2 ? 'upright' : s <= 9 ? 'with a slight lean' : 'leaning forward';
   const article = /^[aeiou]/.test(neat) ? 'An' : 'A';

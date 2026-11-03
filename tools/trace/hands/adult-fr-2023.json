@@ -1,0 +1,4751 @@
+{
+ "style": "adult-fr-2023",
+ "label": "Everyday French 2023",
+ "family": "print",
+ "connected": false,
+ "fallback": "print",
+ "tradition": {
+  "name": "Present-day adult handwriting, mixed print and cursive",
+  "region": "France",
+  "language": "French",
+  "era": "2022–2023",
+  "legibility": "modern",
+  "notes": "Real volunteers of the CREMMA-Wikipedia project; each letter keeps its writer tag (tags.writer)."
+ },
+ "source": {
+  "manifest": "cremma-wikipedia",
+  "name": "CREMMA-Wikipedia (HTR-United, 2022–23)",
+  "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23; CC BY 4.0",
+  "url": "https://github.com/HTR-United/cremma-wikipedia"
+ },
+ "images": {
+  "batch6-022": {
+   "source": "cremma-wikipedia",
+   "file": "data/batch-06/batch6-022.out.png"
+  },
+  "batch6-047": {
+   "source": "cremma-wikipedia",
+   "file": "data/batch-06/batch6-047.out.png"
+  },
+  "batch6-053": {
+   "source": "cremma-wikipedia",
+   "file": "data/batch-06/batch6-053.out.png"
+  },
+  "batch6-051": {
+   "source": "cremma-wikipedia",
+   "file": "data/batch-06/batch6-051.out.png"
+  },
+  "batch1_08": {
+   "source": "cremma-wikipedia",
+   "file": "data/batch-01/batch1_08.out.png"
+  },
+  "batch2-53": {
+   "source": "cremma-wikipedia",
+   "file": "data/batch-02/batch2-53.out.png"
+  }
+ },
+ "binarize": {
+  "flatten": 61,
+  "bias": 0.04,
+  "minArea": 12,
+  "holes": 10
+ },
+ "skeleton": {},
+ "own": 0.6,
+ "autoJoin": true,
+ "units": {
+  "cap": 200,
+  "xRatio": 0.5,
+  "slant": {
+   "source": 0,
+   "target": 0
+  },
+  "descRatio": 0.36,
+  "maxDepth": 0.4,
+  "maxDepthLower": 0.62,
+  "lowerTop": 1.06,
+  "bearing": 0.06,
+  "maxRise": 0.08,
+  "descender": 0.55
+ },
+ "writers": {
+  "cremma-batch6-022": {
+   "slant": 14.0,
+   "pages": [
+    "batch6-022"
+   ]
+  },
+  "cremma-batch6-047": {
+   "slant": 8.0,
+   "pages": [
+    "batch6-047"
+   ]
+  },
+  "cremma-batch6-053": {
+   "slant": 22.0,
+   "pages": [
+    "batch6-053"
+   ]
+  },
+  "cremma-batch6-051": {
+   "slant": 5.0,
+   "pages": [
+    "batch6-051"
+   ]
+  },
+  "cremma-batch1_08": {
+   "slant": 4.0,
+   "pages": [
+    "batch1_08"
+   ]
+  },
+  "cremma-batch2-53": {
+   "slant": 1.0,
+   "pages": [
+    "batch2-53"
+   ]
+  }
+ },
+ "glyphs": [
+  {
+   "ch": "a",
+   "img": "batch6-022",
+   "box": [
+    2910,
+    4344,
+    2985,
+    4413
+   ],
+   "base": 4403.4,
+   "xH": 53.1,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "a.2"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "c",
+   "img": "batch6-022",
+   "box": [
+    3541,
+    5382,
+    3615,
+    5478
+   ],
+   "base": 5464.0,
+   "xH": 69.6,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "c.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      3618.9,
+      5377
+     ],
+     [
+      3620,
+      5377
+     ],
+     [
+      3620,
+      5483
+     ],
+     [
+      3592.5,
+      5483
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "d",
+   "img": "batch6-022",
+   "box": [
+    3789,
+    5061,
+    3876,
+    5193
+   ],
+   "base": 5185.6,
+   "xH": 58.8,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "d.2"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "e",
+   "img": "batch6-022",
+   "box": [
+    1161,
+    5616,
+    1212,
+    5682
+   ],
+   "base": 5686.1,
+   "xH": 64.0,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "e.1"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "f",
+   "img": "batch6-022",
+   "box": [
+    327,
+    4569,
+    390,
+    4728
+   ],
+   "base": 4717.6,
+   "xH": 56.1,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "f.2"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6,
+   "autoJoin": false
+  },
+  {
+   "ch": "i",
+   "img": "batch6-022",
+   "box": [
+    3153,
+    4305,
+    3202,
+    4404
+   ],
+   "base": 4406.6,
+   "xH": 53.4,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "i.1"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "own": 0.6
+  },
+  {
+   "ch": "l",
+   "img": "batch6-022",
+   "box": [
+    3495,
+    4569,
+    3552,
+    4698
+   ],
+   "base": 4689.0,
+   "xH": 52.5,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "l.2"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "n",
+   "img": "batch6-022",
+   "box": [
+    1143,
+    4374,
+    1215,
+    4440
+   ],
+   "base": 4436.1,
+   "xH": 60.8,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "n.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "o",
+   "img": "batch6-022",
+   "box": [
+    1587,
+    5388,
+    1644,
+    5457
+   ],
+   "base": 5450.4,
+   "xH": 58.5,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "o.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "p",
+   "img": "batch6-022",
+   "box": [
+    1281,
+    4353,
+    1359,
+    4479
+   ],
+   "base": 4430.4,
+   "xH": 60.7,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "p.2"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "r",
+   "img": "batch6-022",
+   "box": [
+    3723,
+    5121,
+    3783,
+    5187
+   ],
+   "base": 5186.4,
+   "xH": 56.3,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "r.3"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "s",
+   "img": "batch6-022",
+   "box": [
+    1230,
+    5619,
+    1272,
+    5697
+   ],
+   "base": 5681.2,
+   "xH": 59.6,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "s.2"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "t",
+   "img": "batch6-022",
+   "box": [
+    4305,
+    5337,
+    4362,
+    5469
+   ],
+   "base": 5451.6,
+   "xH": 66.5,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "t.1"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "u",
+   "img": "batch6-022",
+   "box": [
+    840,
+    4383,
+    921,
+    4458
+   ],
+   "base": 4443.1,
+   "xH": 60.8,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "u.1"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "v",
+   "img": "batch6-022",
+   "box": [
+    1869,
+    4869,
+    1929,
+    4932
+   ],
+   "base": 4926.5,
+   "xH": 52.1,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "v.1"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "H",
+   "img": "batch6-022",
+   "box": [
+    2372,
+    5303,
+    2447,
+    5465
+   ],
+   "base": 5456.7,
+   "xH": 63.1,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "H.print"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      2461.0,
+      5298
+     ],
+     [
+      2452,
+      5298
+     ],
+     [
+      2452,
+      5470
+     ],
+     [
+      2418.1,
+      5470
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "I",
+   "img": "batch6-022",
+   "box": [
+    2823,
+    5559,
+    2955,
+    5673
+   ],
+   "base": 5683.2,
+   "xH": 64.4,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "I.2"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "L",
+   "img": "batch6-022",
+   "box": [
+    195,
+    4287,
+    265,
+    4474
+   ],
+   "base": 4456.4,
+   "xH": 61.2,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "L.print"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      304.5,
+      4282
+     ],
+     [
+      270,
+      4282
+     ],
+     [
+      270,
+      4479
+     ],
+     [
+      255.4,
+      4479
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "M",
+   "img": "batch6-022",
+   "box": [
+    2925,
+    5031,
+    3047,
+    5183
+   ],
+   "base": 5163.2,
+   "xH": 58.6,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "M.cursive"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      3051.9,
+      5026
+     ],
+     [
+      3052,
+      5026
+     ],
+     [
+      3052,
+      5188
+     ],
+     [
+      3011.5,
+      5188
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6,
+   "via": [
+    [
+     [
+      2930,
+      5170
+     ],
+     [
+      2965,
+      5100
+     ],
+     [
+      2996,
+      5035
+     ],
+     [
+      2990,
+      5100
+     ],
+     [
+      2985,
+      5160
+     ],
+     [
+      3010,
+      5110
+     ],
+     [
+      3038,
+      5058
+     ],
+     [
+      3043,
+      5110
+     ],
+     [
+      3046,
+      5163
+     ]
+    ]
+   ]
+  },
+  {
+   "ch": "P",
+   "img": "batch6-022",
+   "box": [
+    1863,
+    4278,
+    1935,
+    4431
+   ],
+   "base": 4423.2,
+   "xH": 65.8,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "P.print"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "S",
+   "img": "batch6-022",
+   "box": [
+    3326,
+    5318,
+    3407,
+    5439
+   ],
+   "base": 5432.0,
+   "xH": 69.4,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "S.print"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      3416.8,
+      5313
+     ],
+     [
+      3412,
+      5313
+     ],
+     [
+      3412,
+      5444
+     ],
+     [
+      3384.2,
+      5444
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "V",
+   "img": "batch6-022",
+   "box": [
+    2694,
+    4836,
+    2760,
+    4932
+   ],
+   "base": 4927.3,
+   "xH": 66.3,
+   "slant": 14.0,
+   "var": "cremma-batch6-022",
+   "tags": {
+    "writer": "cremma-batch6-022",
+    "allograph": "V.print"
+   },
+   "source": {
+    "key": "cremma-batch6-022",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-022 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-022.out.png"
+   },
+   "noDots": true,
+   "own": 0.6,
+   "drop": [
+    1
+   ]
+  },
+  {
+   "ch": "a",
+   "img": "batch6-047",
+   "box": [
+    3612,
+    5970,
+    3690,
+    6078
+   ],
+   "base": 6070.0,
+   "xH": 97.5,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "a.2"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "b",
+   "img": "batch6-047",
+   "box": [
+    2878,
+    5511,
+    3017,
+    5737
+   ],
+   "base": 5723.4,
+   "xH": 68.9,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "b.2"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      3038.8,
+      5506
+     ],
+     [
+      3022,
+      5506
+     ],
+     [
+      3022,
+      5742
+     ],
+     [
+      3005.6,
+      5742
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "c",
+   "img": "batch6-047",
+   "box": [
+    3782,
+    5613,
+    3858,
+    5754
+   ],
+   "base": 5745.0,
+   "xH": 73.6,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "c.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      3868.1,
+      5608
+     ],
+     [
+      3863,
+      5608
+     ],
+     [
+      3863,
+      5759
+     ],
+     [
+      3846.9,
+      5759
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "d",
+   "img": "batch6-047",
+   "box": [
+    1908,
+    5196,
+    2010,
+    5373
+   ],
+   "base": 5367.5,
+   "xH": 80.5,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "d.2"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6,
+   "drop": [
+    2
+   ]
+  },
+  {
+   "ch": "e",
+   "img": "batch6-047",
+   "box": [
+    1125,
+    4989,
+    1176,
+    5076
+   ],
+   "base": 5074.8,
+   "xH": 79.6,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "e.1"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "g",
+   "img": "batch6-047",
+   "box": [
+    2145,
+    5274,
+    2238,
+    5520
+   ],
+   "base": 5446.7,
+   "xH": 80.5,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "g.2"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "l",
+   "img": "batch6-047",
+   "box": [
+    852,
+    5520,
+    903,
+    5736
+   ],
+   "base": 5726.2,
+   "xH": 69.5,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "l.2"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "m",
+   "img": "batch6-047",
+   "box": [
+    2035,
+    4403,
+    2184,
+    4491
+   ],
+   "base": 4479.0,
+   "xH": 66.8,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "m.1"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      2183.7,
+      4398
+     ],
+     [
+      2189,
+      4398
+     ],
+     [
+      2189,
+      4496
+     ],
+     [
+      2170.0,
+      4496
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "o",
+   "img": "batch6-047",
+   "box": [
+    4493,
+    5698,
+    4578,
+    5784
+   ],
+   "base": 5776.9,
+   "xH": 72.1,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "o.1"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      4578.2,
+      5693
+     ],
+     [
+      4583,
+      5693
+     ],
+     [
+      4583,
+      5789
+     ],
+     [
+      4564.7,
+      5789
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "s",
+   "img": "batch6-047",
+   "box": [
+    2742,
+    4401,
+    2790,
+    4497
+   ],
+   "base": 4474.9,
+   "xH": 71.8,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "s.2"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "v",
+   "img": "batch6-047",
+   "box": [
+    3474,
+    4671,
+    3555,
+    4794
+   ],
+   "base": 4783.8,
+   "xH": 99.3,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "v.1"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "y",
+   "img": "batch6-047",
+   "box": [
+    557,
+    5019,
+    667,
+    5189
+   ],
+   "base": 5083.4,
+   "xH": 69.3,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "y.2"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      552,
+      5014
+     ],
+     [
+      565.6,
+      5014
+     ],
+     [
+      540.3,
+      5194
+     ],
+     [
+      552,
+      5194
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "z",
+   "img": "batch6-047",
+   "box": [
+    1656,
+    5314,
+    1783,
+    5531
+   ],
+   "base": 5444.1,
+   "xH": 80.5,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "z.3"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      1651,
+      5309
+     ],
+     [
+      1664.7,
+      5309
+     ],
+     [
+      1632.8,
+      5536
+     ],
+     [
+      1651,
+      5536
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "z",
+   "img": "batch6-047",
+   "box": [
+    3714,
+    5964,
+    3837,
+    6078
+   ],
+   "base": 6072.8,
+   "xH": 97.5,
+   "slant": 8.0,
+   "var": "cremma-batch6-047-b",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "z.1"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "A",
+   "img": "batch6-047",
+   "box": [
+    102,
+    4908,
+    255,
+    5082
+   ],
+   "base": 5062.7,
+   "xH": 69.3,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "A.print"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "D",
+   "img": "batch6-047",
+   "box": [
+    1926,
+    6134,
+    2132,
+    6468
+   ],
+   "base": 6326.0,
+   "xH": 80.5,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "D.print"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      2149.4,
+      6129
+     ],
+     [
+      2137,
+      6129
+     ],
+     [
+      2137,
+      6473
+     ],
+     [
+      2101.0,
+      6473
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6,
+   "erase": [
+    [
+     1900,
+     6338,
+     2140,
+     6480
+    ]
+   ]
+  },
+  {
+   "ch": "E",
+   "img": "batch6-047",
+   "box": [
+    1146,
+    4572,
+    1305,
+    4725
+   ],
+   "base": 4731.5,
+   "xH": 87.1,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "E.print"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "G",
+   "img": "batch6-047",
+   "box": [
+    3848,
+    4611,
+    4007,
+    4810
+   ],
+   "base": 4802.3,
+   "xH": 82.1,
+   "slant": 8.0,
+   "var": "cremma-batch6-047",
+   "tags": {
+    "writer": "cremma-batch6-047",
+    "allograph": "G.print"
+   },
+   "source": {
+    "key": "cremma-batch6-047",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-047 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-047. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-047.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      4024.0,
+      4606
+     ],
+     [
+      4012,
+      4606
+     ],
+     [
+      4012,
+      4815
+     ],
+     [
+      3994.6,
+      4815
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "b",
+   "img": "batch6-053",
+   "box": [
+    2025,
+    5241,
+    2100,
+    5331
+   ],
+   "base": 5327.1,
+   "xH": 42.5,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "b.1"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "c",
+   "img": "batch6-053",
+   "box": [
+    3264,
+    5847,
+    3300,
+    5886
+   ],
+   "base": 5886.9,
+   "xH": 35.8,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "c.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "e",
+   "img": "batch6-053",
+   "box": [
+    687,
+    4569,
+    723,
+    4617
+   ],
+   "base": 4610.2,
+   "xH": 45.2,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "e.1"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "f",
+   "img": "batch6-053",
+   "box": [
+    2494,
+    6199,
+    2577,
+    6327
+   ],
+   "base": 6268.8,
+   "xH": 40.4,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "f.2"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      2578.7,
+      6194
+     ],
+     [
+      2582,
+      6194
+     ],
+     [
+      2582,
+      6332
+     ],
+     [
+      2523.0,
+      6332
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "q",
+   "img": "batch6-053",
+   "box": [
+    3422,
+    6381,
+    3506,
+    6484
+   ],
+   "base": 6421.7,
+   "xH": 46.9,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "q.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      3510.6,
+      6376
+     ],
+     [
+      3511,
+      6376
+     ],
+     [
+      3511,
+      6489
+     ],
+     [
+      3465.0,
+      6489
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "t",
+   "img": "batch6-053",
+   "box": [
+    4428,
+    4677,
+    4485,
+    4761
+   ],
+   "base": 4751.9,
+   "xH": 47.7,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "t.1"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "v",
+   "img": "batch6-053",
+   "box": [
+    3064,
+    6375,
+    3150,
+    6442
+   ],
+   "base": 6427.8,
+   "xH": 47.8,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "v.2"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      3152.2,
+      6370
+     ],
+     [
+      3155,
+      6370
+     ],
+     [
+      3155,
+      6447
+     ],
+     [
+      3121.1,
+      6447
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "F",
+   "img": "batch6-053",
+   "box": [
+    105,
+    5475,
+    216,
+    5565
+   ],
+   "base": 5553.3,
+   "xH": 47.0,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "F.1"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6,
+   "drop": [
+    3
+   ]
+  },
+  {
+   "ch": "I",
+   "img": "batch6-053",
+   "box": [
+    3139,
+    5077,
+    3189,
+    5147
+   ],
+   "base": 5139.8,
+   "xH": 44.8,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "I.cursive"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      3134,
+      5072
+     ],
+     [
+      3164.4,
+      5072
+     ],
+     [
+      3132.1,
+      5152
+     ],
+     [
+      3134,
+      5152
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "P",
+   "img": "batch6-053",
+   "box": [
+    4119,
+    5403,
+    4218,
+    5508
+   ],
+   "base": 5498.7,
+   "xH": 49.1,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "P.cursive"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "U",
+   "img": "batch6-053",
+   "box": [
+    4272,
+    6030,
+    4347,
+    6117
+   ],
+   "base": 6101.0,
+   "xH": 42.4,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "U.cursive"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "4",
+   "img": "batch6-053",
+   "box": [
+    2772,
+    5253,
+    2838,
+    5328
+   ],
+   "base": 5319.7,
+   "xH": 44.0,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "4.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "5",
+   "img": "batch6-053",
+   "box": [
+    1497,
+    4506,
+    1563,
+    4593
+   ],
+   "base": 4587.9,
+   "xH": 44.4,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "5.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "9",
+   "img": "batch6-053",
+   "box": [
+    1692,
+    5061,
+    1770,
+    5148
+   ],
+   "base": 5152.4,
+   "xH": 44.8,
+   "slant": 22.0,
+   "var": "cremma-batch6-053",
+   "tags": {
+    "writer": "cremma-batch6-053",
+    "allograph": "9.2"
+   },
+   "source": {
+    "key": "cremma-batch6-053",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-053 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-053. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-053.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "b",
+   "img": "batch6-051",
+   "box": [
+    801,
+    4347,
+    873,
+    4455
+   ],
+   "base": 4459.6,
+   "xH": 61.1,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "b.2"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "c",
+   "img": "batch6-051",
+   "box": [
+    2556,
+    4386,
+    2616,
+    4452
+   ],
+   "base": 4441.4,
+   "xH": 60.6,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "c.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "d",
+   "img": "batch6-051",
+   "box": [
+    2931,
+    6030,
+    3009,
+    6159
+   ],
+   "base": 6162.1,
+   "xH": 78.5,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "d.2"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "e",
+   "img": "batch6-051",
+   "box": [
+    1473,
+    6633,
+    1524,
+    6702
+   ],
+   "base": 6700.6,
+   "xH": 78.3,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "e.1"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "g",
+   "img": "batch6-051",
+   "box": [
+    3144,
+    4176,
+    3207,
+    4305
+   ],
+   "base": 4243.0,
+   "xH": 68.7,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "g.3"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6,
+   "drop": [
+    1
+   ]
+  },
+  {
+   "ch": "i",
+   "img": "batch6-051",
+   "box": [
+    3342,
+    5761,
+    3390,
+    5913
+   ],
+   "base": 5910.4,
+   "xH": 78.2,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "i.2"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "own": 0.6,
+   "drop": [
+    1
+   ],
+   "add": [
+    [
+     [
+      3359,
+      5806
+     ]
+    ]
+   ],
+   "note": "Coordinator (QA bug fix): this writer dots i with a short dash, which the engine read as a stroke and so drew the i without its dot; written as a dot (the engine draws dots as short slanted ticks)"
+  },
+  {
+   "ch": "j",
+   "img": "batch6-051",
+   "box": [
+    1190,
+    4570,
+    1282,
+    4785
+   ],
+   "base": 4649.3,
+   "xH": 74.1,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "j.2"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "own": 0.6
+  },
+  {
+   "ch": "k",
+   "img": "batch6-051",
+   "box": [
+    486,
+    4149,
+    543,
+    4263
+   ],
+   "base": 4269.2,
+   "xH": 64.4,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "k.3"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "l",
+   "img": "batch6-051",
+   "box": [
+    153,
+    5799,
+    174,
+    5961
+   ],
+   "base": 5949.6,
+   "xH": 72.6,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "l.2"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "m",
+   "img": "batch6-051",
+   "box": [
+    654,
+    5100,
+    780,
+    5178
+   ],
+   "base": 5171.7,
+   "xH": 69.0,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "m.1"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "n",
+   "img": "batch6-051",
+   "box": [
+    3174,
+    4755,
+    3234,
+    4839
+   ],
+   "base": 4834.0,
+   "xH": 74.0,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "n.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "o",
+   "img": "batch6-051",
+   "box": [
+    3087,
+    4764,
+    3147,
+    4839
+   ],
+   "base": 4834.8,
+   "xH": 73.6,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "o.1"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "p",
+   "img": "batch6-051",
+   "box": [
+    3612,
+    4995,
+    3699,
+    5145
+   ],
+   "base": 5085.0,
+   "xH": 86.0,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "p.3"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "q",
+   "img": "batch6-051",
+   "box": [
+    3915,
+    6045,
+    3990,
+    6207
+   ],
+   "base": 6160.5,
+   "xH": 83.3,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "q.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "r",
+   "img": "batch6-051",
+   "box": [
+    2505,
+    4533,
+    2562,
+    4596
+   ],
+   "base": 4593.1,
+   "xH": 65.6,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "r.3"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "s",
+   "img": "batch6-051",
+   "box": [
+    1182,
+    5871,
+    1245,
+    5955
+   ],
+   "base": 5951.6,
+   "xH": 73.0,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "s.2"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "t",
+   "img": "batch6-051",
+   "box": [
+    2784,
+    5766,
+    2844,
+    5910
+   ],
+   "base": 5915.6,
+   "xH": 71.5,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "t.1"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "u",
+   "img": "batch6-051",
+   "box": [
+    1497,
+    4560,
+    1560,
+    4635
+   ],
+   "base": 4638.7,
+   "xH": 73.4,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "u.1"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "v",
+   "img": "batch6-051",
+   "box": [
+    308,
+    4377,
+    384,
+    4467
+   ],
+   "base": 4455.2,
+   "xH": 72.9,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "v.1"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      382.1,
+      4372
+     ],
+     [
+      389,
+      4372
+     ],
+     [
+      389,
+      4472
+     ],
+     [
+      373.4,
+      4472
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "x",
+   "img": "batch6-051",
+   "box": [
+    1953,
+    5037,
+    2019,
+    5130
+   ],
+   "base": 5123.9,
+   "xH": 94.8,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "x.1"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "C",
+   "img": "batch6-051",
+   "box": [
+    1596,
+    5235,
+    1683,
+    5376
+   ],
+   "base": 5367.6,
+   "xH": 71.2,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "C.print"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "F",
+   "img": "batch6-051",
+   "box": [
+    3660,
+    4113,
+    3729,
+    4251
+   ],
+   "base": 4242.0,
+   "xH": 64.8,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "F.print"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6,
+   "via": [
+    [
+     [
+      3722,
+      4132
+     ],
+     [
+      3705,
+      4116
+     ],
+     [
+      3680,
+      4120
+     ],
+     [
+      3663,
+      4150
+     ],
+     [
+      3665,
+      4200
+     ],
+     [
+      3680,
+      4245
+     ]
+    ],
+    [
+     [
+      3668,
+      4195
+     ],
+     [
+      3700,
+      4183
+     ],
+     [
+      3732,
+      4178
+     ]
+    ]
+   ]
+  },
+  {
+   "ch": "L",
+   "img": "batch6-051",
+   "box": [
+    3837,
+    4512,
+    3915,
+    4674
+   ],
+   "base": 4676.2,
+   "xH": 84.3,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "L.print"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "3",
+   "img": "batch6-051",
+   "box": [
+    4296,
+    4962,
+    4365,
+    5115
+   ],
+   "base": 5106.3,
+   "xH": 82.7,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "3.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "5",
+   "img": "batch6-051",
+   "box": [
+    4469,
+    4997,
+    4584,
+    5127
+   ],
+   "base": 5109.3,
+   "xH": 82.7,
+   "slant": 5.0,
+   "var": "cremma-batch6-051",
+   "tags": {
+    "writer": "cremma-batch6-051",
+    "allograph": "5.plain"
+   },
+   "source": {
+    "key": "cremma-batch6-051",
+    "name": "CREMMA-Wikipedia, volunteer copy batch6-051 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch6-051. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-06/batch6-051.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      4464,
+      4992
+     ],
+     [
+      4480.5,
+      4992
+     ],
+     [
+      4468.2,
+      5132
+     ],
+     [
+      4464,
+      5132
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "a",
+   "img": "batch1_08",
+   "box": [
+    1145,
+    1789,
+    1173,
+    1807
+   ],
+   "base": 1804.4,
+   "xH": 16.3,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "a.2"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "c",
+   "img": "batch1_08",
+   "box": [
+    752,
+    1992,
+    774,
+    2020
+   ],
+   "base": 2011.5,
+   "xH": 15.5,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "c.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      773.0,
+      1987
+     ],
+     [
+      779,
+      1987
+     ],
+     [
+      779,
+      2025
+     ],
+     [
+      770.3,
+      2025
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "d",
+   "img": "batch1_08",
+   "box": [
+    674,
+    1708,
+    705,
+    1747
+   ],
+   "base": 1744.5,
+   "xH": 18.1,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "d.2"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "e",
+   "img": "batch1_08",
+   "box": [
+    470,
+    1993,
+    497,
+    2022
+   ],
+   "base": 2019.0,
+   "xH": 17.5,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "e.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      465,
+      1988
+     ],
+     [
+      473.3,
+      1988
+     ],
+     [
+      470.6,
+      2027
+     ],
+     [
+      465,
+      2027
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "f",
+   "img": "batch1_08",
+   "box": [
+    1372,
+    1705,
+    1393,
+    1767
+   ],
+   "base": 1732.5,
+   "xH": 12.0,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "f.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      1390.6,
+      1700
+     ],
+     [
+      1398,
+      1700
+     ],
+     [
+      1398,
+      1772
+     ],
+     [
+      1385.6,
+      1772
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "g",
+   "img": "batch1_08",
+   "box": [
+    190,
+    1923,
+    217,
+    1984
+   ],
+   "base": 1948.0,
+   "xH": 16.7,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "g.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      216.2,
+      1918
+     ],
+     [
+      222,
+      1918
+     ],
+     [
+      222,
+      1989
+     ],
+     [
+      211.3,
+      1989
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "h",
+   "img": "batch1_08",
+   "box": [
+    279,
+    1904,
+    314,
+    1949
+   ],
+   "base": 1945.3,
+   "xH": 16.7,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "h.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      274,
+      1899
+     ],
+     [
+      282.4,
+      1899
+     ],
+     [
+      278.5,
+      1954
+     ],
+     [
+      274,
+      1954
+     ]
+    ],
+    [
+     [
+      314.4,
+      1899
+     ],
+     [
+      319,
+      1899
+     ],
+     [
+      319,
+      1954
+     ],
+     [
+      310.5,
+      1954
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "k",
+   "img": "batch1_08",
+   "box": [
+    1041,
+    1873,
+    1079,
+    1945
+   ],
+   "base": 1941.7,
+   "xH": 19.1,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "k.2"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      1036,
+      1868
+     ],
+     [
+      1047.3,
+      1868
+     ],
+     [
+      1041.6,
+      1950
+     ],
+     [
+      1036,
+      1950
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0,
+   "drop": [
+    2
+   ]
+  },
+  {
+   "ch": "l",
+   "img": "batch1_08",
+   "box": [
+    1057,
+    1766,
+    1075,
+    1808
+   ],
+   "base": 1804.0,
+   "xH": 15.2,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "l.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      1052,
+      1761
+     ],
+     [
+      1061.3,
+      1761
+     ],
+     [
+      1057.7,
+      1813
+     ],
+     [
+      1052,
+      1813
+     ]
+    ],
+    [
+     [
+      1073.3,
+      1761
+     ],
+     [
+      1080,
+      1761
+     ],
+     [
+      1080,
+      1813
+     ],
+     [
+      1069.7,
+      1813
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "m",
+   "img": "batch1_08",
+   "box": [
+    584,
+    1860,
+    631,
+    1893
+   ],
+   "base": 1888.0,
+   "xH": 17.0,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "m.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      630.0,
+      1855
+     ],
+     [
+      636,
+      1855
+     ],
+     [
+      636,
+      1898
+     ],
+     [
+      627.0,
+      1898
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "o",
+   "img": "batch1_08",
+   "box": [
+    806,
+    2071,
+    823,
+    2089
+   ],
+   "base": 2086.0,
+   "xH": 14.6,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "o.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "q",
+   "img": "batch1_08",
+   "box": [
+    478,
+    1782,
+    510,
+    1854
+   ],
+   "base": 1815.0,
+   "xH": 19.9,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "q.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      473,
+      1777
+     ],
+     [
+      482.7,
+      1777
+     ],
+     [
+      476.9,
+      1859
+     ],
+     [
+      473,
+      1859
+     ]
+    ],
+    [
+     [
+      509.7,
+      1777
+     ],
+     [
+      515,
+      1777
+     ],
+     [
+      515,
+      1859
+     ],
+     [
+      503.9,
+      1859
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "r",
+   "img": "batch1_08",
+   "box": [
+    292,
+    1866,
+    316,
+    1891
+   ],
+   "base": 1883.8,
+   "xH": 14.8,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "r.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      315.0,
+      1861
+     ],
+     [
+      321,
+      1861
+     ],
+     [
+      321,
+      1896
+     ],
+     [
+      312.5,
+      1896
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "t",
+   "img": "batch1_08",
+   "box": [
+    825,
+    2045,
+    856,
+    2095
+   ],
+   "base": 2085.5,
+   "xH": 14.6,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "t.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      849.1,
+      2044
+     ],
+     [
+      855,
+      2044
+     ],
+     [
+      855,
+      2098
+     ],
+     [
+      845.3,
+      2098
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6,
+   "manual": [
+    [
+     [
+      839,
+      2052
+     ],
+     [
+      838,
+      2064
+     ],
+     [
+      837,
+      2076
+     ],
+     [
+      839,
+      2085
+     ],
+     [
+      844,
+      2089
+     ],
+     [
+      851,
+      2087
+     ]
+    ],
+    [
+     [
+      829,
+      2069
+     ],
+     [
+      841,
+      2066
+     ],
+     [
+      853,
+      2063
+     ]
+    ]
+   ]
+  },
+  {
+   "ch": "y",
+   "img": "batch1_08",
+   "box": [
+    1166,
+    1916,
+    1204,
+    1974
+   ],
+   "base": 1939.4,
+   "xH": 17.4,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "y.1"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      1148,
+      1898
+     ],
+     [
+      1157.2,
+      1898
+     ],
+     [
+      1151.8,
+      1974
+     ],
+     [
+      1148,
+      1974
+     ]
+    ],
+    [
+     [
+      1188.2,
+      1898
+     ],
+     [
+      1193,
+      1898
+     ],
+     [
+      1193,
+      1974
+     ],
+     [
+      1182.8,
+      1974
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0,
+   "manual": [
+    [
+     [
+      1175,
+      1931
+     ],
+     [
+      1178,
+      1939
+     ],
+     [
+      1182,
+      1942
+     ],
+     [
+      1186,
+      1939
+     ],
+     [
+      1189,
+      1932
+     ],
+     [
+      1192,
+      1929
+     ],
+     [
+      1192,
+      1940
+     ],
+     [
+      1190,
+      1952
+     ],
+     [
+      1188,
+      1962
+     ],
+     [
+      1186,
+      1969
+     ],
+     [
+      1183,
+      1968
+     ],
+     [
+      1182,
+      1961
+     ],
+     [
+      1184,
+      1953
+     ],
+     [
+      1189,
+      1946
+     ],
+     [
+      1196,
+      1941
+     ],
+     [
+      1203,
+      1937
+     ]
+    ]
+   ]
+  },
+  {
+   "ch": "z",
+   "img": "batch1_08",
+   "box": [
+    1362,
+    1919,
+    1401,
+    1977
+   ],
+   "base": 1942.1,
+   "xH": 18.6,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "z.3"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      1357,
+      1914
+     ],
+     [
+      1366.0,
+      1914
+     ],
+     [
+      1361.2,
+      1982
+     ],
+     [
+      1357,
+      1982
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "J",
+   "img": "batch1_08",
+   "box": [
+    38,
+    2135,
+    67,
+    2199
+   ],
+   "base": 2182.8,
+   "xH": 18.5,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "J.cursive"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      64.9,
+      2130
+     ],
+     [
+      72,
+      2130
+     ],
+     [
+      72,
+      2204
+     ],
+     [
+      59.7,
+      2204
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "T",
+   "img": "batch1_08",
+   "box": [
+    34,
+    1645,
+    84,
+    1706
+   ],
+   "base": 1694.0,
+   "xH": 19.0,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "T.cursive"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      58.3,
+      1648
+     ],
+     [
+      65,
+      1648
+     ],
+     [
+      65,
+      1670
+     ],
+     [
+      56.8,
+      1670
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0,
+   "erase": [
+    [
+     66,
+     1668,
+     90,
+     1710
+    ]
+   ]
+  },
+  {
+   "ch": "K",
+   "img": "batch1_08",
+   "box": [
+    1322,
+    1908,
+    1350,
+    1948
+   ],
+   "base": 1943.2,
+   "xH": 20.0,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "K.cursive"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "P",
+   "img": "batch1_08",
+   "box": [
+    919,
+    1901,
+    936,
+    1949
+   ],
+   "base": 1946.0,
+   "xH": 15.6,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "P.cursive"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "R",
+   "img": "batch1_08",
+   "box": [
+    762,
+    1703,
+    785,
+    1738
+   ],
+   "base": 1738.2,
+   "xH": 14.7,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "R.cursive"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "S",
+   "img": "batch1_08",
+   "box": [
+    791,
+    1706,
+    809,
+    1736
+   ],
+   "base": 1737.3,
+   "xH": 14.7,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "S.cursive"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "U",
+   "img": "batch1_08",
+   "box": [
+    733,
+    1705,
+    758,
+    1741
+   ],
+   "base": 1739.2,
+   "xH": 14.7,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "U.cursive"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "V",
+   "img": "batch1_08",
+   "box": [
+    280,
+    1635,
+    305,
+    1681
+   ],
+   "base": 1682.2,
+   "xH": 18.7,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "V.cursive"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "0",
+   "img": "batch1_08",
+   "box": [
+    1191,
+    1857,
+    1212,
+    1880
+   ],
+   "base": 1875.0,
+   "xH": 20.5,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "0.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      1186,
+      1852
+     ],
+     [
+      1192.9,
+      1852
+     ],
+     [
+      1190.6,
+      1885
+     ],
+     [
+      1186,
+      1885
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "1",
+   "img": "batch1_08",
+   "box": [
+    721,
+    1906,
+    747,
+    1946
+   ],
+   "base": 1942.7,
+   "xH": 17.2,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "1.2"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "2",
+   "img": "batch1_08",
+   "box": [
+    533,
+    1907,
+    559,
+    1949
+   ],
+   "base": 1942.5,
+   "xH": 16.8,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "2.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "3",
+   "img": "batch1_08",
+   "box": [
+    1313,
+    1845,
+    1335,
+    1882
+   ],
+   "base": 1878.7,
+   "xH": 19.1,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "3.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "6",
+   "img": "batch1_08",
+   "box": [
+    231,
+    1855,
+    258,
+    1897
+   ],
+   "base": 1894.0,
+   "xH": 15.1,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "6.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "7",
+   "img": "batch1_08",
+   "box": [
+    782,
+    1910,
+    811,
+    1947
+   ],
+   "base": 1942.5,
+   "xH": 17.2,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "7.2"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "8",
+   "img": "batch1_08",
+   "box": [
+    1157,
+    1844,
+    1180,
+    1887
+   ],
+   "base": 1882.0,
+   "xH": 20.5,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "8.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "9",
+   "img": "batch1_08",
+   "box": [
+    750,
+    1908,
+    770,
+    1946
+   ],
+   "base": 1942.6,
+   "xH": 17.2,
+   "slant": 4.0,
+   "var": "cremma-batch1_08",
+   "tags": {
+    "writer": "cremma-batch1_08",
+    "allograph": "9.plain"
+   },
+   "source": {
+    "key": "cremma-batch1_08",
+    "name": "CREMMA-Wikipedia, volunteer copy batch1_08 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch1_08. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-01/batch1_08.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "a",
+   "img": "batch2-53",
+   "box": [
+    948,
+    1786,
+    980,
+    1813
+   ],
+   "base": 1807.7,
+   "xH": 20.0,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "a.2"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "c",
+   "img": "batch2-53",
+   "box": [
+    114,
+    1999,
+    134,
+    2033
+   ],
+   "base": 2028.2,
+   "xH": 19.4,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "c.plain"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      131.6,
+      1994
+     ],
+     [
+      139,
+      1994
+     ],
+     [
+      139,
+      2038
+     ],
+     [
+      130.8,
+      2038
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "d",
+   "img": "batch2-53",
+   "box": [
+    1048,
+    1484,
+    1073,
+    1552
+   ],
+   "base": 1550.1,
+   "xH": 17.0,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "d.2"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "e",
+   "img": "batch2-53",
+   "box": [
+    1162,
+    1531,
+    1182,
+    1551
+   ],
+   "base": 1548.1,
+   "xH": 15.7,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "e.4"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "h",
+   "img": "batch2-53",
+   "box": [
+    1429,
+    1623,
+    1455,
+    1701
+   ],
+   "base": 1698.0,
+   "xH": 18.8,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "h.2"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "i",
+   "img": "batch2-53",
+   "box": [
+    120,
+    1762,
+    134,
+    1810
+   ],
+   "base": 1806.7,
+   "xH": 23.2,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "i.1"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "own": 0.6
+  },
+  {
+   "ch": "n",
+   "img": "batch2-53",
+   "box": [
+    174,
+    1426,
+    188,
+    1448
+   ],
+   "base": 1444.8,
+   "xH": 21.8,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "n.plain"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "q",
+   "img": "batch2-53",
+   "box": [
+    890,
+    1879,
+    916,
+    1940
+   ],
+   "base": 1898.0,
+   "xH": 16.2,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "q.plain"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      914.6,
+      1874
+     ],
+     [
+      921,
+      1874
+     ],
+     [
+      921,
+      1945
+     ],
+     [
+      913.3,
+      1945
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "r",
+   "img": "batch2-53",
+   "box": [
+    1317,
+    1403,
+    1330,
+    1426
+   ],
+   "base": 1419.8,
+   "xH": 19.3,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "r.3"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "s",
+   "img": "batch2-53",
+   "box": [
+    681,
+    1548,
+    696,
+    1574
+   ],
+   "base": 1568.4,
+   "xH": 20.0,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "s.2"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "t",
+   "img": "batch2-53",
+   "box": [
+    1406,
+    1624,
+    1428,
+    1690
+   ],
+   "base": 1686.8,
+   "xH": 18.4,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "t.1"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "u",
+   "img": "batch2-53",
+   "box": [
+    150,
+    1428,
+    170,
+    1453
+   ],
+   "base": 1445.6,
+   "xH": 19.5,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "u.1"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "w",
+   "img": "batch2-53",
+   "box": [
+    1264,
+    1534,
+    1305,
+    1557
+   ],
+   "base": 1549.8,
+   "xH": 15.6,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "w.round"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "w",
+   "img": "batch2-53",
+   "box": [
+    47,
+    1779,
+    88,
+    1811
+   ],
+   "base": 1806.4,
+   "xH": 23.2,
+   "slant": 1.0,
+   "var": "cremma-batch2-53-b",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "w.cursive"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "A",
+   "img": "batch2-53",
+   "box": [
+    813,
+    1646,
+    850,
+    1703
+   ],
+   "base": 1697.7,
+   "xH": 18.3,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "A.print"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "B",
+   "img": "batch2-53",
+   "box": [
+    910,
+    1636,
+    941,
+    1700
+   ],
+   "base": 1696.0,
+   "xH": 18.3,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "B.print"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "C",
+   "img": "batch2-53",
+   "box": [
+    278,
+    1757,
+    313,
+    1813
+   ],
+   "base": 1805.0,
+   "xH": 20.5,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "C.print"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      311.0,
+      1752
+     ],
+     [
+      318,
+      1752
+     ],
+     [
+      318,
+      1818
+     ],
+     [
+      309.8,
+      1818
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "E",
+   "img": "batch2-53",
+   "box": [
+    631,
+    1979,
+    672,
+    2030
+   ],
+   "base": 2027.0,
+   "xH": 18.1,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "E.epsilon"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "H",
+   "img": "batch2-53",
+   "box": [
+    1131,
+    1483,
+    1158,
+    1560
+   ],
+   "base": 1557.0,
+   "xH": 16.2,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "H.print"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "I",
+   "img": "batch2-53",
+   "box": [
+    123,
+    1507,
+    134,
+    1579
+   ],
+   "base": 1569.0,
+   "xH": 17.3,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "I.print"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      132.3,
+      1502
+     ],
+     [
+      139,
+      1502
+     ],
+     [
+      139,
+      1584
+     ],
+     [
+      130.8,
+      1584
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "N",
+   "img": "batch2-53",
+   "box": [
+    737,
+    1512,
+    776,
+    1565
+   ],
+   "base": 1558.8,
+   "xH": 20.0,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "N.print"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "erasePoly": [
+    [
+     [
+      773.8,
+      1507
+     ],
+     [
+      781,
+      1507
+     ],
+     [
+      781,
+      1570
+     ],
+     [
+      772.7,
+      1570
+     ]
+    ]
+   ],
+   "noDots": true,
+   "own": 0
+  },
+  {
+   "ch": "P",
+   "img": "batch2-53",
+   "box": [
+    423,
+    1644,
+    452,
+    1700
+   ],
+   "base": 1702.0,
+   "xH": 18.3,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "P.print"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "W",
+   "img": "batch2-53",
+   "box": [
+    1428,
+    1750,
+    1485,
+    1797
+   ],
+   "base": 1794.0,
+   "xH": 18.1,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "W.print"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "4",
+   "img": "batch2-53",
+   "box": [
+    674,
+    1260,
+    692,
+    1313
+   ],
+   "base": 1312.8,
+   "xH": 16.9,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "4.plain"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  },
+  {
+   "ch": "6",
+   "img": "batch2-53",
+   "box": [
+    516,
+    1653,
+    551,
+    1694
+   ],
+   "base": 1693.3,
+   "xH": 21.1,
+   "slant": 1.0,
+   "var": "cremma-batch2-53",
+   "tags": {
+    "writer": "cremma-batch2-53",
+    "allograph": "6.plain"
+   },
+   "source": {
+    "key": "cremma-batch2-53",
+    "name": "CREMMA-Wikipedia, volunteer copy batch2-53 (2022–23)",
+    "credit": "CREMMA-Wikipedia (HTR-United), volunteers' handwritten copies of Wikipedia excerpts, 2022–23: a volunteer's handwritten copy, page batch2-53. CC BY 4.0",
+    "url": "https://github.com/HTR-United/cremma-wikipedia/blob/master/data/batch-02/batch2-53.out.png"
+   },
+   "noDots": true,
+   "own": 0.6
+  }
+ ]
+}
