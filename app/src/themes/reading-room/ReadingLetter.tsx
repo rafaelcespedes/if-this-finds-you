@@ -185,7 +185,7 @@ export function SlipDock(a: DockActions & { id?: string }) {
           <>
             <button type="button" className="rr-icon" onClick={a.onPrev} aria-label={a.prev ? `Previous letter: ${a.prev.title}` : 'Previous letter'}><ChevronLeft aria-hidden /></button>
             <span className="rr-dock-no">
-              {no != null && <><span className="rr-sc">No.</span>&nbsp;<span className="rr-figures">{callNo(no)}</span></>}
+              {no != null && <><span className="rr-sc">No.</span>&nbsp;{callNo(no)}</>}
               {!narrow && <span className="rr-dock-of"><span aria-hidden> · </span>{a.at + 1} of {a.total}</span>}
             </span>
             <button type="button" className="rr-icon" onClick={a.onNext} aria-label={a.next ? `Next letter: ${a.next.title}` : 'Next letter'}><ChevronRight aria-hidden /></button>

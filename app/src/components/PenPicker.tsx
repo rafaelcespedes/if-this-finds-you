@@ -20,7 +20,11 @@ interface PenProps {
 }
 
 export const PenSwatches = memo(function PenSwatches({ seed, style, pen, penSize, ink, inkKey, onPen }: PenProps) {
-  const base = useMemo(() => makeHand(seed, style), [seed, style]);
+  // made only if the page has to write a sample itself (the worker writes them: Specimen's recipe)
+  const base = useMemo(() => {
+    let p: ReturnType<typeof makeHand> | null = null;
+    return () => (p ??= makeHand(seed, style));
+  }, [seed, style]);
   const tip = ENGINE_TIPS && penSize !== 'medium' ? penSize : null;
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const ids = PEN_CHOICES.map((c) => c.id);
@@ -60,7 +64,8 @@ export const PenSwatches = memo(function PenSwatches({ seed, style, pen, penSize
           >
             <Specimen
               sampleKey={`pen|${seed}|${style}|${c.id}|${tip ?? ''}`}
-              hand={() => withOverrides(base, tip ? { pen: c.id, tip } : { pen: c.id })}
+              hand={() => withOverrides(base(), tip ? { pen: c.id, tip } : { pen: c.id })}
+              recipe={{ seed, style, overrides: tip ? { pen: c.id, tip } : { pen: c.id } }}
               text="ink"
               emPx={30}
               color={ink}
