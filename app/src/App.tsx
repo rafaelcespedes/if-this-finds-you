@@ -4,8 +4,9 @@ import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, NAME_WITH_DESCRIPTOR } from '@/lib/brand';
 import { SiteHeader, type Kept } from '@/components/SiteHeader';
+import { useFolio } from '@/components/Folio';
 import { styleCard } from '@/lib/styles';
-import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
+import { CAP, EXTRAS, GF_LATIN_CORE } from '@engine';
 import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
@@ -53,12 +54,13 @@ import { perf } from '@/lib/perf';
 import { MAX_LETTER, linkIssue, offsetsForNewHand, shareUrl } from '@/lib/state';
 import { Notice } from '@/components/Notice';
 import { Button } from '@/components/ui/button';
-import { placeholderFor, requestFor, type Req } from '@/lib/request';
+import { handFor, placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
 // the look being compared (?look=reading-room): its desk, card and printed sheet marks (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
 import { LetterMarks } from '@/themes/reading-room/SheetMarks';
+import { PlateTitle } from '@/themes/reading-room/PlateLine';
 import { PostSheetMarks, ToolArrival } from '@/themes/postmarked/tool';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
@@ -128,7 +130,7 @@ export default function App() {
   const viewport = useVisualViewport();
 
   // natural hand (seed) + your offsets + occasion -> the hand on the page
-  const natural = useMemo(() => makeHand(state.seed, state.style, handOpts(state)), [state.seed, state.style, state.neatOnly]);
+  const natural = useMemo(() => handFor(state.seed, state.style, handOpts(state)), [state.seed, state.style, state.neatOnly]);
   const lookKey = JSON.stringify([state.offsets, state.pen, state.penSize, state.ink, state.occasion, state.amount, state.size]);
   // keyed on the look only: typing must keep the same hand object, so the engine's caches stay warm
   const eff = useMemo(() => effective(natural, state), [natural, lookKey]);
@@ -634,7 +636,8 @@ export default function App() {
   const rollAsk = useRef(0);
   useEffect(() => {
     let w: Worker | null = null;
-    try { w = new Worker(new URL('./workers/roll.worker.ts', import.meta.url), { type: 'module' }); } catch { w = null; }
+    // the writing worker's own script (workers/write.worker.ts rolls too): already downloaded for the letter
+    try { w = new Worker(new URL('./workers/write.worker.ts', import.meta.url), { type: 'module', name: 'roll' }); } catch { w = null; }
     if (w) w.onerror = () => { if (roller.current === w) roller.current = null; };
     roller.current = w;
     return () => { w?.terminate(); roller.current = null; };
@@ -1075,9 +1078,39 @@ export default function App() {
     />
   );
 
+  // the running head (the Reading Room layouts, house rule 2): in the Reading Room on a desktop it runs the width of
+  // the window, its places reaching the desk's right edge; elsewhere it stays over the letter's side
+  const headSpansDesk = LOOK === 'reading-room' && isDesktop && !reader;
+  const folio = useFolio(LOOK === 'reading-room' ? sample?.id : null);
+  const siteHeader = (
+    <SiteHeader
+      ref={headerRef}
+      // a shared letter (the reader view) isn't one of the places: nothing marked, and the wordmark and Write a
+      // letter lead to a desk of your own (its Write your own button is under the letter)
+      current={reader ? undefined : 'write'}
+      // a shared letter is someone else's: your kept letters wait until you write your own
+      kept={reader ? NO_KEPT : { list: kept, found: letterActions.found, onOpen: letterActions.onBackToMine }}
+      // no panel here: Share comes up to the header
+      action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
+      // the running head's middle: a found letter's number, place and year (the Reading Room's catalogue)
+      centre={folio.centre}
+      centreShort={folio.centreShort}
+      // over the whole window, the middle centred over the letter's side (the aside: the desk and its pr-3)
+      beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + 0.75rem)' : undefined}
+      quiet={editing && !isDesktop}
+      style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
+      className={cn('z-auto transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
+    >
+      {/* no hints up here: they come as ghosts by the letter, once; screen readers still hear the state, and what
+          Find another (or a link) brought */}
+      {!reader && <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : announced}</span>}
+    </SiteHeader>
+  );
+
   return (
     <TooltipProvider>
-      <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
+      <div className={cn('relative min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
+        {headSpansDesk && siteHeader}
         <main
           className={cn(
             'relative min-w-0 overflow-x-clip px-4 pb-32 sm:px-8 lg:px-10 lg:pt-[6.25rem] lg:pb-16',
@@ -1086,24 +1119,7 @@ export default function App() {
           )}
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: `${(6.25 * wide).toFixed(3)}rem` } : undefined}
         >
-          {/* the site's one header (components/SiteHeader.tsx): the places, My letters, and on phones Share and the Menu */}
-          <SiteHeader
-            ref={headerRef}
-            // a shared letter (the reader view) isn't one of the places: nothing marked, and the wordmark and Write a
-            // letter lead to a desk of your own (its Write your own button is under the letter)
-            current={reader ? undefined : 'write'}
-            // a shared letter is someone else's: your kept letters wait until you write your own
-            kept={reader ? NO_KEPT : { list: kept, found: letterActions.found, onOpen: letterActions.onBackToMine }}
-            // no panel here: Share comes up to the header
-            action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
-            quiet={editing && !isDesktop}
-            style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
-            className={cn('z-auto transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
-          >
-            {/* no hints up here: they come as ghosts by the letter, once; screen readers still hear the state, and what
-                Find another (or a link) brought */}
-            {!reader && <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : announced}</span>}
-          </SiteHeader>
+          {!headSpansDesk && siteHeader}
           <div ref={stageRef} className="w-full">
           <div className={cn(replyDesk && 'mx-auto flex items-start')} style={replyDesk ? { width: replyDesk.colW + replyDesk.mineW } : undefined}>
           {replyDesk && found && pxPerMm > 0 && (
@@ -1170,7 +1186,8 @@ export default function App() {
                   // on a very wide screen the label grows with the sheet (zoomed, so its width is in its own px)
                   style={wide > 1 && isDesktop ? { width: (shownPaper.w * pxPerMm) / wide, zoom: wide } : { width: shownPaper.w * pxPerMm }}
                 >
-                  {isDesktop ? (
+                  {/* the Reading Room has no row above the sheet: its plate line is the row under it, its hand in the record */}
+                  {isDesktop && LOOK !== 'reading-room' ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
                     // (one row with how you're writing at its right; with large text the menu drops under it)
                     <div className="absolute inset-x-0 bottom-0.5 flex flex-wrap items-end gap-x-2.5">
@@ -1270,11 +1287,13 @@ export default function App() {
                     </button>
                   ) : (
                     // the letter's name is on the sheet now; a translation still says who translated it
+                    // (the Reading Room's plate line, on wide screens: who wrote to whom)
+                    LOOK === 'reading-room' && isDesktop ? <PlateTitle id={sample && !replyDesk ? sample.id : null} fallback={sheetTitle} /> :
                     <span className="mr-auto min-w-0 truncate pr-3 text-[0.75rem]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
                   {/* phones: how you're writing, right under the letter (the bottom sheet keeps to the essentials; while
                       writing, the pen tray has the same) */}
-                  {!isDesktop && <div className="-mr-1.5 shrink-0">{writingMenu}</div>}
+                  {(!isDesktop || LOOK === 'reading-room') && <div className="-mr-1.5 shrink-0">{writingMenu}</div>}
                 </div>
                 {/* phones: the letter leads (nothing above it but the header); what it is comes after it, once: the
                     Reading Room's catalogue slip for a found letter, else the letter's name and how the hand writes */}

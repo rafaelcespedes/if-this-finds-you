@@ -31,7 +31,7 @@
         min-height: 100dvh;
         background: var(--desk);
         color: var(--text);
-        font: 1.0625rem/1.55 var(--book);
+        font: 1.0625rem/1.6 var(--book); /* the reading role */
         display: grid;
         grid-template-rows: auto 1fr;
         padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
@@ -39,7 +39,8 @@
       /* the site's header, as every page has it (components/SiteHeader.tsx, docs/NAVIGATION.md): the wordmark, then
          the three places in the same words and order (the room's small capitals); on phones a Menu chip opens
          them. It can't share the app's code, so keep it in step by hand. */
-      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; }
+      /* the running head: one hairline under the wordmark and the places */
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; padding-bottom: 8px; border-bottom: 1px solid color-mix(in oklab, var(--text) 22%, transparent); }
       header a { border-radius: 3px; }
       .logo { display: flex; align-items: center; height: 32px; margin: 0 -4px; padding: 0 4px; }
       .logo img { display: block; height: 21px; width: auto; }
@@ -73,7 +74,8 @@
       }
       @media (min-width: 1024px) {
         body { padding-top: max(20px, env(safe-area-inset-top)); padding-left: max(40px, env(safe-area-inset-left)); padding-right: max(40px, env(safe-area-inset-right)); }
-        header, .logo { min-height: 36px; height: 36px; }
+        header { min-height: 36px; }
+        .logo { height: 36px; }
         .logo img { height: 22px; }
       }
       main { display: grid; place-items: center; padding: 24px 0 12vh; }
@@ -94,8 +96,8 @@
         content: ''; position: absolute; left: 50%; bottom: 12px; width: 9px; height: 9px; margin-left: -4.5px;
         border-radius: 50%; background: var(--desk); box-shadow: inset 0 1px 1.5px rgba(30, 39, 51, 0.35);
       }
-      .mark { color: var(--mark); font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid color-mix(in oklab, #9b3b2a 55%, transparent); font-variant-numeric: lining-nums; }
-      h1 { font-size: 1.625rem; line-height: 1.2; font-weight: 500; margin: 0; text-wrap: balance; }
+      .mark { color: var(--mark); font-size: 0.8125rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid color-mix(in oklab, #9b3b2a 55%, transparent); font-variant-numeric: lining-nums; }
+      h1 { font-size: 1.375rem; line-height: 1.15; font-weight: 500; /* the title role */ margin: 0; text-wrap: balance; }
       p { margin: 10px 0 0; color: var(--muted); max-width: 34ch; }
       .ways { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
       /* the main action in archival red words, as everywhere in the room */
@@ -106,7 +108,7 @@
         transition: color 150ms ease-out, text-decoration-color 150ms ease-out;
       }
       .button:active { transform: translateY(0.5px); }
-      .link { color: var(--text); font-weight: 500; text-decoration: underline; text-decoration-color: var(--rule-link); text-underline-offset: 3px; padding: 10px 0; }
+      .link { color: var(--text); font-size: 0.9375rem; font-weight: 400; text-decoration: underline; text-decoration-color: var(--rule-link); text-underline-offset: 3px; padding: 10px 0; }
       a:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
       @media (hover: hover) and (pointer: fine) {
         .button:hover { color: #7e2f21; text-decoration-color: currentColor; }

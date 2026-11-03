@@ -1,8 +1,13 @@
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
+// Told the page's direction, sonner doesn't look it up on every render: without it, each render (each keystroke in
+// the tool) asks the browser for the page's computed style, a style recalculation on the spot. Pages never change it.
+const DIR: ToasterProps['dir'] = typeof document !== 'undefined' && document.documentElement.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';
+
 function Toaster(props: ToasterProps) {
   return (
     <Sonner
+      dir={DIR}
       position="bottom-center"
       gap={8}
       toastOptions={{

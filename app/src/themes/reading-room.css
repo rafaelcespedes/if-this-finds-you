@@ -1,88 +1,77 @@
 /* Concept A, "The Reading Room" (?look=reading-room). Everything here is scoped to html[data-look="reading-room"]. */
 /*
-   A letter is brought to your desk, with its catalogue card. The interface steps back into a book serif with real
+   A letter is brought to your desk, with its catalogue card. The interface steps back into a book face with real
    small capitals and old-style figures, on a paper-grey room with one archival ink colour; archival red is kept for
-   numbers and the main action. The new pieces (card, stamps, postmark, request slips) live in themes/reading-room/.
+   numbers and the main action. The new pieces (card, request slips, the desk) live in themes/reading-room/.
 
-   Type: Alegreya and Alegreya SC (Huerta Tipográfica, the foundry behind Piazzolla; SIL OFL 1.1, @fontsource). The
-   Garamonds the brief suggested lose their small capitals in the web files (Google's subsets drop smcp and onum);
-   Alegreya SC is a true small-caps family, and Alegreya's figures are old-style by default, with tabular ones.
-   The faces are declared under their own names, so the default look never downloads them.
-   Text sizes are in rem, so the room follows the browser's text size as the tool does; the stamps on a sheet are
-   sized in the paper's millimetres instead (SheetMarks.tsx).
+   Type (Rafael, 3 Nov, from the type study): Junicode 2 (Peter S. Baker) for reading, titles, the record, small
+   capitals and figures, and Ysabeau Office (Christian Thalmann) for everything you operate. Both SIL OFL 1.1 with no
+   Reserved Font Name. Junicode is self-hosted from fontTools subsets of the upstream release (reading-room/fonts/,
+   OFL.txt there): Fontsource has no Junicode, and its subsets drop small capitals and old-style figures from every
+   face. Ysabeau Office comes from @fontsource-variable (controls need neither). Both are enlarged 115% (size-adjust):
+   Junicode's x-height is small (0.415 em) and the roles' sizes were set for a larger one; Ysabeau Office, a wider
+   face, is enlarged only 105% so the compact controls keep their widths.
+   The faces are declared under their own names, so the classic look never downloads them.
+   Text sizes are in rem, so the room follows the browser's text size as the tool does.
 */
 
 /* ---------- type ---------- */
 @font-face {
-  font-family: 'RR Book';
+  font-family: 'RR Junicode';
   font-style: normal;
   font-display: swap;
-  font-weight: 400 900;
-  size-adjust: 112%;
-  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-normal.woff2') format('woff2-variations');
+  font-weight: 400 600;
+  font-stretch: 100% 112%;
+  size-adjust: 115%;
+  src: url('./reading-room/fonts/junicode-latin-ext-roman.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Book';
+  font-family: 'RR Junicode';
   font-style: normal;
   font-display: swap;
-  font-weight: 400 900;
-  size-adjust: 112%;
-  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-normal.woff2') format('woff2-variations');
+  font-weight: 400 600;
+  font-stretch: 100% 112%;
+  size-adjust: 115%;
+  src: url('./reading-room/fonts/junicode-latin-roman.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'RR Book';
+  font-family: 'RR Junicode';
   font-style: italic;
   font-display: swap;
-  font-weight: 400 900;
-  size-adjust: 112%;
-  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-italic.woff2') format('woff2-variations');
+  font-weight: 400 600;
+  font-stretch: 100% 112%;
+  size-adjust: 115%;
+  src: url('./reading-room/fonts/junicode-latin-ext-italic.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Book';
+  font-family: 'RR Junicode';
   font-style: italic;
   font-display: swap;
-  font-weight: 400 900;
-  size-adjust: 112%;
-  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-italic.woff2') format('woff2-variations');
+  font-weight: 400 600;
+  font-stretch: 100% 112%;
+  size-adjust: 115%;
+  src: url('./reading-room/fonts/junicode-latin-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'RR Caps';
+  font-family: 'RR Ysabeau Office';
   font-style: normal;
   font-display: swap;
-  font-weight: 400;
-  size-adjust: 112%;
-  src: url('@fontsource/alegreya-sc/files/alegreya-sc-latin-ext-400-normal.woff2') format('woff2');
+  font-weight: 1 1000;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/ysabeau-office/files/ysabeau-office-latin-ext-wght-normal.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Caps';
+  font-family: 'RR Ysabeau Office';
   font-style: normal;
   font-display: swap;
-  font-weight: 400;
-  size-adjust: 112%;
-  src: url('@fontsource/alegreya-sc/files/alegreya-sc-latin-400-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'RR Caps';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500 900;
-  size-adjust: 112%;
-  src: url('@fontsource/alegreya-sc/files/alegreya-sc-latin-ext-500-normal.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'RR Caps';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500 900;
-  size-adjust: 112%;
-  src: url('@fontsource/alegreya-sc/files/alegreya-sc-latin-500-normal.woff2') format('woff2');
+  font-weight: 1 1000;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/ysabeau-office/files/ysabeau-office-latin-wght-normal.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -98,8 +87,66 @@ html[data-look='reading-room'] {
   --rr-faint: #666052; /* 4.9:1 on the room */
   --rr-edge: #d6ccb7; /* a card's cut edge */
   --rr-rule: color-mix(in oklab, var(--rr-ink) 15%, transparent); /* an index card's ruled lines */
-  --rr-book: 'RR Book', 'Iowan Old Style', Georgia, serif;
-  --rr-caps: 'RR Caps', 'RR Book', Georgia, serif;
+  --rr-book: 'RR Junicode', 'Iowan Old Style', Georgia, serif;
+  /* small capitals are the book face's own (Junicode keeps smcp and c2sc), switched on by the roles that use them */
+  --rr-caps: var(--rr-book);
+  --rr-ui: 'RR Ysabeau Office', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+
+  /* the type roles (TYPE, at the end of this file): each a face, a size, a weight, a leading and a tracking. A font
+     pairing swaps one face variable per role; the sizes are the scale 13 · 15 · 17 · 22 px, in rem */
+  --rr-title-face: var(--rr-book);
+  --rr-title-size: 1.375rem;
+  --rr-title-weight: 560;
+  --rr-title-stretch: 112%;
+  --rr-title-leading: 1.15;
+  --rr-title-tracking: -0.005em;
+  --rr-reading-face: var(--rr-book);
+  --rr-reading-size: 1.0625rem;
+  --rr-reading-weight: 400;
+  --rr-reading-leading: 1.6;
+  --rr-reading-tracking: 0;
+  --rr-text-face: var(--rr-book);
+  --rr-text-size: 0.9375rem;
+  --rr-text-weight: 400;
+  --rr-text-leading: 1.4;
+  --rr-text-tracking: 0;
+  --rr-small-face: var(--rr-book);
+  --rr-small-size: 0.8125rem;
+  --rr-small-weight: 400;
+  --rr-small-leading: 1.45;
+  --rr-small-tracking: 0;
+  --rr-label-face: var(--rr-caps);
+  --rr-label-size: 0.8125rem;
+  --rr-label-weight: 400;
+  --rr-label-leading: 1.3;
+  --rr-label-tracking: 0.05em;
+  --rr-label-caps: all-small-caps;
+  --rr-number-face: var(--rr-caps);
+  --rr-number-size: 0.9375rem;
+  --rr-number-weight: 400;
+  --rr-number-leading: 1.2;
+  --rr-number-tracking: 0.04em;
+  --rr-number-caps: small-caps;
+  --rr-action-face: var(--rr-book);
+  --rr-action-size: 1.0625rem;
+  --rr-action-weight: 600;
+  --rr-action-leading: 1.2;
+  --rr-action-tracking: 0;
+  --rr-control-face: var(--rr-ui);
+  --rr-control-size: 0.8125rem;
+  --rr-control-weight: 400;
+  --rr-control-leading: 1.35;
+  --rr-control-tracking: 0;
+  --rr-micro-face: var(--rr-ui);
+  --rr-micro-size: 0.6875rem;
+  --rr-micro-leading: 1;
+  /* the tool's compact controls (density.css) take the control role */
+  --body: var(--rr-control-size);
+  --label: var(--rr-control-size);
+  --cta-text: var(--rr-control-size);
+  --seg-text: var(--rr-control-size);
+  --chip-text: var(--rr-control-size);
+  --tile-text: var(--rr-control-size);
 
   --desk: var(--rr-room);
   --ink: var(--rr-ink);
@@ -141,8 +188,9 @@ html[data-look='reading-room'] body {
   --font-letter: var(--rr-book);
   --letter-scale: 1;
   --letter-variation: normal;
-  font-family: var(--rr-book);
-  font-size: 0.9375rem;
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  line-height: var(--rr-text-leading);
   font-variant-numeric: oldstyle-nums proportional-nums;
   font-feature-settings: normal;
 }
@@ -151,15 +199,6 @@ html[data-look='reading-room'] .tabular {
 }
 
 /* ---------- small pieces ---------- */
-html[data-look='reading-room'] .rr-sc {
-  font-family: var(--rr-caps);
-  text-transform: lowercase;
-  letter-spacing: 0.055em;
-  font-weight: 400;
-}
-html[data-look='reading-room'] .rr-figures {
-  font-variant-numeric: oldstyle-nums tabular-nums;
-}
 html[data-look='reading-room'] .rr-red {
   color: var(--rr-red);
 }
@@ -206,21 +245,27 @@ html[data-look='reading-room'] .rr-icon svg {
   }
 }
 
-/* ---------- the site header (components/SiteHeader.tsx): the places in small capitals ---------- */
-html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-action] button),
-html[data-look='reading-room'] [data-site-menu] [data-site-link] {
-  font-family: var(--rr-caps);
-  text-transform: lowercase;
-  letter-spacing: 0.05em;
-  font-size: 0.875rem;
-  font-weight: 400;
+/* ---------- the site header (components/SiteHeader.tsx) as a running head (layouts, house rule 2): the wordmark,
+   the page's middle and the places on one baseline over one hairline, in the label role's small capitals ---------- */
+html[data-look='reading-room'] [data-site-row] {
+  border-bottom: 1px solid color-mix(in oklab, var(--rr-ink) 22%, transparent);
+  padding-bottom: 0.5rem;
+}
+html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button),
+html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site-label]) {
+  font-family: var(--rr-label-face, var(--rr-caps));
+  font-variant-caps: var(--rr-label-caps, normal);
+  letter-spacing: var(--rr-label-tracking, 0.05em);
+  font-size: var(--rr-label-size, 0.875rem);
+  font-weight: var(--rr-label-weight, 400);
+  line-height: var(--rr-label-leading, normal);
+  text-transform: none;
   color: var(--rr-ink);
 }
-html[data-look='reading-room'] [data-site-menu] [data-site-label] {
-  font-family: var(--rr-caps);
-  font-size: 0.8125rem;
-  letter-spacing: 0.06em;
-  text-transform: lowercase;
+/* the letter's number: archival red, as on its sheet */
+html[data-look='reading-room'] [data-site-number] {
+  color: var(--rr-red);
+  font-variant-numeric: tabular-nums;
 }
 /* the phone header's chips (Menu, Share): ruled squares, no lift */
 html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]) {
@@ -277,8 +322,6 @@ html[data-look='reading-room'] .rr-card-head {
 html[data-look='reading-room'] .rr-card-no {
   margin: 0;
   color: var(--rr-red);
-  font-size: 1rem;
-  letter-spacing: 0.04em;
 }
 html[data-look='reading-room'] .rr-card-actions {
   display: flex;
@@ -306,11 +349,6 @@ html[data-look='reading-room'] .rr-card-actions [data-slot='button'] svg {
 }
 html[data-look='reading-room'] .rr-card-title {
   margin: 12px 0 12px;
-  font-family: var(--rr-book);
-  font-size: 1.4375rem;
-  line-height: 1.12;
-  font-weight: 500;
-  letter-spacing: -0.005em;
   color: var(--rr-ink);
 }
 html[data-look='reading-room'] .rr-facts {
@@ -336,20 +374,16 @@ html[data-look='reading-room'] .rr-fact:has(.rr-sig) {
   align-items: center;
 }
 html[data-look='reading-room'] .rr-fact dt {
-  font-size: 0.875rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-fact dd {
   margin: 0;
   min-width: 0;
-  font-size: 0.9375rem;
-  line-height: 1.32;
   overflow-wrap: anywhere;
 }
 html[data-look='reading-room'] .rr-sub {
   display: block;
   margin-top: 1px;
-  font-size: 0.8438rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-ref {
@@ -366,8 +400,6 @@ html[data-look='reading-room'] .rr-notes ol {
   margin: 12px 0 0;
   padding: 10px 0 0 1.2em;
   border-top: 1px solid var(--rr-rule);
-  font-size: 0.8438rem;
-  line-height: 1.42;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-notes li + li {
@@ -375,12 +407,10 @@ html[data-look='reading-room'] .rr-notes li + li {
 }
 html[data-look='reading-room'] .rr-notes li::marker {
   color: var(--rr-red);
-  font-weight: 600;
   font-variant-numeric: lining-nums;
 }
 html[data-look='reading-room'] .rr-card-foot {
   margin: 10px 0 0;
-  font-size: 0.8438rem;
   color: var(--rr-muted);
 }
 /* the writer's name in their own hand, on the card (it opens what's known about the hand) */
@@ -436,49 +466,63 @@ html[data-look='reading-room'] .rr-hand {
   }
 }
 
-/* ---------- the tool's desk (ReadingDesk.tsx) ---------- */
-html[data-look='reading-room'] .rr-desk-inner {
-  padding: 84px 6px 48px 4px;
+/* ---------- the tool's desk, kept as a ledger (ReadingDesk.tsx, LedgerRecord.tsx) ----------
+   House rules (layout study, Rafael 3 Nov): one 12-column grid at 1440 (40 px margins, 32 px gutters; the record column
+   is 3 columns, the 20rem panel), and hairlines, never boxes: the paper is the only thing with an edge. */
+html[data-look='reading-room'] {
+  --rr-margin: 2.5rem; /* the grid's outer margin */
+  --rr-gutter: 2rem;
+  --rr-hair: color-mix(in oklab, var(--rr-ink) 30%, transparent); /* a stronger rule, above a column or a drawer */
+  --rr-desk-top: 100px; /* the record's first rule sits on the sheet's top edge */
 }
-html[data-look='reading-room'] .rr-desk-inner > .rr-card {
-  margin-top: 18px;
+/* the record column: on the grid's right margin, flush with the page, no inner box */
+html[data-look='reading-room'] aside:has(> .rr-desk) {
+  padding: 0 var(--rr-margin) 0 var(--rr-gutter);
+}
+html[data-look='reading-room'] .rr-desk {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+html[data-look='reading-room'] .rr-ledger {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--rr-desk-top) 0 1.5rem;
+  scrollbar-width: none;
 }
 html[data-look='reading-room'] .rr-desk-actions {
   display: grid;
   gap: 2px;
 }
 html[data-look='reading-room'] .rr-status {
-  justify-content: center;
+  justify-content: flex-start;
 }
-/* the main action, in words: archival red, a shuffle mark, and its key as a call number */
+/* the main action: a ruled row in archival red, an arrow, and its key at the row's end */
 html[data-look='reading-room'] .rr-bring {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 8px;
   width: 100%;
   min-height: 48px;
-  padding: 8px 6px 8px 4px;
-  border-top: 1px solid var(--rr-ink);
+  padding: 12px 0 10px;
+  border-top: 1px solid var(--rr-hair);
   border-bottom: 1px solid var(--rr-rule);
   color: var(--rr-red);
-  font-family: var(--rr-book);
-  font-size: 1.125rem;
-  font-weight: 600;
   text-align: left;
   transition: color 150ms var(--ease-out);
 }
-html[data-look='reading-room'] .rr-bring-icon {
-  width: 1.0625rem;
-  height: 1.0625rem;
-  flex: none;
-}
 html[data-look='reading-room'] .rr-bring-label {
-  flex: 1;
   text-decoration: underline;
   text-decoration-color: transparent;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
   transition: text-decoration-color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-bring-arrow {
+  flex: 1;
+  transition: transform 150ms var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-bring:hover {
@@ -487,34 +531,23 @@ html[data-look='reading-room'] .rr-bring-label {
   html[data-look='reading-room'] .rr-bring:hover .rr-bring-label {
     text-decoration-color: currentColor;
   }
+  html[data-look='reading-room'] .rr-bring:hover .rr-bring-arrow {
+    transform: translateX(2px);
+  }
 }
-html[data-look='reading-room'] .rr-bring:active .rr-bring-label {
-  transform: translateY(0.5px);
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] .rr-bring-arrow {
+    transition: none;
+  }
 }
-/* a spine label: "call" over the key */
 html[data-look='reading-room'] .rr-callno {
-  display: inline-grid;
-  justify-items: center;
-  min-width: 30px;
-  padding: 2px 6px 3px;
-  border: 1px solid color-mix(in oklab, var(--rr-red) 55%, transparent);
-  border-radius: 3px;
-  background: var(--rr-slip);
-  color: var(--rr-red);
-  line-height: 1;
-}
-html[data-look='reading-room'] .rr-callno-k {
-  font-family: var(--rr-caps);
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
-  text-transform: lowercase;
-  font-weight: 400;
+  color: var(--rr-muted);
+  white-space: nowrap;
 }
 html[data-look='reading-room'] .rr-callno-v {
-  margin-top: 1px;
-  font-family: var(--rr-book);
-  font-size: 0.9375rem;
-  font-weight: 700;
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  letter-spacing: var(--rr-label-tracking);
 }
 @media (pointer: coarse) {
   html[data-look='reading-room'] .rr-callno {
@@ -522,93 +555,162 @@ html[data-look='reading-room'] .rr-callno-v {
   }
 }
 
-/* the request slip: the writing materials, folded away until asked for */
-html[data-look='reading-room'] .rr-slip {
-  margin-top: 12px;
-  background: var(--rr-slip);
-  border: 1px solid var(--rr-edge);
-  border-top: 1.5px dashed color-mix(in oklab, var(--rr-ink) 38%, transparent); /* torn along its perforation */
-  border-radius: 0 0 2px 2px;
-}
-html[data-look='reading-room'] .rr-slip-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 10px;
-  width: 100%;
-  padding: 12px 14px 13px 16px;
-  text-align: left;
-  border-radius: 0 0 2px 2px;
-  transition: background-color 150ms var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .rr-slip-head:hover {
-    background: color-mix(in oklab, var(--chip) 55%, transparent);
-  }
-}
-html[data-look='reading-room'] .rr-slip-k {
-  grid-column: 1;
-  font-size: 0.8438rem;
-  color: var(--rr-muted);
-}
-html[data-look='reading-room'] .rr-slip-t {
-  grid-column: 1;
-  margin-top: 2px;
-  font-size: 1.0625rem;
-  line-height: 1.2;
-  font-weight: 500;
+/* the record: ruled rows on the room */
+html[data-look='reading-room'] .rr-ledger-record {
+  margin-top: 1.25rem;
   color: var(--rr-ink);
 }
-html[data-look='reading-room'] .rr-slip-v {
-  grid-column: 1;
-  margin-top: 2px;
-  font-size: 0.875rem;
+html[data-look='reading-room'] .rr-ledger-waiting {
+  min-height: 26rem;
+}
+html[data-look='reading-room'] .rr-ledger-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+}
+html[data-look='reading-room'] .rr-ledger-record .rr-card-title {
+  margin: 0.5rem 0 0.875rem;
+}
+/* a note's number is a button: the note opens in place, under its row */
+html[data-look='reading-room'] .rr-ref-button {
+  margin-left: 2px;
+  padding: 0 3px;
+  border-radius: 2px;
+  color: var(--rr-red);
+  font-size: 0.75em;
+  font-variant-numeric: lining-nums;
+  line-height: 1;
+  vertical-align: 0.5em;
+  cursor: pointer;
+}
+html[data-look='reading-room'] .rr-ref-button[aria-expanded='true'] {
+  background: color-mix(in oklab, var(--rr-red) 12%, transparent);
+}
+@media (pointer: coarse) {
+  html[data-look='reading-room'] .rr-ref-button {
+    position: relative;
+  }
+  html[data-look='reading-room'] .rr-ref-button::after {
+    content: '';
+    position: absolute;
+    inset: -14px -10px;
+  }
+}
+html[data-look='reading-room'] .rr-row-note {
+  margin: 0.375rem 0 0.125rem;
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+  font-style: italic;
   color: var(--rr-muted);
 }
-html[data-look='reading-room'] .rr-slip-chev {
-  grid-column: 2;
-  grid-row: 1 / span 3;
-  align-self: center;
+html[data-look='reading-room'] .rr-full {
+  border-top: 1px solid var(--rr-rule);
+}
+html[data-look='reading-room'] .rr-full-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 0 2px;
+  color: var(--rr-ink);
+  text-align: left;
+}
+html[data-look='reading-room'] .rr-full-sign {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-reading-size);
+  line-height: 1;
+}
+html[data-look='reading-room'] .rr-physical {
+  margin: 0.125rem 0 0;
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+  font-style: italic;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-full .rr-facts {
+  margin-top: 0.5rem;
+}
+html[data-look='reading-room'] .rr-small {
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+}
+html[data-look='reading-room'] .rr-cite {
+  overflow-wrap: anywhere;
+  color: var(--rr-muted);
+}
+
+/* the writing materials: a drawer pinned to the column's foot; opened, it rises over the record */
+html[data-look='reading-room'] .rr-drawer {
+  flex: none;
+  background: var(--rr-room);
+  border-top: 1px solid var(--rr-hair);
+}
+html[data-look='reading-room'] .rr-drawer-head {
+  /* one ruled row, like "Full record +": its name, and which way it opens */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 0 12px;
+  text-align: left;
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .rr-drawer-chev {
   width: 18px;
   height: 18px;
   color: var(--rr-muted);
   transition: transform 260ms var(--ease-drawer);
 }
-html[data-look='reading-room'] .rr-slip.is-open .rr-slip-chev {
+html[data-look='reading-room'] .rr-drawer-body {
+  display: none;
+  --pad: 0px; /* density.css: the sideways rows bleed by the panel's padding; the drawer has none */
+}
+html[data-look='reading-room'] .rr-drawer.is-open {
+  position: absolute;
+  inset: calc(var(--rr-desk-top) - 1px) 0 0 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  animation: rr-drawer-in 280ms var(--ease-drawer) both;
+}
+html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-chev {
   transform: rotate(180deg);
 }
-html[data-look='reading-room'] .rr-slip-body {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 300ms var(--ease-drawer);
-}
-html[data-look='reading-room'] .rr-slip.is-open .rr-slip-body {
-  grid-template-rows: 1fr;
-}
-html[data-look='reading-room'] .rr-slip-inner {
+html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-body {
+  display: block;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
-}
-html[data-look='reading-room'] .rr-slip.is-open .rr-slip-inner {
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-top: 1px solid var(--rr-rule);
 }
-/* the panel's groups inside the slip: a label in small capitals per group, on ruled lines */
-html[data-look='reading-room'] .rr-slip-inner section[data-row] h3,
-html[data-look='reading-room'] .control-sheet section[data-row] h3 {
-  font-family: var(--rr-caps);
-  text-transform: lowercase;
-  letter-spacing: 0.055em;
-  font-size: 0.9375rem;
-  font-weight: 400;
+@keyframes rr-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
-html[data-look='reading-room'] .rr-slip-inner section[data-row] h3 > span,
-html[data-look='reading-room'] .control-sheet section[data-row] h3 > span {
-  font-family: var(--rr-book);
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 0.875rem;
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] .rr-drawer.is-open {
+    animation: rr-fade 160ms linear both;
+  }
+  html[data-look='reading-room'] .rr-drawer-chev {
+    transition: none;
+  }
 }
+/* the panel's groups inside the drawer: a label in small capitals per group, on ruled lines */
 html[data-look='reading-room'] .rr-slip-inner section[data-row] {
   border-color: var(--rr-rule);
+}
+/* the drawer is on the room's grid: its groups take no inner margin of their own */
+html[data-look='reading-room'] .rr-slip-inner :is(section[data-row], .px-5) {
+  padding-inline: 0;
 }
 
 /* the tool's controls, in the room: hairline tiles, square corners, ink for what's chosen */
@@ -636,17 +738,11 @@ html[data-look='reading-room'] .control-sheet .rr-bring {
   min-height: 44px;
   padding: 6px 4px 6px 10px;
   border: 0;
-  font-size: 1.0625rem;
 }
 html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-pill] {
   border-radius: 2px;
   border: 1px dashed color-mix(in oklab, var(--rr-ink) 35%, transparent);
   background: transparent;
-  font-family: var(--rr-caps);
-  text-transform: lowercase;
-  letter-spacing: 0.04em;
-  font-size: 0.9062rem;
-  font-weight: 400;
   white-space: nowrap;
 }
 /* the phone's writing tray (PenTray.tsx), its pen menu, and their letter pulled down over yours (TheirLetter.tsx):
@@ -668,8 +764,6 @@ html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'] [da
   background: transparent;
   box-shadow: none;
   color: var(--rr-red);
-  font-size: 1rem;
-  font-weight: 600;
 }
 html[data-look='reading-room'] [class*='rounded-b-[22px]'] {
   border-radius: 0 0 3px 3px;
@@ -681,6 +775,15 @@ html[data-look='reading-room'] [class*='rounded-full'][class*='bg-panel/95'] {
   border: 1px solid var(--rr-edge);
   background: var(--rr-slip);
   color: var(--rr-muted);
+}
+/* the plate line under the sheet (wide screens: PlateLine.tsx): who wrote to whom, in the record's italic, as a
+   museum labels an object at its foot; how you're writing sits at its right (App.tsx's footer row) */
+html[data-look='reading-room'] .rr-plate-title {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  font-style: italic;
+  line-height: var(--rr-text-leading);
+  color: var(--rr-ink);
 }
 /* the catalogue slip under the sheet (phones) */
 html[data-look='reading-room'] .rr-under-sheet {
@@ -705,18 +808,8 @@ html[data-look='reading-room'] .rr-card-tag {
   background: var(--rr-slip);
   box-shadow: none;
   color: var(--rr-red);
-  font-family: var(--rr-caps);
-  font-size: 0.65625rem;
-  letter-spacing: 0.06em;
-  line-height: 1.1;
   white-space: nowrap;
   transform: translateY(-62%) rotate(-1.5deg);
-}
-html[data-look='reading-room'] .rr-card-tag-n {
-  font-family: var(--rr-book);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  font-variant-numeric: oldstyle-nums tabular-nums;
 }
 @keyframes rr-fade {
   from {
@@ -730,16 +823,8 @@ html[data-look='reading-room'] .rr-aid {
   margin: 14px auto 0;
   padding-top: 10px;
   border-top: 1px solid color-mix(in oklab, var(--rr-ink) 60%, transparent);
-  font-family: var(--rr-caps);
-  font-size: 0.8125rem;
-  letter-spacing: 0.05em;
-  text-transform: lowercase;
   color: var(--rr-muted);
   text-wrap: balance;
-}
-html[data-look='reading-room'] .rr-aid .rr-figures {
-  font-family: var(--rr-book);
-  letter-spacing: 0.02em;
 }
 /* the timeline dock and the letter dock: a hairline-ruled slip, not a pill */
 html[data-look='reading-room'] .archive-dock {
@@ -753,9 +838,8 @@ html[data-look='reading-room'] .era-seg {
   border-radius: 2px;
 }
 html[data-look='reading-room'] .era-seg span:not(.era-marks):not(:has(*)) {
-  font-family: var(--rr-caps);
-  text-transform: lowercase;
-  letter-spacing: 0.05em;
+  font-family: var(--rr-label-face);
+  font-variant-caps: var(--rr-label-caps);
 }
 html[data-look='reading-room'] .archive-field {
   border-radius: 2px;
@@ -787,9 +871,6 @@ html[data-look='reading-room'] .rr-letter-kicker {
   margin: 0 auto 16px;
   max-width: 30rem;
   text-align: center;
-  font-size: 1.375rem;
-  line-height: 1.18;
-  font-weight: 500;
   color: var(--rr-ink);
   text-wrap: balance;
 }
@@ -797,7 +878,6 @@ html[data-look='reading-room'] .rr-transcript-wrap {
   max-width: 36rem;
   margin: 28px auto 0;
   text-align: center;
-  font-size: 1rem;
 }
 html[data-look='reading-room'] .rr-transcript {
   display: grid;
@@ -806,8 +886,6 @@ html[data-look='reading-room'] .rr-transcript {
   padding-top: 16px;
   border-top: 1px solid var(--rr-rule);
   text-align: left;
-  font-size: 1.125rem;
-  line-height: 1.6;
   white-space: pre-line;
   color: var(--rr-ink);
 }
@@ -824,14 +902,12 @@ html[data-look='reading-room'] .rr-dock {
   border-top: 1px solid var(--rr-ink);
   border-radius: 2px;
   box-shadow: 0 12px 28px -16px rgba(30, 39, 51, 0.45);
-  font-size: 1rem;
   animation: dock-in 320ms var(--ease-out) both;
 }
 html[data-look='reading-room'] .rr-dock-no {
   padding: 0 4px;
   white-space: nowrap;
   color: var(--rr-red);
-  letter-spacing: 0.03em;
 }
 html[data-look='reading-room'] .rr-dock-of {
   color: var(--rr-muted);
@@ -863,7 +939,6 @@ html[data-look='reading-room'] .rr-dock-word {
 }
 html[data-look='reading-room'] .rr-dock-reply {
   color: var(--rr-red);
-  font-weight: 600;
 }
 html[data-look='reading-room'] .rr-dock-reply svg {
   width: 1rem;
@@ -893,7 +968,6 @@ html[data-look='reading-room'] .rr-dock {
   html[data-look='reading-room'] .rr-dock {
     gap: 0;
     padding-inline: 2px;
-    font-size: 0.9688rem;
   }
   html[data-look='reading-room'] .rr-dock .rr-icon {
     width: 40px;
@@ -946,15 +1020,8 @@ html[data-look='reading-room'] [role='menu'] [role^='menuitem'] {
   border-radius: 2px;
 }
 /* a menu's group label ("More formats", "Kept on this device") in small capitals */
-html[data-look='reading-room'] [role='menu'] > div:not([role]) {
-  font-family: var(--rr-caps);
-  font-size: 0.8125rem;
-  letter-spacing: 0.06em;
-  text-transform: lowercase;
-}
 html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :has(> [role='tooltip']) {
   border-radius: 2px;
-  font-size: 0.8125rem;
 }
 html[data-look='reading-room'] kbd {
   font-family: inherit;
@@ -964,17 +1031,18 @@ html[data-look='reading-room'] kbd {
    earlier base layer is the only thing that outranks them (important declarations reverse the layer order). */
 @layer base {
   html[data-look='reading-room'] [data-sonner-toast] {
-    font-family: var(--rr-book) !important;
-    font-size: 0.9375rem !important;
+    font-family: var(--rr-control-face) !important;
+    font-size: var(--rr-control-size) !important;
+    line-height: var(--rr-control-leading) !important;
     border-radius: 2px !important;
   }
-  html[data-look='reading-room'] [data-sonner-toast] [data-title] {
-    font-weight: 500;
+  html[data-look='reading-room'] [data-sonner-toast] :is([data-title], [data-description], [data-button], [data-cancel]) {
+    font-weight: var(--rr-control-weight) !important;
   }
   html[data-look='reading-room'] [data-sonner-toast] :is([data-button], [data-cancel]) {
     border-radius: 2px !important;
-    font-family: var(--rr-book) !important;
-    font-size: 0.875rem !important;
+    font-family: var(--rr-control-face) !important;
+    font-size: var(--rr-control-size) !important;
   }
 }
 
@@ -994,20 +1062,11 @@ html[data-look='reading-room'] .font-row-name {
   min-width: 0;
   white-space: normal;
 }
-html[data-look='reading-room'] .font-tag {
-  font-family: var(--rr-caps);
-  font-size: 0.875rem;
-  letter-spacing: 0.03em;
-  text-transform: lowercase;
-}
 /* the main actions (New set, Show more, Done) in words and archival red, like Bring another letter */
 html[data-look='reading-room'] .dock-primary {
   background: transparent;
   box-shadow: none;
   color: var(--rr-red);
-  font-family: var(--rr-book);
-  font-size: 1rem;
-  font-weight: 600;
   text-decoration: underline;
   text-decoration-color: transparent;
   text-decoration-thickness: 1px;
@@ -1026,7 +1085,6 @@ html[data-look='reading-room'] .dock-primary:active {
 }
 @media (max-width: 380px) {
   html[data-look='reading-room'] .dock-primary {
-    font-size: 0.875rem;
     padding-inline: 6px;
   }
 }
@@ -1045,11 +1103,168 @@ html[data-look='reading-room'] .dock-caption {
   box-shadow: 0 0 0 1px var(--rr-edge), 0 8px 18px -10px rgba(30, 39, 51, 0.35);
 }
 
+/* =====================================================================================================================
+   TYPE. Nine roles, each with one purpose, and one face, size, weight, leading and tracking (Rafael, 3 Nov: "be very
+   intentful about the styling"). Faces and values are the --rr-<role>-* tokens at the top of this file.
+     display  the handwritten headings ("All letters", "Fonts") and the wordmark: drawn in the logo's hand, no font
+     title    a letter's title, wherever it names the letter (Junicode at 112% width, 22 px, 560)
+     reading  text read at length: the transcript, a page's opening paragraph (Junicode, 17 px)
+     text     the record's values and the room's own words: card values, a slip's title, names (Junicode, 15 px)
+     small    what comes second in the record: notes, sub-lines, footnotes (Junicode, 13 px)
+     label    the keys of the record, group names, places and counts, in the face's own small capitals (13 px)
+     number   catalogue numbers: capitals and small capitals, old-style tabular figures, archival red (15 px)
+     action   the one thing to do next, in archival red words: Bring another letter, Write a reply, New set, Done
+              (Junicode, 17 px, 600)
+     control  everything you operate: the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
+              tooltips (Ysabeau Office, 13 px, 400)
+   and one size outside the scale, for a reason:
+     micro    words inside fixed-size controls, under an icon or a bar: the pen tips (Fine, Medium, Bold) and the
+              timeline's centuries (11 px). Plain for a choice, small capitals for a group.
+   The scale: 13 · 15 · 17 · 22 px.
+   The same sizes on every screen; rem, so they follow the browser's text size. Small capitals only for keys and
+   numbers, where they help a reader scan a record. Tabular figures only for numbers that line up or tick.
+   Controls keep their own line boxes: their heights come from the compact density (density.css).
+   ===================================================================================================================== */
+
+/* the shared components' own sizes, snapped onto the scale (the classic look keeps them as they were) */
+html[data-look='reading-room'] :is([class*='text-[0.6875rem]'], [class*='text-[0.7188rem]'], [class*='text-[0.75rem]'], [class*='text-[0.7812rem]'], [class*='text-[0.78125rem]'], [class*='text-[0.8125rem]'], [class*='text-[11px]'], [class*='text-[11.5px]'], [class*='text-[12px]'], [class*='text-[12.5px]'], [class*='text-[13px]'], [class*='text-[13.5px]']):not(.era-seg *) {
+  font-size: var(--rr-small-size);
+}
+html[data-look='reading-room'] :is([class*='text-[0.8438rem]'], [class*='text-[0.875rem]'], [class*='text-[0.9375rem]'], [class*='text-[14px]'], [class*='text-[15px]']) {
+  font-size: var(--rr-text-size);
+}
+html[data-look='reading-room'] :is([class*='text-[16px]'], [class*='text-[1rem]'], [class*='text-[17px]']) {
+  font-size: var(--rr-reading-size);
+  line-height: var(--rr-reading-leading);
+}
+/* one weight for words, no hand-tuned tracking: emphasis comes from the role (a title, an action), not a heavier cut */
+html[data-look='reading-room'] :is(.font-medium, .font-semibold) {
+  font-weight: inherit;
+}
+html[data-look='reading-room'] [class*='tracking-['] {
+  letter-spacing: 0;
+}
+
+/* title */
+html[data-look='reading-room'] :is(.rr-card-title, .rr-letter-kicker, [class*='text-[22px]']) {
+  font-family: var(--rr-title-face);
+  font-size: var(--rr-title-size);
+  font-weight: var(--rr-title-weight);
+  font-stretch: var(--rr-title-stretch);
+  line-height: var(--rr-title-leading);
+  letter-spacing: var(--rr-title-tracking);
+}
+/* reading */
+html[data-look='reading-room'] :is(.rr-transcript) {
+  font-family: var(--rr-reading-face);
+  font-size: var(--rr-reading-size);
+  font-weight: var(--rr-reading-weight);
+  line-height: var(--rr-reading-leading);
+  letter-spacing: var(--rr-reading-tracking);
+}
+/* text */
+html[data-look='reading-room'] :is(.rr-fact dd, .rr-slip-t, .rr-transcript-wrap, .font-row-name, .canvas-title, .archive-card h3) {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  font-weight: var(--rr-text-weight);
+  line-height: var(--rr-text-leading);
+  letter-spacing: var(--rr-text-tracking);
+  text-transform: none;
+}
+/* small */
+html[data-look='reading-room'] :is(.rr-sub, .rr-notes ol, .rr-card-foot, .rr-slip-v, .specimen-note, .set-note, .font-list-note) {
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  font-weight: var(--rr-small-weight);
+  line-height: var(--rr-small-leading);
+  letter-spacing: var(--rr-small-tracking);
+}
+/* label: small capitals */
+html[data-look='reading-room'] :is(.rr-sc, .rr-aid, .font-tag, [role='menu'] > div:not([role]), .rr-slip-inner section[data-row] h3, .control-sheet section[data-row] h3) {
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  font-weight: var(--rr-label-weight);
+  line-height: var(--rr-label-leading);
+  letter-spacing: var(--rr-label-tracking);
+  font-variant-caps: var(--rr-label-caps);
+  text-transform: none;
+}
+/* a group's name and its value sit a little closer (the pen's row shares its line with the tip buttons) */
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet) section[data-row] h3 {
+  column-gap: 0.5rem;
+}
+/* a group's current value beside its label: a control word, not a small capital */
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet) section[data-row] h3 > span {
+  font-family: var(--rr-control-face);
+  font-size: var(--rr-control-size);
+  letter-spacing: var(--rr-control-tracking);
+  font-variant-caps: normal;
+  text-transform: none;
+}
+/* number */
+html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag, .rr-callno-v) {
+  font-family: var(--rr-number-face);
+  font-size: var(--rr-number-size);
+  font-weight: var(--rr-number-weight);
+  line-height: var(--rr-number-leading);
+  letter-spacing: var(--rr-number-tracking);
+  font-variant-caps: var(--rr-number-caps);
+  font-variant-numeric: oldstyle-nums tabular-nums;
+}
+/* the dock's place in the list ("4 of 127") is words around a count: the text face, figures that tick in place */
+html[data-look='reading-room'] .rr-dock-of {
+  font-family: var(--rr-control-face);
+  letter-spacing: var(--rr-control-tracking);
+  font-variant-caps: normal;
+}
+/* inside a number, "No." keeps the number's size (not the label's) */
+html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag) .rr-sc {
+  font-size: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  font-variant-caps: inherit;
+}
+/* a note's mark: a number in its line, set small and raised (it scales with the text it marks) */
+html[data-look='reading-room'] .rr-ref {
+  font-family: var(--rr-number-face);
+  font-weight: var(--rr-number-weight);
+}
+/* control: everything you operate (the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
+   tooltips, the writing tray), in the control face at one size; actions, numbers and labels inside keep their roles */
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .archive-dock, .rr-dock, [data-radix-popper-content-wrapper], .lib-menu, input, textarea, select, div.fixed.z-40 > div[class*='rounded-[22px]'], .rr-status, .rr-dock-word) {
+  font-family: var(--rr-control-face);
+  font-weight: var(--rr-control-weight);
+  letter-spacing: var(--rr-control-tracking);
+}
+html[data-look='reading-room'] :is(.rr-dock, .rr-dock-word, [role^='menuitem'], [data-radix-popper-content-wrapper] > :has(> [role='tooltip']), .control-sheet button[aria-expanded] > span[data-pill], .control-sheet button[aria-haspopup='menu']),
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .archive-dock, [data-radix-popper-content-wrapper], .lib-menu, div.fixed.z-40 > div[class*='rounded-[22px]']) :is([class*='text-[0.6875rem]'], [class*='text-[0.7188rem]'], [class*='text-[0.75rem]'], [class*='text-[0.7812rem]'], [class*='text-[0.78125rem]'], [class*='text-[0.8125rem]'], [class*='text-[11px]'], [class*='text-[11.5px]'], [class*='text-[12px]'], [class*='text-[12.5px]'], [class*='text-[13px]'], [class*='text-[13.5px]'], [class*='text-[0.8438rem]'], [class*='text-[0.875rem]'], [class*='text-[0.9375rem]'], [class*='text-[14px]'], [class*='text-[15px]']) {
+  font-size: var(--rr-control-size);
+  line-height: var(--rr-control-leading);
+}
+/* micro: words inside fixed-size controls */
+html[data-look='reading-room'] [class*='text-[0.6562rem]'] {
+  font-family: var(--rr-micro-face);
+  font-size: var(--rr-micro-size);
+  line-height: var(--rr-micro-leading);
+}
+html[data-look='reading-room'] .era-seg span:not(.era-marks):not(:has(*)) {
+  font-size: var(--rr-micro-size);
+  line-height: var(--rr-micro-leading);
+  letter-spacing: var(--rr-label-tracking);
+}
+/* action */
+html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div.fixed.z-40 > div[class*='rounded-[22px]'] [data-slot='button']) {
+  font-family: var(--rr-action-face);
+  font-size: var(--rr-action-size);
+  font-weight: var(--rr-action-weight);
+  line-height: var(--rr-action-leading);
+  letter-spacing: var(--rr-action-tracking);
+}
+
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
   html[data-look='reading-room'] .rr-card,
-  html[data-look='reading-room'] .rr-dock,
-  html[data-look='reading-room'] .rr-slip {
+  html[data-look='reading-room'] .rr-dock {
     border: 1px solid CanvasText;
   }
 }

@@ -11,7 +11,21 @@ import { handOpts } from './engine-features';
 
 export type Req = Omit<WriteRequest, 'id'>;
 
-export function requestFor(s: NoteState, natural: Hand = makeHand(s.seed, s.style, handOpts(s)), eff: Effective = effective(natural, s)): Req {
+/** The writer for a seed and style, kept for a while: makeHand gives the same hand for the same arguments, and the
+ * page asks for the same few again and again (the hands ahead are re-requested after every click, and the hand a
+ * click brings was one of them). */
+const made = new Map<string, Hand>();
+export function handFor(seed: string, style: string, opts?: { neatOnly?: boolean }) {
+  const key = `${seed}|${style}|${opts?.neatOnly ?? ''}`;
+  let p = made.get(key);
+  if (p) made.delete(key);
+  else p = makeHand(seed, style, opts);
+  made.set(key, p);
+  if (made.size > 16) made.delete(made.keys().next().value!);
+  return p;
+}
+
+export function requestFor(s: NoteState, natural: Hand = handFor(s.seed, s.style, handOpts(s)), eff: Effective = effective(natural, s)): Req {
   return {
     seed: s.seed, style: s.style, overrides: eff.overrides, text: s.text, paper: s.paper,
     size: eff.size, lineSpacing: eff.lineSpacing, inkKey: eff.inkKey, inkColor: inkColor(s.ink),

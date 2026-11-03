@@ -1,25 +1,37 @@
-// The Reading Room's desk (the tool, wide screens): the column beside the sheet. A found letter arrives with its
-// catalogue card; your own letter gets a plain card of its own. Under it, the main action in words ("Bring another
-// letter"), and the writing materials folded away in a request slip until you ask for them. The controls inside are the
-// tool's own (Panel.tsx), so everything they do is unchanged.
-import { useId, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+// The Reading Room's desk (the tool, wide screens), kept as a ledger (Proposal 1 of the layout study, Rafael's pick,
+// 3 Nov): the column beside the sheet holds ruled rows on the room and nothing with an edge. "Bring another letter"
+// with its key first, then the letter's record (LedgerRecord), and the writing materials as a drawer pinned to the
+// column's foot. Opened, the drawer rises over the record, so the column never needs a scroll bar of its own. The
+// controls inside are the tool's own (Panel.tsx), so everything they do is unchanged.
+import { useEffect, useId, useState } from 'react';
+import { ChevronUp } from 'lucide-react';
 import { AboutHand, LetterStatus, LookControls, MoreControls, ShareMenu, type PanelProps } from '@/components/Panel';
 import { Signature } from '@/components/Signature';
-import { inkColor } from '@/lib/inks';
+import { inkColor, inkName } from '@/lib/inks';
 import { getPaper } from '@/lib/papers';
+import { penName } from '@/lib/pens';
 import { cn } from '@/lib/utils';
 import { BringAnother } from './BringAnother';
-import { CatalogueCard } from './CatalogueCard';
+import { LedgerRecord } from './LedgerRecord';
 import { callNo } from './catalogue';
 import { useRecord } from './useCatalogue';
 
-const SLIP_KEY = 'seedhand:rr-slip';
-function readSlip() {
-  try { return localStorage.getItem(SLIP_KEY) === '1'; } catch { return false; }
+const DRAWER_KEY = 'seedhand:rr-slip';
+function readDrawer() {
+  try { return localStorage.getItem(DRAWER_KEY) === '1'; } catch { return false; }
 }
-function writeSlip(open: boolean) {
-  try { localStorage.setItem(SLIP_KEY, open ? '1' : '0'); } catch { /* private mode: fine */ }
+function writeDrawer(open: boolean) {
+  try { localStorage.setItem(DRAWER_KEY, open ? '1' : '0'); } catch { /* private mode: fine */ }
+}
+
+/** "laid paper · dip pen · blue-black ink", as an archive describes a letter's materials. */
+export function physicalOf(state: PanelProps['state']) {
+  const paper = getPaper(state.paper).name.toLowerCase();
+  // the writer's own pen and ink (the hand's defaults) say so; a chosen pen or ink is named
+  if (state.pen === 'auto' && state.ink === 'auto') return `${paper} · their own pen and ink`;
+  const pen = state.pen === 'auto' ? 'their own pen' : penName(state.pen).toLowerCase();
+  const ink = state.ink === 'auto' ? 'its own ink' : `${inkName(state.ink).toLowerCase()} ink`;
+  return [paper, pen, ink].join(' · ');
 }
 
 export function ReadingDesk(props: PanelProps) {
@@ -32,73 +44,81 @@ export function ReadingDesk(props: PanelProps) {
     <AboutHand {...props}>
       <button type="button" aria-label={`${props.name}: about this hand`} className="rr-sig group">
         <Signature key={state.seed + state.style} p={props.p} name={props.name} ink={inkColor(state.ink)} emPx={24} className="hand-in h-[2.375rem] overflow-visible" />
-        <ChevronDown aria-hidden className="rr-sig-chev" />
       </button>
     </AboutHand>
   );
   const share = <ShareMenu {...props} size="lg" />;
+  const physical = physicalOf(state);
   return (
     // as wide as the tool's panel (density.css --panel-w), so the desk grows with the browser's text size as it does
-    <div className="rr-desk panel-scroll h-full overflow-y-auto overscroll-contain">
-      <div className="rr-desk-inner">
-        {/* the main action first, then the materials folded in their slip, then the letter's card */}
+    <div className="rr-desk panel-scroll h-full">
+      <div className="rr-ledger">
+        {/* the main action, a ruled row with its key, then the record */}
         <div className="rr-desk-actions">
           <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Bring another hand'} />
           {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="rr-status" />}
         </div>
-        <RequestSlip {...props} />
         {found && record ? (
-          <CatalogueCard record={record} hand={signature} handName={props.name} actions={share} />
+          <LedgerRecord record={record} hand={signature} handName={props.name} actions={share} physical={physical} />
         ) : found ? (
-          <div className="rr-card rr-card--waiting" aria-hidden />
+          <div className="rr-ledger-waiting" aria-hidden />
         ) : (
-          <section aria-label="Your letter" className="rr-card">
-            <div className="rr-card-head">
+          <section aria-label="Your letter" className="rr-ledger-record">
+            <div className="rr-ledger-head">
               <p className="rr-card-no"><span className="rr-sc">{replyTo ? 'A reply' : 'Your letter'}</span></p>
               <div className="rr-card-actions">{share}</div>
             </div>
             <h2 className="rr-card-title">{replyTo ? <>To {replyTo.from}</> : 'A letter of your own'}</h2>
             <dl className="rr-facts">
-              {replyTo && (
+              {replyTo?.no != null && (
                 <div className="rr-fact">
                   <dt className="rr-sc">In reply to</dt>
-                  <dd><span className="rr-red rr-figures">No. {callNo(replyTo.no ?? 0)}</span>, {replyTo.title}</dd>
+                  <dd><span className="rr-red">No. {callNo(replyTo.no)}</span>, {replyTo.title}</dd>
                 </div>
               )}
               <div className="rr-fact">
                 <dt className="rr-sc">Hand</dt>
                 <dd>{signature}</dd>
               </div>
-              <div className="rr-fact">
-                <dt className="rr-sc">Paper</dt>
-                <dd>{getPaper(state.paper).name}</dd>
-              </div>
             </dl>
+            <p className="rr-physical">{physical}</p>
             <p className="rr-card-foot">Not in the collection: yours alone until you share it.</p>
           </section>
         )}
-
       </div>
+      <WritingDrawer {...props} />
     </div>
   );
 }
 
-/** The writing materials, folded into a request slip until you want them (remembered on this device). */
-function RequestSlip(props: PanelProps) {
-  const [open, setOpen] = useState(readSlip);
+/** The writing materials: a drawer pinned to the foot of the column (its state remembered on this device). What they
+ * are is said once, in the record's physical-description line, so the drawer's handle is just its name. */
+function WritingDrawer(props: PanelProps) {
+  const [open, setOpen] = useState(readDrawer);
   const id = useId();
-  const toggle = () => setOpen((o) => { writeSlip(!o); return !o; });
+  const toggle = () => setOpen((o) => { writeDrawer(!o); return !o; });
+  // Escape puts the drawer away (focus comes back to its handle)
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (!t?.closest(`#${CSS.escape(id)}-b`)) return;
+      setOpen(false); writeDrawer(false);
+      document.getElementById(`${id}-h`)?.querySelector('button')?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, id]);
   return (
-    <section className={cn('rr-slip', open && 'is-open')} aria-labelledby={`${id}-h`}>
+    <section className={cn('rr-drawer', open && 'is-open')} aria-labelledby={`${id}-h`}>
       <h2 id={`${id}-h`} className="m-0">
-        <button type="button" aria-expanded={open} aria-controls={`${id}-b`} onClick={toggle} className="rr-slip-head">
-          <span className="rr-slip-k rr-sc">Request slip</span><span className="sr-only">: </span>
-          <span className="rr-slip-t">Writing materials</span><span className="sr-only">. </span>
-          <span className="rr-slip-v">{getPaper(props.state.paper).name}, the pen, the ink, the hand</span>
-          <ChevronDown aria-hidden className="rr-slip-chev" />
+        <button type="button" aria-expanded={open} aria-controls={`${id}-b`} onClick={toggle} className="rr-drawer-head">
+          <span className="rr-sc">Writing materials</span>
+          <ChevronUp aria-hidden className="rr-drawer-chev" />
         </button>
       </h2>
-      <div id={`${id}-b`} className="rr-slip-body" inert={!open}>
+      <div id={`${id}-b`} className="rr-drawer-body panel-scroll" inert={!open}>
         <div className="rr-slip-inner">
           <LookControls {...props} />
           <MoreControls {...props} />
@@ -108,9 +128,9 @@ function RequestSlip(props: PanelProps) {
   );
 }
 
-/** Phones: the same card as a slip under the sheet (found letters only). */
+/** Phones: the same record as ruled rows under the sheet (found letters only). */
 export function CatalogueSlip({ id, name }: { id: string | null | undefined; name: string }) {
   const record = useRecord(id);
   if (!record) return null;
-  return <CatalogueCard slip record={record} hand={name} handName={name} className="rr-under-sheet" />;
+  return <LedgerRecord record={record} hand={name} handName={name} className="rr-under-sheet" />;
 }
