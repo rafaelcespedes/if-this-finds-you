@@ -1,9 +1,9 @@
 // The Fonts view's state, all of it in the URL so a set can be shared and comes back the same:
-//   /fonts?set=k7f2q&f=script&t=palmer.spencerian&n=careful&s=forward&p=fountain&any=1&line=pangram&text=…&size=56&show=live&view=saved
-// `set` and the filters decide which hands; `any=1` is Neat hands only switched off; line, text, size and show are
-// how the specimens are written. Defaults are left out.
+//   /fonts?set=k7f2q&f=script&t=palmer.spencerian&n=careful&s=forward&p=fountain&any=1&line=pangram&text=…&view=saved
+// `set` and the filters decide which hands; `any=1` is Neat hands only switched off; line and text are what the
+// specimens write. Defaults are left out. (The size and the live-hand switch were cut on 4 Nov 2026, Rafael: "remove
+// any content that's not essential"; old links that carry size= or show= simply lose them.)
 import { NO_FILTERS, readFilters, writeFilters, type Catalogue, type Filters } from './filters';
-import type { Mode } from './protocol';
 
 /** What every row writes: the set's letter opening (default), a preset, the writer's own name, or your words. */
 export type Line = 'letter' | 'pangram' | 'alphabet' | 'figures' | 'name' | 'own';
@@ -24,17 +24,12 @@ export interface FontsRoute {
   line: Line;
   /** your own words (line = own) */
   text: string;
-  /** px per em; 0 = the default for the screen */
-  size: number;
-  mode: Mode;
   view: 'set' | 'saved';
   /** the hand whose record is open (its id), or '' */
   hand: string;
 }
 
-/** As a font first: it shows what you download; the live hand is a click away. */
-export const DEFAULT_MODE: Mode = 'font';
-export const SIZE = { min: 24, max: 128, step: 1 };
+/** The specimens' size: big enough to judge a hand, two lines on phones. */
 export const defaultSize = (narrow: boolean) => (narrow ? 40 : 60);
 /** How many hands a set holds (24: under a second to draw, and it divides by 2, 3, 4 and 6 if a grid comes later). */
 export const SET_COUNT = 24;
@@ -48,7 +43,6 @@ export const newSetSeed = () => {
 export function readRoute(search: string, cat?: Catalogue): FontsRoute {
   const q = new URLSearchParams(search);
   const set = (q.get('set') ?? '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
-  const size = Number(q.get('size'));
   const text = (q.get('text') ?? '').slice(0, 160);
   const asked = q.get('line') as Line | null;
   const line: Line = text ? 'own' : asked && LINES.some((l) => l.id === asked) ? asked : 'letter';
@@ -58,8 +52,6 @@ export function readRoute(search: string, cat?: Catalogue): FontsRoute {
     neatOnly: q.get('any') !== '1',
     line,
     text,
-    size: Number.isFinite(size) && size >= SIZE.min && size <= SIZE.max ? Math.round(size) : 0,
-    mode: q.get('show') === 'live' ? 'live' : DEFAULT_MODE,
     view: q.get('view') === 'saved' ? 'saved' : 'set',
     hand: (q.get('hand') ?? '').slice(0, 160),
   };
@@ -73,12 +65,12 @@ export function routeSearch(r: FontsRoute, base = location.search) {
   if (!r.neatOnly) q.set('any', '1'); else q.delete('any');
   if (r.line === 'own' && r.text) { q.set('text', r.text); q.delete('line'); }
   else { q.delete('text'); if (r.line !== 'letter' && r.line !== 'own') q.set('line', r.line); else q.delete('line'); }
-  if (r.size) q.set('size', String(r.size)); else q.delete('size');
-  if (r.mode !== DEFAULT_MODE) q.set('show', r.mode); else q.delete('show');
+  q.delete('size');
+  q.delete('show');
   if (r.view === 'saved') q.set('view', 'saved'); else q.delete('view');
   if (r.hand) q.set('hand', r.hand); else q.delete('hand');
   const s = q.toString();
   return s ? `?${s}` : '';
 }
 
-export const EMPTY_ROUTE: FontsRoute = { set: '', filters: NO_FILTERS, neatOnly: true, line: 'letter', text: '', size: 0, mode: DEFAULT_MODE, view: 'set', hand: '' };
+export const EMPTY_ROUTE: FontsRoute = { set: '', filters: NO_FILTERS, neatOnly: true, line: 'letter', text: '', view: 'set', hand: '' };

@@ -1,10 +1,22 @@
 # Fonts (fonts.html, /fonts)
 
 Every hand as a free, open-source font, served like a foundry's list: a set of 24 hands, each a big line set **in its
-own generated font**, with the writer's name (lib/hands.ts `writerName`, as the tool's label), tags (Joined · Palmer ·
-fountain pen · Field journal; a tag filters by itself) and three actions: save it (heart), write with it (opens the
-tool in that exact hand on a fresh sheet), download the font (.otf + .ttf zip). "Show 24 more" carries on with the same
-set; "New set" (dock, or Space) draws another.
+own generated font**, with the writer's name (lib/hands.ts `writerName`, as the tool's label; it opens the hand's
+record), a few plain words about the hand (Joined · Palmer · fountain pen) and three actions: save it (heart), write
+with it (opens the tool in that exact hand on a fresh sheet), download the font (.otf + .ttf zip). "Show 24 more"
+carries on with the same set; "New set" (or Space) draws another.
+
+## The controls: one home at a time (4 Nov 2026)
+- **Below 1024 px** (phones, tablets): one floating dock, `Dock.tsx`: Filters (the shared Sheet: Joined or print first,
+  then every filter), Text (the shared Sheet: what every hand writes, or your own words), your saved hands (only once
+  there are some) and New set. Under 360 px the dock's words hide behind their icons; under 400 px with saved hands,
+  Text keeps only its Aa.
+- **Wide screens**: what every hand writes is one ruled tester line above the list (`SpecimenBar.tsx`); the filters are
+  the rail in the Reading Room (`Rail.tsx`) or the dock (Filters, saved, New set) in the classic look.
+- **Cut, to come back if people ask** (Rafael: "remove any content that's not essential"): the size slider (40 px on
+  phones, 60 px wider), the As a font / Live hand switch (the live hand is now a fold in each hand's record), tags that
+  filtered by themselves, the caption of the filters above the dock, Joined/Print in the dock (now the first filter),
+  and the second "New set" at the end of the list.
 
 Run: `cd app && npm run dev`, open `/fonts.html` (the live site serves it at `/fonts`, clean URLs).
 
@@ -13,14 +25,15 @@ Run: `cd app && npm run dev`, open `/fonts.html` (the live site serves it at `/f
   shows (`buildFont` with `chars`, stroke-merged with clipper, every alternate, join and kerning pair the download has)
   and loaded with `FontFace`. What you see is what you download. New characters (your own words) rebuild that row's
   font; until then the row keeps the last words it could set (never a fallback font).
-- **Live hand**: the engine's live writing with the writer's own pen, ink and paper (renderCanvas on a strip of the
-  paper), labelled as such with a line saying the font keeps a few versions of each letter.
+- **Live hand**: in each hand's record ("The live hand" fold), the engine's live writing with the writer's own pen, ink
+  and paper (renderCanvas on a strip of the paper), with a line saying the font keeps a few versions of each letter.
 
 ## The URL is the state
-`/fonts?set=k7f2q&f=script&t=palmer.spencerian&c=elegant&n=careful.relaxed&s=forward&w=wide&p=fountain&any=1&line=pangram&text=…&size=60&show=live&view=saved`
+`/fonts?set=k7f2q&f=script&t=palmer.spencerian&c=elegant&n=careful.relaxed&s=forward&w=wide&p=fountain&any=1&line=pangram&text=…&view=saved&hand=…`
 
 - `set` + the filters (+ `any=1`, Neat hands only off) decide the hands: the same link always gives the same set.
-- `line` (letter, pangram, alphabet, figures, name) or `text` (your words), `size` and `show` decide the specimens.
+- `line` (letter, pangram, alphabet, figures, name) or `text` (your words) decide the specimens; `hand` keeps a record
+  open. Old links' `size` and `show` are dropped.
 - The default line is the opening of a real letter from the library, a different one per set, credited under the bar.
 
 ## How it works
