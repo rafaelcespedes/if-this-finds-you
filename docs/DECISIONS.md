@@ -40,7 +40,9 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
     only sources that already pass the rights rules (this rules out Brienne and the Prize Papers
     transcriptions for now).
   - **Inclusive writers (hard targets):** a lot of women (≥55% of enabled letters), a lot of African American
-    and African writers (≥15), and a lot of Hispanic/Latin American writers (≥15).
+    and African writers (≥15), and a lot of Hispanic/Latin American writers (≥15). A letter written in Spanish
+    (or Brazilian Portuguese) counts as Hispanic even when the source gives no nationality. The Hispanic set
+    being mostly children's letters is fine for now (adult letters would need manual archive browsing).
   - **Submissions (phase 2):** anyone can submit a letter. Each writer chooses whether to be credited. Letters
     go to a private queue; Claude approves them in batches (daily or every couple of days, depending on traffic),
     with an automatic screening step built later.
