@@ -25,13 +25,22 @@ export interface Written {
   mount(host: HTMLElement): { play(onEnd?: () => void): void; destroy(): void };
 }
 
-/** A new writer for `text`, sized for a line `widthPx` wide at `emPx` pixels to the em. */
-export function write(text: string, entropy: string, widthPx: number, emPx: number): Written | null {
+/**
+ * A new writer for `text`, sized for a line `widthPx` wide at `emPx` pixels to the em. With `oneLine`, a wide hand
+ * that would wrap is written a little smaller instead (about 1 in 20 at desktop width), so the line keeps the room the
+ * page held for it.
+ */
+export function write(text: string, entropy: string, widthPx: number, size: number, opts: { oneLine?: boolean } = {}): Written | null {
   const s = engine.sampleLook({ entropy, textLength: text.length, neatOnly: true });
   const look = handLook(`${s.seed}~${s.style}`);
   if (!look) return null;
   const r = renderingOf(look);
-  const page = layout(r.p, text, { maxWidth: widthPx / (emPx / UPM) });
+  let emPx = size;
+  let page = layout(r.p, text, { maxWidth: widthPx / (emPx / UPM) });
+  while (opts.oneLine && page.lines > 1 && emPx > size * 0.6) {
+    emPx = Math.floor(emPx * 0.92);
+    page = layout(r.p, text, { maxWidth: widthPx / (emPx / UPM) });
+  }
   const svg: string = engine.renderSVG(r.p, page, { width: widthPx, emPx, strokeIds: true, ink: r.inkKey ?? r.inkColor });
   const style = getStyle(look.style) as { label?: string } | undefined;
   const pen = (engine.PENS?.[look.pen] as { label?: string } | undefined)?.label ?? '';
