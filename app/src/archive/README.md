@@ -9,16 +9,24 @@ Run it with the app (`cd app && npm run dev`) and open **/letters.html**.
 
 ## Pages
 
-- **Index** (`Index.tsx`, `Card.tsx`, `Controls.tsx`): "All letters" written in the logo's hand (#5,
-  `all-letters.svg`, drawn by `heading.mjs` with brand/wordmark/wordmark.mjs), then every letter as the letter
-  itself: a sheet of its paper with the letter written on it in its own hand, flat on the page (no shadow, nothing
-  behind it), a touch askew, and its title underneath (in the letter face). Who wrote it, where and when are in the
-  link's hover title and its screen-reader text. Masonry: three columns on wide screens, two from a phone up; each
-  card goes into the shortest column, in reading order, so Tab follows the eye.
-  Browsing controls stay small (research and reasoning in `CONTROLS.md`), three arrangements to compare with
-  `?toolbar=1…3`: 1 search and Shuffle icons in the heading plus a one-sentence filter ("127 letters from any time
-  in any language"); 2 a floating dock like the tool's right panel (the default); 3 the dock with a timeline of
-  every letter by century as the era filter. Search starts folded to an icon; `/` opens it; Esc clears, then closes.
+- **Index**, two views to compare with `?view=canvas|grid` (kept for the tab, never in share links):
+  - **canvas** (`Canvas.tsx`, the default): the letters scattered like paper on a table around "All letters"
+    (written in the logo's hand, `all-letters.svg` from `heading.mjs`) and the intro, a field that loops in every
+    direction. Drag or swipe (with a glide), trackpad or wheel, arrow keys; a tap opens a letter, a drag never does.
+    One wrapped tile, larger than the screen, so each letter shows at most once; only the letters near the screen
+    are on the page, and moving updates their positions directly. A search or a century regathers the matching
+    letters around the heading. Tab brings each letter into view; "Show the letters as a list" (first in Tab
+    order) switches to the grid. Reduced motion: no glide.
+  - **grid** (`Index.tsx`, `Card.tsx`): the masonry: three columns on wide screens, two from a phone up, each card
+    into the shortest column, in reading order.
+  Every card is the letter itself: a sheet of its paper in its own hand, flat on the page (no shadow, nothing behind
+  it), a touch askew, and its title (in the letter face). Who wrote it, where and when are in the link's hover
+  title and its screen-reader text.
+  Browsing controls stay small (research and reasoning in `CONTROLS.md`), three arrangements with
+  `?toolbar=1…3`: 1 a search icon in the heading plus a one-sentence filter (grid view only); 2 a floating dock with
+  Era and Language menus; 3 the dock with a timeline of every letter by century (the default). No Shuffle and no
+  count on screen; screen readers hear the count after each change. Search starts folded to an icon; `/` opens
+  it; Esc clears, then closes.
 - **Letter** (`LetterPage.tsx`, `LetterParts.tsx`, loaded on demand with the engine): a quiet reading page. The
   letter written out in front of you is the hero (the tool's reader: `ReaderSheets`, engine `timeline` +
   `playSVG`, about 3x, a tap or key finishes it). The words around it are editorial, in the letter face: title,
