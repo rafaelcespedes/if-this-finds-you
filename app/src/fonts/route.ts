@@ -28,6 +28,8 @@ export interface FontsRoute {
   size: number;
   mode: Mode;
   view: 'set' | 'saved';
+  /** the hand whose record is open (its id), or '' */
+  hand: string;
 }
 
 /** As a font first: it shows what you download; the live hand is a click away. */
@@ -59,6 +61,7 @@ export function readRoute(search: string, cat?: Catalogue): FontsRoute {
     size: Number.isFinite(size) && size >= SIZE.min && size <= SIZE.max ? Math.round(size) : 0,
     mode: q.get('show') === 'live' ? 'live' : DEFAULT_MODE,
     view: q.get('view') === 'saved' ? 'saved' : 'set',
+    hand: (q.get('hand') ?? '').slice(0, 160),
   };
 }
 
@@ -73,8 +76,9 @@ export function routeSearch(r: FontsRoute, base = location.search) {
   if (r.size) q.set('size', String(r.size)); else q.delete('size');
   if (r.mode !== DEFAULT_MODE) q.set('show', r.mode); else q.delete('show');
   if (r.view === 'saved') q.set('view', 'saved'); else q.delete('view');
+  if (r.hand) q.set('hand', r.hand); else q.delete('hand');
   const s = q.toString();
   return s ? `?${s}` : '';
 }
 
-export const EMPTY_ROUTE: FontsRoute = { set: '', filters: NO_FILTERS, neatOnly: true, line: 'letter', text: '', size: 0, mode: DEFAULT_MODE, view: 'set' };
+export const EMPTY_ROUTE: FontsRoute = { set: '', filters: NO_FILTERS, neatOnly: true, line: 'letter', text: '', size: 0, mode: DEFAULT_MODE, view: 'set', hand: '' };

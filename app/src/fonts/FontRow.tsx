@@ -4,7 +4,7 @@
 // what you see is what you download; Live hand, it's the engine's live writing on the hand's paper.
 // The row's height is set before anything arrives, so rows never move when their writing does.
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Heart, LoaderCircle, PenLine } from 'lucide-react';
+import { Download, Heart, LoaderCircle, PenLine, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -15,6 +15,7 @@ import { boxHeight, type FontEntry, type LiveSpec, type Mode } from './protocol'
 import { fonts, useRowFont, useRowLive } from './store';
 import { toggleSaved } from './favourites';
 import { useNear } from './near';
+import { HandRecordView } from './Record';
 
 /** The line a font-mode row reserves, in em: a line box tall enough for every glyph's ink (the font's own metrics). */
 export const FONT_LINE = 1.5;
@@ -36,6 +37,9 @@ interface Props {
   /** wide screens: the kind of writer as a fourth tag */
   wide: boolean;
   onTag: (key: FilterKey, value: string) => void;
+  /** this hand's record is open (one at a time, kept in the URL) */
+  open: boolean;
+  onOpen: (id: string | null) => void;
 }
 
 const covers = (have: string, want: string) => { for (const c of want) if (!have.includes(c)) return false; return true; };
@@ -71,14 +75,17 @@ function Tag({ children, onClick, title }: { children: React.ReactNode; onClick?
   return <button type="button" className="font-tag" title={title} onClick={onClick}>{children}</button>;
 }
 
-export const FontRow = memo(function FontRow({ entry, index, text, mode, live, em, lines, saved, compact, wide, onTag }: Props) {
+export const FontRow = memo(function FontRow({ entry, index, text, mode, live, em, lines, saved, compact, wide, onTag, open, onOpen }: Props) {
   const ref = useRef<HTMLLIElement>(null);
   const near = useNear(ref);
   const [el, setEl] = useState<Element | null>(null);
   useEffect(() => setEl(ref.current), []);
   const isLive = mode === 'live';
   // as a font: the font, grown when the words need letters it hasn't got; meanwhile the last words it could set stay
-  const { font, failed } = useRowFont(isLive ? undefined : entry, text, el, near);
+  // the record's "Every character" asks the font for its whole glyph set (also while the row shows the live hand)
+  const [allChars, setAllChars] = useState('');
+  useEffect(() => { if (!open) setAllChars(''); }, [open]);
+  const { font, failed } = useRowFont(isLive && !allChars ? undefined : entry, text + allChars, el, near || open);
   const lastText = useRef(text);
   const shownText = font && covers(font.chars, text) ? text : lastText.current;
   if (font && covers(font.chars, text)) lastText.current = text;
@@ -114,7 +121,11 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
       <div className="font-row-meta">
         {entry ? (
           <>
-            <h2 className="font-row-name">{entry.name}</h2>
+            <h2 className="font-row-name">
+              <button type="button" className="font-row-open" aria-expanded={open} aria-controls={`record-${index}`} onClick={() => onOpen(open ? null : entry.id)}>
+                {entry.name}
+              </button>
+            </h2>
             <p className="font-row-tags">
               <Tag title={`Only ${entry.family === 'script' ? 'joined' : 'print'} hands`} onClick={() => onTag('family', entry.family)}>{entry.family === 'script' ? 'Joined' : 'Print'}</Tag>
               <Tag title={entry.schooled || `Only hands taught this way`} onClick={() => onTag('style', entry.style)}>{entry.tradition}</Tag>
@@ -129,6 +140,13 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
             <span className="sr-only">Font {index + 1}, being chosen</span>
           </>
         )}
+        {open && entry ? (
+          <div className="font-row-actions">
+            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => onOpen(null)} aria-controls={`record-${index}`}>
+              Close <X aria-hidden />
+            </Button>
+          </div>
+        ) : (
         <div className={cn('font-row-actions', !entry && 'invisible')}>
           <Action label={saved ? 'Saved (remove)' : 'Save this hand'} compact pressed={saved} onClick={() => entry && toggleSaved(entry)}>
             <Heart aria-hidden className={cn('size-4', saved && 'fill-current')} />
@@ -140,6 +158,7 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
             {building ? <LoaderCircle aria-hidden className="size-4 animate-spin" /> : <Download aria-hidden className="size-4" />}
           </Action>
         </div>
+        )}
       </div>
       {isLive ? (
         <div className="font-row-specimen is-live" style={{ height: h, ...(entry ? { background: entry.tint } : {}) }}>
@@ -158,6 +177,20 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
           )}
           {failed && !font && <span className="font-row-failed">This hand couldn’t be set as a font here.</span>}
         </div>
+      )}
+      {open && entry && (
+        <HandRecordView
+          entry={entry}
+          id={`record-${index}`}
+          family={font?.family ?? null}
+          allLoaded={!!font && !!allChars && covers(font.chars, allChars)}
+          onShowAll={setAllChars}
+          toolHref={`${toolHref}#${entry.tool}`}
+          saved={saved}
+          onSave={() => toggleSaved(entry)}
+          onDownload={download}
+          building={building}
+        />
       )}
     </li>
   );

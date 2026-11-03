@@ -1,6 +1,6 @@
 // The site's one header, on every page, so the pages can't drift apart (docs/NAVIGATION.md).
 // The wordmark on the left is the way to the writing tool (on the tool itself it's plain: a link there would drop the
-// letter on the desk). On the right, the three places in the same words and order everywhere, the current one marked
+// letter on the desk). On the right, the four places in the same words and order everywhere, the current one marked
 // and not a link; before them My letters, only when letters are kept on this device. The words show only when they
 // fit on one line beside the wordmark (a phone, large text, a narrow window beside the tool's panel); otherwise the
 // page's one action, then a Menu chip that opens the same list.

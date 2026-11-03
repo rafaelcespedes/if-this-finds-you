@@ -25,6 +25,8 @@ interface Want {
   width: number;
   css: number;
   aspect: number;
+  /** the whole first sheet at its paper's own size (card-protocol.ts) */
+  full?: boolean;
   el: Element;
 }
 
@@ -144,7 +146,7 @@ class CardStore {
           this.pump();
           return;
         }
-        const req: CardRequest = { job, letter: w.letter, hand: w.hand, width: w.width, css: w.css, aspect: w.aspect };
+        const req: CardRequest = { job, letter: w.letter, hand: w.hand, width: w.width, css: w.css, aspect: w.aspect, full: w.full };
         slot.worker.postMessage(req);
       });
     }

@@ -2,13 +2,15 @@
 // laid out like letters spread on a table (masonry: each goes into the shortest column, in reading order, so Tab
 // and screen readers follow the same order as the eye). Search, filters and Shuffle above, as the tool's controls.
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { cn } from '@/lib/utils';
 import allLetters from './all-letters.svg?raw';
 import { Card } from './Card';
+import { FindingList } from './FindingList';
 import { LetterCanvas, VIEW, type ViewId } from './Canvas';
-import { HeadingTools, SelectDock, SentenceFilter, TimelineDock, TOOLBAR, useSlashToSearch, type ControlsProps } from './Controls';
+import { HeadingTools, SelectDock, SentenceFilter, TimelineDock, TOOLBAR, useSlashToSearch, type ControlsProps, type ViewSwitch } from './Controls';
 import { cardAspect } from './card-protocol';
 import { cardSize } from './cards';
 import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
@@ -115,10 +117,15 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
   const dock = TOOLBAR !== '1';
   // the letters as a table you wander (canvas) or as a grid; "Show the letters as a list" switches to the grid
   const [view, setView] = useState<ViewId>(VIEW);
-  const showList = () => {
-    try { sessionStorage.setItem('seedhand:view', 'grid'); } catch { /* fine */ }
-    setView('grid');
+  const showView = (v: ViewId) => {
+    try { sessionStorage.setItem('seedhand:view', v); } catch { /* fine */ }
+    setView(v);
   };
+  const showList = () => showView('grid');
+  // the Reading Room: the other view one switch away, at the timeline's end (layout study, proposal 2)
+  const switchTo: ViewSwitch | undefined = LOOK !== 'reading-room' ? undefined
+    : view === 'canvas' ? { label: 'List', icon: <List aria-hidden />, onClick: showList }
+    : { label: 'Table', icon: <LayoutGrid aria-hidden />, onClick: () => showView('canvas') };
 
   const intro = 'Real letters by ordinary people, each written out by hand. Some never reached the person they were meant for.';
   if (view === 'canvas') {
@@ -150,10 +157,10 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             ) : null
           }
         />
-        {/* the header stays legible over the letters */}
-        <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[5] h-28 bg-gradient-to-b from-[var(--desk)] via-[color-mix(in_oklab,var(--desk)_70%,transparent)] to-transparent" />
+        {/* letters pass under a soft fade, never under the header's words */}
+        <div aria-hidden className="canvas-fade-top" />
         <SiteHeader current="letters" />
-        {TOOLBAR === '2' ? <SelectDock {...controls} /> : <TimelineDock {...controls} />}
+        {TOOLBAR === '2' ? <SelectDock {...controls} /> : <TimelineDock {...controls} viewSwitch={switchTo} />}
       </div>
     );
   }
@@ -177,7 +184,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
         </section>
         {/* the dock floats at the bottom, but comes first in reading order, before the letters */}
         {TOOLBAR === '2' && <SelectDock {...controls} />}
-        {TOOLBAR === '3' && <TimelineDock {...controls} />}
+        {TOOLBAR === '3' && <TimelineDock {...controls} viewSwitch={switchTo} />}
 
         <div ref={panelRef}>
           {error ? (
@@ -188,6 +195,9 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             <Empty title={filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} action={<Button variant="outline" onClick={clear}>Clear filters</Button>}>
               Try fewer words, or another era or language.
             </Empty>
+          ) : letters && LOOK === 'reading-room' ? (
+            // the Reading Room: the letters as a finding aid (the layout study's list)
+            <FindingList letters={shown} onOpen={onOpen} />
           ) : letters ? (
             <ul ref={listRef} role="list" aria-label="All letters" className="masonry relative mt-2" style={{ '--col-w': `${g.colW}px` } as CSSProperties}>
               {shown.map((l) => <Card key={l.id} letter={l} size={size} aspect={aspects.get(l.id) ?? 1} onOpen={onOpen} />)}

@@ -11,6 +11,7 @@
 import type { PaperSpec } from './types';
 import type { Ctx2D } from './paint';
 import { rng } from './rng';
+import { outlineOf, outlinePath } from './outline';
 
 export type MarkLook = 'reading-room' | 'postmarked' | 'default';
 
@@ -187,7 +188,8 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
       const zone = ZONES[z];
       const rot = ((r() * 2 - 1) * TILT[kind] * Math.PI) / 180;
       // a ring may run a hair off an edge, about one time in five
-      const over = RINGS.has(kind) && r() < 0.2 ? size0 * 0.05 : 0;
+      // a ring may run off an edge about one time in four (clipped to the sheet when printed)
+      const over = RINGS.has(kind) && r() < 0.25 ? size0 * 0.07 : 0;
       const j = r() * r() * 6;
       const t = r();
       let size = size0;
@@ -261,7 +263,7 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
     const picked = pickWeighted(r, w); // always drawn, so forcing a badge for review moves nothing else
     const forced = forcedBadge(input);
     const kind = BADGES[forced ? forced - 1 : picked];
-    const base = clamp(minSide * 0.19, 19, 33) * (0.88 + r() * 0.26);
+    const base = clamp(minSide * 0.19, 19, 33) * 1.18 * (0.88 + r() * 0.26);
     const size0 = kind === 'registry' ? base * 1.25 : kind === 'line' ? base * 1.1 : kind === 'pencil' ? base * 1.15 : base;
     const postal = kind === 'datestamp' || kind === 'duplex' || kind === 'line';
     const at = place(kind, size0);
@@ -287,7 +289,7 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   if (input.number != null) {
     const n = String(input.number).padStart(4, '0');
     const unevenStrike = r() < 0.3;
-    const size0 = clamp(minSide * 0.11, 12, 19) * (0.9 + r() * 0.2);
+    const size0 = clamp(minSide * 0.11, 12, 19) * 1.18 * (0.9 + r() * 0.2);
     const at = place('number', size0);
     const st = strike(0.7);
     marks.push({
@@ -302,7 +304,7 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   }
   // a cancellation in red, true to the provenance
   if (input.cancel) {
-    const at = place('cancel', clamp(minSide * 0.2, 20, 36));
+    const at = place('cancel', clamp(minSide * 0.2, 20, 36) * 1.15);
     marks.push({ kind: 'cancel', x: at.x, y: at.y, rot: at.rot, size: at.size, ...strike(0.9), ink: INKS.red, text: { label: input.cancel.toUpperCase() }, seed: seed + ':cancel' });
   }
   const key = marks.map((m) => `${m.kind}${m.x.toFixed(1)},${m.y.toFixed(1)},${m.rot.toFixed(3)},${m.size.toFixed(2)},${m.layer},${m.ink},${m.text.place ?? ''}${m.text.year ?? ''}${m.text.number ?? ''}${m.text.label ?? ''}`).join(';');
@@ -392,8 +394,25 @@ const SERIF = 'Georgia, "Times New Roman", serif';
 const HAND = '"Bradley Hand", "Segoe Print", "Noteworthy", "Comic Sans MS", cursive';
 
 /** Paint the marks of one layer onto a sheet (ctx at the sheet's origin, k px per mm). */
-export function printMarks(ctx: Ctx2D, marks: Mark[], k: number, layer: 'under' | 'over') {
-  for (const m of marks) if (m.layer === layer) printMark(ctx, m, k);
+export function printMarks(ctx: Ctx2D, marks: Mark[], k: number, layer: 'under' | 'over', paper?: PaperSpec) {
+  const these = marks.filter((m) => m.layer === layer);
+  if (!these.length) return;
+  ctx.save();
+  // a mark that runs off the edge stops at the paper's real edge (deckle, tear, flaps, holes), never on the desk
+  if (paper) clipToSheet(ctx, paper, k);
+  for (const m of these) printMark(ctx, m, k);
+  ctx.restore();
+}
+
+/** Clip ctx (at the sheet's origin) to the sheet: its outline where it has one, else its rectangle. */
+export function clipToSheet(ctx: Ctx2D, paper: PaperSpec, k: number, sheet = 0) {
+  const o = outlineOf(paper, sheet);
+  if (o) ctx.clip(outlinePath(o, k), 'evenodd');
+  else {
+    ctx.beginPath();
+    ctx.rect(0, 0, paper.w * k, paper.h * k);
+    ctx.clip();
+  }
 }
 
 function printMark(ctx: Ctx2D, m: Mark, k: number) {

@@ -60,13 +60,14 @@ export default defineConfig({
   // the main chunk is React + the engine's letter data; opentype.js and the writer worker load separately
   build: {
     chunkSizeWarningLimit: 800,
-    // three pages: the tool (index.html), the Letters library (letters.html, src/archive/) and Fonts (fonts.html,
-    // src/fonts/), split apart
+    // four pages: the tool (index.html), the Letters library (letters.html, src/archive/), Fonts (fonts.html,
+    // src/fonts/) and About (about.html, src/about/), split apart
     rollupOptions: {
       input: {
         main: path.resolve(import.meta.dirname, 'index.html'),
         letters: path.resolve(import.meta.dirname, 'letters.html'),
         fonts: path.resolve(import.meta.dirname, 'fonts.html'),
+        about: path.resolve(import.meta.dirname, 'about.html'),
       },
     },
   },

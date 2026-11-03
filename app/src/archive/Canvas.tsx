@@ -7,6 +7,11 @@
 // letters near the screen are on the page; moving updates their positions directly (no re-render per frame), and
 // letters come and go as they near the screen. A search or a century regathers the matching letters around the
 // heading. Reduced motion: no glide.
+//
+// In the Reading Room the scatter sits on a hidden table (the layout study, proposal 2): equal cells, each letter
+// standing on its row's shelf line at its own paper's size (one scale for every paper), barely tilted, with a
+// two-line label under it (title; place, year and, for a letter lost in transit, why, in small capitals). The
+// heading's cells stay empty: a quiet zone no letter enters.
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type FocusEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { cardAspect } from './card-protocol';
@@ -18,6 +23,7 @@ import type { ArchiveLetter } from './model';
 import { LOOK } from '@/lib/look';
 import { CardStamp } from '@/themes/reading-room/SheetMarks';
 import { letterHash } from './route';
+import { paperSize } from './paper-of';
 // look C (?look=postmarked): each letter in its addressed envelope (src/themes/postmarked/)
 import { EnvelopeCard } from '@/themes/postmarked/EnvelopeCard';
 
@@ -45,6 +51,8 @@ interface Placed {
   /** degrees */
   tilt: number;
   aspect: number;
+  /** the table: the sheet at its paper's size (px) and its own tilt, standing on the cell's shelf */
+  sheet?: { w: number; h: number; tilt: number };
 }
 interface Field {
   items: Placed[];
@@ -125,6 +133,62 @@ function layField(letters: ArchiveLetter[], o: { cardW: number; captionH: number
   return { items, tileW, tileH };
 }
 
+/** The table's measures: a cell's width is the widest paper's, its shelf as tall as the tallest paper. */
+interface TableSize {
+  /** px per mm, the same for every paper */
+  k: number;
+  cellInner: number;
+  shelfH: number;
+  labelH: number;
+}
+
+/**
+ * The Reading Room's table: letters in equal cells around the heading, nearest first (so a search's matches gather
+ * there), each sheet at its paper's size standing on its row's shelf line, the label under the shelf. A cell is left
+ * empty when anything in it would come within `space` of the heading. Tilt stays under 0.7° either way.
+ */
+function layTable(letters: ArchiveLetter[], papers: Map<string, { w: number; h: number }>, t: TableSize, o: { head: { w: number; h: number }; space: number; minW: number; minH: number }): Field {
+  const gapX = Math.round(t.cellInner * 0.3), gapY = Math.round(t.cellInner * 0.2);
+  const cellW = t.cellInner + gapX;
+  const itemH = t.shelfH + t.labelH;
+  const cellH = itemH + gapY;
+  const n = letters.length;
+  const quiet = (cx: number, cy: number) =>
+    Math.abs(cx) - t.cellInner / 2 < o.head.w / 2 + o.space && Math.abs(cy) - itemH / 2 < o.head.h / 2 + o.space;
+  let cols = Math.max(3, Math.round(Math.sqrt(((n + 6) * cellH) / cellW)), Math.ceil(o.minW / cellW));
+  let rows = Math.max(3, Math.ceil((n + 6) / cols), Math.ceil(o.minH / cellH));
+  cols += 1 - (cols % 2);
+  rows += 1 - (rows % 2);
+  const r = rand('table:' + n);
+  let cells: { cx: number; cy: number; d: number }[] = [];
+  for (;;) {
+    cells = [];
+    for (let j = 0; j < rows; j++) {
+      const cy = (j - (rows - 1) / 2) * cellH;
+      for (let i = 0; i < cols; i++) {
+        const cx = (i - (cols - 1) / 2) * cellW;
+        if (!quiet(cx, cy)) cells.push({ cx, cy, d: Math.hypot(cx / cellW, cy / cellH) });
+      }
+    }
+    if (cells.length >= n) break;
+    rows += 2;
+  }
+  // nearest first, rows read left to right within a ring (a little give, so the order is felt more than seen)
+  for (const c of cells) c.d += r() * 0.35;
+  cells.sort((a, b) => a.d - b.d);
+  const items: Placed[] = letters.map((l, k) => {
+    const c = cells[k];
+    const p = papers.get(l.id) ?? { w: 148, h: 210 };
+    return {
+      id: l.id, letter: l, aspect: p.h / p.w,
+      x: c.cx, y: c.cy, w: t.cellInner, h: itemH, tilt: 0,
+      sheet: { w: Math.round(p.w * t.k), h: Math.round(p.h * t.k), tilt: (r() - 0.5) * 1.4 },
+    };
+  });
+  items.push({ id: 'heading', x: 0, y: 0, w: o.head.w, h: o.head.h, tilt: 0, aspect: 0 });
+  return { items, tileW: cols * cellW, tileH: rows * cellH };
+}
+
 /** The page's rem in px: 16 by default, more when the reader has asked for larger text. Read again on a resize and
  * whenever `refresh` is called (the heading changing size is the sure sign the text size has). */
 const readRem = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -157,7 +221,10 @@ interface Props {
 
 const MARGIN = 280;
 
-export function LetterCanvas({ shown, heading, empty, onOpen, active, onList }: Props) {
+/** The Reading Room lays the letters on a table (layTable); the other looks scatter them (layField). */
+const TABLE = LOOK === 'reading-room';
+
+export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, onList }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   const narrow = vp.w < 640;
@@ -172,10 +239,23 @@ export function LetterCanvas({ shown, heading, empty, onOpen, active, onList }: 
     h: headH ?? Math.round((narrow ? 18.75 : 18) * rem),
   };
   const space = Math.round(1.5 * rem);
+  // the table: every paper at one scale, the widest filling a cell; the shelf as tall as the tallest paper; the label
+  // under it at most four lines (two of title, two of small capitals: library.css clamps them), in rem
+  const papers = useMemo(() => new Map(letters.map((l) => [l.id, paperSize(l)])), [letters]);
+  const table = useMemo((): TableSize | null => {
+    if (!TABLE) return null;
+    let w = 0, h = 0;
+    for (const p of papers.values()) { w = Math.max(w, p.w); h = Math.max(h, p.h); }
+    const k = cardW / (w || 148);
+    return { k, cellInner: cardW, shelfH: Math.round((h || 210) * k), labelH: Math.round(5.125 * rem) };
+  }, [papers, cardW, rem]);
   const field = useMemo(
-    () => layField(shown, { cardW, captionH, head, space, minW: vp.w + MARGIN * 2 + cardW, minH: vp.h + MARGIN * 2 + cardW * 1.6 }),
+    () => {
+      const o = { head, space, minW: vp.w + MARGIN * 2 + cardW, minH: vp.h + MARGIN * 2 + cardW * 1.6 };
+      return table ? layTable(shown, papers, table, o) : layField(shown, { cardW, captionH, ...o });
+    },
     // the field changes with what's shown and the screen's class, not every pixel of a resize
-    [shown, cardW, captionH, head.w, head.h, space, Math.ceil(vp.w / 200), Math.ceil(vp.h / 200)],
+    [shown, cardW, captionH, head.w, head.h, space, table, papers, Math.ceil(vp.w / 200), Math.ceil(vp.h / 200)],
   );
   // measured when the heading is on the page, and again whenever it changes size (a face loads, the text grows);
   // kept while it's panned out of sight. Steps of 4 px, so a sub-pixel wobble doesn't lay the field out again.
@@ -409,6 +489,8 @@ export function LetterCanvas({ shown, heading, empty, onOpen, active, onList }: 
               </li>
             );
           }
+          // the Reading Room: on the table, at its paper's size
+          if (table && it.sheet) return <TableCard key={id} letter={it.letter!} sheet={it.sheet} shelfH={table.shelfH} cellInner={table.cellInner} style={style} itemRef={ref} onOpen={onOpen} />;
           // look C (?look=postmarked): each letter in its addressed envelope
           const Card = LOOK === 'postmarked' ? EnvelopeCard : CanvasCard;
           return <Card key={id} letter={it.letter!} aspect={it.aspect} size={size} style={style} itemRef={ref} onOpen={onOpen} />;
@@ -462,6 +544,83 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
         <h3 className="canvas-title font-letter mt-2.5 pr-1 leading-[1.25] text-foreground/85 text-pretty">
           {letter.title ?? opening(letter.text, 48)}
         </h3>
+        <span className="sr-only">
+          {special ? `${circumstanceLabel(letter)}. ` : ''}{fromTo(letter)}. {whereWhen(letter)}.
+        </span>
+      </a>
+    </li>
+  );
+});
+
+/** A place for a label's small capitals: the first and last parts of a long one, nothing in brackets
+ * ("Mount Rest, Clay-Ashland, Liberia" → "Mount Rest, Liberia"; "Béxar (San Antonio), Mexican Texas" → "Béxar, Mexican Texas"). */
+function labelPlace(place: string | undefined) {
+  const parts = (place ?? '').replace(/\s*\([^)]*\)/g, '').split(/,\s*/).filter(Boolean);
+  return parts.length > 2 ? `${parts[0]}, ${parts[parts.length - 1]}` : parts.join(', ');
+}
+
+/**
+ * A letter on the Reading Room's table: its sheet at its paper's size standing on the shelf (bottom-aligned in a
+ * shelf as tall as the tallest paper), a little askew; under the shelf a museum label, the title, then place, year
+ * and, for a letter lost in transit, why (in red), in small capitals. The label starts at the sheet's left edge.
+ * Under the pointer or the keyboard's focus the letter lifts, its label adds who wrote to whom, and the rest of the
+ * table steps back a little (library.css).
+ */
+const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, style, itemRef, onOpen }: {
+  letter: ArchiveLetter; sheet: { w: number; h: number; tilt: number }; shelfH: number; cellInner: number;
+  style: CSSProperties; itemRef: (el: HTMLElement | null) => void; onOpen: () => void;
+}) {
+  const paperRef = useRef<HTMLDivElement>(null);
+  const size = useMemo(() => cardSize(sheet.w), [sheet.w]);
+  const key = cardKey(letter.id, undefined, size) + '|sheet';
+  const img = useSyncExternalStore((cb) => cards.subscribe(key, cb), () => cards.get(key));
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const el = paperRef.current;
+    if (!el || img) return;
+    cards.want({ key, letter: cardLetter(letter), width: size.width, css: size.css, aspect: sheet.h / sheet.w, full: true, el });
+    return () => cards.unwant(key);
+  }, [key, img, letter, size, sheet.w, sheet.h]);
+  const b = img ? img.bleed / img.width : 0;
+  const special = lostInTransit(letter);
+  const inset = Math.max(0, (cellInner - sheet.w) / 2);
+  const place = labelPlace(letter.place);
+  return (
+    <li ref={itemRef} data-place={letter.id} className="canvas-item table-item absolute top-0 left-0" style={style}>
+      <a
+        href={letterHash(letter.id)}
+        onClick={onOpen}
+        draggable={false}
+        title={`${fromTo(letter)}\n${whereWhen(letter)}`}
+        className="archive-card table-card group block outline-none"
+      >
+        <div className="flex items-end justify-center" style={{ height: shelfH }}>
+          <div ref={paperRef} className="table-sheet relative isolate shrink-0" style={{ width: sheet.w, height: sheet.h, '--tilt': `${sheet.tilt.toFixed(2)}deg` } as CSSProperties}>
+            <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', loaded && 'is-gone')} />
+            <CardStamp id={letter.id} />
+            {img && (
+              <img
+                src={img.url}
+                alt=""
+                aria-hidden
+                decoding="async"
+                draggable={false}
+                onLoad={() => { setLoaded(true); cards.shown(); }}
+                style={{ left: `${-b * 100}%`, marginTop: `${-b * 100}%`, width: `${(1 + 2 * b) * 100}%` }}
+                className={cn('absolute top-0 h-auto max-w-none select-none', img.fresh && 'card-in')}
+              />
+            )}
+          </div>
+        </div>
+        <div className="table-label" style={{ marginLeft: inset }}>
+          <h3 className="table-title">{letter.title ?? opening(letter.text, 48)}</h3>
+          {/* under the pointer or the keyboard's focus: who wrote to whom (library.css shows it) */}
+          <p aria-hidden className="table-writer">{fromTo(letter)}</p>
+          <p className="table-meta">
+            {[place, letter.year != null ? String(letter.year) : ''].filter(Boolean).join(' · ')}
+            {special && <>{place || letter.year != null ? ' · ' : ''}<span className="table-status">{circumstanceLabel(letter)}</span></>}
+          </p>
+        </div>
         <span className="sr-only">
           {special ? `${circumstanceLabel(letter)}. ` : ''}{fromTo(letter)}. {whereWhen(letter)}.
         </span>

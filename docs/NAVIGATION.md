@@ -7,16 +7,17 @@ hand-made copy (`app/public/404.html`); keep it in step.
 
 ## The places
 
-Three places, always in this order, always in these words:
+Four places, always in this order, always in these words:
 
 | Place | What it is | Address |
 |---|---|---|
 | **Write a letter** | the writing tool: a found letter on the desk, Find another, your own letter | `/` |
 | **All letters** | the library: the canvas (and the grid, `?view=grid`); a letter's page sits inside it | `/letters` |
 | **Fonts** | every hand as a free font | `/fonts` |
+| **About** | what this is, where the letters and hands come from, credits | `/about` |
 
 **My letters** is not a place: it's your own letters kept on this device. It appears only when at least one is
-kept, before the three places (with a hairline between, so it reads as yours, not as a page), with the count.
+kept, before the four places (with a hairline between, so it reads as yours, not as a page), with the count.
 It opens a short list; picking one brings that letter back onto the desk. It works from every page: away from the
 tool, it opens the tool at `/?kept=<savedAt>`, and the tool takes it off the address once it's open.
 
@@ -25,7 +26,7 @@ without words.
 
 **Adding a place.** A new page that people should be able to reach from anywhere gets one line in `PLACES`
 (`lib/places.ts`), after the others, and its page renders `<SiteHeader current="<its id>" />`; the 404's copy gets
-the same link. **About** (`/about`, coming) is the fourth and last place, in that one word. Nothing else changes:
+the same link. **About** (`/about`) is the fourth and last place, in that one word. Nothing else changes:
 every header picks it up, and where the line no longer fits, the Menu takes over.
 
 ## Where you are
@@ -78,7 +79,7 @@ the label role's small capitals; the letter's number is archival red. Other look
 ```
 
 - Everything goes into one **Menu** chip at the top right (drawn 32 px, a 44 px target, the same chip as Share).
-  It opens a small sheet: the three places (the current one marked), then "My letters, kept on this device" with
+  It opens a small sheet: the four places (the current one marked), then "My letters, kept on this device" with
   the list. With letters kept, the chip carries their count.
 - **Why one menu and not a row of icons.** Before this, the tool's phone header had four icon chips (My letters,
   All letters, Fonts, Share). A grid icon and an "Aa" don't say "All letters" or "Fonts"; at 320 px the chips ran

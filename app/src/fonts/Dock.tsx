@@ -54,8 +54,8 @@ function FilterControl({ def, value, onChange, family, familyOf }: { def: Filter
     const many = def.kind === 'many';
     const common = { 'aria-label': def.label, className: 'flex flex-wrap justify-start gap-1.5 bg-transparent p-0' };
     const items = options.map((o) => (
-      <SegmentedChip key={o.value} value={o.value} aria-label={o.note ? `${o.label}: ${o.note}` : o.label}>
-        {o.label}{o.note && <span className="ml-1.5 text-muted-foreground">{o.note}</span>}
+      <SegmentedChip key={o.value} value={o.value} aria-label={o.note ? `${o.label}: ${o.note}` : o.label} title={o.note}>
+        {o.label}
       </SegmentedChip>
     ));
     return many ? (
@@ -76,6 +76,12 @@ function FilterControl({ def, value, onChange, family, familyOf }: { def: Filter
             <div key={g.id} className="grid gap-1.5">
               <div className="text-[0.7812rem] text-muted-foreground">{g.label}</div>
               {chips(list)}
+              {/* the hands hard to read today, said once under their era rather than on each chip */}
+              {list.some((o) => o.note) && (
+                <p className="text-[0.7188rem] leading-snug text-muted-foreground">
+                  {list.filter((o) => o.note).map((o) => o.label).join(' and ')} {list.filter((o) => o.note).length > 1 ? 'are' : 'is'} hard to read today.
+                </p>
+              )}
             </div>
           );
         })}
@@ -97,15 +103,13 @@ function FilterControl({ def, value, onChange, family, familyOf }: { def: Filter
   return chips(def.options);
 }
 
-function FilterPanel({ id, filters, onFilters, neatOnly, onNeatOnly, catalogue, onClose, narrow }: Pick<Props, 'filters' | 'onFilters' | 'neatOnly' | 'onNeatOnly' | 'catalogue' | 'narrow'> & { id: string; onClose: () => void }) {
+/** Every filter as the tool's ¶ groups, the finer ones under its More row. The dock's panel and the rail both show it. */
+export function FilterGroups({ filters, onFilters, neatOnly, onNeatOnly, catalogue, pad = 'var(--pad,1.25rem)', flush }: Pick<Props, 'filters' | 'onFilters' | 'neatOnly' | 'onNeatOnly' | 'catalogue'> & { pad?: string; flush?: boolean }) {
   const defs = filterDefs(catalogue).filter((d) => d.key !== 'family');
-  const ref = useRef<HTMLDivElement>(null);
   const moreId = useId();
   const moreCount = defs.filter((d) => d.more && filters[d.key].length).length;
   const [more, setMore] = useState(moreCount > 0);
-  useEffect(() => { ref.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true }); }, []);
   const familyOf = (s: string) => catalogue.styles.find((x) => x.id === s)?.family ?? '';
-  const n = filterCount({ ...filters, family: [] });
   const set = (key: keyof Filters, v: string[]) => {
     // Messy needs every hand: picking it switches Neat hands only off
     if (key === 'tidy' && v.includes('messy') && neatOnly) onFilters({ ...filters, tidy: v }, false);
@@ -124,15 +128,26 @@ function FilterPanel({ id, filters, onFilters, neatOnly, onNeatOnly, catalogue, 
     </Group>
   ));
   return (
+    <>
+      {groups(defs.filter((d) => !d.more), true)}
+      <section data-row className="border-t border-border/70" style={{ marginInline: `calc(${pad} * -1)` }}>
+        <MoreButton open={more} controls={moreId} flush={flush} summary={moreCount ? `${moreCount} on` : 'Joins, weight, spacing, pace…'} onClick={() => setMore((v) => !v)}>More</MoreButton>
+      </section>
+      {more && <div id={moreId} className="pb-2">{groups(defs.filter((d) => d.more), true)}</div>}
+    </>
+  );
+}
+
+function FilterPanel({ id, filters, onFilters, neatOnly, onNeatOnly, catalogue, onClose, narrow }: Pick<Props, 'filters' | 'onFilters' | 'neatOnly' | 'onNeatOnly' | 'catalogue' | 'narrow'> & { id: string; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { ref.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true }); }, []);
+  const n = filterCount({ ...filters, family: [] });
+  return (
     <div ref={ref} id={id} role="dialog" aria-label="Filters"
       onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
       className={cn('filter-panel lib-menu pointer-events-auto flex max-h-[min(72dvh,640px)] flex-col overflow-hidden bg-panel', narrow ? 'w-[calc(100vw-24px)]' : 'w-[460px]')}>
       <div className="panel-scroll overflow-y-auto overscroll-contain px-[var(--pad,1.25rem)]">
-        {groups(defs.filter((d) => !d.more), true)}
-        <section data-row className="-mx-[var(--pad,1.25rem)] border-t border-border/70">
-          <MoreButton open={more} controls={moreId} summary={moreCount ? `${moreCount} on` : 'Joins, weight, spacing, pace…'} onClick={() => setMore((v) => !v)}>More</MoreButton>
-        </section>
-        {more && <div id={moreId} className="pb-2">{groups(defs.filter((d) => d.more), true)}</div>}
+        <FilterGroups filters={filters} onFilters={onFilters} neatOnly={neatOnly} onNeatOnly={onNeatOnly} catalogue={catalogue} />
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-border/70 px-3 py-2">
         <Button variant="ghost" size="sm" disabled={!n && neatOnly} onClick={() => onFilters({ ...NO_FILTERS, family: filters.family }, true)} className="text-muted-foreground">

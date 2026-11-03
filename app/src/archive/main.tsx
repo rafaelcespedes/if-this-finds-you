@@ -9,6 +9,8 @@ import './archive.css';
 import { applyLook } from '../lib/look';
 import '../themes/reading-room.css';
 import '../themes/postmarked.css';
+// the library in the Reading Room (the layout study's proposals 2 and 3), after the look's own sheet
+import '../themes/reading-room/library.css';
 
 // the letter face (?serif=1…4), loaded beside the page
 applySerif();
