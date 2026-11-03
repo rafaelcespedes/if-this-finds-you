@@ -4,6 +4,14 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 
 ## 2026-11-02
 
+### Purpose (Rafael's own words, the frame for every other decision)
+- A lab experiment for Rafael's portfolio: **free, fun, no revenue, no usage expectations.** "Using AI in ways
+  that I think is clever." It does what couldn't be done before because it took too many resources, e.g.
+  hundreds of usable fonts that nobody would draw by hand.
+- **Fonts are to be downloadable and open source.**
+- Goal: bring underrepresented content, people and techniques into the spotlight, and inspire other designers.
+  Rafael plans to share it on X.
+
 ### Editor and writing experience
 - **First visit starts in Ink mode.** Edits behave like real ink: deleting crosses words out, a retyped letter
   overwrites the old one, and mid-line insertions go in with a ^. Fair copy stays one click away.
