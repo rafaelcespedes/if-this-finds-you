@@ -43,6 +43,9 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **All letters: the infinite canvas** is the default (Rafael, 2026-11-03); the grid stays at `?view=grid`.
+- **Printed marks:** a letter's place/year mark and its number (No. 0004) are printed into the paper (ink-stamp feel, mostly
+  random position and size, may overlap the writing), never animated in. Several badge variants, QA'd.
 - **Colour: "Rubric"** (the colour research's recommendation) is the default palette, replacing the navy CTA (Rafael,
   2026-11-03). **Type:** Atkinson Hyperlegible Next (UI) and Piazzolla (letters), for now.
 - **Two looks to compare, today's design stays the default:** `?look=reading-room` (concept A, the reading room with a
