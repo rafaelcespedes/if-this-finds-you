@@ -234,7 +234,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     });
   };
   const [saving, setSaving] = useState(false);
-  // the letter as text, open or folded (the dock's "Read it as text" opens it)
+  // the letter as text, open or folded (the dock's "Read as text" opens it)
   const [textOpen, setTextOpen] = useState(false);
   const download = async () => {
     if (!ready || !r || !letter) return;
@@ -243,7 +243,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
       const { blob } = await renderLiveNote(ready.live, ready.extras, r.inkKey ?? 'currentColor', r.inkColor, pxPerMm || 2);
       const file = `${APP_NAME} – ${letter.title ?? letter.id}`;
       const result = await saveNote(blob, file, coarse);
-      if (result === 'saved') toast('Image saved', { id: 'download', description: 'A JPEG of the letter as shown.' });
+      if (result === 'saved') toast('Image downloaded', { id: 'download', description: 'A JPEG of the letter as you see it.' });
       else if (result === 'needs-tap') toast('The image is ready', { id: 'download', action: { label: 'Save', onClick: () => saveNote(blob, file, true) } });
     } catch (e) {
       toast('The image couldn’t be made', { id: 'download', description: e instanceof Error ? e.message : 'Try again.' });
@@ -258,9 +258,9 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
         <SiteHeader current="letters" inside hrefs={{ letters: backHref }} />
         <main className="mx-auto max-w-[1180px] px-4 pt-28 sm:px-8 lg:px-10">
           {error ? (
-            <Missing title="The letters didn’t load." action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>Check your connection, then try again.</Missing>
+            <Missing title="The letters didn’t load" action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>Check your connection, then try again.</Missing>
           ) : letters ? (
-            <Missing title="This letter isn’t in the library." action={<Button variant="outline" asChild><a href={backHref}>See all letters</a></Button>}>
+            <Missing title="This letter isn’t in the collection" action={<Button variant="outline" asChild><a href={backHref}>See all letters</a></Button>}>
               The link may be mistyped, or the letter may have been taken out of the collection.
             </Missing>
           ) : null}

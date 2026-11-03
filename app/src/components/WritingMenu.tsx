@@ -29,7 +29,7 @@ interface Props {
 const LABEL: Record<WritingMode, string> = { ink: 'In ink', pencil: 'In pencil', fair: 'Fair copy' };
 const HINT: Record<WritingMode, string> = {
   ink: 'What’s written stays; changes are crossed out by hand',
-  pencil: 'Rubs out: changes are written again',
+  pencil: 'Changes rub out and are written again',
   fair: 'Every change redraws the page cleanly',
 };
 

@@ -152,7 +152,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
               </div>
             ) : letters && !shown.length ? (
               <div className="mt-2 text-center text-[14px] text-muted-foreground">
-                {filters.q ? `No letters match “${filters.q}”.` : 'No letters match.'} <button type="button" onClick={clear} className="ed-link">Clear</button>
+                {filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} <button type="button" onClick={clear} className="ed-link">Clear</button>
               </div>
             ) : null
           }
@@ -189,7 +189,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
 
         <div ref={panelRef}>
           {error ? (
-            <Empty title="The letters didn’t load." action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>
+            <Empty title="The letters didn’t load" action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>
               Check your connection, then try again.
             </Empty>
           ) : letters && !shown.length ? (

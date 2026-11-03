@@ -246,7 +246,7 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
       icon: <CaseSensitive />,
       quiet: true,
       status: status('font'),
-      hint: busy.font ? 'Being made…' : FONT_PACKAGE ? 'Install it on your computer. It cycles a few versions of each letter.' : undefined,
+      hint: busy.font ? 'Being made…' : FONT_PACKAGE ? 'Install it on your computer. It keeps three versions of each letter; the page never repeats.' : undefined,
       onSelect: onExportFont,
     },
   ];
@@ -310,7 +310,7 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
 }
 
 /**
- * "Roll a neat one", when the hand on the page isn't neat (it came before the switch, or from a link). Whether it is
+ * "Find a neater hand", when the hand on the page isn't neat (it came before the switch, or from a link). Whether it is
  * takes a layout (tens of ms on a slow phone), so it's worked out just after a new hand shows (a deferred render).
  */
 function NeatNudge({ p, onNewHand }: { p: Hand; onNewHand: () => void }) {
@@ -322,7 +322,7 @@ function NeatNudge({ p, onNewHand }: { p: Hand; onNewHand: () => void }) {
       onClick={onNewHand}
       className="justify-self-start rounded-md px-1 py-0.5 text-[0.7812rem] font-medium text-foreground underline decoration-[var(--rule-link)] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
     >
-      Roll a neat one
+      Find a neater hand
     </button>
   );
 }
