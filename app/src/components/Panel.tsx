@@ -3,7 +3,7 @@
 //   the look       Paper, Pen, Ink, Handwriting, How they write (three sliders)
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
-import { memo, useEffect, useId, useRef, useState } from 'react';
+import { memo, useDeferredValue, useEffect, useId, useRef, useState } from 'react';
 import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
 import { hasControl } from '@/controls-lab';
 import { getStyle, UPM, type Hand } from '@engine';
@@ -32,7 +32,7 @@ import { getPaper, PAPERS, variantsOf, type PaperId } from '@/lib/papers';
 import { FONT_PACKAGE } from '@/lib/actions';
 import { PENS_LIVE, PENS_SHOWN, penName } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
-import type { LockKey } from '@/lib/roll';
+import { isNeat, type LockKey } from '@/lib/roll';
 import { AMOUNT_RANGE, SIZE_RANGE, type NoteState } from '@/lib/state';
 import { cn, keepChosenInView } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -86,7 +86,6 @@ export interface PanelProps {
   /** New hand skips the hard-to-read writers */
   onNeatOnly: (v: boolean) => void;
   /** the hand on the page is easy to read */
-  neatNow: boolean;
   onShare: () => void;
   onDownload: () => void;
   onExportFont: () => void;
@@ -311,6 +310,24 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
   );
 }
 
+/**
+ * "Roll a neat one", when the hand on the page isn't neat (it came before the switch, or from a link). Whether it is
+ * takes a layout (tens of ms on a slow phone), so it's worked out just after a new hand shows (a deferred render).
+ */
+function NeatNudge({ p, onNewHand }: { p: Hand; onNewHand: () => void }) {
+  const hand = useDeferredValue(p);
+  if (isNeat(hand)) return null;
+  return (
+    <button
+      type="button"
+      onClick={onNewHand}
+      className="justify-self-start rounded-md px-1 py-0.5 text-[0.7812rem] font-medium text-foreground underline decoration-[var(--rule-link)] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
+    >
+      Roll a neat one
+    </button>
+  );
+}
+
 // ---------- the look: paper, pen, ink, handwriting, how they write ----------
 /** What people change first, in that order. Papers sit in one sideways row, like pens. */
 export function LookControls(props: PanelProps & { rows?: boolean; flush?: boolean }) {
@@ -362,15 +379,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
             onChange={props.onNeatOnly}
           />
           {/* the hand on the page came before the switch (or from a link): one tap to a neat one */}
-          {state.neatOnly && !props.neatNow && (
-            <button
-              type="button"
-              onClick={props.onNewHand}
-              className="justify-self-start rounded-md px-1 py-0.5 text-[0.7812rem] font-medium text-foreground underline decoration-[var(--rule-link)] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
-            >
-              Roll a neat one
-            </button>
-          )}
+          {state.neatOnly && <NeatNudge p={props.p} onNewHand={props.onNewHand} />}
         </div>
       </Group>
       <Group label="How they write" className={pad}>

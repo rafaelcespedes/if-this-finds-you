@@ -44,18 +44,18 @@ The header is the site's running head (the Reading Room layouts, house rule 2): 
 **middle**, and the places on the right, on one line. In the Reading Room it sits over one hairline and is set in
 the label role's small capitals; the letter's number is archival red. Other looks keep the plain header.
 
-- **The middle** says what this page holds. Pages pass it as `centre` (and a short form, `centreShort`, for when
-  only that fits):
-  - the desk, on a found letter (Reading Room): "No. 0115 · Millsburg · 1838", short "No. 0115"
+- **The middle** says what this page holds, on desktops and tablets. Pages pass it as `centre`:
+  - the desk, on a found letter (Reading Room): "No. 0115 · Millsburg · 1838"
     (`components/Folio.tsx`, from the Reading Room's catalogue, the same source as the marks printed on the sheet);
-  - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›", short "‹ No. 0004 ›" (the library builds it);
+  - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›" (the library builds it);
   - All letters: where you are on the canvas, the decade under the middle of the screen (the library builds it).
   Mark the number with `data-site-number` so the looks can colour it.
 - It's centred over the page, or, on the desk in the Reading Room, over the letter's side: there the header runs
   the width of the window (its places reach the desk's right edge) and keeps the desk's width aside (`beside`).
-- When the line gets tight, the header gives way in this order: the middle moves off-centre, then the places go
-  into the Menu, then the middle shortens, then it steps aside (`useFits` in SiteHeader.tsx). On a 375 px phone
-  the desk shows "No. 0115", Share and the Menu; at 320 px, Share and the Menu.
+- **Phones (under 40rem) have no middle** (Rafael, 3 Nov: "keep the navigation on mobile minimal"): the wordmark,
+  the page's action (Share on the desk) and the Menu. The number, place and year stay on the page itself.
+- When the line gets tight on a larger screen, the header gives way in this order: the middle moves off-centre, then
+  the places go into the Menu, then the middle steps aside (`useFits` in SiteHeader.tsx).
 
 ## When the words fit (desktops, tablets)
 

@@ -8,8 +8,8 @@
 // (aria-current on the place you're in), [data-site-kept], [data-site-divider], [data-site-chip], [data-site-action],
 // and in the phone menu [data-site-menu], [data-site-label].
 import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { DropdownMenu } from 'radix-ui';
-import { Sheet, useSheets } from '@/components/ui/sheet';
+import { ActionSheet, Sheet, useSheets, type SheetEntry } from '@/components/ui/sheet';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Menu } from 'lucide-react';
 import { Wordmark } from '@/components/Wordmark';
 import { APP_NAME, withLogo } from '@/lib/brand';
@@ -33,7 +33,7 @@ type Props = {
   /** the running head's middle: what this page holds (a letter's number, place and year; the letter counter; where
    * you are on the canvas). Centred over the page, or over the stage when `beside` is set */
   centre?: ReactNode;
-  /** its short form for when the full one doesn't fit ("No. 0115", "‹ No. 0004 ›"); without one, the middle steps aside */
+  /** @deprecated ignored: phones keep the head minimal, with no middle (Rafael, 3 Nov); remove it where it's passed */
   centreShort?: ReactNode;
   /** a column kept at the right, beside the stage (the tool's record): the middle centres over the stage, and the
    * places still run to the right edge. A CSS length */
@@ -59,16 +59,19 @@ const mark = "relative before:pointer-events-none before:absolute before:inset-x
 const away = 'invisible absolute top-0 right-0';
 
 export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
-  { current, inside, hrefs, kept, action, centre, centreShort, beside, quiet, className, style, children },
+  { current, inside, hrefs, kept, action, centre: centreProp, beside, quiet, className, style, children },
   ref,
 ) {
   const device = useDeviceKept();
   const mine = kept ?? device;
   const onTool = current === 'write' && !inside;
-  const m = useFits(ref, `${!!beside}${!!centre}${!!centreShort}${!!action}`);
+  // phones keep the head minimal: the wordmark, the page's action and the Menu, no middle (Rafael, 3 Nov)
+  const phone = useMediaQuery('(max-width: 39.99rem)');
+  const centre = phone ? undefined : centreProp;
+  const m = useFits(ref, `${!!beside}${!!centre}${!!action}`);
   const { fit } = m;
   const words = fit === 'A' || fit === 'B';
-  const middle = centre && (fit === 'A' || fit === 'B' || fit === 'C') ? 'full' : centreShort && fit === 'D' ? 'short' : 'none';
+  const middle = centre && (fit === 'A' || fit === 'B' || fit === 'C') ? 'full' : 'none';
   return (
     <header
       ref={m.headerRef}
@@ -115,17 +118,6 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
             {centre}
           </div>
         )}
-        {centreShort && (
-          <div
-            ref={m.shortRef}
-            data-site-centre
-            data-short=""
-            inert={middle !== 'short' || undefined}
-            className={cn('flex shrink-0 items-center whitespace-nowrap', middle === 'short' ? 'ml-auto' : away)}
-          >
-            {centreShort}
-          </div>
-        )}
         <div
           inert={quiet || undefined}
           className={cn(
@@ -166,19 +158,17 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
  *   A  the places in words, the middle centred over the page (or the stage)
  *   B  the places in words, the middle between the wordmark and them
  *   C  the Menu, the middle in full
- *   D  the Menu, the middle's short form beside it (a phone)
- *   E  the Menu alone
+ *   E  the Menu alone (always on a phone, where the head has no middle)
  * Measured before the first paint, then whenever the header or any piece changes size (fonts and the wordmark's
  * drawing arrive late).
  */
-type Fit = 'A' | 'B' | 'C' | 'D' | 'E';
+type Fit = 'A' | 'B' | 'C' | 'E';
 function useFits(outer: React.ForwardedRef<HTMLElement>, pieces: string) {
   const header = useRef<HTMLElement | null>(null);
   const rowRef = useRef<HTMLDivElement | null>(null);
   const logoRef = useRef<HTMLDivElement | null>(null);
   const besideRef = useRef<HTMLSpanElement | null>(null);
   const centreRef = useRef<HTMLDivElement | null>(null);
-  const shortRef = useRef<HTMLDivElement | null>(null);
   const actionRef = useRef<HTMLDivElement | null>(null);
   const wordsRef = useRef<HTMLDivElement | null>(null);
   const [fit, setFit] = useState<Fit>('E');
@@ -199,7 +189,6 @@ function useFits(outer: React.ForwardedRef<HTMLElement>, pieces: string) {
       const logo = w(logoRef.current);
       const beside = w(besideRef.current);
       const centre = w(centreRef.current);
-      const short = w(shortRef.current);
       const action = actionRef.current;
       const inner = action ? px(getComputedStyle(action.parentElement!).columnGap) : 0;
       const lead = action ? action.offsetWidth + inner : 0;
@@ -213,20 +202,19 @@ function useFits(outer: React.ForwardedRef<HTMLElement>, pieces: string) {
         if (logo <= side && words <= side + (beside ? g + beside : 0)) next = 'A';
         else if (fits(logo, centre, words)) next = 'B';
         else if (fits(logo, centre, menu)) next = 'C';
-        else if (short && fits(logo, short, menu)) next = 'D';
         else next = 'E';
       } else {
-        next = fits(logo, words) ? 'B' : short && fits(logo, short, menu) ? 'D' : 'E';
+        next = fits(logo, words) ? 'B' : 'E';
       }
       setFit(next);
     };
     measure();
     const ro = new ResizeObserver(measure);
-    for (const el of [row, logoRef.current, besideRef.current, centreRef.current, shortRef.current, actionRef.current, wordsRef.current]) if (el) ro.observe(el);
+    for (const el of [row, logoRef.current, besideRef.current, centreRef.current, actionRef.current, wordsRef.current]) if (el) ro.observe(el);
     return () => ro.disconnect();
     // again when a piece comes or goes (the middle arrives with the letters)
   }, [pieces]);
-  return { fit, headerRef, rowRef, logoRef, besideRef, centreRef, shortRef, actionRef, wordsRef };
+  return { fit, headerRef, rowRef, logoRef, besideRef, centreRef, actionRef, wordsRef };
 }
 
 /** A place: the one you're in is marked and isn't a link; the one a page sits inside is marked and is the way back. */
@@ -264,9 +252,6 @@ function useDeviceKept(): Kept {
   return { list, onOpen: (savedAt) => window.location.assign(withLogo(keptHref(savedAt))) };
 }
 
-const menuSurface =
-  'z-50 w-[min(18rem,calc(100vw-24px))] origin-(--radix-popper-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,var(--popover)_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100';
-const keptRow = 'flex min-h-11 w-full cursor-default items-center justify-between gap-3 rounded-[3px] px-3 py-1.5 text-left text-[0.875rem] text-foreground outline-none select-none';
 
 function KeptLine({ d, kept, now }: { d: Draft; kept: Kept; now: number }) {
   const { words, when } = draftLabel(d, now);
@@ -281,29 +266,43 @@ function KeptLine({ d, kept, now }: { d: Draft; kept: Kept; now: number }) {
   );
 }
 
-/** My letters, when the words fit: how many are kept, and the list to bring one back. */
+/**
+ * My letters, when the words fit: how many are kept, and the list to bring one back. The shared ActionSheet: a menu
+ * from "My letters 2" on a desktop, a sheet of rows on a touch screen.
+ */
 function KeptMenu({ kept }: { kept: Kept }) {
   const now = Date.now();
   const n = kept.list.length;
+  const entries: SheetEntry[] = [
+    { kind: 'label', id: 'kept', label: 'Kept on this device' },
+    ...ordered(kept.list).map((d, i) => {
+      const { words, when } = draftLabel(d, now);
+      return {
+        id: `${d.savedAt}:${i}`,
+        // the time stays at the right of the words (the row's end slot is for an icon, a spinner or a tick)
+        label: (
+          <span className="flex min-w-0 items-baseline justify-between gap-3">
+            <span className="truncate">{words}</span>
+            <span className="shrink-0 text-[0.75rem] text-muted-foreground">{when}</span>
+          </span>
+        ),
+        hint: d.tab === TAB ? (kept.found ? 'The one you were writing here' : 'Written in this tab') : undefined,
+        onSelect: () => kept.onOpen(d.savedAt),
+      };
+    }),
+  ];
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <ActionSheet
+      title="My letters"
+      entries={entries}
+      width="w-[min(18rem,calc(100vw-24px))]"
+      trigger={
         <button type="button" data-site-kept className={link}>
           My letters
           <span className="font-normal text-muted-foreground tabular-nums">{n}</span>
         </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content side="bottom" align="end" sideOffset={8} collisionPadding={12} className={menuSurface}>
-          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">Kept on this device</DropdownMenu.Label>
-          {ordered(kept.list).map((d, i) => (
-            <DropdownMenu.Item key={d.savedAt + ':' + i} onSelect={() => kept.onOpen(d.savedAt)} className={cn(keptRow, 'data-[highlighted]:bg-accent')}>
-              <KeptLine d={d} kept={kept} now={now} />
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      }
+    />
   );
 }
 

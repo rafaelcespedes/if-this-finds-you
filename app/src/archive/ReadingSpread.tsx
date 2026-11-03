@@ -255,11 +255,11 @@ function Row({ term, children }: { term: string; children: ReactNode }) {
 }
 
 /**
- * "‹ No. 0004 · 4 of 127 ›": the number is the navigation. For the running head's middle (SiteHeader's `centre`;
- * `short` is its "‹ No. 0004 ›" for when the full one doesn't fit). The header styles the words; the number takes the
- * look's colour through data-site-number.
+ * "‹ No. 0004 · 4 of 127 ›": the number is the navigation. For the running head's middle (SiteHeader's `centre`,
+ * which phones don't show: there the slip dock carries it). The header styles the words; the number takes the look's
+ * colour through data-site-number.
  */
-export function LetterCounter({ id, turn: t, short }: { id: string; turn: Turn; short?: boolean }) {
+export function LetterCounter({ id, turn: t }: { id: string; turn: Turn }) {
   const no = useMarks(id)?.no;
   if (t.total < 2) return null;
   return (
@@ -267,7 +267,7 @@ export function LetterCounter({ id, turn: t, short }: { id: string; turn: Turn; 
       <button type="button" onClick={t.onPrev} aria-label={t.prev ? `Previous letter: ${t.prev.title ?? 'a letter'}` : 'Previous letter'}><ChevronLeft aria-hidden /></button>
       <span>
         {no != null && <span data-site-number>No. {callNo(no)}</span>}
-        {!short && <span className="letter-counter-of"><span aria-hidden> · </span><span className="sr-only">, </span>{t.at + 1} of {t.total}</span>}
+        <span className="letter-counter-of"><span aria-hidden> · </span><span className="sr-only">, </span>{t.at + 1} of {t.total}</span>
       </span>
       <button type="button" onClick={t.onNext} aria-label={t.next ? `Next letter: ${t.next.title ?? 'a letter'}` : 'Next letter'}><ChevronRight aria-hidden /></button>
     </span>

@@ -304,7 +304,6 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
       <SiteHeader
         current="letters" inside hrefs={{ letters: backHref }}
         centre={spread ? <LetterCounter id={id} turn={turnProps} /> : undefined}
-        centreShort={spread ? <LetterCounter id={id} turn={turnProps} short /> : undefined}
       />
       {LOOK === 'reading-room' ? (
         // the Reading Room: the letter as a spread (ReadingSpread.tsx, the layout study's proposal 3)
