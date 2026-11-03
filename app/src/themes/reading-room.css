@@ -425,7 +425,7 @@ html[data-look='reading-room'] .rr-desk-actions {
 html[data-look='reading-room'] .rr-status {
   justify-content: flex-start;
 }
-/* the main action: a ruled row in archival red, an arrow, and its key at the row's end */
+/* the main action: a ruled row in archival red, words alone (no arrow or icon: Rafael, 3 Nov), its key at the row's end */
 html[data-look='reading-room'] .rr-bring {
   display: flex;
   align-items: baseline;
@@ -440,15 +440,12 @@ html[data-look='reading-room'] .rr-bring {
   transition: color 150ms var(--ease-out);
 }
 html[data-look='reading-room'] .rr-bring-label {
+  flex: 1;
   text-decoration: underline;
   text-decoration-color: transparent;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
   transition: text-decoration-color 150ms var(--ease-out);
-}
-html[data-look='reading-room'] .rr-bring-arrow {
-  flex: 1;
-  transition: transform 150ms var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-bring:hover {
@@ -456,14 +453,6 @@ html[data-look='reading-room'] .rr-bring-arrow {
   }
   html[data-look='reading-room'] .rr-bring:hover .rr-bring-label {
     text-decoration-color: currentColor;
-  }
-  html[data-look='reading-room'] .rr-bring:hover .rr-bring-arrow {
-    transform: translateX(2px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-look='reading-room'] .rr-bring-arrow {
-    transition: none;
   }
 }
 /* its key: a quiet keycap, a tint with no edge, only where there's a keyboard to press it on */
