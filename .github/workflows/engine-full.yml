@@ -1,0 +1,70 @@
+# The whole engine QA (tools/qa/regress.mjs, every matrix item), nightly and on demand (docs/CHECKS.md).
+# Too slow to hold every update; the per-push "Engine: quick QA" covers a fixed sample. Not a Vercel check.
+
+name: Engine full QA
+
+on:
+  schedule:
+    - cron: "30 3 * * *" # every night at 03:30 UTC, on preview (the default branch)
+  workflow_dispatch: # Actions → Engine full QA → Run workflow (any branch)
+
+concurrency:
+  group: engine-full-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  full:
+    name: "Engine: full QA (nightly)"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # Judged against the version from a day ago, rendered here too (as in checks.yml). The nightly run is skipped
+      # when nothing in the engine or its QA changed since then.
+      - name: Check out the version from a day ago
+        id: prev
+        run: |
+          prev=$(git rev-list -1 --before="26 hours ago" HEAD)
+          if [ -z "$prev" ]; then prev=$(git rev-list --max-parents=0 HEAD | tail -1); fi
+          if [ "${{ github.event_name }}" = "schedule" ] && git diff --quiet "$prev" HEAD -- engine tools/qa; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing in engine/ or tools/qa/ changed since $(git log -1 --format='%h, %cd' "$prev"): skipped." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git worktree add --detach "$RUNNER_TEMP/previous" "$prev"
+          echo "Comparing with $(git log -1 --format='%h %s' "$prev")"
+          echo "run=true" >> "$GITHUB_OUTPUT"
+
+      - name: Engine QA, whole matrix
+        if: steps.prev.outputs.run == 'true'
+        run: node tools/qa/regress.mjs --against="$RUNNER_TEMP/previous"
+
+      - name: Summary
+        if: always() && steps.prev.outputs.run == 'true'
+        run: |
+          if [ -f tools/qa/out/summary.txt ]; then
+            { echo '### Engine QA (full)'; echo '```'; cat tools/qa/out/summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Keep the report
+        if: always() && steps.prev.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: engine-qa-full
+          path: |
+            tools/qa/out/summary.txt
+            tools/qa/out/results.json
+          retention-days: 30
