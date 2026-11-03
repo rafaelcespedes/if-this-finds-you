@@ -22,9 +22,32 @@
     <meta property="og:image:alt" content="If This Finds You, in handwriting" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
+    <!-- The first paint, before any script: the desk, the wordmark and an empty sheet, so a slow connection shows
+         the page at once. React replaces it (everything inside #root) on its first render. -->
+    <style>
+      html, body { margin: 0; background: #eeeae2; }
+      .boot { min-height: 100dvh; display: flex; }
+      .boot-main { position: relative; flex: 1; min-width: 0; padding: calc(7.25rem + env(safe-area-inset-top, 0px)) 16px 32px; }
+      .boot-logo { position: absolute; top: max(1rem, env(safe-area-inset-top, 0px)); left: max(1rem, env(safe-area-inset-left, 0px)); height: 32px; display: flex; align-items: center; }
+      .boot-logo img { display: block; height: 21px; width: auto; opacity: 0.85; }
+      .boot-sheet { margin: 0 auto; width: min(577px, 100%); aspect-ratio: 148 / 210; background: #fffdf8; border-radius: 1.5px; box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 14px 34px -20px rgba(60, 45, 20, 0.35); }
+      .boot-panel { display: none; }
+      @media (min-width: 1024px) {
+        .boot-main { padding: 100px 40px 64px; }
+        .boot-logo { top: 1.25rem; left: 2.5rem; height: 36px; }
+        .boot-logo img { height: 22px; }
+        .boot-panel { display: block; position: sticky; top: 0; height: 100dvh; padding: 12px 12px 12px 0; box-sizing: border-box; }
+        .boot-panel div { width: 336px; height: 100%; border-radius: 16px; background: #faf7f1; box-shadow: 0 1px 2px rgba(60, 45, 20, 0.07), 0 10px 30px -14px rgba(60, 45, 20, 0.22); }
+        .boot-read .boot-panel { display: none; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot" aria-busy="true"><div class="boot-main"><div class="boot-logo"><img src="/brand/wordmark-5.svg" alt="If This Finds You" /></div><div class="boot-sheet"></div></div><div class="boot-panel"><div></div></div></div></div>
+    <script>
+      // a letter sent to read has no panel
+      if (/(^|[#&])read=1(&|$)/.test(location.hash)) document.querySelector('.boot').classList.add('boot-read');
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
