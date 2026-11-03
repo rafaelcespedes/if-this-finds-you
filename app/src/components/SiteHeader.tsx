@@ -79,8 +79,12 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
       style={beside ? { ...style, ['--site-beside' as string]: beside } : style}
       className={cn(
         // over the page, clear of a notch or camera island (the phone sideways too); only its links take clicks, so
-        // the canvas under it still drags
-        'pointer-events-none absolute inset-x-0 top-[max(1rem,env(safe-area-inset-top,0px))] z-10 overflow-x-clip pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:pl-[max(2rem,env(safe-area-inset-left,0px))] lg:top-5 lg:pr-[max(2.5rem,env(safe-area-inset-right,0px))] lg:pl-[max(2.5rem,env(safe-area-inset-left,0px))]',
+        // the canvas under it still drags. Its own layer (30): above the page and the desk's side column, below the
+        // docks' menus, the phone's control sheet (40), and every menu, sheet and toast (50).
+        'pointer-events-none absolute inset-x-0 top-0 z-30 overflow-x-clip pt-[max(1rem,env(safe-area-inset-top,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:pl-[max(2rem,env(safe-area-inset-left,0px))] lg:pt-5 lg:pr-[max(2.5rem,env(safe-area-inset-right,0px))] lg:pl-[max(2.5rem,env(safe-area-inset-left,0px))]',
+        // a band of the page's own ground from the top of the window, so nothing scrolling under it shows through,
+        // fading out over 12 px below it
+        "bg-background after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-3 after:bg-gradient-to-b after:from-background after:to-transparent after:content-['']",
         className,
       )}
     >
@@ -317,15 +321,6 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
   const body = useRef<HTMLDivElement>(null);
   const n = kept.list.length;
   const now = Date.now();
-  useEffect(() => {
-    if (!open) return;
-    // Escape closes the menu only (a letter's page also goes back on Escape; the sheet has closed by the time this runs)
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') e.stopPropagation(); };
-    document.addEventListener('keydown', esc, true);
-    // the first place to go: opening focuses the first button, which would be a kept letter
-    const raf = requestAnimationFrame(() => body.current?.querySelector<HTMLElement>('a[data-site-link]')?.focus({ preventScroll: true }));
-    return () => { document.removeEventListener('keydown', esc, true); cancelAnimationFrame(raf); };
-  }, [open]);
   // big, thumb-sized rows in the sheet; the menu's own size in a popover. Every row answers a press at once.
   const row = cn(
     'sheet-row relative flex w-full items-center text-left text-foreground outline-none transition-[transform,background-color] duration-100 ease-out select-none active:scale-[0.97] active:bg-accent hover-device:hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
@@ -340,6 +335,10 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
       side="bottom"
       align="end"
       className="w-[min(18rem,calc(100vw-24px))] p-1.5"
+      // the first place to go (opening would focus the first button, a kept letter)
+      onOpenAutoFocus={(e) => { e.preventDefault(); body.current?.querySelector<HTMLElement>('a[data-site-link]')?.focus({ preventScroll: true }); }}
+      // Escape closes the menu only (a letter's page also goes back on Escape)
+      onEscapeKeyDown={(e) => e.stopPropagation()}
       trigger={
         <button type="button" data-site-chip aria-label={n ? `Menu, ${n} ${n === 1 ? 'letter' : 'letters'} kept` : 'Menu'} className={headerChip}>
           <Menu aria-hidden />
