@@ -213,7 +213,7 @@ export default function App() {
 
   const live = useMemo(
     () => {
-      if (inkActive) return inkLive(p, inkRef.current!.page, paper, eff.size, eff.lineSpacing);
+      if (inkActive) return inkLive(p, inkRef.current!.page, paper, eff.size, eff.lineSpacing, inkRef.current!.draft());
       // a shared ink letter: its page, corrections and all
       if (state.reader && inkMode && state.inkLog) {
         const doc = decodeInk(state.inkLog);
