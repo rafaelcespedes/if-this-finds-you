@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { CaseSensitive, ChevronDown, LayoutDashboard, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
-import { APP_NAME, withLogo } from '@/lib/brand';
+import { APP_NAME, NAME_WITH_DESCRIPTOR, withLogo } from '@/lib/brand';
 import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
 import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
@@ -444,9 +444,10 @@ export default function App() {
     if (c && theirsForwardRef.current) setTheirsForward(false);
   }, []);
 
+  // the tab: the name and what it is; a letter someone sent says it's for you (never its words)
   useEffect(() => {
-    document.title = `${name} – ${APP_NAME}`;
-  }, [name]);
+    document.title = state.reader ? `A letter for you · ${APP_NAME}` : NAME_WITH_DESCRIPTOR;
+  }, [state.reader]);
 
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
   const posture = usePosture(editing);
@@ -1307,6 +1308,9 @@ export default function App() {
                     // the letter's name is on the sheet now; a translation still says who translated it
                     <span className="mr-auto min-w-0 truncate pr-3 text-[0.75rem]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
+                  {/* phones: how you're writing, right under the letter (the bottom sheet keeps to the essentials; while
+                      writing, the pen tray has the same) */}
+                  {!isDesktop && <div className="-mr-1.5 shrink-0">{writingMenu}</div>}
                 </div>
                 {/* phones: the letter leads (nothing above it but the header); what it is comes after it, once: the
                     Reading Room's catalogue slip for a found letter, else the letter's name and how the hand writes */}
@@ -1390,7 +1394,7 @@ export default function App() {
         <>
           {/* with the sheet up, a tap on the letter folds it back down (a second tap writes) */}
           {sheetOpen && detent !== 'peek' && <div aria-hidden className="fixed inset-0 z-30 touch-none" onClick={() => setDetent('peek')} />}
-          <ControlSheet {...panelProps} writingMenu={writingMenu} open={sheetOpen} detent={detent} onDetent={setDetent} onMetrics={onMetrics} onDragging={onSheetDrag} onAdjusting={onAdjusting} />
+          <ControlSheet {...panelProps} open={sheetOpen} detent={detent} onDetent={setDetent} onMetrics={onMetrics} onDragging={onSheetDrag} onAdjusting={onAdjusting} />
         </>
       )}
       <Toaster offset={isDesktop ? 24 : 96} mobileOffset={{ bottom: mobileSheet ? metrics.peek + 12 : 96 }} />

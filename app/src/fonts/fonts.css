@@ -7,8 +7,8 @@
   --fonts-rule: var(--hairline);
   --fonts-row-pad: 18px;
   --fonts-row-gap: 8px;
-  --fonts-name-size: 14.5px;
-  --fonts-attr-size: 13px;
+  --fonts-name-size: 0.9062rem;
+  --fonts-attr-size: 0.8125rem;
   --fonts-name: var(--text);
   --fonts-attr: var(--text-muted);
   /* as a font: the line in the UI's ink */
@@ -182,7 +182,7 @@ button.font-tag:focus-visible {
   display: flex;
   height: 100%;
   align-items: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-faint);
 }
 /* a specimen arriving: opacity only, as a card or a new hand arrives */
@@ -200,13 +200,13 @@ button.font-tag:focus-visible {
   justify-items: start;
   gap: 14px;
   padding-top: 36px;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 .specimen-note {
   margin-top: 10px;
   max-width: 44rem;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.5;
   color: var(--text-muted);
   text-wrap: pretty;
@@ -217,14 +217,14 @@ button.font-tag:focus-visible {
   padding: 8px 12px;
   border-radius: 10px;
   background: color-mix(in oklab, var(--chip) 70%, transparent);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--text-muted);
 }
 .font-list-note {
   max-width: 36rem;
   margin-top: 10px;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.55;
   color: var(--text-faint);
   text-wrap: pretty;
@@ -240,7 +240,7 @@ button.font-tag:focus-visible {
   border-radius: 9px;
   background: var(--fonts-accent);
   color: var(--fonts-accent-text);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   line-height: 1;
 }
@@ -261,5 +261,17 @@ button.font-tag:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .filter-panel {
     animation: specimen-in 150ms var(--ease-out) both;
+  }
+}
+
+/* phones: the filter chips are drawn small, every tap still 44 px tall (as density.css does in the tool's sheet) */
+@media (pointer: coarse) {
+  .filter-panel [data-slot='segmented-item'] {
+    position: relative;
+  }
+  .filter-panel [data-slot='segmented-item']::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc((100% - 44px) / 2)) 0;
   }
 }

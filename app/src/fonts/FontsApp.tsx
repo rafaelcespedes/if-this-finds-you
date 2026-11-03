@@ -72,7 +72,9 @@ function useDevicePixelRatio() {
   return dpr;
 }
 
-const INTRO = 'Every hand here is a free, open-source font. Narrow it down, try your own words, and draw another set until one feels like yours.';
+// the pitch and the longer intro: docs/brand/naming-and-copy.md §2.11 (Rafael's approved copy)
+const INTRO = 'Every hand here is a font you can keep. Free and open source.';
+const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font can only keep a few versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
 
 export function FontsApp() {
   const [route, update] = useRoute();
@@ -149,7 +151,7 @@ export function FontsApp() {
     return () => window.removeEventListener('keydown', on);
   }, [route.view]);
 
-  useEffect(() => { document.title = `${route.view === 'saved' ? 'Saved hands' : 'Fonts'} – ${APP_NAME}`; }, [route.view]);
+  useEffect(() => { document.title = `${route.view === 'saved' ? 'Saved hands' : 'Fonts'} · ${APP_NAME}`; }, [route.view]);
 
   // phones: the dock steps aside while the keyboard is up for your words
   const [typing, setTyping] = useState(false);
@@ -174,7 +176,7 @@ export function FontsApp() {
               {/* "Fonts" in the logo's hand (#5: Québec school print, felt marker; heading.mjs) */}
               <span aria-hidden className="block h-[50px] [&_svg]:h-full [&_svg]:w-auto sm:h-[64px]" dangerouslySetInnerHTML={{ __html: heading }} />
             </h1>
-            <p className="mt-4 max-w-[36rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">
+            <p className="mt-4 max-w-[36rem] text-[0.9375rem] leading-[1.55] text-muted-foreground text-pretty sm:text-[1rem]">
               {route.view === 'saved' ? 'The hands you saved, kept in this browser. Each one downloads as a free, open-source font.' : INTRO}
             </p>
           </section>
@@ -225,7 +227,7 @@ export function FontsApp() {
               </div>
             ) : null}
             <p className="font-list-note">
-              Each font keeps a few versions of every letter and swaps between them as you type, so it’s a little steadier than the live hand. Free to use under the SIL Open Font License.
+              {ABOUT} Free to use under the SIL Open Font License.
             </p>
           </footer>
         </main>
