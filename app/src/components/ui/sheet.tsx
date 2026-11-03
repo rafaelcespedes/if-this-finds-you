@@ -11,7 +11,7 @@
 //
 // Rows have a fixed slot at the end for their icon, a spinner while something is being made, or a tick once it's done,
 // so nothing moves while it works; every row and button answers a press at once (scale 0.97).
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { Drawer } from 'vaul';
 import { Check, Loader2 } from 'lucide-react';
@@ -53,12 +53,27 @@ const sheetSurface =
 const sheetBackdrop = 'sheet-backdrop fixed inset-0 z-50 bg-[rgba(24,20,14,0.32)]';
 
 function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, children, describe, onOpenAutoFocus, onEscapeKeyDown }: { trigger: ReactElement; title: string; showTitle?: boolean; open?: boolean; onOpenChange?: (o: boolean) => void; children: ReactNode; describe?: string; onOpenAutoFocus?: (e: Event) => void; onEscapeKeyDown?: (e: KeyboardEvent) => void }) {
+  const surface = useRef<HTMLDivElement>(null);
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
       <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>
       <Drawer.Portal>
         <Drawer.Overlay className={sheetBackdrop} />
-        <Drawer.Content className={sheetSurface} aria-describedby={undefined} onOpenAutoFocus={onOpenAutoFocus} onEscapeKeyDown={onEscapeKeyDown}>
+        <Drawer.Content
+          ref={surface}
+          tabIndex={-1}
+          className={sheetSurface}
+          aria-describedby={undefined}
+          // focus comes into the sheet however it opened (a tap too): onto the sheet itself, not a field in it, so no
+          // keyboard pops up; a page that picks its own place (onOpenAutoFocus + preventDefault) keeps it
+          onOpenAutoFocus={(e) => {
+            onOpenAutoFocus?.(e);
+            if (e.defaultPrevented) return;
+            e.preventDefault();
+            surface.current?.focus({ preventScroll: true });
+          }}
+          onEscapeKeyDown={onEscapeKeyDown}
+        >
           <div aria-hidden className="flex h-6 shrink-0 cursor-grab items-end justify-center">
             <span className="h-[5px] w-9 rounded-full bg-[color-mix(in_oklab,var(--foreground)_18%,transparent)]" />
           </div>
