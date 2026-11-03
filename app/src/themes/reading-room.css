@@ -868,6 +868,108 @@ html[data-look='reading-room'] .rr-dock-reply svg {
   }
 }
 
+/* ---------- menus, popovers and tooltips: slips of the room's paper, square-cut, ruled in ink along the top ---------- */
+html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :is([role='menu'], [role='dialog'], [role='listbox']) {
+  border: 1px solid var(--rr-edge);
+  border-top-color: var(--rr-ink);
+  border-radius: 3px;
+  background: var(--rr-slip);
+  backdrop-filter: none;
+  box-shadow: 0 14px 34px -14px rgba(30, 39, 51, 0.42);
+}
+html[data-look='reading-room'] [role='menu'] [role^='menuitem'] {
+  border-radius: 2px;
+}
+/* a menu's group label ("More formats", "Kept on this device") in small capitals */
+html[data-look='reading-room'] [role='menu'] > div:not([role]) {
+  font-family: var(--rr-caps);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :has(> [role='tooltip']) {
+  border-radius: 2px;
+  font-size: 0.8125rem;
+}
+html[data-look='reading-room'] kbd {
+  font-family: inherit;
+}
+
+/* toasts: a ledger-ink slip in the book face. Sonner's classes are !important utilities; an !important rule in the
+   earlier base layer is the only thing that outranks them (important declarations reverse the layer order). */
+@layer base {
+  html[data-look='reading-room'] [data-sonner-toast] {
+    font-family: var(--rr-book) !important;
+    font-size: 0.9375rem !important;
+    border-radius: 2px !important;
+  }
+  html[data-look='reading-room'] [data-sonner-toast] [data-title] {
+    font-weight: 500;
+  }
+  html[data-look='reading-room'] [data-sonner-toast] :is([data-button], [data-cancel]) {
+    border-radius: 2px !important;
+    font-family: var(--rr-book) !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* ---------- the Fonts page (fonts/fonts.css tokens): the hands listed like an archive's specimens ---------- */
+html[data-look='reading-room'] {
+  --fonts-name-size: 1rem;
+  --fonts-attr-size: 0.875rem;
+  --fonts-chip-bg: var(--rr-slip);
+  --fonts-chip-on-border: color-mix(in oklab, var(--rr-ink) 45%, var(--rr-edge));
+  --fonts-strip-radius: 2px;
+  /* the badge on More is a count: a number, so archival red */
+  --fonts-accent: var(--rr-red);
+  --fonts-accent-text: var(--rr-slip);
+}
+/* each hand's description (print or joined, the hand it learned from, its pen, its paper) as catalogue small caps */
+html[data-look='reading-room'] .font-tag {
+  font-family: var(--rr-caps);
+  font-size: 0.875rem;
+  letter-spacing: 0.045em;
+  text-transform: lowercase;
+}
+/* the main actions (New set, Show more, Done) in words and archival red, like Bring another letter */
+html[data-look='reading-room'] .dock-primary {
+  background: transparent;
+  box-shadow: none;
+  color: var(--rr-red);
+  font-family: var(--rr-book);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: color 150ms var(--ease-out), text-decoration-color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .dock-primary:hover {
+    background: transparent;
+    color: var(--rr-red-deep);
+    text-decoration-color: currentColor;
+  }
+}
+html[data-look='reading-room'] .dock-primary:active {
+  transform: translateY(0.5px);
+}
+html[data-look='reading-room'] .seg-btn[aria-checked='true'] {
+  background: var(--rr-slip);
+  box-shadow: 0 0 0 1px var(--rr-edge);
+}
+html[data-look='reading-room'] .outline-btn {
+  border-color: var(--rr-edge);
+  border-radius: 2px;
+  background: var(--rr-slip);
+  box-shadow: none;
+}
+html[data-look='reading-room'] .dock-caption {
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--rr-edge), 0 8px 18px -10px rgba(30, 39, 51, 0.35);
+}
+
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
   html[data-look='reading-room'] .rr-card,
