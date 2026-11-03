@@ -51,7 +51,7 @@ type Props = {
 /** The phone header's small chips (Menu here, Share in the tool): drawn 32 px, a 48 px target (44 at the least
  * beside another chip, 12 px away). */
 export const headerChip =
-  "pointer-events-auto relative grid size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-colors duration-150 after:absolute after:-inset-2 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent [&_svg]:size-[16px]";
+  "pointer-events-auto relative grid size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-[background-color,scale] duration-[var(--dur-press,100ms)] ease-out after:absolute after:-inset-2 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-[var(--st-press,var(--accent))] [&_svg]:size-[16px]";
 const CHIP = 32;
 
 // a place in the header: a big enough target without making the line taller
@@ -133,7 +133,7 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
               href={withLogo(TOOL_URL)}
               aria-label={`${APP_NAME}: write a letter`}
               // a 48 px tall target around the 32 px line
-              className="pointer-events-auto relative -mx-1 flex h-8 min-w-0 items-center rounded-[3px] px-1 after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] text-foreground/85 transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring lg:h-9"
+              className="pointer-events-auto relative -mx-1 flex h-8 min-w-0 items-center rounded-[3px] px-1 after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] text-foreground/85 transition-[color,opacity] duration-150 hover-device:hover:text-foreground active:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring lg:h-9"
             >
               <Wordmark />
             </a>
@@ -334,7 +334,7 @@ function KeptMenu({ kept }: { kept: Kept }) {
       entries={entries}
       width="w-[min(18rem,calc(100vw-24px))]"
       trigger={
-        <button type="button" data-site-kept className={link}>
+        <button type="button" data-site-kept className={cn(link, 'active:underline active:decoration-current active:underline-offset-[3px]')}>
           My letters
           <span className="font-normal text-muted-foreground tabular-nums">{n}</span>
         </button>
@@ -356,7 +356,7 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
   const now = Date.now();
   // big, thumb-sized rows in the sheet; the menu's own size in a popover. Every row answers a press at once.
   const row = cn(
-    'sheet-row relative flex w-full items-center text-left text-foreground outline-none transition-[transform,background-color] duration-100 ease-out select-none active:scale-[0.97] active:bg-accent hover-device:hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+    'sheet-row relative flex w-full items-center text-left text-foreground outline-none transition-[scale,background-color] duration-[var(--dur-press,100ms)] ease-out select-none active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] hover-device:hover:bg-[var(--st-hover,var(--accent))] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
     sheets ? 'min-h-14 gap-3 rounded-[10px] px-4 text-[1.125rem]' : 'min-h-11 gap-3 rounded-[3px] px-3 text-[0.9375rem]',
   );
   return (
