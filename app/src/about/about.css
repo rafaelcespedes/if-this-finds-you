@@ -301,7 +301,7 @@
   }
   .about-section-title {
     position: sticky;
-    top: 1.5rem;
+    top: calc(var(--site-head-clear, 0px) + 1.5rem); /* under the pinned site header */
     align-self: start;
     flex-direction: column;
     gap: 0.125rem;

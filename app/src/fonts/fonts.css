@@ -279,9 +279,9 @@ button.font-tag:focus-visible {
 }
 .font-rail {
   position: sticky;
-  top: 1rem;
+  top: calc(var(--site-head-clear, 0px) + 1rem); /* under the pinned site header */
   display: grid;
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(100dvh - var(--site-head-clear, 0px) - 2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0 0.25rem 2rem 0;

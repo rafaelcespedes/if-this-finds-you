@@ -374,3 +374,20 @@ textarea {
   }
 }
 
+/* ---------- the site header (components/SiteHeader.tsx), pinned at the top ----------
+   How much of the top it covers while pinned: its top padding and its 32 / 36 px line (a look adds its rule through
+   --site-head-rule), and with its 12 px fade. Anything else that sticks to the top sits under it
+   (top: var(--site-head-clear)), and jumps to an anchor stop below it. A screen under 32rem tall doesn't pin the
+   header, so there it covers nothing. */
+:root {
+  --site-head-rule: 0px;
+  --site-head: calc(max(1rem, env(safe-area-inset-top, 0px)) + 2rem + var(--site-head-rule));
+  --site-head-clear: calc(var(--site-head) + 12px);
+}
+@media (min-width: 64rem) {
+  :root { --site-head: calc(1.25rem + 2.25rem + var(--site-head-rule)); }
+}
+@media (max-height: 31.99rem), print {
+  :root { --site-head: 0px; --site-head-clear: 0px; }
+}
+html { scroll-padding-top: var(--site-head-clear); }

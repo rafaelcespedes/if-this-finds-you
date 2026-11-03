@@ -279,6 +279,8 @@ html[data-look='reading-room'] [data-site-row] {
   border-bottom: 1px solid var(--rr-hair);
   padding-bottom: 0.5rem;
 }
+/* the rule and its space, for the header's height (index.css --site-head) */
+html[data-look='reading-room'] { --site-head-rule: calc(0.5rem + 1px); }
 html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button),
 html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site-label]) {
   font-family: var(--rr-label-face, var(--rr-caps));
