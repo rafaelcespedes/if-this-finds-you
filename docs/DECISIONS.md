@@ -35,8 +35,12 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
   The product is also an archive of letters by ordinary people, mostly undelivered or everyday letters,
   each with its *true* origin (never invented). Anyone can browse, shuffle (random letter + random hand),
   read a letter written in a hand, and "Write a reply". The engine is unchanged.
-  - **Collection:** shift toward ordinary and undelivered letters (Prize Papers, Brienne trunk, emigrant and
-    family letters); keep only a few famous ones.
+  - **Collection:** shift toward ordinary and undelivered letters (emigrant, family, everyday, undelivered);
+    about 20 famous letters is fine. **No permission requests to institutions** (keep it low effort): use
+    only sources that already pass the rights rules (this rules out Brienne and the Prize Papers
+    transcriptions for now).
+  - **Inclusive writers (hard targets):** a lot of women (≥55% of enabled letters), a lot of African American
+    and African writers (≥15), and a lot of Hispanic/Latin American writers (≥15).
   - **Submissions (phase 2):** anyone can submit a letter. Each writer chooses whether to be credited. Letters
     go to a private queue; Claude approves them in batches (daily or every couple of days, depending on traffic),
     with an automatic screening step built later.
