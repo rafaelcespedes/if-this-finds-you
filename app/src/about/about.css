@@ -541,6 +541,16 @@
   }
 }
 
+/* pressed: a tap shows it landed (shared state tokens, with today's chip tints until they land) */
+:is(.about-link, .about-text-button, .about-give-link):active {
+  text-decoration-color: currentColor;
+  background: var(--st-hover, var(--chip-hover));
+  border-radius: 2px;
+}
+.about-credits summary:active {
+  background: var(--st-press, var(--chip-hover));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .about-link,
   .about-text-button {
