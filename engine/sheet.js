@@ -81,15 +81,33 @@ function newSheet(st, why) {
 // The whole log, from scratch.
 export function replay(p, doc, layoutOpts = {}) {
   const st = createState(p, doc, layoutOpts);
-  if (doc.complete) st.ahead = aheadOf(doc.log || []);
+  st.ahead = aheadFor(doc.log || [], 0, !!doc.complete);
   (doc.log || []).forEach((e, i) => applyOne(st, e, i));
   st.ahead = null;
   return finish(st);
 }
-// A finished letter (doc.complete: the journey, which every letter in the app goes through) is laid out
-// knowing what comes next, so layout can set it out as a letter (a closing block, a P.S. set apart, a
-// name at the end): for each write, the rest of its stream's text from the later writes. Live Ink mode
-// doesn't pass this: what the pen hasn't reached isn't in the log, and a replay must equal what was seen.
+// Text that is known in full is laid out knowing what comes next, so layout can set it out as a letter
+// (a closing block, a P.S. set apart, a name at the end): a finished letter (doc.complete: the journey,
+// which every letter in the app goes through), and a fair copy (the writes its sheet event counts, which
+// always arrive together). Each such write gets the rest of its stream's text from the writes after it
+// (Map event index -> ahead). Live typing doesn't: what the pen hasn't reached isn't in the log, and a
+// replay must equal what was seen.
+function aheadFor(events, base, complete) {
+  const out = complete ? aheadOf(events) : new Map();
+  if (complete) return out;
+  events.forEach((e, i) => {
+    if (e.t !== 'sheet' || e.why !== 'fair' || !(e.copy > 0)) return;
+    const block = events.slice(i + 1, i + 1 + e.copy);
+    let rest = '';
+    for (let j = block.length - 1; j >= 0; j--) {
+      const b = block[j];
+      if (b.t !== 'write' && b.t !== 'break') continue;
+      out.set(base + i + 1 + j, rest);
+      rest = (b.t === 'break' ? '\n' : b.text || '') + rest;
+    }
+  });
+  return out;
+}
 function aheadOf(log) {
   const out = new Map(), streams = new Map();
   let sheet = 0, tag = 'm';
@@ -112,7 +130,9 @@ export function apply(st, events) {
   if (!events || !events.length) return st;
   const ev0 = st.doc.log.length;
   for (const e of events) st.doc.log.push(e);
+  st.ahead = aheadFor(events, ev0, false);
   events.forEach((e, i) => applyOne(st, e, ev0 + i));
+  st.ahead = null;
   return finish(st);
 }
 // Undo the wet tail (§4.5): drop the newest event and replay.
@@ -156,7 +176,7 @@ function applyOne(st, e, ev) {
   R.apply(e);
   switch (e.t) {
     case 'write': case 'break':
-      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev, st.ahead ? { ahead: st.ahead.get(ev) || '', complete: true } : undefined);
+      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev, st.ahead && st.ahead.has(ev) ? { ahead: st.ahead.get(ev), complete: true } : undefined);
       break;
     case 'strike': {
       const struck = placedRun(s, e.from, e.to);
@@ -387,7 +407,8 @@ function pageOf(st, s, live) {
     lines: 1 + Math.max(-1, ...s.items.map((it) => it.line)), words: 1 + Math.max(-1, ...s.items.map((it) => it.word)),
     misses: pages.flatMap((pg) => pg.misses || []), xh: xhOf(st), connected: !!(last && last.connected), seed: st.p.seed,
     text: live ? live.text : '', sheet: s.n, sheets: st.sheets.length,
-    full: !!(st.opts.pageHeight && Number.isFinite(ink.y1) && ink.y1 > st.opts.pageHeight),
+    // (with layout's sheets, opts.sheet, writing carries on onto the next sheet: never full)
+    full: !!(st.opts.pageHeight && !st.opts.sheet && Number.isFinite(ink.y1) && ink.y1 > st.opts.pageHeight),
     pen: s.stream.ink.pen,
   };
   void R;
@@ -667,6 +688,7 @@ export function fairCopy(st) {
   const text = textNow(st);
   const events = [{ t: 'sheet', why: 'fair' }];
   text.split('\n').forEach((part, i) => { if (i) events.push({ t: 'break' }); if (part) events.push({ t: 'write', text: part }); });
+  events[0].copy = events.length - 1; // the copy's own writes: laid out knowing the whole text (aheadFor)
   return events;
 }
 // "Add a P.S." (§3.4): the pen moves below the text; what's typed next is written there, smaller.
