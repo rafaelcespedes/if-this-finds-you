@@ -39,7 +39,8 @@
       /* the site's header, as every page has it (components/SiteHeader.tsx, docs/NAVIGATION.md): the wordmark, then
          the three places in the same words and order (the room's small capitals); on phones a Menu chip opens
          them. It can't share the app's code, so keep it in step by hand. */
-      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; }
+      /* the running head: one hairline under the wordmark and the places */
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; padding-bottom: 8px; border-bottom: 1px solid color-mix(in oklab, var(--text) 22%, transparent); }
       header a { border-radius: 3px; }
       .logo { display: flex; align-items: center; height: 32px; margin: 0 -4px; padding: 0 4px; }
       .logo img { display: block; height: 21px; width: auto; }
@@ -73,7 +74,8 @@
       }
       @media (min-width: 1024px) {
         body { padding-top: max(20px, env(safe-area-inset-top)); padding-left: max(40px, env(safe-area-inset-left)); padding-right: max(40px, env(safe-area-inset-right)); }
-        header, .logo { min-height: 36px; height: 36px; }
+        header { min-height: 36px; }
+        .logo { height: 36px; }
         .logo img { height: 22px; }
       }
       main { display: grid; place-items: center; padding: 24px 0 12vh; }

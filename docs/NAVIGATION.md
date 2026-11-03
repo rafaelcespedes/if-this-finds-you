@@ -38,6 +38,25 @@ every header picks it up, and where the line no longer fits, the Menu takes over
   list as you left it (search and era kept).
 - A shared letter (the reader view, `?read=1`) isn't one of the places, so nothing is marked there.
 
+## The running head
+
+The header is the site's running head (the Reading Room layouts, house rule 2): the wordmark on the left, the page's
+**middle**, and the places on the right, on one line. In the Reading Room it sits over one hairline and is set in
+the label role's small capitals; the letter's number is archival red. Other looks keep the plain header.
+
+- **The middle** says what this page holds. Pages pass it as `centre` (and a short form, `centreShort`, for when
+  only that fits):
+  - the desk, on a found letter (Reading Room): "No. 0115 · Millsburg · 1838", short "No. 0115"
+    (`components/Folio.tsx`, from the Reading Room's catalogue, the same source as the marks printed on the sheet);
+  - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›", short "‹ No. 0004 ›" (the library builds it);
+  - All letters: where you are on the canvas, the decade under the middle of the screen (the library builds it).
+  Mark the number with `data-site-number` so the looks can colour it.
+- It's centred over the page, or, on the desk in the Reading Room, over the letter's side: there the header runs
+  the width of the window (its places reach the desk's right edge) and keeps the desk's width aside (`beside`).
+- When the line gets tight, the header gives way in this order: the middle moves off-centre, then the places go
+  into the Menu, then the middle shortens, then it steps aside (`useFits` in SiteHeader.tsx). On a 375 px phone
+  the desk shows "No. 0115", Share and the Menu; at 320 px, Share and the Menu.
+
 ## When the words fit (desktops, tablets)
 
 ```

@@ -245,16 +245,27 @@ html[data-look='reading-room'] .rr-icon svg {
   }
 }
 
-/* ---------- the site header (components/SiteHeader.tsx): the places in the label role, in small capitals ---------- */
-html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-action] button),
+/* ---------- the site header (components/SiteHeader.tsx) as a running head (layouts, house rule 2): the wordmark,
+   the page's middle and the places on one baseline over one hairline, in the label role's small capitals ---------- */
+html[data-look='reading-room'] [data-site-row] {
+  border-bottom: 1px solid color-mix(in oklab, var(--rr-ink) 22%, transparent);
+  padding-bottom: 0.5rem;
+}
+html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button),
 html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site-label]) {
-  font-family: var(--rr-label-face);
-  font-variant-caps: var(--rr-label-caps);
-  letter-spacing: var(--rr-label-tracking);
-  font-size: var(--rr-label-size);
-  font-weight: var(--rr-label-weight);
+  font-family: var(--rr-label-face, var(--rr-caps));
+  font-variant-caps: var(--rr-label-caps, normal);
+  letter-spacing: var(--rr-label-tracking, 0.05em);
+  font-size: var(--rr-label-size, 0.875rem);
+  font-weight: var(--rr-label-weight, 400);
+  line-height: var(--rr-label-leading, normal);
   text-transform: none;
   color: var(--rr-ink);
+}
+/* the letter's number: archival red, as on its sheet */
+html[data-look='reading-room'] [data-site-number] {
+  color: var(--rr-red);
+  font-variant-numeric: tabular-nums;
 }
 /* the phone header's chips (Menu, Share): ruled squares, no lift */
 html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]) {
