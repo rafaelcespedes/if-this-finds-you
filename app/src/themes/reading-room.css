@@ -407,9 +407,13 @@ html[data-look='reading-room'] .rr-desk {
 html[data-look='reading-room'] .rr-ledger {
   flex: 1 1 auto;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--rr-desk-top) 0 1.5rem;
+  /* a 12 px gutter past the rules' right end, inside the scroll: Share's icon sits flush with the rules while its
+     button and focus ring reach into it, so nothing sticks out and the column never scrolls sideways */
+  padding: var(--rr-desk-top) 12px 1.5rem 0;
+  margin-right: -12px;
   scrollbar-width: none;
 }
 html[data-look='reading-room'] .rr-desk-actions {
