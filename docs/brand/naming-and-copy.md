@@ -98,6 +98,27 @@ marks in TMview.
 Taken as `.com`: Wayward Letters, Letter Drift, Typed by Hand, Bottle Post, Dear Finder, Stray Hand.
 **Verdict: Stray Letters still wins.** It's the only one where both meanings are equally strong, and it's the shortest.
 
+### Any ending: shorter names once `.com` doesn't matter
+
+Rafael said `.co` or `.io` is fine. Prices per year (renewal). Watch the endings: `.io` renews at $46, `.co` at
+$24.80 (and some short `.co` names are premium at $123–308), `.app` at $15, `.me` at $20, `.ink` at $28.75.
+
+| Name | Best domain, per year | Trademarks (TMview) | Read |
+|---|---|---|---|
+| **Strayhand** | strayhand.app $15 (.co $24.80, .io $46) | none | One word that joins the two ideas: a stray letter and a human hand. Also the hand that strays off the line |
+| Waylaid | waylaid.app $15 (.io $46) | none | Stopped on the way, like a letter held up for a century. A little dark ("ambushed") |
+| Missent | missent.app $15 | none | The real postal stamp "Missent to…" on letters routed to the wrong office. Reads as a mistake |
+| Mislaid | mislaid.app $15 | none | Plain and gentle; says lost, not found |
+| Belated | belated.app $15 | none | Letters that arrive late. Sounds like a birthday card |
+| Astray | astray.me $20 | live US marks in classes 9 and 41 | Risky |
+| Adrift | adrift.ink $28.75 | 20 live, including class 9 | Risky |
+
+Taken in every ending tried: Stray, Strays, Unsent, Wayward, Errant, Foundling, Tidings, Dearest, Missive, Flotsam,
+Keepsake, Unclaimed.
+
+**Verdict:** Stray Letters (strayletters.com, $12.03) is still the clearest. If Rafael wants one word, **Strayhand**
+(strayhand.app, $15) is the best new option.
+
 ---
 
 ## 1. Naming
