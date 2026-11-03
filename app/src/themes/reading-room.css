@@ -763,6 +763,36 @@ html[data-look='reading-room'] [class*='rounded-full'][class*='bg-panel/95'] {
   background: var(--rr-slip);
   color: var(--rr-muted);
 }
+/* phones: under the record's hand, the way into what's known about it, in archival red like the room's other actions */
+html[data-look='reading-room'] .rr-hand-link {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin: -0.5rem 0 -0.75rem;
+  padding: 0.5rem 0 0.75rem;
+  min-height: 44px;
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+  color: var(--rr-red);
+}
+html[data-look='reading-room'] .rr-hand-link svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+/* the phone sheet's writer: their name and how they write, in the record's type rather than the controls' */
+html[data-look='reading-room'] .control-sheet .sheet-writer h3 {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  font-weight: var(--rr-text-weight);
+  line-height: var(--rr-text-leading);
+}
+html[data-look='reading-room'] .control-sheet .sheet-writer h3 + p {
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+  font-style: italic;
+}
 /* the plate line under the sheet (wide screens: PlateLine.tsx): who wrote to whom, in the record's italic, as a
    museum labels an object at its foot; how you're writing sits at its right (App.tsx's footer row) */
 html[data-look='reading-room'] .rr-plate-title {

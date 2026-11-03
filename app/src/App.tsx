@@ -1316,7 +1316,7 @@ export default function App() {
                 </div>
                 {/* phones: the letter leads (nothing above it but the header); what it is comes after it, once: the
                     Reading Room's catalogue slip for a found letter, else the letter's name and how the hand writes */}
-                {!isDesktop && (LOOK === 'reading-room' && sample ? <CatalogueSlip id={sample.id} name={name} /> : (
+                {!isDesktop && (LOOK === 'reading-room' && sample ? <CatalogueSlip id={sample.id} name={name} panel={panelProps} /> : (
                   <div className={cn('mx-auto mt-2 transition-opacity duration-200', !desk && 'opacity-0')} style={{ width: shownPaper.w * pxPerMm }}>
                     <SheetLabel title={sheetTitle} hand={myHandWords} stack />
                   </div>
