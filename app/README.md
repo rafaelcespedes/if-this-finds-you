@@ -90,7 +90,9 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   - *Always there:* the writer's name (opens About this hand), **New hand**, "Another letter" while a found
     letter is on the page, and one **Share** icon. Under the sheet: the letter's credit and the writing menu
     (In ink / In pencil / Fair copy, Make a fair copy, Fresh sheet, Blank page, Sign it, Edit as plain text).
-  - *The look,* one scrolling column, no tabs, in this order: **Paper** (a row of swatches), **Pen** (each
+  - *The look,* one scrolling column, no tabs, in this order: **Paper** (a row of swatches, and under it the chosen paper's kinds as small chips: a pad in white A5,
+    British blue, binsen or German A4; going on past one sheet the way that stationery does: a postcard's next
+    card is numbered, a notecard says "over" and goes on to its plain back, a second aerogramme follows), **Pen** (each
     swatch is the word "ink" written with that pen; Fine / Medium / Bold beside it), **Ink**, **Handwriting**
     (Print or Joined, the school cards, Similar, and **Neat hands only**: on by default, New hand skips the
     hard-to-read writers; it never changes the hand on the page, and offers "Roll a neat one" when that hand

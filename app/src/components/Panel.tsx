@@ -24,7 +24,7 @@ import { branded } from '@/lib/brand';
 import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
-import { getPaper, PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
+import { getPaper, PAPERS, variantsOf, type PaperId, type PaperSpec } from '@/lib/papers';
 import { PENS_LIVE, PENS_SHOWN, penName } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
 import type { LockKey } from '@/lib/roll';
@@ -278,6 +278,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
     <>
       <Group label="Paper" value={getPaper(state.paper).name} className={pad} first>
         <PaperPicker value={getPaper(state.paper).family} onChange={props.onPaper} rows />
+        <PaperVariants value={state.paper} onChange={props.onPaper} />
       </Group>
       {PENS_SHOWN && (
         <Group
@@ -659,6 +660,36 @@ const SWATCH = { w: 40, h: 30 };
 const swatchCrop = (paper: PaperSpec) => ({ ...paper.swatch, ...SWATCH });
 
 /** Papers as a grid (desktop panel) or one row that scrolls sideways (phone sheet). */
+/** The kinds of the chosen paper (a pad: white A5, British blue, binsen, German A4), as small chips. */
+function PaperVariants({ value, onChange }: { value: PaperId; onChange: (id: PaperId) => void }) {
+  const variants = variantsOf(value);
+  if (variants.length < 2) return null;
+  return (
+    <Segmented
+      type="single"
+      aria-label={`Kind of ${getPaper(value).name.toLowerCase()}`}
+      value={getPaper(value).id}
+      onValueChange={(v) => v && onChange(v as PaperId)}
+      className="mt-2 flex flex-wrap justify-start gap-1.5 bg-transparent p-0"
+    >
+      {variants.map((v) => (
+        <Tooltip key={v.id}>
+          <TooltipTrigger asChild>
+            <SegmentedItem
+              value={v.id}
+              aria-label={`${v.variant}: ${v.hint}`}
+              className="h-7 rounded-full bg-secondary px-2.5 text-[12px] aria-checked:bg-[#fffefb] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-9 pointer-coarse:px-3"
+            >
+              {v.variant}
+            </SegmentedItem>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{v.hint}</TooltipContent>
+        </Tooltip>
+      ))}
+    </Segmented>
+  );
+}
+
 const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value: PaperId; onChange: (id: PaperId) => void; rows?: boolean }) {
   return (
     <Segmented
@@ -680,11 +711,11 @@ const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value
               value={paper.id}
               aria-label={`${paper.name}: ${paper.hint}`}
               className={cn(
-                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] data-[state=on]:bg-[#fffefb] pointer-coarse:h-auto',
+                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] aria-checked:bg-[#fffefb] pointer-coarse:h-auto',
                 rows && 'w-[86px] shrink-0 snap-start bg-secondary',
               )}
             >
-              <span className="relative block overflow-hidden rounded-[5px] shadow-[0_0_0_0.5px_rgba(60,45,20,0.16),0_1px_2px_rgba(60,45,20,0.08)] transition-shadow duration-150 group-data-[state=on]:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(60,45,20,0.08)]">
+              <span className="relative block overflow-hidden rounded-[5px] shadow-[0_0_0_0.5px_rgba(60,45,20,0.16),0_1px_2px_rgba(60,45,20,0.08)] transition-shadow duration-150 group-aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(60,45,20,0.08)]">
                 <PaperCanvas paper={paper} pxPerMm={2.1} crop={swatchCrop(paper)} className="h-auto! w-full!" />
               </span>
               <span className="truncate px-0.5 text-center leading-tight">{paper.name}</span>
@@ -721,10 +752,10 @@ const InkPicker = memo(function InkPicker({ value, pen, onChange }: { value: str
             <SegmentedItem
               value={ink.id}
               aria-label={ink.name}
-              className="size-8 rounded-full p-0 data-[state=on]:bg-transparent data-[state=on]:shadow-none pointer-coarse:size-11"
+              className="size-8 rounded-full p-0 aria-checked:bg-transparent aria-checked:shadow-none pointer-coarse:size-11"
             >
               <span
-                className="block size-[22px] rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-offset-2 ring-offset-panel transition-[box-shadow] duration-150 [[data-state=on]>&]:ring-[1.5px] [[data-state=on]>&]:ring-[var(--ink)]"
+                className="block size-[22px] rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-offset-2 ring-offset-panel transition-[box-shadow] duration-150 [[aria-checked=true]>&]:ring-[1.5px] [[aria-checked=true]>&]:ring-[var(--ink)]"
                 style={{
                   background: ink.color
                     ? `radial-gradient(circle at 40% 36%, color-mix(in oklab, ${ink.color} 84%, white) 0 22%, transparent 62%), radial-gradient(circle at 66% 70%, color-mix(in oklab, ${ink.color} 86%, black) 0 26%, transparent 64%), ${ink.color}`
