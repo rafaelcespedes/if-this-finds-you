@@ -7,15 +7,18 @@
 //   node tools/smoke/smoke.mjs --url=<site>      check a running site instead (a Vercel preview, the live site)
 //   SMOKE_CHANNEL=chrome node tools/smoke/…      use the installed Google Chrome (CI does; no browser download)
 //
-// Pages: / (the desk), /letters (all letters) and one letter page (the first card's link; the library shuffles,
-// so it varies from run to run and the output names it), each at desktop (1440×900) and phone (375×812) size.
-// A page fails when
+// Pages: / (the desk), /letters (all letters), one letter page (the first card's link; the library shuffles,
+// so it varies from run to run and the output names it) and /fonts, each at desktop (1440×900) and phone
+// (375×812) size. A page fails when
 //   - it logs a console error or throws an uncaught exception
+//   - one of its web workers fails (a worker's uncaught error or console error; every `new Worker` is watched)
 //   - a request to the site itself fails (4xx / 5xx, or no answer)
-//   - its letter stays blank: no handwriting on the sheet within 30 s
+//   - it shows one of the site's own failure messages ("The fonts didn't load", FAILURE_TEXTS below)
+//   - it stays blank: within 30 s the desk's letter has no handwriting, fewer than 6 letter cards have painted,
+//     the letter page has no handwriting, or fewer than 3 font specimens have drawn
 // Screenshots of every page land in tools/smoke/out/ (CI keeps them). Exit code 1 on any failure.
 //
-// The sheet on each page is found by its accessible name or link (SHEETS below). If a redesign renames one,
+// What each page must draw is found by accessible names and links (PAGES below). If a redesign renames one,
 // the test says so plainly: update the selector here.
 
 import fs from 'node:fs';
@@ -35,13 +38,18 @@ const VIEWPORTS = [
   { name: 'desktop', viewport: { width: 1440, height: 900 } },
   { name: 'phone', viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
 ];
-// Where each page's letter lives, and how much handwriting counts as "not blank".
-const SHEETS = {
-  home: { what: 'the letter on the desk', sel: '[role="group"][aria-label="Letter"]' },
-  letters: { what: 'the first letter card', sel: 'a[href*="#/letter/"]' },
-  letter: { what: 'the letter in its hand', sel: '[role="img"][aria-label^="The letter"]' },
+// What each page must draw before it counts as working: `sel` finds the things, `need` of them must be drawn.
+//   sheet: one element with handwriting (svg paths or a loaded image)    cards: elements each with handwriting
+//   fonts: rows whose specimen is set in a font the page loaded itself (or shows a loaded image)
+const PAGES = {
+  home: { what: 'the letter on the desk', kind: 'sheet', sel: '[role="group"][aria-label="Letter"]', need: 1 },
+  letters: { what: 'letter cards painted', kind: 'cards', sel: 'a[href*="#/letter/"]', need: 6 },
+  letter: { what: 'the letter in its hand', kind: 'sheet', sel: '[role="img"][aria-label^="The letter"]', need: 1 },
+  fonts: { what: 'font specimens drawn', kind: 'fonts', sel: 'ol[aria-label="Fonts"] > li', need: 3 },
 };
 const MIN_STROKES = 20; // svg paths; a found letter has hundreds, an empty sheet none
+// the site's own words for "this broke" (a page can fail without throwing)
+const FAILURE_TEXTS = [/The (fonts|letters) didn[’']t load/, /couldn[’']t be set as a font here/];
 
 // ---------- a static server for app/dist that behaves like Vercel with cleanUrls (/letters -> letters.html) ----------
 const TYPES = {
@@ -76,28 +84,63 @@ function serveDist() {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
-// ---------- the probe, run inside the page: is there handwriting on the sheet? ----------
-function probeSheet({ sel, minStrokes }) {
-  const el = document.querySelector(sel);
-  if (!el) return { found: false };
-  const r = el.getBoundingClientRect();
-  const strokes = el.querySelectorAll('svg path').length;
-  const images = [...el.querySelectorAll('img')].filter((i) => i.complete && i.naturalWidth > 50).length;
-  const canvases = [...el.querySelectorAll('canvas')].filter((c) => c.width > 50 && c.height > 50).length;
-  return {
-    found: true, w: Math.round(r.width), h: Math.round(r.height), strokes, images, canvases,
-    written: r.width >= 100 && r.height >= 100 && (strokes >= minStrokes || images > 0),
+// ---------- watching workers: runs in the page before its own scripts ----------
+// Every Worker the page starts is recorded with its type; its uncaught errors (a script that doesn't parse, a
+// crash while drawing) are kept for the test, which otherwise only sees the page's own errors.
+function watchWorkers() {
+  const W = window.Worker;
+  if (!W) return;
+  const seen = (window.__smokeWorkers = { made: [], errors: [] });
+  window.Worker = class extends W {
+    constructor(url, opts) {
+      super(url, opts);
+      const who = `${(opts && opts.name) || String(url).split('/').pop()} (${(opts && opts.type) || 'classic'} worker)`;
+      seen.made.push(who);
+      this.addEventListener('error', (e) => seen.errors.push(`${who}: ${e.message || 'failed to start'}`));
+    }
   };
+}
+
+// ---------- the probe, run inside the page: has it drawn what it should? ----------
+function probePage({ kind, sel, minStrokes, failureTexts }) {
+  const written = (el) => el.querySelectorAll('svg path').length >= minStrokes ||
+    [...el.querySelectorAll('img')].some((i) => i.complete && i.naturalWidth > 50);
+  const els = [...document.querySelectorAll(sel)];
+  let count = 0, detail = '';
+  if (kind === 'sheet') {
+    const el = els[0];
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const strokes = el.querySelectorAll('svg path').length;
+      const images = [...el.querySelectorAll('img')].filter((i) => i.complete && i.naturalWidth > 50).length;
+      count = r.width >= 100 && r.height >= 100 && written(el) ? 1 : 0;
+      detail = `${strokes} strokes${images ? `, ${images} images` : ''} (${Math.round(r.width)}×${Math.round(r.height)} px)`;
+    }
+  } else if (kind === 'cards') {
+    count = els.filter(written).length;
+    detail = `${count} of ${els.length} cards painted`;
+  } else if (kind === 'fonts') {
+    const loaded = new Set([...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/["']/g, '')));
+    const drawn = (li) => [...li.querySelectorAll('[style*="font-family"]')].some((e) => loaded.has(e.style.fontFamily.replace(/["']/g, ''))) ||
+      [...li.querySelectorAll('img')].some((i) => i.complete && i.naturalWidth > 50);
+    count = els.filter(drawn).length;
+    detail = `${count} of ${els.length} specimens drawn`;
+  }
+  const text = document.body ? document.body.innerText : '';
+  const failures = failureTexts.map((re) => (text.match(new RegExp(re)) || [])[0]).filter(Boolean);
+  return { found: els.length > 0, count, detail, failures, workers: window.__smokeWorkers || { made: [], errors: [] } };
 }
 
 async function checkPage(browser, base, vp, page) {
   const context = await browser.newContext({ ...vp, viewport: vp.viewport, reducedMotion: 'no-preference' });
+  await context.addInitScript(watchWorkers);
   const tab = await context.newPage();
   const origin = new URL(base).origin;
   const problems = [];
   let crashed = false;
   tab.on('console', (m) => { if (m.type() === 'error') problems.push(`console error: ${m.text().slice(0, 300)}`); });
   tab.on('pageerror', (e) => { crashed = true; problems.push(`uncaught exception: ${String(e.stack || e).split('\n').slice(0, 3).join(' | ').slice(0, 300)}`); });
+  tab.on('worker', (w) => w.on('console', (m) => { if (m.type() === 'error') problems.push(`worker console error (${w.url().split('/').pop()}): ${m.text().slice(0, 300)}`); }));
   tab.on('response', (r) => { if (r.url().startsWith(origin) && r.status() >= 400) problems.push(`HTTP ${r.status()} for ${r.url().slice(origin.length)}`); });
   tab.on('requestfailed', (r) => {
     const err = r.failure() && r.failure().errorText;
@@ -106,32 +149,38 @@ async function checkPage(browser, base, vp, page) {
   });
 
   const url = base.replace(/\/$/, '') + page.path;
-  const sheet = SHEETS[page.sheet];
-  let probe = { found: false };
+  const want = PAGES[page.kind];
+  const args = { kind: want.kind, sel: want.sel, minStrokes: MIN_STROKES, failureTexts: FAILURE_TEXTS.map((re) => re.source) };
+  let probe = { found: false, count: 0, detail: '', failures: [], workers: { made: [], errors: [] } };
   try {
     const res = await tab.goto(url, { waitUntil: 'load', timeout: WAIT_MS });
     if (!res || !res.ok()) problems.push(`the page itself answered HTTP ${res ? res.status() : 'nothing'}`);
     const t0 = Date.now();
     do {
-      probe = await tab.evaluate(probeSheet, { sel: sheet.sel, minStrokes: MIN_STROKES });
-      if (probe.written) break;
+      probe = await tab.evaluate(probePage, args);
+      if (probe.count >= want.need) break;
       // a page that crashed won't recover: give it a few seconds, not the full wait
-      if (crashed && Date.now() - t0 > 5_000) break;
+      if ((crashed || probe.workers.errors.length || probe.failures.length) && Date.now() - t0 > 5_000) break;
       await tab.waitForTimeout(250);
     } while (Date.now() - t0 < WAIT_MS);
-    if (!probe.found) problems.push(`blank page: ${sheet.what} never appeared (looked for ${sheet.sel}; if the page was redesigned, update SHEETS in tools/smoke/smoke.mjs)`);
-    else if (!probe.written) problems.push(`blank sheet: ${sheet.what} has no handwriting after ${Math.round((Date.now() - t0) / 1000)} s (${probe.w}×${probe.h} px, ${probe.strokes} strokes, ${probe.images} images)`);
+    const waited = Math.round((Date.now() - t0) / 1000);
+    const broke = crashed || probe.workers.errors.length || probe.failures.length;
+    if (!probe.found) problems.push(`blank page: ${want.what}: nothing found after ${waited} s (looked for ${want.sel}${broke ? '' : '; if the page was redesigned, update PAGES in tools/smoke/smoke.mjs'})`);
+    else if (probe.count < want.need) problems.push(`blank: ${want.what}: ${probe.detail} after ${waited} s, needs ${want.need}`);
     await tab.waitForTimeout(SETTLE_MS);
+    probe = await tab.evaluate(probePage, args).catch(() => probe);
   } catch (e) {
     problems.push(`could not load: ${String(e.message || e).split('\n')[0]}`);
   }
+  for (const m of probe.workers.errors) problems.push(`worker failed: ${m.slice(0, 300)}`);
+  for (const m of probe.failures) problems.push(`the page says "${m}"`);
   // the letters index hands its first letter to the letter page
   let firstLetter = null;
-  if (page.sheet === 'letters') {
+  if (page.kind === 'letters') {
     firstLetter = await tab.evaluate((sel) => {
       const m = (document.querySelector(sel)?.getAttribute('href') || '').match(/#\/letter\/([^?]+)/);
       return m ? decodeURIComponent(m[1]) : null;
-    }, sheet.sel).catch(() => null);
+    }, want.sel).catch(() => null);
   }
   const shot = path.join(OUT, `${page.name}-${vp.name}.png`);
   await tab.screenshot({ path: shot }).catch(() => {});
@@ -168,12 +217,13 @@ async function main() {
   for (const vp of VIEWPORTS) {
     let letterId = null;
     const pages = [
-      { name: 'home', path: '/', sheet: 'home' },
-      { name: 'letters', path: '/letters', sheet: 'letters' },
-      { name: 'letter', path: null, sheet: 'letter' },
+      { name: 'home', path: '/', kind: 'home' },
+      { name: 'letters', path: '/letters', kind: 'letters' },
+      { name: 'letter', path: null, kind: 'letter' },
+      { name: 'fonts', path: '/fonts', kind: 'fonts' },
     ];
     for (const page of pages) {
-      if (page.sheet === 'letter') {
+      if (page.kind === 'letter') {
         const id = letterId || firstEnabledLetter();
         if (!id) { results.push({ label: `letter page · ${vp.name}`, problems: ['no letter id to open (no card on /letters, none in content/sample-texts.json)'] }); continue; }
         page.path = `/letters#/letter/${encodeURIComponent(id)}`;
@@ -182,9 +232,8 @@ async function main() {
       const r = await checkPage(browser, base, vp, page);
       if (r.firstLetter) letterId = r.firstLetter;
       const label = `${page.path} · ${vp.name}`;
-      const p = r.probe;
-      const detail = p.found ? `${p.strokes} strokes${p.images ? `, ${p.images} images` : ''}` : 'no sheet';
-      console.log(`${r.problems.length ? '✗ FAIL' : '✓ ok  '}  ${label.padEnd(44)} ${detail.padEnd(22)} ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+      const detail = r.probe.found ? r.probe.detail : 'nothing found';
+      console.log(`${r.problems.length ? '✗ FAIL' : '✓ ok  '}  ${label.padEnd(44)} ${detail.padEnd(36)} ${((Date.now() - t0) / 1000).toFixed(1)}s`);
       for (const m of [...new Set(r.problems)].slice(0, 12)) console.log(`         ${m}`);
       results.push({ label, problems: r.problems });
     }
