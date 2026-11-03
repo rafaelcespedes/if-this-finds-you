@@ -1,4 +1,4 @@
-# Letters (the library)
+# All letters (the library)
 
 The library of If This Finds You: real letters by ordinary people, each written out by hand by a fictional writer,
 easy to flip through. A second page of the app (`app/letters.html`, built beside the tool's `index.html`),

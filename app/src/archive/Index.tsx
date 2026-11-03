@@ -103,7 +103,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
       </SiteHeader>
       <main className="mx-auto w-full max-w-[1180px] px-4 pb-28 sm:px-8 lg:px-10">
         <section className="pt-[calc(4.75rem+env(safe-area-inset-top,0px))] pb-9 sm:pt-24 sm:pb-11">
-          <h1 className="text-[34px] leading-[1.05] font-[560] tracking-[-0.03em] text-foreground sm:text-[44px]">Letters</h1>
+          <h1 className="text-[34px] leading-[1.05] font-[560] tracking-[-0.03em] text-foreground sm:text-[44px]">All letters</h1>
           <p className="mt-4 max-w-[34rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">
             Real letters by ordinary people, each written out by hand. Some never reached the person they were meant for.
           </p>
@@ -163,7 +163,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
           ) : (
             <ul
               role="list"
-              aria-label="Letters"
+              aria-label="All letters"
               className="mt-3 grid gap-x-7 gap-y-11 [grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr))]"
             >
               {letters
