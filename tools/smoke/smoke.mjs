@@ -8,14 +8,14 @@
 //   SMOKE_CHANNEL=chrome node tools/smoke/…      use the installed Google Chrome (CI does; no browser download)
 //
 // Pages: / (the desk), /letters (all letters), one letter page (the first card's link; the library shuffles,
-// so it varies from run to run and the output names it) and /fonts, each at desktop (1440×900) and phone
+// so it varies from run to run and the output names it), /fonts and /about, each at desktop (1440×900) and phone
 // (375×812) size. A page fails when
 //   - it logs a console error or throws an uncaught exception
 //   - one of its web workers fails (a worker's uncaught error or console error; every `new Worker` is watched)
 //   - a request to the site itself fails (4xx / 5xx, or no answer)
 //   - it shows one of the site's own failure messages ("The fonts didn't load", FAILURE_TEXTS below)
 //   - it stays blank: within 30 s the desk's letter has no handwriting, fewer than 6 letter cards have painted,
-//     the letter page has no handwriting, or fewer than 3 font specimens have drawn
+//     the letter page has no handwriting, fewer than 3 font specimens have drawn, or About's live line is unwritten
 // Screenshots of every page land in tools/smoke/out/ (CI keeps them). Exit code 1 on any failure.
 //
 // What each page must draw is found by accessible names and links (PAGES below). If a redesign renames one,
@@ -46,6 +46,8 @@ const PAGES = {
   letters: { what: 'letter cards painted', kind: 'cards', sel: 'a[href*="#/letter/"]', need: 6 },
   letter: { what: 'the letter in its hand', kind: 'sheet', sel: '[role="img"][aria-label^="The letter"]', need: 1 },
   fonts: { what: 'font specimens drawn', kind: 'fonts', sel: 'ol[aria-label="Fonts"] > li', need: 3 },
+  // About: the one line a writer writes live (a figure, captioned with the writer's name)
+  about: { what: 'the line written live', kind: 'sheet', sel: 'main figure', need: 1 },
 };
 const MIN_STROKES = 20; // svg paths; a found letter has hundreds, an empty sheet none
 // the site's own words for "this broke" (a page can fail without throwing)
@@ -221,6 +223,7 @@ async function main() {
       { name: 'letters', path: '/letters', kind: 'letters' },
       { name: 'letter', path: null, kind: 'letter' },
       { name: 'fonts', path: '/fonts', kind: 'fonts' },
+      { name: 'about', path: '/about', kind: 'about' },
     ];
     for (const page of pages) {
       if (page.kind === 'letter') {
