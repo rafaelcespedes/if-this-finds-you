@@ -116,13 +116,22 @@ const area = (a: Box) => (a[2] - a[0]) * (a[3] - a[1]);
 /** The ink box of a placed mark (mm), for layers sized to their marks. */
 export const markBox = (m: Pick<Mark, 'kind' | 'x' | 'y' | 'size' | 'rot'>) => boxAt(BOX[m.kind], m.size, m.rot, m.x, m.y);
 
-/** A place as a stamp prints it: tidy spacing, no "Township of", never cut inside a word. */
+/** A place as a stamp prints it: tidy spacing, no "Township of", never cut inside a word, never a non-place. */
 export function stampPlace(raw: string | null | undefined, max = 16) {
   let p = (raw || '').replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim();
+  // someone else's cut ("AT SEA OFF THE AMERIC…"): drop the broken word
+  if (/(…|\.\.\.)$/.test(p)) p = p.replace(/\s*\S*(…|\.\.\.)$/, '').trim();
+  // not a town ("his country house"): no place at all
+  if (/^(his|her|their|my|our|your)\b/i.test(p)) return '';
+  if (/^at sea\b/i.test(p)) return 'At sea';
   p = p.replace(/\b(Township|County|Parish|Convent)( of)?\b\s*/gi, '').replace(/\s+,/g, ',').replace(/^[\s,]+|[\s,]+$/g, '').trim();
   if (p.length <= max) return p;
-  const head = p.split(',')[0].trim();
+  const parts = p.split(',').map((x) => x.trim()).filter(Boolean);
+  const head = parts[0];
   if (head.length <= max) return head;
+  // the town is too long: the region it's in, if that fits ("Fort Pillsburg, Liberia" → "Liberia")
+  const region = parts.slice(1).find((x) => x.length <= max);
+  if (region) return region;
   const words = head.split(' ');
   let out = words[0];
   for (const w of words.slice(1)) { if ((out + ' ' + w).length > max) break; out += ' ' + w; }
@@ -298,6 +307,23 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   }
   const key = marks.map((m) => `${m.kind}${m.x.toFixed(1)},${m.y.toFixed(1)},${m.rot.toFixed(3)},${m.size.toFixed(2)},${m.layer},${m.ink},${m.text.place ?? ''}${m.text.year ?? ''}${m.text.number ?? ''}${m.text.label ?? ''}`).join(';');
   return { marks, key: hash(key) };
+}
+
+// ---------- the pencilled note, in a hand ----------
+/** A note written by the handwriting engine: SVG path data in px at `em`, and where its words sit. */
+export interface NoteWriting {
+  paths: string[];
+  left: number;
+  width: number;
+  baseline: number;
+  em: number;
+  /** x-height as a fraction of the em */
+  xHeight: number;
+}
+let noteWriter: ((text: string) => NoteWriting | null) | null = null;
+/** The page hands the printer a way to write the archivist's note in a real hand (lib/paper/pencil-note.ts). */
+export function setNoteWriter(w: typeof noteWriter) {
+  noteWriter = w;
 }
 
 // ---------- the letter on screen ----------
@@ -588,6 +614,27 @@ const SHAPES: Record<Kind, Shape> = {
   // 6. an archivist's pencilled note, in a neat hand
   pencil(g, m) {
     const note = [m.text.place, m.text.year].filter(Boolean).join(', ');
+    const w = noteWriter?.(note);
+    if (w && w.paths.length) {
+      // a neat archivist's print, x-height about 2.5 mm, narrowed only if it wouldn't fit
+      const xh = 2.5;
+      let s = xh / (w.xHeight * w.em);
+      if (w.width * s > m.size * 2.1) s = (m.size * 2.1) / w.width;
+      const half = (w.width * s) / 2;
+      g.save();
+      g.scale(s, s);
+      g.translate(-(w.left + w.width / 2), -(w.baseline - (w.xHeight * w.em) / 2));
+      for (const d of w.paths) g.fill(new Path2D(d));
+      g.restore();
+      // underlined below the descenders, the rule a little unsteady
+      const y = (w.xHeight * w.em * s) / 2 + xh * 0.95;
+      g.lineWidth = 0.2;
+      g.beginPath();
+      g.moveTo(-half * 0.86, y + 0.15);
+      g.quadraticCurveTo(0, y - 0.3, half * 0.82, y + 0.1);
+      g.stroke();
+      return;
+    }
     const px = fitPx(g, note, HAND, m.size * 2.1, m.size * 0.24, 0);
     g.font = font(px, HAND, 400);
     g.textAlign = 'center';
