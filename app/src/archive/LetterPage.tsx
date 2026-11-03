@@ -25,10 +25,10 @@ import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
 import { ARCHIVE_URL, Missing, SiteHeader, toolHref } from './SiteHeader';
-// the look being compared (?look=reading-room): its own letter layout and dock (src/themes/reading-room/)
+// the Reading Room: its own letter layout (ReadingSpread.tsx) and, where the spread doesn't fit, its slip dock (SlipDock.tsx)
 import { LOOK } from '@/lib/look';
-import { SlipDock } from '@/themes/reading-room/ReadingLetter';
-import { ReadingSpread, SPREAD_QUERY } from './ReadingSpread';
+import { SlipDock } from './SlipDock';
+import { LetterCounter, ReadingSpread, SPREAD_QUERY } from './ReadingSpread';
 const Dock: (a: DockActions & { id?: string }) => ReactNode = LOOK === 'reading-room' ? SlipDock : LetterDock;
 import { LetterArrival } from '@/themes/postmarked/letter';
 
@@ -153,6 +153,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // a menu or sheet that's open takes its own keys (Escape closes it, and only it)
+      if ((e.target as Element | null)?.closest?.('[role=menu], [role=dialog], [data-vaul-drawer]') || document.querySelector('[role=menu], [data-vaul-drawer]')) return;
       if (e.key === 'Escape') { back(); return; }
       const t = e.target as HTMLElement | null;
       const typing = t && /^(input|textarea|select)$/i.test(t.tagName) && (t as HTMLInputElement).type !== 'checkbox';
@@ -295,9 +297,14 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     </div>
   );
   const editorial = <Editorial letter={letter} name={name} textOpen={textOpen} onText={setTextOpen} centred={DETAIL === '2'} />;
+  const turnProps = { at, total: at >= 0 ? list.length : 0, prev: neighbour(-1), next: neighbour(1), onPrev: () => turn(-1), onNext: () => turn(1) };
   return (
     <div className="min-h-dvh">
-      <SiteHeader current="letters" inside hrefs={{ letters: backHref }} />
+      {/* the Reading Room's spread: the counter is the running head's middle (on phones the slip dock carries it) */}
+      <SiteHeader
+        current="letters" inside hrefs={{ letters: backHref }}
+        centre={spread ? <LetterCounter id={id} turn={turnProps} /> : undefined}
+      />
       {LOOK === 'reading-room' ? (
         // the Reading Room: the letter as a spread (ReadingSpread.tsx, the layout study's proposal 3)
         <ReadingSpread
@@ -305,7 +312,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
           paper={r.paper} sheets={ready?.live.sheets.length ?? 1} frameH={fitH ? r.paper.h * pxPerMm : null} gap={SHEET_GAP}
           keep={keep} onKeep={setKeep} onNewHand={newHand} onReplay={() => { setFinish(0); setToken((n) => n + 1); }} canReplay={!!ready}
           onShare={share} onImage={download} imageReady={!!ready && !saving} onRandom={another} reply={replyHref(letter, look, replier)}
-          turn={{ at, total: at >= 0 ? list.length : 0, prev: neighbour(-1), next: neighbour(1), onPrev: () => turn(-1), onNext: () => turn(1) }}
+          turn={turnProps}
         />
       ) : DETAIL === '1' ? (
         // 1 side by side: the letter on the left, the reading on the right (above it on phones)
@@ -332,7 +339,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
       )}
       {/* look C (?look=postmarked): the letter arrives in its envelope */}
       {LOOK === 'postmarked' && <LetterArrival letter={letter} />}
-      {/* the Reading Room's spread has no dock on desktop: its counter and actions are on the page */}
+      {/* the Reading Room's spread has no dock on desktop: its counter is in the header, its actions on the page */}
       {!spread && <Dock
         id={id}
         reply={replyHref(letter, look, replier)}

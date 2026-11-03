@@ -221,6 +221,35 @@ interface Props {
 
 const MARGIN = 280;
 
+// ---------- where you are on the table: the running head's middle (SiteHeader's `centre`) ----------
+// The decade of the letter nearest the middle of the screen and a few of that decade's places near it ("the 1790s ·
+// Cairo, Madrid, Westminster"); nothing while the heading is nearest. Kept in a tiny store so only the readout
+// re-renders as you drag, and only when the words change.
+let readoutNow = '';
+const readoutSubs = new Set<() => void>();
+function setReadout(v: string) {
+  if (v === readoutNow) return;
+  readoutNow = v;
+  readoutSubs.forEach((fn) => fn());
+}
+export function useCanvasReadout() {
+  return useSyncExternalStore((cb) => { readoutSubs.add(cb); return () => readoutSubs.delete(cb); }, () => readoutNow, () => '');
+}
+function readoutOf(near: { it: Placed; d: number }[]) {
+  const first = near[0];
+  if (!first || first.it.id === 'heading' || first.it.letter?.year == null) return '';
+  const decade = Math.floor(first.it.letter.year / 10) * 10;
+  const places: string[] = [];
+  for (const { it } of near) {
+    const l = it.letter;
+    if (!l?.place || l.year == null || Math.floor(l.year / 10) * 10 !== decade) continue;
+    const place = l.place.replace(/\s*\([^)]*\)/g, '').split(/,\s*/)[0];
+    if (place && !places.includes(place)) places.push(place);
+    if (places.length === 3) break;
+  }
+  return `the ${decade}s${places.length ? ` · ${places.join(', ')}` : ''}`;
+}
+
 /** The Reading Room lays the letters on a table (layTable); the other looks scatter them (layField). */
 const TABLE = LOOK === 'reading-room';
 
@@ -290,6 +319,7 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
     `translate3d(${(sx - it.w / 2).toFixed(1)}px, ${(sy - it.h / 2).toFixed(1)}px, 0) rotate(${it.tilt.toFixed(2)}deg)`;
 
   /** Move everything to the camera: transforms directly, and the set of letters near the screen when it changes. */
+  const byId = useMemo(() => new Map(field.items.map((it) => [it.id, it])), [field]);
   const frame = useCallback(() => {
     const near: { id: string; sx: number; sy: number }[] = [];
     for (const it of field.items) {
@@ -299,6 +329,15 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
       const el = els.current.get(it.id);
       if (el) el.style.transform = transformOf(it, p.sx, p.sy);
     }
+    // the Reading Room's running head: where you are (the letters nearest the middle of the screen)
+    if (TABLE) {
+      const cx = vp.w / 2, cy = vp.h / 2;
+      const byDist = near
+        .map((n) => ({ it: byId.get(n.id)!, d: Math.hypot(n.sx - cx, n.sy - cy) }))
+        .filter((n) => n.it && n.d < Math.max(vp.w, vp.h) * 0.6)
+        .sort((a, b) => a.d - b.d);
+      setReadout(readoutOf(byDist));
+    }
     // reading order for Tab: rows from the top, left to right
     near.sort((a, b) => (Math.abs(a.sy - b.sy) > 120 ? a.sy - b.sy : a.sx - b.sx));
     const key = near.map((n) => n.id).join(',');
@@ -306,7 +345,7 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
       visibleKey.current = key;
       setVisible(near.map((n) => n.id));
     }
-  }, [field, place]);
+  }, [field, place, byId, vp.w, vp.h]);
   useLayoutEffect(frame, [frame]);
 
   // a new set of letters (a search, a century): gather them around the heading, from the middle
@@ -454,9 +493,8 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
     glideTo(p.sx - vp.w / 2, p.sy - vp.h / 2);
   };
 
-  useEffect(() => () => stop(), []);
+  useEffect(() => () => { stop(); setReadout(''); }, []);
 
-  const byId = useMemo(() => new Map(field.items.map((it) => [it.id, it])), [field]);
   return (
     <div
       ref={stageRef}

@@ -44,18 +44,18 @@ The header is the site's running head (the Reading Room layouts, house rule 2): 
 **middle**, and the places on the right, on one line. In the Reading Room it sits over one hairline and is set in
 the label role's small capitals; the letter's number is archival red. Other looks keep the plain header.
 
-- **The middle** says what this page holds. Pages pass it as `centre` (and a short form, `centreShort`, for when
-  only that fits):
-  - the desk, on a found letter (Reading Room): "No. 0115 · Millsburg · 1838", short "No. 0115"
+- **The middle** says what this page holds, on desktops and tablets. Pages pass it as `centre`:
+  - the desk, on a found letter (Reading Room): "No. 0115 · Millsburg · 1838"
     (`components/Folio.tsx`, from the Reading Room's catalogue, the same source as the marks printed on the sheet);
-  - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›", short "‹ No. 0004 ›" (the library builds it);
+  - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›" (the library builds it);
   - All letters: where you are on the canvas, the decade under the middle of the screen (the library builds it).
   Mark the number with `data-site-number` so the looks can colour it.
 - It's centred over the page, or, on the desk in the Reading Room, over the letter's side: there the header runs
   the width of the window (its places reach the desk's right edge) and keeps the desk's width aside (`beside`).
-- When the line gets tight, the header gives way in this order: the middle moves off-centre, then the places go
-  into the Menu, then the middle shortens, then it steps aside (`useFits` in SiteHeader.tsx). On a 375 px phone
-  the desk shows "No. 0115", Share and the Menu; at 320 px, Share and the Menu.
+- **Phones (under 40rem) have no middle** (Rafael, 3 Nov: "keep the navigation on mobile minimal"): the wordmark,
+  the page's action (Share on the desk) and the Menu. The number, place and year stay on the page itself.
+- When the line gets tight on a larger screen, the header gives way in this order: the middle moves off-centre, then
+  the places go into the Menu, then the middle steps aside (`useFits` in SiteHeader.tsx).
 
 ## When the words fit (desktops, tablets)
 
@@ -79,8 +79,10 @@ the label role's small capitals; the letter's number is archival red. Other look
 ```
 
 - Everything goes into one **Menu** chip at the top right (drawn 32 px, a 44 px target, the same chip as Share).
-  It opens a small sheet: the four places (the current one marked), then "My letters, kept on this device" with
-  the list. With letters kept, the chip carries their count.
+  It opens the shared Sheet (`components/ui/sheet.tsx`): on a phone a bottom sheet that slides up, follows your
+  finger, and closes on a swipe or flick down, the backdrop or Escape; the four places as big 56 px rows (the
+  current one marked), then "My letters, kept on this device" with the list. On a larger screen (large text, a
+  narrow window) the same list opens as a popover from the chip. With letters kept, the chip carries their count.
 - **Why one menu and not a row of icons.** Before this, the tool's phone header had four icon chips (My letters,
   All letters, Fonts, Share). A grid icon and an "Aa" don't say "All letters" or "Fonts"; at 320 px the chips ran
   over the wordmark; and the library and Fonts pages showed words instead, a different set on each page.
@@ -117,9 +119,10 @@ stays in the panel. Keep it to one action, and only when the page has nowhere el
 - Order for keyboards and screen readers is the order on screen: wordmark, page action, My letters, the places
   (or the Menu chip). The places are a `<nav aria-label="Site">` list.
 - Every target is at least 44 px (the words carry an invisible larger hit area so the line stays compact).
-- The phone menu is a button (`aria-expanded`) that opens a small dialog. Opening it moves focus to the first
-  place; Tab stays inside; **Escape closes it** and returns focus to the chip, without also leaving a letter's page
-  (that page goes back on Escape); a tap outside closes it.
+- The Menu is a button (`aria-expanded`) that opens a dialog (the sheet, or the popover). Opening it moves focus to
+  the first place; Tab stays inside; **Escape closes it** and returns focus to the chip (on a phone once the sheet
+  has slid away), without also leaving a letter's page (that page goes back on Escape); a tap on the backdrop or
+  outside closes it, and so does a swipe down on a phone.
 - The current place says so (`aria-current`). My letters says how many are kept ("Menu, 2 letters kept").
 - While you're writing on a phone, the header steps aside and its controls leave the tab order (`inert`).
 - Focus rings use `--ring`; the chips and words keep their look in forced colours.

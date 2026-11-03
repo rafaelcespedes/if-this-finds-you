@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
@@ -20,6 +20,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
+import { useStableProps } from '@/hooks/useStableProps';
 import { useWideScale } from '@/hooks/useWideScale';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
@@ -79,6 +80,8 @@ function writePref(key: string, v: string) {
 
 /** Every edit to the note, in order: the seed of the ink log (see lib/edits.ts). */
 const editLog = new EditLog();
+/** the Reading Room's desk, skipped when nothing it shows changed (its props are stable: useStableProps) */
+const ReadingDeskMemo = memo(ReadingDesk);
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
 const TAIL_KEY = 'seedhand:typed';
 /** in a shared letter's header: no kept letters (picking one would keep their letter as yours) */
@@ -718,20 +721,28 @@ export default function App() {
     // `base` covers everything the rolls depend on
   }, [base, editing, state.reader]);
 
-  // the live page's first layout for a hand is the slow one: do it once the page has sat still on this hand a
-  // while (not between quick clicks: on a slow phone it's most of a second), so a tap to write starts at once.
-  // On a found letter the first key starts a reply on a fresh sheet: a few words warm the hand, not their letter.
+  // the live page's first layout for a hand is the slow one: done when you're about to write (the pointer over the
+  // letter, a finger on it), so a tap to write starts at once, and never between quick clicks; else, once the page
+  // has sat still a good while, in a truly idle moment. Once per hand. On a found letter the first key starts a reply
+  // on a fresh sheet: a few words warm the hand, not their letter.
+  const warmed = useRef('');
+  const warmKey = JSON.stringify([state.seed, state.style, lookKey, state.paper, eff.size, eff.lineSpacing, state.signed, replyPending]);
+  const warmInputs = useRef({ p, paper, size: eff.size, lineSpacing: eff.lineSpacing, signed: state.signed, words: '' });
+  warmInputs.current = { p, paper, size: eff.size, lineSpacing: eff.lineSpacing, signed: state.signed, words: replyPending ? 'Dear friend, thank you' : state.text };
+  const warmHand = useCallback(() => {
+    if (!LIVE || warmed.current === warmKey) return;
+    warmed.current = warmKey;
+    const w = warmInputs.current;
+    try { liveLayout(w.p, w.words, w.paper, w.size, w.lineSpacing, w.signed); } catch { /* fine */ }
+  }, [warmKey]);
   useEffect(() => {
     if (!LIVE || editing || state.reader) return;
-    const words = replyPending ? 'Dear friend, thank you' : state.text;
     const t = window.setTimeout(() => {
-      const run = () => { try { liveLayout(p, words, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
-      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 4000 });
-      else run();
-    }, 3000);
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(warmHand);
+      else warmHand();
+    }, 8000);
     return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader, replyPending]);
+  }, [warmHand, editing, state.reader]);
 
   // ---------- actions ----------
   const share = useCallback(async () => {
@@ -896,8 +907,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [newHand, similarHand, posture.toggle]);
 
-  const panelProps: PanelProps = {
-    state,
+  // what the panel shows of the letter: everything but its words (it never shows them), so typing doesn't redraw it
+  const panelState = useMemo(
+    () => ({ ...state, text: state.text ? '…' : '', inkLog: state.inkLog ? '…' : null, marks: [] }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.seed, state.style, state.pen, state.penSize, state.ink, state.paper, state.size, state.offsets, state.occasion, state.amount, state.sample, state.mode, state.signed, state.replyTo, state.reader, state.neatOnly, !!state.text, !!state.inkLog],
+  );
+  const panelLive: PanelProps = {
+    state: panelState,
     natural,
     p,
     name,
@@ -976,6 +993,8 @@ export default function App() {
     } : undefined,
   };
 
+  // stable callbacks, and the same object until something the panel shows changes (Panel and the sheet are memo'd)
+  const panelProps = useStableProps(panelLive);
   onModeRef.current = panelProps.ink?.onMode;
   freshRef.current = panelProps.ink?.onFreshSheet;
   const desk = !posture.writing;
@@ -1094,7 +1113,6 @@ export default function App() {
       action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
       // the running head's middle: a found letter's number, place and year (the Reading Room's catalogue)
       centre={folio.centre}
-      centreShort={folio.centreShort}
       // over the whole window, the middle centred over the letter's side (the aside: the desk and its pr-3)
       beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + 0.75rem)' : undefined}
       quiet={editing && !isDesktop}
@@ -1221,6 +1239,7 @@ export default function App() {
                 <LetterMarks id={sample && !replyDesk ? sample.id : null} hand={state.seed}>
                 <PaperEditor
                   ref={editor}
+                  onIntent={warmHand}
                   text={replyPending ? '' : inkActive ? inkRef.current!.text() : state.text}
                   blank={replyPending}
                   hovering={inkActive && inkRef.current!.hovering}
@@ -1351,7 +1370,7 @@ export default function App() {
               desk ? 'duration-[180ms]' : 'pointer-events-none translate-x-3 opacity-0 duration-[240ms] motion-reduce:translate-x-0',
             )}
           >
-            {LOOK === 'reading-room' ? <ReadingDesk {...panelProps} /> : (
+            {LOOK === 'reading-room' ? <ReadingDeskMemo {...panelProps} /> : (
             <div style={wide > 1 ? { zoom: wide } : undefined} className="panel-scroll h-full w-[21rem] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>

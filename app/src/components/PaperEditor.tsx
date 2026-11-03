@@ -48,6 +48,8 @@ interface Props {
   onComposingChange?: (composing: boolean) => void;
   /** Ink mode: the writer is considering a fix at the pen head; the pen hovers instead of resting */
   hovering?: boolean;
+  /** someone is about to write (the pointer comes over the letter, a finger lands on it): get ready */
+  onIntent?: () => void;
   /** the page shows a letter that isn't in the text (a found letter before the reply's first key): the text
    *  is empty, so an IME composes into an empty field, and the caret rests at the end of what's shown */
   blank?: boolean;
@@ -64,7 +66,7 @@ interface Sel {
 const AMBER = '#f3d27a';
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, children },
+  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -180,6 +182,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   // mouse and pen: press to place, drag to select, double-click a word, triple-click a line.
   // Touch keeps tap-to-place in onClick, because iOS only opens the keyboard from a tap.
   const onPointerDown = (e: React.PointerEvent) => {
+    onIntent?.();
     // count clicks ourselves: pointer events don't reliably carry a click count (a finger lands less exactly)
     const ld = lastDown.current;
     const near = e.timeStamp - ld.t < 450 && Math.hypot(e.clientX - ld.x, e.clientY - ld.y) < (e.pointerType === 'touch' ? 24 : 5);
@@ -419,6 +422,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       className="relative mx-auto cursor-text touch-manipulation [-webkit-touch-callout:none] focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-ring"
       style={{ width: sheetW * pxPerMm }}
       onPointerDown={onPointerDown}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') onIntent?.(); }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}

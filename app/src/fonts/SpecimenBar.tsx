@@ -2,11 +2,10 @@
 // own name, or your words), the size, and As a font (the font itself, what you download) or Live hand (the engine's
 // live writing, with the writer's own pen, ink and paper). Built from the tool's own controls (its menu, field,
 // slider row and segmented control), so it looks and behaves like the panel on the home page.
-import { Check, ChevronDown, X } from 'lucide-react';
-import { DropdownMenu } from 'radix-ui';
+import { ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { inputField } from '@/components/ui/input';
-import { menuContent, menuItem } from '@/components/ui/menu';
+import { ActionSheet } from '@/components/ui/sheet';
 import { SliderRow } from '@/components/ui/slider-row';
 import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
@@ -29,32 +28,23 @@ interface Props {
   narrow: boolean;
 }
 
-/** What every hand writes: the tool's menu, opened from a quiet button. */
+/** What every hand writes: the shared ActionSheet (a menu from a quiet button on desktop, rows on phones). */
 function LinePicker({ line, onLine }: { line: Line; onLine: (l: Line) => void }) {
   const current = line === 'own' ? 'Your words' : LINES.find((l) => l.id === line)?.label ?? '';
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <ActionSheet
+      title="What every hand writes"
+      side="bottom"
+      align="start"
+      width="w-[236px]"
+      entries={LINES.map((l) => ({ id: l.id, label: l.label, checked: line === l.id, onSelect: () => onLine(l.id) }))}
+      trigger={
         <Button variant="outline" className="group max-w-[11rem] shrink-0 justify-between gap-1.5 px-3 font-normal" aria-label={`What every hand writes: ${current}`}>
           <span className="truncate">{current}</span>
           <ChevronDown aria-hidden className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content side="bottom" align="start" sideOffset={6} collisionPadding={12} className={cn(menuContent, 'w-[236px]')}>
-          <DropdownMenu.RadioGroup value={line} onValueChange={(v) => onLine(v as Line)}>
-            {LINES.map((l) => (
-              <DropdownMenu.RadioItem key={l.id} value={l.id} className={menuItem}>
-                <span className="grid size-4 shrink-0 place-items-center">
-                  <DropdownMenu.ItemIndicator><Check className="size-4 text-[var(--ink)]" aria-hidden /></DropdownMenu.ItemIndicator>
-                </span>
-                {l.label}
-              </DropdownMenu.RadioItem>
-            ))}
-          </DropdownMenu.RadioGroup>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      }
+    />
   );
 }
 

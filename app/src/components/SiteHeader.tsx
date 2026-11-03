@@ -8,7 +8,8 @@
 // (aria-current on the place you're in), [data-site-kept], [data-site-divider], [data-site-chip], [data-site-action],
 // and in the phone menu [data-site-menu], [data-site-label].
 import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { DropdownMenu, Popover } from 'radix-ui';
+import { ActionSheet, Sheet, useSheets, type SheetEntry } from '@/components/ui/sheet';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Menu } from 'lucide-react';
 import { Wordmark } from '@/components/Wordmark';
 import { APP_NAME, withLogo } from '@/lib/brand';
@@ -32,7 +33,7 @@ type Props = {
   /** the running head's middle: what this page holds (a letter's number, place and year; the letter counter; where
    * you are on the canvas). Centred over the page, or over the stage when `beside` is set */
   centre?: ReactNode;
-  /** its short form for when the full one doesn't fit ("No. 0115", "‹ No. 0004 ›"); without one, the middle steps aside */
+  /** @deprecated ignored: phones keep the head minimal, with no middle (Rafael, 3 Nov); remove it where it's passed */
   centreShort?: ReactNode;
   /** a column kept at the right, beside the stage (the tool's record): the middle centres over the stage, and the
    * places still run to the right edge. A CSS length */
@@ -58,16 +59,19 @@ const mark = "relative before:pointer-events-none before:absolute before:inset-x
 const away = 'invisible absolute top-0 right-0';
 
 export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
-  { current, inside, hrefs, kept, action, centre, centreShort, beside, quiet, className, style, children },
+  { current, inside, hrefs, kept, action, centre: centreProp, beside, quiet, className, style, children },
   ref,
 ) {
   const device = useDeviceKept();
   const mine = kept ?? device;
   const onTool = current === 'write' && !inside;
-  const m = useFits(ref, `${!!beside}${!!centre}${!!centreShort}${!!action}`);
+  // phones keep the head minimal: the wordmark, the page's action and the Menu, no middle (Rafael, 3 Nov)
+  const phone = useMediaQuery('(max-width: 39.99rem)');
+  const centre = phone ? undefined : centreProp;
+  const m = useFits(ref, `${!!beside}${!!centre}${!!action}`);
   const { fit } = m;
   const words = fit === 'A' || fit === 'B';
-  const middle = centre && (fit === 'A' || fit === 'B' || fit === 'C') ? 'full' : centreShort && fit === 'D' ? 'short' : 'none';
+  const middle = centre && (fit === 'A' || fit === 'B' || fit === 'C') ? 'full' : 'none';
   return (
     <header
       ref={m.headerRef}
@@ -76,7 +80,7 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
       className={cn(
         // over the page, clear of a notch or camera island (the phone sideways too); only its links take clicks, so
         // the canvas under it still drags
-        'pointer-events-none absolute inset-x-0 top-[max(1rem,env(safe-area-inset-top,0px))] z-10 pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:pl-[max(2rem,env(safe-area-inset-left,0px))] lg:top-5 lg:pr-[max(2.5rem,env(safe-area-inset-right,0px))] lg:pl-[max(2.5rem,env(safe-area-inset-left,0px))]',
+        'pointer-events-none absolute inset-x-0 top-[max(1rem,env(safe-area-inset-top,0px))] z-10 overflow-x-clip pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:pl-[max(2rem,env(safe-area-inset-left,0px))] lg:top-5 lg:pr-[max(2.5rem,env(safe-area-inset-right,0px))] lg:pl-[max(2.5rem,env(safe-area-inset-left,0px))]',
         className,
       )}
     >
@@ -112,17 +116,6 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
             className={cn('flex shrink-0 items-center whitespace-nowrap', middle !== 'full' ? away : fit === 'A' ? 'col-start-2 justify-self-center' : 'mx-auto')}
           >
             {centre}
-          </div>
-        )}
-        {centreShort && (
-          <div
-            ref={m.shortRef}
-            data-site-centre
-            data-short=""
-            inert={middle !== 'short' || undefined}
-            className={cn('flex shrink-0 items-center whitespace-nowrap', middle === 'short' ? 'ml-auto' : away)}
-          >
-            {centreShort}
           </div>
         )}
         <div
@@ -165,19 +158,17 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
  *   A  the places in words, the middle centred over the page (or the stage)
  *   B  the places in words, the middle between the wordmark and them
  *   C  the Menu, the middle in full
- *   D  the Menu, the middle's short form beside it (a phone)
- *   E  the Menu alone
+ *   E  the Menu alone (always on a phone, where the head has no middle)
  * Measured before the first paint, then whenever the header or any piece changes size (fonts and the wordmark's
  * drawing arrive late).
  */
-type Fit = 'A' | 'B' | 'C' | 'D' | 'E';
+type Fit = 'A' | 'B' | 'C' | 'E';
 function useFits(outer: React.ForwardedRef<HTMLElement>, pieces: string) {
   const header = useRef<HTMLElement | null>(null);
   const rowRef = useRef<HTMLDivElement | null>(null);
   const logoRef = useRef<HTMLDivElement | null>(null);
   const besideRef = useRef<HTMLSpanElement | null>(null);
   const centreRef = useRef<HTMLDivElement | null>(null);
-  const shortRef = useRef<HTMLDivElement | null>(null);
   const actionRef = useRef<HTMLDivElement | null>(null);
   const wordsRef = useRef<HTMLDivElement | null>(null);
   const [fit, setFit] = useState<Fit>('E');
@@ -198,7 +189,6 @@ function useFits(outer: React.ForwardedRef<HTMLElement>, pieces: string) {
       const logo = w(logoRef.current);
       const beside = w(besideRef.current);
       const centre = w(centreRef.current);
-      const short = w(shortRef.current);
       const action = actionRef.current;
       const inner = action ? px(getComputedStyle(action.parentElement!).columnGap) : 0;
       const lead = action ? action.offsetWidth + inner : 0;
@@ -212,20 +202,19 @@ function useFits(outer: React.ForwardedRef<HTMLElement>, pieces: string) {
         if (logo <= side && words <= side + (beside ? g + beside : 0)) next = 'A';
         else if (fits(logo, centre, words)) next = 'B';
         else if (fits(logo, centre, menu)) next = 'C';
-        else if (short && fits(logo, short, menu)) next = 'D';
         else next = 'E';
       } else {
-        next = fits(logo, words) ? 'B' : short && fits(logo, short, menu) ? 'D' : 'E';
+        next = fits(logo, words) ? 'B' : 'E';
       }
       setFit(next);
     };
     measure();
     const ro = new ResizeObserver(measure);
-    for (const el of [row, logoRef.current, besideRef.current, centreRef.current, shortRef.current, actionRef.current, wordsRef.current]) if (el) ro.observe(el);
+    for (const el of [row, logoRef.current, besideRef.current, centreRef.current, actionRef.current, wordsRef.current]) if (el) ro.observe(el);
     return () => ro.disconnect();
     // again when a piece comes or goes (the middle arrives with the letters)
   }, [pieces]);
-  return { fit, headerRef, rowRef, logoRef, besideRef, centreRef, shortRef, actionRef, wordsRef };
+  return { fit, headerRef, rowRef, logoRef, besideRef, centreRef, actionRef, wordsRef };
 }
 
 /** A place: the one you're in is marked and isn't a link; the one a page sits inside is marked and is the way back. */
@@ -263,9 +252,6 @@ function useDeviceKept(): Kept {
   return { list, onOpen: (savedAt) => window.location.assign(withLogo(keptHref(savedAt))) };
 }
 
-const menuSurface =
-  'z-50 w-[min(18rem,calc(100vw-24px))] origin-(--radix-popper-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,var(--popover)_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100';
-const keptRow = 'flex min-h-11 w-full cursor-default items-center justify-between gap-3 rounded-[3px] px-3 py-1.5 text-left text-[0.875rem] text-foreground outline-none select-none';
 
 function KeptLine({ d, kept, now }: { d: Draft; kept: Kept; now: number }) {
   const { words, when } = draftLabel(d, now);
@@ -280,67 +266,93 @@ function KeptLine({ d, kept, now }: { d: Draft; kept: Kept; now: number }) {
   );
 }
 
-/** My letters, when the words fit: how many are kept, and the list to bring one back. */
+/**
+ * My letters, when the words fit: how many are kept, and the list to bring one back. The shared ActionSheet: a menu
+ * from "My letters 2" on a desktop, a sheet of rows on a touch screen.
+ */
 function KeptMenu({ kept }: { kept: Kept }) {
   const now = Date.now();
   const n = kept.list.length;
+  const entries: SheetEntry[] = [
+    { kind: 'label', id: 'kept', label: 'Kept on this device' },
+    ...ordered(kept.list).map((d, i) => {
+      const { words, when } = draftLabel(d, now);
+      return {
+        id: `${d.savedAt}:${i}`,
+        // the time stays at the right of the words (the row's end slot is for an icon, a spinner or a tick)
+        label: (
+          <span className="flex min-w-0 items-baseline justify-between gap-3">
+            <span className="truncate">{words}</span>
+            <span className="shrink-0 text-[0.75rem] text-muted-foreground">{when}</span>
+          </span>
+        ),
+        hint: d.tab === TAB ? (kept.found ? 'The one you were writing here' : 'Written in this tab') : undefined,
+        onSelect: () => kept.onOpen(d.savedAt),
+      };
+    }),
+  ];
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <ActionSheet
+      title="My letters"
+      entries={entries}
+      width="w-[min(18rem,calc(100vw-24px))]"
+      trigger={
         <button type="button" data-site-kept className={link}>
           My letters
           <span className="font-normal text-muted-foreground tabular-nums">{n}</span>
         </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content side="bottom" align="end" sideOffset={8} collisionPadding={12} className={menuSurface}>
-          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">Kept on this device</DropdownMenu.Label>
-          {ordered(kept.list).map((d, i) => (
-            <DropdownMenu.Item key={d.savedAt + ':' + i} onSelect={() => kept.onOpen(d.savedAt)} className={cn(keptRow, 'data-[highlighted]:bg-accent')}>
-              <KeptLine d={d} kept={kept} now={now} />
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      }
+    />
   );
 }
 
-/** When the words don't fit: one Menu chip for the places and your kept letters (a count on it when there are any). */
+/**
+ * When the words don't fit: one Menu chip (with a count when letters are kept) that opens the shared Sheet. On a
+ * phone that's a bottom sheet you can drag or flick away: the places as big rows, the current one marked, then My
+ * letters. On a larger screen (large text, a narrow window) the same list in a popover.
+ */
 function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: boolean; hrefs?: Partial<Record<Place, string>>; kept: Kept }) {
+  const sheets = useSheets();
   const [open, setOpen] = useState(false);
+  const body = useRef<HTMLDivElement>(null);
   const n = kept.list.length;
   const now = Date.now();
-  const row = "relative flex min-h-11 w-full items-center rounded-[3px] px-3 text-[0.9375rem] text-foreground outline-none transition-colors duration-150 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring hover-device:hover:bg-accent active:bg-accent";
+  useEffect(() => {
+    if (!open) return;
+    // Escape closes the menu only (a letter's page also goes back on Escape; the sheet has closed by the time this runs)
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') e.stopPropagation(); };
+    document.addEventListener('keydown', esc, true);
+    // the first place to go: opening focuses the first button, which would be a kept letter
+    const raf = requestAnimationFrame(() => body.current?.querySelector<HTMLElement>('a[data-site-link]')?.focus({ preventScroll: true }));
+    return () => { document.removeEventListener('keydown', esc, true); cancelAnimationFrame(raf); };
+  }, [open]);
+  // big, thumb-sized rows in the sheet; the menu's own size in a popover. Every row answers a press at once.
+  const row = cn(
+    'sheet-row relative flex w-full items-center text-left text-foreground outline-none transition-[transform,background-color] duration-100 ease-out select-none active:scale-[0.97] active:bg-accent hover-device:hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+    sheets ? 'min-h-14 gap-3 rounded-[10px] px-4 text-[1.125rem]' : 'min-h-11 gap-3 rounded-[3px] px-3 text-[0.9375rem]',
+  );
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger asChild>
+    <Sheet
+      title="Menu"
+      showTitle={false}
+      open={open}
+      onOpenChange={setOpen}
+      side="bottom"
+      align="end"
+      className="w-[min(18rem,calc(100vw-24px))] p-1.5"
+      trigger={
         <button type="button" data-site-chip aria-label={n ? `Menu, ${n} ${n === 1 ? 'letter' : 'letters'} kept` : 'Menu'} className={headerChip}>
           <Menu aria-hidden />
           {n > 0 && (
             <span aria-hidden className="absolute -top-1.5 -right-1.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--ink)] px-1 text-[10px] leading-none font-medium text-[var(--primary-foreground)] tabular-nums">{n}</span>
           )}
         </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          data-site-menu
-          aria-label="Menu"
-          side="bottom"
-          align="end"
-          sideOffset={8}
-          collisionPadding={12}
-          // the first place to go (focus skips links by default, and would land on a kept letter)
-          onOpenAutoFocus={(e) => {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('a[data-site-link]')?.focus();
-          }}
-          // Escape closes the menu only (a letter page also goes back on Escape)
-          onEscapeKeyDown={(e) => e.stopPropagation()}
-          className={menuSurface}
-        >
+      }
+    >
+      {(close) => (
+        <div ref={body} data-site-menu className={cn('grid', sheets && 'pb-1')}>
           <nav aria-label="Site">
-            <ul>
+            <ul className="grid">
               {PLACES.map((p) => (
                 <li key={p.id}>
                   <PlaceLink place={p} current={current} inside={inside} href={hrefs?.[p.id]} className={cn(row, 'font-medium')} />
@@ -350,12 +362,12 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
           </nav>
           {n > 0 && (
             <>
-              <div aria-hidden className="mx-2 my-1 h-px bg-border" />
-              <p data-site-label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">My letters, kept on this device</p>
-              <ul>
+              <div aria-hidden className={cn('my-1.5 h-px bg-border', sheets ? 'mx-4' : 'mx-2')} />
+              <p data-site-label className={cn('pt-1 pb-1 text-muted-foreground', sheets ? 'px-4 text-[0.8125rem]' : 'px-3 text-[0.7188rem]')}>My letters, kept on this device</p>
+              <ul className="grid">
                 {ordered(kept.list).map((d, i) => (
                   <li key={d.savedAt + ':' + i}>
-                    <button type="button" onClick={() => { setOpen(false); kept.onOpen(d.savedAt); }} className={cn(keptRow, 'hover-device:hover:bg-accent active:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring')}>
+                    <button type="button" onClick={() => { close(); kept.onOpen(d.savedAt); }} className={cn(row, 'justify-between', sheets ? 'text-[1rem]' : 'text-[0.875rem]')}>
                       <KeptLine d={d} kept={kept} now={now} />
                     </button>
                   </li>
@@ -363,8 +375,8 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
               </ul>
             </>
           )}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </div>
+      )}
+    </Sheet>
   );
 }
