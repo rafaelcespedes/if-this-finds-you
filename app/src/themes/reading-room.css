@@ -104,6 +104,22 @@ html[data-look='reading-room'] {
   --rc-ctl-on: #fbfaf6; /* a chosen control's face */
   --rc-track: #7d786e; /* a thin track, a switch's edge: 3.6:1 on the room, 4.0:1 on the card */
   --rc-track-soft: #d3cfc6; /* a switch that's off */
+  /* states, one set for every control in the room (hover and press audit, 4 Nov): an ink wash for a plain control,
+     a red one for a red action (red never presses on the ink wash: 4.4:1), a line that firms up under the pointer */
+  --st-hover: var(--rc-ctl-hover);
+  --st-press: var(--rc-ctl-press);
+  --st-accent: color-mix(in oklab, var(--rr-red) 8%, transparent);
+  --st-accent-hover: color-mix(in oklab, var(--rr-red) 12%, transparent);
+  --st-accent-press: color-mix(in oklab, var(--rr-red) 16%, transparent);
+  --st-line: color-mix(in oklab, currentColor 35%, transparent);
+  --st-line-hover: currentColor;
+  --st-on: var(--rc-ctl-on);
+  --st-on-ring: var(--rr-ink);
+  --st-ring: var(--ring);
+  --st-disabled: 0.45;
+  --st-scale: 0.97;
+  --st-scale-row: 0.985;
+  --st-dur: 150ms;
   /* the grid (house rules, layout study): 12 columns at 1440, 40 px margins, 32 px gutters; a side column is 3 of
      them, the 20rem panel (density.css --panel-w) */
   --rr-margin: 2.5rem;

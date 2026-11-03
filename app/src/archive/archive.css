@@ -45,7 +45,7 @@
 /* a card's sheet: a letter put down a touch askew, flat on the page (no shadow); it straightens under the pointer */
 .archive-sheet {
   transform: rotate(var(--tilt, 0deg));
-  transition: transform 220ms var(--ease-out);
+  transition: transform var(--st-dur, 150ms) var(--ease-out);
 }
 /* the faint sheet that holds a card's place while its letter is written; it fades as the letter arrives */
 .archive-sheet-blank {
@@ -179,7 +179,7 @@ select.archive-field {
 }
 @media (hover: hover) and (pointer: fine) {
   .quiet-select:hover {
-    background: var(--chip);
+    background: var(--st-hover, var(--rc-ctl-hover, var(--chip)));
     color: var(--foreground);
   }
 }
@@ -502,5 +502,19 @@ select.archive-field {
     width: max(100%, 2.75rem);
     height: max(100%, 2.75rem);
     translate: -50% -50%;
+  }
+}
+
+/* ---------- states: one press for every control, from the shared state tokens (with today's values until they land) */
+/* a press answers at once, everywhere (touch screens included: they have no hover) */
+:is(.era-seg, .dock-switch, .letter-counter button):active {
+  background: var(--st-press, var(--rc-ctl-press, var(--accent)));
+  border-radius: 3px;
+  scale: var(--st-scale, 0.97);
+  transition-duration: var(--dur-press, 100ms);
+}
+@media (hover: hover) and (pointer: fine) {
+  .letter-counter button:hover {
+    background: var(--st-hover, var(--rc-ctl-hover, var(--chip)));
   }
 }
