@@ -61,7 +61,7 @@ export async function renderNote(req: Omit<WriteRequest, 'id'>, ink: string, css
     const img = await rasterizeWriting(res.svgs[i], sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
     // and those stamped after it, over the writing
-    if (marks) printMarks(ctx, marks, k, 'over');
+    if (marks) printMarks(ctx, marks, k, 'over', paper);
     ctx.restore();
   }
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));
@@ -93,7 +93,7 @@ export async function renderLiveNote(live: Live, extras: string[], inkKey: strin
     const img = await rasterizeWriting(sheetSVG(live, i, inkKey ?? 'currentColor', extras[i] ?? ''), sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
     // and those stamped after it, over the writing
-    if (marks) printMarks(ctx, marks, k, 'over');
+    if (marks) printMarks(ctx, marks, k, 'over', paper);
     ctx.restore();
   }
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));
