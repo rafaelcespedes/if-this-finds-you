@@ -197,7 +197,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
                   {letter.author}, {letter.year}{letter.title ? `. ${letter.title}` : ''}
                   {letter.translator && <>, translated by {letter.translator.name}</>}. Public domain.
                   {letter.source?.url && (
-                    <> <a href={letter.source.url} target="_blank" rel="noreferrer" className="underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:text-foreground">Source</a></>
+                    <> <a href={letter.source.url} target="_blank" rel="noreferrer" className="underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:decoration-current active:decoration-current">Source</a></>
                   )}
                 </dd>
               </div>
@@ -209,7 +209,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
                   {sources.map((s) => (
                     <span key={s.name}>
                       {sourceLine(s.name, readerCredit(s.credit))}
-                      {s.url && <> <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:text-foreground">Source</a></>}
+                      {s.url && <> <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:decoration-current active:decoration-current">Source</a></>}
                     </span>
                   ))}
                 </dd>
@@ -586,7 +586,7 @@ function OccasionRow({ state, onOccasion, onAmount }: PanelProps) {
             id={id}
             value={state.occasion ?? ''}
             onChange={(e) => onOccasion(e.target.value || null)}
-            className="h-8 max-w-full cursor-pointer appearance-none truncate rounded-md border border-border bg-[var(--field)] py-0 pr-7 pl-2.5 text-[0.8125rem] text-foreground shadow-[0_1px_1px_rgba(60,45,20,0.04)] transition-colors duration-150 hover-device:hover:bg-[#f4f1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:h-11 pointer-coarse:text-[1rem]"
+            className="h-8 max-w-full cursor-pointer appearance-none truncate rounded-md border border-border bg-[var(--field)] py-0 pr-7 pl-2.5 text-[0.8125rem] text-foreground shadow-[0_1px_1px_rgba(60,45,20,0.04)] transition-colors duration-150 hover-device:hover:bg-[var(--st-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:h-11 pointer-coarse:text-[1rem]"
           >
             <option value="">Everyday</option>
             {OCCASIONS.map((o) => (

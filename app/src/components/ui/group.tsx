@@ -38,7 +38,7 @@ export function MoreButton({ open, onClick, controls, summary, flush, children }
       aria-controls={controls}
       onClick={onClick}
       className={cn(
-        'flex w-full items-center justify-between py-4 text-[0.8125rem] font-medium transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:py-3.5',
+        'ruled-row flex w-full items-center justify-between py-4 text-[0.8125rem] font-medium focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:py-3.5',
         flush ? 'rounded-lg' : 'px-5',
       )}
     >
