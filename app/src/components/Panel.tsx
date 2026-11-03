@@ -492,6 +492,9 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
   const { state, flush } = props;
   const connected = !!getStyle(state.style)?.connected;
   const [open, setOpen] = useState(() => readOpen());
+  // folded away, its dozens of sliders aren't drawn at all (each new hand would redraw them: most of a second
+  // on a slow phone); once opened they stay, so folding it again still slides
+  const [drawn, setDrawn] = useState(open);
   const id = useId();
   const top = new Set(topSliders(props).map((c) => c.key));
   const rest = shownSliders(props).filter((c) => !top.has(c.key));
@@ -508,7 +511,7 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
         type="button"
         aria-expanded={open}
         aria-controls={id}
-        onClick={() => setOpen((o) => { writeOpen(!o); return !o; })}
+        onClick={() => { setDrawn(true); setOpen((o) => { writeOpen(!o); return !o; }); }}
         className={cn(
           'flex w-full items-center justify-between py-4 text-[13px] font-medium transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:py-3.5',
           flush ? 'rounded-lg' : 'px-5',
@@ -522,7 +525,7 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
       </button>
       <div id={id} className={cn('grid transition-[grid-template-rows] duration-300 ease-[var(--ease-drawer)] motion-reduce:transition-none', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
         <div className="overflow-hidden" inert={!open}>
-          <div className={cn('grid gap-6 pt-1 pb-6', pad)}>
+          {drawn && <div className={cn('grid gap-6 pt-1 pb-6', pad)}>
             <div className="grid gap-3.5">
               {rest.map((c) => <ControlRow key={c.key} c={c} {...props} />)}
             </div>
@@ -567,7 +570,7 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
                 </button>
               )}
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     </section>

@@ -614,29 +614,33 @@ export default function App() {
         prefetch(withTheirs(reqs));
       }
       if (chain.length < AHEAD) { idle(step); return; }
-      idle(() => {
+      // the sibling (Shift R) is asked for less: rolled once the page has stayed on this hand a while
+      window.setTimeout(() => idle(() => {
         if (cancelled) return;
         const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters());
         similarAhead.current = { base, look };
         prefetch(withTheirs([...reqs, requestFor({ ...state, ...look })]));
-      });
+      }), 2500);
     };
     const t = window.setTimeout(() => idle(step), 80);
     return () => { cancelled = true; window.clearTimeout(t); };
     // `base` covers everything the rolls depend on
   }, [base, editing, state.reader]);
 
-  // the live page's first layout for a hand is the slow one: do it while the page sits still, so a tap to
-  // write starts at once
+  // the live page's first layout for a hand is the slow one: do it once the page has sat still on this hand a
+  // while (not between quick clicks: on a slow phone it's most of a second), so a tap to write starts at once.
+  // On a found letter the first key starts a reply on a fresh sheet: a few words warm the hand, not their letter.
   useEffect(() => {
     if (!LIVE || editing || state.reader) return;
+    const words = replyPending ? 'Dear friend, thank you' : state.text;
     const t = window.setTimeout(() => {
-      const run = () => { try { liveLayout(p, state.text, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
-      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 3000 });
+      const run = () => { try { liveLayout(p, words, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 4000 });
       else run();
-    }, 1400);
+    }, 3000);
     return () => window.clearTimeout(t);
-  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader, replyPending]);
 
   // ---------- actions ----------
   const share = useCallback(async () => {
@@ -651,7 +655,11 @@ export default function App() {
 
   // the download never carries the empty-page placeholder
   const requestKey = JSON.stringify({ ...request, placeholder: undefined });
+  const downloading = useRef(false);
   const download = useCallback(async () => {
+    // a second tap while it's being made does nothing (one image, one share sheet)
+    if (downloading.current) return;
+    downloading.current = true;
     setBusy((b) => ({ ...b, download: true }));
     try {
       const res = live
@@ -676,8 +684,9 @@ export default function App() {
       } else done(r);
     } catch (e) {
       console.error(e);
-      toast.error('Couldn’t make the image', { description: e instanceof Error ? e.message : String(e) });
+      toast.error('Couldn’t make the image', { description: 'Something went wrong while it was being made. Try again in a moment.' });
     } finally {
+      downloading.current = false;
       setBusy((b) => ({ ...b, download: false }));
     }
   }, [requestKey, ink, pxPerMm, name, coarse, live, state.marks, state.signed, eff.inkKey, inkActive]);
@@ -724,16 +733,24 @@ export default function App() {
       toast.dismiss('export');
       if (coarse && navigator.canShare?.({ files: [file] })) {
         // making it took a few seconds, so the share sheet needs a fresh tap (then Save Video puts it in Photos)
-        toast.success(`Your ${what} is ready`, { id: 'export-done', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
+        // it waits until it's saved or put away: making it again takes a while
+        toast.success(`Your ${what} is ready`, { id: 'export-done', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: Infinity, closeButton: true });
       } else {
         saveBlob(res.blob, filename);
         toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export-done', description, duration: 4000 });
       }
     } catch (e) {
-      if ((e as Error)?.name === 'AbortError') toast('Stopped', { id: 'export', duration: 2000 });
+      // a fresh toast each way, so the progress one's Stop button and percentage don't linger
+      toast.dismiss('export');
+      if ((e as Error)?.name === 'AbortError') toast(`The ${what} was stopped`, { id: 'export-done', description: 'No file was made.', duration: 4000 });
       else {
         console.error(e);
-        toast.error(`Couldn’t make the ${what}`, { id: 'export', description: e instanceof Error ? e.message : String(e) });
+        toast.error(`Couldn’t make the ${what}`, {
+          id: 'export-done',
+          description: 'Something went wrong while it was being made.',
+          action: { label: 'Try again', onClick: () => void exportLetter(kind) },
+          duration: 10000,
+        });
       }
     } finally {
       exporting.current = null;
