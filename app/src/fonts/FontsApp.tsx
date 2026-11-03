@@ -57,6 +57,20 @@ function useSettled<T>(value: T, ms: number) {
   return v;
 }
 
+/** The screen's pixel density (capped at 3), kept up to date when it changes (another screen, browser zoom). */
+function useDevicePixelRatio() {
+  const read = () => Math.min(3, Math.max(1, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1));
+  const [dpr, setDpr] = useState(read);
+  useEffect(() => {
+    // a media query that matches only the current density: it stops matching when the density changes
+    const mq = matchMedia(`(resolution: ${devicePixelRatio || 1}dppx)`);
+    const on = () => setDpr(read());
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [dpr]);
+  return dpr;
+}
+
 const INTRO = 'Every hand here is a free, open-source font. Narrow it down, try your own words, and draw another set until one feels like yours.';
 
 export function FontsApp() {
@@ -81,12 +95,13 @@ export function FontsApp() {
   const [liveSize, setLiveSize] = useState(size);
   useEffect(() => { setLiveSize(size); }, [size]);
 
-  // the list's width, in steps (a resize of a few pixels shouldn't remake every live image)
+  // the list's exact width (live-hand images are made for it, pixel for pixel, once a resize has settled) and the
+  // screen's own density, up to 3x (iPhones), followed when the window moves to another screen or the page zooms
   const listRef = useRef<HTMLOListElement>(null);
   const rawWidth = useElementWidth(listRef);
-  const width = useSettled(Math.max(200, Math.floor(rawWidth / 8) * 8), 160);
+  const width = useSettled(Math.max(200, Math.floor(rawWidth)), 200);
   const lines = narrow ? 2 : 1;
-  const dpr = Math.min(2, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1);
+  const dpr = useSettled(useDevicePixelRatio(), 200);
   const live: Omit<LiveSpec, 'text'> = useMemo(() => ({ emPx: size, width, lines, dpr }), [size, width, lines, dpr]);
 
   // the set: drawn by the worker from the URL's seed and filters, or your saved hands

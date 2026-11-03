@@ -205,9 +205,8 @@ button.font-tag:focus-visible {
 }
 .font-specimen-img {
   display: block;
-  height: 100%;
-  width: auto;
   max-width: none;
+  transform-origin: 0 0;
   -webkit-user-select: none;
   user-select: none;
 }

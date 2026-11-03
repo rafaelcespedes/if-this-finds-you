@@ -44,6 +44,9 @@ jobs:
         working-directory: app
         run: npm ci --no-audit --no-fund
 
+      - name: Workers start the way the build makes them
+        run: node tools/smoke/check-workers.mjs
+
       - name: Typecheck (any TypeScript error fails)
         working-directory: app
         run: npm run typecheck
@@ -61,7 +64,7 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
-      - name: Smoke test (/, /letters, a letter; desktop and phone)
+      - name: Smoke test (/, /letters, a letter, /fonts; desktop and phone)
         # the runner's own Google Chrome: no browser download
         run: node tools/smoke/smoke.mjs 2>&1 | tee smoke.txt
         env:
