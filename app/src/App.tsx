@@ -390,6 +390,17 @@ export default function App() {
   useEffect(() => { if (writing) shownSheets.current = sheetCount; }, [writing, sheetCount]);
 
   const deskRef = useRef<HTMLDivElement>(null);
+  const lastDeskPointer = useRef('');
+  /** a press on your sheet's area that didn't reach the letter itself (and isn't on a control) */
+  const pressMissedLetter = (e: React.PointerEvent | React.MouseEvent) => {
+    if (reader || !editor.current) return false;
+    const t = e.target as HTMLElement;
+    if (t.closest('[data-paper], button, a, input, textarea, select, label, [role="button"], [role="menu"], [role="dialog"], [data-vaul-drawer]')) return false;
+    const paper = deskRef.current?.querySelector('[data-paper]');
+    if (!paper) return false;
+    const boxes = [paper.getBoundingClientRect(), ...[...paper.querySelectorAll('canvas')].map((c) => c.getBoundingClientRect())];
+    return boxes.some((r) => e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom);
+  };
   const deskW = useElementWidth(deskRef);
   // a very wide screen draws the sheet (and the panel and header) bigger, in step with it
   const wide = useWideScale();
@@ -1163,7 +1174,12 @@ export default function App() {
           <div
             ref={deskRef}
             // with their letter in front, yours waits behind it; a click on yours brings it back (and writes there)
-            onPointerDownCapture={replyDesk && theirsForward ? () => setTheirsForward(false) : undefined}
+            // a press anywhere on your sheet writes, even where something lies over it (the hint, a printed mark) or
+            // the paper paints past the letter's box: a mouse or pen on the press, a finger on the tap (iOS opens the
+            // keyboard only from a tap); buttons and links keep their own
+            onPointerDown={(e) => { if (e.pointerType !== 'touch' && e.button === 0 && pressMissedLetter(e)) { e.preventDefault(); editor.current?.placeAt(e.clientX, e.clientY); } }}
+            onClick={(e) => { if (lastDeskPointer.current === 'touch' && pressMissedLetter(e)) editor.current?.placeAt(e.clientX, e.clientY); }}
+            onPointerDownCapture={(e) => { lastDeskPointer.current = e.pointerType; if (replyDesk && theirsForward) setTheirsForward(false); }}
             className={cn(
               'mx-auto w-full max-w-[820px]',
               replyDesk && 'relative z-10 mx-0 shrink-0 transition-opacity duration-300 ease-out',
