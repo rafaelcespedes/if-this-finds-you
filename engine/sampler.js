@@ -176,7 +176,14 @@ function result(b, variety) {
 
 export const LOOK_PENS = ['ballpoint', 'gel', 'fountain', 'pointed', 'italic', 'felt', 'pencil'];
 export const LOOK_TIPS = ['fine', 'medium', 'bold'];
-export const LOOK_PAPERS = ['plain', 'us-ruled', 'seyes', 'uk-feint', 'grid', 'dots'];
+// Papers are the app's ids (app/src/lib/papers.ts, docs/research/stationery.md): a family or family-variant.
+export const LOOK_PAPERS = ['pad', 'pad-uk', 'pad-binsen', 'pad-a4', 'laid', 'laid-blue', 'laid-cotton', 'airmail', 'airmail-white',
+  'aerogramme', 'notebook', 'notebook-loose', 'notebook-legal', 'notebook-uk', 'notebook-fr', 'postcard', 'postcard-us', 'card', 'card-ippitsusen'];
+// how common each is on its own (the app's own roll uses the same numbers)
+const PAPER_BASE = { pad: 10, 'pad-uk': 5, 'pad-binsen': 2, 'pad-a4': 3, laid: 8, 'laid-blue': 3, 'laid-cotton': 3, airmail: 9, 'airmail-white': 3,
+  aerogramme: 9, notebook: 4, 'notebook-loose': 4, 'notebook-legal': 3, 'notebook-uk': 2.5, 'notebook-fr': 2.5, postcard: 5, 'postcard-us': 3, card: 6, 'card-ippitsusen': 2 };
+// papers that only hold so much text (characters); sampleLook({ textLength }) skips them for longer letters
+const PAPER_FITS = { postcard: 360, 'postcard-us': 360, card: 420, 'card-ippitsusen': 160, aerogramme: 1500 };
 // Which inks go in which pen (mirrors pen.js SPECS[pen].inks on the pens branch)
 const PEN_INKS = {
   ballpoint: { 'ballpoint-blue': 50, black: 38, 'blue-black': 5, red: 4, green: 3 },
@@ -190,33 +197,57 @@ const PEN_INKS = {
 const INK_RGB = { 'ballpoint-blue': [38, 48, 132], 'royal-blue': [45, 82, 180], 'blue-black': [35, 50, 80], 'iron-gall': [42, 46, 66], sepia: [98, 66, 40], black: [38, 38, 46], red: [176, 36, 42], green: [30, 104, 70], graphite: [82, 82, 88] };
 const PEN_TIPS = { ballpoint: { fine: 2, medium: 3, bold: 0.6 }, gel: { fine: 2, medium: 2.5, bold: 1 }, fountain: { fine: 2.2, medium: 2.5, bold: 0.8 }, pointed: { fine: 1.5, medium: 2, bold: 0.8 }, italic: { fine: 0.6, medium: 2.4, bold: 1.6 }, felt: { fine: 1.2, medium: 2.4, bold: 2.4 }, pencil: { fine: 1, medium: 3, bold: 0.8 } };
 const PEN_PAPER = {
-  pencil: { grid: 2, dots: 1.4, seyes: 1.2 }, fountain: { seyes: 2, 'uk-feint': 1.5, plain: 1.4, 'us-ruled': 0.8 },
-  ballpoint: { 'us-ruled': 2, plain: 1, grid: 1 }, felt: { plain: 1.6, grid: 1.3, dots: 1.3, seyes: 0.5 },
-  pointed: { plain: 1.8, 'uk-feint': 1.4, seyes: 1.2, grid: 0.4, dots: 0.5 }, italic: { plain: 2, 'uk-feint': 1.2, grid: 0.5 },
-  gel: { dots: 1.5, plain: 1.2, 'us-ruled': 1.2 },
+  pencil: { notebook: 2, 'notebook-loose': 2, 'notebook-legal': 1.5, 'notebook-fr': 1.2, 'notebook-uk': 1.2, card: 0.6, laid: 0.4, airmail: 0.3, 'airmail-white': 0.3 },
+  fountain: { laid: 1.8, 'laid-blue': 1.5, pad: 1.5, 'pad-uk': 1.5, 'pad-binsen': 1.4, airmail: 1.3, 'notebook-fr': 1.6, card: 1.2, postcard: 0.8, notebook: 0.7, 'notebook-legal': 0.5 },
+  ballpoint: { aerogramme: 2, postcard: 1.8, 'postcard-us': 1.8, notebook: 1.6, 'notebook-loose': 1.6, 'notebook-legal': 1.6, airmail: 1.2, pad: 1, 'laid-cotton': 0.5 },
+  gel: { card: 1.5, 'card-ippitsusen': 1.2, pad: 1.2, notebook: 1.2, postcard: 1.2 },
+  felt: { 'notebook-legal': 1.5, card: 1.2, postcard: 1, laid: 0.6, airmail: 0.3, 'airmail-white': 0.3, aerogramme: 0.5 },
+  pointed: { laid: 3, 'laid-blue': 2.5, 'laid-cotton': 1.5, pad: 1, airmail: 0.4, postcard: 0.4, notebook: 0.2, 'notebook-loose': 0.2, 'notebook-legal': 0.2, aerogramme: 0.2 },
+  italic: { laid: 2, 'laid-cotton': 1.5, card: 1.5, pad: 1.2, notebook: 0.3, 'notebook-legal': 0.3 },
 };
-// where a writer learned shows in the paper they reach for: Seyès in France, college ruled in the US, feint
-// ruled in the UK, squared paper across much of continental Europe and Latin America
+// where a writer learned shows in the paper they reach for: the cahier in France, filler paper and legal pads in the
+// US, the blue pad and exercise book in Britain, A4 pads in Germany, airmail home from Latin America
 const SCHOOL_PAPER = {
-  french: { seyes: 6 }, american: { 'us-ruled': 3 }, british: { 'uk-feint': 3 }, continental: { grid: 2.2, 'uk-feint': 1.2 },
-  polish: { grid: 3 }, 'latin-american': { grid: 1.6, 'us-ruled': 1.6 }, italic: { plain: 1.4, 'uk-feint': 1.3 }, 'adult-print': { dots: 1.6, plain: 1.3, 'us-ruled': 1.2 },
+  french: { 'notebook-fr': 4, pad: 1.3, laid: 1.2 },
+  american: { notebook: 2, 'notebook-loose': 2.5, 'notebook-legal': 2, 'postcard-us': 2, card: 1.4, postcard: 0.5, 'pad-uk': 0.4, 'pad-a4': 0.3 },
+  british: { 'pad-uk': 3, 'notebook-uk': 2.5, postcard: 1.3, card: 1.2, 'notebook-loose': 0.4, 'notebook-legal': 0.3, 'postcard-us': 0.3 },
+  continental: { 'pad-a4': 2.5, pad: 1.5, 'notebook-fr': 0.6, 'notebook-loose': 0.3, 'notebook-legal': 0.2, 'postcard-us': 0.4 },
+  polish: { pad: 1.5, 'pad-a4': 1.5, 'notebook-uk': 0.8, 'notebook-legal': 0.2, 'postcard-us': 0.3 },
+  'latin-american': { notebook: 1.5, 'notebook-loose': 1.2, pad: 1.2, airmail: 1.5, aerogramme: 1.5, 'notebook-legal': 0.5 },
+  italic: { laid: 2, 'laid-cotton': 1.5, card: 1.5, 'pad-binsen': 0.8 },
+  'adult-print': { pad: 1.2, notebook: 1.4, card: 1.2, 'notebook-legal': 0.8 },
+};
+// when the hand was taught (the style's tradition.era): laid sheets before envelopes, airmail and aerogrammes in the
+// 20th century, pads and notebook pages now
+const ERA_PAPER = {
+  early: { laid: 3, 'laid-blue': 2, 'laid-cotton': 1.5, card: 0.3, pad: 0.3, 'pad-uk': 0.2, 'pad-a4': 0.2, 'pad-binsen': 0.2, airmail: 0.05, 'airmail-white': 0.05, aerogramme: 0.05,
+    notebook: 0.1, 'notebook-loose': 0.1, 'notebook-legal': 0.05, 'notebook-uk': 0.1, 'notebook-fr': 0.1, postcard: 0.1, 'postcard-us': 0.1, 'card-ippitsusen': 0.2 },
+  c19: { laid: 2.5, 'laid-blue': 1.5, card: 1.2, pad: 0.8, postcard: 0.6, 'postcard-us': 0.6, notebook: 0.4, 'notebook-loose': 0.4, 'notebook-legal': 0.3, airmail: 0.2, 'airmail-white': 0.2, aerogramme: 0.1 },
+  c20a: { airmail: 2, 'airmail-white': 1.6, aerogramme: 1.5, pad: 1.5, 'pad-uk': 1.5, postcard: 1.4, 'postcard-us': 1.4, card: 1, laid: 1, notebook: 0.8 },
+  c20b: { aerogramme: 1.8, airmail: 1.6, pad: 1.6, 'pad-uk': 1.4, notebook: 1.2, 'notebook-loose': 1.2, postcard: 1.2, card: 1 },
+  now: { notebook: 1.8, 'notebook-loose': 1.6, 'notebook-legal': 1.4, pad: 1.4, card: 1.2, postcard: 1.1, laid: 0.6, airmail: 0.4, 'airmail-white': 0.4, aerogramme: 0.25 },
+};
+const eraOf = (style) => {
+  const y = parseInt((String(((getStyle(style) || {}).tradition || {}).era || '').match(/\d{4}/) || [])[0], 10);
+  return !y ? 'now' : y < 1750 ? 'early' : y < 1900 ? 'c19' : y < 1950 ? 'c20a' : y < 2000 ? 'c20b' : 'now';
 };
 // what each kind of writer writes with and on (fonts-study.md §6); size = x-height in mm
 const ARCH_LOOK = {
-  friend: { pens: { ballpoint: 4, fountain: 2, gel: 2, pencil: 0.5, felt: 0.5 }, papers: { plain: 2, 'us-ruled': 1.5, 'uk-feint': 1.2, dots: 0.8 }, size: [2.8, 3.6] },
-  thanks: { pens: { gel: 3, fountain: 3, ballpoint: 1.5, pointed: 0.6 }, papers: { plain: 4, dots: 0.6 }, size: [3, 4] },
-  architect: { pens: { felt: 2.5, ballpoint: 1.5, pencil: 2.5, gel: 1 }, papers: { grid: 3, dots: 2, plain: 1.5 }, size: [2.4, 3.2], tips: { fine: 3, medium: 1 } },
-  field: { pens: { pencil: 4, ballpoint: 2, felt: 0.8, gel: 0.8 }, papers: { dots: 2, grid: 2, plain: 1.5, 'us-ruled': 0.6 }, size: [2.2, 2.9], tips: { fine: 2, medium: 1 } },
-  whiteboard: { pens: { felt: 6, gel: 0.6, ballpoint: 0.5 }, papers: { plain: 3, grid: 1.6, dots: 1 }, size: [4.2, 6.4], tips: { bold: 3, medium: 1 } },
-  margin: { pens: { felt: 3, gel: 2, ballpoint: 1.5 }, papers: { plain: 2, 'us-ruled': 1.4, 'uk-feint': 1 }, size: [3.6, 5], inks: { red: 8, green: 3 } },
-  postcard: { pens: { fountain: 2.5, ballpoint: 2.5, gel: 1.5, felt: 0.5 }, papers: { plain: 5 }, size: [2.3, 3.1] },
-  recipe: { pens: { fountain: 3, pointed: 1.4, ballpoint: 2, pencil: 0.6 }, papers: { 'uk-feint': 2, plain: 2, 'us-ruled': 1.5, grid: 0.4 }, size: [2.8, 3.8], inks: { sepia: 3, 'iron-gall': 3, 'blue-black': 1.5 }, age: [0.35, 0.95] },
-  first: { pens: { pencil: 6, felt: 1.4, ballpoint: 0.5 }, papers: { seyes: 2, 'us-ruled': 2, 'uk-feint': 1.4, grid: 1.2 }, size: [4.4, 6.6], tips: { medium: 2, bold: 1 } },
-  italic: { pens: { italic: 5, fountain: 2, pointed: 0.8 }, papers: { plain: 3, 'uk-feint': 1.4, dots: 0.6 }, size: [3.2, 4.4] },
-  signature: { pens: { fountain: 3, gel: 2, ballpoint: 2, felt: 0.8 }, papers: { plain: 4 }, size: [3.4, 5] },
-  backhand: { pens: { gel: 3, ballpoint: 2, felt: 1.2, pencil: 1 }, papers: { dots: 2.5, plain: 2, 'us-ruled': 1.2, grid: 1 }, size: [2.4, 3.2] },
+  friend: { pens: { ballpoint: 4, fountain: 2, gel: 2, pencil: 0.5, felt: 0.5 }, papers: { pad: 3, 'pad-uk': 1.5, airmail: 1.5, aerogramme: 1.2, notebook: 1, 'notebook-loose': 1, laid: 1, postcard: 0.6 }, size: [2.8, 3.6] },
+  thanks: { pens: { gel: 3, fountain: 3, ballpoint: 1.5, pointed: 0.6 }, papers: { card: 4, 'card-ippitsusen': 1.5, laid: 2, 'laid-cotton': 1.2, 'pad-binsen': 1.2, pad: 1 }, size: [3, 4] },
+  architect: { pens: { felt: 2.5, ballpoint: 1.5, pencil: 2.5, gel: 1 }, papers: { 'pad-a4': 2, 'notebook-legal': 1.5, pad: 1.5, card: 1 }, size: [2.4, 3.2], tips: { fine: 3, medium: 1 } },
+  field: { pens: { pencil: 4, ballpoint: 2, felt: 0.8, gel: 0.8 }, papers: { notebook: 2, 'notebook-uk': 1.2, 'notebook-legal': 1, airmail: 1, aerogramme: 1.4, postcard: 1 }, size: [2.2, 2.9], tips: { fine: 2, medium: 1 } },
+  whiteboard: { pens: { felt: 6, gel: 0.6, ballpoint: 0.5 }, papers: { 'notebook-legal': 2, 'pad-a4': 1.5, notebook: 1 }, size: [4.2, 6.4], tips: { bold: 3, medium: 1 } },
+  margin: { pens: { felt: 3, gel: 2, ballpoint: 1.5 }, papers: { 'notebook-legal': 1.5, 'notebook-loose': 1.2, pad: 1, card: 0.6 }, size: [3.6, 5], inks: { red: 8, green: 3 } },
+  postcard: { pens: { fountain: 2.5, ballpoint: 2.5, gel: 1.5, felt: 0.5 }, papers: { postcard: 5, 'postcard-us': 3, card: 1 }, size: [2.3, 3.1] },
+  recipe: { pens: { fountain: 3, pointed: 1.4, ballpoint: 2, pencil: 0.6 }, papers: { card: 3, 'notebook-uk': 1.5, pad: 1.5, 'notebook-legal': 0.8 }, size: [2.8, 3.8], inks: { sepia: 3, 'iron-gall': 3, 'blue-black': 1.5 }, age: [0.35, 0.95] },
+  first: { pens: { pencil: 6, felt: 1.4, ballpoint: 0.5 }, papers: { 'notebook-fr': 2, 'notebook-loose': 2, 'notebook-uk': 1.5, notebook: 1.5, pad: 0.5 }, size: [4.4, 6.6], tips: { medium: 2, bold: 1 } },
+  italic: { pens: { italic: 5, fountain: 2, pointed: 0.8 }, papers: { laid: 2.5, 'laid-cotton': 2, 'laid-blue': 1.2, card: 1.5, 'pad-binsen': 1 }, size: [3.2, 4.4] },
+  signature: { pens: { fountain: 3, gel: 2, ballpoint: 2, felt: 0.8 }, papers: { card: 2, laid: 2, pad: 1.5 }, size: [3.4, 5] },
+  backhand: { pens: { gel: 3, ballpoint: 2, felt: 1.2, pencil: 1 }, papers: { notebook: 1.5, pad: 1.5, 'notebook-loose': 1, 'card-ippitsusen': 0.8 }, size: [2.4, 3.2] },
 };
-const RULED = new Set(['us-ruled', 'seyes', 'uk-feint']);
+// printed rules and guide sheets keep lines close (writers follow a guide sheet under airmail paper too)
+const RULED = new Set(['pad', 'pad-uk', 'pad-binsen', 'pad-a4', 'airmail', 'airmail-white', 'notebook', 'notebook-loose', 'notebook-legal', 'notebook-uk', 'notebook-fr', 'card-ippitsusen']);
 const LOOK_KEYS = ['pen', 'tip', 'ink', 'paper', 'size', 'inkAge', 'inkVariation'];
 
 // pick a key from { key: weight } tables multiplied together (a key a table doesn't list gets its __floor, else 1);
@@ -232,7 +263,8 @@ function draw(r, keys, tables, flat = 1) {
 const inkFits = (pen, ink) => (PEN_INKS[pen] && PEN_INKS[pen][ink] ? 1 : ink === 'graphite' || pen === 'pencil' ? 0 : 0.15);
 
 // The natural look of a seed (family: 'print' | 'script'; locked: { pen?, tip?, ink?, paper?, size?, inkAge? } kept
-// as given, with everything else chosen to suit them). opts.wild flattens the odds. Pure.
+// as given, with everything else chosen to suit them). opts.wild flattens the odds; opts.textLength (characters) leaves
+// out papers too small for the letter (postcards, notecards, ippitsusen, aerogrammes). Pure.
 //   -> { seed, family, style, archetype, label, schooling, pen, tip, ink, inkAge, inkVariation, paper, size,
 //        params: { neatness, slant, pressure, hurry, blend, lineWander, fatigue, ...traits other modules add to
 //                  every hand, e.g. the style dimensions loops, joinLength, rhythm }  (absolute values)
@@ -253,7 +285,11 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
     L.ink ? Object.fromEntries(LOOK_PENS.map((p) => [p, inkFits(p, L.ink)])) : null,
     L.tip ? Object.fromEntries(LOOK_PENS.map((p) => [p, PEN_TIPS[p][L.tip]])) : null,
   ], flat);
-  const paper = L.paper && LOOK_PAPERS.includes(L.paper) ? L.paper : draw(rFor('paper'), LOOK_PAPERS, [{ ...A.papers, __floor: 0.25 }, SCHOOL_PAPER[h.schooling], { ...PEN_PAPER[pen], __floor: 0.7 }], flat);
+  // paper: how common it is, what this kind of writer uses, where and when they learned, what suits the pen; papers too
+  // small for opts.textLength are left out
+  const fits = opts.textLength > 0 ? Object.fromEntries(Object.entries(PAPER_FITS).filter(([, n]) => opts.textLength > n).map(([k]) => [k, 0])) : null;
+  const paper = L.paper && LOOK_PAPERS.includes(L.paper) ? L.paper : draw(rFor('paper'), LOOK_PAPERS,
+    [PAPER_BASE, { ...A.papers, __floor: 0.35 }, SCHOOL_PAPER[h.schooling], ERA_PAPER[eraOf(h.style)], { ...PEN_PAPER[pen], __floor: 0.7 }, fits], flat);
   const tip = L.tip && LOOK_TIPS.includes(L.tip) ? L.tip : draw(rFor('tip'), LOOK_TIPS, [PEN_TIPS[pen], A.tips ? { ...A.tips, __floor: 0.4 } : null], flat);
   // the pen's usual inks; an archetype's own inks (red for margin notes, sepia for recipes) can go in most pens
   const inkPool = { ...PEN_INKS[pen] };
@@ -275,8 +311,8 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   if (pen === 'pointed' || pen === 'italic') off.pressure += 0.25;
   if (pen === 'pencil') off.pressure += 0.1;
   if (pen === 'fountain') off.pressure += 0.08;
-  if (RULED.has(paper)) off.lineWander -= 0.22 * nat.lineWander; else if (paper === 'plain' || paper === 'dots') off.lineWander += 0.08 * nat.lineWander;
-  if (paper === 'seyes') off.neatness += 0.04;
+  if (RULED.has(paper)) off.lineWander -= 0.22 * nat.lineWander; else off.lineWander += 0.08 * nat.lineWander;
+  if (paper === 'notebook-fr') off.neatness += 0.04;
   for (const k of addedNumbers(h)) { nat[k] = h[k]; off[k] = 0; } // e.g. style dimensions, as the writer has them
   const params = {};
   const lo = (k) => (k in NEG || nat[k] < 0 ? -1 : 0);
@@ -302,6 +338,7 @@ export function lookDistance(a, b) {
 //                 the last 6 count. opts.variety: 'sibling' | 'stranger' (default) | 'wild', or 0..100
 //                 (0-20 Sibling, 21-70 Stranger, 71-100 Wild). opts.locked: { family?, pen?, tip?, ink?, paper?, size?,
 //                 inkAge? } kept as given; a list of keys keeps opts.current's values. opts.entropy: any fresh string.
+//                 opts.textLength: the letter's length in characters, so a postcard isn't offered for a long letter.
 //   Compatible with the earlier shape: { current: { seed, style }, locked: ['style'], variety: 60 }.
 export function sampleLook(opts = {}) {
   let variety = opts.variety == null ? 'stranger' : opts.variety;
@@ -330,7 +367,7 @@ export function sampleLook(opts = {}) {
     let best = null;
     for (let i = 0; i < (opts.candidates || 12); i++) {
       const seed = `${baseSeed(last.seed)}~${1 + Math.floor(r() * 998)}`;
-      const look = lookOf(seed, fam, lastLocks);
+      const look = lookOf(seed, fam, lastLocks, { textLength: opts.textLength });
       const d = lookDistance({ ...look, P: profile(makeHand(seed, fam)) }, last);
       const score = -Math.abs(d - 0.38);
       if (!best || score > best.score) best = { look, d, score };
@@ -355,7 +392,7 @@ export function sampleLook(opts = {}) {
     if (archetypeOf(seed).id !== target) continue;
     n++;
     const h = makeHand(seed, fam);
-    const look = lookOf(seed, fam, lockedLook, { wild: variety === 'wild' });
+    const look = lookOf(seed, fam, lockedLook, { wild: variety === 'wild', textLength: opts.textLength });
     const C = { ...look, P: profile(h) };
     const ds = P.map((x) => lookDistance(C, x));
     const dmin = ds.length ? Math.min(...ds) : 1;
