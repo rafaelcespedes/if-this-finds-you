@@ -4,6 +4,7 @@
 //    can't show or restore the seed's own value)
 //  - hostile input never throws and never produces NaN
 //  - makeGlyph returns the documented shape
+//  - sampleLooks (the Fonts view's set of hands) is deterministic, meets its filters, and says so when it can't
 
 import { varietySeeds } from '../config.mjs';
 import { isFiniteDeep, fmt } from '../util.mjs';
@@ -60,6 +61,51 @@ export async function run(ctx) {
       problems.push({ level: 'warn', msg: `${style}: strokes[i].contour is not contours[i] (animation relies on drawing order matching)` });
     if (!isFiniteDeep(g.contours)) problems.push({ level: 'fail', msg: `${style}: canonical 'a' has non-finite points` });
   }
+  if (E.sampleLooks) lines.push(fontsViewContract(E, problems));
   lines.push(`hostile inputs: ${ok}/${HOSTILE.length * E.styleNames().length} rendered cleanly (empty, whitespace, 400-char word, emoji, combining mark, tabs, zero-width, CRLF, U+FFFD, ligature)`);
   return { id: 'contracts', title: 'API contracts', lines, problems, data: {} };
+}
+
+// sampleLooks(setSeed, n, constraints, opts): docs/FILTERS.md
+function fontsViewContract(E, problems) {
+  const fail = (msg) => problems.push({ level: 'fail', msg: `sampleLooks: ${msg}` });
+  for (const f of E.LOOK_FILTERS) {
+    if (!f.key || !f.label || !['choice', 'range', 'toggle'].includes(f.kind)) fail(`LOOK_FILTERS '${f.key}' needs key, label and kind choice|range|toggle`);
+    if (f.kind === 'choice' && f.key !== 'movement' && !(typeof f.values === 'function' && f.values().length)) fail(`LOOK_FILTERS '${f.key}' has no values()`);
+    if (f.kind === 'range' && !(Array.isArray(f.range) && f.range[0] < f.range[1])) fail(`LOOK_FILTERS '${f.key}' needs range [min, max]`);
+  }
+  const t0 = Date.now();
+  const a = E.sampleLooks('qa-set', 16, {});
+  const ms = Date.now() - t0;
+  if (JSON.stringify(a) !== JSON.stringify(E.sampleLooks('qa-set', 16, {}))) fail('the same setSeed gave a different set');
+  if (a.looks.length !== 16 || a.matched !== 16) fail(`asked for 16 unfiltered hands, got ${a.looks.length} (${a.matched} matched)`);
+  if (new Set(a.looks.map((l) => l.seed)).size !== a.looks.length) fail('a writer appears twice in one set');
+  for (const l of a.looks) {
+    if (!(l.seed && l.style && l.family && l.params && l.pen && l.ink && l.paper && Number.isFinite(l.size))) { fail(`a look lacks seed/style/family/params/pen/ink/paper/size: ${JSON.stringify(l).slice(0, 120)}`); break; }
+    if (l.legibility < E.NEAT_MIN) { fail(`Neat only is the default, but ${l.seed} has legibility ${l.legibility}`); break; }
+  }
+  // filters are met: joined, leaning 15° or more, by visible slant (tradition's own lean plus the hand's)
+  const b = E.sampleLooks('qa-set', 12, { family: 'script', slant: [15, null] });
+  for (const l of b.looks.filter((x) => x.matches)) {
+    const lean = E.builtInSlant(l.style) + l.params.slant;
+    if (l.family !== 'script' || lean < 15) { fail(`{ family: 'script', slant: [15, null] } returned ${l.seed} (${l.family}, ${lean.toFixed(1)}°)`); break; }
+  }
+  if (b.matched < 12) fail(`{ family: 'script', slant: [15, null] } should be easy, but only ${b.matched}/12 matched`);
+  // a choice that can't be met returns nothing, with a note; too-tight ranges are topped up and say so
+  const c = E.sampleLooks('qa-set', 6, { family: 'print', style: 'palmer' });
+  if (c.looks.length || !c.note) fail('an impossible tradition filter should return no hands and a note');
+  const d = E.sampleLooks('qa-set', 6, { slant: [42, 45], loops: [0.95, 1], hurry: [0, 0.05] });
+  if (d.looks.length !== 6 || d.matched === 6 || !d.note || !d.looks.some((l) => Object.keys(l.nudged).length)) fail('too-tight ranges should still return n hands, nudged, with a note');
+  // Character and row info; a historical tradition named outright still fills a Neat only set
+  const f = E.sampleLooks('qa-set', 8, { character: 'careful' });
+  if (f.matched < 8 || f.looks.some((l) => !l.about || !l.about.character.includes('careful'))) fail(`{ character: 'careful' } returned hands that aren't careful (or too few: ${f.matched}/8)`);
+  const g = E.sampleLooks('qa-set', 4, { style: 'kurrent-1849' });
+  if (g.matched < 4) fail(`Kurrent named by style should still fill a Neat only set, got ${g.matched}/4`);
+  const s = E.sampleSet({ setSeed: 'qa-set', count: 16 });
+  if (JSON.stringify(s.looks) !== JSON.stringify(a.looks.map((l) => l)) || s.exhausted) fail('sampleSet({ setSeed, count }) should equal sampleLooks(setSeed, count)');
+  // load more: a second set keeps away from the hands already shown
+  const e = E.sampleLooks('qa-set-2', 16, {}, { shown: a.looks });
+  if (e.looks.some((l) => a.looks.some((x) => x.seed === l.seed))) fail('opts.shown hands came back in the next set');
+  const ds = a.looks.slice(1).map((l) => l.distance).sort((x, y) => x - y);
+  return `sampleLooks: 16 hands in ${ms} ms, nearest-pick distance median ${ds[ds.length >> 1].toFixed(2)} (min ${ds[0].toFixed(2)}); filters met; tight filters topped up with a note`;
 }
