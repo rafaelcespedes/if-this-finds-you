@@ -10,8 +10,8 @@
 // Pure: the same opts give the same pick. The UI passes fresh `entropy` (any string) on each click.
 
 import { rng, clamp } from './core.js';
-import { makeHand, archetypeOf, latentOf, baseSeed, ARCHETYPES, care, skeleton, builtInSlant, CAP } from './hand.js';
-import { describeHabits, families, getStyle, choose, allographOf, isHistorical, CONFUSABLE } from './glyphs.js';
+import { makeHand, archetypeOf, latentOf, baseSeed, ARCHETYPES, care, skeleton, builtInSlant, CAP, pickStyle } from './hand.js';
+import { describeHabits, families, getStyle, choose, allographOf, isHistorical, CONFUSABLE, styleNames, schoolingNames, stylesInFamily, pickSchooling } from './glyphs.js';
 import { layout } from './layout.js';
 
 export const VARIETY = {
@@ -330,7 +330,10 @@ const inkFits = (pen, ink) => (PEN_INKS[pen] && PEN_INKS[pen][ink] ? 1 : ink ===
 //                  every hand, e.g. the style dimensions loops, joinLength, rhythm }  (absolute values)
 //        offsets: { same keys }  (params minus this hand's natural values: the look's nudges) }
 export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
-  const h = makeHand(seed, family, { neatOnly: neatOpt(opts) });
+  return lookFor(makeHand(seed, family, { neatOnly: neatOpt(opts) }), seed, locked, opts);
+}
+// lookOf for a hand already made (makeHand(seed, family, { neatOnly })); opts.legibility skips measuring it again
+function lookFor(h, seed, locked = {}, opts = {}) {
   const base = baseSeed(seed);
   const A = ARCH_LOOK[h.archetype] || ARCH_LOOK.friend;
   // a sibling keeps most of the base seed's look, and re-rolls a few parts of it
@@ -380,7 +383,7 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   for (const k in off) off[k] = +(params[k] - nat[k]).toFixed(3);
   const arch = archetypeOf(seed);
   return { seed: String(seed), family: h.family, style: h.style, archetype: arch.id, label: arch.label, schooling: h.schooling, traditions: h.traditions,
-    neatOnly: h.neatOnly, legibility: +legibility(h).toFixed(2),
+    neatOnly: h.neatOnly, legibility: +(opts.legibility != null ? opts.legibility : legibility(h)).toFixed(2),
     pen, tip, ink, inkAge, inkVariation, paper, size, params, offsets: off };
 }
 
@@ -472,4 +475,253 @@ export function sampleLook(opts = {}) {
     if (!best || score > best.score) best = { look, d: dmin, score };
   }
   return finish(best || spare);
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// A set of hands for the Fonts view: sampleLooks(setSeed, n, constraints) -> n diverse looks that meet the filters.
+// docs/FILTERS.md explains every filter; LOOK_FILTERS below is the same list for code (labels, values, ranges).
+//
+// How: a stream of candidate seeds (a pure function of setSeed) is filtered; the hands that meet every filter form
+// a pool (about 3n), and the set is chosen from it by farthest-point selection on lookDistance (each pick is the
+// candidate farthest from the hands already picked). Same setSeed, n, constraints and opts -> the same set.
+// When the filters are too tight to find n hands within the search budget, the set is topped up with the closest
+// misses: their slider-like values are nudged into the asked range (look.nudged) and anything still outside is
+// listed in look.misses; the result says so in plain words (result.note). Choice filters (print/joined,
+// tradition, schooling, kind of writer, movement, era, pen, tip, ink, paper) are never broken.
+// ---------------------------------------------------------------------------------------------------------
+
+// movementOf comes from style-dims.js; index.js hands it over (importing it here would change module order)
+let movementHook = null;
+export function useMovements(fn, list) { movementHook = { fn, list }; }
+
+// what each range filter reads, and how a near miss is nudged into range (null: can't be nudged)
+const xhUnits = (h) => h.xHeight * CAP;
+const nWidth = (h) => skeleton(h, 'n', CTX).advance / xhUnits(h);
+const param = (k) => (look, h) => (look.params[k] != null ? look.params[k] : h[k]);
+const setParam = (k) => (look, h, v) => { look.params[k] = v; };
+const RANGES = {
+  legibility: { get: (look) => look.legibility, span: 1, nudge: null },
+  neatness: { get: param('neatness'), span: 1, nudge: setParam('neatness') },
+  hurry: { get: param('hurry'), span: 1, nudge: setParam('hurry') },
+  slant: { get: (look, h) => builtInSlant(h.style) + param('slant')(look, h), span: 45, nudge: (look, h, v) => { look.params.slant = +(v - builtInSlant(h.style)).toFixed(2); } },
+  xHeight: { get: (look, h) => h.xHeight, span: 0.4, nudge: setParam('xHeight') },
+  width: { get: (look, h) => nWidth(h), span: 1, nudge: (look, h, v) => { look.params.width = +(h.width * v / nWidth(h)).toFixed(3); } },
+  spacing: { get: (look, h) => h.sidebearing / xhUnits(h), span: 0.2, nudge: (look, h, v) => { look.params.sidebearing = +(v * xhUnits(h)).toFixed(1); } },
+  weight: { get: (look, h) => (look.params.penWidth != null ? look.params.penWidth : h.penWidth) / xhUnits(h), span: 0.16, nudge: (look, h, v) => { look.params.penWidth = +(v * xhUnits(h)).toFixed(1); } },
+  pressure: { get: param('pressure'), span: 1, nudge: setParam('pressure') },
+  blend: { get: param('blend'), span: 1, nudge: setParam('blend') },
+  tremor: { get: param('tremor'), span: 3, nudge: setParam('tremor') },
+  lineWander: { get: param('lineWander'), span: 1.5, nudge: setParam('lineWander') },
+  fatigue: { get: param('fatigue'), span: 1.5, nudge: setParam('fatigue') },
+  mistakes: { get: param('mistakes'), span: 1, nudge: setParam('mistakes') },
+  size: { get: (look) => look.size, span: 4.8, nudge: (look, h, v) => { look.size = +v.toFixed(1); } },
+  inkAge: { get: (look) => look.inkAge, span: 1, nudge: (look, h, v) => { look.inkAge = +v.toFixed(2); } },
+  inkVariation: { get: (look) => look.inkVariation, span: 1, nudge: (look, h, v) => { look.inkVariation = +v.toFixed(2); } },
+};
+// joined-hand movement doesn't apply to print: a print hand has no loops, lead-ins, flicks or swash capitals, lifts the
+// pen after every letter, and has no joins to be long or short (NaN: a join-length filter means joined hands only)
+const PRINT_AS = { loops: -1, leadIns: -1, endFlicks: -1, flourish: -1, lifts: 1, joinLength: NaN };
+for (const k of ['loops', 'leadIns', 'endFlicks', 'flourish', 'lifts', 'joinLength', 'angularity', 'loopHeight', 'bowls', 'rhythm']) {
+  const own = param(k), set = setParam(k);
+  RANGES[k] = k in PRINT_AS
+    ? { get: (look, h) => (h.family === 'script' ? own(look, h) : PRINT_AS[k]), span: k === 'lifts' ? 1 : 2, nudge: (look, h, v) => { if (h.family === 'script') set(look, h, v); } }
+    : { get: own, span: 2, nudge: set };
+}
+// look settings: always met (the look is drawn with them), so they never count as a miss
+const LOOK_RANGE = new Set(['size', 'inkAge', 'inkVariation']);
+
+// The filters, for UIs (labels in plain words; docs/FILTERS.md has the why). kind: 'choice' (one value or a list),
+// 'range' ([min, max], either may be null), 'toggle'. hard: never broken; soft: may be nudged when too tight.
+export const LOOK_FILTERS = [
+  { key: 'family', label: 'Print or joined', kind: 'choice', hard: true, values: () => families() },
+  { key: 'style', label: 'Tradition', kind: 'choice', hard: true, values: () => styleNames() },
+  { key: 'historical', label: 'Include historical hands', kind: 'toggle', hard: true, default: false },
+  { key: 'era', label: 'Taught', kind: 'choice', hard: true, values: () => ['early', 'c19', 'c20a', 'c20b', 'now'] },
+  { key: 'schooling', label: 'Schooling', kind: 'choice', hard: true, values: () => schoolingNames() },
+  { key: 'archetype', label: 'Kind of writer', kind: 'choice', hard: true, values: () => ARCHETYPES.map((a) => a.id) },
+  { key: 'movement', label: 'Movement', kind: 'choice', hard: true, values: () => (movementHook ? movementHook.list.map((m) => m.id) : []) },
+  { key: 'neatOnly', label: 'Neat hands only', kind: 'toggle', hard: false, default: true },
+  { key: 'legibility', label: 'Readable at a glance', kind: 'range', hard: false, range: [0, 1] },
+  { key: 'neatness', label: 'Neatness', kind: 'range', hard: false, range: [0, 1] },
+  { key: 'hurry', label: 'Hurry', kind: 'range', hard: false, range: [0, 1] },
+  { key: 'slant', label: 'Slant', kind: 'range', hard: false, range: [-20, 45], unit: '° from upright' },
+  { key: 'xHeight', label: 'X-height', kind: 'range', hard: false, range: [0.36, 0.78], unit: 'of capital height' },
+  { key: 'width', label: 'Width', kind: 'range', hard: false, range: [0.4, 2], unit: 'n width in x-heights' },
+  { key: 'spacing', label: 'Letter spacing', kind: 'range', hard: false, range: [0, 0.3], unit: 'x-heights' },
+  { key: 'weight', label: 'Weight', kind: 'range', hard: false, range: [0.04, 0.24], unit: 'stroke / x-height' },
+  { key: 'pressure', label: 'Pressure', kind: 'range', hard: false, range: [0, 1] },
+  { key: 'blend', label: 'Mixed schooling', kind: 'range', hard: false, range: [0, 1] },
+  { key: 'loops', label: 'Loops', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'leadIns', label: 'Lead-ins', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'endFlicks', label: 'End flicks', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'flourish', label: 'Capitals', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'lifts', label: 'Pen lifts', kind: 'range', hard: false, range: [0, 1] },
+  { key: 'joinLength', label: 'Join length', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'angularity', label: 'Pointed turns', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'loopHeight', label: 'Loop height', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'bowls', label: 'Round or compressed', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'rhythm', label: 'Rhythm', kind: 'range', hard: false, range: [-1, 1] },
+  { key: 'tremor', label: 'Shaky', kind: 'range', hard: false, range: [0, 3.5] },
+  { key: 'mistakes', label: 'Mistakes', kind: 'range', hard: false, range: [0, 1] },
+  { key: 'lineWander', label: 'Line wander', kind: 'range', hard: false, range: [0, 1.5] },
+  { key: 'fatigue', label: 'Tires over a page', kind: 'range', hard: false, range: [0, 1.5] },
+  { key: 'pen', label: 'Pen', kind: 'choice', hard: true, values: () => LOOK_PENS, specimen: true },
+  { key: 'tip', label: 'Tip', kind: 'choice', hard: true, values: () => LOOK_TIPS, specimen: true },
+  { key: 'ink', label: 'Ink', kind: 'choice', hard: true, values: () => Object.keys(INK_RGB), specimen: true },
+  { key: 'paper', label: 'Paper', kind: 'choice', hard: true, values: () => LOOK_PAPERS, specimen: true },
+  { key: 'size', label: 'Size', kind: 'range', hard: true, range: [2, 6.8], unit: 'mm x-height', specimen: true },
+  { key: 'inkAge', label: 'Ink age', kind: 'range', hard: true, range: [0, 1], specimen: true },
+  { key: 'inkVariation', label: 'Ink variation', kind: 'range', hard: true, range: [0, 1], specimen: true },
+];
+
+const listOf = (v) => (v == null || v === '' ? null : (Array.isArray(v) ? v : [v]).filter((x) => x != null && x !== ''));
+// how far a value lies outside [lo, hi], in units of the filter's usual span (0 = inside)
+const outside = (v, [lo, hi], span) => (Number.isNaN(v) ? 1 : v == null ? 0 : lo != null && v < lo ? (lo - v) / span : hi != null && v > hi ? (v - hi) / span : 0);
+
+// sampleLooks(setSeed, n = 24, constraints = {}, opts = {}) ->
+//   { setSeed, n, looks: [look...], matched, relaxed: [keys some looks miss or were nudged on], note, tried, pool,
+//     constraints (as understood) }
+//   constraints: any LOOK_FILTERS key. Choice keys take a value or a list (family: 'script'; style: ['palmer',
+//     'spencerian']); range keys take [min, max] (either may be null: slant: [10, null]); historical: true lets
+//     historical traditions in when no style is named; neatOnly (default true) = legibility >= NEAT_MIN, tidied hands.
+//   opts: { shown: looks already on screen (the new set keeps away from them), exclude: seeds not to repeat,
+//     variety: 'stranger' (default, a chaos budget keeps extremes rare) | 'wild', pool, maxTries }
+//   look: lookOf's shape (seed, family, style, ..., pen, tip, ink, paper, size, params, offsets, legibility) plus
+//     { distance (to the nearest hand picked before it), matches (met every filter as the seed is), nudged:
+//       { key: [natural, shown] }, misses: [keys still outside] }. Draw it with withOverrides(makeHand(seed,
+//       { style }, { neatOnly }), look.params): nudged structural keys (xHeight, width, sidebearing, penWidth) are in
+//       params too.
+export function sampleLooks(setSeed, n = 24, constraints = {}, opts = {}) {
+  n = Math.max(0, Math.min(200, Math.floor(n) || 0));
+  const C = constraints || {};
+  const neat = C.neatOnly !== false && C.neatOnly !== 'off';
+  const ranges = {};
+  for (const k in RANGES) if (Array.isArray(C[k]) && C[k].length === 2 && (C[k][0] != null || C[k][1] != null)) ranges[k] = [C[k][0] ?? null, C[k][1] ?? null];
+  if (neat) ranges.legibility = [Math.max(NEAT_MIN, (ranges.legibility || [0])[0] ?? 0), (ranges.legibility || [])[1] ?? null];
+  const choice = {};
+  for (const k of ['family', 'style', 'era', 'schooling', 'archetype', 'movement', 'pen', 'tip', 'ink', 'paper']) { const l = listOf(C[k]); if (l && l.length) choice[k] = l; }
+  // the traditions that can come up: named ones (any, historical too), else the families' modern ones (+ historical)
+  let styles = choice.style ? choice.style.filter((s) => getStyle(s)) : styleNames().filter((s) => C.historical || !isHistorical(s));
+  if (choice.family) styles = styles.filter((s) => choice.family.includes(getStyle(s).family || 'print'));
+  if (choice.era) styles = styles.filter((s) => choice.era.includes(eraOf(s)));
+  const fams = [...new Set(styles.map((s) => getStyle(s).family || 'print'))];
+  const understood = { ...Object.fromEntries(Object.entries(choice)), ...ranges, neatOnly: neat, historical: !!C.historical };
+  const out = { setSeed: String(setSeed), n, looks: [], matched: 0, relaxed: [], note: null, tried: 0, pool: 0, constraints: understood };
+  if (!n) return out;
+  if (!styles.length) { out.note = 'No tradition fits these filters together (print or joined, tradition and era).'; return out; }
+
+  const cfg = VARIETY[opts.variety === 'wild' ? 'wild' : 'stranger'];
+  const poolTarget = opts.pool || Math.max(3 * n, 48);
+  const maxTries = opts.maxTries || 1500 + 40 * n;
+  const exclude = new Set(listOf(opts.exclude) || []);
+  for (const x of opts.shown || []) if (x && x.seed) exclude.add(String(x.seed));
+  const r = rng('looks:' + setSeed);
+  const pool = [], near = [];
+  const keepNear = (c) => { near.push(c); near.sort((a, b) => a.miss - b.miss); if (near.length > n) near.pop(); };
+  let tried = 0;
+  for (let k = 0; tried < maxTries && pool.length < poolTarget && k < maxTries * 4; k++) {
+    // stop early when the rest of the budget can't reach n matches at the rate seen so far
+    if (tried >= 300 && pool.length + (maxTries - tried) * (pool.length / tried) < n) break;
+    const seed = seedFrom(rng('looks-seed:' + setSeed + ':' + k));
+    if (exclude.has(seed)) continue;
+    exclude.add(seed); // seed names can repeat in the stream; each writer once
+    if (choice.archetype && !choice.archetype.includes(archetypeOf(seed).id)) continue; // cheap: from the seed alone
+    tried++;
+    // the tradition: the family first (evenly), then the seed's own tradition when every one of the family's is
+    // allowed (so the seed means what it means elsewhere), else one of the allowed ones by their usual odds
+    const fam = fams.length === 1 ? fams[0] : fams[Math.floor(r() * fams.length)];
+    const inFam = styles.filter((s) => (getStyle(s).family || 'print') === fam);
+    const natural = stylesInFamily(fam).filter((s) => C.historical || !isHistorical(s));
+    const style = !choice.style && natural.every((s) => inFam.includes(s)) ? pickStyle(seed, fam, { historical: !!C.historical })
+      : r.weighted(inFam.map((s) => ({ s, weight: getStyle(s).weight ?? 1 }))).s;
+    // who the writer is (schooling, kind of movement) is known before the hand is made: filter on it first
+    const who = { seed, style, archetype: archetypeOf(seed).id, schooling: pickSchooling(baseSeed(seed), style) };
+    if (choice.schooling && !choice.schooling.includes(who.schooling)) continue;
+    if (choice.movement && !(movementHook && choice.movement.includes(movementHook.fn(who).id))) continue;
+    const h = makeHand(seed, { style }, { neatOnly: neat });
+    // the look, with the specimen choices locked (a list: one of them, drawn evenly)
+    const locked = {};
+    for (const k of ['pen', 'tip', 'ink', 'paper']) if (choice[k]) locked[k] = choice[k][Math.floor(r() * choice[k].length)];
+    let look = lookFor(h, seed, locked, { neatOnly: neat, wild: opts.variety === 'wild', legibility: 1 });
+    look.params = { ...look.params };
+    for (const k of LOOK_RANGE) if (ranges[k]) look[k] = +clamp(look[k], ranges[k][0] ?? -Infinity, ranges[k][1] ?? Infinity).toFixed(k === 'size' ? 1 : 2);
+    // range filters, legibility last (it lays text out); a candidate that misses is remembered if it is close
+    let miss = 0;
+    const misses = [];
+    for (const k in ranges) {
+      if (k === 'legibility' || LOOK_RANGE.has(k)) continue;
+      const o = outside(RANGES[k].get(look, h), ranges[k], RANGES[k].span);
+      if (o > 0) { miss += o; misses.push(k); }
+    }
+    if (!miss) {
+      look.legibility = +legibility(h).toFixed(2);
+      if (ranges.legibility) { const o = outside(look.legibility, ranges.legibility, 0.3); if (o > 0) { miss += o; misses.push('legibility'); } }
+    }
+    const c = { seed, h, look, miss, misses };
+    if (miss > 0) { keepNear(c); continue; }
+    pool.push(c);
+  }
+  out.tried = tried;
+  out.pool = pool.length;
+
+  // farthest-point selection: start from the first match (the set's own random start), then always the candidate
+  // farthest from everything picked or already shown; hands over the variety's chaos budget only when nothing else is left
+  const shown = (opts.shown || []).filter((x) => x && x.seed).map((x) => ({ ...x, P: profile(asHand(x, neat)) }));
+  for (const c of pool) { c.P = profile(c.h); c.L = { ...c.look, P: c.P }; c.chaos = chaos(c.h); c.dmin = Infinity; }
+  for (const s of shown) for (const c of pool) c.dmin = Math.min(c.dmin, lookDistance(c.L, s));
+  const picked = [];
+  while (picked.length < n && pool.length) {
+    let bi = 0, best = -Infinity;
+    for (let i = 0; i < pool.length; i++) {
+      const c = pool[i];
+      const score = (picked.length || shown.length ? c.dmin : -i) - (c.chaos > cfg.budget ? 10 : 0);
+      if (score > best) { best = score; bi = i; }
+    }
+    const c = pool.splice(bi, 1)[0];
+    picked.push(c);
+    for (const o of pool) o.dmin = Math.min(o.dmin, lookDistance(o.L, c.L));
+  }
+  const fromPool = picked.length;
+  // too tight: the closest misses, nudged into range where a slider can do it
+  for (const c of near) {
+    if (picked.length >= n) break;
+    c.look.nudged = {};
+    for (const k of c.misses) {
+      const R = RANGES[k];
+      if (!R.nudge) continue;
+      const v = R.get(c.look, c.h), [lo, hi] = ranges[k];
+      const inset = 0.08 * Math.min(R.span, lo != null && hi != null ? hi - lo : R.span); // a little inside the edge
+      const to = lo != null && v < lo ? (hi != null ? Math.min(lo + inset, hi) : lo + inset) : hi != null ? (lo != null ? Math.max(hi - inset, lo) : hi - inset) : v;
+      R.nudge(c.look, c.h, to);
+      if (outside(R.get(c.look, c.h), ranges[k], R.span) === 0) c.look.nudged[k] = [+v.toFixed(3), +to.toFixed(3)];
+    }
+    // legibility can't be set, only measured: the nudges may have fixed it (or not)
+    c.look.legibility = +legibility(withParams(c.h, c.look.params)).toFixed(2);
+    c.look.misses = c.misses.filter((k) => !(k in c.look.nudged) && k !== 'legibility');
+    if (ranges.legibility && outside(c.look.legibility, ranges.legibility, 1) > 0) c.look.misses.push('legibility');
+    picked.push(c);
+  }
+  // distances in the final order (to the nearest earlier pick or shown hand)
+  const seen = shown.slice();
+  for (const c of picked) {
+    const L = c.L || { ...c.look, P: profile(c.h) };
+    let d = Infinity;
+    for (const s of seen) d = Math.min(d, lookDistance(L, s));
+    seen.push(L);
+    out.looks.push({ ...c.look, distance: +(Number.isFinite(d) ? d : 0).toFixed(3), matches: c.miss === 0, nudged: c.look.nudged || {}, misses: c.look.misses || [] });
+  }
+  out.matched = fromPool;
+  const nudged = [...new Set(out.looks.flatMap((l) => Object.keys(l.nudged)))], missed = [...new Set(out.looks.flatMap((l) => l.misses))];
+  out.relaxed = [...new Set([...nudged, ...missed])];
+  const label = (k) => (LOOK_FILTERS.find((f) => f.key === k) || { label: k }).label.toLowerCase();
+  if (out.looks.length < n) out.note = `Only ${out.looks.length} hand${out.looks.length === 1 ? '' : 's'} came close to these filters; loosen one to see more.`;
+  else if (fromPool < n) out.note = (fromPool ? `${fromPool} of ${n} hands meet every filter. The other ${n - fromPool} are the closest we found` : 'No hand meets every filter. These are the closest we found') +
+    (nudged.length ? `, adjusted for ${nudged.map(label).join(', ')}` : '') + (missed.length ? `; some are still outside on ${missed.map(label).join(', ')}` : '') + '.';
+  return out;
+}
+// a hand with a look's absolute params applied (as withOverrides does, without leaving the sampler)
+function withParams(h, params) {
+  const p = Object.assign(Object.create(null), h);
+  for (const k in params) if (params[k] != null) p[k] = params[k];
+  return p;
 }
