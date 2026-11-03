@@ -748,6 +748,41 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-
   background: transparent;
   white-space: nowrap;
 }
+/* the shared sheet (components/ui/sheet.tsx: Share and the other action sheets on phones), cut like the control sheet:
+   square-cut, ruled in ink along its top, its title a label in small capitals, its rows ruled lines rather than tiles */
+html[data-look='reading-room'] .sheet-surface {
+  border-radius: 4px 4px 0 0;
+  border-top: 1px solid var(--rr-ink);
+  background: var(--rr-card);
+  box-shadow: 0 -10px 30px -16px rgba(30, 39, 51, 0.4);
+}
+html[data-look='reading-room'] .sheet-surface > div:first-child > span {
+  background: color-mix(in oklab, var(--rr-ink) 22%, transparent);
+  border-radius: 2px;
+}
+html[data-look='reading-room'] .sheet-backdrop {
+  background: color-mix(in oklab, var(--rr-ink) 28%, transparent);
+}
+html[data-look='reading-room'] .sheet-surface .sheet-title {
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  font-weight: var(--rr-label-weight);
+  letter-spacing: var(--rr-label-tracking);
+  font-variant-caps: var(--rr-label-caps);
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .sheet-surface .sheet-row {
+  border-radius: 0;
+  border-top: 1px solid var(--rr-rule);
+}
+html[data-look='reading-room'] .sheet-surface .sheet-row:active {
+  background: color-mix(in oklab, var(--rr-ink) 6%, transparent);
+}
+/* between groups, a little space: the rows' own rules do the separating */
+html[data-look='reading-room'] .sheet-surface [role='presentation'][class*='h-px'] {
+  height: 0;
+  background: none;
+}
 /* the phone's writing tray (PenTray.tsx), its pen menu, and their letter pulled down over yours (TheirLetter.tsx):
    slips ruled in ink, not pills; Done, the action of the moment, in red words */
 html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'],
@@ -1024,7 +1059,15 @@ html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :is([role='
 html[data-look='reading-room'] [role='menu'] [role^='menuitem'] {
   border-radius: 2px;
 }
-/* a menu's group label ("More formats", "Kept on this device") in small capitals */
+/* a menu's or sheet's group label ("More formats", "Kept on this device") in small capitals */
+html[data-look='reading-room'] :is([role='menu'] > div:not([role]), .sheet-surface [role='list'] > div:not([role]):not(.sheet-row)) {
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  font-weight: var(--rr-label-weight);
+  letter-spacing: var(--rr-label-tracking);
+  font-variant-caps: var(--rr-label-caps);
+  color: var(--rr-muted);
+}
 html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :has(> [role='tooltip']) {
   border-radius: 2px;
 }
@@ -1226,13 +1269,13 @@ html[data-look='reading-room'] .rr-ref {
 }
 /* control: everything you operate (the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
    tooltips, the writing tray), in the control face at one size; actions, numbers and labels inside keep their roles */
-html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .archive-dock, .rr-dock, [data-radix-popper-content-wrapper], .lib-menu, input, textarea, select, div.fixed.z-40 > div[class*='rounded-[22px]'], .rr-status, .rr-dock-word) {
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .sheet-surface, .archive-dock, .rr-dock, [data-radix-popper-content-wrapper], .lib-menu, input, textarea, select, div.fixed.z-40 > div[class*='rounded-[22px]'], .rr-status, .rr-dock-word) {
   font-family: var(--rr-control-face);
   font-weight: var(--rr-control-weight);
   letter-spacing: var(--rr-control-tracking);
 }
 html[data-look='reading-room'] :is(.rr-dock, .rr-dock-word, [role^='menuitem'], [data-radix-popper-content-wrapper] > :has(> [role='tooltip']), .control-sheet button[aria-expanded] > span[data-pill], .control-sheet button[aria-haspopup='menu']),
-html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .archive-dock, [data-radix-popper-content-wrapper], .lib-menu, div.fixed.z-40 > div[class*='rounded-[22px]']) :is([class*='text-[0.6875rem]'], [class*='text-[0.7188rem]'], [class*='text-[0.75rem]'], [class*='text-[0.7812rem]'], [class*='text-[0.78125rem]'], [class*='text-[0.8125rem]'], [class*='text-[11px]'], [class*='text-[11.5px]'], [class*='text-[12px]'], [class*='text-[12.5px]'], [class*='text-[13px]'], [class*='text-[13.5px]'], [class*='text-[0.8438rem]'], [class*='text-[0.875rem]'], [class*='text-[0.9375rem]'], [class*='text-[14px]'], [class*='text-[15px]']) {
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .sheet-surface, .archive-dock, [data-radix-popper-content-wrapper], .lib-menu, div.fixed.z-40 > div[class*='rounded-[22px]']) :is([class*='text-[0.6875rem]'], [class*='text-[0.7188rem]'], [class*='text-[0.75rem]'], [class*='text-[0.7812rem]'], [class*='text-[0.78125rem]'], [class*='text-[0.8125rem]'], [class*='text-[11px]'], [class*='text-[11.5px]'], [class*='text-[12px]'], [class*='text-[12.5px]'], [class*='text-[13px]'], [class*='text-[13.5px]'], [class*='text-[0.8438rem]'], [class*='text-[0.875rem]'], [class*='text-[0.9375rem]'], [class*='text-[14px]'], [class*='text-[15px]']) {
   font-size: var(--rr-control-size);
   line-height: var(--rr-control-leading);
 }
