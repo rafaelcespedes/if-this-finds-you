@@ -165,8 +165,8 @@ export function AboutApp() {
           </p>
           <p>
             The name is how a message in a bottle begins. These letters were meant for one person, and some never reached
-            them. Now one has found you. Read it, press Find another for a new letter in a new hand, or write a reply and
-            watch it go down in ink.
+            them. Now one has found you. Each visit opens on a writer and a letter picked at random. Read it, press
+            Find another for a new letter in a new hand, or write a reply and watch it go down in ink.
           </p>
           <p>
             Keep one thing in mind as you read: the words are the original writer’s, but the handwriting never is. No
