@@ -103,7 +103,7 @@ export function LetterDock(a: DockActions) {
           title="More"
           side="top"
           trigger={
-            <Button variant="ghost" size="icon" aria-label="More" className="size-9 rounded-lg text-muted-foreground hover-device:hover:text-foreground pointer-coarse:size-10">
+            <Button variant="ghost" size="icon" aria-label="More" className="hit-44 size-9 rounded-lg text-muted-foreground hover-device:hover:text-foreground pointer-coarse:size-10">
               <Ellipsis aria-hidden />
             </Button>
           }
