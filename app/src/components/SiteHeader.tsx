@@ -1,12 +1,13 @@
 // The site's one header, on every page, so the pages can't drift apart (docs/NAVIGATION.md).
 // The wordmark on the left is the way to the writing tool (on the tool itself it's plain: a link there would drop the
 // letter on the desk). On the right, the three places in the same words and order everywhere, the current one marked
-// and not a link; before them My letters, only when letters are kept on this device. Phones (under 40rem): the page's
-// one action, then a Menu chip that opens the same list.
+// and not a link; before them My letters, only when letters are kept on this device. The words show only when they
+// fit on one line beside the wordmark (a phone, large text, a narrow window beside the tool's panel); otherwise the
+// page's one action, then a Menu chip that opens the same list.
 // The looks restyle it through data hooks, never through its classes: header[data-site-header], [data-site-link]
 // (aria-current on the place you're in), [data-site-kept], [data-site-divider], [data-site-chip], [data-site-action],
 // and in the phone menu [data-site-menu], [data-site-label].
-import { forwardRef, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { Menu } from 'lucide-react';
 import { Wordmark } from '@/components/Wordmark';
@@ -52,9 +53,11 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
   const device = useDeviceKept();
   const mine = kept ?? device;
   const onTool = current === 'write' && !inside;
+  // the words on one line beside the wordmark, or (when they don't fit) the Menu chip
+  const { headerRef, actionRef, wordsRef, compact } = useFits(ref);
   return (
     <header
-      ref={ref}
+      ref={headerRef}
       data-site-header
       style={style}
       className={cn(
@@ -76,13 +79,18 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
         </a>
       )}
       {children}
-      {/* large text: the places wrap onto a second row rather than running off the screen */}
       <div
         inert={quiet || undefined}
-        className={cn('flex min-h-8 min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1 transition-opacity duration-150 lg:min-h-9', quiet && 'opacity-0')}
+        className={cn('flex min-h-8 min-w-0 items-center justify-end gap-x-2 transition-opacity duration-150 lg:min-h-9', quiet && 'opacity-0')}
       >
-        {action && <div data-site-action className="pointer-events-auto flex shrink-0 items-center">{action}</div>}
-        <div className="hidden min-w-0 flex-wrap items-center justify-end gap-x-1 gap-y-1 sm:flex">
+        {action && <div ref={actionRef} data-site-action className="pointer-events-auto flex shrink-0 items-center">{action}</div>}
+        {/* never wrapped: when the line doesn't fit it stays measurable, out of sight and out of reach, and the Menu
+            takes over */}
+        <div
+          ref={wordsRef}
+          inert={compact || undefined}
+          className={cn('flex shrink-0 items-center gap-x-1 whitespace-nowrap', compact && 'invisible absolute top-0 right-0')}
+        >
           {mine.list.length > 0 && (
             <>
               <KeptMenu kept={mine} />
@@ -90,7 +98,7 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
             </>
           )}
           <nav aria-label="Site">
-            <ul className="flex flex-wrap items-center justify-end gap-x-1 gap-y-1">
+            <ul className="flex items-center gap-x-1">
               {PLACES.map((p) => (
                 <li key={p.id} className="flex">
                   <PlaceLink place={p} current={current} inside={inside} href={hrefs?.[p.id]} className={link} />
@@ -99,11 +107,53 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
             </ul>
           </nav>
         </div>
-        <SiteMenu current={current} inside={inside} hrefs={hrefs} kept={mine} />
+        {compact && <SiteMenu current={current} inside={inside} hrefs={hrefs} kept={mine} />}
       </div>
     </header>
   );
 });
+
+/**
+ * Whether the words fit on one line beside the wordmark (and the page's action). Measured, not guessed from the
+ * window: the room changes with the tool's panel, large text, a look's wider capitals and My letters' count. Starts
+ * compact and is measured before the first paint, then again whenever the header or the words change size.
+ */
+function useFits(outer: React.ForwardedRef<HTMLElement>) {
+  const header = useRef<HTMLElement | null>(null);
+  const actionRef = useRef<HTMLDivElement | null>(null);
+  const wordsRef = useRef<HTMLDivElement | null>(null);
+  const [compact, setCompact] = useState(true);
+  const headerRef = useCallback((el: HTMLElement | null) => {
+    header.current = el;
+    if (typeof outer === 'function') outer(el);
+    else if (outer) outer.current = el;
+  }, [outer]);
+  useLayoutEffect(() => {
+    const h = header.current;
+    const words = wordsRef.current;
+    if (!h || !words) return;
+    const measure = () => {
+      const px = (v: string) => parseFloat(v) || 0;
+      const hs = getComputedStyle(h);
+      // the wordmark comes first, with its margins
+      const logo = h.firstElementChild as HTMLElement | null;
+      const ls = logo && getComputedStyle(logo);
+      const logoW = logo && ls ? logo.offsetWidth + px(ls.marginLeft) + px(ls.marginRight) : 0;
+      const room = h.clientWidth - px(hs.paddingLeft) - px(hs.paddingRight) - logoW - px(hs.columnGap);
+      const action = actionRef.current;
+      const gap = action ? px(getComputedStyle(action.parentElement!).columnGap) : 0;
+      const need = words.offsetWidth + (action ? action.offsetWidth + gap : 0);
+      setCompact(need > room + 0.5);
+    };
+    measure();
+    // the header (window, panel), the words (fonts arriving, My letters' count), the wordmark (its drawing arrives
+    // after the first paint) and the action
+    const ro = new ResizeObserver(measure);
+    for (const el of [h, words, h.firstElementChild, actionRef.current]) if (el) ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return { headerRef, actionRef, wordsRef, compact };
+}
 
 /** A place: the one you're in is marked and isn't a link; the one a page sits inside is marked and is the way back. */
 function PlaceLink({ place, current, inside, href, className }: {
@@ -157,7 +207,7 @@ function KeptLine({ d, kept, now }: { d: Draft; kept: Kept; now: number }) {
   );
 }
 
-/** My letters (40rem and up): how many are kept, and the list to bring one back. */
+/** My letters, when the words fit: how many are kept, and the list to bring one back. */
 function KeptMenu({ kept }: { kept: Kept }) {
   const now = Date.now();
   const n = kept.list.length;
@@ -183,7 +233,7 @@ function KeptMenu({ kept }: { kept: Kept }) {
   );
 }
 
-/** Phones: one Menu chip for the three places and your kept letters (a count on it when there are any). */
+/** When the words don't fit: one Menu chip for the places and your kept letters (a count on it when there are any). */
 function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: boolean; hrefs?: Partial<Record<Place, string>>; kept: Kept }) {
   const [open, setOpen] = useState(false);
   const n = kept.list.length;
@@ -192,7 +242,7 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button type="button" data-site-chip aria-label={n ? `Menu, ${n} ${n === 1 ? 'letter' : 'letters'} kept` : 'Menu'} className={cn(headerChip, 'sm:hidden')}>
+        <button type="button" data-site-chip aria-label={n ? `Menu, ${n} ${n === 1 ? 'letter' : 'letters'} kept` : 'Menu'} className={headerChip}>
           <Menu aria-hidden />
           {n > 0 && (
             <span aria-hidden className="absolute -top-1.5 -right-1.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--ink)] px-1 text-[10px] leading-none font-medium text-[var(--primary-foreground)] tabular-nums">{n}</span>

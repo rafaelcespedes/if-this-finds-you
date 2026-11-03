@@ -23,6 +23,11 @@ tool, it opens the tool at `/?kept=<savedAt>`, and the tool takes it off the add
 Words we don't use for these: "Letters", "Library", "Archive", "Home", "Write" on its own, "Fonts page", icons
 without words.
 
+**Adding a place.** A new page that people should be able to reach from anywhere gets one line in `PLACES`
+(`lib/places.ts`), after the others, and its page renders `<SiteHeader current="<its id>" />`; the 404's copy gets
+the same link. **About** (`/about`, coming) is the fourth and last place, in that one word. Nothing else changes:
+every header picks it up, and where the line no longer fits, the Menu takes over.
+
 ## Where you are
 
 - The place you're on is marked with a short rule under its words (Rubric's vermilion; the Reading Room turns it
@@ -32,7 +37,7 @@ without words.
   list as you left it (search and era kept).
 - A shared letter (the reader view, `?read=1`) isn't one of the places, so nothing is marked there.
 
-## Desktop and tablets (40rem, 640 px, and up)
+## When the words fit (desktops, tablets)
 
 ```
 [wordmark]                         [page action]  My letters 3 | Write a letter  All letters  Fonts
@@ -41,10 +46,13 @@ without words.
 - The wordmark sits at the same spot on every page: 16 px from the window's edge on phones, 32 px from 640 px,
   40 px from 1024 px; 16 px from the top, 20 px from 1024 px. On the tool the header runs over the letter's
   column (the panel has the right side); elsewhere it runs the width of the window.
-- 12.5 px words, the interface face, medium weight; hover darkens them. Large text wraps them onto a second row
-  rather than off the screen (all sizes are rem, so the switch to the phone menu also comes sooner).
+- 12.5 px words, the interface face, medium weight; hover darkens them.
+- The words never wrap. The header measures whether they fit on one line beside the wordmark (and the page's
+  action); when they don't, they go into the Menu. That decides it on phones, but also beside the tool's panel on
+  a narrow window, with large text (200 % text on a 1440 px screen gets the Menu on the desk), with a look's wider
+  capitals, and when My letters or a fourth place adds width. It's measured again whenever any of those change.
 
-## Phones (under 40rem)
+## When they don't (phones, large text, narrow windows)
 
 ```
 [wordmark]                                         [page action] [≡]
@@ -56,8 +64,8 @@ without words.
 - **Why one menu and not a row of icons.** Before this, the tool's phone header had four icon chips (My letters,
   All letters, Fonts, Share). A grid icon and an "Aa" don't say "All letters" or "Fonts"; at 320 px the chips ran
   over the wordmark; and the library and Fonts pages showed words instead, a different set on each page.
-  The wordmark is wide (about 150 px) and the words don't fit beside it at 320 px, so on a phone the choice is
-  icons, two rows, or a menu. A menu keeps the words, keeps the letter the first thing you see, and is the same on
+  The wordmark is wide (about 150 px) and the words don't fit beside it on any phone (they need about 450 px), so
+  the choice is icons, two rows, or a menu. A menu keeps the words, keeps the letter the first thing you see, and is the same on
   every page. Editorial sites do the same on phones (The New York Times, Substack: wordmark plus menu), and the
   bottom of each page is already taken by its own tools (the desk's sheet, the timeline dock, the letter's dock,
   the Fonts dock), so a tab bar would collide with all of them.
