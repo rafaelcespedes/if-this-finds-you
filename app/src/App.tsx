@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { ChevronDown, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
-import { APP_NAME } from '@/lib/brand';
+import { APP_NAME, NAME_WITH_DESCRIPTOR } from '@/lib/brand';
 import { SiteHeader, type Kept } from '@/components/SiteHeader';
 import { styleCard } from '@/lib/styles';
 import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
@@ -464,9 +464,10 @@ export default function App() {
     if (c && theirsForwardRef.current) setTheirsForward(false);
   }, []);
 
+  // the tab: the name and what it is; a letter someone sent says it's for you (never its words)
   useEffect(() => {
-    document.title = `${name} – ${APP_NAME}`;
-  }, [name]);
+    document.title = state.reader ? `A letter for you · ${APP_NAME}` : NAME_WITH_DESCRIPTOR;
+  }, [state.reader]);
 
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
   const posture = usePosture(editing);
@@ -1080,7 +1081,7 @@ export default function App() {
         <main
           className={cn(
             'relative min-w-0 overflow-x-clip px-4 pb-32 sm:px-8 lg:px-10 lg:pt-[6.25rem] lg:pb-16',
-            // phones: room for the header (the letter's label row is in the page, under it, 2.75rem of the same 7.25)
+            // phones: room for the header, then the letter (its label comes after it)
             reader ? 'pt-[calc(7.25rem+env(safe-area-inset-top,0px))]' : 'pt-[calc(4.5rem+env(safe-area-inset-top,0px))]',
           )}
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: `${(6.25 * wide).toFixed(3)}rem` } : undefined}
@@ -1162,14 +1163,6 @@ export default function App() {
             )}
             {pxPerMm > 0 && !reader && !brokenLink && !(penFailed && !writing) && (
               <div ref={fitRef} className="origin-top">
-                {/* phones: the label and how you're writing share a row above the sheet, in the page: with large text the
-                    menu drops under the label and the sheet moves down, rather than anything running into the header */}
-                {!isDesktop && (
-                  <div className="relative z-20 mx-auto flex flex-wrap items-end justify-between gap-x-3" style={{ width: shownPaper.w * pxPerMm }}>
-                    <SheetLabel title={sheetTitle} hand={myHandWords} stack className="mb-2.5 min-w-[10rem] flex-1" />
-                    <div className="-mr-1.5 ml-auto shrink-0">{writingMenu}</div>
-                  </div>
-                )}
                 {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
                 {/* (with their letter picked up, its label covers this line: yours steps out of the way until it's back) */}
                 <div
@@ -1280,7 +1273,13 @@ export default function App() {
                     <span className="mr-auto min-w-0 truncate pr-3 text-[0.75rem]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
                 </div>
-                {LOOK === 'reading-room' && !isDesktop && sample && <CatalogueSlip id={sample.id} name={name} />}
+                {/* phones: the letter leads (nothing above it but the header); what it is comes after it, once: the
+                    Reading Room's catalogue slip for a found letter, else the letter's name and how the hand writes */}
+                {!isDesktop && (LOOK === 'reading-room' && sample ? <CatalogueSlip id={sample.id} name={name} /> : (
+                  <div className={cn('mx-auto mt-2 transition-opacity duration-200', !desk && 'opacity-0')} style={{ width: shownPaper.w * pxPerMm }}>
+                    <SheetLabel title={sheetTitle} hand={myHandWords} stack />
+                  </div>
+                ))}
                 {plainText && (
                   <div className="mt-3 flex justify-center">
                     <DraftSlip value={replyPending ? '' : state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
@@ -1356,7 +1355,7 @@ export default function App() {
         <>
           {/* with the sheet up, a tap on the letter folds it back down (a second tap writes) */}
           {sheetOpen && detent !== 'peek' && <div aria-hidden className="fixed inset-0 z-30 touch-none" onClick={() => setDetent('peek')} />}
-          <ControlSheet {...panelProps} open={sheetOpen} detent={detent} onDetent={setDetent} onMetrics={onMetrics} onDragging={onSheetDrag} onAdjusting={onAdjusting} />
+          <ControlSheet {...panelProps} writingMenu={writingMenu} open={sheetOpen} detent={detent} onDetent={setDetent} onMetrics={onMetrics} onDragging={onSheetDrag} onAdjusting={onAdjusting} />
         </>
       )}
       <Toaster offset={isDesktop ? 24 : 96} mobileOffset={{ bottom: mobileSheet ? metrics.peek + 12 : 96 }} />

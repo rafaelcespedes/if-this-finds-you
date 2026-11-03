@@ -4,6 +4,7 @@
 import { Check, ChevronDown } from 'lucide-react';
 import { useRef } from 'react';
 import { DropdownMenu } from 'radix-ui';
+import { menuContent, menuItem } from '@/components/ui/menu';
 import { cn } from '@/lib/utils';
 
 export type WritingMode = 'ink' | 'pencil' | 'fair';
@@ -38,7 +39,7 @@ export function WritingMenu(p: Props) {
   // a choice made (not Escape, not a click away): the writing carries on where it was
   const chose = useRef(false);
   const pick = (fn: () => void) => () => { chose.current = true; fn(); };
-  const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[0.875rem] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
+  const item = menuItem;
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -60,7 +61,7 @@ export function WritingMenu(p: Props) {
             if (chose.current && p.onAfter?.()) e.preventDefault();
             chose.current = false;
           }}
-          className="z-50 w-[272px] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,#fdfcf9_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
+          className={cn(menuContent, 'w-[272px]')}
         >
           {p.inkAvailable && (
             <>
