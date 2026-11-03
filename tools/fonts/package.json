@@ -1,0 +1,13 @@
+{
+  "name": "ifthisfindsyou-fonts",
+  "private": true,
+  "description": "Builds the open-source font pack (node build-pack.mjs). The engine's font builder is engine/fontbuild.js.",
+  "type": "module",
+  "scripts": {
+    "pack": "node build-pack.mjs"
+  },
+  "dependencies": {
+    "clipper-lib": "6.4.2",
+    "wawoff2": "2.0.1"
+  }
+}

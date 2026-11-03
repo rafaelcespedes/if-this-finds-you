@@ -1,0 +1,86 @@
+/* Lost Letters: the archive's own few styles, on top of the tool's palette (index.css). */
+
+/* a card's sheet: the tool's sheet shadow, a touch deeper under the pointer */
+.archive-paper {
+  box-shadow: var(--sheet-shadow);
+  transition: box-shadow 200ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .archive-card:hover .archive-paper {
+    box-shadow:
+      0 0.5px 0 rgba(60, 45, 20, 0.08),
+      0 2px 4px rgba(60, 45, 20, 0.07),
+      0 10px 22px -8px rgba(60, 45, 20, 0.16),
+      0 30px 56px -22px rgba(60, 45, 20, 0.26);
+  }
+  .archive-card:hover h3 {
+    text-decoration: underline;
+    text-decoration-color: #cfc8b9;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+}
+.archive-card:focus-visible .archive-paper {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+.archive-card:active .archive-paper {
+  transform: scale(0.995);
+  transition: transform 120ms var(--ease-out), box-shadow 200ms var(--ease-out);
+}
+
+/* a card's writing arriving: opacity only, as a new hand arrives in the tool */
+@keyframes card-in {
+  from {
+    opacity: 0;
+  }
+}
+.card-in {
+  animation: card-in 220ms var(--ease-out) both;
+}
+
+/* search and filter fields */
+.archive-field {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fdfcf9;
+  color: var(--foreground);
+  box-shadow: 0 1px 1px rgba(60, 45, 20, 0.04);
+  transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out);
+  outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .archive-field:hover {
+    border-color: var(--input);
+  }
+}
+.archive-field:focus-visible {
+  border-color: color-mix(in oklab, var(--ink) 35%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink) 12%, transparent);
+}
+.archive-field::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+select.archive-field {
+  cursor: pointer;
+}
+/* phones: 16px keeps iOS from zooming into the field */
+@media (pointer: coarse) {
+  .archive-field {
+    font-size: 16px;
+  }
+}
+
+/* the letter page: the provenance text */
+.provenance dd a {
+  text-decoration: underline;
+  text-decoration-color: #cfc8b9;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .provenance dd a:hover {
+    text-decoration-color: currentColor;
+  }
+}

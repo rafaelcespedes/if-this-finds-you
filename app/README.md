@@ -31,12 +31,40 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   (public domain, rights-checked). The seed picks it (a hash over the enabled letters, so a seed always writes
   the same one), preferring letters that suit the style (Business and Spencerian: American letters, German
   school: German, Chancery: Italian, Québec print: French); the oldest spellings (before 1660) only come with
-  historical hands (Chancery). The credit sits under the sheet ("Letter: Kamma Rahbek, 1813", with the source
-  in the provenance card), and "Blank page" starts from nothing. The first edit (typing, an underline) makes the
+  historical hands (Chancery). "Blank page" starts from nothing. The first edit (typing, an underline) makes the
   text yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a
-  sample. There's always a way back: under New hand the page says what it holds ("A found letter" or "Your
-  letter"), with "Another letter" / "Read a found letter"; your own letter is kept on this device (never in a
-  link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter doesn't come back within ten hands.
+  sample. There's always a way back: Find another brings the next found letter, and "Read a found letter" leads back from yours; your own letter
+  is kept on this device (never in a link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter
+  doesn't come back within ten hands.
+- **Desktop: the writer on the letter.** The writer's name, in their own hand, sits on the sheet's top-left corner
+  and opens About this hand (how they write, where they learned, the letter's source); the letter's name
+  follows it. The panel starts with the ways to other letters and Share (top right), then New hand across its
+  width. "Click the letter to write on it" isn't in the top line: after 9 s on the page without writing, a
+  small pointer beside the sheet says it (on the label's line when there's no room), and once you've
+  written it never comes back (`seedhand:wrote`). Phones keep the name in the control sheet.
+- **Swatches are flat colours**: each paper its sheet's colour (the name under it tells near-whites apart),
+  each ink its colour; the pen's own ink is split in two of its usual colours.
+- **The sheet's label** (`components/SheetLabel.tsx`), like an artboard's name: one quiet line above the first
+  sheet's top-left corner, in the app's type. Which letter it is ("Kamma Rahbek, 1813", the credit; the source
+  is in About this hand) and how the hand writes ("A meticulous joined hand, upright"). On your first key it
+  becomes yours ("Your reply to Kamma Rahbek", or "A letter from you"), a 200 ms cross-fade in place; going
+  back to a found letter brings its name back. On the reply desk each sheet has its own. Where the sheet is too
+  narrow for both (phones), only the name shows. A translated letter still credits its translator under the
+  sheet.
+- **Replying** (`components/TheirLetter.tsx`, `lib/found.ts`). The first key on a found letter starts your reply
+  on a fresh sheet, and their letter stays on the desk in its own hand, pen, ink and paper (exactly as it was
+  read; a link's `re=` carries its look, so it comes back the same). **Your letter never moves**: theirs comes
+  to you and goes back, so the caret and anything being composed stay put.
+  - *Desktop:* theirs slides off your sheet and is put down beside it, smaller and a little turned (tucked
+    under its edge when the desk is narrow). On wide desks (about 1366 px and up) both are readable side by
+    side, for answering line by line. Pick it up by clicking it, starting a scroll on it, ⌘[ or Tab + Enter: it
+    comes forward at your writing size over your sheet, which waits behind, dimmed. Put it down by typing,
+    clicking your sheet, ⌘], Esc or "Back to your letter". 300 ms on `--ease-drawer`, transform and opacity
+    only; reduced motion swaps without travelling.
+  - *Phones and tablets:* one letter at a time. "In reply to …" under your sheet (or "Their letter" in the pen
+    tray while writing) pulls theirs down from the top, above the keyboard, which stays up. Typing, a tap on
+    your letter, swiping it up or "Your letter" puts it away.
+  - Their words are there for screen readers too (the handwriting is a picture).
 - **Ink mode** (the default where the engine writes in ink, `lib/ink.ts`): what's written stays. Typed letters
   wait as faint thoughts and the pen writes them a few letters behind, at handwriting speed, so most slips
   are fixed before ink touches paper. Change something already written and the writer corrects it their own
@@ -49,7 +77,9 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
 - **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
   about how they write. The name opens **About this hand**: how they write, where they learned, the letter's
   source, where the letter shapes come from (with links), and the seed.
-- **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
+- **Find another** (or **R** when not typing; it used to be New hand) rolls the whole look, and on a found
+  letter brings another letter with it. **Change writer**, in the writer's dropdown, is the same letter in a
+  new hand (paper, pen and ink kept). Either way it rolls: a new writer (word seed, the most unlike
   of several candidates), Print or Joined, pen and tip, ink, paper, size, and a fresh offset on every
   slider, each inside a band that stays legible. **Keep my paper, pen and ink** (a switch under More) keeps
   those while everything else rolls (remembered per browser). The next two new hands (and a sibling) are
@@ -70,9 +100,15 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   - *Always there:* the writer's name (opens About this hand), **New hand**, "Another letter" while a found
     letter is on the page, and one **Share** icon. Under the sheet: the letter's credit and the writing menu
     (In ink / In pencil / Fair copy, Make a fair copy, Fresh sheet, Blank page, Sign it, Edit as plain text).
-  - *The look,* one scrolling column, no tabs, in this order: **Paper** (a row of swatches), **Pen** (each
+  - *The look,* one scrolling column, no tabs, in this order: **Paper** (a row of swatches, and under it the chosen paper's kinds as small chips: a pad in white A5,
+    British blue, binsen or German A4; going on past one sheet the way that stationery does: a postcard's next
+    card is numbered, a notecard says "over" and goes on to its plain back, a second aerogramme follows), **Pen** (each
     swatch is the word "ink" written with that pen; Fine / Medium / Bold beside it), **Ink**, **Handwriting**
-    (Print or Joined, the school cards, Similar), **How they write** (Neatness, Hurry, Size, each with plain
+    (Print or Joined, the school cards, Similar, and **Neat hands only**: on by default, the engine tidies a
+    hand a little (slant, pen width, spacing, hurry, capitals) and New hand skips writers below its `NEAT_MIN`
+    readability; switched off, the page shows the hand exactly as its seed wrote it (a cross-fade) and New
+    hand picks from everyone. "Roll a neat one" appears when the hand on the page still isn't easy to read;
+    `neat=0` in links when it's off), **How they write** (Neatness, Hurry, Size, each with plain
     words at its ends: Messy / Neat, Calm / Rushed, Small / Large).
   - *More* (folded): the other sliders (Pressure, Slant), an Occasion with an Amount, Keep my
     paper, pen and ink, Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle, Line spacing,
@@ -83,8 +119,11 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     keeps your How and With-what offsets and clears the Who ones (slant, proportions, spacing).
 - **Share** (one icon): Copy link (a URL that restores the exact note; the toast offers the share sheet
   where there is one), Download image (JPEG at 3x the screen, paper and writing exactly as shown; on phones
-  it opens the share sheet, so Save Image puts it in Photos), and under More formats, Font file (.otf from
-  the engine's `buildFont`, opentype.js 1.3.4, loaded only when used).
+  it opens the share sheet, so Save Image puts it in Photos), Download video (the letter writing itself out:
+  MP4, 4:5, the first lines, made in a few seconds by `src/export`, loaded when first used; progress and Stop in
+  a toast; on phones a Save button opens the share sheet), and under More formats, Animated GIF and Font file
+  (.otf from the engine's `buildFont`, opentype.js 1.3.4, loaded only when used). Formats the browser can't
+  make are greyed out.
 - **On phones** the controls live in a sheet that's always there, at three heights (`ControlSheet.tsx`):
   - *peek:* the writer's name (About this hand), New hand, Share, what's on the page ("A found letter" /
     "Another letter") and "Paper, pen & ink" to open it.
@@ -99,8 +138,8 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     changes it (scrolling past is safe), up/down goes to the sheet, and a double tap puts it back.
   - For a moment after the sheet moves, its controls ignore touches, so the tap that opened it can't land
     on whatever slid in under the finger.
-- Occasions set the scene once when picked: Thank-you card and Love letter on laid paper, Postcard on the
-  postcard, Lecture notes on college ruled, Shopping list on squared.
+- Occasions set the scene once when picked: Thank-you card on the notecard, Love letter on laid paper, Postcard
+  on the postcard, Lecture notes on US loose-leaf, Shopping list on a legal pad page.
 
 ### Controls waiting for the engine
 
@@ -145,21 +184,30 @@ work can be seen in the product UI without merging.
 
 ## Papers
 
-| Paper | Based on |
-|---|---|
-| Letter | Plain A5 writing paper |
-| Laid | Cream laid writing paper, A5: fine laid lines about 1 mm apart, chain lines about 25 mm apart |
-| College ruled | US loose-leaf filler paper, 8 × 10½ in: 33 blue rules at 9/32 in (7.14 mm), pink-red margin 1¼ in from the left, three 5/16 in holes 4¼ in apart |
-| Seyès | French cahier 17 × 22 cm: violet writing lines and verticals every 8 mm, three light-blue interlines at 2 mm, red margin. Small letters fill one 2 mm interline, as French schools teach |
-| Feint ruled | UK exercise book, 9 × 7 in: pale blue feint rules at 8 mm, single red margin |
-| Squared | German Kästchen (DIN 16552 Lineatur 10 style): 5 mm squares on A5, plain margin on the right |
-| Dot grid | Rhodia / Leuchtturm1917 style A5: 5 mm grey dots on ivory |
-| Postcard | The message side of an A6 postcard: centre divider, four address lines, a stamp box |
+Seven papers people really write letters on (`docs/research/stationery.md`), each with variants. A paper id is the
+family or family-variant (`notebook-fr`); links with the old ids (plain, college, seyes, feint, squared, dots)
+open on their nearest new paper.
 
-Pitches, sheet sizes, line counts and hole geometry come from manufacturer and retailer listings
-(Mead/Staples filler paper, Clairefontaine, Silvine, Rhodia, Leuchtturm), Wikipedia "Ruled paper" and
-"Réglure", and DIN 16552 summaries. Colours and line weights are not published anywhere; they are
-matched by eye. On small grids (squared, dots) the writing takes every second line, like a real hand.
+| Paper | Variants | Based on |
+|---|---|---|
+| Letter pad (default) | White A5 · British blue · Binsen · German A4 | A 90 g wove sheet torn off a glued pad, with the pad's lined guide sheet slipped under it. The British pad is 137 × 178 mm in azure; binsen is Japanese cream letter paper with 15 printed rules at 9.5 mm; the German A4 pad has DIN 5008 fold and punch marks |
+| Laid paper | Cream · Blue-white · Handmade cotton | Post quarto laid letter paper: laid lines about 1 mm apart, chain lines 26 mm apart, deckled right and foot. Blue-white as 18th-century Dutch writing paper; handmade cotton rag with four deckles, flecks and a rough tooth |
+| Airmail | Pale blue · White | B5 onionskin, about 30 g/m²: thin enough for the desk to show through, softly cockled, its lined template plain underneath. Smaller writing |
+| Aerogramme | | The inside of an unfolded air letter (US size, three 90.5 mm panels): top and side flaps with gum, two creases, "first fold" and "second fold". Writing runs edge to edge, small |
+| Notebook page | US spiral · US loose-leaf · Legal pad · UK exercise book · French cahier | Torn out: a spiral's ragged fringe, three binder holes, a canary legal pad torn along its perforation, a feint-ruled exercise book page or a Seyès cahier page torn at the staples |
+| Postcard | A6 · 6 × 4 in | The message side: divided back, address lines, a stamp box. Coated card |
+| Notecard | Correspondence card · Ippitsusen | A 6⅜ × 4¼ in ecru cotton card with a navy triple border; a Japanese short-note strip with a few rules and a printed sprig |
+
+**The guide sheet** (pad, airmail) shows while you write and stays in the pad when the letter goes: the reader
+view, the found letter and the downloaded JPEG show plain paper. **Edges** that aren't cut straight (deckles,
+tears, the spiral fringe, the aerogramme's flaps) clip the sheet and cast their own shadow. **Overflow** per paper:
+`sheets` (more sheets), `card` (another card), `back` (a notecard's plain back), `cramp` (an aerogramme squeezes,
+then offers a second); see `sheetPaper()` in `lib/papers.ts`.
+
+Sizes come from makers' and retailers' listings, DIN 5008, USPS and Wikipedia; colours and line weights are matched
+by eye. Everything is painted by `lib/paper/paint.ts` from small textures made once (grain, formation, cockle)
+and stretched, so a sheet paints in a few milliseconds; shared textures and outlines are made in idle time.
+`papers.html` (dev only) shows every paper whole, as a swatch and up close: `/papers.html?view=sheets|swatches|close`.
 
 ## How it's put together
 
@@ -182,7 +230,8 @@ src/
     ui/                   shadcn-style primitives (button, slider, segmented, tooltip, toast)
   lib/
     compose.ts            hand + text + paper + size -> sheets of positioned writing (mm <-> font units)
-    papers.ts             paper specs + one painter used for the screen and the JPEG
+    papers.ts             paper specs, variants, old-id redirects, roll weights, overflow per paper
+    paper/                the painter (paint.ts), edges and outlines (outline.ts), noise, spec types
     writing.ts            engine SVG at a fixed reference scale, id scoping, rasterising for the JPEG
     write-core.ts         request -> result (runs in the worker, and on the main thread for downloads)
     caret.ts              text index <-> position on the handwriting

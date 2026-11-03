@@ -7,6 +7,8 @@
 import { memo, useEffect, useLayoutEffect, useRef } from 'react';
 import * as E from '@engine';
 import { PaperCanvas } from '@/components/PaperCanvas';
+import { sheetPaper, sheetShadow } from '@/lib/papers';
+import { SheetMarks } from '@/components/SheetView';
 import { sheetFrame, sheetOfLine, type Live } from '@/lib/live';
 import { scopeIds } from '@/lib/writing';
 
@@ -133,11 +135,12 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
         <div
           key={s}
           className="relative isolate shrink-0 rounded-[1.5px]"
-          style={{ width: live.paper.w * pxPerMm, height: live.paper.h * pxPerMm, boxShadow: 'var(--sheet-shadow)' }}
+          style={{ width: live.paper.w * pxPerMm, height: live.paper.h * pxPerMm, boxShadow: sheetShadow(live.paper) }}
           aria-label={sheets > 1 ? `Page ${s + 1} of ${sheets}` : undefined}
           role={sheets > 1 ? 'group' : undefined}
         >
-          <PaperCanvas paper={live.paper} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
+          <PaperCanvas paper={sheetPaper(live.paper, s)} sheet={s} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
+          <SheetMarks paper={live.paper} index={s} count={sheets} pxPerMm={pxPerMm} />
           <div data-sheet-ink className="writing writing-fill pointer-events-none absolute inset-0" style={{ color: ink }} />
         </div>
       ))}

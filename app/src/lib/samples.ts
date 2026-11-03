@@ -96,6 +96,8 @@ export function sawLetter(id: string | null | undefined) {
 }
 
 /** "Letter: Kamma Rahbek, 1813" (or "Note: …"; and the translator, when there is one). */
+export { shortAuthor } from './names';
+
 export function sampleCredit(s: SampleText) {
   return `${s.kind === 'note' ? 'Note' : 'Letter'}: ${s.author}, ${s.year}${s.translator ? `, translated by ${s.translator.name}` : ''}`;
 }
