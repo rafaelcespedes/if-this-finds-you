@@ -91,6 +91,7 @@ function SchoolCard({ seed, style, ink, selected, onPick }: { seed: string; styl
       <Specimen
         sampleKey={`school|${seed}|${style}`}
         hand={() => makeHand(seed, style)}
+        recipe={{ seed, style }}
         text="Dear"
         emPx={25}
         color={ink}
