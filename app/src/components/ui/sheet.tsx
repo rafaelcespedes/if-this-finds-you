@@ -52,13 +52,13 @@ const sheetSurface =
   'sheet-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] max-w-[640px] flex-col rounded-t-[20px] border-t border-border bg-panel pb-[max(12px,env(safe-area-inset-bottom,0px))] shadow-[0_-1px_2px_rgba(60,45,20,0.05),0_-16px_44px_-16px_rgba(40,30,10,0.35)] outline-none';
 const sheetBackdrop = 'sheet-backdrop fixed inset-0 z-50 bg-[rgba(24,20,14,0.32)]';
 
-function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, children, describe }: { trigger: ReactElement; title: string; showTitle?: boolean; open?: boolean; onOpenChange?: (o: boolean) => void; children: ReactNode; describe?: string }) {
+function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, children, describe, onOpenAutoFocus, onEscapeKeyDown }: { trigger: ReactElement; title: string; showTitle?: boolean; open?: boolean; onOpenChange?: (o: boolean) => void; children: ReactNode; describe?: string; onOpenAutoFocus?: (e: Event) => void; onEscapeKeyDown?: (e: KeyboardEvent) => void }) {
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
       <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>
       <Drawer.Portal>
         <Drawer.Overlay className={sheetBackdrop} />
-        <Drawer.Content className={sheetSurface} aria-describedby={undefined}>
+        <Drawer.Content className={sheetSurface} aria-describedby={undefined} onOpenAutoFocus={onOpenAutoFocus} onEscapeKeyDown={onEscapeKeyDown}>
           <div aria-hidden className="flex h-6 shrink-0 cursor-grab items-end justify-center">
             <span className="h-[5px] w-9 rounded-full bg-[color-mix(in_oklab,var(--foreground)_18%,transparent)]" />
           </div>
@@ -216,9 +216,13 @@ interface SheetProps {
   className?: string;
   /** desktop: after it closes (true when it moved the focus itself) */
   onCloseAutoFocus?: (e: Event) => void;
+  /** where focus goes as it opens (preventDefault to keep it on the panel itself) */
+  onOpenAutoFocus?: (e: Event) => void;
+  /** Escape, before it closes the sheet (e.g. stop a page's own Escape from also acting) */
+  onEscapeKeyDown?: (e: KeyboardEvent) => void;
 }
 
-export function Sheet({ trigger, title, showTitle = true, children, open: openProp, onOpenChange, side = 'bottom', align = 'start', className, onCloseAutoFocus }: SheetProps) {
+export function Sheet({ trigger, title, showTitle = true, children, open: openProp, onOpenChange, side = 'bottom', align = 'start', className, onCloseAutoFocus, onOpenAutoFocus, onEscapeKeyDown }: SheetProps) {
   const sheets = useSheets();
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
@@ -227,7 +231,7 @@ export function Sheet({ trigger, title, showTitle = true, children, open: openPr
   const body = typeof children === 'function' ? children(close) : children;
   if (sheets) {
     return (
-      <PhoneSheet trigger={trigger} title={title} showTitle={showTitle} open={open} onOpenChange={set}>
+      <PhoneSheet trigger={trigger} title={title} showTitle={showTitle} open={open} onOpenChange={set} onOpenAutoFocus={onOpenAutoFocus} onEscapeKeyDown={onEscapeKeyDown}>
         <div className="px-3 pb-2">{body}</div>
       </PhoneSheet>
     );
@@ -243,6 +247,8 @@ export function Sheet({ trigger, title, showTitle = true, children, open: openPr
           collisionPadding={12}
           aria-label={title}
           onCloseAutoFocus={onCloseAutoFocus}
+          onOpenAutoFocus={onOpenAutoFocus}
+          onEscapeKeyDown={onEscapeKeyDown}
           className={cn(
             'z-50 max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-24px))] origin-(--radix-popover-content-transform-origin) overflow-y-auto overscroll-contain rounded-2xl border border-border bg-popover p-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100',
             className,
