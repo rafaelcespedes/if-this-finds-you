@@ -49,19 +49,23 @@ function Item({ icon, children, onSelect, disabled }: { icon: ReactNode; childre
   );
 }
 
-/** "In Ilse Pryor's hand ⌄": what you can do with the hand, beside the hand (the tool's writer dropdown). */
-export function HandMenu({ name, keep, onKeep, onNewHand, onReplay, canReplay }: {
+/** "In Ilse Pryor's hand ⌄": what you can do with the hand, beside the hand (the tool's writer dropdown). A page can
+ * give it its own trigger (`trigger`, a button: the Reading Room's spread shows the name alone in its record). */
+export function HandMenu({ name, keep, onKeep, onNewHand, onReplay, canReplay, trigger, align = 'center' }: {
   name: string; keep: boolean; onKeep: (v: boolean) => void; onNewHand: () => void; onReplay: () => void; canReplay: boolean;
+  trigger?: ReactNode; align?: 'start' | 'center' | 'end';
 }) {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button type="button" className="group inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[13px] text-muted-foreground transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:py-2.5">
-          In {name}’s hand
-          <ChevronDown aria-hidden className="size-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-        </button>
+        {trigger ?? (
+          <button type="button" className="group inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[13px] text-muted-foreground transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:py-2.5">
+            In {name}’s hand
+            <ChevronDown aria-hidden className="size-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          </button>
+        )}
       </DropdownMenu.Trigger>
-      <MenuContent side="bottom" align="center">
+      <MenuContent side="bottom" align={align}>
         <Item icon={<Shuffle />} onSelect={onNewHand}>Another hand</Item>
         <Item icon={<RotateCcw />} onSelect={onReplay} disabled={!canReplay}>Write it out again</Item>
         <DropdownMenu.Separator className="mx-2 my-1 h-px bg-border" />
