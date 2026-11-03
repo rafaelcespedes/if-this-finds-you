@@ -6,7 +6,7 @@ import { APP_NAME, NAME_WITH_DESCRIPTOR } from '@/lib/brand';
 import { SiteHeader, type Kept } from '@/components/SiteHeader';
 import { useFolio } from '@/components/Folio';
 import { styleCard } from '@/lib/styles';
-import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
+import { CAP, EXTRAS, GF_LATIN_CORE } from '@engine';
 import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
@@ -54,7 +54,7 @@ import { perf } from '@/lib/perf';
 import { MAX_LETTER, linkIssue, offsetsForNewHand, shareUrl } from '@/lib/state';
 import { Notice } from '@/components/Notice';
 import { Button } from '@/components/ui/button';
-import { placeholderFor, requestFor, type Req } from '@/lib/request';
+import { handFor, placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
 // the look being compared (?look=reading-room): its desk, card and printed sheet marks (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
@@ -130,7 +130,7 @@ export default function App() {
   const viewport = useVisualViewport();
 
   // natural hand (seed) + your offsets + occasion -> the hand on the page
-  const natural = useMemo(() => makeHand(state.seed, state.style, handOpts(state)), [state.seed, state.style, state.neatOnly]);
+  const natural = useMemo(() => handFor(state.seed, state.style, handOpts(state)), [state.seed, state.style, state.neatOnly]);
   const lookKey = JSON.stringify([state.offsets, state.pen, state.penSize, state.ink, state.occasion, state.amount, state.size]);
   // keyed on the look only: typing must keep the same hand object, so the engine's caches stay warm
   const eff = useMemo(() => effective(natural, state), [natural, lookKey]);
@@ -636,7 +636,8 @@ export default function App() {
   const rollAsk = useRef(0);
   useEffect(() => {
     let w: Worker | null = null;
-    try { w = new Worker(new URL('./workers/roll.worker.ts', import.meta.url), { type: 'module' }); } catch { w = null; }
+    // the writing worker's own script (workers/write.worker.ts rolls too): already downloaded for the letter
+    try { w = new Worker(new URL('./workers/write.worker.ts', import.meta.url), { type: 'module', name: 'roll' }); } catch { w = null; }
     if (w) w.onerror = () => { if (roller.current === w) roller.current = null; };
     roller.current = w;
     return () => { w?.terminate(); roller.current = null; };

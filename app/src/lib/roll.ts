@@ -73,10 +73,16 @@ let VISIT = (() => {
 export const visitChance = () => VISIT;
 export const takeVisitChance = (v: string) => { VISIT = v; };
 
-/** Is this hand easy to read? (The engine's score when it has one; else its neatness and hurry.) */
+/** Is this hand easy to read? (The engine's score when it has one; else its neatness and hurry.) Kept per hand: the
+ * page asks on every render (each keystroke), and the engine's score lays out a few words each time. */
+const neatOf = new WeakMap<Hand, boolean>();
 export function isNeat(p: Hand) {
-  if (engineLegibility) return engineLegibility(p) >= NEAT_MIN;
-  return (p.neatness as number) >= 0.45 && ((p.hurry as number) ?? 0) <= 0.7;
+  let neat = neatOf.get(p);
+  if (neat === undefined) {
+    neat = engineLegibility ? engineLegibility(p) >= NEAT_MIN : (p.neatness as number) >= 0.45 && ((p.hurry as number) ?? 0) <= 0.7;
+    neatOf.set(p, neat);
+  }
+  return neat;
 }
 
 export function rollLook(s: NoteState, opts: { variety: number; locked: Set<LockKey> }): Partial<NoteState> {
