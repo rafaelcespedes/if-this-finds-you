@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { decodeState, encodeState, DEFAULT_STATE, type NoteState } from '@/lib/state';
+import { decodeState, encodeState, firstVisitState, type NoteState } from '@/lib/state';
 
 /** The link saved on leaving the page, for this tab: a reload goes to the address as it was before. */
 const LEFT_KEY = 'seedhand:left';
@@ -22,7 +22,8 @@ function startHash(): string {
 export function useNoteState(paused = false) {
   const [state, setState] = useState<NoteState>(() => {
     const h = startHash();
-    return h ? decodeState('#' + h) : DEFAULT_STATE;
+    // no link: a first hand and letter of this visit's own
+    return h ? decodeState('#' + h) : firstVisitState();
   });
   const lastWritten = useRef<string>('');
   const latest = useRef(state);
