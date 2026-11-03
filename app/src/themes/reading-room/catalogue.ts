@@ -6,7 +6,10 @@
 //
 // Everything on the card comes from the curator's fields; nothing is invented here. Loaded with the collection (the
 // tool already has it in its main chunk; the library loads it on demand), so this never makes a page wait.
-import { useEffect, useState } from 'react';
+//
+// One source for the number and the place: the card, the sheet's marks and anything that prints them (marksOf) read
+// from here. No React and no DOM, so a worker (the library's card painter) can use it too; the hooks are in
+// useCatalogue.ts.
 import { shortAuthor } from '@/lib/names';
 
 interface Raw {
@@ -64,16 +67,30 @@ export function loadCatalogue() {
   return loading;
 }
 
+/** The collection is in (getRecord and marksOf answer from now on). */
+export const catalogueReady = () => ready != null;
+
 /** The card for a letter id (undefined until the collection is in, or for a letter that isn't in it). */
-export function useRecord(id: string | null | undefined): CardRecord | undefined {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (ready) return;
-    let on = true;
-    loadCatalogue().then(() => on && setTick((n) => n + 1));
-    return () => { on = false; };
-  }, []);
-  return id && ready ? ready.get(id) : undefined;
+export const getRecord = (id: string | null | undefined): CardRecord | undefined => (id && ready ? ready.get(id) : undefined);
+
+/** What is printed on a letter's sheet: its number ("No. 0004") and its postmark (the place, short, and the year). */
+export interface LetterMarks {
+  id: string;
+  no: number;
+  /** "No. 0004" */
+  number: string;
+  /** the postmark's place, short enough for a ring ("Cairo"); empty when the source gives none */
+  place: string;
+  /** the place as the curator wrote it */
+  placeFull?: string;
+  year?: number;
+}
+
+/** The marks for a letter id, once the collection is in (await loadCatalogue() first where it may not be). */
+export function marksOf(id: string | null | undefined): LetterMarks | undefined {
+  const r = getRecord(id);
+  if (!r || r.no == null) return undefined;
+  return { id: r.id, no: r.no, number: `No. ${callNo(r.no)}`, place: postmarkPlace(r.where), placeFull: r.where, year: r.year };
 }
 
 /** No. 0004 */
