@@ -8,6 +8,7 @@ import { useElementWidth } from '@/hooks/useElementWidth';
 import { cn } from '@/lib/utils';
 import allLetters from './all-letters.svg?raw';
 import { Card } from './Card';
+import { FindingList } from './FindingList';
 import { LetterCanvas, VIEW, type ViewId } from './Canvas';
 import { HeadingTools, SelectDock, SentenceFilter, TimelineDock, TOOLBAR, useSlashToSearch, type ControlsProps, type ViewSwitch } from './Controls';
 import { cardAspect } from './card-protocol';
@@ -202,6 +203,9 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             <Empty title={filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} action={<Button variant="outline" onClick={clear}>Clear filters</Button>}>
               Try fewer words, or another era or language.
             </Empty>
+          ) : letters && LOOK === 'reading-room' ? (
+            // the Reading Room: the letters as a finding aid (the layout study's list)
+            <FindingList letters={shown} onOpen={onOpen} />
           ) : letters ? (
             <ul ref={listRef} role="list" aria-label="All letters" className="masonry relative mt-2" style={{ '--col-w': `${g.colW}px` } as CSSProperties}>
               {shown.map((l) => <Card key={l.id} letter={l} size={size} aspect={aspects.get(l.id) ?? 1} onOpen={onOpen} />)}
