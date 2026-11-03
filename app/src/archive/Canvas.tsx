@@ -67,32 +67,43 @@ function rand(seed: string) {
  * Lay the letters out on a tile: cells around a clearing for the heading, the first letters nearest the middle
  * (so a search's matches gather there), some cells left empty so the spacing varies, each letter a little off its
  * cell's centre and a little tilted. The tile is at least the screen plus a margin each way, so nothing repeats on
- * screen.
+ * screen. The heading's row is as tall as the heading needs (its measured height and `space` on each side, against
+ * the tallest letter and its scatter), so no letter reaches into it at any text size.
  */
-function layField(letters: ArchiveLetter[], o: { cardW: number; captionH: number; head: { w: number; h: number }; minW: number; minH: number }): Field {
+function layField(letters: ArchiveLetter[], o: { cardW: number; captionH: number; head: { w: number; h: number }; space: number; minW: number; minH: number }): Field {
   const gapX = Math.round(o.cardW * 0.34), gapY = Math.round(o.cardW * 0.3);
   const cellW = o.cardW + gapX;
   // rows sized for a typical letter (tall ones reach into the gap below, which the scatter leaves room for)
   const cellH = Math.round(o.cardW * 1.16) + o.captionH + gapY;
+  // how far a letter can reach from its cell's centre: the tallest sheet (card-protocol.ts caps it at 1.42 its
+  // width), its caption, the scatter, and what the tilt (±3.5°) adds
+  const tilt = Math.sin((3.5 * Math.PI) / 180);
+  const tallest = o.cardW * 1.42 + o.captionH;
+  const reachY = tallest / 2 + gapY * 0.175 + (o.cardW / 2) * tilt;
+  const reachX = o.cardW / 2 + gapX * 0.35 + (tallest / 2) * tilt;
+  // the heading's row: the next rows' letters stop `space` short of the heading
+  const midH = Math.max(cellH, Math.ceil(o.head.h + 2 * o.space + 2 * reachY - cellH));
   const n = letters.length;
   // about a fifth of the cells stay empty, for uneven spacing
   const want = Math.ceil(n * 1.22) + 8;
   let cols = Math.max(3, Math.round(Math.sqrt((want * cellH) / cellW)));
   let rows = Math.max(3, Math.ceil(want / cols));
   cols = Math.max(cols, Math.ceil(o.minW / cellW));
-  rows = Math.max(rows, Math.ceil(o.minH / cellH));
+  rows = Math.max(rows, Math.ceil((o.minH - midH) / cellH) + 1);
   // odd counts put a cell (row and column) right on the heading, so the clearing is one row tall, not two
   cols += 1 - (cols % 2);
   rows += 1 - (rows % 2);
-  const tileW = cols * cellW, tileH = rows * cellH;
+  const tileW = cols * cellW, tileH = (rows - 1) * cellH + midH;
   const r = rand('field:' + n);
-  // cells, centred on the heading; the ones under the heading (and a little around it) are the clearing
+  // cells, centred on the heading; in its row, the ones a letter would reach the heading from are the clearing
+  const mid = (rows - 1) / 2;
   const cells: { cx: number; cy: number; d: number }[] = [];
   for (let j = 0; j < rows; j++) {
+    const k = j - mid;
+    const cy = k === 0 ? 0 : Math.sign(k) * (midH / 2 + (Math.abs(k) - 0.5) * cellH);
     for (let i = 0; i < cols; i++) {
       const cx = -tileW / 2 + (i + 0.5) * cellW;
-      const cy = -tileH / 2 + (j + 0.5) * cellH;
-      const clear = Math.abs(cx) < o.head.w / 2 + cellW * 0.4 && Math.abs(cy) < o.head.h / 2 + cellH * 0.3;
+      const clear = k === 0 && Math.abs(cx) - reachX < o.head.w / 2 + o.space;
       if (!clear) cells.push({ cx, cy, d: Math.hypot(cx / cellW, cy / cellH) + r() * 0.9 });
     }
   }
@@ -112,6 +123,19 @@ function layField(letters: ArchiveLetter[], o: { cardW: number; captionH: number
   });
   items.push({ id: 'heading', x: 0, y: 0, w: o.head.w, h: o.head.h, tilt: 0, aspect: 0 });
   return { items, tileW, tileH };
+}
+
+/** The page's rem in px: 16 by default, more when the reader has asked for larger text. Read again on a resize and
+ * whenever `refresh` is called (the heading changing size is the sure sign the text size has). */
+const readRem = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+function useRootRem() {
+  const [rem, setRem] = useState(readRem);
+  const refresh = useCallback(() => setRem(readRem()), []);
+  useEffect(() => {
+    window.addEventListener('resize', refresh);
+    return () => window.removeEventListener('resize', refresh);
+  }, [refresh]);
+  return [rem, refresh] as const;
 }
 
 /** Where a tile position lands on screen, wrapped so it's always within half a tile of the camera. */
@@ -139,12 +163,36 @@ export function LetterCanvas({ shown, heading, empty, onOpen, active, onList }: 
   const narrow = vp.w < 640;
   const cardW = narrow ? 150 : vp.w < 1024 ? 190 : 224;
   const captionH = narrow ? 44 : 50;
-  const head = narrow ? { w: Math.min(330, vp.w - 40), h: 300 } : { w: 560, h: 290 };
+  // the heading: its measure in rem (larger text, a wider heading), its height as it really is (measured below:
+  // the intro, a look's finding aid, a "no letters match" note, at any text size); the space around it in rem too
+  const [rem, refreshRem] = useRootRem();
+  const [headH, setHeadH] = useState<number | null>(null);
+  const head = {
+    w: Math.round(narrow ? Math.min(20.625 * rem, vp.w - 40) : Math.min(35 * rem, vp.w - 80)),
+    h: headH ?? Math.round((narrow ? 18.75 : 18) * rem),
+  };
+  const space = Math.round(1.5 * rem);
   const field = useMemo(
-    () => layField(shown, { cardW, captionH, head, minW: vp.w + MARGIN * 2 + cardW, minH: vp.h + MARGIN * 2 + cardW * 1.6 }),
+    () => layField(shown, { cardW, captionH, head, space, minW: vp.w + MARGIN * 2 + cardW, minH: vp.h + MARGIN * 2 + cardW * 1.6 }),
     // the field changes with what's shown and the screen's class, not every pixel of a resize
-    [shown, cardW, captionH, head.w, head.h, Math.ceil(vp.w / 200), Math.ceil(vp.h / 200)],
+    [shown, cardW, captionH, head.w, head.h, space, Math.ceil(vp.w / 200), Math.ceil(vp.h / 200)],
   );
+  // measured when the heading is on the page, and again whenever it changes size (a face loads, the text grows);
+  // kept while it's panned out of sight. Steps of 4 px, so a sub-pixel wobble doesn't lay the field out again.
+  const headObs = useRef<ResizeObserver | null>(null);
+  const measureHead = useCallback((el: HTMLElement | null) => {
+    headObs.current?.disconnect();
+    headObs.current = null;
+    if (!el) return;
+    const take = () => {
+      const h = Math.ceil(el.offsetHeight / 4) * 4;
+      if (h > 0) setHeadH((was) => (was === h ? was : h));
+      refreshRem();
+    };
+    take();
+    headObs.current = new ResizeObserver(take);
+    headObs.current.observe(el);
+  }, [refreshRem]);
   const size = useMemo(() => cardSize(cardW), [cardW]);
 
   // the camera: the tile position at the centre of the screen
@@ -352,9 +400,12 @@ export function LetterCanvas({ shown, heading, empty, onOpen, active, onList }: 
           const ref = (el: HTMLElement | null) => { if (el) els.current.set(id, el); else els.current.delete(id); };
           if (id === 'heading') {
             return (
-              <li key={id} ref={ref} data-place={id} className="canvas-item absolute top-0 left-0" style={{ ...style, height: it.h }}>
-                {heading}
-                {empty}
+              <li key={id} ref={ref} data-place={id} className="canvas-item absolute top-0 left-0" style={style}>
+                {/* its own height (measured: the field makes room for it) */}
+                <div ref={measureHead}>
+                  {heading}
+                  {empty}
+                </div>
               </li>
             );
           }
