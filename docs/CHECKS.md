@@ -81,7 +81,8 @@ match exactly; on 440 items the final SVG differed in 36 on Intel/AMD Linux and 
 (`--against=<previous version>`) the QA also renders the version before the update on the same machine, and
 asks of every item: did its output change between the two versions? If it did, its line in `baseline.json` must
 have changed in the same update, or the check fails, just as `regress.mjs` fails on the Mac. Items whose final
-SVG differs from the Mac's only by this rounding are counted, not failed. On the Mac nothing changes:
+SVG differs from the Mac's only by this rounding are counted, not failed. When there's no earlier version to render (it
+doesn't load), layout, letters and outlines are compared with `baseline.json` and any difference fails. On the Mac nothing changes:
 `regress.mjs` compares with `baseline.json` exactly. (If GitHub ever flags an item that the full run on the Mac
 calls unchanged, it's this rounding: say so in the PR and Force Promote.)
 

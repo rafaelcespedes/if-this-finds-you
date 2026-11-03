@@ -167,14 +167,12 @@ function describeChanges(changed) {
 // baseline line change with it? Changed output with an untouched baseline line fails, as on the Mac.
 async function regressionAgainst(ctx, specs, cur, base, lines, problems) {
   const prevRoot = path.resolve(ctx.args.against);
-  let P;
-  try { P = await loadEngine(prevRoot); } catch (e) {
-    problems.push({ level: 'fail', msg: `the previous version (${ctx.args.against}) did not load: ${(e && e.message) || e}` });
-    return null;
-  }
+  // without a previous engine (none yet, or it doesn't load) only the baseline's CPU-independent layers can judge
+  let P = null, noPrev = null;
+  try { P = await loadEngine(prevRoot); } catch (e) { noPrev = String((e && e.message) || e).split('\n')[0]; }
   let prevBase = {};
   try { prevBase = JSON.parse(fs.readFileSync(path.join(prevRoot, 'tools', 'qa', 'baseline.json'), 'utf8')).items || {}; } catch {}
-  const prevIds = new Set(buildMatrix(P).map((s) => s.id));
+  const prevIds = new Set(P ? buildMatrix(P).map((s) => s.id) : []);
   const steady = (h) => h.split(':').slice(0, 3).join(':'); // layout, center, outline: the same on every CPU so far
   const changed = [], accepted = [], added = [], drift = [];
   let svgOnly = 0, same = 0;
@@ -193,11 +191,12 @@ async function regressionAgainst(ctx, specs, cur, base, lines, problems) {
     const c = { id, layers: LAYERS.filter((_, i) => a[i] !== b[i]) };
     (base[id] !== prevBase[id] ? accepted : changed).push(c);
   }
-  lines.push(`regression vs the previous version, both rendered here: ${same} unchanged · ${changed.length} changed with no baseline update · ${accepted.length} changed with one · ${added.length} new`);
+  if (noPrev) lines.push(`no previous version to compare with (${noPrev}): judged against baseline.json in layout, letters and outline only`);
+  else lines.push(`regression vs the previous version, both rendered here: ${same} unchanged · ${changed.length} changed with no baseline update · ${accepted.length} changed with one · ${added.length} new`);
   if (changed.length) lines.push(...describeChanges(changed));
   lines.push(`vs baseline.json (made on another machine): ${svgOnly} items differ only in the final SVG (a rounding flip on this CPU, expected) · ${drift.length} in layout, letters or outline`);
   if (changed.length) problems.push({ level: 'fail', msg: `${changed.length} matrix items changed since the previous version but their baseline lines didn't — if intentional, run regress.mjs --update and commit baseline.json, saying why` });
-  if (drift.length) problems.push({ level: 'warn', msg: `${drift.length} items differ from baseline.json in layout, letters or outline (stale baseline?): ${drift.slice(0, 3).join(', ')}${drift.length > 3 ? ' …' : ''}` });
+  if (drift.length) problems.push({ level: noPrev ? 'fail' : 'warn', msg: `${drift.length} items differ from baseline.json in layout, letters or outline (${noPrev ? 'if intentional, run with --update and say why' : 'stale baseline?'}): ${drift.slice(0, 3).join(', ')}${drift.length > 3 ? ' …' : ''}` });
   if (added.length) problems.push({ level: 'warn', msg: `${added.length} new matrix items not in baseline (new style/pen/param?) — run with --update to record them` });
-  return { against: ctx.args.against, same, changed, accepted, added, drift, svgOnly, total: Object.keys(cur).length };
+  return { against: ctx.args.against, noPrev, same, changed, accepted, added, drift, svgOnly, total: Object.keys(cur).length };
 }
