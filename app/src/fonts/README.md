@@ -1,44 +1,45 @@
 # Fonts (fonts.html, /fonts)
 
-Every hand as a free, open-source font, served like a foundry's list: a set of 20 hands, each a big specimen line in
-its own hand, with the writer's name, a few quiet words (Joined · Spencerian · fountain pen) and three actions: save it
-(heart), write with it (opens the tool in that hand on a fresh sheet), download the font (.otf + .ttf zip).
+Every hand as a free, open-source font, served like a foundry's list: a set of 24 hands, each a big line set **in its
+own generated font**, with the writer's name (lib/hands.ts `writerName`, as the tool's label), tags (Joined · Palmer ·
+fountain pen · Field journal; a tag filters by itself) and three actions: save it (heart), write with it (opens the
+tool in that exact hand on a fresh sheet), download the font (.otf + .ttf zip). "Show 24 more" carries on with the same
+set; "New set" (dock, or Space) draws another.
 
 Run: `cd app && npm run dev`, open `/fonts.html` (the live site serves it at `/fonts`, clean URLs).
 
-## The URL is the state
-`/fonts?set=k7f2q&f=script&t=palmer.spencerian&n=careful&s=slight&p=fountain&any=1&text=…&size=72&show=ink&view=saved`
+## Honest about limits (PRINCIPLES.md #7)
+- **As a font** (default): the row's line is set in the hand's real font, built in a worker for the characters the row
+  shows (`buildFont` with `chars`, stroke-merged with clipper, every alternate, join and kerning pair the download has)
+  and loaded with `FontFace`. What you see is what you download. New characters (your own words) rebuild that row's
+  font; until then the row keeps the last words it could set (never a fallback font).
+- **Live hand**: the engine's live writing with the writer's own pen, ink and paper (renderCanvas on a strip of the
+  paper), labelled as such with a line saying the font keeps a few versions of each letter.
 
-- `set` + the filters (+ `any=1`, Neat hands only off) decide which hands: the same link always gives the same set.
-- `text`, `size` and `show` (plain | ink) decide how the specimens are written. Defaults are left out.
-- "Another set" pushes a history entry (Back returns to the last set, shown at once from memory); everything else
-  replaces it.
+## The URL is the state
+`/fonts?set=k7f2q&f=script&t=palmer.spencerian&c=elegant&n=careful.relaxed&s=forward&w=wide&p=fountain&any=1&line=pangram&text=…&size=60&show=live&view=saved`
+
+- `set` + the filters (+ `any=1`, Neat hands only off) decide the hands: the same link always gives the same set.
+- `line` (letter, pangram, alphabet, figures, name) or `text` (your words), `size` and `show` decide the specimens.
+- The default line is the opening of a real letter from the library, a different one per set, credited under the bar.
 
 ## How it works
-- The page never loads the engine. `store.ts` starts one or two workers (`fonts.worker.ts`) that load it once.
-- Worker 0 draws the set (`sample.ts`): slot by slot, a few candidates that pass the filters and Neat hands only
-  (engine `seedFrom` + `lookOf` + `legibility`), keeping the one farthest from the hands already chosen. Each pick is
-  sent at once, named (`lib/hands.ts writerName`, no two alike in a set) and given its tool link (`lib/state.ts
-  encodeState`).
-- Specimens are written only for rows near the screen (`near.ts`), on screen first. Plain = the hand's outlines
-  filled flat in the UI's ink, as a small SVG (what the font draws). Ink on paper = the engine's live renderer on a
-  strip of the hand's own paper, as a WebP. Row heights are fixed before anything arrives (`protocol.ts BOX`).
-- While the size slider moves, the last specimens scale with their row; new ones are written when you let go.
-  Typing waits a quarter second.
-- Download reuses the tool's font worker (`workers/font.worker.ts`, `buildFontPackage`).
-- Saved hands: `favourites.ts`, localStorage `seedhand:fonts:saved`, with everything needed to write them again.
-
-## Filters
-`filters.ts` holds them (no engine): label, URL name, choices and the test the worker runs. Print / Joined lives in
-the dock; tradition, neatness, slant, pen and Neat hands only in the panel above it (a sheet on phones). These are
-placeholders until the research plan lands; a new filter is one more entry in `filterDefs` (and, if the engine
-should decide it while sampling, a line in `sample.ts`).
-When the engine exports its constrained sampler, `sample.ts` hands over to it.
+- The page never loads the engine. `store.ts` starts up to four workers (`fonts.worker.ts`); the first draws sets.
+- Sets: the engine's `sampleLooks` (docs/FILTERS.md), page k as `sampleSet({ offset })` gives it (seed, then `seed#k`,
+  each page kept away from the earlier ones). `set.note` is shown above the rows when filters were too tight.
+- Filters (`filters.ts`, engine-free) follow the research plan (side-session-notes …/fonts-view-filters.md, "Aligned
+  with the engine spec"). Each choice maps to engine constraints; runs of stops (Tidy to wild, Slant) become one range;
+  with Neat hands only on, open range ends are clamped to the engine's safe edges. Picking Messy turns Neat only off.
+  Kurrent and Dutch come up only when picked (`historical: true`).
+- Specimens only for rows near the screen (`near.ts`), on screen first; row heights fixed before anything arrives.
+- Download: `buildFontPackage` in a worker of its own, for the very hand the row shows (neat or not).
+- Saved hands: `favourites.ts`, localStorage `seedhand:fonts:saved`.
 
 ## Styling
-Tokens at the top of `fonts.css` (`--fonts-*`), on top of `index.css` and the library's `archive.css` surfaces.
+Tokens at the top of `fonts.css` (`--fonts-*`), on top of `index.css` and the library's `archive.css` surfaces. The page
+follows `?look=` like the tool and the library.
 
 ## QA
-`window.__fonts.stats`: firstEntryMs, firstRowMs, tenthRowMs, renderMs per specimen, setMs.
-Measured (production build, headless Chrome, this Mac): ten rows written in 0.63 s (0.9 s with the CPU slowed 4x);
-scrolling the whole set: no frame over 17 ms, no long tasks.
+`window.__fonts.stats`: setShownMs, firstRowMs, tenthRowMs, fontMs (per font build), liveMs.
+Measured (production build, headless Chrome, this Mac, cold): set on screen 0.55 s, first row 0.73 s, ten rows 1.3 s;
+fonts build in 45–540 ms (joined hands are the slow ones). Scrolling the set: no frame over 19 ms.

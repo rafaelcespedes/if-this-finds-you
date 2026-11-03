@@ -11,7 +11,7 @@
   --fonts-attr-size: 13px;
   --fonts-name: var(--text);
   --fonts-attr: var(--text-muted);
-  /* a plain specimen: the font, filled flat in the UI's ink */
+  /* as a font: the line in the UI's ink */
   --fonts-ink: var(--ink);
   /* ink on paper: a strip of the hand's own paper */
   --fonts-strip-radius: 6px;
@@ -73,15 +73,48 @@
   color: var(--fonts-name);
   white-space: nowrap;
 }
-.font-row-attrs {
+.font-row-tags {
   grid-area: attrs;
+  display: flex;
   min-width: 0;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 2px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: var(--fonts-attr-size);
   line-height: 1.35;
   color: var(--fonts-attr);
+  white-space: nowrap;
+}
+/* a tag: quiet words that filter by themselves; dots between them */
+.font-tag {
+  flex-shrink: 0;
+  border-radius: 4px;
+  padding: 1px 2px;
+  color: inherit;
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
+}
+.font-tag + .font-tag::before {
+  content: '·';
+  display: inline-block;
+  margin-right: 4px;
+  color: var(--text-faint);
+}
+.font-tag.is-near {
+  color: var(--text-faint);
+  font-style: italic;
+}
+@media (hover: hover) and (pointer: fine) {
+  button.font-tag:hover {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+    text-underline-offset: 3px;
+  }
+}
+button.font-tag:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
 }
 .font-row-actions {
   grid-area: actions;
@@ -130,31 +163,45 @@
   overflow-x: clip;
   color: var(--fonts-ink);
 }
-.font-row-specimen.is-ink {
+.font-row-specimen.is-live {
   overflow: hidden;
   border-radius: var(--fonts-strip-radius);
   box-shadow: var(--fonts-strip-edge);
 }
-.font-row-specimen.is-clipped {
+/* as a font: the line set in the hand's own font. A line box tall enough for every glyph (the font's metrics cover
+   all its ink), the font's own joins, alternates and kerning (calt, kern) as any app would use them */
+.font-line {
+  margin: 0;
+  padding-left: 0.04em;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--fonts-ink);
+  font-kerning: normal;
+  font-feature-settings: 'calt' 1, 'kern' 1;
+  font-variant-ligatures: contextual;
+  font-synthesis: none;
+  letter-spacing: normal;
+  word-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+.font-line.is-wrap {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.font-row-specimen.is-fade {
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent);
   mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent);
 }
 /* two lines (phones): the first stays whole, the second fades out at its end */
-.font-row-specimen.is-clipped-2 {
+.font-row-specimen.is-fade-2 {
   -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 50%), linear-gradient(to right, #000 calc(100% - 56px), transparent);
   mask-image: linear-gradient(to bottom, #000 50%, transparent 50%), linear-gradient(to right, #000 calc(100% - 56px), transparent);
   -webkit-mask-composite: source-over;
   mask-composite: add;
-}
-.font-specimen-svg {
-  height: 100%;
-}
-.font-specimen-svg svg {
-  display: block;
-  height: 100%;
-  width: auto;
-  max-width: none;
-  overflow: visible;
 }
 .font-specimen-img {
   display: block;
@@ -188,6 +235,39 @@
   padding-top: 36px;
   font-size: 14px;
   color: var(--text-muted);
+}
+.specimen-note {
+  margin-top: 10px;
+  max-width: 44rem;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+/* the sampler's own words when the filters were too tight ("9 of 24 hands meet every filter…") */
+.set-note {
+  margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--chip) 70%, transparent);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.outline-btn {
+  border: 1px solid var(--border);
+  background: var(--fonts-chip-bg);
+  color: var(--foreground);
+  box-shadow: 0 1px 1px rgba(60, 45, 20, 0.04);
+  transition: background-color 150ms var(--ease-out), transform 150ms var(--ease-out);
+}
+.outline-btn:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .outline-btn:hover {
+    background: #f4f1ea;
+  }
 }
 .font-list-note {
   max-width: 36rem;
@@ -281,6 +361,58 @@
   font-size: 12.5px;
   font-weight: 500;
   color: var(--text-muted);
+}
+.filter-hint {
+  font-weight: 400;
+  color: var(--text-faint);
+}
+.filter-era + .filter-era {
+  margin-top: 10px;
+}
+.filter-era-label {
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+/* stops on a scale (tidy to wild, slant): one stop or a run of neighbours, chosen ones joined in ink on paper */
+.run-stop {
+  color: var(--fonts-control);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .run-stop:hover {
+    color: var(--foreground);
+  }
+}
+.run-stop.is-on {
+  background: #fffefb;
+  color: var(--fonts-chip-on-text);
+  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.12), 0 0 0 0.5px rgba(40, 30, 10, 0.06);
+}
+.run-stop.is-on + .run-stop.is-on {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.run-stop.is-on:has(+ .run-stop.is-on) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.line-pick {
+  transition: color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .line-pick:hover {
+    color: var(--foreground);
+  }
+}
+.line-pick:has(select:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+.archive-field:has(input:focus-visible) {
+  border-color: color-mix(in oklab, var(--ink) 35%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink) 12%, transparent);
 }
 .filter-chip {
   border: 1px solid var(--fonts-chip-border);

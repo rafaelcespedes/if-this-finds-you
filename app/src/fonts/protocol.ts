@@ -1,10 +1,10 @@
 // Messages between the Fonts page and its workers (fonts.worker.ts). The page never loads the engine: the workers
-// choose the hands, name them, write their specimens and build the tool links; the page only shows what they send.
-import type { Catalogue, Filters } from './filters';
+// choose the hands (the engine's sampler), name them, build their fonts and tool links; the page only shows them.
+import type { Catalogue, Constraints } from './filters';
 
-/** One hand in a set: everything a row shows and every action needs, so a favourite reproduces it exactly. */
+/** One hand in a set: everything a row shows and every action needs, so a saved hand comes back exactly. */
 export interface FontEntry {
-  /** seed~style~pen~tip~ink: unique in a set, and the favourite's key */
+  /** seed~style~pen~tip~ink: unique in a set, and the saved hand's key */
   id: string;
   seed: string;
   style: string;
@@ -15,29 +15,31 @@ export interface FontEntry {
   tip: string;
   ink: string;
   paper: string;
-  /** the look's own values (absolute), as the engine's sampler gave them */
+  /** the look's values (absolute), exactly as the sampler gave them: the hand is makeHand + these */
   params: Record<string, number>;
-  /** what the renderer and the font builder are given: the params the engine knows, pen, tip and ink */
-  overrides: Record<string, number | string>;
-  /** the fictional writer ("Yara Bellamy") */
+  /** the fictional writer ("Yara Bellamy"; lib/hands.ts writerName, as the tool's label) */
   name: string;
-  /** the quiet line under the name: ["Joined", "Spencerian", "fountain pen"] */
-  attrs: string[];
-  /** for the filters and the screen reader: how neat (0..1), how it leans (degrees), how easy to read (0..1) */
-  traits: { neatness: number; lean: number; legibility: number };
+  /** "Palmer", "Québec school" */
+  tradition: string;
+  /** the kind of writer ("Field journal") */
+  kind: string;
+  /** where they learned, for a tooltip: "Schooled in … Later habits …" */
+  schooled: string;
+  /** met every filter as drawn (false: one of the closest, nudged; the set's note says so) */
+  matches: boolean;
   /** the tool's note state (lib/state.ts encodeState) with this hand on a fresh sheet: `${toolHref}#${tool}` */
   tool: string;
-  /** the paper's colour (ink on paper) and the ink's flat colour (the UI's tint for this hand) */
+  /** the paper's colour and the ink's flat colour (Live hand) */
   tint: string;
   inkColor: string;
 }
 
-export type Mode = 'ink' | 'plain';
+/** As a font: the generated font itself (what you download). Live hand: the engine's live writing on its paper. */
+export type Mode = 'font' | 'live';
 
-export interface RenderSpec {
+export interface LiveSpec {
   text: string;
-  mode: Mode;
-  /** px per em: the specimen's size */
+  /** px per em */
   emPx: number;
   /** the space the specimen has, CSS px */
   width: number;
@@ -46,22 +48,26 @@ export interface RenderSpec {
   dpr: number;
 }
 
+export interface Opening { text: string; id: string; by: string; year?: number }
+
 export type ToWorker =
   | { type: 'hello' }
-  | { type: 'set'; req: number; setSeed: string; filters: Filters; count: number; neatOnly: boolean }
-  | { type: 'render'; job: number; entry: FontEntry; spec: RenderSpec };
+  | { type: 'set'; req: number; setSeed: string; page: number; count: number; constraints: Constraints; neatOnly: boolean }
+  | { type: 'font'; job: number; entry: FontEntry; chars: string }
+  | { type: 'live'; job: number; entry: FontEntry; spec: LiveSpec }
+  | { type: 'package'; job: number; entry: FontEntry };
 
 export type FromWorker =
-  | { type: 'ready'; catalogue: Catalogue; sampler: 'engine' | 'app' }
-  | { type: 'entry'; req: number; index: number; entry: FontEntry }
-  | { type: 'set-done'; req: number; found: number; exhausted: boolean; ms: number }
-  | { type: 'rendered'; job: number; svg?: string; blob?: Blob; width: number; height: number; clipped: boolean; ms: number }
+  | { type: 'ready'; catalogue: Catalogue }
+  | { type: 'set'; req: number; entries: FontEntry[]; note: string | null; exhausted: boolean; matched: number; opening: Opening | null; ms: number }
+  | { type: 'font'; job: number; otf: ArrayBuffer; chars: string; ms: number }
+  | { type: 'live'; job: number; blob: Blob; width: number; height: number; clipped: boolean; ms: number }
+  | { type: 'package'; job: number; zip: ArrayBuffer; filename: string }
   | { type: 'failed'; job?: number; req?: number; message: string };
 
 /**
- * The specimen box for a size, in em: room above the first baseline for capitals, ascenders and flourishes, below
- * the last for descenders, and the line pitch when it wraps. The page reserves exactly this before anything is
- * written, so rows never move when their writing arrives.
+ * The specimen box, in em: a line, plus room above for capitals and flourishes and below for descenders. The page
+ * reserves exactly this before anything arrives, so rows never move when their writing does.
  */
 export const BOX = { above: 1.02, below: 0.5, pitch: 1.36, left: 0.08 };
 export const boxHeight = (emPx: number, lines: number) => Math.ceil((BOX.above + BOX.below + (lines - 1) * BOX.pitch) * emPx);
