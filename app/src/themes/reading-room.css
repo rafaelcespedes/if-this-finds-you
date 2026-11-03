@@ -547,12 +547,11 @@ html[data-look='reading-room'] .rr-ledger-record {
 html[data-look='reading-room'] .rr-ledger-waiting {
   min-height: 26rem;
 }
-/* on the desk the record opens the column: its first rule on the sheet's top edge, then its number, its two-line
-   title and, as the head's last line, Bring another */
+/* on the desk the record opens the column with no rule above it (Rafael, 4 Nov): its number, its two-line title and,
+   as the head's last line, Bring another; the number keeps its place (the 1 px the rule took is padding now) */
 html[data-look='reading-room'] .rr-desk .rr-ledger-record:first-child {
   margin-top: 0;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--rr-hair);
+  padding-top: calc(0.5rem + 1px);
 }
 /* desktop: Bring another, the desk's main action, is a button (Rafael, 4 Nov): a light archival-red tint with no
    edge, the controls' height and corners, its words in the action role like the phone's peek (the book face, 17 px,
@@ -736,8 +735,51 @@ html[data-look='reading-room'] .rr-drawer.is-open {
   flex-direction: column;
   animation: rr-drawer-in 280ms var(--ease-drawer) both;
 }
-html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-chev {
+html[data-look='reading-room'] .rr-drawer:is(.is-open, .is-peek) .rr-drawer-chev {
   transform: rotate(180deg);
+}
+/* partway (as you start a letter of your own, materials.ts): risen from the column's foot only as far as paper, pen
+   and ink need, the record still above it; the rest of the materials a row away */
+html[data-look='reading-room'] .rr-drawer.is-peek {
+  position: absolute;
+  inset: auto 0 0 0;
+  max-height: calc(100% - var(--rr-desk-top) + 1px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  animation: rr-drawer-in 280ms var(--ease-drawer) both;
+}
+html[data-look='reading-room'] .rr-drawer.is-peek .rr-drawer-body {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--rr-rule);
+}
+html[data-look='reading-room'] .rr-drawer.is-peek .rr-slip-inner > section:nth-of-type(n + 4) {
+  display: none;
+}
+html[data-look='reading-room'] .rr-drawer-all {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 0 12px;
+  border-top: 1px solid var(--rr-rule);
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  font-weight: var(--rr-label-weight);
+  letter-spacing: var(--rr-label-tracking);
+  font-variant-caps: var(--rr-label-caps);
+  color: var(--rr-ink);
+  text-align: left;
+}
+html[data-look='reading-room'] .rr-drawer-all svg {
+  width: 14px;
+  height: 14px;
+  color: var(--rr-muted);
 }
 /* under the open drawer the record is covered, so it's hidden: nothing of it (Share, in the column's gutter) shows past
    the drawer's edge, and focus and screen readers don't wander into it */
@@ -759,7 +801,7 @@ html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-body {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-look='reading-room'] .rr-drawer.is-open {
+  html[data-look='reading-room'] .rr-drawer:is(.is-open, .is-peek) {
     animation: rr-fade 160ms linear both;
   }
   html[data-look='reading-room'] .rr-drawer-chev {
