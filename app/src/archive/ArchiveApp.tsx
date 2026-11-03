@@ -1,4 +1,4 @@
-// The library (Letters): its two views, the index and a letter, switched by the URL hash (route.ts). The index
+// The library (All letters): its two views, the index and a letter, switched by the URL hash (route.ts). The index
 // stays mounted under an open letter, so coming back finds it as it was: the same cards, filters and scroll.
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Toaster } from '@/components/ui/sonner';
@@ -60,7 +60,7 @@ export function ArchiveApp() {
   }, []);
 
   useEffect(() => {
-    if (route.page === 'index') document.title = `Letters – ${APP_NAME}`;
+    if (route.page === 'index') document.title = `All letters – ${APP_NAME}`;
   }, [route.page]);
 
   // the index under an open letter keeps the filters it had

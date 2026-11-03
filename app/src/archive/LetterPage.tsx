@@ -164,7 +164,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
 
   useEffect(() => {
     if (letter) document.title = `${letter.title ?? 'A letter'} – ${APP_NAME}`;
-    return () => { document.title = `Letters – ${APP_NAME}`; };
+    return () => { document.title = `All letters – ${APP_NAME}`; };
   }, [letter]);
 
   // ---------- actions ----------

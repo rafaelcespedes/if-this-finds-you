@@ -1,5 +1,5 @@
-// The library's top line: the product's name (the way to the writing tool) and "Letters" (the way back to all of
-// them), with a page's own controls on the right.
+// The library's top line: the product's name (the way to the writing tool) and "All letters" (the way back to
+// the library), with a page's own controls on the right.
 import type { ReactNode } from 'react';
 import { APP_NAME } from '@/lib/brand';
 
@@ -18,9 +18,9 @@ export function SiteHeader({ back, children }: { back?: string; children?: React
         <a href={TOOL_URL} className={`${headerLink} shrink-0 text-[13px] font-medium tracking-[-0.01em] text-foreground/80`}>{APP_NAME}</a>
         <span aria-hidden className="text-faint">/</span>
         {back ? (
-          <a href={back} className={`${headerLink} truncate`}>Letters</a>
+          <a href={back} className={`${headerLink} truncate`}>All letters</a>
         ) : (
-          <span aria-current="page" className="truncate text-foreground/70">Letters</span>
+          <span aria-current="page" className="truncate text-foreground/70">All letters</span>
         )}
       </nav>
       <div className="flex shrink-0 items-center gap-3">{children}</div>
