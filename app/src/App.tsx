@@ -1196,9 +1196,11 @@ export default function App() {
                       <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 260)} />
                     </div>
                   ) : (
-                    <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
+                    // phones: the label on the left, how you're writing on the right, both above the sheet (under it, a
+                    // tall sheet on a small phone kept the menu below the fold, behind the controls)
+                    <SheetLabel title={sheetTitle} hand={myHandWords} width={Math.max(120, shownPaper.w * pxPerMm - 104)} stack className="absolute bottom-2.5 left-0" />
                   )}
-                  {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
+                  <div className={cn('absolute right-0', isDesktop ? 'bottom-0.5' : '-right-1.5 bottom-0')}>{writingMenu}</div>
                   {LOOK === 'reading-room' && sample && !replyDesk && <SampleMarks id={sample.id} pxPerMm={pxPerMm} />}
                   {/* look C (?look=postmarked): a found letter's postmark on the sheet's corner */}
                   {LOOK === 'postmarked' && <SheetPost sampleId={sample?.id} width={shownPaper.w * pxPerMm} />}
@@ -1283,7 +1285,6 @@ export default function App() {
                     // the letter's name is on the sheet now; a translation still says who translated it
                     <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
-                  {!isDesktop && writingMenu}
                 </div>
                 {LOOK === 'reading-room' && !isDesktop && sample && <CatalogueSlip id={sample.id} name={name} />}
                 {plainText && (
