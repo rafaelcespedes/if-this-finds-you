@@ -303,6 +303,12 @@ html[data-look='reading-room'] .rr-card-actions [data-slot='button'] {
   box-shadow: none;
   border: 0;
 }
+/* at rest it stays a bare icon at the row's end, never a filled or ringed box (the controls' resting look, rr-color.css,
+   is for controls in a group); hovered, it takes their wash */
+html[data-look='reading-room'] .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary:not([aria-checked='true']):not(:hover) {
+  background: transparent;
+  box-shadow: none;
+}
 html[data-look='reading-room'] .rr-card-actions [data-slot='button'] svg {
   width: 1.0625rem;
   height: 1.0625rem;
@@ -628,6 +634,11 @@ html[data-look='reading-room'] .rr-drawer.is-open {
 }
 html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-chev {
   transform: rotate(180deg);
+}
+/* under the open drawer the record is covered, so it's hidden: nothing of it (Share, in the column's gutter) shows past
+   the drawer's edge, and focus and screen readers don't wander into it */
+html[data-look='reading-room'] .rr-desk:has(> .rr-drawer.is-open) > .rr-ledger {
+  visibility: hidden;
 }
 html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-body {
   display: block;
