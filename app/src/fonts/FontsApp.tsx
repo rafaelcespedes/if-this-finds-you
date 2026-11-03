@@ -134,7 +134,7 @@ export function FontsApp() {
     const y = el.getBoundingClientRect().top + window.scrollY - (narrow ? 16 : 96);
     if (window.scrollY > y) window.scrollTo({ top: y, behavior: 'auto' });
   };
-  const newSet = () => { update({ set: newSetSeed(), view: 'set' }, true); listTop(); };
+  const newSet = () => { update({ set: newSetSeed(), view: 'set', hand: '' }, true); listTop(); };
   const setFilters = (filters: Filters, neatOnly?: boolean) => update({ filters, view: 'set', ...(neatOnly != null ? { neatOnly } : {}) });
   // Neat hands only back on: Messy (which needs it off) steps out of Tidy to wild
   const onNeatOnly = (v: boolean) => update({ neatOnly: v, view: 'set', ...(v && route.filters.tidy.includes('messy') ? { filters: { ...route.filters, tidy: route.filters.tidy.filter((x) => x !== 'messy') } } : {}) });
@@ -143,6 +143,9 @@ export function FontsApp() {
     update({ filters: { ...NO_FILTERS, ...route.filters, [key]: [value], ...family }, view: 'set' });
     listTop();
   }, [route.filters, catalogue]);
+
+  // a hand's record opens in place, one at a time, and the link keeps it
+  const onOpen = useCallback((id: string | null) => update({ hand: id ?? '' }), []);
 
   // Space draws a new set (when nothing that takes Space has focus)
   useEffect(() => {
@@ -221,7 +224,7 @@ export function FontsApp() {
           <ol ref={listRef} className="font-list" aria-label={route.view === 'saved' ? 'Saved hands' : 'Fonts'} aria-busy={!set.done}>
             {entries.map((e, i) => (
               <FontRow key={e?.id ?? `slot-${i}`} entry={e} index={i} text={rowText(e)} mode={route.mode} live={live} em={liveSize} lines={lines}
-                saved={!!e && savedIds.has(e.id)} compact={narrow} wide={wide} onTag={onTag} />
+                saved={!!e && savedIds.has(e.id)} compact={narrow} wide={wide} onTag={onTag} open={!!e && e.id === route.hand} onOpen={onOpen} />
             ))}
           </ol>
           <footer className="font-list-end">

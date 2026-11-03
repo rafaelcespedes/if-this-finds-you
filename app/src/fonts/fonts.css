@@ -403,3 +403,144 @@ html[data-look='reading-room'] .specimen-bar [data-slot='segmented-item'][data-s
 html[data-look='reading-room'] .specimen-bar > div:last-child {
   align-items: center;
 }
+
+/* ---------- a hand's record, opened in place under its specimen (Record.tsx): ruled rows, never boxes ---------- */
+.font-row-open {
+  border-radius: 3px;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .font-row-open:hover {
+    text-decoration-color: currentColor;
+  }
+}
+.font-row-open[aria-expanded='true'] {
+  text-decoration-color: currentColor;
+}
+.font-record {
+  display: grid;
+  gap: 0 2.5rem;
+  margin-top: 1.25rem;
+  padding-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--foreground);
+  animation: specimen-in 220ms var(--ease-out) both;
+}
+@media (min-width: 900px) {
+  .font-record {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  }
+  .font-record > .record-rows {
+    grid-row: span 3;
+  }
+}
+.record-rows {
+  margin: 0;
+  border-top: 1px solid var(--fonts-rule);
+}
+.record-rows > div {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding-block: 0.55rem;
+  border-bottom: 1px solid var(--fonts-rule);
+}
+.record-rows dt {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.record-rows dd {
+  margin: 0;
+}
+.record-sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.record-about {
+  padding-block: 0.55rem 0.9rem;
+  border-top: 1px solid var(--fonts-rule);
+  color: var(--foreground);
+  text-wrap: pretty;
+}
+.record-folds {
+  border-bottom: 1px solid var(--fonts-rule);
+}
+.record-folds > .record-fold:first-child {
+  border-top-color: var(--fonts-rule);
+}
+.record-sources {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  list-style: decimal;
+}
+.record-sources li::marker {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.record-source-name {
+  display: block;
+}
+/* every character, set in the hand's own font: the alternates show as a typist would see them */
+.record-charset {
+  font-size: 2rem;
+  line-height: 1.5;
+  color: var(--fonts-ink);
+  word-spacing: 0.15em;
+  font-feature-settings: 'calt' 1, 'kern' 1;
+  overflow-wrap: anywhere;
+}
+.record-wait,
+.record-note {
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+.record-wait {
+  padding-block: 0.75rem;
+}
+.record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-block: 1rem 0.25rem;
+}
+
+/* the record in the Reading Room: small-capital labels, the reading face, the room's rules */
+html[data-look='reading-room'] .font-record {
+  font-family: var(--rr-book, inherit);
+  font-size: 0.9688rem;
+}
+html[data-look='reading-room'] .record-rows dt {
+  font-family: var(--rr-caps, inherit);
+  font-size: 0.8438rem;
+  letter-spacing: 0.045em;
+  text-transform: lowercase;
+}
+html[data-look='reading-room'] .record-rows,
+html[data-look='reading-room'] .record-rows > div,
+html[data-look='reading-room'] .record-about,
+html[data-look='reading-room'] .record-folds,
+html[data-look='reading-room'] .record-folds > .record-fold {
+  border-color: var(--rr-rule, var(--fonts-rule));
+}
+html[data-look='reading-room'] .record-folds button[aria-expanded] > span:first-child {
+  font-family: var(--rr-caps, inherit);
+  font-weight: 400;
+  letter-spacing: 0.045em;
+  text-transform: lowercase;
+}
+html[data-look='reading-room'] .record-sub,
+html[data-look='reading-room'] .record-note,
+html[data-look='reading-room'] .record-wait {
+  color: var(--rr-muted, var(--text-muted));
+}
