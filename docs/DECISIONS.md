@@ -2,6 +2,14 @@
 
 Rafael's calls, newest first. Builders follow these. If one conflicts with a research recommendation, this log wins.
 
+## 2026-11-03
+
+### Type
+- **Interface: Atkinson Hyperlegible Next. Letters: Piazzolla.** "For now." Replaces Instrument Sans and Newsreader.
+  Both SIL OFL 1.1, so the font files can live in the public repo. Comparison of five pairings and the licence checks:
+  docs/research/type-system. Geist Serif (Vercel, Oct 2026) was considered and passed over: display only, one weight,
+  and Vercel's own brand.
+
 ## 2026-11-02
 
 ### Purpose (Rafael's own words, the frame for every other decision)
@@ -26,6 +34,9 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **Shared links autoplay the writing animation for the recipient.**
 
 ### Writers and variety
+- **The main button is "Find another"** (Rafael, 2026-11-02; replaces "New hand"). On a found letter it brings a new letter in
+  a new hand; "Change writer" (same letter, new hand) lives in the writer-name dropdown. On your own letter it finds
+  another writer for your text.
 - **Ugly is allowed.** "Some overlap and some ugliness is acceptable. A lot of handwritings are ugly. So unless
   it's a bug, don't fix it." Builders and QA fix only unintended behaviour (scaling mistakes, missing ink,
   clipping). They never beautify, normalise or tighten hands. QA guards catch only values a bug could produce.
@@ -40,6 +51,13 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **All letters controls: the timeline dock** (option 3, Rafael 2026-11-03): a floating dock with search and a
+  timeline of every letter by century. No count, no Shuffle. Next to explore: the letters floating on an infinite,
+  looping canvas around a centred heading (drag in any direction), on desktop and phones.
+- **Panel density:** controls one step tighter (shorter controls, 13.5 px text, 8 px corners, 320 px panel), but the roomier
+  spacing between sections stays (Rafael, 2026-11-02).
+- **Logo: wordmark #5** (Rafael, 2026-11-02; replaces #32 the same day): "If This Finds You" on one line in a Québec school
+  print, felt marker. #32 (stacked, Spanish copybook) stays viewable with `?logo=32`. Files and settings in brand/wordmark/.
 - **Name: "If This Finds You"** (Rafael, 2026-11-02, "for now"). It's how a message in a bottle begins: a letter
   that may never have arrived, and you're the one it found. Domain: ifthisfindsyou.app (Rafael is buying it
   himself; .com is taken). Light trademark check only (no live marks found); since it's open source and

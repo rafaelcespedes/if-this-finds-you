@@ -65,7 +65,7 @@ function useWindowHeight() {
   return h;
 }
 
-export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, onAdjusting, ...props }: Props) {
+export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onDragging, onAdjusting, ...props }: Props) {
   const safe = useSafeInsets();
   const ih = useWindowHeight();
   const peekRef = useRef<HTMLDivElement>(null);
@@ -83,6 +83,11 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
 
   const top = Math.round(safe.top + 8);
   const height = ih - top;
+  // a short screen (a phone held sideways): half the screen would be most of it, so the sheet goes straight
+  // to its full, scrolling height instead of a half one that can't scroll
+  const short = ih < 520;
+  const onDetent = useCallback((d: Detent) => setDetent(d === 'half' && short ? 'full' : d), [setDetent, short]);
+  const pillRef = useRef<HTMLButtonElement>(null);
   const vPeek = peekH + safe.bottom;
   const vHalf = Math.min(height, Math.max(vPeek + 230, Math.round(ih * 0.5)));
   const visibleAt = useCallback((d: Detent) => (d === 'peek' ? vPeek : d === 'half' ? vHalf : height), [vPeek, vHalf, height]);
@@ -112,7 +117,10 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
       if (t && /^(input|textarea|select)$/i.test(t.tagName)) return;
+      // focus goes back to what opened it, not to the page (the folded sheet is inert)
+      const inside = contentRef.current?.contains(document.activeElement);
       onDetent('peek');
+      if (inside) requestAnimationFrame(() => pillRef.current?.focus({ preventScroll: true }));
     };
     window.addEventListener('keydown', on);
     return () => window.removeEventListener('keydown', on);
@@ -138,6 +146,8 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
   // ---------- the drag ----------
   const suppressClick = useRef(false);
   const onPointerDown = (e: React.PointerEvent) => {
+    // a finger's drag never produces the click a mouse's does, so the flag never outlives a new press
+    suppressClick.current = false;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const t = e.target as HTMLElement;
     if (t.closest('input, textarea, select')) return;
@@ -172,7 +182,7 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
     if (!d || d.id !== e.pointerId) return;
     drag.current = null;
     if (!d.active) return;
-    suppressClick.current = e.type === 'pointerup';
+    suppressClick.current = e.type === 'pointerup' && e.pointerType === 'mouse';
     // velocity over the last moments (px per ms, positive downwards)
     const [t0, y0] = d.samples[0];
     const [t1, y1] = d.samples[d.samples.length - 1];
@@ -186,6 +196,20 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
     else onDetent(target);
     onDragging(null);
   };
+
+  // a keyboard moving through the sheet: open it fully (it scrolls there) and keep what has focus in view
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const on = (e: FocusEvent) => {
+      const t = e.target as HTMLElement;
+      if (!t.matches(':focus-visible')) return;
+      if (detent !== 'full') onDetent('full');
+      requestAnimationFrame(() => t.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+    };
+    el.addEventListener('focusin', on);
+    return () => el.removeEventListener('focusin', on);
+  }, [detent, onDetent]);
 
   // a control being slid at full height: the letter moves clear of it (see the sheet's CSS for the rest)
   useEffect(() => {
@@ -261,6 +285,7 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
         {/* the look, as a pull-up: a centred pill under the grabber's line of sight; its chevron says which way it goes */}
         <div className="flex justify-center pb-2">
           <button
+            ref={pillRef}
             type="button"
             aria-expanded={expanded}
             onClick={() => onDetent(expanded ? 'peek' : 'half')}

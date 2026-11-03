@@ -1,8 +1,29 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import '@fontsource-variable/instrument-sans';
 
 @custom-variant hover-device (@media (hover: hover) and (pointer: fine));
+
+/* The interface face: Atkinson Hyperlegible Next (Braille Institute, SIL OFL 1.1), chosen by Rafael on 3 Nov 2026
+   (docs/research/type-system). Declared here rather than through @fontsource's CSS so it can carry a size-adjust:
+   its x-height is 3% under Instrument Sans', which every size in the app was tuned for. */
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  size-adjust: 103%;
+  src: url('@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  size-adjust: 103%;
+  src: url('@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /* Warm stationery palette. The ink is the only accent: the UI is set in the same blue-black the hand writes with. */
 :root {
@@ -12,7 +33,7 @@
   --ink-soft: #2c3550;
   --text: #23211d;
   --text-muted: #6c685f;
-  --text-faint: #8f8a80;
+  --text-faint: #736e66; /* 4.5:1 on the panel and the desk (small grey text stays readable) */
   --panel: #f8f6f1;
   --hairline: #e2ddd2;
   --chip: #ece8df;
@@ -34,7 +55,7 @@
   --accent-foreground: var(--text);
   --border: var(--hairline);
   --input: #d6d0c3;
-  --ring: color-mix(in oklab, var(--ink) 42%, transparent);
+  --ring: color-mix(in oklab, var(--ink) 80%, transparent); /* the focus ring: well over 3:1 on desk and panel */
   --radius: 0.625rem;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -49,7 +70,7 @@
 }
 
 @theme inline {
-  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Atkinson Hyperlegible Next Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -81,7 +102,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     -webkit-text-size-adjust: 100%;
@@ -309,4 +330,16 @@ textarea {
   border-radius: 12px;
   background-color: var(--panel);
   box-shadow: 0 0 0 10px var(--panel), 0 14px 36px -6px rgba(40, 30, 10, 0.38);
+}
+
+/* Windows contrast themes: swatches keep their own colours, and what's chosen is outlined in the system's
+   highlight (the app's own rings and fills are dropped in forced colours) */
+@media (forced-colors: active) {
+  .swatch { forced-color-adjust: none; }
+  [data-slot='segmented-item'][aria-checked='true'],
+  [role='radio'][aria-checked='true'],
+  [role='radio'][aria-pressed='true'],
+  [aria-pressed='true'] { outline: 2px solid Highlight; outline-offset: 2px; }
+  [data-slot='button'] { border: 1px solid ButtonText; }
+  [role='switch'] { border: 1px solid ButtonText; }
 }

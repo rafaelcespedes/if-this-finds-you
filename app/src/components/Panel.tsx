@@ -151,7 +151,11 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           align="start"
           sideOffset={8}
           collisionPadding={12}
-          className="z-50 w-[min(320px,calc(100vw-24px))] origin-(--radix-popover-content-transform-origin) rounded-2xl border border-border bg-[#fdfcf9] p-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
+          // small phones and sideways: never taller than the room the screen has (it scrolls), and a swipe on it
+          // scrolls it rather than dragging the sheet it opened from (React events bubble through the portal)
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+          className="z-50 max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-24px))] w-[min(320px,calc(100vw-24px))] origin-(--radix-popover-content-transform-origin) overflow-y-auto overscroll-contain rounded-2xl border border-border bg-[#fdfcf9] p-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
         >
           <div style={{ color: inkColor(state.ink) }}>
             <Signature p={p} name={name} ink="currentColor" emPx={30} className="-ml-1 h-[46px] overflow-visible" />
@@ -391,7 +395,8 @@ function learnedFrom(style: string) {
   const [fam] = styleName(style).split(':');
   const card = styleCard(style);
   if (card.title === 'Everyday') return `Everyday ${fam.toLowerCase()}, ${card.sub.toLowerCase()}`;
-  return `${card.title} (${fam.toLowerCase()})${card.sub ? `, ${card.sub}` : ''}`;
+  const named = card.title.toLowerCase() === fam.toLowerCase() ? card.title : `${card.title} (${fam.toLowerCase()})`;
+  return `${named}${card.sub ? `, ${card.sub}` : ''}`;
 }
 
 /** A source and its credit, without saying the title twice ("Spencer, Compendium…" then "Platt Rogers Spencer, Compendium…"). */
@@ -540,7 +545,7 @@ function Switch({ label, hint, tip, checked, onChange }: { label: string; hint?:
         onClick={() => onChange(!checked)}
         className={cn(
           "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring after:absolute after:-inset-2 after:content-['']",
-          checked ? 'bg-[var(--ink)]' : 'bg-[#dcd6ca]',
+          checked ? 'bg-[var(--ink)]' : 'bg-[#dcd6ca] shadow-[inset_0_0_0_1.5px_#8a8478]',
         )}
       >
         <span
@@ -790,7 +795,7 @@ const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value
             >
               <span className="relative block overflow-hidden rounded-[5px] shadow-[0_0_0_0.5px_rgba(60,45,20,0.16),0_1px_2px_rgba(60,45,20,0.08)] transition-shadow duration-150">
                 {/* flat: the sheet's own colour (the name under it tells near-whites apart) */}
-                <span className="block aspect-[4/3] w-full" style={{ background: paper.tint }} />
+                <span className="swatch block aspect-[4/3] w-full" style={{ background: paper.tint }} />
               </span>
               <span className="truncate px-0.5 text-center leading-tight">{paper.name}</span>
             </SegmentedItem>
@@ -832,7 +837,7 @@ const InkPicker = memo(function InkPicker({ value, pen, onChange }: { value: str
               className="size-8 rounded-full p-0 aria-checked:bg-transparent aria-checked:shadow-none pointer-coarse:size-11"
             >
               <span
-                className="block size-[22px] rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-offset-2 ring-offset-panel transition-[box-shadow] duration-150 [[aria-checked=true]>&]:ring-[1.5px] [[aria-checked=true]>&]:ring-[var(--ink)]"
+                className="swatch block size-[22px] rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-offset-2 ring-offset-panel transition-[box-shadow] duration-150 [[aria-checked=true]>&]:ring-[1.5px] [[aria-checked=true]>&]:ring-[var(--ink)]"
                 style={{
                   // flat colours, like the rest of the panel; the pen's own ink is two of its usual colours, split
                   background: ink.color || 'linear-gradient(135deg, #263084 50%, #26262e 50%)',

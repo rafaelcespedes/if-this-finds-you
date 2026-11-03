@@ -9,21 +9,37 @@ Run it with the app (`cd app && npm run dev`) and open **/letters.html**.
 
 ## Pages
 
-- **Index** (`Index.tsx`, `Card.tsx`, `Controls.tsx`): "All letters" written in the logo's hand (#5,
-  `all-letters.svg`, drawn by `heading.mjs` with brand/wordmark/wordmark.mjs), then every letter as the letter
-  itself: a sheet of its paper with the letter written on it in its own hand, flat on the page (no shadow, nothing
-  behind it), a touch askew, and its title underneath (in the letter face). Who wrote it, where and when are in the
-  link's hover title and its screen-reader text. Masonry: three columns on wide screens, two from a phone up; each
-  card goes into the shortest column, in reading order, so Tab follows the eye.
-  Browsing controls stay small (research and reasoning in `CONTROLS.md`), three arrangements to compare with
-  `?toolbar=1…3`: 1 search and Shuffle icons in the heading plus a one-sentence filter ("127 letters from any time
-  in any language"); 2 a floating dock like the tool's right panel (the default); 3 the dock with a timeline of
-  every letter by century as the era filter. Search starts folded to an icon; `/` opens it; Esc clears, then closes.
-- **Letter** (`LetterPage.tsx`, loaded on demand with the engine): the whole letter written out in front of you
-  (the tool's reader: `ReaderSheets`, engine `timeline` + `playSVG`, about 3x, a tap or key finishes it), the
-  provenance (story, writer, recipient, place, date, source, rights, translator), Read it as text, and Write a
-  reply, Another (random), Share, Image (JPEG). **Previous / Next** (header, ← →, or a sideways swipe on phones)
-  turn through the letters the index was showing. New hand and Keep this hand change the writer. Esc goes back.
+- **Index**, two views to compare with `?view=canvas|grid` (kept for the tab, never in share links):
+  - **canvas** (`Canvas.tsx`, the default): the letters scattered like paper on a table around "All letters"
+    (written in the logo's hand, `all-letters.svg` from `heading.mjs`) and the intro, a field that loops in every
+    direction. Drag or swipe (with a glide), trackpad or wheel, arrow keys; a tap opens a letter, a drag never does.
+    One wrapped tile, larger than the screen, so each letter shows at most once; only the letters near the screen
+    are on the page, and moving updates their positions directly. A search or a century regathers the matching
+    letters around the heading. Tab brings each letter into view; "Show the letters as a list" (first in Tab
+    order) switches to the grid. Reduced motion: no glide.
+  - **grid** (`Index.tsx`, `Card.tsx`): the masonry: three columns on wide screens, two from a phone up, each card
+    into the shortest column, in reading order.
+  Every card is the letter itself: a sheet of its paper in its own hand, flat on the page (no shadow, nothing behind
+  it), a touch askew, and its title (in the letter face). Who wrote it, where and when are in the link's hover
+  title and its screen-reader text.
+  Browsing controls stay small (research and reasoning in `CONTROLS.md`), three arrangements with
+  `?toolbar=1…3`: 1 a search icon in the heading plus a one-sentence filter (grid view only); 2 a floating dock with
+  Era and Language menus; 3 the dock with a timeline of every letter by century (the default). No Shuffle and no
+  count on screen; screen readers hear the count after each change. Search starts folded to an icon; `/` opens
+  it; Esc clears, then closes.
+- **Letter** (`LetterPage.tsx`, `LetterParts.tsx`, loaded on demand with the engine): a quiet reading page. The
+  letter written out in front of you is the hero (the tool's reader: `ReaderSheets`, engine `timeline` +
+  `playSVG`, about 3x, a tap or key finishes it). The words around it are editorial, in the letter face: title,
+  an italic dateline (who to whom), where and when, the story, the record (written by, to, from, when, language,
+  translator), the letter as text, and numbered notes for the source, the rights and the fictional hand.
+  Everything you can do sits in one floating dock (the library's and the tool's right panel's family):
+  Previous / Next (also ← →, and a sideways swipe on phones), Another hand, Share, More (read it as text, save as
+  an image, a letter at random) and Write a reply. "In Ilse Pryor's hand ⌄" under the sheet holds Another hand,
+  Write it out again and Keep this hand (the tool's writer-dropdown pattern). Two layouts to compare with
+  `?detail=1|2`: 1 side by side (the letter left, the reading right), 2 letter first, one column (the default).
+  Esc goes back to all letters.
+
+Colours, sizes and surfaces for the library are `--lib-*` tokens at the top of `archive.css`.
 
 Everything is in the URL hash (`route.ts`), so every view can be shared and Back works.
 
@@ -50,10 +66,11 @@ the worker build. The workers start (and warm up the engine) while the letters J
 
 ## The letter face (`serif.ts`)
 
-A serif beside Instrument Sans for the letters' own words: card titles, and on a letter page the title, the story,
-the record and the text. Newsreader by default, and three to compare in place, `?serif=1…4` (kept for the tab,
-never in share links), only the chosen one loaded, all SIL Open Font License 1.1 via @fontsource:
-1. Newsreader (the default), 2. Source Serif 4, 3. Literata, 4. Fraunces (soft cut, the warmest).
+A serif beside Atkinson Hyperlegible Next (the interface face) for the letters' own words: card titles, and on a
+letter page the title, the story, the record and the text. Piazzolla by default (Rafael, 3 Nov 2026; the comparison is
+in `docs/research/type-system`), and four to compare in place, `?serif=1…5` (kept for the tab, never in share links),
+only the chosen one loaded, all SIL Open Font License 1.1 via @fontsource:
+1. Newsreader, 2. Source Serif 4, 3. Literata, 4. Fraunces (soft cut, the warmest), 5. Piazzolla (the default).
 
 `window.__lostLetters.stats` has the timings (first card written and shown, per-card render times, cache hits).
 

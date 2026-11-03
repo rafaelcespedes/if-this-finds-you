@@ -213,7 +213,9 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     const el = e.currentTarget;
     setPointerSel(false);
     if (e.key === 'Escape') {
+      // writing stops, but focus stays on the letter, so Tab carries on from here (not from the page's top)
       el.blur();
+      wrap.current?.focus({ preventScroll: true });
       sync();
       return;
     }
@@ -314,7 +316,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       ref={wrap}
       role="group"
       aria-label="Letter"
-      className="relative mx-auto cursor-text touch-manipulation"
+      tabIndex={-1}
+      className="relative mx-auto cursor-text touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-ring"
       style={{ width: sheetW * pxPerMm }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
