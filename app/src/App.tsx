@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME } from '@/lib/brand';
@@ -282,11 +282,20 @@ export default function App() {
   const [wrote, setWrote] = useState(() => readPref('seedhand:wrote') === '1');
   const [idleLong, setIdleLong] = useState(false);
   useEffect(() => {
-    if (wrote || !isDesktop || state.reader) return;
+    if (wrote || state.reader) return;
     const t = window.setTimeout(() => setIdleLong(true), 9000);
     return () => window.clearTimeout(t);
-  }, [wrote, isDesktop, state.reader]);
-  const hintShown = isDesktop && idleLong && !wrote && !editing && !state.reader && !replying;
+  }, [wrote, state.reader]);
+  const hintShown = idleLong && !wrote && !editing && !state.reader && !replying;
+  // the first time you write on a desktop: how to stop, once, for a few seconds
+  const [escHint, setEscHint] = useState(false);
+  useEffect(() => {
+    if (!editing || !isDesktop || readPref('seedhand:esc-taught') === '1') return;
+    writePref('seedhand:esc-taught', '1');
+    setEscHint(true);
+    const t = window.setTimeout(() => setEscHint(false), 4500);
+    return () => window.clearTimeout(t);
+  }, [editing, isDesktop]);
   /** beside the sheet when the desk has room for it, else on the label's line */
   const hintBeside = stageW > 0 && (stageW - shownPaper.w * pxPerMm) / 2 >= 124;
   const foundName = (l: { author: string; year?: number }) => `${shortAuthor(l.author)}${l.year ? `, ${l.year}` : ''}`;
@@ -764,9 +773,8 @@ export default function App() {
                   Write your own
                 </button>
               ) : (
-                <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
-                  {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : isDesktop ? '' : coarse ? 'Tap the letter to write' : 'Click the letter to write on it'}
-                </span>
+                // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state
+                <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : ''}</span>
               )}
               {/* the found letters, all of them (the archive) */}
               <a
@@ -838,21 +846,33 @@ export default function App() {
                         </button>
                       </AboutHand>
                       <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 220)} className="mb-3" />
-                      {hintShown && hintBeside === false && (
-                        <span className="mb-3 animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">Click the letter to write on it</span>
+                      {((hintShown && !hintBeside) || (escHint && !hintBeside)) && (
+                        <span key={escHint ? 'esc' : 'click'} className="mb-3 animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">
+                          {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
+                        </span>
                       )}
                     </div>
                   ) : (
                     <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
                   )}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
-                  {hintShown && hintBeside && (
+                  {isDesktop && (hintShown || escHint) && hintBeside && (
                     <div
+                      key={escHint ? 'esc' : 'click'}
                       aria-hidden
                       className="pointer-events-none absolute top-36 right-full mr-3 flex w-[108px] animate-in items-center gap-1.5 rounded-xl bg-panel px-2.5 py-2 text-[12px] leading-snug text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_8px_20px_-10px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-left-1 duration-700"
                     >
-                      Click the letter to write on it
-                      <ArrowRight className="size-3.5 shrink-0" />
+                      {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
+                      {!escHint && <ArrowRight className="size-3.5 shrink-0" />}
+                    </div>
+                  )}
+                  {/* phones: a ghost in the sheet's top margin, pointing in (never over the label, never near the sheet below) */}
+                  {!isDesktop && hintShown && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700"
+                    >
+                      <Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write
                     </div>
                   )}
                 </div>

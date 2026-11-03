@@ -255,18 +255,23 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
           </Button>
           <ShareMenu {...props} />
         </div>
-        <div className="flex min-h-9 items-center gap-2 pb-2.5">
-          <LetterStatus {...props} compact className="min-w-0 flex-1 pl-1" />
-          {!expanded && (
-            <button
-              type="button"
-              onClick={() => onDetent('half')}
-              className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[12.5px] font-medium text-foreground transition-colors duration-150 select-none pointer-coarse:py-2.5"
-            >
+        {/* the ways to the other letters, when there are any (Find another brings the next found letter) */}
+        {props.letter && (!props.letter.found || props.letter.drafts > 0) && (
+          <LetterStatus {...props} compact className="min-w-0 pb-1 pl-1" />
+        )}
+        {/* the look, as a pull-up: a centred pill under the grabber's line of sight; its chevron says which way it goes */}
+        <div className="flex justify-center pb-2">
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => onDetent(expanded ? 'peek' : 'half')}
+            className="group inline-flex h-11 items-center px-2 select-none focus-visible:outline-none"
+          >
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-secondary px-3.5 text-[12.5px] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
               Paper, pen & ink
-              <ChevronUp aria-hidden className="size-3.5 text-muted-foreground" />
-            </button>
-          )}
+              <ChevronUp aria-hidden className={cn('size-3.5 text-muted-foreground transition-transform duration-300 ease-[var(--ease-drawer)]', expanded && 'rotate-180')} />
+            </span>
+          </button>
         </div>
       </div>
 
