@@ -331,8 +331,18 @@ html[data-look='reading-room'] [data-site-number] {
    their size is the shared header's own */
 html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]) {
   border-color: transparent;
-  background: transparent;
   box-shadow: none;
+}
+html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]):not(:hover, :active, [data-state='open']) {
+  background: transparent;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]):hover {
+    background: var(--st-hover);
+  }
+}
+html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]):is(:active, [data-state='open']) {
+  background: var(--st-press);
 }
 /* with no box, the Menu's lines end where the running head's rule ends */
 html[data-look='reading-room'] [data-site-header] [data-site-chip] {
@@ -863,11 +873,12 @@ html[data-look='reading-room'] :is(.control-sheet, .sheet-surface) {
   background: var(--rc-surface-1);
 }
 html[data-look='reading-room'] :is(.sheet-surface, .control-sheet) .sheet-row:active {
-  background: var(--rc-ctl-press);
+  background: var(--st-press);
 }
 /* the controls you operate: fills, edges, the held-down state */
 html[data-look='reading-room'] :is(
     [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+    [data-slot='segmented-item'][data-chip],
     [role='radiogroup']:is([aria-label='Pen'], [aria-label='School']) > button,
     [data-slot='button'].bg-secondary
   ):not([aria-checked='true']) {
@@ -877,10 +888,11 @@ html[data-look='reading-room'] :is(
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] :is(
       [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+      [data-slot='segmented-item'][data-chip],
       [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
       [data-slot='button'].bg-secondary
     ):not([aria-checked='true']):hover {
-    background-color: var(--rc-ctl-hover);
+    background-color: var(--st-hover);
   }
 }
 html[data-look='reading-room'] :is(
@@ -888,7 +900,7 @@ html[data-look='reading-room'] :is(
     [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
     [data-slot='button'].bg-secondary
   ):not([aria-checked='true']):not([data-state='on']):active {
-  background-color: var(--rc-ctl-press);
+  background-color: var(--st-press);
 }
 /* Print / Joined: its track is a control at rest, its chosen half the chosen face */
 html[data-look='reading-room'] [data-slot='segmented']:not(.bg-transparent):not([aria-label='Ink']):not([aria-label='Paper']):not([aria-label^='Kind of']) {
@@ -973,9 +985,6 @@ html[data-look='reading-room'] .sheet-surface .sheet-title {
 html[data-look='reading-room'] .sheet-surface .sheet-row {
   border-radius: 0;
   border-top: 1px solid var(--rr-rule);
-}
-html[data-look='reading-room'] .sheet-surface .sheet-row:active {
-  background: color-mix(in oklab, var(--rr-ink) 6%, transparent);
 }
 /* between groups, a little space: the rows' own rules do the separating */
 html[data-look='reading-room'] .sheet-surface [role='presentation'][class*='h-px'] {
@@ -1321,9 +1330,6 @@ html[data-look='reading-room'] .dock-primary {
     text-decoration-color: currentColor;
   }
 }
-html[data-look='reading-room'] .dock-primary:active {
-  transform: translateY(0.5px);
-}
 @media (max-width: 380px) {
   html[data-look='reading-room'] .dock-primary {
     padding-inline: 6px;
@@ -1492,9 +1498,30 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
     --rr-hair: color-mix(in oklab, var(--rr-ink) 60%, transparent);
   }
 }
+/* pressed, every control answers, phones included (the tap highlight is off everywhere): icons and quiet words on the
+   ink press wash, red words on their red one in the deeper red (red on the ink wash would be 4.4:1) */
+html[data-look='reading-room'] :is(.rr-icon, .rr-dock-word):active {
+  background: var(--st-press);
+  scale: var(--st-scale);
+  transition-duration: var(--dur-press);
+}
+html[data-look='reading-room'] :is(.rr-dock-reply, .dock-primary, .control-sheet .rr-bring, .rr-hand-link):active {
+  color: var(--rr-red-deep);
+  background: var(--st-accent);
+}
+html[data-look='reading-room'] .control-sheet button[aria-expanded]:active > span[data-pill] {
+  background: var(--st-press);
+}
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
   html[data-look='reading-room'] .rr-dock {
     border: 1px solid CanvasText;
+  }
+  /* (at the desk button's own weight, which a plainer selector loses to) */
+  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring, .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary.bg-secondary) {
+    border: 1px solid ButtonText;
+  }
+  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring, .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary.bg-secondary):hover {
+    outline: 1px solid Highlight;
   }
 }
