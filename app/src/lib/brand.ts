@@ -27,4 +27,10 @@ export const logoSrc = LOGO === '5' ? `${base}brand/wordmark-5.svg` : `${base}br
 export const logoHeight = LOGO === '5' ? 'h-[19px] lg:h-[22px]' : 'h-[22px] lg:h-[26px]';
 export const faviconSrc = LOGO === '5' ? `${base}brand/favicon-5.svg` : `${base}brand/favicon.svg`;
 /** The library link, keeping a logo that isn't the default. */
-export const withLogo = (href: string) => (LOGO === '5' ? href : `${href}${href.includes('?') ? '&' : '?'}logo=${LOGO}`);
+/** A link to our other pages, keeping the comparison switches that aren't the default (logo, density). */
+export const withLogo = (href: string) => {
+  const q: string[] = [];
+  if (LOGO !== '5') q.push(`logo=${LOGO}`);
+  try { if (sessionStorage.getItem('seedhand:density') === 'current') q.push('density=current'); } catch { /* fine */ }
+  return q.length ? `${href}${href.includes('?') ? '&' : '?'}${q.join('&')}` : href;
+};
