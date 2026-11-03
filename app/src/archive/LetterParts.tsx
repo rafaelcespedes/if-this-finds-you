@@ -27,7 +27,7 @@ function readDetail(): DetailId {
 export const DETAIL: DetailId = typeof location !== 'undefined' ? readDetail() : '2';
 
 // ---------- menus (the tool's dropdown: WritingMenu.tsx) ----------
-const itemCls = 'flex min-h-10 cursor-default items-center gap-3 rounded-[10px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent pointer-coarse:min-h-11';
+const itemCls = 'flex min-h-10 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent pointer-coarse:min-h-11';
 
 function MenuContent({ children, side = 'top', align = 'end' }: { children: ReactNode; side?: 'top' | 'bottom'; align?: 'start' | 'center' | 'end' }) {
   return (
@@ -127,7 +127,7 @@ export function LetterDock(a: DockActions) {
           </MenuContent>
         </DropdownMenu.Root>
         {/* no divider before the reply: a filled button separates itself */}
-        <Button asChild className="ml-1 h-9 rounded-xl px-3.5 pointer-coarse:h-10">
+        <Button asChild className="ml-1 h-9 rounded-sm px-3.5 pointer-coarse:h-10">
           <a href={a.reply}><PenLine aria-hidden /> {narrow ? 'Reply' : 'Write a reply'}</a>
         </Button>
       </div>

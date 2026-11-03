@@ -8,7 +8,7 @@
     0 0 0 0.5px rgba(60, 45, 20, 0.08),
     0 1px 2px rgba(60, 45, 20, 0.08),
     0 12px 32px -12px rgba(60, 45, 20, 0.3);
-  --lib-menu-surface: color-mix(in oklab, #fdfcf9 96%, transparent);
+  --lib-menu-surface: color-mix(in oklab, var(--popover) 96%, transparent);
   --lib-menu-border: var(--border);
   --lib-menu-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 16px 40px -12px rgba(40, 30, 10, 0.35);
   /* the reading: the letter face (serif.ts sets --font-letter and --letter-scale), sizes, colours, measure */
@@ -23,7 +23,7 @@
   /* the quietest text that still reads: 4.5:1 on the page, 5:1 on the dock (the tool's --text-faint is 2.9:1, for
      decoration only) */
   --lib-text-faint: #6f6a62;
-  --lib-accent: var(--ink);
+  --lib-accent: var(--mark); /* Rubric: datelines, footnote numbers, menu ticks */
   --lib-rule: var(--hairline);
   --lib-measure: 36rem;
 }
@@ -61,7 +61,7 @@
   }
   .archive-card:hover h3 {
     text-decoration: underline;
-    text-decoration-color: #cfc8b9;
+    text-decoration-color: var(--rule-link);
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
   }
@@ -96,7 +96,7 @@
 .archive-field {
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fdfcf9;
+  background: var(--field);
   color: var(--foreground);
   box-shadow: 0 1px 1px rgba(60, 45, 20, 0.04);
   transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out);
@@ -127,7 +127,7 @@ select.archive-field {
 /* the letter page: the provenance text */
 .provenance dd a {
   text-decoration: underline;
-  text-decoration-color: #cfc8b9;
+  text-decoration-color: var(--rule-link);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   transition: text-decoration-color 150ms var(--ease-out), color 150ms var(--ease-out);
@@ -185,7 +185,7 @@ select.archive-field {
 .sentence-pick > span:first-child {
   color: var(--foreground);
   text-decoration: underline;
-  text-decoration-color: #cfc8b9;
+  text-decoration-color: var(--rule-link);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
@@ -387,7 +387,7 @@ select.archive-field {
 @media (hover: hover) and (pointer: fine) {
   .canvas-item .archive-card:hover .canvas-title {
     text-decoration: underline;
-    text-decoration-color: #cfc8b9;
+    text-decoration-color: var(--rule-link);
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
   }

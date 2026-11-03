@@ -55,7 +55,7 @@ export const PenSwatches = memo(function PenSwatches({ seed, style, pen, penSize
             onClick={() => onPen(c.id)}
             className={cn(
               'flex w-[78px] shrink-0 snap-start flex-col items-center gap-0.5 rounded-xl px-1.5 pt-1.5 pb-1.5 transition-[background-color,box-shadow] duration-150 ease-out select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.97] motion-reduce:active:scale-100',
-              on ? 'bg-[#fffefb] shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)]' : 'bg-secondary hover-device:hover:bg-accent',
+              on ? 'bg-[var(--tile-on)] shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)]' : 'bg-secondary hover-device:hover:bg-accent',
             )}
           >
             <Specimen
@@ -92,7 +92,7 @@ export const TipChoice = memo(function TipChoice({ value, ink, onChange }: { val
             onClick={() => onChange(s.id)}
             className={cn(
               'relative flex h-9 w-14 flex-col items-center justify-center rounded-lg transition-[background-color,box-shadow] duration-150 ease-out select-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:h-11 pointer-coarse:w-[52px]',
-              on ? 'bg-[#fffefb] shadow-[0_0_0_1.5px_var(--ink)]' : 'hover-device:hover:bg-accent',
+              on ? 'bg-[var(--tile-on)] shadow-[0_0_0_1.5px_var(--ink)]' : 'hover-device:hover:bg-accent',
             )}
           >
             <svg aria-hidden viewBox="0 0 36 12" className="h-3 w-9 overflow-visible" style={{ color: ink }}>

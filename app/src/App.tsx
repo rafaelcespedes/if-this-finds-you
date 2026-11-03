@@ -882,7 +882,7 @@ export default function App() {
             <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
             <span className={cn('flex min-w-0 gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
               {reader ? (
-                <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
+                <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[var(--rule-link)] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                   Write your own
                 </button>
               ) : (

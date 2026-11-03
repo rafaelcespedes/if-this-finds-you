@@ -8,9 +8,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_1px_2px_rgba(20,24,40,0.25)] hover-device:hover:bg-[var(--ink-soft)]',
+        // Rubric: flat warm black, no shadow, like ink on paper; it lifts to brown-black under the pointer and goes to true black when held
+        default: 'bg-primary text-primary-foreground hover-device:hover:bg-[var(--ink-soft)] active:bg-[var(--ink-press)]',
         secondary: 'bg-secondary text-secondary-foreground hover-device:hover:bg-accent',
-        outline: 'border border-border bg-[#fdfcf9] text-foreground shadow-[0_1px_1px_rgba(60,45,20,0.04)] hover-device:hover:bg-[#f4f1ea]',
+        outline: 'border border-border bg-[var(--field)] text-foreground hover-device:hover:bg-[var(--chip)]',
         ghost: 'text-foreground hover-device:hover:bg-accent',
         link: 'h-auto px-0 text-muted-foreground underline-offset-4 hover-device:hover:text-foreground hover-device:hover:underline active:scale-100',
       },
