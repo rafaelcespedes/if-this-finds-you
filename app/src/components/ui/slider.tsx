@@ -28,6 +28,7 @@ function Slider({
   const max = props.max ?? 100;
   const step = props.step ?? 1;
   const value = (props.value ?? props.defaultValue ?? [min])[0];
+  const valuePct = ((value - min) / (max - min || 1)) * 100;
   const markPct = mark == null ? null : Math.min(100, Math.max(0, ((mark - min) / (max - min || 1)) * 100));
   const [active, setActive] = React.useState(false);
   const touch = React.useRef<{ id: number; x: number; y: number; v: number; w: number; sliding: boolean; last: number } | null>(null);
@@ -143,6 +144,8 @@ function Slider({
     <SliderPrimitive.Root
       data-slot="slider"
       data-active={active ? '' : undefined}
+      // controls research #1: where the value line would run into the name (left) or the word (right)
+      data-edge={valuePct < 24 || valuePct > 70 ? '' : undefined}
       className={cn('relative flex h-5 w-full touch-none select-none items-center pointer-coarse:h-11 data-[disabled]:opacity-45', className)}
       onDoubleClick={onReset}
       ref={rootRef}

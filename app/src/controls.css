@@ -32,7 +32,7 @@
   background-color: var(--chip) !important;
 }
 :root[data-controls~='1'] [data-slot='slider'] > span:first-child > span {
-  background-color: color-mix(in oklab, var(--mark) 13%, var(--chip)) !important;
+  background-color: color-mix(in oklab, var(--text) 9%, var(--chip)) !important;
 }
 /* tens marks, faint, on hover or while held */
 :root[data-controls~='1'] [data-slot='slider'] > span:first-child::after {
@@ -65,6 +65,10 @@
 }
 :root[data-controls~='1'] [data-slot='slider'] [role='slider']::after {
   inset: -8px -10px;
+}
+/* near the name or the word the line steps back so the words stay readable (DialKit's value dodge) */
+:root[data-controls~='1'] [data-slot='slider'][data-edge]:not(:hover):not([data-active]) [role='slider'] {
+  background: color-mix(in oklab, var(--mark) 22%, transparent);
 }
 /* the writer's own value: a short tick in the bar */
 :root[data-controls~='1'] [data-slot='slider'] > span[aria-hidden] {
