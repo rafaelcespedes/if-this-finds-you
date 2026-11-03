@@ -12,6 +12,7 @@ import type { PaperSpec } from './types';
 import type { Ctx2D } from './paint';
 import { rng } from './rng';
 import { outlineOf, outlinePath } from './outline';
+import { paintAdornment, type AdornKind } from './adorn';
 
 export type MarkLook = 'reading-room' | 'postmarked' | 'default';
 
@@ -30,11 +31,17 @@ export interface MarkInput {
   look: MarkLook;
   /** force one badge kind (1-6) for review; the URL's ?badge=N does the same */
   badge?: number | null;
+  /** the letter's provenance and kind, for the marks of its era (adorned set) */
+  origin?: string | null;
+  kind?: string | null;
+  /** plain, organic or adorned (else the URL's ?marks=, else the default) */
+  mode?: MarkMode;
 }
 
 /** 1 double-ring datestamp · 2 ring with bars · 3 receipt oval · 4 registry box · 5 straight-line mark · 6 pencil note */
 export type BadgeKind = 1 | 2 | 3 | 4 | 5 | 6;
-type Kind = 'datestamp' | 'duplex' | 'oval' | 'registry' | 'line' | 'pencil' | 'number' | 'cancel';
+type Kind = 'datestamp' | 'duplex' | 'oval' | 'registry' | 'line' | 'pencil' | 'number' | 'cancel' | 'folio' | AdornKind;
+const ADORN = new Set<Kind>(['fold', 'seal', 'pin', 'clip', 'fox', 'tide']);
 const BADGES: Kind[] = ['datestamp', 'duplex', 'oval', 'registry', 'line', 'pencil'];
 
 export interface Mark {
@@ -57,6 +64,41 @@ export interface Mark {
   /** a second, faint strike (the stamp bounced), offset in mm */
   bounce: [number, number] | null;
   seed: string;
+  /** an adornment's numbers (a fold's creases, foxing's spots) */
+  data?: number[];
+  /** how this impression went wrong, if it did (the organic set; most marks have none) */
+  flaws?: Flaw[];
+  /** the numbering machine's wheels: which one sat a hair off (mm, + is low) and how much ink each figure took */
+  wheel?: { at: number; dy: number; ink: number[] };
+}
+
+/**
+ * What can go wrong with a hand stamp: the ink feathering into the fibres, an over-inked stamp filling its counters,
+ * a starved one breaking where it rocked, a faint second strike, a thumb smudge, the pad's weave in the fill, and
+ * for the numbering machine a wheel sitting off its line.
+ */
+export type Flaw = 'bleed' | 'fill' | 'starved' | 'ghost' | 'smudge' | 'pad' | 'wheel';
+
+/**
+ * Which marks print: 'plain' (clean impressions), 'organic' (a seeded minority hand-applied, with one or two flaws) or
+ * 'adorned' (organic, plus the small marks of the letter's era: folds, a pin's rust, an endorsement, a foliation).
+ * ?marks=plain|organic|adorned in the URL picks one for the session.
+ */
+export type MarkMode = 'plain' | 'organic' | 'adorned';
+export const DEFAULT_MARK_MODE: MarkMode = 'plain';
+const MODES: MarkMode[] = ['plain', 'organic', 'adorned'];
+let urlMode: MarkMode | null | undefined;
+export function markMode(input?: Pick<MarkInput, 'mode'>): MarkMode {
+  if (input?.mode) return input.mode;
+  if (urlMode === undefined) {
+    try {
+      const q = new URLSearchParams(location.search).get('marks') as MarkMode;
+      urlMode = MODES.includes(q) ? q : null;
+    } catch {
+      urlMode = null;
+    }
+  }
+  return urlMode ?? DEFAULT_MARK_MODE;
 }
 
 export interface MarkPlan {
@@ -93,11 +135,19 @@ const BOX: Record<Kind, [number, number, number, number]> = {
   pencil: [-1.05, 1.05, -0.22, 0.22],
   number: [-0.9, 0.9, -0.25, 0.25],
   cancel: [-0.73, 0.73, -0.22, 0.22],
+  folio: [-0.5, 0.5, -0.3, 0.3],
+  // adornments (painted into the paper; these boxes keep other marks off them)
+  fold: [0, 0, 0, 0],
+  seal: [-0.6, 0.6, -0.6, 0.6],
+  pin: [-0.75, 0.75, -0.3, 0.3],
+  clip: [-0.2, 0.2, 0, 1],
+  fox: [0, 0, 0, 0],
+  tide: [0, 0, 0, 0],
 };
 /** the duplex's bars, which must never cross the writing */
 const BARS: [number, number, number, number] = [0.3, 1.2, -0.42, 0.42];
 /** how far each kind tilts, degrees */
-const TILT: Record<Kind, number> = { datestamp: 15, duplex: 15, oval: 15, registry: 8, line: 8, pencil: 3, number: 8, cancel: 8 };
+const TILT: Record<Kind, number> = { datestamp: 15, duplex: 15, oval: 15, registry: 8, line: 8, pencil: 3, number: 8, cancel: 8, folio: 2, fold: 0, seal: 0, pin: 0, clip: 0, fox: 0, tide: 0 };
 const RINGS = new Set<Kind>(['datestamp', 'duplex']);
 
 type Box = [number, number, number, number];
@@ -113,6 +163,28 @@ function boxAt(local: Box, size: number, rot: number, x: number, y: number): Box
 }
 const overlapArea = (a: Box, b: Box) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
 const area = (a: Box) => (a[2] - a[0]) * (a[3] - a[1]);
+
+/** Whether a mark's box (inset half a millimetre) lies on the sheet: inside its outline and clear of its holes. */
+function onSheet(o: { pts: number[]; holes: { x: number; y: number; r: number }[] }, local: Box, size: number, rot: number, x: number, y: number) {
+  const c = Math.cos(rot), s = Math.sin(rot);
+  const [l, r, t, b] = local;
+  const inset = 0.5 / Math.max(1, size);
+  for (const [u, v] of [[l, t], [r, t], [r, b], [l, b], [(l + r) / 2, t], [(l + r) / 2, b], [l, (t + b) / 2], [r, (t + b) / 2]]) {
+    const uu = u + (u < (l + r) / 2 ? inset : u > (l + r) / 2 ? -inset : 0), vv = v + (v < (t + b) / 2 ? inset : v > (t + b) / 2 ? -inset : 0);
+    const px = x + (uu * c - vv * s) * size, py = y + (uu * s + vv * c) * size;
+    if (!inPolygon(o.pts, px, py)) return false;
+    for (const h of o.holes) if (Math.hypot(px - h.x, py - h.y) < h.r + 1) return false;
+  }
+  return true;
+}
+function inPolygon(pts: number[], x: number, y: number) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 2; i < pts.length; j = i, i += 2) {
+    const xi = pts[i], yi = pts[i + 1], xj = pts[j], yj = pts[j + 1];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
 
 /** The ink box of a placed mark (mm), for layers sized to their marks. */
 export const markBox = (m: Pick<Mark, 'kind' | 'x' | 'y' | 'size' | 'rot'>) => boxAt(BOX[m.kind], m.size, m.rot, m.x, m.y);
@@ -165,6 +237,7 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   const shortPlace = stampPlace(input.place);
   const year = input.year != null ? String(input.year) : '';
   const marks: Mark[] = [];
+  const mode = markMode(input);
   const T = paper.text;
   // the writing's block, with room for ascenders above the first line and descenders below the last
   const block: Box = [T.left, T.first - 5, T.right, T.last + 3];
@@ -180,9 +253,18 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   const zoneW = [1.2, 1.4, 0.9, 1.15, 1.15, 0.95, 0.4, 0.4, 0.3];
   const used = new Set<number>();
   const placed: Box[] = [];
+  const edgeIn = { left: 0, right: 0, top: 0, bottom: 0 };
+  for (const side of ['left', 'right', 'top', 'bottom'] as const) { const e = paper.edges?.[side]; if (e) edgeIn[side] = e.depth + 0.8; }
+  // a printed border: a stamp may strike across it, but a pencilled note on its rules can't be read, so the note sits
+  // inside it
+  const border = paper.border ? paper.border.inset + (paper.border.count ?? 1) * (paper.border.gap ?? 0) + 1.5 : 0;
+  // a postcard's stamp box is the stamp's, not ours
+  if (paper.postcard) { const [sx, sy, sw, sh] = paper.postcard.stamp; placed.push([sx, sy, sx + sw, sy + sh]); }
+  // torn and deckled sides are kept off above; the aerogramme's cut corners and binder holes need the outline itself
+  const outline = paper.flaps || paper.holes ? outlineOf(paper, 0) : null;
   const place = (kind: Kind, size0: number) => {
     let best: { x: number; y: number; rot: number; size: number; z: number; cost: number } | null = null;
-    for (let tries = 0; tries < 10; tries++) {
+    for (let tries = 0, n = outline ? 16 : 10; tries < n; tries++) {
       // a pencilled note goes in the top or bottom margin, nowhere else
       const z = pickWeighted(r, zoneW.map((w, i) => (kind === 'pencil' && i > 5 ? 0 : used.has(i) ? w * 0.1 : w)));
       const zone = ZONES[z];
@@ -204,7 +286,10 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
       const e = ext(size);
       // the duplex's bars may run off the right edge: only its ring has to stay on
       const right = kind === 'duplex' ? boxAt([BOX.duplex[0], 0.05, -0.5, 0.5], size, rot, 0, 0)[2] : e[2];
-      const L = -e[0] - over, R = right - over, U = -e[1] - over, D = e[3] - over;
+      // a torn, deckled or spiral-ripped side takes its depth back from the room (so a word isn't lost in the fringe)
+      // and a mark with words keeps a couple of millimetres off a straight edge too (a ring may run off, worded)
+      const safe = RINGS.has(kind) ? 0 : kind === 'pencil' ? Math.max(2, border) : 0.5;
+      const L = -e[0] - over + edgeIn.left + safe, R = right - over + edgeIn.right + safe, U = -e[1] - over + edgeIn.top + safe, D = e[3] - over + edgeIn.bottom + safe;
       const along = (lo: number, hi: number) => lo + t * Math.max(0, hi - lo);
       let x: number, y: number;
       switch (zone) {
@@ -229,6 +314,8 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
       let cost = Math.max(0, share - (zone === 'drift' ? 0.45 : 0.25)) * 4;
       if (inMiddle(x, y)) cost += 5;
       if (kind === 'duplex' && overlapArea(boxAt(BARS, size, rot, x, y), block) > 0) cost += 3;
+      // a shaped sheet (the aerogramme's cut corners, binder holes): a mark that isn't meant to run off stays on it
+      if (outline && !over && !onSheet(outline, kind === 'duplex' ? [BOX.duplex[0], 0.05, -0.5, 0.5] : BOX[kind], size, rot, x, y)) cost += 2;
       const pad: Box = [b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3];
       for (const p of placed) if (overlapArea(pad, p) > 0) cost += 3;
       if (!best || cost < best.cost) best = { x, y, rot, size, z, cost };
@@ -259,6 +346,13 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
     if (input.look === 'postmarked' && input.year != null) {
       if (input.year < 1840) { w[1] = 0; w[0] *= 0.4; w[4] *= 2.5; }
       else if (input.year < 1880) w[0] *= 0.8;
+    }
+    // the adorned set keeps to the letter's time: no rubber stamp before about 1870 (the archivist pencils a note
+    // instead), and no post office handstamp at all before 1661
+    if (mode === 'adorned' && input.year != null) {
+      const rubber = input.look !== 'postmarked' && input.year < 1870;
+      const prePost = input.look === 'postmarked' && input.year < 1661;
+      if (rubber || prePost) w.fill(0, 0, 5).splice(5, 1, 1);
     }
     const picked = pickWeighted(r, w); // always drawn, so forcing a badge for review moves nothing else
     const forced = forcedBadge(input);
@@ -307,8 +401,192 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
     const at = place('cancel', clamp(minSide * 0.2, 20, 36) * 1.15);
     marks.push({ kind: 'cancel', x: at.x, y: at.y, rot: at.rot, size: at.size, ...strike(0.9), ink: INKS.red, text: { label: input.cancel.toUpperCase() }, seed: seed + ':cancel' });
   }
-  const key = marks.map((m) => `${m.kind}${m.x.toFixed(1)},${m.y.toFixed(1)},${m.rot.toFixed(3)},${m.size.toFixed(2)},${m.layer},${m.ink},${m.text.place ?? ''}${m.text.year ?? ''}${m.text.number ?? ''}${m.text.label ?? ''}`).join(';');
+  if (mode === 'adorned') adorn(paper, input, seed, block, placed, marks);
+  if (mode !== 'plain') for (const m of marks) handApplied(m, paper);
+  const key = mode + marks.map((m) => `${m.kind}${m.x.toFixed(1)},${m.y.toFixed(1)},${m.rot.toFixed(3)},${m.size.toFixed(2)},${m.layer},${m.ink},${m.text.place ?? ''}${m.text.year ?? ''}${m.text.number ?? ''}${m.text.label ?? ''}${m.flaws?.join('') ?? ''}`).join(';');
   return { marks, key: hash(key) };
+}
+
+// ---------- the letter's life: folds, seal, pin, folio, stains (the adorned set; lib/paper/adorn.ts paints them) ----------
+/**
+ * What happened to this letter between its writing and the archive, by its year and kind (side notes,
+ * stationery-adornments.md): how it was folded (a packet before envelopes, an envelope's fold after), what's left of
+ * the wafer or wax that sealed it (1600-1849), the pin or later the paperclip that held it in a bundle, the
+ * archivist's pencilled folio number, and for the hard-travelled foxing or a tide line. Seeded on their own stream,
+ * so the stamps never move; at most three besides the creases, all in the margins except the creases and foxing.
+ */
+function adorn(paper: PaperSpec, input: MarkInput, seed: string, block: Box, placed: Box[], marks: Mark[]) {
+  if (input.year == null) return;
+  const r = rng('adorn:' + seed);
+  const y = input.year, W = paper.w, H = paper.h;
+  const origin = input.origin ?? 'notable';
+  const note = input.kind === 'note';
+  // ?adorn=all gives the letter every adornment its era allows, for review
+  const all = (() => { try { return new URLSearchParams(location.search).get('adorn') === 'all'; } catch { return false; } })();
+  const odds = (p: number) => (all ? p > 0 : r() < p);
+  const base = { press: 1, lean: 0, uneven: 0, bounce: null, layer: 'under' as const, text: {}, rot: 0 };
+  const add = (m: Partial<Mark> & Pick<Mark, 'kind' | 'x' | 'y' | 'size' | 'ink'>) => marks.push({ ...base, seed: `${seed}:${m.kind}`, ...m });
+  /** a box (mm) clear of the stamps (2 mm round them), and of the writing unless allowed */
+  const clear = (b: Box) => placed.every((p) => overlapArea([b[0] - 4, b[1] - 4, b[2] + 4, b[3] + 4], p) === 0) && overlapArea(b, block) === 0;
+  // a card or a postcard was never folded into a packet, sealed or pinned into a bundle
+  const card = paper.family === 'postcard' || paper.family === 'card';
+
+  // creases, on any paper that folds (not card, not a postcard, not one that brings its own folds)
+  if (!paper.folds && paper.family !== 'postcard' && paper.family !== 'card' && paper.family !== 'aerogramme' && !(note && r() < 0.5)) {
+    const d: number[] = [];
+    const tilt = () => (r() - 0.5) * 0.008;
+    if (note) d.push(0, H * (0.45 + r() * 0.1), tilt());
+    else if (y < 1600) {
+      // a packet: folded small, several times across and once or twice down, sometimes slit for its paper tag
+      const n = clamp(Math.round(H / 40), 3, 5);
+      for (let i = 1; i <= n; i++) d.push(0, (H * i) / (n + 1) + (r() - 0.5) * 6, tilt());
+      d.push(1, W * (0.3 + r() * 0.08), tilt());
+      if (r() < 0.5) d.push(1, W * (0.62 + r() * 0.08), tilt());
+      if (r() < 0.3) { const sx = W * (0.4 + r() * 0.2), sy = (H * 1) / (n + 1) + 3; d.push(2, sx, sy, 2, sx, sy + 9 + r() * 3); }
+    } else if (y < 1850) {
+      // a letter sheet folded into its own packet: in thirds, and one side tucked in
+      d.push(0, H / 3 + (r() - 0.5) * 4, tilt(), 0, (2 * H) / 3 + (r() - 0.5) * 4, tilt());
+      const tuck = 25 + r() * 15;
+      d.push(1, r() < 0.5 ? tuck : W - tuck, tilt());
+    } else if (r() < 0.6) d.push(0, H / 2 + (r() - 0.5) * 4, tilt());
+    else d.push(0, H / 3 + (r() - 0.5) * 3, tilt(), 0, (2 * H) / 3 + (r() - 0.5) * 3, tilt());
+    add({ kind: 'fold', x: 0, y: 0, size: 1, ink: '#000', data: d });
+  }
+
+  let budget = all ? 6 : 3;
+  // the seal: a wafer's fragment (1680-1849) or a smear of wax (before), on the edge band where the packet closed
+  const sealOdds = note || card ? 0 : y >= 1600 && y < 1850 ? 0.4 : y < 1600 ? 0.25 : 0;
+  if (odds(sealOdds)) {
+    const wax = y < 1680;
+    const size = y < 1600 ? 5 + r() * 3 : wax ? 8 + r() * 6 : 10 + r() * 8;
+    const inks = wax ? ['#9b2b25', '#8e2a22'] : ['#8a6a48', '#8a6a48', '#7d5e3e', '#b0443a', '#c27a74', '#5f6f94'];
+    const ink = inks[Math.floor(r() * inks.length)];
+    for (let t = 0; t < 8; t++) {
+      const right = r() < 0.55;
+      const x = right ? W - (2 + r() * 9) : W * (0.3 + r() * 0.4);
+      const yy = right ? H * (0.3 + r() * 0.4) : H - (2 + r() * 9);
+      const b = boxAt(BOX.seal, size, 0, x, yy);
+      if (!clear(b)) continue;
+      add({ kind: 'seal', x, y: yy, size, rot: r() * Math.PI * 2, ink, text: { label: wax ? 'wax' : 'wafer' } });
+      placed.push(b);
+      budget--;
+      break;
+    }
+  }
+  // a pin through the corner (brass, then steel), or from 1895 a paperclip's rust
+  const pinOdds = y < 1600 || (card && y < 1895) ? 0 : ['family', 'notable', 'emigrant', 'seized'].includes(origin) ? 0.2 : 0.1;
+  if (budget > 0 && odds(pinOdds)) {
+    const clip = y >= 1895;
+    for (let t = 0; t < 4 && budget > 0; t++) {
+      const left = t < 2;
+      const x = clip ? (left ? 12 + r() * 16 : W - 12 - r() * 16) : left ? 7 + r() * 7 : W - 7 - r() * 7;
+      const yy = clip ? -1.5 : 6 + r() * 7;
+      const rot = clip ? (r() - 0.5) * 0.14 : (left ? -1 : 1) * (r() - 0.2) * 0.35;
+      // a clip's rust stops short of the writing: beside it, its full length; above it, what the margin holds
+      const beside = x + 5 < paper.text.left || x - 5 > paper.text.right;
+      const size = clip ? Math.min(24 + r() * 8, beside ? 40 : block[1] - 3) : 4 + r() * 4;
+      if (clip && size < 12) continue;
+      const kind = clip ? 'clip' : 'pin';
+      const b = boxAt(BOX[kind], size, rot, x, yy);
+      if (!clear(b)) continue;
+      add({ kind, x, y: yy, size, rot, ink: '#000', text: { label: y < 1850 ? 'brass' : 'steel' } });
+      placed.push(b);
+      budget--;
+      break;
+    }
+  }
+  // the archivist's folio number, pencilled top right (not on letters sent to a magazine, which no archive kept)
+  const folioOdds = origin === 'everyday' && y >= 1880 ? 0 : y < 1700 ? 0.6 : y < 1850 ? 0.45 : 0.3;
+  if (budget > 0 && odds(folioOdds)) {
+    const n = 1 + Math.floor(r() * r() * 240);
+    const pick = r();
+    const label = pick < 0.3 ? `fol. ${n}` : String(n);
+    const size = 4 + label.length * 1.6;
+    for (let t = 0; t < 3; t++) {
+      const x = W - 9 - size / 2 - t * 6, yy = 9 + r() * 3 + t * 2;
+      const b = boxAt(BOX.folio, size, 0, x, yy);
+      if (!clear(b)) continue;
+      add({ kind: 'folio', x, y: yy, size, rot: (r() - 0.5) * 0.04, ink: INKS.pencil, layer: 'over', text: { label } });
+      placed.push(b);
+      budget--;
+      break;
+    }
+  }
+  // the hard-travelled: a tide line from an edge (seized, undelivered); light foxing on rag paper of 1700-1889
+  if (budget > 0 && odds(origin === 'seized' || origin === 'undelivered' ? 0.5 : 0)) {
+    // from a corner that hasn't a mark in it
+    const first = Math.floor(r() * 4);
+    let corner = first;
+    for (let i = 0; i < 4; i++) {
+      const c = (first + i) % 4, cx = c % 2 ? W : 0, cy = c < 2 ? 0 : H;
+      if (placed.every((p) => overlapArea(p, [cx - 35, cy - 35, cx + 35, cy + 35]) === 0)) { corner = c; break; }
+    }
+    const x = corner % 2 ? W + 4 : -4, yy = corner < 2 ? -4 : H + 4;
+    add({ kind: 'tide', x, y: yy, size: 26 + r() * 22, ink: '#000' });
+    budget--;
+  }
+  if (budget > 0 && odds(y >= 1700 && y < 1890 ? 0.15 : 0)) {
+    const d: number[] = [];
+    const cx = W * (0.15 + r() * 0.7), cy = H * (0.15 + r() * 0.7);
+    const n = 3 + Math.floor(r() * 7);
+    for (let i = 0; i < n; i++) d.push(clamp(cx + (r() - 0.5) * 40, 2, W - 2), clamp(cy + (r() - 0.5) * 40, 2, H - 2), 0.3 + r() * r() * 1.3);
+    add({ kind: 'fox', x: 0, y: 0, size: 1, ink: '#000', data: d });
+  }
+}
+
+// ---------- hand-applied: what went wrong with this impression ----------
+/** How far an ink runs into the fibres: aniline violet and red spread, the blue less, pencil not at all. */
+const SPREAD: Record<string, number> = { [INKS.violet]: 1, [INKS.red]: 0.85, [INKS.blue]: 0.55, [INKS.pencil]: 0 };
+/** How readily the paper drinks ink: cheap pulp and soft rag more than hard-sized laid, onionskin or coated card. */
+function absorbency(paper: PaperSpec) {
+  const by: Record<string, number> = { notebook: 0.9, card: 0.75, pad: 0.6, postcard: 0.5, laid: 0.35, airmail: 0.3, aerogramme: 0.3 };
+  if (paper.id === 'laid-cotton' || paper.id === 'card-ippitsusen') return 0.85;
+  if (paper.id === 'notebook-legal') return 0.75;
+  return by[paper.family] ?? 0.6;
+}
+
+/**
+ * Most impressions come out clean; a seeded minority (stable per letter, and on their own random stream so the
+ * marks never move) get one flaw, now and then two. Which flaw follows the ink and the paper: a soft paper and an
+ * aniline ink feather; a hard-sized sheet doesn't.
+ */
+function handApplied(m: Mark, paper: PaperSpec) {
+  if (m.kind === 'pencil' || m.kind === 'folio' || ADORN.has(m.kind)) return;
+  const r = rng('flaws:' + m.seed);
+  const soak = (SPREAD[m.ink] ?? 0.7) * absorbency(paper);
+  const n = r() < 0.42 ? (r() < 0.28 ? 2 : 1) : 0;
+  if (m.kind === 'number') {
+    // the numbering machine's figures never take ink quite evenly; one wheel in four sits a hair off its line
+    m.wheel = { at: -1, dy: 0, ink: Array.from({ length: m.text.number?.length ?? 4 }, () => 0.7 + r() * 0.3) };
+    if (r() < 0.26) { m.wheel.at = Math.floor(r() * m.wheel.ink.length); m.wheel.dy = (r() < 0.5 ? -1 : 1) * (0.3 + r() * 0.2); }
+  }
+  // ?flaw=bleed (or bleed,smudge) gives every mark those flaws, for review
+  const forced = forcedFlaws();
+  if (forced) { m.flaws = forced; return; }
+  if (!n) return;
+  const options: [Flaw, number][] = [
+    ['bleed', 2.4 * soak],
+    ['fill', 1],
+    ['starved', 1],
+    ['ghost', m.bounce ? 0 : 0.6],
+    ['smudge', 0.45],
+    ['pad', m.kind === 'duplex' || m.kind === 'number' || m.kind === 'cancel' ? 1 : 0.6],
+  ];
+  const flaws: Flaw[] = [];
+  for (let i = 0; i < n; i++) {
+    const left = options.filter(([f]) => !flaws.includes(f) && !(f === 'fill' && flaws.includes('starved')) && !(f === 'starved' && flaws.includes('fill')));
+    flaws.push(left[pickWeighted(r, left.map(([, w]) => w))][0]);
+  }
+  m.flaws = flaws;
+}
+
+function forcedFlaws(): Flaw[] | null {
+  try {
+    const f = new URLSearchParams(location.search).get('flaw');
+    return f ? (f.split(',') as Flaw[]) : null;
+  } catch {
+    return null;
+  }
 }
 
 // ---------- the pencilled note, in a hand ----------
@@ -400,7 +678,7 @@ export function printMarks(ctx: Ctx2D, marks: Mark[], k: number, layer: 'under' 
   ctx.save();
   // a mark that runs off the edge stops at the paper's real edge (deckle, tear, flaps, holes), never on the desk
   if (paper) clipToSheet(ctx, paper, k);
-  for (const m of these) printMark(ctx, m, k);
+  for (const m of these) printMark(ctx, m, k, paper);
   ctx.restore();
 }
 
@@ -415,8 +693,11 @@ export function clipToSheet(ctx: Ctx2D, paper: PaperSpec, k: number, sheet = 0) 
   }
 }
 
-function printMark(ctx: Ctx2D, m: Mark, k: number) {
+function printMark(ctx: Ctx2D, m: Mark, k: number, paper?: PaperSpec) {
+  if (ADORN.has(m.kind)) { paintAdornment(ctx, m as Mark & { kind: AdornKind }, k, paper?.w ?? 0, paper?.h ?? 0); return; }
   const r = rng(m.seed);
+  const flaws = m.flaws ?? [];
+  const has = (f: Flaw) => flaws.includes(f);
   // the mark's own canvas, room for its widest form
   const span = m.kind === 'duplex' ? m.size * 2.5 : m.kind === 'line' || m.kind === 'pencil' || m.kind === 'number' ? m.size * 2.6 : m.kind === 'cancel' ? m.size * 1.6 : m.size * 1.4;
   const W = Math.ceil(span * k), H = Math.ceil(m.size * 1.4 * k);
@@ -427,10 +708,31 @@ function printMark(ctx: Ctx2D, m: Mark, k: number) {
   g.fillStyle = g.strokeStyle = '#000';
   g.lineCap = 'round';
   g.lineJoin = 'round';
-  SHAPES[m.kind](g, m, r);
+  SHAPES[m.kind]!(g, m, r);
   g.setTransform(1, 0, 0, 1, 0, 0);
 
-  const pencil = m.kind === 'pencil';
+  const pencil = m.kind === 'pencil' || m.kind === 'folio';
+  // a flaw's own randomness, so a clean mark draws exactly as it always did
+  const fr = rng('flaw-print:' + m.seed);
+  // the side the stamp rocked toward (the fuller side is the lean's); a point on the mark's rim that way
+  const rock = m.lean + Math.PI + (fr() - 0.5) * 0.8;
+  const [bl, br, bt, bb] = BOX[m.kind];
+  const rim = (a: number, f = 1) => [W / 2 + Math.cos(a) * ((br - bl) / 2) * m.size * k * f, H / 2 + Math.sin(a) * ((bb - bt) / 2) * m.size * k * f] as const;
+  // over-inked: the ink swells into the counters and thickens the rim on the stamp's fuller side
+  if (has('fill')) {
+    const d = Math.max(1, (m.kind === 'number' ? 0.09 : 0.16) * k);
+    const fat = makeCanvas(W, H);
+    const fg = fat.getContext('2d') as Ctx2D;
+    for (let i = 0; i < 8; i++) fg.drawImage(c, Math.cos((i * Math.PI) / 4) * d, Math.sin((i * Math.PI) / 4) * d);
+    const [fx, fy] = rim(m.lean, 0.5 + fr() * 0.4);
+    const blob = fg.createRadialGradient(fx, fy, 0, fx, fy, m.size * k * (0.4 + fr() * 0.2));
+    blob.addColorStop(0, 'rgba(0,0,0,0.95)');
+    blob.addColorStop(1, 'rgba(0,0,0,0)');
+    fg.globalCompositeOperation = 'destination-in';
+    fg.fillStyle = blob;
+    fg.fillRect(0, 0, W, H);
+    g.drawImage(fat, 0, 0);
+  }
   // ink: voids where the rubber missed (pencil: the paper's tooth catching graphite)
   g.globalCompositeOperation = 'destination-out';
   const sp = g.createPattern(speckle(), 'repeat');
@@ -457,6 +759,34 @@ function printMark(ctx: Ctx2D, m: Mark, k: number) {
   g.globalAlpha = 1;
   g.fillStyle = grad;
   g.fillRect(0, 0, W, H);
+  // starved: the pad was dry, the impression patchy, and where the stamp rocked off the rim breaks
+  if (has('starved')) {
+    if (sp) {
+      sp.setTransform(new DOMMatrix().translate(fr() * 200, fr() * 200).scale(Math.max(1.1, k / 4)).rotate(fr() * 90));
+      g.globalAlpha = 0.5;
+      g.fillStyle = sp;
+      g.fillRect(0, 0, W, H);
+      g.globalAlpha = 1;
+    }
+    const [bx, by] = rim(rock, 1);
+    const gap = g.createRadialGradient(bx, by, 0, bx, by, m.size * k * (0.16 + fr() * 0.1));
+    gap.addColorStop(0, 'rgba(0,0,0,0.97)');
+    gap.addColorStop(0.55, 'rgba(0,0,0,0.7)');
+    gap.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gap;
+    g.fillRect(0, 0, W, H);
+  }
+  // the pad's cloth: its weave shows faintly in the fill
+  if (has('pad')) {
+    const wv = g.createPattern(weave(), 'repeat');
+    if (wv) {
+      wv.setTransform(new DOMMatrix().rotate(fr() * 30 - 15).scale(Math.max(0.6, k * 0.16)));
+      g.globalAlpha = 0.5;
+      g.fillStyle = wv;
+      g.fillRect(0, 0, W, H);
+      g.globalAlpha = 1;
+    }
+  }
   // colour it
   g.globalCompositeOperation = 'source-in';
   g.globalAlpha = 1;
@@ -464,15 +794,80 @@ function printMark(ctx: Ctx2D, m: Mark, k: number) {
   g.fillRect(0, 0, W, H);
 
   // onto the sheet: multiplied, so the paper (and any writing under it) shows through; a hair of spread
+  const soak = m.flaws ? (SPREAD[m.ink] ?? 0.7) * (paper ? absorbency(paper) : 0.6) : 0;
+  const press = has('starved') ? m.press * 0.82 : m.press;
+  const alpha = pencil ? 0.62 : m.ink === INKS.violet ? press * 0.82 : press;
   ctx.save();
   ctx.translate(m.x * k, m.y * k);
   ctx.rotate(m.rot);
   ctx.globalCompositeOperation = 'multiply';
-  // the darker the ink, the more a thin inking shows
-  ctx.globalAlpha = pencil ? 0.62 : m.ink === INKS.violet ? m.press * 0.82 : m.press;
+  // feathering: a halo of the ink, only where it ran along the paper's fibres, under the impression itself
+  if (has('bleed')) {
+    const pad = Math.ceil(1.2 * k);
+    const b = makeCanvas(W + 2 * pad, H + 2 * pad);
+    const bg = b.getContext('2d') as Ctx2D;
+    const far = (W + 2 * pad) * 2;
+    bg.shadowColor = m.ink;
+    bg.shadowBlur = Math.max(1.5, (0.45 + 0.5 * soak) * k);
+    bg.shadowOffsetX = far;
+    bg.drawImage(c, pad - far, pad);
+    bg.shadowColor = 'transparent';
+    const fib = bg.createPattern(fibres(), 'repeat');
+    if (fib) {
+      fib.setTransform(new DOMMatrix().translate(fr() * 96, fr() * 96).rotate(fr() * 180).scale(Math.max(0.4, k * 0.06)));
+      bg.globalCompositeOperation = 'destination-in';
+      bg.fillStyle = fib;
+      bg.fillRect(0, 0, W + 2 * pad, H + 2 * pad);
+    }
+    ctx.globalAlpha = Math.min(1, alpha * (0.7 + 0.9 * soak));
+    ctx.drawImage(b, -W / 2 - pad, -H / 2 - pad);
+    ctx.drawImage(b, -W / 2 - pad, -H / 2 - pad);
+    ctx.globalAlpha = alpha * 0.35 * soak;
+    // and the ink's own soft spread, a little wider than a clean strike's
+    ctx.drawImage(c, -W / 2, -H / 2);
+  }
+  // a faint second strike just beside the first (the hand bounced, the stamp turned a hair)
+  if (has('ghost')) {
+    const a = fr() * Math.PI * 2, d = (0.3 + fr() * 0.35) * k;
+    ctx.save();
+    ctx.translate(Math.cos(a) * d, Math.sin(a) * d);
+    ctx.rotate((fr() - 0.5) * 0.035);
+    ctx.globalAlpha = alpha * (0.16 + fr() * 0.08);
+    ctx.drawImage(c, -W / 2, -H / 2);
+    ctx.restore();
+  }
+  // a thumb dragged across one edge while the ink was wet: the edge smeared outward, fading
+  if (has('smudge')) {
+    const a = rock + Math.PI + (fr() - 0.5) * 0.6;
+    const [sx, sy] = rim(a, 0.9);
+    const s = makeCanvas(W, H);
+    const sg = s.getContext('2d') as Ctx2D;
+    sg.drawImage(c, 0, 0);
+    const spot = sg.createRadialGradient(sx, sy, 0, sx, sy, m.size * k * 0.32);
+    spot.addColorStop(0, 'rgba(0,0,0,1)');
+    spot.addColorStop(1, 'rgba(0,0,0,0)');
+    sg.globalCompositeOperation = 'destination-in';
+    sg.fillStyle = spot;
+    sg.fillRect(0, 0, W, H);
+    // dragged a couple of millimetres, the smear fading, the thumb wandering a little: built at a quarter of the
+    // resolution and drawn back up, which also softens it
+    const dir = a + (fr() - 0.5) * 0.9, step = 0.12 * k, n = 16, wob = (fr() - 0.5) * 0.06 * k;
+    const q = 4, pad = Math.ceil(2.4 * k);
+    const sm = makeCanvas(Math.ceil((W + 2 * pad) / q), Math.ceil((H + 2 * pad) / q));
+    const smg = sm.getContext('2d') as Ctx2D;
+    smg.imageSmoothingEnabled = true;
+    for (let i = 1; i <= n; i++) {
+      smg.globalAlpha = 0.17 * (1 - i / (n + 1));
+      smg.drawImage(s, (pad + Math.cos(dir) * step * i - Math.sin(dir) * wob * i) / q, (pad + Math.sin(dir) * step * i + Math.cos(dir) * wob * i) / q, W / q, H / q);
+    }
+    ctx.globalAlpha = alpha;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(sm, -W / 2 - pad, -H / 2 - pad, sm.width * q, sm.height * q);
+  }
+  ctx.globalAlpha = alpha;
   if (!pencil) {
     ctx.shadowColor = m.ink;
-    ctx.shadowBlur = Math.max(0.6, 0.18 * k);
+    ctx.shadowBlur = Math.max(0.6, 0.18 * k) * (m.flaws ? 0.8 + 0.5 * soak : 1);
   }
   ctx.drawImage(c, -W / 2, -H / 2);
   ctx.shadowBlur = 0;
@@ -481,6 +876,42 @@ function printMark(ctx: Ctx2D, m: Mark, k: number) {
     ctx.drawImage(c, -W / 2 + m.bounce[0] * k, -H / 2 + m.bounce[1] * k);
   }
   ctx.restore();
+}
+
+// the stamp pad's cloth, a plain weave (made once)
+let weaveTile: AnyCanvas | null = null;
+function weave() {
+  if (weaveTile) return weaveTile;
+  const c = makeCanvas(4, 4);
+  const g = c.getContext('2d') as Ctx2D;
+  g.fillStyle = 'rgba(0,0,0,0.85)';
+  // threads over and under: a checker of 2-pixel cells
+  for (let y = 0; y < 4; y += 2) for (let x = 0; x < 4; x += 2) if (((x + y) >> 1) % 2 === 0) g.fillRect(x, y, 2, 2);
+  return (weaveTile = c);
+}
+// the paper's fibres, short strokes every way (made once): ink feathering runs along them
+let fibreTile: AnyCanvas | null = null;
+function fibres() {
+  if (fibreTile) return fibreTile;
+  const S = 96;
+  const c = makeCanvas(S, S);
+  const g = c.getContext('2d') as Ctx2D;
+  const r = rng('marks:fibres');
+  g.lineCap = 'round';
+  for (let i = 0; i < 300; i++) {
+    const x = r() * S, y = r() * S, a = r() * Math.PI, l = 3 + r() * r() * 14;
+    g.strokeStyle = `rgba(0,0,0,${0.25 + r() * 0.75})`;
+    g.lineWidth = 0.6 + r() * 0.8;
+    const bend = (r() - 0.5) * 2;
+    // drawn again past the tile's edges so it repeats without seams
+    for (const [ox, oy] of [[0, 0], [-S, 0], [0, -S], [-S, -S]]) {
+      g.beginPath();
+      g.moveTo(x + ox, y + oy);
+      g.quadraticCurveTo(x + ox + Math.cos(a) * l * 0.5 + bend, y + oy + Math.sin(a) * l * 0.5, x + ox + Math.cos(a) * l, y + oy + Math.sin(a) * l);
+      g.stroke();
+    }
+  }
+  return (fibreTile = c);
 }
 
 // ---------- the shapes (drawn black at mm scale, centred on 0,0) ----------
@@ -543,7 +974,7 @@ function arcPx(g: Ctx2D, text: string, rad: number, deg: number, max: number, sp
 }
 const track = (text: string) => (text.length <= 6 ? 0.16 : Math.max(0.08, 0.12));
 
-const SHAPES: Record<Kind, Shape> = {
+const SHAPES: Partial<Record<Kind, Shape>> = {
   // 1. a double-ring datestamp: the town around the top, two small stars at the foot, the year across the middle
   datestamp(g, m) {
     const R = m.size / 2;
@@ -665,6 +1096,25 @@ const SHAPES: Record<Kind, Shape> = {
     g.quadraticCurveTo(0, px * 0.7, g.measureText(note).width * 0.4, px * 0.58);
     g.stroke();
   },
+  // the archivist's folio number, small and upright in the same pencil hand
+  folio(g, m) {
+    const label = m.text.label || '';
+    const w = noteWriter?.(label);
+    if (w && w.paths.length) {
+      const xh = 1.9;
+      const s = xh / (w.xHeight * w.em);
+      g.save();
+      g.scale(s, s);
+      g.translate(-(w.left + w.width / 2), -(w.baseline - (w.xHeight * w.em) / 2));
+      for (const d of w.paths) g.fill(new Path2D(d));
+      g.restore();
+      return;
+    }
+    g.font = font(3.2, HAND, 400);
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(label, 0, 0);
+  },
   // the number: a numbering machine's figures (a small "No" with its o raised and underlined)
   number(g, m) {
     const px = m.size * 0.36;
@@ -687,7 +1137,14 @@ const SHAPES: Record<Kind, Shape> = {
     g.fillRect(x + NW, px * 0.2, oW, px * 0.06);
     x += NW + oW + px * 0.18;
     g.font = font(px, MONO, 700);
-    g.fillText(n, x, px * 0.35);
+    if (!m.wheel) { g.fillText(n, x, px * 0.35); return; }
+    // figure by figure: each wheel takes its own ink, and one may sit a hair off the line
+    const step = nw / Math.max(1, n.length);
+    [...n].forEach((d, i) => {
+      g.globalAlpha = m.wheel!.ink[i] ?? 1;
+      g.fillText(d, x + i * step, px * 0.35 + (i === m.wheel!.at ? m.wheel!.dy : 0));
+    });
+    g.globalAlpha = 1;
   },
   // a boxed cancellation word
   cancel(g, m) {

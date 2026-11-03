@@ -6,7 +6,7 @@ import { makeHand } from '@engine';
 import { PaperCanvas, PaperGuide, PaperMarks } from '@/components/PaperCanvas';
 import { liveLayout, sheetSVG } from '@/lib/live';
 import { SAMPLES } from '@/lib/samples';
-import type { MarkLook } from '@/lib/paper/marks';
+import { planMarks, printMarks, type MarkLook, type MarkMode } from '@/lib/paper/marks';
 import { ALL_PAPERS, getPaper, paintPaper, sheetShadow, type PaperSpec } from '@/lib/papers';
 import '../index.css';
 
@@ -66,6 +66,38 @@ function Lettered({ paperId, badge, i, look }: { paperId: string; badge: number;
 }
 const Z = parseFloat(q.get('z') || '6');
 
+// view=compare: letters across the eras, each as plain, organic and adorned (?modes=plain,organic&letters=id:paper,…)
+const COMPARE: [string, string, MarkLook][] = [
+  ['cely-1482', 'laid-cotton', 'reading-room'],
+  ['wentworth-1705', 'laid', 'reading-room'],
+  ['dezirad-1798', 'laid-blue', 'reading-room'],
+  ['snetter-1834', 'laid', 'postmarked'],
+  ['harpers-1882-goldfish', 'notebook', 'reading-room'],
+  ['mathea-1887', 'pad-a4', 'postmarked'],
+  ['santa-1908-miss-myra', 'notebook-loose', 'postmarked'],
+  ['migrant-1917-chicago-sister', 'pad', 'reading-room'],
+  ['aibonito-1929', 'airmail', 'reading-room'],
+];
+function Compared({ id, paperId, look, mode, i }: { id: string; paperId: string; look: MarkLook; mode: MarkMode; i: number }) {
+  const paper = getPaper(paperId);
+  const letter = SAMPLES.find((s) => s.id === id) ?? SAMPLES[i];
+  const raw = letter as unknown as { place?: string; year?: number; origin?: string };
+  const [seed, style] = HANDS[i % HANDS.length];
+  const svg = useMemo(() => {
+    const live = liveLayout(makeHand(seed, style), letter.text.slice(0, 520), paper, 1, 1, false);
+    return sheetSVG(live, 0, 'currentColor', '');
+  }, [letter, paper, seed, style]);
+  const cancel = look === 'postmarked' && raw.origin === 'undelivered' ? 'Undelivered' : null;
+  return (
+    <PaperMarks value={{ id: letter.id, hand: seed, place: raw.place ?? null, year: raw.year ?? null, number: look === 'reading-room' ? 12 + i * 37 : null, cancel, look, origin: raw.origin, kind: letter.kind, mode }}>
+      <div className="relative isolate shrink-0 rounded-[1.5px]" style={{ width: paper.w * K, height: paper.h * K, boxShadow: sheetShadow(paper) }}>
+        <PaperCanvas paper={paper} pxPerMm={K} className="absolute inset-0 rounded-[1.5px]" />
+        <div className="writing writing-fill pointer-events-none absolute inset-0 overflow-hidden" style={{ color: '#1f2a44' }} dangerouslySetInnerHTML={{ __html: svg }} />
+      </div>
+    </PaperMarks>
+  );
+}
+
 function Gallery() {
   const ms = useMemo(() => (q.get('time') ? timings() : new Map<string, number>()), []);
   const papers = ALL_PAPERS.filter((p) => !ONLY || ONLY.split(',').some((o) => p.id.startsWith(o)));
@@ -95,6 +127,23 @@ function Gallery() {
                 <div className="flex flex-wrap items-start gap-8">
                   {(q.get('papers') || 'pad,laid,airmail,notebook,postcard').split(',').map((id, i) => (
                     <Lettered key={id} paperId={id} badge={badge} i={i} look={(q.get('look') as MarkLook) || 'reading-room'} />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+        {VIEW === 'compare' && (
+          <div className="grid gap-10">
+            {(q.get('letters')?.split(',').map((x) => [...x.split(':'), 'reading-room'] as [string, string, MarkLook]) ?? COMPARE).map(([id, paperId, look], i) => (
+              <section key={id} data-letter={id} className="grid gap-2">
+                <h2 className="text-[13px] font-medium">{id} · {paperId} · {look}</h2>
+                <div className="flex flex-wrap items-start gap-6">
+                  {((q.get('modes') || 'plain,organic,adorned').split(',') as MarkMode[]).map((mode) => (
+                    <div key={mode} className="grid gap-1">
+                      <Compared id={id} paperId={paperId} look={look} mode={mode} i={i} />
+                      <span className="text-muted-foreground">{mode}</span>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -146,6 +195,41 @@ function Gallery() {
     times.push(performance.now() - t0);
   }
   return times.map((t) => +t.toFixed(1));
+};
+
+// window.__marksCost('organic') prints every letter's marks (both layers) on a sheet-sized canvas at a phone's density
+// and returns the ms per letter: median, p95, max. Each letter is printed once, as the app does.
+(window as unknown as Record<string, unknown>).__marksCost = (mode: MarkMode, look: MarkLook = 'reading-room', papers = 'pad,laid-cotton,notebook,airmail,postcard', only = '') => {
+  const k = 3.7 * 3;
+  const times: number[] = [];
+  const ids = papers.split(',');
+  SAMPLES.forEach((s, i) => {
+    const paper = getPaper(ids[i % ids.length]);
+    const raw = s as unknown as { place?: string; year?: number; origin?: string };
+    const plan = planMarks(paper, { id: s.id, hand: 'h' + i, place: raw.place, year: raw.year, number: i + 1, look, origin: raw.origin, kind: s.kind, mode });
+    if (only) plan.marks = plan.marks.filter((m) => m.kind === only);
+    const c = document.createElement('canvas');
+    c.width = Math.round(paper.w * k);
+    c.height = Math.round(paper.h * k);
+    const ctx = c.getContext('2d')!;
+    const t0 = performance.now();
+    printMarks(ctx, plan.marks, k, 'under', paper);
+    printMarks(ctx, plan.marks, k, 'over', paper);
+    ctx.getImageData(0, 0, 1, 1);
+    times.push(performance.now() - t0);
+  });
+  times.sort((a, b) => a - b);
+  const at = (q: number) => +times[Math.min(times.length - 1, Math.floor(q * times.length))].toFixed(2);
+  return { n: times.length, median: at(0.5), p95: at(0.95), max: at(1) };
+};
+
+// window.__planOf('cely-1482', 'laid-cotton', 'reading-room', 'adorned', 0): what the compare view prints for a letter
+(window as unknown as Record<string, unknown>).__planOf = (id: string, paperId: string, look: MarkLook, mode: MarkMode, i: number) => {
+  const s = SAMPLES.find((x) => x.id === id)!;
+  const raw = s as unknown as { place?: string; year?: number; origin?: string };
+  const cancel = look === 'postmarked' && raw.origin === 'undelivered' ? 'Undelivered' : null;
+  const plan = planMarks(getPaper(paperId), { id, hand: HANDS[i % HANDS.length][0], place: raw.place ?? null, year: raw.year ?? null, number: look === 'reading-room' ? 12 + i * 37 : null, cancel, look, origin: raw.origin, kind: s.kind, mode });
+  return plan.marks.map((m) => ({ kind: m.kind, layer: m.layer, ink: m.ink, flaws: m.flaws, wheel: m.wheel?.at, label: m.text.label, x: m.x, y: m.y, size: m.size, data: m.data }));
 };
 
 // one root, even when the module hot-reloads
