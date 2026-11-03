@@ -86,8 +86,10 @@ html[data-look='reading-room'] {
   --rr-muted: #575146; /* 6.2:1 on the room */
   --rr-faint: #666052; /* 4.9:1 on the room */
   --rr-edge: #d6ccb7; /* a card's cut edge */
-  --rr-rule: color-mix(in oklab, var(--rr-ink) 15%, transparent); /* a row's rule: the ledger, lists, the record */
-  --rr-hair: color-mix(in oklab, var(--rr-ink) 30%, transparent); /* a stronger rule: atop a column, a drawer, a spread */
+  /* rules are soft, never hard black lines (Rafael, 3 Nov): a row's at 12% ink, a stronger one at 16% (the running
+     head, atop a column, a drawer, a sheet, a menu, the spread). High contrast raises both (below) */
+  --rr-rule: color-mix(in oklab, var(--rr-ink) 12%, transparent);
+  --rr-hair: color-mix(in oklab, var(--rr-ink) 16%, transparent);
   /* the grid (house rules, layout study): 12 columns at 1440, 40 px margins, 32 px gutters; a side column is 3 of
      them, the 20rem panel (density.css --panel-w) */
   --rr-margin: 2.5rem;
@@ -251,7 +253,7 @@ html[data-look='reading-room'] .rr-icon svg {
 /* ---------- the site header (components/SiteHeader.tsx) as a running head (layouts, house rule 2): the wordmark,
    the page's middle and the places on one baseline over one hairline, in the label role's small capitals ---------- */
 html[data-look='reading-room'] [data-site-row] {
-  border-bottom: 1px solid color-mix(in oklab, var(--rr-ink) 22%, transparent);
+  border-bottom: 1px solid var(--rr-hair);
   padding-bottom: 0.5rem;
 }
 html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button),
@@ -423,7 +425,7 @@ html[data-look='reading-room'] .rr-desk-actions {
 html[data-look='reading-room'] .rr-status {
   justify-content: flex-start;
 }
-/* the main action: a ruled row in archival red, an arrow, and its key at the row's end */
+/* the main action: a ruled row in archival red, words alone (no arrow or icon: Rafael, 3 Nov), its key at the row's end */
 html[data-look='reading-room'] .rr-bring {
   display: flex;
   align-items: baseline;
@@ -438,15 +440,12 @@ html[data-look='reading-room'] .rr-bring {
   transition: color 150ms var(--ease-out);
 }
 html[data-look='reading-room'] .rr-bring-label {
+  flex: 1;
   text-decoration: underline;
   text-decoration-color: transparent;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
   transition: text-decoration-color 150ms var(--ease-out);
-}
-html[data-look='reading-room'] .rr-bring-arrow {
-  flex: 1;
-  transition: transform 150ms var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-bring:hover {
@@ -454,14 +453,6 @@ html[data-look='reading-room'] .rr-bring-arrow {
   }
   html[data-look='reading-room'] .rr-bring:hover .rr-bring-label {
     text-decoration-color: currentColor;
-  }
-  html[data-look='reading-room'] .rr-bring:hover .rr-bring-arrow {
-    transform: translateX(2px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-look='reading-room'] .rr-bring-arrow {
-    transition: none;
   }
 }
 /* its key: a quiet keycap, a tint with no edge, only where there's a keyboard to press it on */
@@ -681,7 +672,7 @@ html[data-look='reading-room'] [data-slot='switch'][data-state='checked'] {
 /* ---------- phones: the control sheet as a slip ---------- */
 html[data-look='reading-room'] .control-sheet {
   border-radius: 4px 4px 0 0;
-  border-top: 1px solid var(--rr-ink);
+  border-top: 1px solid var(--rr-hair);
   background: var(--rr-card);
   box-shadow: 0 -10px 30px -16px rgba(30, 39, 51, 0.4);
 }
@@ -705,10 +696,10 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-
   white-space: nowrap;
 }
 /* the shared sheet (components/ui/sheet.tsx: Share and the other action sheets on phones), cut like the control sheet:
-   square-cut, ruled in ink along its top, its title a label in small capitals, its rows ruled lines rather than tiles */
+   square-cut, a soft rule along its top, its title a label in small capitals, its rows ruled lines rather than tiles */
 html[data-look='reading-room'] .sheet-surface {
   border-radius: 4px 4px 0 0;
-  border-top: 1px solid var(--rr-ink);
+  border-top: 1px solid var(--rr-hair);
   background: var(--rr-card);
   box-shadow: 0 -10px 30px -16px rgba(30, 39, 51, 0.4);
 }
@@ -740,11 +731,11 @@ html[data-look='reading-room'] .sheet-surface [role='presentation'][class*='h-px
   background: none;
 }
 /* the phone's writing tray (PenTray.tsx), its pen menu, and their letter pulled down over yours (TheirLetter.tsx):
-   slips ruled in ink, not pills; Done, the action of the moment, in red words */
+   slips with a soft rule, not pills; Done, the action of the moment, in red words */
 html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'],
 html[data-look='reading-room'] div.fixed.z-40 [class*='w-64'][class*='rounded-2xl'] {
   border: 1px solid var(--rr-edge);
-  border-top-color: var(--rr-ink);
+  border-top-color: var(--rr-hair);
   border-radius: 3px;
   background: var(--rr-card);
   backdrop-filter: none;
@@ -761,7 +752,7 @@ html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'] [da
 }
 html[data-look='reading-room'] [class*='rounded-b-[22px]'] {
   border-radius: 0 0 3px 3px;
-  border-bottom: 1px solid var(--rr-ink);
+  border-bottom: 1px solid var(--rr-hair);
 }
 /* the quiet pointer on the sheet ("Click the letter to write", "Press Esc when you're done"): a patch of the room's
    paper over the writing, with no edge of its own */
@@ -771,6 +762,36 @@ html[data-look='reading-room'] [class*='rounded-full'][class*='bg-panel/95'] {
   box-shadow: none;
   background: var(--rr-slip);
   color: var(--rr-muted);
+}
+/* phones: under the record's hand, the way into what's known about it, in archival red like the room's other actions */
+html[data-look='reading-room'] .rr-hand-link {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin: -0.5rem 0 -0.75rem;
+  padding: 0.5rem 0 0.75rem;
+  min-height: 44px;
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+  color: var(--rr-red);
+}
+html[data-look='reading-room'] .rr-hand-link svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+/* the phone sheet's writer: their name and how they write, in the record's type rather than the controls' */
+html[data-look='reading-room'] .control-sheet .sheet-writer h3 {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  font-weight: var(--rr-text-weight);
+  line-height: var(--rr-text-leading);
+}
+html[data-look='reading-room'] .control-sheet .sheet-writer h3 + p {
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+  font-style: italic;
 }
 /* the plate line under the sheet (wide screens: PlateLine.tsx): who wrote to whom, in the record's italic, as a
    museum labels an object at its foot; how you're writing sits at its right (App.tsx's footer row) */
@@ -818,14 +839,14 @@ html[data-look='reading-room'] .rr-card-tag {
 html[data-look='reading-room'] .rr-aid {
   margin: 14px auto 0;
   padding-top: 10px;
-  border-top: 1px solid color-mix(in oklab, var(--rr-ink) 60%, transparent);
+  border-top: 1px solid var(--rr-hair);
   color: var(--rr-muted);
   text-wrap: balance;
 }
 /* the timeline dock and the letter dock: a hairline-ruled slip, not a pill */
 html[data-look='reading-room'] .archive-dock {
   border-radius: 2px;
-  border-top: 1px solid var(--rr-ink);
+  border-top: 1px solid var(--rr-hair);
 }
 html[data-look='reading-room'] .archive-dock [data-slot='button'] {
   border-radius: 3px;
@@ -859,7 +880,7 @@ html[data-look='reading-room'] .rr-dock {
   padding: 4px 6px;
   background: var(--rr-card);
   border: 1px solid var(--rr-edge);
-  border-top: 1px solid var(--rr-ink);
+  border-top: 1px solid var(--rr-hair);
   border-radius: 2px;
   box-shadow: 0 12px 28px -16px rgba(30, 39, 51, 0.45);
   animation: dock-in 320ms var(--ease-out) both;
@@ -967,10 +988,10 @@ html[data-look='reading-room'] .rr-dock {
   }
 }
 
-/* ---------- menus, popovers and tooltips: slips of the room's paper, square-cut, ruled in ink along the top ---------- */
+/* ---------- menus, popovers and tooltips: slips of the room's paper, square-cut, a soft rule along the top ---------- */
 html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :is([role='menu'], [role='dialog'], [role='listbox']) {
   border: 1px solid var(--rr-edge);
-  border-top-color: var(--rr-ink);
+  border-top-color: var(--rr-hair);
   border-radius: 3px;
   background: var(--rr-slip);
   backdrop-filter: none;
@@ -1212,6 +1233,13 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
   letter-spacing: var(--rr-action-tracking);
 }
 
+/* asked for more contrast: the soft rules become plain ones */
+@media (prefers-contrast: more) {
+  html[data-look='reading-room'] {
+    --rr-rule: color-mix(in oklab, var(--rr-ink) 45%, transparent);
+    --rr-hair: color-mix(in oklab, var(--rr-ink) 60%, transparent);
+  }
+}
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
   html[data-look='reading-room'] .rr-dock {

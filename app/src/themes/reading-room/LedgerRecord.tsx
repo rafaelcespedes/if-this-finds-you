@@ -12,6 +12,8 @@ interface Props {
   record: CardRecord;
   /** the hand row's value (the writer's signature, or a menu) */
   hand: ReactNode;
+  /** under it, the way into what's known about the hand (phones: "About this hand ›") */
+  handAction?: ReactNode;
   handName: string;
   /** beside the number: Share */
   actions?: ReactNode;
@@ -22,7 +24,7 @@ interface Props {
 
 type NoteKey = 'story' | 'hand' | 'source';
 
-export function LedgerRecord({ record: r, hand, handName, actions, physical, className }: Props) {
+export function LedgerRecord({ record: r, hand, handAction, handName, actions, physical, className }: Props) {
   const id = useId();
   const [open, setOpen] = useState<NoteKey | null>(null);
   const [full, setFull] = useState(false);
@@ -87,7 +89,7 @@ export function LedgerRecord({ record: r, hand, handName, actions, physical, cla
   if (r.where) rows.push({ term: 'Where', value: r.where });
   if (r.year != null) rows.push({ term: 'When', value: <>{r.year}{r.dateNote && <span className="rr-sub">{r.dateNote}</span>}</> });
   rows.push({ term: 'Status', value: <><span className={cn(r.lost && 'rr-red')}>{r.status}</span>{r.story && mark('story', 'how it survives')}</>, after: r.story ? note('story') : null });
-  rows.push({ term: 'Hand', value: <span className="inline-flex max-w-full items-center">{hand}{mark('hand', 'about the hand')}</span>, after: note('hand') });
+  rows.push({ term: 'Hand', value: <><span className="inline-flex max-w-full items-center">{hand}{mark('hand', 'about the hand')}</span>{handAction}</>, after: note('hand') });
   if (r.rights) rows.push({ term: 'Rights', value: <>{r.rights}{r.source && mark('source', 'the printed source')}</>, after: r.source ? note('source') : null });
 
   const cite = citation(r);

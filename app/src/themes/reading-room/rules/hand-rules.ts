@@ -21,8 +21,8 @@ const LONG = 640; // px: from here the long drawings, so the wobble keeps its sc
 const ATTR = 'data-rr-hr';
 const LINE = 'data-rr-hr-line';
 const SCOPE = "html[data-look='reading-room'][data-rules='hand']";
-// a rule's drawing is a touch heavier than its hairline's colour: the pen's line tapers, so it reads lighter
-const WEIGHT = 1.15;
+// a rule's drawing takes its hairline's own soft colour as it is: no line in the room is ever dark (Rafael, 3 Nov)
+const WEIGHT = 1;
 
 let media: CSSMediaRule | null = null;
 const made = new Set<string>();
