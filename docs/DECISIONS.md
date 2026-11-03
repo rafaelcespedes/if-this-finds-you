@@ -26,6 +26,9 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **Shared links autoplay the writing animation for the recipient.**
 
 ### Writers and variety
+- **The main button is "Find another"** (Rafael, 2026-11-02; replaces "New hand"). On a found letter it brings a new letter in
+  a new hand; "Change writer" (same letter, new hand) lives in the writer-name dropdown. On your own letter it finds
+  another writer for your text.
 - **Ugly is allowed.** "Some overlap and some ugliness is acceptable. A lot of handwritings are ugly. So unless
   it's a bug, don't fix it." Builders and QA fix only unintended behaviour (scaling mistakes, missing ink,
   clipping). They never beautify, normalise or tighten hands. QA guards catch only values a bug could produce.
