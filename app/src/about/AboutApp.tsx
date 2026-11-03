@@ -135,7 +135,7 @@ export function AboutApp() {
 
         <Section id="what">
           <p>
-            This is a small archive of real letters, most by people nobody remembers: emigrants, settlers, children,
+            This is a small collection of real letters, most by people nobody remembers: emigrants, settlers, children,
             soldiers, servants. A writer who never existed copies each one out by hand, stroke by stroke. Each visit
             opens on a writer and a letter picked at random.
           </p>
