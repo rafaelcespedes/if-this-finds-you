@@ -30,14 +30,15 @@ export function ReadingDesk(props: PanelProps) {
   const signature = (
     <AboutHand {...props}>
       <button type="button" aria-label={`${props.name}: about this hand`} className="rr-sig group">
-        <Signature key={state.seed + state.style} p={props.p} name={props.name} ink={inkColor(state.ink)} emPx={24} className="hand-in h-[38px] overflow-visible" />
+        <Signature key={state.seed + state.style} p={props.p} name={props.name} ink={inkColor(state.ink)} emPx={24} className="hand-in h-[2.375rem] overflow-visible" />
         <ChevronDown aria-hidden className="rr-sig-chev" />
       </button>
     </AboutHand>
   );
   const share = <ShareMenu {...props} size="lg" />;
   return (
-    <div className="rr-desk panel-scroll h-full w-[340px] overflow-y-auto overscroll-contain">
+    // as wide as the tool's panel (density.css --panel-w), so the desk grows with the browser's text size as it does
+    <div className="rr-desk panel-scroll h-full overflow-y-auto overscroll-contain">
       <div className="rr-desk-inner">
         {/* the main action first, then the materials folded in their slip, then the letter's card */}
         <div className="rr-desk-actions">
