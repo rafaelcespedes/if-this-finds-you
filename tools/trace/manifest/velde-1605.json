@@ -1,0 +1,33 @@
+{
+  "id": "velde-1605",
+  "title": "Spieghel der Schrijfkonste",
+  "author": "Jan van de Velde (1568–1623); engraved by Simon Frisius",
+  "date": "1605",
+  "place": "Rotterdam",
+  "holder": "Rijksmuseum, Amsterdam, album BI-1885-1327",
+  "page": "https://id.rijksmuseum.nl/200649490",
+  "rights": {
+    "statement": "Image: Public Domain Mark 1.0; metadata CC0 1.0 (Rijksmuseum Linked Art records of each plate).",
+    "where": "https://id.rijksmuseum.nl/<plate id> (Accept: application/ld+json); search https://data.rijksmuseum.nl/search/collection?objectNumber=BI-1885-1327*",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "Engravings of 1605, public domain everywhere. Read only to understand the Dutch running hand's movement for dutch-1618; nothing traced from them."
+  },
+  "files": [
+    {
+      "name": "plate20.jpg",
+      "url": "https://iiif.micr.io/CJfTG/full/max/0/default.jpg",
+      "what": "BI-1885-1327-20 (https://id.rijksmuseum.nl/200649488): Schrijfvoorbeeld: Chilo van Lacedemonien (...); Dutch running-hand text. Read for movement, not traced"
+    },
+    {
+      "name": "plate21.jpg",
+      "url": "https://iiif.micr.io/uQCcH/full/max/0/default.jpg",
+      "what": "BI-1885-1327-21 (https://id.rijksmuseum.nl/200649490): Schrijfvoorbeeld: Marcus Curius (...); Dutch running-hand text. Read for movement, not traced"
+    },
+    {
+      "name": "plate24.jpg",
+      "url": "https://iiif.micr.io/eGKwF/full/max/0/default.jpg",
+      "what": "BI-1885-1327-24 (https://id.rijksmuseum.nl/200649498): Schrijfvoorbeeld: De Burghemeesteren (...); Dutch running-hand text. Read for movement, not traced"
+    }
+  ]
+}

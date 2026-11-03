@@ -1,0 +1,23 @@
+{
+  "id": "castilla-1866",
+  "title": "Curso completo de caligrafía general, ó Nuevo sistema de enseñanza de la letra española",
+  "author": "Antonio Castilla Benavides",
+  "date": "1866",
+  "place": "Madrid",
+  "holder": "Biblioteca Pública de Ávila (PA 83/464), Biblioteca Digital de Castilla y León",
+  "page": "https://bibliotecadigital.jcyl.es/es/consulta/registro.do?id=17089",
+  "rights": {
+    "statement": "Derechos: The Creative Commons CC0 (on the record page).",
+    "where": "https://bibliotecadigital.jcyl.es/es/consulta/registro.do?id=17089",
+    "checked": "2026-11-02",
+    "verdict": "clean",
+    "notes": "1866 publication. The library's PDF of this record is the text volume only: no alphabet plates, so it can't supply the hand. The Spanish letra española is traced from Palomares 1776 instead (second tracing batch, source palomares-1776)."
+  },
+  "files": [
+    {
+      "name": "curso-completo-1866.pdf",
+      "url": "https://bibliotecadigital.jcyl.es/es/catalogo_imagenes/grupo.do?path=10079796",
+      "what": "the text volume as one PDF (259 pages, 33 MB); no plates"
+    }
+  ]
+}
