@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME } from '@/lib/brand';
 import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
-import { Panel, type PanelProps } from '@/components/Panel';
+import { AboutHand, Panel, type PanelProps } from '@/components/Panel';
+import { Signature } from '@/components/Signature';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -277,6 +278,17 @@ export default function App() {
     return h ? describeHand(h) : undefined;
   }, [replying, replyKey]);
   const myHandWords = useMemo(() => describeHand(p), [p]);
+  // the "click the letter" hint, desktop: only after a while without writing, and never again once you have
+  const [wrote, setWrote] = useState(() => readPref('seedhand:wrote') === '1');
+  const [idleLong, setIdleLong] = useState(false);
+  useEffect(() => {
+    if (wrote || !isDesktop || state.reader) return;
+    const t = window.setTimeout(() => setIdleLong(true), 9000);
+    return () => window.clearTimeout(t);
+  }, [wrote, isDesktop, state.reader]);
+  const hintShown = isDesktop && idleLong && !wrote && !editing && !state.reader && !replying;
+  /** beside the sheet when the desk has room for it, else on the label's line */
+  const hintBeside = stageW > 0 && (stageW - shownPaper.w * pxPerMm) / 2 >= 124;
   const foundName = (l: { author: string; year?: number }) => `${shortAuthor(l.author)}${l.year ? `, ${l.year}` : ''}`;
   const sheetTitle = sample ? foundName(sample) : found ? `Your reply to ${shortAuthor(found.letter.author)}` : 'A letter from you';
   /** At a reply's first moment: keep the found letter's writing, as read. */
@@ -290,6 +302,7 @@ export default function App() {
   const replyDesk = isDesktop && found && stageW > 0 ? deskLayout(stageW, shownPaper.w, found.paper.w, MAX_PX_PER_MM) : null;
   const [theirsForward, setTheirsForward] = useState(false);
   const theirsForwardRef = useRef(false);
+  const wroteRef = useRef(false);
   theirsForwardRef.current = theirsForward;
   useEffect(() => { setTheirsForward(false); }, [replyKey]);
   /** a reply just started here (not opened from a link): their letter slides off your fresh sheet */
@@ -310,6 +323,7 @@ export default function App() {
     editLog.push(e);
     // typing is writing yours: their letter goes back down
     if (theirsForwardRef.current) setTheirsForward(false);
+    if (!wroteRef.current) { wroteRef.current = true; setWrote(true); writePref('seedhand:wrote', '1'); }
     if (e.source === 'paper') posture.onTyped();
     if (inkMode) {
       const s = stateNow.current;
@@ -730,7 +744,7 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 px-4 pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[72px] lg:pb-16"
+          className="relative min-w-0 px-4 pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
         >
           <header
@@ -749,7 +763,7 @@ export default function App() {
                 </button>
               ) : (
                 <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
-                  {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write' : 'Click the letter to write on it'}
+                  {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : isDesktop ? '' : coarse ? 'Tap the letter to write' : 'Click the letter to write on it'}
                 </span>
               )}
               {/* the found letters, all of them (the archive) */}
@@ -806,7 +820,39 @@ export default function App() {
             {pxPerMm > 0 && !reader && (
               <div ref={fitRef} className="origin-top">
                 <div className="relative mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
-                  <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} className="absolute bottom-2 left-0" />
+                  {isDesktop ? (
+                    // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
+                    <div className="absolute bottom-1.5 left-0 flex max-w-full items-end gap-2.5">
+                      <AboutHand {...panelProps}>
+                        <button
+                          type="button"
+                          aria-label={`${name}: about this hand`}
+                          className="group -ml-1.5 flex shrink-0 items-end gap-1 rounded-lg px-1.5 pt-0.5 transition-colors duration-150 hover-device:hover:bg-[#e6e2d8] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+                        >
+                          <span key={state.seed + state.style} className="hand-in block" style={{ color: ink }}>
+                            <Signature p={p} name={name} ink="currentColor" emPx={26} className="h-[42px] overflow-visible" />
+                          </span>
+                          <ChevronDown aria-hidden className="mb-2.5 size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </button>
+                      </AboutHand>
+                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 220)} className="mb-3" />
+                      {hintShown && hintBeside === false && (
+                        <span className="mb-3 animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">Click the letter to write on it</span>
+                      )}
+                    </div>
+                  ) : (
+                    <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} className="absolute bottom-2 left-0" />
+                  )}
+                  {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
+                  {hintShown && hintBeside && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute top-36 right-full mr-3 flex w-[108px] animate-in items-center gap-1.5 rounded-xl bg-panel px-2.5 py-2 text-[12px] leading-snug text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_8px_20px_-10px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-left-1 duration-700"
+                    >
+                      Click the letter to write on it
+                      <ArrowRight className="size-3.5 shrink-0" />
+                    </div>
+                  )}
                 </div>
                 <PaperEditor
                   ref={editor}

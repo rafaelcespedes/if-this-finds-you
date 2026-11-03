@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { PaperCanvas } from '@/components/PaperCanvas';
 import { PenSwatches, TipChoice } from '@/components/PenPicker';
 import { Signature } from '@/components/Signature';
 import { StylePicker } from '@/components/StylePicker';
@@ -24,7 +23,7 @@ import { branded } from '@/lib/brand';
 import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
-import { getPaper, PAPERS, variantsOf, type PaperId, type PaperSpec } from '@/lib/papers';
+import { getPaper, PAPERS, variantsOf, type PaperId } from '@/lib/papers';
 import { FONT_PACKAGE } from '@/lib/actions';
 import { PENS_LIVE, PENS_SHOWN, penName } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
@@ -113,29 +112,19 @@ export function Panel(props: PanelProps) {
 // ---------- always there: the writer, New hand, share, what's on the page ----------
 function WriterHeader(props: PanelProps) {
   const { onNewHand } = props;
+  // desktop: the writer's name (and what's known about the hand) sits on the letter itself; here, the ways on
   return (
     <section aria-label="Writer" className="px-5 pt-4 pb-4">
-      <AboutHand {...props}>
-        <button type="button" className="group -mx-1.5 block w-[calc(100%+12px)] rounded-lg px-1.5 pt-1 pb-1.5 text-left transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring">
-          <span key={props.state.seed + props.state.style} className="hand-in block" style={{ color: inkColor(props.state.ink) }}>
-            <Signature p={props.p} name={props.name} ink="currentColor" emPx={34} className="-ml-1 h-[54px] overflow-visible" />
-          </span>
-          <span className="mt-0.5 flex items-center gap-1 text-[16px] leading-tight font-medium tracking-[-0.012em]">
-            {props.name}
-            <ChevronDown aria-hidden className="size-3.5 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
-          </span>
-        </button>
-      </AboutHand>
-      <div className="mt-3 flex gap-2">
-        <Button size="lg" className="flex-1 justify-between pr-3 pl-3.5" onClick={onNewHand}>
-          <span className="flex items-center gap-2">
-            <Shuffle aria-hidden /> New hand
-          </span>
-          <kbd className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
-        </Button>
+      <div className="flex min-h-11 items-center gap-2">
+        <LetterStatus {...props} className="min-w-0 flex-1" />
         <ShareMenu {...props} size="lg" />
       </div>
-      <LetterStatus {...props} className="mt-2.5" />
+      <Button size="lg" className="mt-2 w-full justify-between pr-3 pl-3.5" onClick={onNewHand}>
+        <span className="flex items-center gap-2">
+          <Shuffle aria-hidden /> New hand
+        </span>
+        <kbd className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
+      </Button>
     </section>
   );
 }
@@ -681,8 +670,6 @@ const SliderRow = memo(function SliderRow({
 });
 
 // paper swatches show a magnified corner of each sheet, where its character is
-const SWATCH = { w: 40, h: 30 };
-const swatchCrop = (paper: PaperSpec) => ({ ...paper.swatch, ...SWATCH });
 
 /** Papers as a grid (desktop panel) or one row that scrolls sideways (phone sheet). */
 /** The kinds of the chosen paper (a pad: white A5, British blue, binsen, German A4), as small chips. */
@@ -741,7 +728,8 @@ const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value
               )}
             >
               <span className="relative block overflow-hidden rounded-[5px] shadow-[0_0_0_0.5px_rgba(60,45,20,0.16),0_1px_2px_rgba(60,45,20,0.08)] transition-shadow duration-150 group-aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(60,45,20,0.08)]">
-                <PaperCanvas paper={paper} pxPerMm={2.1} crop={swatchCrop(paper)} className="h-auto! w-full!" />
+                {/* flat: the sheet's own colour (the name under it tells near-whites apart) */}
+                <span className="block aspect-[4/3] w-full" style={{ background: paper.tint }} />
               </span>
               <span className="truncate px-0.5 text-center leading-tight">{paper.name}</span>
             </SegmentedItem>
@@ -782,9 +770,8 @@ const InkPicker = memo(function InkPicker({ value, pen, onChange }: { value: str
               <span
                 className="block size-[22px] rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-offset-2 ring-offset-panel transition-[box-shadow] duration-150 [[aria-checked=true]>&]:ring-[1.5px] [[aria-checked=true]>&]:ring-[var(--ink)]"
                 style={{
-                  background: ink.color
-                    ? `radial-gradient(circle at 40% 36%, color-mix(in oklab, ${ink.color} 84%, white) 0 22%, transparent 62%), radial-gradient(circle at 66% 70%, color-mix(in oklab, ${ink.color} 86%, black) 0 26%, transparent 64%), ${ink.color}`
-                    : 'conic-gradient(from 200deg, #263084, #233250, #26262e, #624228, #263084)',
+                  // flat colours, like the rest of the panel; the pen's own ink is two of its usual colours, split
+                  background: ink.color ?? 'linear-gradient(135deg, #263084 50%, #26262e 50%)',
                 }}
               />
             </SegmentedItem>

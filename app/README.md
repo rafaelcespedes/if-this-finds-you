@@ -36,6 +36,14 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   sample. There's always a way back: under New hand, "Another letter" / "Read a found letter"; your own letter
   is kept on this device (never in a link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter
   doesn't come back within ten hands.
+- **Desktop: the writer on the letter.** The writer's name, in their own hand, sits on the sheet's top-left corner
+  and opens About this hand (how they write, where they learned, the letter's source); the letter's name
+  follows it. The panel starts with the ways to other letters and Share (top right), then New hand across its
+  width. "Click the letter to write on it" isn't in the top line: after 9 s on the page without writing, a
+  small pointer beside the sheet says it (on the label's line when there's no room), and once you've
+  written it never comes back (`seedhand:wrote`). Phones keep the name in the control sheet.
+- **Swatches are flat colours**: each paper its sheet's colour (the name under it tells near-whites apart),
+  each ink its colour; the pen's own ink is split in two of its usual colours.
 - **The sheet's label** (`components/SheetLabel.tsx`), like an artboard's name: one quiet line above the first
   sheet's top-left corner, in the app's type. Which letter it is ("Kamma Rahbek, 1813", the credit; the source
   is in About this hand) and how the hand writes ("A meticulous joined hand, upright"). On your first key it
