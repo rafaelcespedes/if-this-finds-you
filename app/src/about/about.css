@@ -61,7 +61,7 @@
 .about-facts dt,
 .about-line-meta,
 .about-subhead,
-.about-contents a {
+.about-credits summary {
   font-family: var(--about-label-font);
   font-size: var(--about-label-size);
   letter-spacing: var(--about-label-spacing);
@@ -226,51 +226,6 @@
   color: var(--about-muted);
 }
 
-/* ---------- contents ---------- */
-.about-contents {
-  margin-top: 2.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--about-rule);
-}
-.about-contents .about-label {
-  color: var(--about-muted);
-}
-.about-contents ol {
-  margin: 0.5rem 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(13.5rem, 100%), 1fr));
-  column-gap: 1.5rem;
-}
-.about-contents a {
-  display: flex;
-  align-items: baseline;
-  gap: 0.625rem;
-  min-height: 2.75rem;
-  padding-block: 0.75rem;
-  color: var(--about-text);
-  text-decoration: none;
-}
-@media (pointer: fine) {
-  .about-contents a {
-    min-height: 0;
-    padding-block: 0.25rem;
-  }
-}
-@media (hover: hover) and (pointer: fine) {
-  .about-contents a:hover {
-    text-decoration: underline;
-    text-decoration-color: var(--rule-link);
-    text-underline-offset: 0.25em;
-  }
-}
-.about-contents-no,
-.about-section-no {
-  color: var(--about-number);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ---------- sections: ruled off, the label in the margin on a wide screen ---------- */
 .about-section {
   margin-top: 2.5rem;
@@ -324,12 +279,14 @@
   gap: 0 1.25rem;
   margin: 0;
 }
-/* wide: the four counts in a row, then the four shares two to a row, so their longer labels keep to a line or two */
+/* wide: four columns; the dates and the longer labels take two, so each row fills: letters, written (2), languages;
+   writers, by women, by ordinary people (2); then the two groups, two each */
 @media (min-width: 40rem) {
   .about-facts {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .about-facts > div:nth-child(n + 5) {
+  .about-facts > div:nth-child(2),
+  .about-facts > div:nth-child(n + 6) {
     grid-column: span 2;
   }
   /* "1395–1929" stays on one line in the narrow columns of a wide screen; on a phone (or at a large text size) it may
@@ -354,39 +311,6 @@
   font-size: 1.625em;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-}
-.about-facts-note {
-  margin-top: 0.25rem !important;
-  font-size: 0.8125em;
-  color: var(--about-muted);
-}
-
-/* the hands, as a ledger: the year in the margin, red */
-.about-ledger {
-  margin: 1rem 0 0;
-  padding: 0;
-  list-style: none;
-  border-bottom: 1px solid var(--about-rule);
-}
-.about-ledger li {
-  display: grid;
-  grid-template-columns: 3.25rem minmax(0, 1fr);
-  gap: 0.75rem;
-  padding: 0.625rem 0;
-  border-top: 1px solid var(--about-rule);
-  font-size: 0.9375em;
-  line-height: 1.5;
-}
-.about-ledger-year {
-  color: var(--about-number);
-  font-variant-numeric: tabular-nums;
-}
-.about-ledger-name {
-  color: var(--about-text);
-  font-weight: 500;
-}
-.about-ledger .about-link {
-  color: var(--about-muted);
 }
 
 /* contact, as a card's two ruled lines: the label in small capitals, the address beside it */
@@ -523,47 +447,63 @@
 .about-sources li:last-child {
   border-bottom: 1px solid var(--about-rule);
 }
-.about-noteref {
-  line-height: 0;
-  font-size: 0.7em;
-  margin-left: 0.1em;
-}
-.about-noteref a {
-  /* a fingertip's room around a small figure */
-  position: relative;
-  color: var(--about-number);
-  text-decoration: none;
-  font-variant-numeric: lining-nums;
-}
-.about-noteref a::after {
-  content: '';
-  position: absolute;
-  inset: -0.9rem -0.6rem;
-}
-.about-footnotes {
-  margin: 0.5rem 0 0;
-  padding-left: 1.25rem;
-  list-style: decimal;
-  color: var(--about-muted);
-}
-.about-footnotes li + li {
-  margin-top: 0.625rem;
-}
-.about-footnotes li::marker {
-  color: var(--about-number);
-}
-.about-footnotes li:target {
-  color: var(--about-text);
-}
-.about-back {
-  color: var(--about-number);
-  text-decoration: none;
-  padding: 0.5rem 0.25rem;
-}
 
 .about-colophon-name {
   color: var(--about-text);
 }
+/* the full credits, folded away: a quiet ruled line that opens to the list */
+.about-credits {
+  margin-top: 3.5rem;
+  border-top: 1px solid var(--about-rule);
+}
+.about-credits summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0;
+  color: var(--about-muted);
+  cursor: pointer;
+  list-style: none;
+}
+.about-credits summary::-webkit-details-marker {
+  display: none;
+}
+.about-credits summary::before {
+  content: '+';
+  width: 1em;
+  color: var(--about-number);
+  font-variant-numeric: tabular-nums;
+}
+.about-credits[open] summary::before {
+  content: '−';
+}
+@media (hover: hover) and (pointer: fine) {
+  .about-credits summary:hover {
+    color: var(--about-text);
+  }
+}
+.about-credits .about-notes {
+  max-width: 38rem;
+  padding-bottom: 1rem;
+}
+.about-credits .about-subhead:first-child {
+  margin-top: 0.5rem !important;
+}
+.about-ledger-year {
+  color: var(--about-number);
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 56rem) {
+  .about-credits {
+    padding-left: 16rem;
+    border-top: 0;
+  }
+  .about-credits summary {
+    border-top: 1px solid var(--about-rule);
+  }
+}
+
 .about-colophon {
   margin-top: 4rem;
   padding-top: 1rem;
@@ -608,14 +548,13 @@ html[data-look='reading-room'] .about-kicker,
 html[data-look='reading-room'] .about-facts dt,
 html[data-look='reading-room'] .about-line-meta,
 html[data-look='reading-room'] .about-subhead,
-html[data-look='reading-room'] .about-contents a,
+html[data-look='reading-room'] .about-credits summary,
 html[data-look='reading-room'] .about-contact dt,
 html[data-look='reading-room'] .about-give-link {
   font-weight: 400;
 }
 html[data-look='reading-room'] .about-facts dd,
 html[data-look='reading-room'] .about-ledger-year,
-html[data-look='reading-room'] .about-contents-no,
 html[data-look='reading-room'] .about-section-no {
   font-variant-numeric: oldstyle-nums tabular-nums;
 }
