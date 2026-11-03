@@ -870,6 +870,7 @@ export default function App() {
                 gap={SHEET_GAP}
                 ink={ink}
                 name={name}
+                text={inkMode && state.inkLog ? (live?.page.text ?? state.text) : state.text}
                 onWriteYourOwn={() => update({ reader: false })}
               />
             )}
