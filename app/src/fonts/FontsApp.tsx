@@ -99,7 +99,7 @@ function useDevicePixelRatio() {
 
 // the pitch and the longer intro: docs/brand/naming-and-copy.md §2.11 (Rafael's approved copy)
 const INTRO = 'Every hand here is a font you can keep. Free and open source.';
-const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font can only keep a few versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
+const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font keeps four or five versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
 
 export function FontsApp() {
   const [route, update] = useRoute();
