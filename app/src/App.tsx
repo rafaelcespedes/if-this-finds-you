@@ -614,7 +614,8 @@ export default function App() {
   const rollAsk = useRef(0);
   useEffect(() => {
     let w: Worker | null = null;
-    try { w = new Worker(new URL('./workers/roll.worker.ts', import.meta.url), { type: 'module' }); } catch { w = null; }
+    // the writing worker's own script (workers/write.worker.ts rolls too): already downloaded for the letter
+    try { w = new Worker(new URL('./workers/write.worker.ts', import.meta.url), { type: 'module', name: 'roll' }); } catch { w = null; }
     if (w) w.onerror = () => { if (roller.current === w) roller.current = null; };
     roller.current = w;
     return () => { w?.terminate(); roller.current = null; };
