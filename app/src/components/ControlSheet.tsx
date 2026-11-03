@@ -251,7 +251,7 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
             </button>
           </AboutHand>
           <Button onClick={props.onNewHand} className="h-11 px-3.5">
-            <Shuffle aria-hidden /> New hand
+            <Shuffle aria-hidden /> Find another
           </Button>
           <ShareMenu {...props} />
         </div>

@@ -26,7 +26,7 @@ import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
-import { isNeat, rollHand, withSample, type LockKey } from '@/lib/roll';
+import { isNeat, rollHand, rollLook, withSample, type LockKey } from '@/lib/roll';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
@@ -607,6 +607,8 @@ export default function App() {
     },
     busy,
     onNewHand: () => newHand(true),
+    // the same letter, another writer: the stationery stays, the text stays (a found letter keeps its words)
+    onChangeWriter: () => lookChange(() => update((s) => rollLook(s, { variety, locked: new Set<LockKey>(['pen', 'ink', 'paper']) }))),
     onSimilarHand: () => similarHand(true),
     onSeed: (seed) => update((s) => withSample(s, { seed, offsets: offsetsForNewHand(s.offsets) }, recentLetters())),
     onStyle: (style) => lookChange(() => update({ style })),

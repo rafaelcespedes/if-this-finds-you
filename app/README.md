@@ -33,7 +33,7 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   school: German, Chancery: Italian, Québec print: French); the oldest spellings (before 1660) only come with
   historical hands (Chancery). "Blank page" starts from nothing. The first edit (typing, an underline) makes the
   text yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a
-  sample. There's always a way back: under New hand, "Another letter" / "Read a found letter"; your own letter
+  sample. There's always a way back: Find another brings the next found letter, and "Read a found letter" leads back from yours; your own letter
   is kept on this device (never in a link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter
   doesn't come back within ten hands.
 - **Desktop: the writer on the letter.** The writer's name, in their own hand, sits on the sheet's top-left corner
@@ -77,7 +77,9 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
 - **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
   about how they write. The name opens **About this hand**: how they write, where they learned, the letter's
   source, where the letter shapes come from (with links), and the seed.
-- **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
+- **Find another** (or **R** when not typing; it used to be New hand) rolls the whole look, and on a found
+  letter brings another letter with it. **Change writer**, in the writer's dropdown, is the same letter in a
+  new hand (paper, pen and ink kept). Either way it rolls: a new writer (word seed, the most unlike
   of several candidates), Print or Joined, pen and tip, ink, paper, size, and a fresh offset on every
   slider, each inside a band that stays legible. **Keep my paper, pen and ink** (a switch under More) keeps
   those while everything else rolls (remembered per browser). The next two new hands (and a sibling) are
