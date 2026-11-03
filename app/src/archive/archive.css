@@ -55,6 +55,12 @@
 .archive-sheet-blank.is-gone {
   opacity: 0;
 }
+/* a card is one big link, never underlined itself. Tailwind's reset gives links `text-decoration: inherit`, and a
+   link inheriting a property that isn't inherited makes Chrome restyle the card's whole subtree whenever the card's
+   own style changes: on the canvas, every frame of a drag (a phone spent most of each frame on it) */
+.archive-card {
+  text-decoration: none;
+}
 @media (hover: hover) and (pointer: fine) {
   .archive-card:hover .archive-sheet {
     transform: rotate(0deg);
