@@ -138,6 +138,25 @@ Ligature, Downstroke, Upstroke, Cursive, Flourish, Penmanship, Letterform, Coppe
 **Verdict:** on the design side, **Inkswell** (one warm word) or **Hairline & Swell** (for a type-literate
 audience). For the whole product, Stray Letters still tells the story best.
 
+### "Dear …": names that open like a letter
+
+No live exact marks in TMview unless noted. Per year (renewal).
+
+| Name | Domain | What it says |
+|---|---|---|
+| **Dear Long Ago** | dearlongago.com $12.03 (.app $15) | Addresses the past directly; the archive runs 1395 to 1914. The most romantic |
+| **Dear Finder** | dearfinder.app $15 (.co $24.80; .com taken) | How a note in a bottle starts. You're the finder: you explore, find a letter, write back |
+| Dear Whoever | dearwhoever.app $15 | A letter that never reached its person, now addressed to anyone. Playful, modern |
+| Dear Afar | dearafar.com $12.03 | Letters from far away, in place and time. Short |
+| Dear Hand | dearhand.com $12.03 | Addresses the handwriting itself. The most typographic |
+| Dear So-and-so | dearsoandso.app $15 | Warm and wry; every writer is a so-and-so |
+
+Dropped: **Dear Stranger** is Oregon Humanities' letter exchange (since 2014) and a Substack letter exchange.
+Dear Unknown has a mark in Korea (class 35). Taken: Dear Someone, Dear Reader, Dear You, Dear Friend (.com),
+Dear Ink, Dear Paper (.com), Dear Elsewhere.
+
+**Verdict:** **Dear Long Ago** if the name should feel romantic; **Dear Finder** if it should invite exploring.
+
 ---
 
 ## 1. Naming
