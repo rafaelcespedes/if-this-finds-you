@@ -21,6 +21,7 @@ function watch(el: Element, fn: (near: boolean) => void) {
 
 export const cardLetter = (l: ArchiveLetter): CardLetter => ({
   id: l.id, text: l.text, lang: l.lang, year: l.year, tags: l.tags, traditions: l.traditions, olderHandsOnly: l.olderHandsOnly, look: l.look, origin: l.origin,
+  recipient: l.recipient, found: l.found ? { circumstance: l.found.circumstance } : undefined,
 });
 
 interface Props {
