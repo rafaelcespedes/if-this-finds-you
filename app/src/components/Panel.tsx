@@ -25,6 +25,7 @@ import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
 import { getPaper, PAPERS, variantsOf, type PaperId, type PaperSpec } from '@/lib/papers';
+import { FONT_PACKAGE } from '@/lib/actions';
 import { PENS_LIVE, PENS_SHOWN, penName } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
 import type { LockKey } from '@/lib/roll';
@@ -233,8 +234,14 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
           <MenuItem onSelect={() => onExportVideo('gif')} icon={<ImagePlay aria-hidden />} disabled={busy.video || exportable?.gif === false} quiet>
             Animated GIF
           </MenuItem>
-          <MenuItem onSelect={onExportFont} icon={busy.font ? <Loader2 className="animate-spin" aria-hidden /> : <CaseSensitive aria-hidden />} disabled={busy.font} quiet>
-            Font file (.otf)
+          <MenuItem
+            onSelect={onExportFont}
+            icon={busy.font ? <Loader2 className="animate-spin" aria-hidden /> : <CaseSensitive aria-hidden />}
+            disabled={busy.font}
+            quiet
+            hint={FONT_PACKAGE ? 'Install it on your computer. It cycles a few versions of each letter.' : undefined}
+          >
+            {FONT_PACKAGE ? 'Download font (.zip)' : 'Font file (.otf)'}
           </MenuItem>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
@@ -242,17 +249,23 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
   );
 }
 
-function MenuItem({ children, icon, onSelect, disabled, quiet }: { children: React.ReactNode; icon: React.ReactNode; onSelect: () => void; disabled?: boolean; quiet?: boolean }) {
+function MenuItem({ children, icon, onSelect, disabled, quiet, hint }: { children: React.ReactNode; icon: React.ReactNode; onSelect: () => void; disabled?: boolean; quiet?: boolean; hint?: string }) {
   return (
     <DropdownMenu.Item
       disabled={disabled}
       onSelect={onSelect}
       className={cn(
-        'flex h-11 cursor-default items-center justify-between gap-3 rounded-[10px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:text-muted-foreground',
+        'flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[10px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
         quiet ? 'text-[13px]' : 'text-[14px]',
+        hint && 'py-2',
       )}
     >
-      {children}
+      {hint ? (
+        <span className="grid gap-0.5">
+          <span>{children}</span>
+          <span className="text-[11.5px] leading-snug text-muted-foreground">{hint}</span>
+        </span>
+      ) : children}
       {icon}
     </DropdownMenu.Item>
   );

@@ -20,7 +20,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
-import { canShareLinks, copyText, exportFont, renderNote, saveNote, shareLink } from '@/lib/actions';
+import { FONT_PACKAGE, canShareLinks, copyText, exportFont, exportFontPackage, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
@@ -544,15 +544,21 @@ export default function App() {
     // let the spinner paint before the (blocking) font build
     await new Promise((r) => setTimeout(r, 40));
     try {
-      const res = await exportFont(p, `${APP_NAME} – ${name} (${styleCard(state.style).title})`);
-      toast.success('Font exported', { description: `${res.glyphs} glyphs, 3 versions of each letter` });
+      if (FONT_PACKAGE) {
+        // the open font, zipped with how to install it, its licence and credits (built in a worker)
+        const res = await exportFontPackage({ seed: state.seed, style: state.style, overrides: eff.overrides, name });
+        toast.success('Font downloaded', { description: `${res.family}: ${res.glyphs} glyphs. Install it from the zip.` });
+      } else {
+        const res = await exportFont(p, `${APP_NAME} – ${name} (${styleCard(state.style).title})`);
+        toast.success('Font exported', { description: `${res.glyphs} glyphs, 3 versions of each letter` });
+      }
     } catch (e) {
       console.error(e);
       toast.error('Couldn’t build the font', { description: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy((b) => ({ ...b, font: false }));
     }
-  }, [p, name, state.style]);
+  }, [p, name, state.seed, state.style, eff.overrides]);
 
   // R for a new hand, Shift R for a similar one, when not typing; ⌘\\ shows or hides the desk while writing
   useEffect(() => {
