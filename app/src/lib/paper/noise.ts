@@ -1,5 +1,5 @@
 // Seeded smooth noise for paper: edges (1D, along a side) and fields (2D, over the sheet). Values 0..1.
-import { rng } from '@engine';
+import { rng } from './rng';
 
 const N = 1024;
 const smooth = (t: number) => t * t * (3 - 2 * t);

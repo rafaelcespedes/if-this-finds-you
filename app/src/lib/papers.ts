@@ -7,7 +7,6 @@ import { isShaped } from './paper/outline';
 
 export type { PaperId, PaperSpec } from './paper/types';
 export { paintPaper, SHADOW_BLEED, type PaintOptions } from './paper/paint';
-import { warmPaperArt } from './paper/paint';
 export { isShaped } from './paper/outline';
 
 type Base = Omit<PaperSpec, 'id' | 'family'>;
@@ -275,14 +274,6 @@ export const ALL_PAPERS: PaperSpec[] = FAMILIES.flatMap((f) => [
   ...(f.variants ?? []).map((v) => ({ ...f.base, ...v.patch, variant: v.variant, hint: v.hint, roll: v.roll, id: `${f.id}-${v.id}`, family: f.id })),
 ]);
 const byId = new Map(ALL_PAPERS.map((p) => [p.id, p]));
-
-/** Make the shared paper textures and every outline in idle moments (once), so no New hand waits on them. */
-let warmed = false;
-export function warmPapers() {
-  if (warmed) return;
-  warmed = true;
-  warmPaperArt(ALL_PAPERS);
-}
 
 /** The seven papers, as the picker shows them (each family's first version). */
 export const PAPERS: PaperSpec[] = FAMILIES.map((f) => byId.get(f.id)!);

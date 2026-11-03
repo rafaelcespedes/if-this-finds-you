@@ -1,5 +1,6 @@
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { isShaped, paintPaper, SHADOW_BLEED, warmPapers, type PaperSpec } from '@/lib/papers';
+import { ALL_PAPERS, isShaped, SHADOW_BLEED, type PaperSpec } from '@/lib/papers';
+import { paintHere, paintOff, paintsOffThread, warmPaper, type PaperBitmap, type PaperJob } from '@/lib/paper/client';
 import { perf } from '@/lib/perf';
 import { cn } from '@/lib/utils';
 
@@ -23,11 +24,23 @@ interface Props {
 }
 
 // Painted sheets, kept so switching back to a paper costs a copy, not a repaint (a few sheet-sized bitmaps).
-// Swatches have their own, larger store so the picker never pushes a sheet out.
-const painted = new Map<string, HTMLCanvasElement>();
-const swatches = new Map<string, HTMLCanvasElement>();
+// Swatches have their own, larger store so the picker never pushes a sheet out. Paintings still on their way from
+// the worker are shared, so two canvases asking for the same sheet wait for one painting.
+const painted = new Map<string, PaperBitmap>();
+const swatches = new Map<string, PaperBitmap>();
+const coming = new Map<string, Promise<PaperBitmap>>();
 const KEEP = 6;
 const KEEP_SWATCHES = 48;
+
+function keep(store: Map<string, PaperBitmap>, key: string, bmp: PaperBitmap, max: number) {
+  store.set(key, bmp);
+  while (store.size > max) {
+    const [old, b] = store.entries().next().value!;
+    store.delete(old);
+    // a canvas showing it holds its own copy
+    if ('close' in b) b.close();
+  }
+}
 
 function desk() {
   return getComputedStyle(document.documentElement).getPropertyValue('--desk').trim() || '#eeebe4';
@@ -36,13 +49,18 @@ function desk() {
 /** How far past the screen a sheet keeps its painted paper (a screen's height above and below). */
 const NEAR = '100% 0px';
 
+let warmed = false;
+
 /**
- * A sheet of paper painted on a canvas at the screen's pixel density. A long letter's sheets far from the screen
- * give their bitmaps back (each is several megabytes) and are painted again as they come near.
+ * A sheet of paper painted on a canvas at the screen's pixel density. The painting happens in a worker where the
+ * browser allows it: until the new paper arrives the old one stays (its own size), then they swap. A long letter's
+ * sheets far from the screen give their bitmaps back (each is several megabytes) and are painted again as they come
+ * near.
  */
 export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fade, sheet = 0, className }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const shown = useRef<string | null>(null);
+  const wanted = useRef<string | null>(null);
   // the first sheets start painted (they're the ones on screen); the rest wait to be seen near
   const [near, setNear] = useState(() => !!crop || sheet < 2);
   useEffect(() => {
@@ -65,7 +83,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     if (!near) {
       // far from the screen: the bitmap goes (the sheet keeps its size; it's painted again on the way back)
       if (c.width) { c.width = 0; c.height = 0; }
-      shown.current = null;
+      shown.current = wanted.current = null;
       return;
     }
     const dpr = Math.min(3, window.devicePixelRatio || 1);
@@ -75,51 +93,72 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     const h = Math.round(region.h * k) + 2 * b;
     const key = `${paper.id}|${guide ? 'g' : ''}|${sheet}|${region.x}|${region.y}|${w}x${h}`;
     if (shown.current === key) return;
-    // the old paper fades out over the new one
-    if (fade && shown.current && c.width && !crop) ghost(c, cssW, cssH);
-    const store = crop ? swatches : painted;
-    let src = store.get(key);
-    if (!src) {
-      src = document.createElement('canvas');
-      src.width = w;
-      src.height = h;
-      const ctx = src.getContext('2d');
-      if (!ctx) return;
-      // a swatch may look past the sheet's edge, onto the desk
-      if (crop) {
-        ctx.fillStyle = desk();
-        ctx.fillRect(0, 0, w, h);
-      }
-      ctx.translate(b - region.x * k, b - region.y * k);
-      perf.time(crop ? 'paper swatch paint' : 'paper sheet paint', () =>
-        paintPaper(ctx, paper, {
-          pxPerMm: k,
-          grainScale: dpr,
-          // a swatch shows its cut edges against the desk; a sheet lets the real desk show
-          holeFill: crop ? desk() : 'clear',
-          guide,
-          sheet,
-          shadow: bleed ? 'full' : 'contact',
-        }),
-      );
-      store.set(key, src);
-      while (store.size > (crop ? KEEP_SWATCHES : KEEP)) store.delete(store.keys().next().value!);
-    }
-    c.width = w;
-    c.height = h;
-    c.getContext('2d')?.drawImage(src, 0, 0);
-    shown.current = key;
-    warmPapers();
-  }, [paper, pxPerMm, region.x, region.y, region.w, region.h, cssW, fade, crop, guide, sheet, bleed, near]);
+    wanted.current = key;
+    const asked = performance.now();
 
-  return (
-    <canvas
-      ref={ref}
-      aria-hidden
-      className={cn('block', className)}
-      style={bleed ? { left: -bleed, top: -bleed, width: cssW + 2 * bleed, height: cssH + 2 * bleed, maxWidth: 'none' } : { width: cssW, height: cssH }}
-    />
-  );
+    // the canvas takes the new paper's size only when the new paper is in it, so the old one never stretches
+    const show = (src: PaperBitmap) => {
+      if (wanted.current !== key || ref.current !== c) return;
+      // the old paper fades out over the new one
+      if (fade && shown.current && c.width && !crop) ghost(c, cssW, cssH);
+      c.width = w;
+      c.height = h;
+      c.style.width = `${cssW + 2 * bleed}px`;
+      c.style.height = `${cssH + 2 * bleed}px`;
+      c.style.left = bleed ? `${-bleed}px` : '';
+      c.style.top = bleed ? `${-bleed}px` : '';
+      c.getContext('2d')?.drawImage(src, 0, 0);
+      shown.current = key;
+      if (!warmed) { warmed = true; warmPaper(ALL_PAPERS); }
+    };
+
+    const store = crop ? swatches : painted;
+    const have = store.get(key);
+    if (have) { show(have); return; }
+    const job: Omit<PaperJob, 'id'> = {
+      paper,
+      w,
+      h,
+      tx: b - region.x * k,
+      ty: b - region.y * k,
+      // a swatch may look past the sheet's edge, onto the desk
+      fill: crop ? desk() : undefined,
+      o: {
+        pxPerMm: k,
+        grainScale: dpr,
+        // a swatch shows its cut edges against the desk; a sheet lets the real desk show
+        holeFill: crop ? desk() : 'clear',
+        guide,
+        sheet,
+        shadow: bleed ? 'full' : 'contact',
+      },
+    };
+    const max = crop ? KEEP_SWATCHES : KEEP;
+    if (!paintsOffThread()) {
+      // no painting in workers here: paint now, as the page always did
+      const src = perf.time(crop ? 'paper swatch paint' : 'paper sheet paint', () => paintHere(job));
+      keep(store, key, src, max);
+      show(src);
+      return;
+    }
+    let p = coming.get(key);
+    if (!p) {
+      p = paintOff(job).then((src) => {
+        coming.delete(key);
+        keep(store, key, src, max);
+        return src;
+      });
+      coming.set(key, p);
+    }
+    p.then((src) => {
+      if (wanted.current !== key) return;
+      show(src);
+      perf.samples.push({ name: crop ? 'paper swatch ready' : 'paper sheet ready', ms: performance.now() - asked });
+    });
+  }, [paper, pxPerMm, region.x, region.y, region.w, region.h, cssW, cssH, fade, crop, guide, sheet, bleed, near]);
+
+  // the size follows the painted paper (set in show); before any paper arrives, the canvas holds the sheet's place
+  return <canvas ref={ref} aria-hidden className={cn('block', className)} style={{ maxWidth: 'none' }} />;
 });
 
 /** A copy of the canvas as it is now, laid over it and fading away, clipped to the new sheet. */
