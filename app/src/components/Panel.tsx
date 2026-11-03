@@ -131,7 +131,7 @@ function WriterHeader(props: PanelProps) {
         </span>
         <kbd aria-hidden className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
       </Button>
-      {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="mt-2.5" />}
+      {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="mt-2.5 justify-center" />}
     </section>
   );
 }
@@ -282,7 +282,7 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
   return (
     // what the letter is lives on the sheet now (its label); here, only the ways to the others
     <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted-foreground', className)}>
-      <span className="-ml-1 flex items-center gap-1">
+      <span className="flex items-center gap-1">
         {letter.found && letter.drafts > 0 && (
           <button type="button" onClick={letter.onBackToMine} className={link}>Back to my letter</button>
         )}

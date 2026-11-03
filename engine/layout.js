@@ -260,7 +260,12 @@ function graphemes(tok, base) {
 //         salt (another letter by the same hand: different letter instances), size, weight,
 //         letter (false: no letter shape, every line at the margin), ahead (the text still to be written,
 //         as far as it's known: Ink mode's thought letters), complete (the text ends where the letter
-//         ends; default true, false in Ink mode) }
+//         ends; default true, false in Ink mode),
+//         sheet ({ first, last, ink, height }: sheets of paper, font units from each sheet's top: the first
+//         and last baselines, the lowest ink may go, the sheet's height. A line that doesn't fit starts the
+//         next sheet; sheets are stacked `height` apart, so sheet k's lines have y in [k·height, (k+1)·height).
+//         An empty line never starts a sheet, and a closing goes over with its name. Ink placed on a sheet
+//         stays there, so Ink mode and fair copy flow onto as many sheets as they need.) }
 // Letter shape: each line's role (greeting, paragraph, closing, name, P.S.) is decided when the line
 // begins, from what's known of it then (this text plus `ahead`), so ink placed once never moves. With
 // `complete`, a closing is also recognised by where it sits (only short lines follow it).
@@ -291,7 +296,8 @@ function graphemes(tok, base) {
 //     and on empty lines. kind: 'glyph' | 'space' | 'lineEnd' | 'lineStart' | 'empty'.
 //   lineInfo: per line { n (= item.line), y, x0, x1, slope (deg, + = uphill), lean (deg), flow, bow and
 //     droop (font units at the middle / end), drift, phase, wave, edge, rule?, start (x where the writing
-//     starts: an indent, a closing block), role, blank? }: lineBaseline(p, line, x) rebuilds the curve.
+//     starts: an indent, a closing block), role, blank?, sheet (0 without opts.sheet) }: lineBaseline(p,
+//     line, x) rebuilds the curve. page.sheets: how many sheets the writing uses.
 //     role: what the line is in the letter (letter-shape.js: 'first', 'opening', 'para', 'cont',
 //     'closing', 'signature', 'name', 'ps', 'ps-para', 'ps-cont'), 'wrap' (the writing ran on from the
 //     line above) or 'blank' (an empty line between paragraphs: it has no ink and only holds the caret;
@@ -307,8 +313,12 @@ export function layout(p, text, opts = {}) {
   const ruled = !!opts.ruled;
   const lineH = opts.lineHeight || M.pitch;
   const pitch = ruled ? lineH : opts.lineHeight ? lineH * H.pitch : lineH;
-  const placed = opts.firstBaseline != null;
-  const firstY = placed ? opts.firstBaseline : M.firstBaseline;
+  // sheets of paper (opts.sheet): a line that doesn't fit starts the next sheet, stacked `height` apart
+  const SH = opts.sheet && opts.sheet.height > 0 ? opts.sheet : null;
+  const placed = opts.firstBaseline != null || !!SH;
+  const firstY = opts.firstBaseline != null ? opts.firstBaseline : SH && SH.first != null ? SH.first : M.firstBaseline;
+  // the first baseline (first rule) of sheet k
+  const sheetBase = (k) => (SH ? k * SH.height + (SH.first != null ? SH.first : firstY) : firstY);
   const marginL = opts.marginLeft || 0;
   const ink = opts.ink ? { salt: String(opts.ink.salt == null ? (opts.salt == null ? '' : opts.salt) : opts.ink.salt) } : null;
   // salt: a different letter by the same hand gets different letter instances (writing-experience §4.6)
@@ -326,7 +336,7 @@ export function layout(p, text, opts = {}) {
   const pen = opts.start ? JSON.parse(JSON.stringify(opts.start)) : {
     lineNo: -1, line: null, lp: 0, x: 0, wp: 0, wordsBefore: 0, offset: 0, para: -1, words: 0,
     pending: 0, prevEnd: '', seen: {}, glyphs: 0, open: null, endO: null, endX: 0,
-    letter: newLetter(), lastText: null, textEnd: null, wrapDx: 0, pk: 1, size: 1, blockX: null, sigX: null,
+    letter: newLetter(), lastText: null, textEnd: null, wrapDx: 0, pk: 1, size: 1, blockX: null, sigX: null, sheet: 0,
   };
   if (!pen.letter) pen.letter = newLetter();
   const L = pen.letter;
@@ -383,16 +393,16 @@ export function layout(p, text, opts = {}) {
     const k = sp ? sp.k || 1 : pen.pk || 1;
     const between = sp && sp.blank && sp.at != null;
     if (ruled) {
-      const prevRule = ref && ref.rule != null ? Math.round((ref.rule - firstY) / lineH) : -1;
+      const prevRule = ref && ref.rule != null ? Math.round((ref.rule - sheetBase(ref.sheet || 0)) / lineH) : -1;
       if (between) {
         // an empty line between paragraphs: on the rule the writer skips, or between two rules
         if (ref) Object.assign(ln, { slope: ref.slope, x0: ref.x0 });
-        ln.y = firstY + (prevRule + sp.at) * lineH;
-        if (Number.isInteger(sp.at)) { ln.rule = ln.y; rules.push(ln.rule); }
+        ln.y = sheetBase(pen.sheet || 0) + (prevRule + sp.at) * lineH;
+        if (Number.isInteger(sp.at)) ln.rule = ln.y;
       } else {
         // sometimes a rule is skipped before a new paragraph
         const skip = sp && sp.para && ref && lr() < H.skipRule * (0.5 + (1 - care)) * Math.min(1, wander) ? 1 : 0;
-        ln.rule = firstY + (prevRule + 1 + (sp ? Math.round(sp.adv || 0) : 0) + skip) * lineH;
+        ln.rule = sheetBase(pen.sheet || 0) + (prevRule + 1 + (sp ? Math.round(sp.adv || 0) : 0) + skip) * lineH;
         // words float a little above the rule; now and then a whole line strays off it
         ln.float = xh * (H.float + 0.025 * ls * series(hc, S + 'float', 0.6, lineNo));
         if (lr() < H.stray * (0.4 + (1 - care)) * Math.min(1.5, wander)) ln.float += xh * (lr() < 0.8 ? lr.range(0.06, 0.16) : -lr.range(0.03, 0.07));
@@ -418,6 +428,22 @@ export function layout(p, text, opts = {}) {
       }
       const t = tight();
       if (t < near) ln.y += near - t;
+    }
+    // ----- the sheet: a line past the last baseline (or whose descenders would run off the paper) starts
+    // the next sheet, on its first baseline. An empty line never starts a sheet: it stays at the foot of
+    // this one. sp.keep: lines that must come along (a closing's name), in pitches.
+    ln.sheet = pen.sheet || 0;
+    if (SH && ref) {
+      const top = ln.sheet * SH.height, tol = (ruled ? 0.3 : 0.2) * pitch, last = SH.last != null ? SH.last : Infinity;
+      const ink = SH.ink != null ? SH.ink : Infinity, keep = (sp && sp.keep || 0) * pitch;
+      const base = ruled && ln.rule != null ? ln.rule : ln.y;
+      if (between) {
+        if (base - top > last + tol) { ln.y = top + last + tol; ln.rule = undefined; }
+      } else if (base - top + keep > last + tol || ln.y - top + keep + M.descender > ink) {
+        pen.sheet = ++ln.sheet;
+        if (ruled) { const f = ln.rule - ln.y; ln.rule = sheetBase(ln.sheet); ln.y = ln.rule - f; rules[rules.length - 1] = ln.rule; }
+        else ln.y = sheetBase(ln.sheet);
+      }
     }
     // where the writing starts: the margin, an indent, a closing block, under the greeting
     let start = sp && sp.x != null ? sp.x : ln.x0 + (sp ? sp.dx || 0 : pen.wrapDx || 0);
@@ -702,13 +728,16 @@ export function layout(p, text, opts = {}) {
       sp.w = roughWidth(known[pi]) * (role === 'closing' ? 1 : H.nameSize);
       if (role === 'closing') {
         // the block fits as a whole: the writer starts the closing far enough left for the name below
-        for (let j = pi + 1, n = 0; j < known.length && n < 4; j++) {
+        let n = 0;
+        for (let j = pi + 1; j < known.length && n < 4; j++) {
           const u = known[j].trim();
           if (!u) { if (n) break; continue; }
           if (isPS(u) || !isShort(u)) break;
           sp.w = Math.max(sp.w, roughWidth(u) * H.nameSize + H.nameDx * xh);
           n++;
         }
+        // (and the name goes over to the next sheet with it)
+        sp.keep = n ? n * (ruled ? 1 : 1 + H.sigGap) : 0;
       }
       if (role === 'signature' && pen.blockX != null) {
         sp.x = L.sigs === 1 ? pen.blockX + H.nameDx * xh * (0.7 + 0.6 * xr()) : (pen.sigX == null ? pen.blockX : pen.sigX) + 0.35 * xh * spread * xr.gauss();
@@ -877,6 +906,7 @@ export function layout(p, text, opts = {}) {
     items, runs, stops, height: Math.max(bottom + margin, lastBase + M.descender), width: maxU, lines: lineInfo.length, misses, lineHeight: lineH,
     rules, ruling: ruled ? { first: firstY + shift, pitch: lineH } : null,
     lineInfo, words: wordsHere, ink: { top, bottom, left, right }, pen, text, from, seed: p.seed, xh, connected,
+    sheets: SH ? (pen.sheet || 0) + 1 : 1,
   };
 }
 

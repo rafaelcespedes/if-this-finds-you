@@ -33,8 +33,8 @@ export function Wordmark({ className }: { className?: string }) {
     if (!icon) return;
     fetch(icon, { method: 'HEAD' }).then((r) => {
       if (!r.ok) return;
-      const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (link) link.href = icon;
+      const link = document.querySelector<HTMLLinkElement>('link[rel="icon"][type="image/svg+xml"]');
+      if (link && !link.href.endsWith(icon)) link.href = icon;
     }).catch(() => {});
   }, []);
   if (!svg) return <span className={cn('text-[13px] font-medium tracking-[-0.01em]', className)}>{APP_NAME}</span>;

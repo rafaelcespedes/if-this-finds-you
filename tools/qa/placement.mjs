@@ -58,5 +58,29 @@ for (const style of E.styleNames().slice(0, 3)) for (const ruled of [false, true
   if (!ok) bad++;
   console.log(`${style.padEnd(7)} ${ruled ? 'ruled' : 'plain'} letter${complete ? ' (complete)' : ''}: word by word with what's ahead = one pass: ${same}; roles ${need.filter((r) => !roles.includes(r)).length ? 'MISSING ' + need.filter((r) => !roles.includes(r)).join(', ') : 'all there'}`);
 }
+// a long letter on sheets of paper (opts.sheet): it carries on onto the next sheet, written word by word
+// exactly as in one pass; no line goes past the last baseline, no sheet starts on an empty line, and a
+// name never ends up on another sheet than its closing
+{
+  const para = 'I write to you from the farm, where the wheat is nearly in and the evenings are long and gold. Father is well and sends his love.';
+  const LONG = 'Dear Mary,\n\n' + Array(7).fill(para).join('\n\n') + '\n\nYour loving sister,\nAnne\n\nP.S. Do write soon.';
+  for (const style of E.styleNames().slice(0, 3)) for (const ruled of [false, true]) {
+    const p = E.makeHand('quiet-heron-17', style);
+    const xh = E.pageMetrics(p).xh, pitch = ruled ? 3.1 * xh : E.pageMetrics(p).pitch;
+    const sheet = { first: 1.2 * pitch, last: 10 * pitch, ink: 10 * pitch + 550, height: 12 * pitch };
+    const opts = { maxWidth: 34 * xh, ruled, lineHeight: ruled ? pitch : undefined, sheet, salt: 'qa', complete: true };
+    const one = E.inkPage(p, opts); const pg = one.write(LONG);
+    const wb = E.inkPage(p, opts); let at = 0;
+    for (const w of LONG.match(/[^ \n]+[ \n]*|\n+/g)) { at += w.length; wb.write(w, { ahead: LONG.slice(at) }); }
+    const same = one.items.map(sig).join('\n') === wb.items.map(sig).join('\n');
+    const L = pg.lineInfo;
+    const over = L.filter((ln) => !ln.blank && (ruled && ln.rule != null ? ln.rule : ln.y) - ln.sheet * sheet.height > sheet.last + 0.3 * pitch).length;
+    const blankStart = L.filter((ln, i) => i && ln.blank && ln.sheet !== L[i - 1].sheet).length;
+    const split = L.filter((ln, i) => i && ln.role === 'signature' && ln.sheet !== L[i - 1].sheet).length;
+    const ok = same && pg.sheets > 2 && !over && !blankStart && !split;
+    if (!ok) bad++;
+    console.log(`${style.padEnd(7)} ${ruled ? 'ruled' : 'plain'} long letter on sheets: ${pg.sheets} sheets; word by word = one pass: ${same}; past the last line ${over}, sheets starting empty ${blankStart}, names split from the closing ${split}${ok ? '' : '  FAIL'}`);
+  }
+}
 console.log(bad ? `${bad} problem(s)` : 'ink placements are frozen and identical however the text arrives');
 process.exit(bad ? 1 : 0);
