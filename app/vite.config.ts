@@ -29,7 +29,7 @@ export default defineConfig({
   // the main chunk is React + the engine's letter data; opentype.js and the writer worker load separately
   build: {
     chunkSizeWarningLimit: 800,
-    // two pages: the tool (index.html) and the Lost Letters archive (letters.html, src/archive/), split apart
+    // two pages: the tool (index.html) and the Letters library (letters.html, src/archive/), split apart
     rollupOptions: {
       input: {
         main: path.resolve(import.meta.dirname, 'index.html'),

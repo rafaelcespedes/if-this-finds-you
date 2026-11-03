@@ -46,9 +46,9 @@ The workers start (and warm up the engine) while the letters JSON loads.
 
 ## Write a reply
 
-Opens the tool in Ink mode on a fresh sheet with this letter one tap away. `REPLY_PARAM` in `LetterPage.tsx`
-switches to the agreed `#reply=<id>&in=<seed>~<style>~<paper>` once the tool reads it; until then the link uses the
-tool's existing `t=Q&re=<id>~<seed>~<style>~<paper>`.
+Opens the tool on its two-letter desk: a blank sheet for the reader (a new writer, never the letter's) with the
+found letter beside it, in the same hand, pen, ink, paper, size and slider values (`replyTo` with its look). The
+link is built with the tool's own `encodeState` (lib/state.ts), so its format lives in one place.
 
 Letters written here and sent in are not planned (no submissions for now); `PHASE2.md` notes what the model
 already leaves room for. The product name comes from `lib/brand.ts` (`APP_NAME`), shared with the tool.

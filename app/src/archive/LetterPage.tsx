@@ -11,10 +11,13 @@ import { ReaderSheets } from '@/components/ReaderSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { canShareLinks, copyText, renderLiveNote, saveNote, shareLink } from '@/lib/actions';
+import { makeHand } from '@engine';
 import { APP_NAME } from '@/lib/brand';
+import { CONTROLS, naturalValue } from '@/lib/controls';
+import { DEFAULT_STATE, encodeState, type ReplyTo } from '@/lib/state';
 import { writerName } from '@/lib/hands';
 import { LIVE, liveExtras, liveLayout, type Live } from '@/lib/live';
-import { cn } from '@/lib/utils';
+import { clamp, cn } from '@/lib/utils';
 import { cards } from './cards';
 import { circumstanceLabel, filterLetters, fromTo, opening } from './data';
 import type { ArchiveLetter, Look } from './model';
@@ -25,17 +28,31 @@ import { ARCHIVE_URL, SiteHeader, TOOL_URL } from './SiteHeader';
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
 
+/** The look's slider values as the tool's seed-relative offsets (lib/controls.ts), so the tool draws the same hand. */
+function lookOffsets(look: Look) {
+  const natural = makeHand(look.seed, look.style);
+  const out: Record<string, number> = {};
+  for (const c of CONTROLS) {
+    const v = look.params[c.key];
+    if (v == null || c.app) continue;
+    const off = clamp(v, c.min, c.max) - naturalValue(c, natural);
+    if (Math.abs(off) > (c.max - c.min) * 0.002) out[c.key] = +off.toFixed(3);
+  }
+  return out;
+}
+
 /**
- * "Write a reply": the tool opens in Ink mode on a fresh sheet, with this letter one tap away (in the hand and
- * on the paper it was read in). Agreed format: `#reply=<letter id>&in=<seed>~<style>~<paper>`. Until the tool
- * reads it, its own link format does the same: an empty text (`t=Q`) and the letter it answers (`re=`).
+ * "Write a reply": the tool opens on the two-letter desk, a blank sheet for you (a writer of your own, never this
+ * letter's) with this letter beside it, exactly as it was shown here. The link is the tool's own note state
+ * (lib/state.ts encodeState), so its format lives in one place.
  */
-export const REPLY_PARAM = false;
-export function replyHref(l: ArchiveLetter, look: Look) {
-  const where = [look.seed, look.style, look.paper].join('~');
-  return REPLY_PARAM
-    ? `${TOOL_URL}#reply=${encodeURIComponent(l.id)}&in=${where}`
-    : `${TOOL_URL}#t=Q&re=${[l.id, where].join('~')}`;
+export function replyHref(l: ArchiveLetter, look: Look, replier: string) {
+  const [seed, style] = replier.split('~');
+  const replyTo: ReplyTo = {
+    id: l.id, seed: look.seed, style: look.style, paper: look.paper as ReplyTo['paper'],
+    pen: look.pen, ink: look.ink, tip: look.tip as ReplyTo['tip'], size: look.size, offsets: lookOffsets(look),
+  };
+  return `${TOOL_URL}#${encodeState({ ...DEFAULT_STATE, seed, style, text: '', sample: null, inkLog: null, marks: [], replyTo })}`;
 }
 
 interface Props {
@@ -57,6 +74,12 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   );
   const r = useMemo(() => (look ? renderingOf(look) : null), [look]);
   const name = look ? writerName(look.seed) : '';
+  // the reply's writer: someone new (two letters in one hand on one desk would read oddly), fixed for this view
+  const replier = useMemo(() => {
+    let h = randomHand();
+    while (look && h.split('~')[0] === look.seed) h = randomHand();
+    return h;
+  }, [id, look]);
   const coarse = useMediaQuery('(pointer: coarse)');
 
   // the sheet fills its column, up to about real size on a laptop
@@ -275,7 +298,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
         <aside className="provenance mt-10 min-w-0 lg:col-start-2 lg:row-start-2 lg:mt-0">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
             <Button size="lg" asChild className="sm:col-span-2 lg:col-span-1">
-              <a href={replyHref(letter, look)}>
+              <a href={replyHref(letter, look, replier)}>
                 <PenLine aria-hidden /> Write a reply
               </a>
             </Button>
