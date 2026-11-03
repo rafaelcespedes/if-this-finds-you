@@ -1,19 +1,22 @@
-# Lost Letters (the archive)
+# Letters (the library)
 
-The browsing side of Lost Letters: real letters, each written out by hand by a fictional writer. A second page of
-the app (`app/letters.html`, built beside the tool's `index.html`), code-split from the tool.
+The library of If This Finds You: real letters by ordinary people, each written out by hand by a fictional writer,
+easy to flip through. A second page of the app (`app/letters.html`, built beside the tool's `index.html`),
+code-split from the tool. (Its working title was "Lost Letters"; code names like `lost-letters` remain in cache
+keys and the QA handle.)
 
 Run it with the app (`cd app && npm run dev`) and open **/letters.html**.
 
 ## Pages
 
 - **Index** (`Index.tsx`, `Card.tsx`): every letter as a card, the top of its first sheet with the opening lines in
-  the letter's own hand. Search (text, writer, recipient, place), filters (era, language, letters or notes), two
-  drawers (Found, Written here) and Shuffle (a random letter, from what's shown, in a random hand). `/` searches.
+  the letter's own hand. Search (text, writer, recipient, place), filters (era, language, letters or notes) and
+  Shuffle (a random letter, from what's shown, in a random hand). `/` searches.
 - **Letter** (`LetterPage.tsx`, loaded on demand with the engine): the whole letter written out in front of you
   (the tool's reader: `ReaderSheets`, engine `timeline` + `playSVG`, about 3x, a tap or key finishes it), the
   provenance (story, writer, recipient, place, date, source, rights, translator), Read it as text, and Write a
-  reply, Another letter, Share, Image (JPEG). New hand and Keep this hand change the writer. Esc goes back.
+  reply, Another (random), Share, Image (JPEG). **Previous / Next** (header, ← →, or a sideways swipe on phones)
+  turn through the letters the index was showing. New hand and Keep this hand change the writer. Esc goes back.
 
 Everything is in the URL hash (`route.ts`), so every view can be shared and Back works.
 
@@ -47,4 +50,5 @@ Opens the tool in Ink mode on a fresh sheet with this letter one tap away. `REPL
 switches to the agreed `#reply=<id>&in=<seed>~<style>~<paper>` once the tool reads it; until then the link uses the
 tool's existing `t=Q&re=<id>~<seed>~<style>~<paper>`.
 
-Phase 2 (letters written here and sent in): see `PHASE2.md`.
+Letters written here and sent in are not planned (no submissions for now); `PHASE2.md` notes what the model
+already leaves room for. The product name comes from `lib/brand.ts` (`APP_NAME`), shared with the tool.

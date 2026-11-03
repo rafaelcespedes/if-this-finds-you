@@ -1,8 +1,8 @@
-// The archive's letter model. Phase 1 has only found letters (content/sample-texts.json); phase 2 adds letters
-// written here and submitted (see PHASE2.md). Both kinds share one shape, so the index, filters and letter page
-// never ask where a letter came from except to show it.
+// The library's letter model. Today every letter is found (content/sample-texts.json). Letters written here and
+// sent in aren't planned, but the shape leaves room for them (PHASE2.md), so the index, filters and letter page
+// would never need to ask where a letter came from except to show it.
 
-/** Found: a real letter from an archive or a printed source. Written: written here and submitted (phase 2). */
+/** Found: a real letter from an archive or a printed source. Written: written here and sent in (not planned now). */
 export type LetterOrigin = 'found' | 'written';
 
 /**

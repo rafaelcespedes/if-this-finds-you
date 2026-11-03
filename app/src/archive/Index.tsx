@@ -1,17 +1,16 @@
-// The index: every letter in the drawer as a card, with search, filters and Shuffle. Found letters fill one drawer;
-// letters written here and sent in (phase 2) will fill the other.
+// The library: every letter as a card, with search, filters and Shuffle.
 import { useDeferredValue, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { ChevronDown, PenLine, Search, Shuffle, X } from 'lucide-react';
+import { ChevronDown, Search, Shuffle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 import { Card } from './Card';
 import { cardSize } from './cards';
-import { baseLang, eraOf, ERAS, fold, languageName } from './data';
+import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
 import type { ArchiveLetter } from './model';
 import { letterHash, NO_FILTERS, randomHand, randomIndex, type Filters } from './route';
-import { SiteHeader, TOOL_URL } from './SiteHeader';
+import { headerLink, SiteHeader, TOOL_URL } from './SiteHeader';
 
 interface Props {
   letters: ArchiveLetter[] | null;
@@ -33,13 +32,9 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
   const narrow = useMediaQuery('(max-width: 639px)');
   const set = (patch: Partial<Filters>) => onFilters({ ...filters, ...patch });
 
-  const drawers = useMemo(() => ({
-    found: letters?.filter((l) => l.origin === 'found') ?? [],
-    written: letters?.filter((l) => l.origin === 'written') ?? [],
-  }), [letters]);
-  const pool = drawers[filters.drawer];
+  const pool = useMemo(() => letters ?? [], [letters]);
 
-  // what the filters can offer in this drawer, with counts
+  // what the filters can offer, with counts
   const facets = useMemo(() => {
     const eras = new Map<string, number>();
     const langs = new Map<string, number>();
@@ -55,17 +50,13 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
     };
   }, [pool]);
 
-  const shown = useMemo(() => {
-    const words = fold(q).split(/\s+/).filter(Boolean);
-    return pool.filter((l) =>
-      (!filters.era || eraOf(l)?.id === filters.era) &&
-      (!filters.lang || baseLang(l.lang) === filters.lang) &&
-      (!filters.kind || l.kind === filters.kind) &&
-      words.every((w) => l.haystack.includes(w)));
-  }, [pool, q, filters.era, filters.lang, filters.kind]);
+  const shown = useMemo(
+    () => filterLetters(pool, { ...filters, q }),
+    [pool, q, filters.era, filters.lang, filters.kind],
+  );
 
   const filtered = !!(filters.q || filters.era || filters.lang || filters.kind);
-  const clear = () => onFilters({ ...NO_FILTERS, drawer: filters.drawer });
+  const clear = () => onFilters(NO_FILTERS);
 
   // card width: the grid's columns, measured once for all cards (on the panel, which is always there; the grid
   // itself comes and goes with empty results)
@@ -81,7 +72,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
 
   // Shuffle: a random letter (from what's shown, when filtered) in a random hand
   const shuffle = () => {
-    const from = shown.length ? shown : pool.length ? pool : drawers.found;
+    const from = shown.length ? shown : pool;
     if (!from.length) return;
     onOpen();
     window.location.hash = letterHash(from[randomIndex(from.length)].id, randomHand());
@@ -107,57 +98,52 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
 
   return (
     <div className="min-h-dvh">
-      <SiteHeader current="index" />
+      <SiteHeader>
+        <a href={TOOL_URL} className={headerLink}>Write a letter</a>
+      </SiteHeader>
       <main className="mx-auto w-full max-w-[1180px] px-4 pb-28 sm:px-8 lg:px-10">
         <section className="pt-[calc(4.75rem+env(safe-area-inset-top,0px))] pb-9 sm:pt-24 sm:pb-11">
-          <h1 className="text-[34px] leading-[1.05] font-[560] tracking-[-0.03em] text-foreground sm:text-[44px]">Lost Letters</h1>
+          <h1 className="text-[34px] leading-[1.05] font-[560] tracking-[-0.03em] text-foreground sm:text-[44px]">Letters</h1>
           <p className="mt-4 max-w-[34rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">
             Real letters by ordinary people, each written out by hand. Some never reached the person they were meant for.
           </p>
         </section>
 
-        <div role="tablist" aria-label="Drawers" className="flex gap-6 border-b border-border">
-          <DrawerTab id="found" current={filters.drawer} n={drawers.found.length} ready={!!letters} onSelect={(d) => onFilters({ ...NO_FILTERS, drawer: d })}>Found</DrawerTab>
-          <DrawerTab id="written" current={filters.drawer} n={drawers.written.length} ready={!!letters} onSelect={(d) => onFilters({ ...NO_FILTERS, drawer: d })}>Written here</DrawerTab>
-        </div>
-
-        <div ref={panelRef} id="drawer-panel" role="tabpanel" aria-labelledby={`drawer-${filters.drawer}`}>
+        <div ref={panelRef}>
           {/* in reading order: search, filters, Shuffle (on phones Shuffle sits beside the search) */}
-          {(filters.drawer === 'found' || drawers.written.length > 0) && (
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pt-5 pb-3 sm:flex sm:items-center sm:gap-2.5">
-              <label className="relative col-start-1 row-start-1 min-w-0 sm:max-w-[400px] sm:flex-1">
-                <span className="sr-only">Search letters</span>
-                <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={filters.q}
-                  onChange={(e) => set({ q: e.target.value })}
-                  onKeyDown={(e) => { if (e.key === 'Escape' && filters.q) { e.preventDefault(); set({ q: '' }); } }}
-                  placeholder={narrow ? 'Words, writers, places' : 'Search words, writers, places'}
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="archive-field h-10 w-full pr-3 pl-9 text-[13.5px] placeholder:text-faint pointer-coarse:h-11"
-                />
-              </label>
-              <div className="col-span-2 grid grid-cols-3 gap-2 sm:flex sm:gap-2.5">
-                <Select label="Era" value={filters.era} onChange={(v) => set({ era: v })} any={narrow ? 'Era' : 'Any era'} options={facets.eras} />
-                <Select label="Language" value={filters.lang} onChange={(v) => set({ lang: v })} any={narrow ? 'Language' : 'Any language'} options={facets.langs} />
-                <Select
-                  label="Letters or notes"
-                  value={filters.kind}
-                  onChange={(v) => set({ kind: v as Filters['kind'] })}
-                  any={narrow ? 'Kind' : 'Letters and notes'}
-                  options={[{ value: 'letter', label: 'Letters' }, { value: 'note', label: 'Notes' }]}
-                />
-              </div>
-              <Button variant="outline" onClick={shuffle} disabled={!letters} className="col-start-2 row-start-1 h-10 pointer-coarse:h-11 sm:ml-auto">
-                <Shuffle aria-hidden /> Shuffle
-              </Button>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pb-3 sm:flex sm:items-center sm:gap-2.5">
+            <label className="relative col-start-1 row-start-1 min-w-0 sm:max-w-[400px] sm:flex-1">
+              <span className="sr-only">Search letters</span>
+              <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
+              <input
+                ref={searchRef}
+                type="search"
+                value={filters.q}
+                onChange={(e) => set({ q: e.target.value })}
+                onKeyDown={(e) => { if (e.key === 'Escape' && filters.q) { e.preventDefault(); set({ q: '' }); } }}
+                placeholder={narrow ? 'Words, writers, places' : 'Search words, writers, places'}
+                autoComplete="off"
+                spellCheck={false}
+                className="archive-field h-10 w-full pr-3 pl-9 text-[13.5px] placeholder:text-faint pointer-coarse:h-11"
+              />
+            </label>
+            <div className="col-span-2 grid grid-cols-[1fr_1.3fr_1fr] gap-2 sm:flex sm:gap-2.5">
+              <Select label="Era" value={filters.era} onChange={(v) => set({ era: v })} any={narrow ? 'Era' : 'Any era'} options={facets.eras} />
+              <Select label="Language" value={filters.lang} onChange={(v) => set({ lang: v })} any={narrow ? 'Language' : 'Any language'} options={facets.langs} />
+              <Select
+                label="Letters or notes"
+                value={filters.kind}
+                onChange={(v) => set({ kind: v as Filters['kind'] })}
+                any={narrow ? 'Kind' : 'Letters and notes'}
+                options={[{ value: 'letter', label: 'Letters' }, { value: 'note', label: 'Notes' }]}
+              />
             </div>
-          )}
+            <Button variant="outline" onClick={shuffle} disabled={!letters} className="col-start-2 row-start-1 h-10 pointer-coarse:h-11 sm:ml-auto">
+              <Shuffle aria-hidden /> Shuffle
+            </Button>
+          </div>
 
-          <p aria-live="polite" className={cn('flex min-h-8 items-center gap-2 text-[12.5px] text-muted-foreground tabular', letters && !pool.length && 'sr-only')}>
+          <p aria-live="polite" className="flex min-h-8 items-center gap-2 text-[12.5px] text-muted-foreground tabular">
             {letters && (filtered ? `${noun(shown.length)} of ${count}` : noun(count))}
             {filtered && (
               <button type="button" onClick={clear} className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-foreground/80 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-2.5">
@@ -170,13 +156,6 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             <Empty title="The letters didn’t load." action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>
               Check your connection, then try again.
             </Empty>
-          ) : filters.drawer === 'written' && !drawers.written.length && letters ? (
-            <Empty
-              title="Nothing in this drawer yet."
-              action={<Button asChild><a href={TOOL_URL}><PenLine aria-hidden /> Write a letter</a></Button>}
-            >
-              Letters people write here and send in will be kept in this drawer, credited or anonymous, as each writer chooses. Sending isn’t open yet.
-            </Empty>
           ) : letters && !shown.length ? (
             <Empty title={filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} action={<Button variant="outline" onClick={clear}>Clear filters</Button>}>
               Try fewer words, or another era or language.
@@ -184,7 +163,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
           ) : (
             <ul
               role="list"
-              aria-label={filters.drawer === 'found' ? 'Found letters' : 'Letters written here'}
+              aria-label="Letters"
               className="mt-3 grid gap-x-7 gap-y-11 [grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr))]"
             >
               {letters
@@ -195,36 +174,6 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
         </div>
       </main>
     </div>
-  );
-}
-
-function DrawerTab({ id, current, n, ready, onSelect, children }: { id: Filters['drawer']; current: Filters['drawer']; n: number; ready: boolean; onSelect: (d: Filters['drawer']) => void; children: ReactNode }) {
-  const on = id === current;
-  return (
-    <button
-      type="button"
-      role="tab"
-      id={`drawer-${id}`}
-      aria-selected={on}
-      aria-controls="drawer-panel"
-      tabIndex={on ? 0 : -1}
-      onClick={() => onSelect(id)}
-      onKeyDown={(e) => {
-        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-        e.preventDefault();
-        const next = id === 'found' ? 'written' : 'found';
-        onSelect(next);
-        document.getElementById(`drawer-${next}`)?.focus();
-      }}
-      className={cn(
-        'relative -mb-px flex items-baseline gap-1.5 pt-1 pb-3 text-[14px] font-medium transition-colors duration-150 pointer-coarse:pb-3.5',
-        on ? 'text-foreground' : 'text-muted-foreground hover-device:hover:text-foreground',
-      )}
-    >
-      {children}
-      <span className="text-[12px] font-normal text-faint tabular">{ready ? n : ''}</span>
-      <span aria-hidden className={cn('absolute inset-x-0 -bottom-px h-[1.5px] rounded-full bg-[var(--ink)] transition-opacity duration-150', on ? 'opacity-100' : 'opacity-0')} />
-    </button>
   );
 }
 

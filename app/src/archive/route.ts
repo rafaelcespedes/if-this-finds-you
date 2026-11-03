@@ -1,6 +1,6 @@
 // Where you are in the archive lives in the URL hash, so every view can be shared and Back works:
-//   #/                                  the index (found letters)
-//   #/?q=mother&era=1800s&lang=fr&kind=note&drawer=written
+//   #/                                  the index (all letters)
+//   #/?q=mother&era=1800s&lang=fr&kind=note
 //   #/letter/<id>                       a letter in its own hand
 //   #/letter/<id>?hand=<seed>~<style>   in a chosen hand (Shuffle, New hand); &keep=1 keeps it for the next letter
 //   #/letter/<id>?hand=of:<id2>&keep=1  in another letter's own hand (kept from that letter)
@@ -10,9 +10,8 @@ export interface Filters {
   era: string;
   lang: string;
   kind: '' | 'letter' | 'note';
-  drawer: 'found' | 'written';
 }
-export const NO_FILTERS: Filters = { q: '', era: '', lang: '', kind: '', drawer: 'found' };
+export const NO_FILTERS: Filters = { q: '', era: '', lang: '', kind: '' };
 
 export type Route =
   | { page: 'index'; filters: Filters }
@@ -32,7 +31,6 @@ export function parseRoute(hash: string): Route {
       era: q.get('era') ?? '',
       lang: q.get('lang') ?? '',
       kind: kind === 'letter' || kind === 'note' ? kind : '',
-      drawer: q.get('drawer') === 'written' ? 'written' : 'found',
     },
   };
 }
@@ -43,7 +41,6 @@ export function indexHash(f: Filters) {
   if (f.era) q.set('era', f.era);
   if (f.lang) q.set('lang', f.lang);
   if (f.kind) q.set('kind', f.kind);
-  if (f.drawer === 'written') q.set('drawer', 'written');
   const s = q.toString();
   return s ? `#/?${s}` : '#/';
 }

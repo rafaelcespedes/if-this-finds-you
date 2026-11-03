@@ -1,21 +1,22 @@
 // A letter: the whole letter on paper in its hand, written out in front of you when it opens (the tool's reader:
 // the engine's timeline + playSVG, about 3x a real hand, a tap finishes it), what is known about it, and what you
-// can do with it: write a reply, read another, share it, keep it as an image.
+// can do with it: write a reply, turn to the next one, share it, keep it as an image.
 // Loaded on demand (its own chunk, with the engine); the index never waits for it.
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import { toast } from 'sonner';
-import { Download, Link2, PenLine, RefreshCw, RotateCcw, Shuffle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Link2, PenLine, RefreshCw, RotateCcw, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PaperCanvas } from '@/components/PaperCanvas';
 import { ReaderSheets } from '@/components/ReaderSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { canShareLinks, copyText, renderLiveNote, saveNote, shareLink } from '@/lib/actions';
+import { APP_NAME } from '@/lib/brand';
 import { writerName } from '@/lib/hands';
 import { LIVE, liveExtras, liveLayout, type Live } from '@/lib/live';
 import { cn } from '@/lib/utils';
 import { cards } from './cards';
-import { circumstanceLabel, fromTo, opening } from './data';
+import { circumstanceLabel, filterLetters, fromTo, opening } from './data';
 import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
@@ -44,7 +45,7 @@ interface Props {
   id: string;
   hand: string | null;
   keep: boolean;
-  /** the index's filters, for the way back */
+  /** the index's filters: the way back, and the letters Previous and Next turn through */
   backFilters: Filters;
 }
 
@@ -85,23 +86,61 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const backHref = indexHash(backFilters);
   // back to the index as it was left (filters and scroll)
   const back = useCallback(() => { window.location.hash = backHref; }, [backHref]);
+
+  // Previous and Next turn through the letters the index was showing (all of them when this one isn't among them),
+  // round and round. Turning replaces the page in the history, so Back still goes to the index.
+  const list = useMemo(() => {
+    if (!letters) return [];
+    const shown = filterLetters(letters, backFilters);
+    return shown.some((l) => l.id === id) ? shown : letters;
+  }, [letters, backFilters, id]);
+  const at = list.findIndex((l) => l.id === id);
+  const neighbour = (d: 1 | -1) => (list.length > 1 && at >= 0 ? list[(at + d + list.length) % list.length] : null);
+  const thisHand = hand ?? `of:${id}`;
+  const turn = useCallback((d: 1 | -1) => {
+    const to = neighbour(d);
+    if (!to) return;
+    history.replaceState(null, '', letterHash(to.id, keep ? thisHand : null, keep));
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+  }, [list, at, keep, thisHand]);
+
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === 'Escape') { back(); return; }
+      const t = e.target as HTMLElement | null;
+      const typing = t && /^(input|textarea|select)$/i.test(t.tagName) && (t as HTMLInputElement).type !== 'checkbox';
+      if (!typing && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); turn(e.key === 'ArrowLeft' ? -1 : 1); return; }
       setFinish((n) => n + 1);
     };
     window.addEventListener('keydown', on);
     return () => window.removeEventListener('keydown', on);
-  }, [back]);
+  }, [back, turn]);
+
+  // phones: a sideways swipe on the letter turns to the next or previous one; a tap still finishes the writing
+  const swipe = useRef<{ x: number; y: number; turned: boolean } | null>(null);
+  const onTouchStart = (e: TouchEvent) => {
+    if (e.touches.length !== 1) { swipe.current = null; return; }
+    swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, turned: false };
+  };
+  const onTouchEnd = (e: TouchEvent) => {
+    const s0 = swipe.current;
+    if (!s0) return;
+    const dx = e.changedTouches[0].clientX - s0.x, dy = e.changedTouches[0].clientY - s0.y;
+    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.6) { s0.turned = true; turn(dx < 0 ? 1 : -1); }
+  };
+  const onSheetClick = () => {
+    if (swipe.current?.turned) { swipe.current = null; return; }
+    setFinish((n) => n + 1);
+  };
 
   // a new letter: screen readers start at its title
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => { titleRef.current?.focus({ preventScroll: true }); }, [letter?.id]);
 
   useEffect(() => {
-    if (letter) document.title = `${letter.title ?? 'A letter'} – Lost Letters`;
-    return () => { document.title = 'Lost Letters'; };
+    if (letter) document.title = `${letter.title ?? 'A letter'} – ${APP_NAME}`;
+    return () => { document.title = `Letters – ${APP_NAME}`; };
   }, [letter]);
 
   // ---------- actions ----------
@@ -112,8 +151,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     } else window.location.hash = hash;
   };
   const newHand = () => go(letterHash(id, randomHand(), keep), true);
-  // this hand, exactly: a chosen hand as it is, or this letter's own hand
-  const thisHand = hand ?? `of:${id}`;
+  // "this hand", exactly: a chosen hand as it is, or this letter's own hand (thisHand, above)
   const setKeep = (on: boolean) => go(letterHash(id, on ? thisHand : hand, on), true);
   const another = () => {
     if (!letters?.length) return;
@@ -130,11 +168,12 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const share = async () => {
     const url = shareUrl();
     const ok = await copyText(url);
-    if (coarse && canShareLinks()) { await shareLink(url, letter?.title ?? 'A letter'); return; }
+    const title = `${letter?.title ?? 'A letter'} – ${APP_NAME}`;
+    if (coarse && canShareLinks()) { await shareLink(url, title); return; }
     toast(ok ? 'Link copied' : 'Couldn’t copy the link', {
       id: 'share',
       description: ok ? 'It opens this letter in this hand.' : url,
-      action: canShareLinks() ? { label: 'Share…', onClick: () => shareLink(url, letter?.title ?? 'A letter') } : undefined,
+      action: canShareLinks() ? { label: 'Share…', onClick: () => shareLink(url, title) } : undefined,
     });
   };
   const [saving, setSaving] = useState(false);
@@ -143,9 +182,10 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     setSaving(true);
     try {
       const { blob } = await renderLiveNote(ready.live, ready.extras, r.inkKey ?? 'currentColor', r.inkColor, pxPerMm || 2);
-      const result = await saveNote(blob, `lost-letter-${letter.id}`, coarse);
+      const file = `${APP_NAME} – ${letter.title ?? letter.id}`;
+      const result = await saveNote(blob, file, coarse);
       if (result === 'saved') toast('Image saved', { id: 'download', description: 'A JPEG of the letter as shown.' });
-      else if (result === 'needs-tap') toast('The image is ready', { id: 'download', action: { label: 'Save', onClick: () => saveNote(blob, `lost-letter-${letter.id}`, true) } });
+      else if (result === 'needs-tap') toast('The image is ready', { id: 'download', action: { label: 'Save', onClick: () => saveNote(blob, file, true) } });
     } catch (e) {
       toast('The image couldn’t be made', { id: 'download', description: e instanceof Error ? e.message : 'Try again.' });
     } finally {
@@ -156,12 +196,12 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   if (!letters || !letter || !look || !r) {
     return (
       <div className="min-h-dvh">
-        <SiteHeader current="letter" back={backHref} />
+        <SiteHeader back={backHref} />
         <main className="mx-auto max-w-[1180px] px-4 pt-28 sm:px-8 lg:px-10">
           {error ? (
             <Missing title="The letters didn’t load." action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>Check your connection, then try again.</Missing>
           ) : letters ? (
-            <Missing title="This letter isn’t in the archive." action={<Button variant="outline" asChild><a href={backHref}>See all letters</a></Button>}>
+            <Missing title="This letter isn’t in the library." action={<Button variant="outline" asChild><a href={backHref}>See all letters</a></Button>}>
               The link may be mistyped, or the letter may have been taken out of the collection.
             </Missing>
           ) : null}
@@ -173,7 +213,19 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const sheetH = r.paper.h * pxPerMm;
   return (
     <div className="min-h-dvh">
-      <SiteHeader current="letter" back={backHref} />
+      <SiteHeader back={backHref}>
+        {list.length > 1 && at >= 0 && (
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" onClick={() => turn(-1)} aria-label={`Previous letter: ${neighbour(-1)?.title ?? ''}`} className="size-8 text-muted-foreground pointer-coarse:size-11">
+              <ChevronLeft aria-hidden />
+            </Button>
+            <span className="min-w-[4.5rem] text-center tabular" aria-label={`Letter ${at + 1} of ${list.length}`}>{at + 1} of {list.length}</span>
+            <Button variant="ghost" size="icon" onClick={() => turn(1)} aria-label={`Next letter: ${neighbour(1)?.title ?? ''}`} className="size-8 text-muted-foreground pointer-coarse:size-11">
+              <ChevronRight aria-hidden />
+            </Button>
+          </div>
+        )}
+      </SiteHeader>
       <main className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-14 px-4 pt-[calc(3.75rem+env(safe-area-inset-top,0px))] pb-28 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:grid-rows-[auto_1fr] lg:px-10 lg:pt-16">
         {/* title: above the sheet on phones, beside it on wide screens */}
         <header className="pt-2 pb-5 lg:col-start-2 lg:row-start-1 lg:pt-8 lg:pb-6">
@@ -186,8 +238,10 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
 
         <div ref={colRef} className="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:pt-8">
           <div
-            className="flex flex-col items-center"
-            onClick={() => setFinish((n) => n + 1)}
+            className="flex touch-pan-y flex-col items-center"
+            onClick={onSheetClick}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
             role="img"
             aria-label={`The letter, written out by hand on ${r.paper.name.toLowerCase()} paper`}
           >

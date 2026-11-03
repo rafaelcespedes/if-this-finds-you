@@ -1,6 +1,7 @@
 // The collection, loaded on demand (its own chunk), turned into the archive's letter model, plus the words the
 // index shows for each letter. Everything shown comes from the curator's fields; nothing here invents a fact.
 import type { ArchiveLetter, Circumstance, Found } from './model';
+import type { Filters } from './route';
 
 interface Raw {
   id: string;
@@ -173,4 +174,14 @@ export function opening(text: string, n: number) {
   if (text.length <= n) return text;
   const cut = text.slice(0, n).replace(/\s+\S*$/, '');
   return cut + '…';
+}
+
+/** The letters a set of filters shows, in the collection's order (the index, and the letter page's Previous/Next). */
+export function filterLetters(letters: ArchiveLetter[], f: Filters) {
+  const words = fold(f.q).split(/\s+/).filter(Boolean);
+  return letters.filter((l) =>
+    (!f.era || eraOf(l)?.id === f.era) &&
+    (!f.lang || baseLang(l.lang) === f.lang) &&
+    (!f.kind || l.kind === f.kind) &&
+    words.every((w) => l.haystack.includes(w)));
 }
