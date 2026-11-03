@@ -38,7 +38,7 @@ export function WritingMenu(p: Props) {
   // a choice made (not Escape, not a click away): the writing carries on where it was
   const chose = useRef(false);
   const pick = (fn: () => void) => () => { chose.current = true; fn(); };
-  const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-[10px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
+  const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>

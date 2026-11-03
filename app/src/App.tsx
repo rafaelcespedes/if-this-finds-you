@@ -5,7 +5,7 @@ import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, withLogo } from '@/lib/brand';
 import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
-import { CAP, makeHand } from '@engine';
+import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
 import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
@@ -29,7 +29,7 @@ import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { isNeat, rollHand, rollLook, withSample, type LockKey } from '@/lib/roll';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
-import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
+import { drafts, keepDraft, takeDraft, type Draft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
@@ -72,6 +72,13 @@ function writePref(key: string, v: string) {
 const editLog = new EditLog();
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
 const TAIL_KEY = 'seedhand:typed';
+/** a letter's length at most: long letters get slow and heavy (memory grows with every sheet) */
+const MAX_LETTER = 10000;
+/** a paste (or dictation) this long is written down at once instead of at the pen's pace */
+const WRITE_AT_ONCE = 200;
+/** what the hands can write (the Latin alphabet and its marks); anything else stays in plain print */
+const WRITABLE = new Set<string>([...GF_LATIN_CORE, ...EXTRAS, '\n', '\t', '\r']);
+const RIGHT_TO_LEFT = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
 /** after the last key, how long the letter still counts as in use: single-letter keys go to it, not to shortcuts */
 const WRITING_LATELY_MS = 20000;
 (window as unknown as { __seedhandEdits: EditLog }).__seedhandEdits = editLog;
@@ -107,7 +114,7 @@ export default function App() {
   useEffect(() => { sawLetter(state.sample); }, [state.sample]);
 
   // ---------- found letters and your own: always a way to each ----------
-  const [draftCount, setDraftCount] = useState(() => drafts().length);
+  const [kept, setKept] = useState<Draft[]>(() => drafts());
   const toFound = useCallback((next?: ReturnType<typeof sampleForSeed>) => {
     markStep();
     const s = stateNow.current;
@@ -119,21 +126,23 @@ export default function App() {
   const letterActions = {
     found: !!sample,
     own: !sample && (!!state.text.trim() || !!state.inkLog),
-    drafts: draftCount,
+    drafts: kept.length,
+    kept,
     /** another found letter (your own, if any, is kept) */
     onAnother: () => {
       const s = stateNow.current;
-      if (!s.sample) { keepDraft(s); setDraftCount(drafts().length); }
+      if (!s.sample) { keepDraft(s); setKept(drafts()); }
       toFound();
     },
-    /** back to the letter you were writing */
-    onBackToMine: () => {
+    /** back to a letter you were writing (the newest, or the one picked from the list) */
+    onBackToMine: (index = 0) => {
       const s = stateNow.current;
+      const d = takeDraft(index);
       // what's on the page now is kept too, unless it's a found letter
       if (!s.sample) keepDraft(s);
-      const d = takeDraft();
-      setDraftCount(drafts().length);
+      setKept(drafts());
       if (!d) return;
+      markStep();
       inkRef.current = null;
       update({ text: d.text, inkLog: d.inkLog, marks: d.marks ?? [], replyTo: d.replyTo ?? null, signed: !!d.signed, sample: null });
     },
@@ -399,6 +408,24 @@ export default function App() {
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
   const posture = usePosture(editing);
   const lastEditAt = useRef(-Infinity);
+  const scriptNoted = useRef(false);
+  /** a big cut can be undone from its note: the letter as it was comes back (ink: its log, replayed) */
+  const offerBack = useCallback((snap: Pick<NoteState, 'text' | 'inkLog' | 'marks' | 'signed'>, title: string) => {
+    toast(title, {
+      id: 'bring-back',
+      duration: 12000,
+      action: {
+        label: 'Bring it back',
+        onClick: () => {
+          inkRef.current = null;
+          inkFor.current = '';
+          update({ ...snap, sample: null });
+          setInkTick((n) => n + 1);
+          window.setTimeout(() => editor.current?.focus(), 0);
+        },
+      },
+    });
+  }, [update]);
   const onEdit = useCallback((e: Edit) => {
     editLog.push(e);
     lastEditAt.current = performance.now();
@@ -406,6 +433,37 @@ export default function App() {
     if (theirsForwardRef.current) setTheirsForward(false);
     if (!wroteRef.current) { wroteRef.current = true; setWrote(true); writePref('seedhand:wrote', '1'); }
     if (e.source === 'paper') posture.onTyped();
+    // the letter's length at most: what doesn't fit is left out, and said so
+    {
+      const s = stateNow.current;
+      const li = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+      const base = s.sample && SAMPLE_FIRST_KEY === 'reply' ? 0 : li ? li.text().length : s.text.length;
+      const room = MAX_LETTER - (base - e.del);
+      if (e.ins.length > room) {
+        toast('That’s as long as a letter gets', { id: 'too-long', description: `Letters stop at ${MAX_LETTER.toLocaleString()} characters, so the rest was left out.` });
+        e = { ...e, ins: e.ins.slice(0, Math.max(0, room)) };
+        if (!e.ins && !e.del) return;
+      }
+      // letters the hand can't write: kept, but in print; said once
+      if (!scriptNoted.current && [...e.ins].some((c) => !WRITABLE.has(c))) {
+        scriptNoted.current = true;
+        toast('These hands write the Latin alphabet', {
+          id: 'script',
+          duration: 9000,
+          description: RIGHT_TO_LEFT.test(e.ins)
+            ? 'Other letters and emoji stay in the letter, drawn in plain print, and right-to-left writing runs the wrong way.'
+            : 'Other letters and emoji stay in the letter, drawn in plain print.',
+        });
+      }
+    }
+    // most of the letter cut at once (select all, then Delete or a key): a note to bring it back
+    const was = stateNow.current;
+    const liveInk = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+    const wasLen = liveInk ? liveInk.text().length : was.text.length;
+    if (!was.sample && e.kind !== 'undo' && e.del >= 30 && e.del >= wasLen * 0.5 && e.ins.length * 4 < e.del) {
+      liveInk?.flush();
+      offerBack({ text: liveInk ? liveInk.text() : was.text, inkLog: liveInk ? encodeInk(liveInk.doc) : was.inkLog, marks: was.marks, signed: was.signed }, e.ins.trim() ? 'Most of the letter is gone' : 'The letter is blank');
+    }
     if (inkMode) {
       const s = stateNow.current;
       // Undo lifts only wet ink (the newest event, within 3 s)
@@ -420,6 +478,8 @@ export default function App() {
       const reply = onSample && SAMPLE_FIRST_KEY === 'reply';
       const ink = !onSample ? inkSession() : inkSession(reply ? newInkDoc(s.seed, s.style) : inkFromText(s.seed, s.style, s.text));
       ink.edit(reply ? { ...e, at: 0, del: 0 } : e);
+      // a long paste or dictation: written down now (minutes at the pen's pace, and the page busy all the while)
+      if (e.ins.length >= WRITE_AT_ONCE) ink.flush();
       if (reply) { replyArrive.current = true; keepTheirs(s); update({ replyTo: replyOf(s) }); }
       syncInk();
       keepTail();
@@ -438,7 +498,7 @@ export default function App() {
       // the first edit makes a sample letter the writer's own text
       return { text: doc.text, marks: doc.marks, sample: null };
     });
-  }, [update, posture.onTyped, inkMode, inkSession, syncInk, keepTail]);
+  }, [update, posture.onTyped, inkMode, inkSession, syncInk, keepTail, inkLook, offerBack]);
 
   // ---------- pen-only formatting: underline by hand, press harder, sign ----------
   const editor = useRef<PaperEditorApi>(null);
@@ -884,7 +944,7 @@ export default function App() {
             <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
             <span className={cn('flex min-w-0 gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
               {reader ? (
-                <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
+                <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[var(--rule-link)] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                   Write your own
                 </button>
               ) : (

@@ -81,6 +81,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   // indices in the live text <-> indices in the text the page was written from
   const toMap = useCallback((i: number) => (geo ? (blank ? geo.text.length : across(i, text, geo.text)) : i), [geo, text, blank]);
   const fromMap = useCallback((i: number) => (geo ? across(i, geo.text, text) : i), [geo, text]);
+  // a line's end: past keys the page hasn't drawn yet (End lands after the last letter typed, not one short)
+  const fromMapEnd = (i: number) => (geo ? across(i, geo.text, text, 'right') : i);
   const u = geo ? geo.unitsPerMm : 1;
   const k = pxPerMm / u; // CSS px per font unit
   const pitch = sheetH * pxPerMm + gapPx; // CSS px from one sheet's top to the next
@@ -251,7 +253,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       e.preventDefault();
       const edges = geo.edges(toMap(head));
       const toEnd = e.key === 'End' || e.key === 'ArrowRight';
-      focusAt(fromMap(toEnd ? edges.end : edges.start), e.shiftKey);
+      focusAt(toEnd ? fromMapEnd(edges.end) : fromMap(edges.start), e.shiftKey);
     }
   };
 

@@ -221,5 +221,10 @@ export function inkGeometry(base: Geometry, live: Live, draft: any, viewText: st
     if (!last) return base.caret(written);
     return place(last.x + (last.g?.advance ?? 0), last.y, last.line);
   };
-  return { ...base, text: viewText, caret };
+  // a line's end that's the written letter's end runs on through the thought letters (End, ⌘→)
+  const edges = (o: number) => {
+    const e = base.edges(Math.min(o, written));
+    return e.end >= written && viewText.length > written ? { start: e.start, end: viewText.length } : e;
+  };
+  return { ...base, text: viewText, caret, edges };
 }
