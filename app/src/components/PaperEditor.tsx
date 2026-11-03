@@ -162,14 +162,39 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   const [sweep, setSweep] = useState(0); // bumps when a pointer selection finishes, to sweep the highlighter in
   const [pointerSel, setPointerSel] = useState(false);
 
+  // touch: a long press or a double tap picks the word under the finger (done on the finger's lift, which iOS counts
+  // as a tap, so the keyboard may open), then two handles move either end; a plain tap still places the caret
+  const press = useRef<{ id: number; x: number; y: number; timer: number; armed: boolean } | null>(null);
+  const skipClick = useRef(false);
+  const [touchSel, setTouchSel] = useState(false);
+  const selectWordAt = (clientX: number, clientY: number) => {
+    const idx = pointToIndex(clientX, clientY);
+    const [a, b] = wordAt(text, idx);
+    if (b <= a) { focusAt(idx); return; }
+    focusAt(b, true, a);
+    setPointerSel(true);
+    setTouchSel(true);
+    setSweep((n) => n + 1);
+  };
+
   // mouse and pen: press to place, drag to select, double-click a word, triple-click a line.
   // Touch keeps tap-to-place in onClick, because iOS only opens the keyboard from a tap.
   const onPointerDown = (e: React.PointerEvent) => {
-    // count clicks ourselves: pointer events don't reliably carry a click count
+    // count clicks ourselves: pointer events don't reliably carry a click count (a finger lands less exactly)
     const ld = lastDown.current;
-    const near = e.timeStamp - ld.t < 450 && Math.hypot(e.clientX - ld.x, e.clientY - ld.y) < 5;
+    const near = e.timeStamp - ld.t < 450 && Math.hypot(e.clientX - ld.x, e.clientY - ld.y) < (e.pointerType === 'touch' ? 24 : 5);
     lastDown.current = { t: e.timeStamp, x: e.clientX, y: e.clientY, count: near ? ld.count + 1 : 1, type: e.pointerType };
-    if (e.pointerType === 'touch' || e.button !== 0) return;
+    if (e.pointerType === 'touch') {
+      // a new touch: whatever click a handle's drag or a long press was waiting to swallow never came
+      skipClick.current = false;
+      if (press.current) window.clearTimeout(press.current.timer);
+      const p = { id: e.pointerId, x: e.clientX, y: e.clientY, timer: 0, armed: false };
+      p.timer = window.setTimeout(() => { p.armed = true; navigator.vibrate?.(8); }, 450);
+      press.current = p;
+      return;
+    }
+    if (e.button !== 0) return;
+    setTouchSel(false);
     e.preventDefault(); // keep focus in the textarea, no native text selection
     goalX.current = null;
     const idx = pointToIndex(e.clientX, e.clientY);
@@ -196,11 +221,25 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e: React.PointerEvent) => {
+    // a finger that moves is scrolling (or dragging the page), not pressing
+    const p = press.current;
+    if (p && p.id === e.pointerId && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 8) { window.clearTimeout(p.timer); press.current = null; }
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     focusAt(pointToIndex(e.clientX, e.clientY), true, d.anchor);
   };
   const onPointerUp = (e: React.PointerEvent) => {
+    const p = press.current;
+    if (p && p.id === e.pointerId) {
+      window.clearTimeout(p.timer);
+      press.current = null;
+      if (p.armed && e.type === 'pointerup') {
+        // the long press: the word under the finger (the click that follows would only place the caret)
+        skipClick.current = true;
+        selectWordAt(e.clientX, e.clientY);
+        return;
+      }
+    }
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     drag.current = null;
@@ -213,9 +252,37 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   const onClick = (e: React.MouseEvent) => {
     // touch taps only (pointer events above handle mouse and pen); keyboard "clicks" have detail 0
     if (lastDown.current.type !== 'touch' && e.detail !== 0) return;
+    if (skipClick.current) { skipClick.current = false; return; }
     goalX.current = null;
+    // a double tap: the word
+    if (lastDown.current.type === 'touch' && lastDown.current.count === 2) { selectWordAt(e.clientX, e.clientY); return; }
     setPointerSel(false);
+    setTouchSel(false);
     focusAt(pointToIndex(e.clientX, e.clientY));
+  };
+
+  // the handles at a touch selection's ends: drag either one; the text line is just above the finger
+  const handleDrag = useRef<{ id: number; other: number } | null>(null);
+  const onHandleDown = (which: 'start' | 'end') => (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    handleDrag.current = { id: e.pointerId, other: which === 'start' ? sel.end : sel.start };
+  };
+  const onHandleMove = (e: React.PointerEvent) => {
+    const h = handleDrag.current;
+    if (!h || h.id !== e.pointerId) return;
+    e.stopPropagation();
+    const idx = pointToIndex(e.clientX, e.clientY - 24);
+    if (idx !== h.other) focusAt(idx, true, h.other);
+  };
+  const onHandleUp = (e: React.PointerEvent) => {
+    if (handleDrag.current?.id !== e.pointerId) return;
+    e.stopPropagation();
+    handleDrag.current = null;
+    setPointerSel(true);
+    // the click the lift makes would only place the caret where the finger left off
+    skipClick.current = true;
   };
 
   // ---------- keys ----------
@@ -225,6 +292,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     // Enter is never cancelled (on iOS that leaves the keyboard stuck in lowercase), except ⌘↩
     const el = e.currentTarget;
     setPointerSel(false);
+    setTouchSel(false);
     if (e.key === 'Escape') {
       // writing stops, but focus stays on the letter, so Tab carries on from here (not from the page's top)
       el.blur();
@@ -300,6 +368,17 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     );
   }, [geo, sel.start, sel.end, toMap, k, pitch]);
 
+  // a touch selection's handles: just under each end's baseline
+  const handles = useMemo(() => {
+    if (!touchSel || !sel.focused || sel.start === sel.end || !geo) return null;
+    const at = (o: number, side: Side) => {
+      const c = geo.caret(toMap(o), side);
+      return c ? { x: c.x * k, y: c.sheet * pitch + (c.y + desc * 0.6) * k } : null;
+    };
+    const start = at(sel.start, 'after'), end = at(sel.end, 'before');
+    return start && end ? { start, end } : null;
+  }, [touchSel, sel, geo, toMap, k, pitch, desc]);
+
   // the selection chip: what a pen can do with a pointer selection
   const chip = useMemo(() => {
     if (!pointerSel || !sel.focused || sel.start === sel.end || !geo) return null;
@@ -335,12 +414,19 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       role="group"
       aria-label="Letter"
       tabIndex={-1}
-      className="relative mx-auto cursor-text touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-ring"
+      // no long-press callout over the paper (the press picks a word instead); never user-select: none here, which
+      // stops iOS typing into the textarea inside
+      className="relative mx-auto cursor-text touch-manipulation [-webkit-touch-callout:none] focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-ring"
       style={{ width: sheetW * pxPerMm }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      // after a touch, the browser's own mouse press would focus the letter's frame (it can be focused, for Esc)
+      // and take the focus from the text a long press just selected
+      onMouseDown={(e) => { if (lastDown.current.type === 'touch') e.preventDefault(); }}
+      // a long press picks a word: no browser menu over the paper (Android's image menu)
+      onContextMenu={(e) => { if (lastDown.current.type === 'touch') e.preventDefault(); }}
       onClick={onClick}
     >
       {children}
@@ -407,6 +493,24 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
           <ChipButton onClick={() => { void navigator.clipboard?.writeText(text.slice(sel.start, sel.end)); setPointerSel(false); }}>Copy</ChipButton>
         </div>
       )}
+      {handles && (['start', 'end'] as const).map((which) => {
+        const c = handles[which];
+        return (
+          <div
+            key={which}
+            aria-hidden
+            className="absolute z-10 flex size-11 -translate-x-1/2 touch-none justify-center"
+            style={{ left: c.x, top: c.y }}
+            onPointerDown={onHandleDown(which)}
+            onPointerMove={onHandleMove}
+            onPointerUp={onHandleUp}
+            onPointerCancel={onHandleUp}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="mt-0.5 block size-4 rounded-full shadow-[0_1px_2px_rgba(60,45,20,0.3)]" style={{ background: '#d9a520' }} />
+          </div>
+        );
+      })}
       <textarea
         ref={ta}
         value={text}
