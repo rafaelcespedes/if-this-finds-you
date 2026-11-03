@@ -29,7 +29,7 @@ import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { isNeat, rollHand, rollLook, withSample, type LockKey } from '@/lib/roll';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
-import { drafts, keepDraft, takeDraft, type Draft } from '@/lib/drafts';
+import { DRAFTS_KEY, drafts, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
@@ -48,10 +48,15 @@ import { renderLiveNote } from '@/lib/actions';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
 import { PENS_LIVE } from '@/lib/pens';
 import { perf } from '@/lib/perf';
-import { offsetsForNewHand, shareUrl } from '@/lib/state';
+import { MAX_LETTER, linkIssue, offsetsForNewHand, shareUrl } from '@/lib/state';
+import { Notice } from '@/components/Notice';
+import { Button } from '@/components/ui/button';
 import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
+// the look being compared (?look=reading-room): its desk, card and sheet marks (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
+import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
+import { SampleMarks } from '@/themes/reading-room/SheetMarks';
 import { SheetPost, ToolArrival } from '@/themes/postmarked/tool';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
@@ -72,8 +77,6 @@ function writePref(key: string, v: string) {
 const editLog = new EditLog();
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
 const TAIL_KEY = 'seedhand:typed';
-/** a letter's length at most: long letters get slow and heavy (memory grows with every sheet) */
-const MAX_LETTER = 10000;
 /** a paste (or dictation) this long is written down at once instead of at the pen's pace */
 const WRITE_AT_ONCE = 200;
 /** what the hands can write (the Latin alphabet and its marks); anything else stays in plain print */
@@ -85,7 +88,18 @@ const WRITING_LATELY_MS = 20000;
 
 export default function App() {
   const [composing, setComposing] = useState(false);
-  const [state, update, markStep, saveNow] = useNoteState(composing);
+  // what was wrong with the link this page opened from, said once (the state has already fallen back safely);
+  // a link cut short stays as it came (never rewritten or saved over) until the writer starts a letter of their own
+  const [linkTrouble, setLinkTrouble] = useState(() => linkIssue(window.location.hash));
+  const holdLink = linkTrouble === 'incomplete';
+  const holdLinkRef = useRef(holdLink);
+  holdLinkRef.current = holdLink;
+  const [state, update, markStep, saveNow] = useNoteState(composing || holdLink);
+  useEffect(() => {
+    if (linkTrouble === 'too-long') toast('This letter was longer than letters can be here', { id: 'link-long', duration: 10000, description: `It’s shown up to ${MAX_LETTER.toLocaleString()} characters.` });
+    if (linkTrouble === 'unknown-letter') toast('That letter wasn’t found', { id: 'link-unknown', duration: 8000, description: 'Here’s another one instead.' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
   const [busy, setBusy] = useState({ download: false, font: false, video: false });
@@ -115,6 +129,23 @@ export default function App() {
 
   // ---------- found letters and your own: always a way to each ----------
   const [kept, setKept] = useState<Draft[]>(() => drafts());
+  // another tab kept or took a letter: the list follows
+  useEffect(() => {
+    const on = (e: StorageEvent) => { if (e.key === DRAFTS_KEY || e.key == null) setKept(drafts()); };
+    window.addEventListener('storage', on);
+    return () => window.removeEventListener('storage', on);
+  }, []);
+  /** keep your letter as you step away from it; when the device won't, say so (it lasts while the page is open) */
+  const keepMine = (s: NoteState) => {
+    if (s.sample) return;
+    if (!keepDraft(s)) {
+      toast('Your letter can’t be kept on this device', {
+        id: 'no-storage',
+        duration: 12000,
+        description: 'Its storage is full or blocked. It’s kept while this page is open; copy its link to keep it for later.',
+      });
+    }
+  };
   const toFound = useCallback((next?: ReturnType<typeof sampleForSeed>) => {
     markStep();
     const s = stateNow.current;
@@ -128,20 +159,25 @@ export default function App() {
     own: !sample && (!!state.text.trim() || !!state.inkLog),
     drafts: kept.length,
     kept,
+    mine: mineIndex(kept) >= 0,
     /** another found letter (your own, if any, is kept) */
     onAnother: () => {
       const s = stateNow.current;
-      if (!s.sample) { keepDraft(s); setKept(drafts()); }
+      keepMine(s);
+      setKept(drafts());
       toFound();
     },
-    /** back to a letter you were writing (the newest, or the one picked from the list) */
-    onBackToMine: (index = 0) => {
+    /** back to a letter you were writing (this tab's newest, or the one picked from the list) */
+    onBackToMine: (savedAt?: number) => {
       const s = stateNow.current;
-      const d = takeDraft(index);
+      const d = takeDraft(savedAt);
       // what's on the page now is kept too, unless it's a found letter
-      if (!s.sample) keepDraft(s);
+      if (d) keepMine(s);
       setKept(drafts());
-      if (!d) return;
+      if (!d) {
+        toast('That letter isn’t here any more', { id: 'draft-gone', description: 'It was opened in another tab, or this device’s storage was cleared.' });
+        return;
+      }
       markStep();
       inkRef.current = null;
       update({ text: d.text, inkLog: d.inkLog, marks: d.marks ?? [], replyTo: d.replyTo ?? null, signed: !!d.signed, sample: null });
@@ -156,7 +192,7 @@ export default function App() {
   // written ahead (prefetch). With the live page (engines with incremental layout), typing is drawn on the
   // main thread instead, from the moment the letter is tapped: same markup, so the switch shows nothing.
   const liveWanted = LIVE && (editing || state.reader);
-  const { writing, prefetch, written, lookup } = useWriting(request, composing || liveWanted);
+  const { writing, prefetch, written, lookup, failed: penFailed } = useWriting(request, composing || liveWanted);
   const requestRef = useRef(request);
   requestRef.current = request;
   const committed = useRef(state.text);
@@ -232,6 +268,7 @@ export default function App() {
   // the link saved at once, without waiting for the pen or the debounce
   useEffect(() => {
     const leave = () => {
+      if (holdLinkRef.current) return;
       const ink = inkRef.current;
       if (ink && inkFor.current === inkLook && ink.waiting) {
         ink.flush();
@@ -830,6 +867,7 @@ export default function App() {
   freshRef.current = panelProps.ink?.onFreshSheet;
   const desk = !posture.writing;
   const reader = state.reader;
+  const brokenLink = linkTrouble === 'incomplete';
 
   // ---------- phones: the control sheet, and the letter making room above it ----------
   const mobileSheet = !reader && !isDesktop;
@@ -1026,9 +1064,23 @@ export default function App() {
             )}
             style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : undefined}
           >
+            {/* a link cut short on its way: no letter to show, and the one thing to do about it */}
+            {brokenLink && (
+              <Notice
+                title="This link looks incomplete"
+                action={<Button variant="secondary" onClick={() => { setLinkTrouble(null); update({ reader: false }); }}>Write a letter of your own</Button>}
+              >
+                Part of the letter didn’t arrive. Some apps shorten long links, so ask the sender to share it again.
+              </Notice>
+            )}
+            {!brokenLink && penFailed && !writing && (
+              <Notice title="The pen couldn’t load" action={<Button variant="secondary" onClick={() => window.location.reload()}>Reload</Button>}>
+                Your letter is safe in this page’s link. Reload to try again.
+              </Notice>
+            )}
             {/* look C (?look=postmarked): a shared link arrives in its envelope, postmarked */}
-            {LOOK === 'postmarked' && pxPerMm > 0 && reader && <><ToolArrival sampleId={state.sample} writer={name} /><div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}><SheetPost sampleId={state.sample} width={shownPaper.w * pxPerMm} /></div></>}
-            {pxPerMm > 0 && reader && (
+            {LOOK === 'postmarked' && pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && <><ToolArrival sampleId={state.sample} writer={name} /><div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}><SheetPost sampleId={state.sample} width={shownPaper.w * pxPerMm} /></div></>}
+            {pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && (
               <ReaderView
                 writing={writing}
                 live={live ? { live, extras, inkKey: eff.inkKey } : null}
@@ -1041,7 +1093,7 @@ export default function App() {
                 onWriteYourOwn={() => update({ reader: false })}
               />
             )}
-            {pxPerMm > 0 && !reader && (
+            {pxPerMm > 0 && !reader && !brokenLink && !(penFailed && !writing) && (
               <div ref={fitRef} className="origin-top">
                 {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
                 {/* (with their letter picked up, its label covers this line: yours steps out of the way until it's back) */}
@@ -1068,6 +1120,7 @@ export default function App() {
                     <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
                   )}
                   {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
+                  {LOOK === 'reading-room' && sample && !replyDesk && <SampleMarks id={sample.id} pxPerMm={pxPerMm} />}
                   {/* look C (?look=postmarked): a found letter's postmark on the sheet's corner */}
                   {LOOK === 'postmarked' && <SheetPost sampleId={sample?.id} width={shownPaper.w * pxPerMm} />}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
@@ -1153,6 +1206,7 @@ export default function App() {
                   )}
                   {!isDesktop && writingMenu}
                 </div>
+                {LOOK === 'reading-room' && !isDesktop && sample && <CatalogueSlip id={sample.id} name={name} />}
                 {plainText && (
                   <div className="mt-3 flex justify-center">
                     <DraftSlip value={replyPending ? '' : state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
@@ -1196,9 +1250,11 @@ export default function App() {
               desk ? 'duration-[180ms]' : 'pointer-events-none translate-x-3 opacity-0 duration-[240ms] motion-reduce:translate-x-0',
             )}
           >
+            {LOOK === 'reading-room' ? <ReadingDesk {...panelProps} /> : (
             <div className="panel-scroll h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>
+            )}
           </aside>
         ) : null)}
       </div>

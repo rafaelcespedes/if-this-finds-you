@@ -93,8 +93,11 @@ export interface PanelProps {
     drafts: number;
     /** the kept letters, newest first */
     kept: Draft[];
+    /** one of them was written in this tab */
+    mine: boolean;
     onAnother: () => void;
-    onBackToMine: (index?: number) => void;
+    /** this tab's newest, or the one put down at `savedAt` */
+    onBackToMine: (savedAt?: number) => void;
   };
   /** Ink mode (when the engine writes in ink): used by the writing menu and the pen tray, not the panel */
   ink?: {
@@ -313,12 +316,13 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
     // what the letter is lives on the sheet now (its label); here, only the ways to the others
     <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted-foreground', className)}>
       <span className="flex items-center gap-1">
-        {letter.found && letter.drafts === 1 && (
+        {/* this tab's own letter, never another tab's */}
+        {letter.found && letter.mine && (
           <button type="button" onClick={() => letter.onBackToMine()} className={link}>Back to my letter</button>
         )}
-        {/* more than one kept (or any, beside your own): each of them, by its first words */}
-        {(letter.drafts > 1 || (!letter.found && letter.drafts > 0)) && (
-          <KeptLetters kept={letter.kept} label={letter.found ? 'My letters' : 'My other letters'} onOpen={letter.onBackToMine} className={link} />
+        {/* the others kept on this device (all of them, beside your own): each by its first words */}
+        {letter.drafts > (letter.found && letter.mine ? 1 : 0) && (
+          <KeptLetters kept={letter.kept} label={letter.found && !letter.mine ? 'My letters' : 'My other letters'} onOpen={letter.onBackToMine} className={link} />
         )}
         {/* on a found letter, Find another brings the next one */}
         {!letter.found && <button type="button" onClick={letter.onAnother} className={link}>Read a found letter</button>}
@@ -327,7 +331,7 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
   );
 }
 
-function KeptLetters({ kept, label, onOpen, className }: { kept: Draft[]; label: string; onOpen: (i: number) => void; className: string }) {
+function KeptLetters({ kept, label, onOpen, className }: { kept: Draft[]; label: string; onOpen: (savedAt: number) => void; className: string }) {
   const now = Date.now();
   return (
     <DropdownMenu.Root>
@@ -351,7 +355,7 @@ function KeptLetters({ kept, label, onOpen, className }: { kept: Draft[]; label:
             return (
               <DropdownMenu.Item
                 key={d.savedAt + ':' + i}
-                onSelect={() => onOpen(i)}
+                onSelect={() => onOpen(d.savedAt)}
                 className="flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 py-1.5 text-[14px] text-foreground outline-none select-none data-[highlighted]:bg-accent"
               >
                 <span className="min-w-0 truncate">{words}</span>

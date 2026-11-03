@@ -15,6 +15,9 @@ import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
 import type { ArchiveLetter } from './model';
 import { NO_FILTERS, type Filters } from './route';
 import { headerLink, SiteHeader, toolHref } from './SiteHeader';
+// the look being compared (?look=reading-room): the heading as a finding aid (src/themes/reading-room/)
+import { LOOK } from '@/lib/look';
+import { FindingAid } from '@/themes/reading-room/FindingAid';
 
 interface Props {
   letters: ArchiveLetter[] | null;
@@ -132,6 +135,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             <div className="flex h-full flex-col items-center justify-center px-2 text-center">
               <span aria-hidden className="block h-[52px] text-foreground [&_svg]:h-full [&_svg]:w-auto sm:h-[68px]" dangerouslySetInnerHTML={{ __html: allLetters }} />
               <p className="mt-4 max-w-[28rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">{intro}</p>
+              {LOOK === 'reading-room' && <FindingAid letters={pool} />}
             </div>
           }
           empty={
@@ -172,6 +176,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             {TOOLBAR === '1' && <HeadingTools {...controls} />}
           </div>
           <p className="mt-4 max-w-[34rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">{intro}</p>
+          {LOOK === 'reading-room' && <FindingAid letters={pool} />}
           {TOOLBAR === '1' && <div className="mt-5"><SentenceFilter {...controls} /></div>}
         </section>
         {/* the dock floats at the bottom, but comes first in reading order, before the letters */}
