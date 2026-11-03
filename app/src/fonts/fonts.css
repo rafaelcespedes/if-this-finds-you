@@ -563,68 +563,80 @@ html[data-look='reading-room'] .record-actions [data-slot='button'] {
 }
 
 /* ---------- the Reading Room's type roles (reading-room.css: --rr-<role>-face/-size/-weight/-leading/-tracking) ----------
-   Every Fonts text in the room takes a role, never a face, so a change of typeface reaches this page at once. The
-   fallbacks are the room's values today. */
-html[data-look='reading-room'] :is(.fonts-intro, .specimen-bar input[type='text']) {
-  font-family: var(--rr-reading-face, var(--rr-book, inherit));
-  font-size: var(--rr-reading-size, 1.0625rem);
-  font-weight: var(--rr-reading-weight, 400);
-  line-height: var(--rr-reading-leading, 1.6);
-  letter-spacing: var(--rr-reading-tracking, 0);
+   Every Fonts text in the room takes a role, never a face, so a change of typeface reaches this page at once. Small
+   capitals come from the face itself (font-variant-caps), on natural-case words. Doubled classes lift a rule over the
+   room's broad control rule where the role list asks for a book role instead (the tester's words, a group's name). */
+html[data-look='reading-room'] :is(.fonts-intro, .specimen-bar-wrap .specimen-bar.specimen-bar input[type='text']) {
+  font-family: var(--rr-reading-face);
+  font-size: var(--rr-reading-size);
+  font-weight: var(--rr-reading-weight);
+  line-height: var(--rr-reading-leading);
+  letter-spacing: var(--rr-reading-tracking);
 }
 html[data-look='reading-room'] :is(.font-row-name, .font-record, .record-rows dd, .record-about) {
-  font-family: var(--rr-text-face, var(--rr-book, inherit));
-  font-size: var(--rr-text-size, 0.9375rem);
-  font-weight: var(--rr-text-weight, 400);
-  line-height: var(--rr-text-leading, 1.4);
-  letter-spacing: var(--rr-text-tracking, 0);
-}
-html[data-look='reading-room'] .font-row-name {
-  font-size: var(--rr-text-size, 1rem);
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  font-weight: var(--rr-text-weight);
+  line-height: var(--rr-text-leading);
+  letter-spacing: var(--rr-text-tracking);
 }
 /* the hand that's open: its name as the record's title */
 html[data-look='reading-room'] .font-row-name:has(.font-row-open[aria-expanded='true']) {
-  font-family: var(--rr-title-face, var(--rr-book, inherit));
-  font-size: var(--rr-title-size, 1.375rem);
-  font-weight: var(--rr-title-weight, 500);
-  line-height: var(--rr-title-leading, 1.15);
-  letter-spacing: var(--rr-title-tracking, -0.005em);
+  font-family: var(--rr-title-face);
+  font-size: var(--rr-title-size);
+  font-weight: var(--rr-title-weight);
+  line-height: var(--rr-title-leading);
+  letter-spacing: var(--rr-title-tracking);
 }
-html[data-look='reading-room'] :is(.specimen-note, .set-note, .record-sub, .record-note, .record-wait, .record-sources, .font-list-note, .font-rail p, .filter-panel p, .font-rail [data-row] .grid > div:first-child, .filter-panel .grid > div:first-child) {
-  font-family: var(--rr-small-face, var(--rr-book, inherit));
-  font-size: var(--rr-small-size, 0.8125rem);
-  font-weight: var(--rr-small-weight, 400);
-  line-height: var(--rr-small-leading, 1.45);
-  letter-spacing: var(--rr-small-tracking, 0);
+html[data-look='reading-room'] :is(.specimen-note, .set-note, .record-sub, .record-note, .record-wait, .record-sources, .font-list-note) {
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  font-weight: var(--rr-small-weight);
+  line-height: var(--rr-small-leading);
+  letter-spacing: var(--rr-small-tracking);
 }
-/* keys: the tester's words, the record's keys and folds, the filter groups' names in the rail and the panel */
+/* label: the tester's words, the record's keys and folds, and the filter groups' names in the rail and the panel */
 html[data-look='reading-room'] :is(
   .specimen-bar [data-slot='button'][aria-haspopup],
   .specimen-bar [data-row].grid > div:first-child > span:first-child,
   .specimen-bar [data-slot='segmented-item'],
   .record-rows dt,
   .record-folds button[aria-expanded] > span:first-child,
-  :is(.font-rail, .filter-panel) section[data-row] h3
+  :is(.font-rail, .filter-panel.filter-panel.filter-panel) section[data-row] h3
 ) {
-  font-family: var(--rr-label-face, var(--rr-caps, inherit));
-  font-size: var(--rr-label-size, 0.8125rem);
-  font-weight: var(--rr-label-weight, 400);
-  line-height: var(--rr-label-leading, 1.3);
-  letter-spacing: var(--rr-label-tracking, 0.06em);
-  text-transform: lowercase;
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  font-weight: var(--rr-label-weight);
+  line-height: var(--rr-label-leading);
+  letter-spacing: var(--rr-label-tracking);
+  font-variant-caps: var(--rr-label-caps);
+  text-transform: none;
 }
-/* counts that line up: the size in px, the folds' counts */
+/* a group's chosen value beside its name: a control word (as in the tool's slip) */
+html[data-look='reading-room'] :is(.font-rail, .filter-panel.filter-panel.filter-panel) section[data-row] h3 > span:not([aria-hidden]) {
+  font-family: var(--rr-control-face);
+  font-size: var(--rr-control-size);
+  letter-spacing: var(--rr-control-tracking);
+  font-variant-caps: normal;
+}
+/* number: the size in px, the folds' counts */
 html[data-look='reading-room'] :is(.specimen-bar [data-row].grid > div:first-child > span:last-child, .record-folds button[aria-expanded] > span:first-child > span) {
-  font-family: var(--rr-number-face, var(--rr-caps, inherit));
-  font-size: var(--rr-number-size, 0.9375rem);
-  font-weight: var(--rr-number-weight, 400);
-  line-height: var(--rr-number-leading, 1.2);
-  letter-spacing: var(--rr-number-tracking, 0.04em);
+  font-family: var(--rr-number-face);
+  font-size: var(--rr-number-size);
+  font-weight: var(--rr-number-weight);
+  line-height: var(--rr-number-leading);
+  letter-spacing: var(--rr-number-tracking);
+  font-variant-caps: var(--rr-number-caps);
   font-variant-numeric: oldstyle-nums tabular-nums;
-  text-transform: lowercase;
+  text-transform: none;
 }
-html[data-look='reading-room'] :is(.record-actions, .font-list-end) [data-slot='button']:not(.dock-primary) {
-  font-family: var(--rr-text-face, var(--rr-book, inherit));
-  font-size: var(--rr-text-size, 0.9375rem);
-  font-weight: var(--rr-text-weight, 400);
+/* control: what you operate in the rail, on a row and in the record (the dock and the panel take it from the room);
+   the red actions keep the action role */
+html[data-look='reading-room'] :is(.font-rail, .font-row-actions, .record-actions, .font-list-end) :is([data-slot='button'], [data-slot='segmented-item']):not(.dock-primary),
+html[data-look='reading-room'] .font-rail :is(p, .grid > div:first-child:not(:has(*))) {
+  font-family: var(--rr-control-face);
+  font-size: var(--rr-control-size);
+  font-weight: var(--rr-control-weight);
+  line-height: var(--rr-control-leading);
+  letter-spacing: var(--rr-control-tracking);
 }
