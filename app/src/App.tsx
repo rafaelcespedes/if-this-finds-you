@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ChevronDown, Pointer } from 'lucide-react';
+import { ChevronDown, Mails, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, withLogo } from '@/lib/brand';
 import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
-import { AboutHand, Panel, type PanelProps } from '@/components/Panel';
+import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -72,7 +72,7 @@ const editLog = new EditLog();
 
 export default function App() {
   const [composing, setComposing] = useState(false);
-  const [state, update] = useNoteState(composing);
+  const [state, update, markStep] = useNoteState(composing);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
   const [busy, setBusy] = useState({ download: false, font: false, video: false });
@@ -100,6 +100,7 @@ export default function App() {
   // ---------- found letters and your own: always a way to each ----------
   const [draftCount, setDraftCount] = useState(() => drafts().length);
   const toFound = useCallback((next?: ReturnType<typeof sampleForSeed>) => {
+    markStep();
     const s = stateNow.current;
     const pick = next ?? sampleForSeed(s.seed, s.style, new Set([...recentLetters(), ...(s.sample ? [s.sample] : [])]));
     if (!pick) return;
@@ -163,6 +164,8 @@ export default function App() {
   }, [p, inkLayout, coarse, inkLook]);
   /** after the session changed: the note follows it (what it says, and its log) */
   const fullNoted = useRef(false);
+  const onModeRef = useRef<((m: 'ink' | 'pencil' | 'fair') => void) | undefined>(undefined);
+  const freshRef = useRef<(() => void) | undefined>(undefined);
   const syncInk = useCallback(() => {
     const ink = inkRef.current;
     if (!ink) return;
@@ -170,7 +173,14 @@ export default function App() {
     setInkTick((n) => n + 1);
     if (ink.full && !fullNoted.current) {
       fullNoted.current = true;
-      toast('This sheet is full', { description: 'Make a fair copy, or start a fresh sheet.' });
+      // ink keeps to one sheet: go on in a fair copy (which runs onto more sheets), or start a fresh one
+      toast('This sheet is full', {
+        id: 'sheet-full',
+        description: 'Go on in a fair copy, which runs onto more sheets, or start a fresh sheet.',
+        duration: 12000,
+        action: { label: 'Fair copy', onClick: () => onModeRef.current?.('fair') },
+        cancel: { label: 'Fresh sheet', onClick: () => freshRef.current?.() },
+      });
     } else if (!ink.full) fullNoted.current = false;
   }, [update]);
   // writing in ink: the session is up from the first tap (or, on an untouched sample letter, the first key)
@@ -203,7 +213,7 @@ export default function App() {
 
   const live = useMemo(
     () => {
-      if (inkActive) return inkLive(p, inkRef.current!.page, paper, eff.size, eff.lineSpacing);
+      if (inkActive) return inkLive(p, inkRef.current!.page, paper, eff.size, eff.lineSpacing, inkRef.current!.draft());
       // a shared ink letter: its page, corrections and all
       if (state.reader && inkMode && state.inkLog) {
         const doc = decodeInk(state.inkLog);
@@ -296,8 +306,6 @@ export default function App() {
     const t = window.setTimeout(() => setEscHint(false), 4500);
     return () => window.clearTimeout(t);
   }, [editing, isDesktop]);
-  /** beside the sheet when the desk has room for it, else on the label's line */
-  const hintBeside = stageW > 0 && (stageW - shownPaper.w * pxPerMm) / 2 >= 124;
   const foundName = (l: { author: string; year?: number }) => `${shortAuthor(l.author)}${l.year ? `, ${l.year}` : ''}`;
   const sheetTitle = sample ? foundName(sample) : found ? `Your reply to ${shortAuthor(found.letter.author)}` : 'A letter from you';
   /** At a reply's first moment: keep the found letter's writing, as read. */
@@ -394,12 +402,14 @@ export default function App() {
   const similarAhead = useRef<{ base: string; look: Partial<NoteState> } | null>(null);
   const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.mode, s.inkLog, s.marks, s.signed, s.neatOnly, variety, lockKey]), [variety, lockKey]);
   const newHand = useCallback((fade = true) => {
+    markStep();
     // for QA (window.__seedhandPerf): click → the new hand's writing in the page
     const now = ahead.current.find((a) => a.base === baseOf(stateNow.current));
     perf.lookAsked(!!now && written(requestFor({ ...stateNow.current, ...now.look })));
     lookChange(() => update((s) => ahead.current.find((a) => a.base === baseOf(s))?.look ?? rollHand(s, { variety, locked: locks, avoid: recentLetters() })), fade);
   }, [update, baseOf, variety, locks, lookChange, written]);
   const similarHand = useCallback((fade = true) => {
+    markStep();
     lookChange(() => update((s) => {
       const pre = similarAhead.current;
       return pre && pre.base === baseOf(s) ? pre.look : withSample(s, { ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) }, recentLetters());
@@ -486,12 +496,12 @@ export default function App() {
         : await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
       const filename = `${APP_NAME} – ${name}`;
       const done = (r: string) => {
-        if (r === 'saved') toast.success('Note downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
+        if (r === 'saved') toast.success('Image downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
       };
       const r = await saveNote(res.blob, filename, coarse);
       // making the image took long enough that the browser wants a fresh tap before sharing
       if (r === 'needs-tap') {
-        toast('Your note is ready', {
+        toast('Your image is ready', {
           description: `JPEG, ${res.width} × ${res.height} px`,
           action: { label: 'Save image', onClick: () => void saveNote(res.blob, filename, true).then(done) },
           duration: 10000,
@@ -543,12 +553,14 @@ export default function App() {
       const filename = `${fileSafe(`${APP_NAME} – ${name}`)}.${res.ext}`;
       const description = `${Math.round(res.seconds)} s, ${res.width} × ${res.height}, ${(res.blob.size / 1e6).toFixed(1)} MB`;
       const file = new File([res.blob], filename, { type: res.mime });
+      // a fresh toast, not the progress one (that one's Stop button would stay)
+      toast.dismiss('export');
       if (coarse && navigator.canShare?.({ files: [file] })) {
         // making it took a few seconds, so the share sheet needs a fresh tap (then Save Video puts it in Photos)
-        toast.success(`Your ${what} is ready`, { id: 'export', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
+        toast.success(`Your ${what} is ready`, { id: 'export-done', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
       } else {
         saveBlob(res.blob, filename);
-        toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export', description, duration: 4000 });
+        toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export-done', description, duration: 4000 });
       }
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') toast('Stopped', { id: 'export', duration: 2000 });
@@ -617,7 +629,7 @@ export default function App() {
     busy,
     onNewHand: () => newHand(true),
     // the same letter, another writer: the stationery stays, the text stays (a found letter keeps its words)
-    onChangeWriter: () => lookChange(() => update((s) => rollLook(s, { variety, locked: new Set<LockKey>(['pen', 'ink', 'paper']) }))),
+    onChangeWriter: () => { markStep(); lookChange(() => update((s) => rollLook(s, { variety, locked: new Set<LockKey>(['pen', 'ink', 'paper']) }))); },
     onSimilarHand: () => similarHand(true),
     onSeed: (seed) => update((s) => withSample(s, { seed, offsets: offsetsForNewHand(s.offsets) }, recentLetters())),
     onStyle: (style) => lookChange(() => update({ style })),
@@ -673,6 +685,8 @@ export default function App() {
     } : undefined,
   };
 
+  onModeRef.current = panelProps.ink?.onMode;
+  freshRef.current = panelProps.ink?.onFreshSheet;
   const desk = !posture.writing;
   const reader = state.reader;
 
@@ -751,6 +765,23 @@ export default function App() {
     else fitLetter(visible, false);
   }, [fitLetter, sheetOpen, detent, metrics]);
 
+  // how you're writing (and what to do with the sheet): at the sheet's top right on desktop, under it on phones
+  const writingMenu = (
+    <WritingMenu
+      inkAvailable={!!panelProps.ink}
+      mode={state.pen === 'pencil' ? 'pencil' : state.mode}
+      onMode={(m) => panelProps.ink?.onMode(m)}
+      inkLetter={!!state.inkLog}
+      onFairCopy={() => panelProps.ink?.onFairCopy()}
+      onFreshSheet={() => panelProps.ink?.onFreshSheet()}
+      onBlankPage={sample ? () => { replyArrive.current = true; keepTheirs(stateNow.current); update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) })); } : undefined}
+      signed={state.signed}
+      onSign={toggleSigned}
+      plainText={plainText}
+      onPlainText={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
+    />
+  );
+
   return (
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
@@ -767,8 +798,8 @@ export default function App() {
             )}
           >
             {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
-            <span className="flex h-8 items-start text-foreground/85 lg:h-9"><Wordmark className="h-full" /></span>
-            <span className="flex min-w-0 items-baseline gap-2">
+            <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
+            <span className={cn('flex min-w-0 gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
               {reader ? (
                 <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                   Write your own
@@ -777,7 +808,20 @@ export default function App() {
                 // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state
                 <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : ''}</span>
               )}
-              {/* the whole library of found letters (the archive) */}
+              {/* the whole library of found letters (the archive); on phones a small chip, with Share beside it */}
+              {!isDesktop && !reader ? (
+                <span className={cn('pointer-events-auto flex items-center gap-1.5 transition-opacity duration-150', editing && 'pointer-events-none opacity-0')}>
+                  <a
+                    href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
+                    aria-label="All letters"
+                    title="All letters"
+                    className="relative grid size-8 place-items-center rounded-[9px] bg-secondary text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <Mails aria-hidden className="size-4" />
+                  </a>
+                  <ShareMenu {...panelProps} size="chip" />
+                </span>
+              ) : (
               <a
                 href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                 className={cn(
@@ -788,6 +832,7 @@ export default function App() {
               >
                 All letters
               </a>
+              )}
             </span>
           </header>
           <div ref={stageRef} className="w-full">
@@ -831,7 +876,11 @@ export default function App() {
             {pxPerMm > 0 && !reader && (
               <div ref={fitRef} className="origin-top">
                 {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
-                <div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
+                {/* (with their letter picked up, its label covers this line: yours steps out of the way until it's back) */}
+                <div
+                  className={cn('relative z-20 mx-auto transition-opacity duration-300 ease-out', replyDesk && theirsForward && 'pointer-events-none opacity-0')}
+                  style={{ width: shownPaper.w * pxPerMm }}
+                >
                   {isDesktop ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
                     <div className="absolute bottom-1.5 left-0 flex max-w-full items-baseline gap-2.5">
@@ -845,34 +894,21 @@ export default function App() {
                           <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </button>
                       </AboutHand>
-                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 160)} />
-                      {((hintShown && !hintBeside) || (escHint && !hintBeside)) && (
-                        <span key={escHint ? 'esc' : 'click'} className="animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">
-                          {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
-                        </span>
-                      )}
+                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 260)} />
                     </div>
                   ) : (
                     <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
                   )}
+                  {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
-                  {isDesktop && (hintShown || escHint) && hintBeside && (
-                    <div
-                      key={escHint ? 'esc' : 'click'}
-                      aria-hidden
-                      className="pointer-events-none absolute top-36 right-full mr-3 flex w-[108px] animate-in items-center gap-1.5 rounded-xl bg-panel px-2.5 py-2 text-[12px] leading-snug text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_8px_20px_-10px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-left-1 duration-700"
-                    >
-                      {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
-                      {!escHint && <ArrowRight className="size-3.5 shrink-0" />}
-                    </div>
-                  )}
-                  {/* phones: a ghost in the sheet's top margin, pointing in (never over the label, never near the sheet below) */}
-                  {!isDesktop && hintShown && (
+                  {/* a ghost in the sheet's top margin, pointing in (clear of the label above and the first line below);
+                      the first time you write on a desktop, the same place says how to stop */}
+                  {(hintShown || escHint) && (
                     <div
                       aria-hidden
                       className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700"
                     >
-                      <Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write
+                      {escHint ? 'Press Esc when you’re done' : <><Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write</>}
                     </div>
                   )}
                 </div>
@@ -944,19 +980,7 @@ export default function App() {
                     // the letter's name is on the sheet now; a translation still says who translated it
                     <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
-                  <WritingMenu
-                    inkAvailable={!!panelProps.ink}
-                    mode={state.pen === 'pencil' ? 'pencil' : state.mode}
-                    onMode={(m) => panelProps.ink?.onMode(m)}
-                    inkLetter={!!state.inkLog}
-                    onFairCopy={() => panelProps.ink?.onFairCopy()}
-                    onFreshSheet={() => panelProps.ink?.onFreshSheet()}
-                    onBlankPage={sample ? () => { replyArrive.current = true; keepTheirs(stateNow.current); update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) })); } : undefined}
-                    signed={state.signed}
-                    onSign={toggleSigned}
-                    plainText={plainText}
-                    onPlainText={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
-                  />
+                  {!isDesktop && writingMenu}
                 </div>
                 {plainText && (
                   <div className="mt-3 flex justify-center">

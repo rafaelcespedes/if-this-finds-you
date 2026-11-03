@@ -58,17 +58,40 @@ export function inkFromText(seed: string, style: string, text: string): InkDoc {
 export function inkOpts(p: Hand, paper: PaperSpec, size: number, lineSpacing: number) {
   const setup = pageSetup(p, paper, size, lineSpacing);
   const frame = frameFor(paper, setup.lines.first, setup.lineMm, setup.u);
-  return { ...setup, frame, layout: { ...setup.opts, pageHeight: frame.inkU } };
+  // the letter flows onto as many sheets as it needs (the engine breaks lines by the same rules as paginate:
+  // a line that doesn't fit starts the next sheet, an empty line never does, a closing goes over with its name)
+  const sheet = { first: frame.firstU, last: frame.lastU, ink: frame.inkU, height: paper.h * setup.u };
+  return { ...setup, frame, sheetU: sheet.height, layout: { ...setup.opts, pageHeight: frame.inkU, sheet } };
 }
 
-/** An ink sheet's page as a Live: one sheet (the current one), for LiveSheets, the caret and the JPEG. */
-export function inkLive(p: Hand, page: any, paper: PaperSpec, size: number, lineSpacing: number): Live {
-  const { emMm, u, lines, lineMm, frame } = inkOpts(p, paper, size, lineSpacing);
-  const ys = ((page.lineInfo ?? []) as { y: number }[]).map((l) => l.y);
+/** Which sheet a point (page units, y down) is on, when sheets are stacked `sheetU` apart. */
+const sheetAtY = (y: number, sheetU: number, count: number) => Math.min(count - 1, Math.max(0, Math.floor(y / sheetU)));
+
+/**
+ * An ink letter's page as a Live, for LiveSheets, the caret and the JPEG: as many sheets as the engine broke it
+ * into (each line carries its sheet), and as many as the thought letters reach (`draft`), so the writing ahead of
+ * the pen never floats past the paper.
+ */
+export function inkLive(p: Hand, page: any, paper: PaperSpec, size: number, lineSpacing: number, draft?: any): Live {
+  const { emMm, u, lines, lineMm, frame, sheetU } = inkOpts(p, paper, size, lineSpacing);
+  const info = (page.lineInfo ?? []) as { n: number; y: number; sheet?: number }[];
+  const ys = info.map((l) => l.y);
   const lastY = ys.length ? Math.max(...ys) : frame.firstU - frame.pitchU;
+  const draftYs = ((draft?.items ?? []) as { kind: string; y: number }[]).filter((it) => it.kind === 'glyph').map((it) => it.y);
+  const count = 1 + Math.max(0, ...info.map((l) => l.sheet ?? 0), ...draftYs.map((y) => Math.floor(y / sheetU)));
+  const breaks: number[] = [];
+  const shifts: number[] = [];
+  for (let k = 0; k < count; k++) {
+    const first = info.filter((l) => (l.sheet ?? 0) === k).map((l) => l.n);
+    // a sheet only the thought letters have reached starts after the last written line
+    breaks.push(first.length ? Math.min(...first) : Math.max(page.lines ?? 0, info.length, (breaks[k - 1] ?? -1) + 1));
+    shifts.push(k * sheetU);
+  }
+  breaks[0] = 0;
+  const sheets = breaks.map((fromLine, s) => ({ shiftU: shifts[s], fromLine, toLine: breaks[s + 1] ?? Infinity }));
   return {
     p, page, geo: engine.geometry(p, page), paper, emMm, unitsPerMm: u, lineMm, firstMm: lines.first,
-    pages: { breaks: [0], shifts: [0] }, frame, sheets: [{ shiftU: 0, fromLine: 0, toLine: Infinity }],
+    pages: { breaks, shifts }, frame, sheets,
     tailY: lastY + frame.pitchU, emPx: emMm * REF_PX_PER_MM,
     widthPx: Math.round(paper.w * REF_PX_PER_MM), heightPx: Math.ceil(paper.h * REF_PX_PER_MM),
   };
@@ -88,7 +111,11 @@ function itemContours(it: any): number[][][] {
  */
 export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerName: string }): string[] {
   const sc = live.emPx / UPM;
-  let out = '';
+  const n = live.sheets.length;
+  const sheetU = live.paper.h * live.unitsPerMm;
+  // each sheet's own: marks and thoughts go on the sheet their line is on
+  const out: string[] = Array.from({ length: n }, () => '');
+  const thoughts: string[] = Array.from({ length: n }, () => '');
   // newer engines put each correction mark in a run of its own (LiveSheets draws and inks it with the
   // words); only marks outside every run are drawn here, flat
   const inRun = new Set<number>();
@@ -96,19 +123,21 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
   for (const [i, it] of (live.page.items as any[]).entries()) {
     if (it.kind !== 'mark' || inRun.has(i)) continue;
     const cs = itemContours(it);
-    if (cs.length) out += `<path data-key="${String(it.key).replace(/"/g, '')}" d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
+    if (cs.length) out[sheetAtY(it.y ?? 0, sheetU, n)] += `<path data-key="${String(it.key).replace(/"/g, '')}" d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
   }
   if (x.draft) {
-    let thoughts = '';
     for (const it of x.draft.items as any[]) {
       if (it.kind !== 'glyph') continue;
       const cs = itemContours(it);
-      if (cs.length) thoughts += `<path d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
+      if (cs.length) thoughts[sheetAtY(it.y, sheetU, n)] += `<path d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
     }
-    if (thoughts) out += `<g fill="${GRAPHITE}" fill-opacity="0.24" class="thoughts">${thoughts}</g>`;
+    thoughts.forEach((t, s) => { if (t) out[s] += `<g fill="${GRAPHITE}" fill-opacity="0.24" class="thoughts">${t}</g>`; });
   }
-  if (x.signed && x.writerName) out += liveExtras(live, { marks: [], signed: true, writerName: x.writerName, text: live.page.text })[0] ?? '';
-  return [out];
+  if (x.signed && x.writerName) {
+    const sig = liveExtras(live, { marks: [], signed: true, writerName: x.writerName, text: live.page.text });
+    sig.forEach((s, i) => { if (s && i < n) out[i] += s; });
+  }
+  return out;
 }
 
 /** The live sheet while someone writes in ink. Plain object state; the caller re-renders after changes. */
@@ -183,10 +212,14 @@ export function inkGeometry(base: Geometry, live: Live, draft: any, viewText: st
     const j = o - written;
     const glyphs = (draft.items as any[]).filter((it) => it.kind === 'glyph');
     const at = glyphs.find((it) => it.charIndex - (draft.from ?? 0) >= j);
-    if (at) return { sheet: 0, x: at.x, y: at.y, line: at.line };
+    // (page units, sheets stacked a paper's height apart: the caret's sheet, and its y on that sheet)
+    const sheetU = live.paper.h * live.unitsPerMm;
+    const onSheet = (y: number) => Math.min(live.sheets.length - 1, Math.max(0, Math.floor(y / sheetU)));
+    const place = (x: number, y: number, line: number) => { const s = onSheet(y); return { sheet: s, x, y: y - live.sheets[s].shiftU, line }; };
+    if (at) return place(at.x, at.y, at.line);
     const last = glyphs[glyphs.length - 1];
     if (!last) return base.caret(written);
-    return { sheet: 0, x: last.x + (last.g?.advance ?? 0), y: last.y, line: last.line };
+    return place(last.x + (last.g?.advance ?? 0), last.y, last.line);
   };
   return { ...base, text: viewText, caret };
 }

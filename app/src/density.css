@@ -1,0 +1,84 @@
+/* Compact controls (compact research option 1, "−1 step", docs/research/compact-ui; Rafael's call, 3 Nov 2026):
+   on desktop every control is 4 px shorter, text 14 → 13.5 (labels stay 13), corners 10 → 8 and the panel
+   336 → 320; phones draw a few things smaller but keep every tap at 44 px. The space between sections stays
+   as it was (groups, the block under Find another, the gaps between sliders): tight controls, airy layout.
+   Unlayered, so it beats Tailwind's layers; fold these into the components when convenient. */
+:root {
+  /* −1 step: every control one Tailwind step (4px) shorter, a touch less air */
+  --panel-w: 320px; --pad: 18px; --radius: 0.5rem;
+  --sig-h: 48px;
+  --cta-h: 40px; --cta-text: 13.5px; --icon: 40px; --ghost-h: 28px;
+  --head-h: 24px; --label: 13px; --body: 13.5px;
+  --seg-h: 28px; --seg-text: 12.5px; --chip-h: 24px; --chip-text: 11.5px;
+  --paper-w: 78px; --tile-text: 11.5px; --pen-w: 72px; --pen-spec: 27px; --school-w: 116px; --school-spec: 30px; --card-r: 10px;
+  --tip-h: 32px; --tip-w: 50px; --ink-hit: 28px; --ink-dot: 20px;
+  --sw-w: 36px; --sw-h: 20px; --sw-thumb: 16px;
+  --thumb: 14px; 
+  /* phone: visuals a step down, every tap target still 44 */
+  --m-pad: 18px; --m-cta-h: 44px; --m-icon: 44px; --m-seg-h: 40px; --m-chip-h: 32px; --m-tip-h: 40px; --m-tip-w: 48px;
+  --m-ink-hit: 44px; --m-ink-dot: 22px; --m-thumb: 18px;
+}
+
+/* ---------- the rules (desktop and anything with a fine pointer) ---------- */
+:root body { font-size: var(--body); }
+:root aside .panel-scroll { width: var(--panel-w); }
+:root .panel-scroll .px-5 { padding-inline: var(--pad); }
+:root .panel-scroll .sheet-row { margin-inline: calc(var(--pad) * -1); padding-inline: var(--pad); scroll-padding-inline: var(--pad); }
+
+/* the writer, Find another, share */
+:root section[aria-label='Writer'] [role='img'] svg { height: var(--sig-h); width: auto; }
+:root section[aria-label='Writer'] > [data-slot='button'] { height: var(--cta-h); font-size: var(--cta-text); }
+:root [data-slot='button'][aria-label='Share']:not([data-chip]) { width: var(--icon); height: var(--icon); }
+:root [data-slot='button'].text-muted-foreground { height: var(--ghost-h); }
+
+/* groups */
+:root section[data-row][aria-labelledby] > div:first-child { min-height: var(--head-h); }
+:root section[data-row][aria-labelledby] h3 { font-size: var(--label); }
+:root [data-row].grid > div:first-child > span.font-medium,
+:root [data-row] > span.grid > span.font-medium { font-size: var(--label); }
+:root section[data-row] > button[aria-expanded] { font-size: var(--label); }
+
+/* segmented (Print / Joined) */
+:root [data-slot='segmented']:not(.bg-transparent) > [data-slot='segmented-item'] { height: var(--seg-h); font-size: var(--seg-text); }
+/* paper kinds */
+:root [data-slot='segmented'][aria-label^='Kind of'] > [data-slot='segmented-item'] { height: var(--chip-h); font-size: var(--chip-text); padding-inline: 9px; }
+/* tiles and cards */
+:root [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item'] { width: var(--paper-w); font-size: var(--tile-text); }
+:root [role='radiogroup'][aria-label='Pen'] > button { width: var(--pen-w); border-radius: var(--card-r); }
+:root [role='radiogroup'][aria-label='Pen'] > button > :first-child { height: var(--pen-spec); }
+:root [role='radiogroup'][aria-label='Pen'] > button svg { height: var(--pen-spec); width: auto; }
+:root [role='radiogroup'][aria-label='School'] > button { width: var(--school-w); border-radius: var(--card-r); }
+:root [role='radiogroup'][aria-label='School'] > button > :first-child { height: var(--school-spec); }
+:root [role='radiogroup'][aria-label='School'] > button > :first-child svg { height: var(--school-spec); width: auto; }
+/* pen tip */
+:root [role='radiogroup'][aria-label='Tip'] > button { height: var(--tip-h); width: var(--tip-w); }
+/* ink */
+:root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item'] { width: var(--ink-hit); height: var(--ink-hit); }
+:root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item'] > span { width: var(--ink-dot); height: var(--ink-dot); }
+/* switch */
+:root [role='switch'] { width: var(--sw-w); height: var(--sw-h); }
+:root [role='switch'] > span { width: var(--sw-thumb); height: var(--sw-thumb); top: calc((var(--sw-h) - var(--sw-thumb)) / 2); left: calc((var(--sw-h) - var(--sw-thumb)) / 2); }
+:root [role='switch'] > span { translate: 0 0; }
+:root [role='switch'][aria-checked='true'] > span { translate: calc(var(--sw-w) - var(--sw-h)) 0; }
+/* sliders */
+:root [data-slot='slider'] [role='slider'] { width: var(--thumb); height: var(--thumb); }
+:root [data-slot='slider'] > span:first-child { height: var(--track, 3px); }
+
+/* ---------- phones (coarse pointer): visuals shrink, tap targets stay 44 ---------- */
+@media (pointer: coarse) {
+  :root .control-sheet .sheet-body { padding-inline: var(--m-pad); }
+  :root .control-sheet .sheet-row { margin-inline: calc(var(--m-pad) * -1); padding-inline: var(--m-pad); scroll-padding-inline: var(--m-pad); }
+  :root .control-sheet [data-fade] [data-slot='button'] { height: var(--m-cta-h); font-size: var(--cta-text); }
+  :root [data-slot='button'][aria-label='Share']:not([data-chip]) { width: var(--m-icon); height: var(--m-icon); }
+  :root [data-slot='segmented']:not(.bg-transparent) > [data-slot='segmented-item'] { height: var(--m-seg-h); }
+  :root [data-slot='segmented'][aria-label^='Kind of'] > [data-slot='segmented-item'] { height: var(--m-chip-h); padding-inline: 11px; }
+  :root [role='radiogroup'][aria-label='Tip'] > button { height: var(--m-tip-h); width: var(--m-tip-w); }
+  :root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item'] { width: var(--m-ink-hit); height: var(--m-ink-hit); }
+  :root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item'] > span { width: var(--m-ink-dot); height: var(--m-ink-dot); }
+  :root [data-slot='slider'] [role='slider'] { width: var(--m-thumb); height: var(--m-thumb); }
+  /* the 44px tap target, kept by an invisible margin around anything drawn smaller */
+  :root .control-sheet :is([data-slot='button'], [data-slot='segmented-item'], [role='radiogroup'][aria-label='Tip'] > button) { position: relative; }
+  :root .control-sheet :is([data-slot='button'], [data-slot='segmented-item'], [role='radiogroup'][aria-label='Tip'] > button)::after {
+    content: ''; position: absolute; inset: min(0px, calc((100% - 44px) / 2)) 0;
+  }
+}

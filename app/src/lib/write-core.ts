@@ -4,7 +4,7 @@
 // Besides the text, the writer adds what a pen adds to a letter (editor-ux.md §3.4): hand-drawn
 // underlines, letters pressed harder, a signature below the last line, and page numbers on sheets 2+.
 import { layout, makeGlyph, makeHand, penOutline, rng, withOverrides, UPM, type Glyph, type Hand, type Page, type PageItem } from '@engine';
-import { lineAfter, sheetOf } from './paginate';
+import { closingStart, lineAfter, sheetOf } from './paginate';
 import { LIVE } from './live';
 import { lookOf } from './request';
 import { writeInkLetter, writeLive } from './write-live';
@@ -96,7 +96,9 @@ export function write(req: WriteRequest): WriteResult {
     const { sheet, y } = own != null
       ? { sheet: sheetOf(comp.pages, line), y: own - comp.pages.shifts[sheetOf(comp.pages, line)] }
       : lineAfter(comp.pages, comp.frame, lineY(comp.page, line - 1) ?? comp.firstMm * u - lineU, Math.max(0, line - 1));
-    const x0 = paper.text.left * u + lineU * 0.15;
+    // under the letter's own closing when it has one ("Yours," set right); else just in from the margin
+    const close = closingStart(comp.page);
+    const x0 = close ?? paper.text.left * u + lineU * 0.15;
     while (drawn.length <= sheet) { drawn.push({ items: [], height: paper.h * u }); extra.push([]); }
     for (const it of sig.items) {
       if (it.kind !== 'glyph') continue;

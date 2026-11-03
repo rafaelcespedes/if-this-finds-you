@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AboutHand, LetterStatus, LookControls, MoreControls, ShareMenu, type PanelProps } from '@/components/Panel';
+import { AboutHand, LetterStatus, LookControls, MoreControls, type PanelProps } from '@/components/Panel';
 import { styleName } from '@/lib/styles';
 import { cn } from '@/lib/utils';
 
@@ -253,11 +253,10 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
           <Button onClick={props.onNewHand} className="h-11 px-3.5">
             <Shuffle aria-hidden /> Find another
           </Button>
-          <ShareMenu {...props} />
         </div>
         {/* the ways to the other letters, when there are any (Find another brings the next found letter) */}
         {props.letter && (!props.letter.found || props.letter.drafts > 0) && (
-          <LetterStatus {...props} compact className="min-w-0 pb-1 pl-1" />
+          <LetterStatus {...props} compact className="min-w-0 justify-center pb-1" />
         )}
         {/* the look, as a pull-up: a centred pill under the grabber's line of sight; its chevron says which way it goes */}
         <div className="flex justify-center pb-2">

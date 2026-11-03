@@ -1,12 +1,12 @@
 // Pen and tip. Each pen swatch is a word written by this writer with that pen, so the choice shows what the
 // pen does (ballpoint skips, fountain shading, pencil grain) instead of naming it. Tips are small strokes.
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useEffect, useRef } from 'react';
 import { makeHand, withOverrides } from '@engine';
 import { Specimen } from '@/components/Specimen';
 import { PEN_SIZES, type PenSize } from '@/lib/controls';
 import { ENGINE_TIPS } from '@/lib/engine-features';
 import { PEN_CHOICES } from '@/lib/pens';
-import { cn } from '@/lib/utils';
+import { cn, keepChosenInView } from '@/lib/utils';
 
 interface PenProps {
   seed: string;
@@ -32,8 +32,12 @@ export const PenSwatches = memo(function PenSwatches({ seed, style, pen, penSize
     const host = e.currentTarget;
     requestAnimationFrame(() => host.querySelector<HTMLElement>('[aria-checked="true"]')?.focus());
   };
+  // the chosen pen stays in view when it changes from elsewhere (Find another, a link)
+  const row = useRef<HTMLDivElement>(null);
+  useEffect(() => { requestAnimationFrame(() => keepChosenInView(row.current)); }, [pen]);
   return (
     <div
+      ref={row}
       role="radiogroup"
       aria-label="Pen"
       onKeyDown={onKeyDown}

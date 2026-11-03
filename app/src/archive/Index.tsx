@@ -1,16 +1,20 @@
-// The library: every letter as a card, with search, filters and Shuffle.
-import { useDeferredValue, useEffect, useMemo, useRef, type ReactNode } from 'react';
+// The library: every letter as the letter itself, a sheet of its paper in its own hand with its title underneath,
+// laid out like letters spread on a table (masonry: each goes into the shortest column, in reading order, so Tab
+// and screen readers follow the same order as the eye). Quiet search, filters and Shuffle above.
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import { ChevronDown, Search, Shuffle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
+import allLetters from './all-letters.svg?raw';
 import { Card } from './Card';
+import { cardAspect } from './card-protocol';
 import { cardSize } from './cards';
 import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
 import type { ArchiveLetter } from './model';
 import { letterHash, NO_FILTERS, randomHand, randomIndex, type Filters } from './route';
-import { headerLink, SiteHeader, TOOL_URL } from './SiteHeader';
+import { headerLink, SiteHeader, toolHref } from './SiteHeader';
 
 interface Props {
   letters: ArchiveLetter[] | null;
@@ -24,8 +28,13 @@ interface Props {
   active: boolean;
 }
 
-const MIN_CARD = 272;
-const GAP = 28;
+/** Columns and gaps for a width: three on wide screens, two from a phone up. */
+function grid(width: number) {
+  const cols = width >= 900 ? 3 : 2;
+  const gapX = cols === 3 ? 36 : 16;
+  const gapY = cols === 3 ? 44 : 28;
+  return { cols, gapX, gapY, colW: width ? (width - gapX * (cols - 1)) / cols : 0 };
+}
 
 export function Index({ letters, error, onRetry, filters, onFilters, onOpen, active }: Props) {
   const q = useDeferredValue(filters.q);
@@ -54,21 +63,46 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
     () => filterLetters(pool, { ...filters, q }),
     [pool, q, filters.era, filters.lang, filters.kind],
   );
+  const aspects = useMemo(() => new Map(pool.map((l) => [l.id, cardAspect(l.text)])), [pool]);
 
   const filtered = !!(filters.q || filters.era || filters.lang || filters.kind);
   const clear = () => onFilters(NO_FILTERS);
 
-  // card width: the grid's columns, measured once for all cards (on the panel, which is always there; the grid
-  // itself comes and goes with empty results)
+  // the grid's columns, measured on the panel (always there; the list comes and goes with empty results). While the
+  // index is hidden under a letter it measures 0: keep the last size, so cards come back as they were.
   const panelRef = useRef<HTMLDivElement>(null);
-  const gridW = useElementWidth(panelRef);
-  const cols = Math.max(1, Math.floor((gridW + GAP) / (MIN_CARD + GAP)));
-  const colW = gridW ? (gridW - GAP * (cols - 1)) / cols : 0;
-  // while the index is hidden under a letter it measures 0: keep the last size, so cards come back as they were
-  const lastSize = useRef<ReturnType<typeof cardSize> | null>(null);
-  if (colW) lastSize.current = cardSize(colW);
-  const csize = lastSize.current;
+  const panelW = useElementWidth(panelRef);
+  const lastW = useRef(0);
+  if (panelW) lastW.current = panelW;
+  const g = grid(lastW.current);
+  const csize = g.colW ? cardSize(g.colW) : null;
   const size = useMemo(() => csize, [csize?.css, csize?.width]);
+
+  // masonry: each card into the shortest column, in order. Sheet heights are known from the start (cardAspect), so
+  // nothing moves when the writing arrives; titles are measured. Runs before paint, and again when fonts land.
+  const listRef = useRef<HTMLUListElement>(null);
+  const lay = useCallback(() => {
+    const ul = listRef.current;
+    if (!ul || !g.colW) return;
+    const items = [...ul.children] as HTMLElement[];
+    const heights = items.map((el) => el.offsetHeight);
+    const cols = new Array(g.cols).fill(0);
+    items.forEach((el, i) => {
+      let c = 0;
+      for (let j = 1; j < g.cols; j++) if (cols[j] < cols[c] - 1) c = j;
+      el.style.transform = `translate3d(${(c * (g.colW + g.gapX)).toFixed(1)}px, ${cols[c].toFixed(1)}px, 0)`;
+      cols[c] += heights[i] + g.gapY;
+    });
+    ul.style.height = `${Math.max(0, Math.max(...cols) - g.gapY)}px`;
+  }, [g.cols, g.colW, g.gapX, g.gapY]);
+  useLayoutEffect(lay, [lay, shown]);
+  useEffect(() => {
+    const f = document.fonts;
+    if (!f) return;
+    f.ready.then(lay);
+    f.addEventListener('loadingdone', lay);
+    return () => f.removeEventListener('loadingdone', lay);
+  }, [lay]);
 
   // Shuffle: a random letter (from what's shown, when filtered) in a random hand
   const shuffle = () => {
@@ -99,11 +133,15 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
   return (
     <div className="min-h-dvh">
       <SiteHeader>
-        <a href={TOOL_URL} className={headerLink}>Write a letter</a>
+        <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
       </SiteHeader>
       <main className="mx-auto w-full max-w-[1180px] px-4 pb-28 sm:px-8 lg:px-10">
-        <section className="pt-[calc(4.75rem+env(safe-area-inset-top,0px))] pb-9 sm:pt-24 sm:pb-11">
-          <h1 className="text-[34px] leading-[1.05] font-[560] tracking-[-0.03em] text-foreground sm:text-[44px]">All letters</h1>
+        <section className="pt-[calc(5.25rem+env(safe-area-inset-top,0px))] pb-8 sm:pt-28 sm:pb-10">
+          {/* "All letters" in the logo's hand (#5: Québec school print, felt marker; heading.mjs) */}
+          <h1 className="text-foreground">
+            <span className="sr-only">All letters</span>
+            <span aria-hidden className="block h-[46px] [&_svg]:h-full [&_svg]:w-auto sm:h-[60px]" dangerouslySetInnerHTML={{ __html: allLetters }} />
+          </h1>
           <p className="mt-4 max-w-[34rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">
             Real letters by ordinary people, each written out by hand. Some never reached the person they were meant for.
           </p>
@@ -111,10 +149,10 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
 
         <div ref={panelRef}>
           {/* in reading order: search, filters, Shuffle (on phones Shuffle sits beside the search) */}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pb-3 sm:flex sm:items-center sm:gap-2.5">
-            <label className="relative col-start-1 row-start-1 min-w-0 sm:max-w-[400px] sm:flex-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 pb-2 sm:flex sm:items-center sm:gap-1">
+            <label className="relative col-start-1 row-start-1 min-w-0 sm:max-w-[340px] sm:flex-1">
               <span className="sr-only">Search letters</span>
-              <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
+              <Search aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-faint" />
               <input
                 ref={searchRef}
                 type="search"
@@ -124,10 +162,10 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
                 placeholder={narrow ? 'Words, writers, places' : 'Search words, writers, places'}
                 autoComplete="off"
                 spellCheck={false}
-                className="archive-field h-10 w-full pr-3 pl-9 text-[13.5px] placeholder:text-faint pointer-coarse:h-11"
+                className="archive-field archive-quiet h-9 w-full pr-3 pl-8 text-[13.5px] placeholder:text-faint pointer-coarse:h-11"
               />
             </label>
-            <div className="col-span-2 grid grid-cols-[1fr_1.3fr_1fr] gap-2 sm:flex sm:gap-2.5">
+            <div className="col-span-2 grid grid-cols-[1fr_1.3fr_1fr] gap-1.5 sm:flex sm:gap-1">
               <Select label="Era" value={filters.era} onChange={(v) => set({ era: v })} any={narrow ? 'Era' : 'Any era'} options={facets.eras} />
               <Select label="Language" value={filters.lang} onChange={(v) => set({ lang: v })} any={narrow ? 'Language' : 'Any language'} options={facets.langs} />
               <Select
@@ -138,15 +176,15 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
                 options={[{ value: 'letter', label: 'Letters' }, { value: 'note', label: 'Notes' }]}
               />
             </div>
-            <Button variant="outline" onClick={shuffle} disabled={!letters} className="col-start-2 row-start-1 h-10 pointer-coarse:h-11 sm:ml-auto">
+            <Button variant="ghost" onClick={shuffle} disabled={!letters} className="col-start-2 row-start-1 h-9 text-muted-foreground pointer-coarse:h-11 sm:ml-auto">
               <Shuffle aria-hidden /> Shuffle
             </Button>
           </div>
 
-          <p aria-live="polite" className="flex min-h-8 items-center gap-2 text-[12.5px] text-muted-foreground tabular">
+          <p aria-live="polite" className="flex min-h-8 items-center gap-2 text-[12.5px] text-faint tabular">
             {letters && (filtered ? `${noun(shown.length)} of ${count}` : noun(count))}
             {filtered && (
-              <button type="button" onClick={clear} className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-foreground/80 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-2.5">
+              <button type="button" onClick={clear} className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-muted-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-2.5">
                 <X aria-hidden className="size-3.5" /> Clear
               </button>
             )}
@@ -160,16 +198,16 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             <Empty title={filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} action={<Button variant="outline" onClick={clear}>Clear filters</Button>}>
               Try fewer words, or another era or language.
             </Empty>
-          ) : (
-            <ul
-              role="list"
-              aria-label="All letters"
-              className="mt-3 grid gap-x-7 gap-y-11 [grid-template-columns:repeat(auto-fill,minmax(min(100%,272px),1fr))]"
-            >
-              {letters
-                ? shown.map((l) => <Card key={l.id} letter={l} size={size} onOpen={onOpen} />)
-                : Array.from({ length: 9 }, (_, i) => <Blank key={i} />)}
+          ) : letters ? (
+            <ul ref={listRef} role="list" aria-label="All letters" className="masonry relative mt-6" style={{ '--col-w': `${g.colW}px` } as CSSProperties}>
+              {shown.map((l) => <Card key={l.id} letter={l} size={size} aspect={aspects.get(l.id) ?? 1} onOpen={onOpen} />)}
             </ul>
+          ) : (
+            <div aria-hidden className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-9">
+              {[1.1, 0.8, 1.3, 0.9, 1.2, 0.7].map((a, i) => (
+                <div key={i} className="archive-sheet-blank rounded-[1px] bg-[var(--paper)]" style={{ aspectRatio: `1 / ${a}` }} />
+              ))}
+            </div>
           )}
         </div>
       </main>
@@ -184,27 +222,15 @@ function Select({ label, value, onChange, any, options }: { label: string; value
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={cn('archive-field h-10 w-full min-w-0 appearance-none truncate pr-7 pl-2.5 text-[13.5px] pointer-coarse:h-11 sm:w-auto sm:pr-8 sm:pl-3', value ? 'text-foreground' : 'text-muted-foreground')}
+        className={cn('archive-field archive-quiet h-9 w-full min-w-0 appearance-none truncate pr-7 pl-2.5 text-[13.5px] pointer-coarse:h-11 sm:w-auto', value ? 'text-foreground' : 'text-muted-foreground')}
       >
         <option value="">{any}</option>
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.n != null ? `${o.label} (${o.n})` : o.label}</option>
         ))}
       </select>
-      <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-faint sm:right-2.5" />
+      <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-faint" />
     </label>
-  );
-}
-
-function Blank() {
-  return (
-    <li aria-hidden>
-      <div className="archive-paper aspect-[1/0.62] rounded-[1.5px] bg-[var(--paper)]" />
-      <div className="mt-3.5 grid gap-2">
-        <div className="h-3 w-3/5 rounded-full bg-[var(--chip)]" />
-        <div className="h-2.5 w-4/5 rounded-full bg-[var(--chip)]/70" />
-      </div>
-    </li>
   );
 }
 

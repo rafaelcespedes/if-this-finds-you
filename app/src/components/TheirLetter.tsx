@@ -212,9 +212,11 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
         )}
       </div>
 
-      <SheetLabel title={title} hand={hand} width={forward ? sheetW : aside * sheetW} className="absolute bottom-full left-0 mb-2" />
+      {/* tucked under your sheet, only an edge shows: its name and "Not a reply" wait until it's picked up */}
+      {(forward || !under) && <SheetLabel title={title} hand={hand} width={forward ? sheetW : aside * sheetW} className="absolute bottom-full left-0 mb-2" />}
 
       {/* under the letter, wherever it is: the way back (or that it isn't a reply) */}
+      {(forward || !under) && (
       <div
         ref={captionRef}
         className="absolute top-0 left-0 flex items-center gap-1 text-[12px] text-muted-foreground motion-reduce:transition-none"
@@ -241,6 +243,7 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }

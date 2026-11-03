@@ -89,6 +89,16 @@ export function paginate(page: Page, f: PageFrame): Pagination {
   return { breaks, shifts };
 }
 
+/**
+ * Where the letter's own sign-off block starts (font units from the page's left edge), so the app's signature
+ * lines up under it: the last closing line's `start` ("Yours," drifted right), else null (signed at the margin).
+ */
+export function closingStart(page: unknown): number | null {
+  const info = ((page as { lineInfo?: LineInfo[] }).lineInfo ?? []).filter((l) => l.role === 'closing' && typeof (l as { start?: number }).start === 'number');
+  const last = info[info.length - 1] as (LineInfo & { start: number }) | undefined;
+  return last ? last.start : null;
+}
+
 /** The sheet a line is on. */
 export function sheetOf(p: Pagination, line: number) {
   let s = 0;
