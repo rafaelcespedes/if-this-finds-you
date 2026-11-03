@@ -1,0 +1,312 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/instrument-sans';
+
+@custom-variant hover-device (@media (hover: hover) and (pointer: fine));
+
+/* Warm stationery palette. The ink is the only accent: the UI is set in the same blue-black the hand writes with. */
+:root {
+  --desk: #eeebe4;
+  --paper: #fffdf8;
+  --ink: #1c2233;
+  --ink-soft: #2c3550;
+  --text: #23211d;
+  --text-muted: #6c685f;
+  --text-faint: #8f8a80;
+  --panel: #f8f6f1;
+  --hairline: #e2ddd2;
+  --chip: #ece8df;
+  --chip-hover: #e4dfd4;
+
+  --background: var(--desk);
+  --foreground: var(--text);
+  --card: var(--panel);
+  --card-foreground: var(--text);
+  --popover: #fbfaf6;
+  --popover-foreground: var(--text);
+  --primary: var(--ink);
+  --primary-foreground: #fbfaf6;
+  --secondary: var(--chip);
+  --secondary-foreground: var(--text);
+  --muted: var(--chip);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--chip-hover);
+  --accent-foreground: var(--text);
+  --border: var(--hairline);
+  --input: #d6d0c3;
+  --ring: color-mix(in oklab, var(--ink) 42%, transparent);
+  --radius: 0.625rem;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --sheet-shadow:
+    0 0.5px 0 rgba(60, 45, 20, 0.08),
+    0 1px 2px rgba(60, 45, 20, 0.06),
+    0 6px 14px -6px rgba(60, 45, 20, 0.12),
+    0 24px 48px -20px rgba(60, 45, 20, 0.2);
+}
+
+@theme inline {
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-desk: var(--desk);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-faint: var(--text-faint);
+  --color-panel: var(--panel);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.45;
+    font-feature-settings: 'ss01' 0;
+    overscroll-behavior-y: none;
+  }
+  button,
+  [role='button'],
+  [role='radio'],
+  [role='slider'] {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Browser surfaces in the palette */
+::selection {
+  background: color-mix(in oklab, var(--ink) 16%, transparent);
+  color: inherit;
+}
+input,
+textarea {
+  caret-color: var(--ink);
+}
+.panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d6d0c3 transparent;
+}
+
+/* Numbers in the panel line up */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The writing layer: engine SVG output */
+.writing svg {
+  display: block;
+  overflow: visible;
+}
+.writing text.miss {
+  fill: #a59f92;
+  font-family: 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive;
+  text-anchor: middle;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* A new hand: the old writing softens out, the new one settles in. Opacity-only when motion is reduced. */
+/* Writing arriving: opacity only. (A blur here made the browser redraw the whole page of writing every frame,
+   so on phones the letter sat blurred for seconds before it settled.) */
+@keyframes hand-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.hand-in {
+  animation: hand-in 260ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hand-in {
+    animation-duration: 160ms;
+  }
+}
+
+/* Ink mode: the writer considers a fix at the pen head; the pen hovers just above the paper */
+@keyframes pen-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(-2px);
+    opacity: 0.55;
+  }
+}
+.pen-hover {
+  animation: pen-hover 900ms var(--ease-in-out) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes pen-hover {
+    50% {
+      transform: none;
+      opacity: 0.5;
+    }
+  }
+}
+
+/* The caret is the pen: solid for a moment after each move, then it breathes (editor-ux.md §3.4) */
+@keyframes caret-breathe {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+.caret-breathe {
+  animation: caret-breathe 1.2s ease-in-out 600ms infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret-breathe {
+    animation: none;
+  }
+}
+
+/* The highlighter sweeps in left to right on pointer selections */
+@keyframes highlighter-sweep {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.highlighter-sweep {
+  animation: highlighter-sweep 120ms var(--ease-out) both;
+}
+/* the selection chip appears after a short pause, so it doesn't flash during quick selections */
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+.selection-chip {
+  animation: chip-in 140ms var(--ease-out) 200ms both;
+}
+@keyframes chip-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .highlighter-sweep {
+    animation: none;
+  }
+  .selection-chip {
+    animation: chip-fade 120ms linear 200ms both;
+  }
+}
+
+/* sheet writing is drawn at a reference scale and stretched to the sheet */
+.writing-fill svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* A sheet the letter grows while open (it ran onto a new page) rises in; the controls never move */
+.sheet-enter {
+  transition: opacity 240ms var(--ease-out), transform 300ms var(--ease-out);
+}
+@starting-style {
+  .sheet-enter {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  @starting-style {
+    .sheet-enter {
+      transform: none;
+    }
+  }
+}
+
+/* First load: paper and writing arrive together */
+.desk-in {
+  transition: opacity 200ms var(--ease-out);
+}
+
+/* ---------- the phone's control sheet (ControlSheet.tsx) ---------- */
+/* Below full height the sheet's content drags the sheet; at full height it scrolls. Rows that scroll sideways
+   and sliders keep their own axis either way. */
+.control-sheet {
+  transition: background-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+.control-sheet .sheet-body {
+  overflow-y: hidden;
+  touch-action: pan-x;
+}
+.control-sheet[data-detent='full'] .sheet-body {
+  overflow-y: auto;
+  touch-action: pan-x pan-y;
+}
+.control-sheet .sheet-row {
+  touch-action: pan-x;
+}
+.control-sheet[data-detent='full'] .sheet-row {
+  touch-action: pan-x pan-y;
+}
+.control-sheet[data-detent='full'] [data-slot='slider'] {
+  touch-action: pan-y;
+}
+.control-sheet [data-row],
+.control-sheet [data-fade] {
+  transition: opacity 150ms var(--ease-out), box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out);
+}
+/* Full height covers the letter, so while a finger slides a control everything else steps back and the page
+   shows through; the control stays put under the finger on a card of its own. */
+.control-sheet[data-detent='full']:has([data-slot='slider'][data-active]) {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.control-sheet[data-detent='full']:has([data-slot='slider'][data-active]) :is([data-fade], [data-row]:not(:has([data-slot='slider'][data-active]))) {
+  opacity: 0;
+}
+.control-sheet[data-detent='full'] [data-row]:has(> [data-slot='slider'][data-active]) {
+  border-radius: 12px;
+  background-color: var(--panel);
+  box-shadow: 0 0 0 10px var(--panel), 0 14px 36px -6px rgba(40, 30, 10, 0.38);
+}

@@ -11,14 +11,25 @@
 //   wordSpace     measured gap between words in a laid-out line / x-height
 //   irregularity  how much each use of a letter differs from the hand's canonical form / x-height
 //   variants      which skeleton variant the hand picks for a–z A–Z 0–9 (categorical)
+// Movement features (how the pen moves, not just how big or slanted the letters are), also measured:
+//   loops         ascender loop width of l h b k at 60% of the ascender, / x-height (0 = retraced stem)
+//   descLoops     descender loop width of g j y at half the descender, / x-height (0 = straight or hooked)
+//   lifts         share of lowercase pairs in a sentence where the pen lifts (exit > 1.5 pen widths away)
+//   leadIn        word-initial entry stroke length (start to first top) of n m i u, / x-height
+//   endFlick      word-final exit length (last bottom turn to the end) of n m e a d l, / x-height
+//   capSwash      capital path length per cap height (D H M W T B): plain vs looped and swashy
+//   sharpness     share of the turning in n m u h a that happens at corners (pointed vs round turns)
 // Distances are in "just noticeable difference" (JND) units: a difference of 1 in a feature is about
 // what a designer would just notice side by side. These scales are judgement calls; tune them in JND.
 // NN distance < 1.5 = near-twins, 1.5–3 = close cousins, > 3 = clearly different people.
+// The report also gives the NN distance on the first nine features alone, comparable with older runs.
 
 import { varietySeeds } from '../config.mjs';
 import { stats, fmt, fmtStats, histogram, bboxOf, polyArea, polyLength, widthProfile } from '../util.mjs';
 
-export const JND = { slant: 3, xHeight: 0.04, width: 0.08, weight: 0.15, contrast: 0.25, spacing: 0.08, wordSpace: 0.25, irregularity: 0.02, variants: 0.1 };
+export const JND = { slant: 3, xHeight: 0.04, width: 0.08, weight: 0.15, contrast: 0.25, spacing: 0.08, wordSpace: 0.25, irregularity: 0.02, variants: 0.1,
+  loops: 0.1, descLoops: 0.1, lifts: 0.1, leadIn: 0.15, endFlick: 0.15, capSwash: 0.25, sharpness: 0.1 };
+const CLASSIC = ['slant', 'xHeight', 'width', 'weight', 'contrast', 'spacing', 'wordSpace', 'irregularity', 'variants'];
 const LOG_FEATURES = new Set(['weight', 'contrast']); // compared as log ratios
 const VARIANT_CHARS = [...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'];
 
@@ -70,13 +81,93 @@ export function features(E, p) {
   }
   const irregularity = dev / Math.max(1, nDev) / xh;
   const variants = VARIANT_CHARS.map((ch) => { if (!E.has(p, ch)) return '-'; const v = E.choose(p, ch); return v ? v.id || '?' : '-'; });
-  return { slant, xHeight: xh / cap, width, weight, contrast, spacing, wordSpace, irregularity, variants };
+  return { slant, xHeight: xh / cap, width, weight, contrast, spacing, wordSpace, irregularity, variants, ...movement(E, p, G, xh, CAP) };
 }
 
-export function distance(a, b) {
+// ---------- movement features ----------
+const crossings = (lines, y) => {
+  const xs = [];
+  for (const c of lines) for (let i = 1; i < c.length; i++) {
+    const a = c[i - 1], b = c[i];
+    if ((a[1] - y) * (b[1] - y) < 0) xs.push(a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]));
+  }
+  return xs;
+};
+const span = (xs) => (xs.length >= 2 ? Math.max(...xs) - Math.min(...xs) : 0);
+const pathLen = (c, i0 = 0, i1 = c.length - 1) => { let L = 0; for (let i = i0 + 1; i <= i1; i++) L += Math.hypot(c[i][0] - c[i - 1][0], c[i][1] - c[i - 1][1]); return L; };
+function movement(E, p, G, xh, CAP) {
+  const lines = (g) => g.strokes.filter((s) => !s.dot).map((s) => s.center);
+  const mean = (a) => { const v = a.filter(Number.isFinite); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : NaN; };
+  // loops: horizontal span of the loop at a fixed height (shear-invariant, so slant doesn't count)
+  const loops = mean([...'lhbk'].map((ch) => { const g = G(ch); if (!g) return NaN; const L = lines(g); let top = -Infinity; for (const c of L) for (const q of c) top = Math.max(top, q[1]); return span(crossings(L, xh + 0.6 * (top - xh))) / xh; }));
+  const descLoops = mean([...'gjy'].map((ch) => { const g = G(ch); if (!g) return NaN; const L = lines(g); let bot = Infinity; for (const c of L) for (const q of c) bot = Math.min(bot, q[1]); return span(crossings(L, 0.5 * bot)) / xh; }));
+  // lifts: exit-to-next-letter gaps in a laid-out sentence (as in the geometry check's join measurement)
+  const page = E.layout(p, 'minimum quick brown dogs jump over lazy foxes and humming birds', { maxWidth: 1e6 });
+  const gl = page.items.filter((it) => it.kind === 'glyph');
+  let pairs = 0, lifted = 0;
+  const zone = (q) => q[1] > -0.15 * xh && q[1] < 1.2 * xh;
+  for (let i = 0; i + 1 < gl.length; i++) {
+    const A = gl[i], B = gl[i + 1];
+    if (B.charIndex !== A.charIndex + 1) continue;
+    let exit = null;
+    for (const s of A.g.strokes) if (!s.dot) { const q = s.center[s.center.length - 1]; if (zone(q) && (!exit || q[0] > exit[0])) exit = q; }
+    pairs++;
+    if (!exit) { lifted++; continue; }
+    let d = Infinity;
+    for (const s of B.g.strokes) if (!s.dot) for (const q of s.center) if (zone(q)) d = Math.min(d, Math.hypot(B.x + q[0] - (A.x + exit[0]), B.y - q[1] - (A.y - exit[1])));
+    if (d / p.penWidth > 1.5) lifted++;
+  }
+  const lifts = pairs ? lifted / pairs : NaN;
+  // lead-ins and end flicks, on laid-out words (they only exist at word edges)
+  const words = E.layout(p, 'nun mum imp uni one sea and all', { maxWidth: 1e6 }).items.filter((it) => it.kind === 'glyph');
+  const firsts = [], lasts = [];
+  words.forEach((it, i) => {
+    if (!words[i - 1] || words[i - 1].charIndex !== it.charIndex - 1) firsts.push(it);
+    if (!words[i + 1] || words[i + 1].charIndex !== it.charIndex + 1) lasts.push(it);
+  });
+  const leadIn = mean(firsts.filter((it) => 'nmiu'.includes(it.ch)).map((it) => {
+    const c = lines(it.g)[0]; if (!c) return NaN;
+    let k = 0; while (k + 1 < c.length && c[k][1] < 0.75 * xh) k++; // up to the letter's first top (past any curl)
+    while (k + 1 < c.length && c[k + 1][1] >= c[k][1] - 0.5) k++;
+    return pathLen(c, 0, k) / xh;
+  }));
+  const endFlick = mean(lasts.filter((it) => 'nmeadl'.includes(it.ch)).map((it) => {
+    const L = lines(it.g); if (!L.length) return NaN;
+    let c = L[0]; for (const x of L) if (x[x.length - 1][0] > c[c.length - 1][0]) c = x;
+    let b = c.length - 1; // the lowest point in the stroke's last stretch near the baseline = the bottom turn
+    for (let j = c.length - 1; j >= Math.floor(c.length * 0.4); j--) if (c[j][1] < c[b][1] && c[j][1] < 0.3 * xh) b = j;
+    return pathLen(c, b, c.length - 1) / xh;
+  }));
+  const capSwash = mean([...'DHMWTB'].map((ch) => { const g = G(ch); if (!g) return NaN; return lines(g).reduce((n, c) => n + pathLen(c), 0) / CAP; }));
+  // sharpness: share of the turning that is concentrated (over 50° within 0.1 x-height of path), counting the
+  // turn where one pen run meets the next (the pen model splits strokes at hard corners)
+  let sharp = 0, total = 0;
+  for (const ch of 'nmuha') {
+    const g = G(ch); if (!g) continue;
+    const L = lines(g);
+    L.forEach((c, si) => {
+      const n = L[si + 1];
+      const pts = n && Math.hypot(n[0][0] - c[c.length - 1][0], n[0][1] - c[c.length - 1][1]) < 2 ? [...c, ...n.slice(1)] : c;
+      const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      const turn = pts.map((q, i) => {
+        if (!i || i === pts.length - 1) return 0;
+        const ux = q[0] - pts[i - 1][0], uy = q[1] - pts[i - 1][1], vx = pts[i + 1][0] - q[0], vy = pts[i + 1][1] - q[1];
+        return Math.abs(Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)) * 180 / Math.PI;
+      });
+      for (let i = 1; i + 1 < pts.length; i++) {
+        if (si > 0 && L[si - 1] && i < 1) continue;
+        let local = 0; for (let j = 0; j < pts.length; j++) if (Math.abs(cum[j] - cum[i]) <= 0.05 * xh) local += turn[j];
+        total += turn[i]; if (local > 50) sharp += turn[i];
+      }
+    });
+  }
+  return { loops, descLoops, lifts, leadIn, endFlick, capSwash, sharpness: total ? sharp / total : NaN };
+}
+
+export function distance(a, b, keys = Object.keys(JND)) {
   let s = 0;
   const parts = {};
-  for (const k in JND) {
+  for (const k of keys) {
     let d;
     if (k === 'variants') d = a.variants.filter((v, i) => v !== b.variants[i]).length / a.variants.length / JND.variants;
     else if (LOG_FEATURES.has(k)) d = Math.abs(Math.log(a[k] / b[k])) / JND[k];
@@ -110,7 +201,11 @@ export async function run(ctx) {
       D.features[k] = { ...s, spreadJND: spread };
       lines.push(`    ${k.padEnd(13)} p5 ${fmt(s.p05, 3).padStart(7)} · median ${fmt(s.median, 3).padStart(7)} · p95 ${fmt(s.p95, 3).padStart(7)} · spans ${fmt(spread, 1)} JND`);
     }
-    // nearest neighbours
+    // nearest neighbours (and on the first nine features alone, comparable with runs before movement features)
+    const nnClassic = F.map((x, i) => Math.min(...F.filter((_, j) => j !== i).map((y) => distance(x.f, y.f, CLASSIC).d)));
+    const sc = stats(nnClassic);
+    D.nnClassic = sc;
+    lines.push(`    nearest-neighbour distance, size/slant/weight/spacing features only (JND): ${fmtStats(sc, 2)}`);
     const nn = [], pairs = [];
     for (let i = 0; i < F.length; i++) {
       let best = { d: Infinity };
