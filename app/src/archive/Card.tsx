@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils';
 import { cardKey, cards } from './cards';
 import { circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
 import type { ArchiveLetter } from './model';
+// the look being compared (?look=reading-room): the letter's number stamped on its sheet (src/themes/reading-room/)
+import { LOOK } from '@/lib/look';
+import { CardStamp } from '@/themes/reading-room/SheetMarks';
 import { letterHash } from './route';
 import type { CardLetter } from './card-protocol';
 
@@ -77,6 +80,7 @@ export const Card = memo(function Card({ letter, size, aspect, onOpen }: Props) 
           {/* while the letter is being written: a faint sheet where it will lie; gone once it's there, so nothing but
               the paper itself (deckled and torn edges, punched holes) sits on the page */}
           <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', loaded && 'is-gone')} />
+          {LOOK === 'reading-room' && <CardStamp id={letter.id} />}
           {img && (
             <img
               src={img.url}

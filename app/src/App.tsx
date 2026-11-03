@@ -53,6 +53,10 @@ import { Notice } from '@/components/Notice';
 import { Button } from '@/components/ui/button';
 import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
+// the look being compared (?look=reading-room): its desk, card and sheet marks (src/themes/reading-room/)
+import { LOOK } from '@/lib/look';
+import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
+import { SampleMarks } from '@/themes/reading-room/SheetMarks';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
 const AHEAD = 5;
@@ -1113,6 +1117,7 @@ export default function App() {
                     <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
                   )}
                   {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
+                  {LOOK === 'reading-room' && sample && !replyDesk && <SampleMarks id={sample.id} pxPerMm={pxPerMm} />}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
                   {/* a ghost in the sheet's top margin, pointing in (clear of the label above and the first line below);
                       the first time you write on a desktop, the same place says how to stop */}
@@ -1196,6 +1201,7 @@ export default function App() {
                   )}
                   {!isDesktop && writingMenu}
                 </div>
+                {LOOK === 'reading-room' && !isDesktop && sample && <CatalogueSlip id={sample.id} name={name} />}
                 {plainText && (
                   <div className="mt-3 flex justify-center">
                     <DraftSlip value={replyPending ? '' : state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
@@ -1239,9 +1245,11 @@ export default function App() {
               desk ? 'duration-[180ms]' : 'pointer-events-none translate-x-3 opacity-0 duration-[240ms] motion-reduce:translate-x-0',
             )}
           >
+            {LOOK === 'reading-room' ? <ReadingDesk {...panelProps} /> : (
             <div className="panel-scroll h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>
+            )}
           </aside>
         ) : null)}
       </div>
