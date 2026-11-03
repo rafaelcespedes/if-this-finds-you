@@ -52,13 +52,15 @@ export function ReadingDesk(props: PanelProps) {
   // the desk's main action, a button at the foot of the record's head (under its number and two-line title)
   const bring = <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Bring another hand'} />;
   const status = props.letter && (!props.letter.found || props.letter.drafts > 0);
-  // the found letter turning into your own (the first key typed on it) cracks the writing materials open, once a visit
+  // starting your reply to the found letter on the sheet (its first typed key, or a Blank page from the In ink menu)
+  // cracks the writing materials open, once a visit; reopening one of My letters doesn't
   const [crack, setCrack] = useState(0);
-  const wasFound = useRef(found);
+  const wasSample = useRef(sampleId);
   useEffect(() => {
-    if (wasFound.current && !found && materials.canOpen()) setCrack((c) => c + 1);
-    wasFound.current = found;
-  }, [found]);
+    const was = wasSample.current;
+    if (was && !sampleId && state.replyTo?.id === was && materials.canOpen()) setCrack((c) => c + 1);
+    wasSample.current = sampleId;
+  }, [sampleId, state.replyTo?.id]);
   const physical = physicalOf(state);
   return (
     // as wide as the tool's panel (density.css --panel-w), so the desk grows with the browser's text size as it does
