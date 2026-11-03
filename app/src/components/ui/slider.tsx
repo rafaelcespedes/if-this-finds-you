@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Slider as SliderPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
+import { hasControl } from '@/controls-lab';
 
 /**
  * A slider. `mark` draws a small dot on the track (the hand's natural value, for seed-relative controls);
@@ -27,6 +28,7 @@ function Slider({
   const max = props.max ?? 100;
   const step = props.step ?? 1;
   const value = (props.value ?? props.defaultValue ?? [min])[0];
+  const valuePct = ((value - min) / (max - min || 1)) * 100;
   const markPct = mark == null ? null : Math.min(100, Math.max(0, ((mark - min) / (max - min || 1)) * 100));
   const [active, setActive] = React.useState(false);
   const touch = React.useRef<{ id: number; x: number; y: number; v: number; w: number; sliding: boolean; last: number } | null>(null);
@@ -36,6 +38,42 @@ function Slider({
   React.useEffect(() => () => window.clearTimeout(settle.current), []);
   const current = React.useRef(value);
   current.current = value;
+
+  // controls research #2: within 4% of the writer's own value the thumb catches on it (a detent)
+  const detent = hasControl(2);
+  const bars = hasControl(1);
+  const caught = React.useRef(false);
+  // only a pointer catches: arrow keys step by less than the catch, so they'd never get past it
+  const pointing = React.useRef(false);
+  const catchMark = (v: number) => {
+    if (!detent || mark == null || !pointing.current) return v;
+    const near = Math.abs(v - mark) <= (max - min) * 0.04;
+    if (near && !caught.current && typeof navigator.vibrate === 'function') navigator.vibrate(4);
+    caught.current = near;
+    if (rootRef.current) rootRef.current.toggleAttribute('data-caught', near);
+    return near ? mark : v;
+  };
+  const rootRef = React.useRef<HTMLSpanElement>(null);
+  // a tap settles (the thumb glides to it); a drag follows the pointer exactly; past the ends the track gives a little
+  React.useEffect(() => {
+    const el = rootRef.current;
+    if (!detent || !el) return;
+    let start: { x: number; rect: DOMRect } | null = null;
+    const down = (e: PointerEvent) => { if (e.button === 0) { pointing.current = true; start = { x: e.clientX, rect: el.getBoundingClientRect() }; } };
+    const move = (e: PointerEvent) => {
+      if (!start) return;
+      if (Math.abs(e.clientX - start.x) > 3) el.dataset.dragging = '';
+      const past = e.clientX < start.rect.left ? e.clientX - start.rect.left : e.clientX > start.rect.right ? e.clientX - start.rect.right : 0;
+      const give = Math.sign(past) * 6 * Math.sqrt(Math.min(Math.max(0, Math.abs(past) - 12) / 160, 1));
+      el.style.setProperty('--give', `${give.toFixed(2)}px`);
+    };
+    const up = () => { start = null; pointing.current = false; caught.current = false; el.removeAttribute('data-caught'); delete el.dataset.dragging; el.style.setProperty('--give', '0px'); };
+    el.addEventListener('pointerdown', down);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    return () => { el.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+  }, [detent]);
 
   const snap = (v: number) => {
     const s = Math.round((v - min) / step) * step + min;
@@ -75,7 +113,7 @@ function Slider({
       }
     }
     e.stopPropagation();
-    const v = snap(t.v + (dx / t.w) * (max - min));
+    const v = catchMark(snap(t.v + (dx / t.w) * (max - min)));
     if (v !== t.last) {
       t.last = v;
       onValueChange?.([v]);
@@ -109,9 +147,12 @@ function Slider({
     <SliderPrimitive.Root
       data-slot="slider"
       data-active={active ? '' : undefined}
+      // controls research #1: where the value line would run into the name (left) or the word (right)
+      data-edge={bars && (valuePct < 24 || valuePct > 70) ? '' : undefined}
       className={cn('relative flex h-5 w-full touch-none select-none items-center pointer-coarse:h-11 data-[disabled]:opacity-45', className)}
       onDoubleClick={onReset}
-      onValueChange={onValueChange}
+      ref={rootRef}
+      onValueChange={detent ? (v) => onValueChange?.([catchMark(v[0])]) : onValueChange}
       onValueCommit={onValueCommit}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

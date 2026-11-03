@@ -87,7 +87,7 @@ class FontStore {
     const n = cores >= 8 && !phone ? 4 : cores >= 4 ? 2 : 1;
     for (let i = 0; i < n; i++) {
       // built as a classic worker (the build's worker format); in development it's served as a module
-      const worker = new Worker(workerSrc, { type: import.meta.env.DEV ? 'module' : 'classic', name: 'fonts' });
+      const worker = new Worker(workerSrc, { type: 'module', name: 'fonts' });
       const slot: Slot = { worker, job: null, key: null };
       worker.onmessage = (e: MessageEvent<FromWorker>) => this.receive(slot, e.data);
       worker.onerror = () => {
@@ -307,7 +307,7 @@ class FontStore {
   /** The whole font package for a hand (.otf, .ttf, licence, credits), built in a worker of its own. */
   download(entry: FontEntry) {
     return new Promise<{ zip: ArrayBuffer; filename: string }>((resolve, reject) => {
-      const w = new Worker(workerSrc, { type: import.meta.env.DEV ? 'module' : 'classic', name: 'fonts-package' });
+      const w = new Worker(workerSrc, { type: 'module', name: 'fonts-package' });
       w.onmessage = (e: MessageEvent<FromWorker>) => {
         const m = e.data;
         if (m.type === 'package') { w.terminate(); resolve({ zip: m.zip, filename: m.filename }); }

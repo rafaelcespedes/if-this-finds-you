@@ -6,9 +6,13 @@ import './density.css';
 import { applyLook } from './lib/look';
 import './themes/reading-room.css';
 import './themes/postmarked.css';
+import './controls.css';
+import { applyControlsLab } from './controls-lab';
 
 // the look being compared (?look=…); today's design when none
 applyLook();
+// control patterns being tried (?controls=1…6)
+applyControlsLab();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
