@@ -7,6 +7,7 @@
 import { memo, useEffect, useLayoutEffect, useRef } from 'react';
 import * as E from '@engine';
 import { PaperCanvas } from '@/components/PaperCanvas';
+import { sheetShadow } from '@/lib/papers';
 import { sheetFrame, sheetOfLine, type Live } from '@/lib/live';
 import { scopeIds } from '@/lib/writing';
 
@@ -133,7 +134,7 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
         <div
           key={s}
           className="relative isolate shrink-0 rounded-[1.5px]"
-          style={{ width: live.paper.w * pxPerMm, height: live.paper.h * pxPerMm, boxShadow: 'var(--sheet-shadow)' }}
+          style={{ width: live.paper.w * pxPerMm, height: live.paper.h * pxPerMm, boxShadow: sheetShadow(live.paper) }}
           aria-label={sheets > 1 ? `Page ${s + 1} of ${sheets}` : undefined}
           role={sheets > 1 ? 'group' : undefined}
         >
