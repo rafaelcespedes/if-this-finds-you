@@ -293,3 +293,113 @@ button.font-tag:focus-visible {
   padding: 0 0.25rem 2rem 0;
   border-top: 1px solid var(--fonts-rule);
 }
+
+/* ---------- the Reading Room: the tester is one ruled line (layout study, Proposal 4) ----------
+   The same shared controls (the menu's button, the field, the slider row, the segmented control), drawn without
+   their boxes: words on the room, a hairline under the whole line, the chosen choice in ink. */
+html[data-look='reading-room'] .specimen-bar-wrap {
+  padding-block: 14px 10px;
+  border-bottom: 0;
+}
+/* the line itself carries the rule; the letter's credit sits under it */
+html[data-look='reading-room'] .specimen-bar {
+  column-gap: 1.75rem;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rr-ink, var(--fonts-rule));
+}
+/* what every hand writes: a small-capital word with its chevron */
+html[data-look='reading-room'] .specimen-bar [data-slot='button'][aria-haspopup] {
+  height: auto;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--rr-muted, var(--text-muted));
+  font-family: var(--rr-caps, inherit);
+  font-size: 0.9375rem;
+  letter-spacing: 0.045em;
+  text-transform: lowercase;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .specimen-bar [data-slot='button'][aria-haspopup]:hover {
+    background: transparent;
+    color: var(--rr-ink, var(--foreground));
+  }
+}
+/* the words themselves: in the reading face, no box */
+html[data-look='reading-room'] .specimen-bar input[type='text'] {
+  height: auto;
+  padding-block: 0.25rem;
+  padding-inline: 0 2rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--rr-book, inherit);
+  font-size: 1.0625rem;
+}
+html[data-look='reading-room'] .specimen-bar input[type='text']:focus {
+  background: transparent;
+}
+html[data-look='reading-room'] .specimen-bar input[type='text']::placeholder {
+  font-style: italic;
+  color: var(--rr-faint, var(--text-faint));
+}
+/* size: the label and its slider side by side on the line */
+html[data-look='reading-room'] .specimen-bar [data-row].grid {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+html[data-look='reading-room'] .specimen-bar [data-row].grid > div:first-child {
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+html[data-look='reading-room'] .specimen-bar [data-row].grid > div:first-child > span:first-child {
+  font-family: var(--rr-caps, inherit);
+  font-weight: 400;
+  letter-spacing: 0.045em;
+  text-transform: lowercase;
+  color: var(--rr-muted, var(--text-muted));
+}
+html[data-look='reading-room'] .specimen-bar [data-row].grid > [data-slot='slider'] {
+  flex: 1;
+  min-width: 5rem;
+}
+/* as a font · live hand: two words on the line, the chosen one in ink and underlined */
+html[data-look='reading-room'] .specimen-bar [data-slot='segmented'] {
+  display: flex;
+  width: auto;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+}
+html[data-look='reading-room'] .specimen-bar [data-slot='segmented-item'] {
+  height: auto;
+  padding: 0.25rem 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--rr-muted, var(--text-muted));
+  font-family: var(--rr-caps, inherit);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.045em;
+  text-transform: lowercase;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+}
+html[data-look='reading-room'] .specimen-bar [data-slot='segmented-item'] + [data-slot='segmented-item']::before {
+  content: '·';
+  margin-inline: 0.6em;
+  color: var(--rr-faint, var(--text-faint));
+  text-decoration: none;
+  display: inline-block;
+}
+html[data-look='reading-room'] .specimen-bar [data-slot='segmented-item'][data-state='on'] {
+  color: var(--rr-ink, var(--foreground));
+  text-decoration-color: currentColor;
+}
+html[data-look='reading-room'] .specimen-bar > div:last-child {
+  align-items: center;
+}
