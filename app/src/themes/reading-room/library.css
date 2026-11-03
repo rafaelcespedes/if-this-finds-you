@@ -133,3 +133,136 @@ html[data-look='reading-room'] .table-status {
     text-underline-offset: 3px;
   }
 }
+
+/* ---------- All letters as a list: a finding aid (FindingList.tsx) ---------- */
+html[data-look='reading-room'] .fa {
+  margin-top: 0.5rem;
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .fa-sort {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  font-family: var(--rr-caps);
+  font-size: 0.8125rem;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .fa-sort-by {
+  padding: 0.375rem 0.125rem;
+  color: var(--rr-muted);
+  text-transform: inherit;
+  letter-spacing: inherit;
+  transition: color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .fa-sort-by.is-on {
+  color: var(--rr-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .fa-sort-by:hover {
+    color: var(--rr-ink);
+  }
+}
+html[data-look='reading-room'] .fa-sep {
+  color: var(--rr-faint);
+}
+/* a century (or a letter of the alphabet) between two hairlines */
+html[data-look='reading-room'] .fa-group {
+  margin-top: 2.25rem;
+}
+html[data-look='reading-room'] .fa-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+  font-family: var(--rr-caps);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .fa-head::before,
+html[data-look='reading-room'] .fa-head::after {
+  content: '';
+  border-top: 1px solid var(--rr-rule);
+}
+/* a row: number, title, who to whom, place, year, ruled underneath */
+html[data-look='reading-room'] .fa-row {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr) 3rem;
+  align-items: baseline;
+  column-gap: 1.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--rr-rule);
+  outline: none;
+}
+html[data-look='reading-room'] .fa-row:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+html[data-look='reading-room'] .fa-no {
+  font-family: var(--rr-caps);
+  font-size: 0.78125rem;
+  letter-spacing: 0.05em;
+  color: var(--rr-red);
+  white-space: nowrap;
+}
+html[data-look='reading-room'] .fa-title {
+  font-family: var(--rr-book);
+  font-size: 1.03125rem;
+  line-height: 1.3;
+  color: var(--rr-ink);
+  text-wrap: pretty;
+}
+html[data-look='reading-room'] .fa-writer {
+  font-family: var(--rr-book);
+  font-style: italic;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .fa-place {
+  font-family: var(--rr-caps);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .fa-status {
+  color: var(--rr-red);
+}
+html[data-look='reading-room'] .fa-year {
+  text-align: right;
+  font-family: var(--rr-book);
+  font-size: 1rem;
+  color: var(--rr-ink);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .fa-row:hover .fa-title {
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, var(--rr-ink) 40%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+}
+/* phones: number and year on one line, then the title, who to whom, and the place */
+@media (max-width: 719px) {
+  html[data-look='reading-room'] .fa-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'no year' 'title title' 'writer writer' 'place place';
+    row-gap: 0.125rem;
+  }
+  html[data-look='reading-room'] .fa-no { grid-area: no; }
+  html[data-look='reading-room'] .fa-year { grid-area: year; }
+  html[data-look='reading-room'] .fa-title { grid-area: title; margin-top: 0.125rem; }
+  html[data-look='reading-room'] .fa-writer { grid-area: writer; }
+  html[data-look='reading-room'] .fa-place { grid-area: place; margin-top: 0.125rem; }
+}
