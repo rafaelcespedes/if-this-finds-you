@@ -56,5 +56,41 @@ for (const style of E.styleNames()) for (const seed of ['maple-river-42', 'quiet
     }
   }
 }
+// Ink mode while the pen is behind: typed key by key, the pen writing in pieces (a word may be split
+// between two writes and the second piece wrap). The written page has a caret stop at every offset of
+// the written text (its end and word spaces included); with the thought letters (draftPage, moved into
+// the textarea's offsets by offsetStops) every offset of the whole text has one; and a wrapped line's
+// start shows on its own line ('after'), its line end above ('before').
+{
+  const INK = 'Dear Ada,\nI have been meaning to write to you for weeks, but the days keep folding into each other. See you soon!\n\nWith love,\nMary';
+  for (const style of E.styleNames().slice(0, 3)) {
+    const p = E.makeHand('quiet-heron-17', style);
+    const lo = { maxWidth: 24 * E.pageMetrics(p).xh, firstBaseline: 1100 };
+    let st = E.replay(p, E.newInkDoc({ seed: 'quiet-heron-17', style, salt: 'qa' }), lo), view = E.newView(), typed = '', i = 0;
+    const probs = new Map(); const add = (k) => probs.set(k, (probs.get(k) || 0) + 1);
+    let states = 0, wraps = 0;
+    for (const ch of INK) {
+      let r = E.plan(st, view, { at: typed.length, del: 0, ins: ch, kind: 'insertText' }); E.apply(st, r.events); view = r.view; typed += ch;
+      const pause = (i++ % 5) === 0; // a pause now and then lets the pen write (dt and idle in ms)
+      r = E.penStep(st, view, { dt: pause ? 900 : 130, idle: pause ? 900 : 130, forgiving: true }); E.apply(st, r.events); view = r.view;
+      const pg = st.page, T = pg.text, d = E.draftPage(st, view), V = E.viewText(st, view);
+      states++;
+      const own = new Set(pg.stops.map((sp) => sp.o));
+      if (T.length) for (let o = 0; o <= T.length; o++) if (!own.has(o)) add(`written page: no caret at ${o === T.length ? 'its end' : 'offset ' + o}`);
+      const geo = E.geometry(p, d ? [pg, E.offsetStops(d, T.length - (d.from || 0))] : pg);
+      const all = new Set(geo.stops.map((sp) => sp.o));
+      for (let o = 0; o <= V.length; o++) if (!all.has(o)) add(`written + thoughts: no caret at ${o === V.length ? 'the end' : 'an offset'}`);
+      const byLine = new Map(); for (const sp of geo.stops) { if (!byLine.has(sp.line)) byLine.set(sp.line, []); byLine.get(sp.line).push(sp.o); }
+      for (const [ln, os] of byLine) {
+        const info = geo.lines.get(ln); if (!info || info.role !== 'wrap') continue;
+        const o = Math.min(...os); wraps++;
+        if (geo.caretAt(o, 'after').line !== ln) add('a wrapped line\'s start shows on another line');
+        if (geo.caretAt(o, 'before').line === ln) add('no line end above a wrap');
+      }
+    }
+    if (probs.size) for (const [k, n] of probs) fail(`${style} ink, pen behind: ${k} (${n}x)`);
+    else console.log(`${style.padEnd(7)} ink with the pen behind: ${states} moments, ${wraps} wrap checks, a caret at every offset`);
+  }
+}
 console.log(bad ? `${bad} problem(s)` : 'carets at every boundary; clicks land on the caret; selections cover every line');
 process.exit(bad ? 1 : 0);

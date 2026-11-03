@@ -36,7 +36,7 @@ export { makeHand, addHandTraits, withOverrides, makeGlyph, has, isLower, isUppe
 export { sampleHand, sampleLook, lookOf, lookDistance, handDistance, chaos, seedFrom, legibility, legibilityParts, NEAT_MIN, VARIETY, LOOK_PENS, LOOK_TIPS, LOOK_PAPERS } from './sampler.js';
 export { PENS, getPen, penKey, penOutline, strokeInk, simplify, INKS, inkModel, inkRGB, PAPER_REF, TIPS, handSize, penWidthUnits, emPxFor } from './pen.js';
 export { layout, inkPage, writeAt, pageHabits, pageMetrics, spreadOf, lineBaseline, lineAngle, lineLean } from './layout.js';
-export { geometry, pathD } from './editing.js';
+export { geometry, pathD, offsetStops } from './editing.js';
 export { kinematics } from './kinematics.js';
 export { timeline, frameAt, strokeFraction, createPlayer, playSVG, createPen, paintPen } from './animate.js';
 export { renderSVG, contoursToD, renderRun, runRenderer, runTransform, runChanges } from './render-svg.js';
