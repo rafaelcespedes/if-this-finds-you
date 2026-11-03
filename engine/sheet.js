@@ -387,7 +387,8 @@ function pageOf(st, s, live) {
     lines: 1 + Math.max(-1, ...s.items.map((it) => it.line)), words: 1 + Math.max(-1, ...s.items.map((it) => it.word)),
     misses: pages.flatMap((pg) => pg.misses || []), xh: xhOf(st), connected: !!(last && last.connected), seed: st.p.seed,
     text: live ? live.text : '', sheet: s.n, sheets: st.sheets.length,
-    full: !!(st.opts.pageHeight && Number.isFinite(ink.y1) && ink.y1 > st.opts.pageHeight),
+    // (with layout's sheets, opts.sheet, writing carries on onto the next sheet: never full)
+    full: !!(st.opts.pageHeight && !st.opts.sheet && Number.isFinite(ink.y1) && ink.y1 > st.opts.pageHeight),
     pen: s.stream.ink.pen,
   };
   void R;

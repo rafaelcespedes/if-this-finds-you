@@ -27,5 +27,14 @@ export default defineConfig({
   },
   preview: { host: '127.0.0.1', port: 4173 },
   // the main chunk is React + the engine's letter data; opentype.js and the writer worker load separately
-  build: { chunkSizeWarningLimit: 800 },
+  build: {
+    chunkSizeWarningLimit: 800,
+    // two pages: the tool (index.html) and the Letters library (letters.html, src/archive/), split apart
+    rollupOptions: {
+      input: {
+        main: path.resolve(import.meta.dirname, 'index.html'),
+        letters: path.resolve(import.meta.dirname, 'letters.html'),
+      },
+    },
+  },
 });
