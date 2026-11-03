@@ -29,6 +29,8 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **Ugly is allowed.** "Some overlap and some ugliness is acceptable. A lot of handwritings are ugly. So unless
   it's a bug, don't fix it." Builders and QA fix only unintended behaviour (scaling mistakes, missing ink,
   clipping). They never beautify, normalise or tighten hands. QA guards catch only values a bug could produce.
+- **"Neat hands only" setting, on by default:** New hand skips hard-to-read writers (based on a legibility score)
+  and gently tidies extremes. Turning it off allows every hand ("ugly is allowed" still holds).
 - **New hand randomizes everything:** writer, print or joined, pen, ink, paper, size, every slider, and each
   writer's own mistakes and corrections (cross-outs, letters rewritten over others). Small locks let people keep a setting.
 - **Blend between traditions.** A writer can be schooled in one tradition and influenced by another
