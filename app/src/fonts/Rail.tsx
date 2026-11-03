@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Group } from '@/components/ui/group';
 import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
-import { FilterGroups } from './Dock';
+import { FilterGroups, withFamily } from './Dock';
 import { filterCount, NO_FILTERS, type Catalogue, type Filters } from './filters';
 
 interface Props {
@@ -28,11 +28,7 @@ export function FontsRail(p: Props) {
     <aside aria-label="Choose the fonts" className="font-rail panel-scroll">
       <Group label="Show" first>
         <Segmented slide type="single" aria-label="Joined or print" value={p.view === 'saved' ? '' : family}
-          onValueChange={(v) => {
-            if (!v) return;
-            const fam = v === 'any' ? '' : v;
-            p.onFilters({ ...p.filters, family: fam ? [fam] : [], style: fam ? p.filters.style.filter((s) => (p.catalogue.styles.find((x) => x.id === s)?.family ?? fam) === fam) : p.filters.style });
-          }}>
+          onValueChange={(v) => v && p.onFilters(withFamily(p.filters, v, p.catalogue))}>
           <SegmentedItem value="any">All</SegmentedItem>
           <SegmentedItem value="print">Print</SegmentedItem>
           <SegmentedItem value="script">Joined</SegmentedItem>

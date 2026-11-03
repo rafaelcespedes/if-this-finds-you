@@ -1,17 +1,20 @@
-// The Fonts view's floating dock, in the family of All letters' dock (the same surface and rise-in): the filters,
-// Joined or print, your saved hands, and a new set. The filters open in a panel just above it (a sheet on phones),
-// laid out like the tool's panel: ¶ groups with the same chips, segmented controls and switch, the finer ones under
-// "More". Every control is the tool's own component. Every change draws a new set at once.
-import { useEffect, useId, useState, type ReactNode } from 'react';
-import { ArrowLeft, Heart, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
+// The Fonts view's one control surface below wide screens: a floating dock in the family of All letters' dock, with
+// Filters, Text (what every hand writes), your saved hands (once there are some) and New set. Filters and Text open
+// the shared Sheet (a popover from the button on desktop, a bottom sheet on phones). The filters are laid out like
+// the tool's panel: ¶ groups with the same chips, segmented controls and switch, the finer ones under "More". Every
+// control is a shared component; every change draws a new set at once. (4 Nov 2026, Rafael: cut to the essentials,
+// one home for the controls: Joined or print moved into the filters; the caption above the dock went.)
+import { useEffect, useId, useState } from 'react';
+import { ArrowLeft, CaseSensitive, Heart, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Group, MoreButton } from '@/components/ui/group';
 import { Sheet, useSheets } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Segmented, SegmentedChip, SegmentedItem } from '@/components/ui/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { describeFilters, ERA_GROUPS, filterCount, filterDefs, NO_FILTERS, tapRun, type Catalogue, type FilterDef, type Filters } from './filters';
+import { ERA_GROUPS, filterCount, filterDefs, NO_FILTERS, tapRun, type Catalogue, type FilterDef, type Filters } from './filters';
+import type { Line } from './route';
+import { TextPanel } from './SpecimenBar';
 
 interface Props {
   filters: Filters;
@@ -23,21 +26,28 @@ interface Props {
   onView: (v: 'set' | 'saved') => void;
   savedCount: number;
   onNewSet: () => void;
-  narrow: boolean;
+  /** what every hand writes (the Text sheet); left out when the tester line above the list has it (wide screens) */
+  text?: { line: Line; onLine: (l: Line) => void; text: string; onText: (t: string) => void; placeholder: string; onFocusChange?: (f: boolean) => void };
   /** hidden while the phone's keyboard is up for your own words */
   hidden?: boolean;
 }
 
-const Divider = () => <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />;
+/** Joined or print: a filter of its own (the family), and picking one keeps only the styles of that family. */
+export function withFamily(filters: Filters, v: string, catalogue: Catalogue): Filters {
+  const fam = v === 'any' ? '' : v;
+  return { ...filters, family: fam ? [fam] : [], style: fam ? filters.style.filter((s) => (catalogue.styles.find((x) => x.id === s)?.family ?? fam) === fam) : filters.style };
+}
 
-/** A dock button with a tooltip on pointer screens (its label is read out either way). */
-function Tip({ label, children, show = true }: { label: string; children: ReactNode; show?: boolean }) {
-  if (!show) return <>{children}</>;
+/** Joined or print, the first of the filters, on the sliding segmented control. */
+function FamilyGroup({ filters, onFilters, catalogue }: Pick<Props, 'filters' | 'onFilters' | 'catalogue'>) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
+    <Group label="Joined or print" first>
+      <Segmented slide type="single" aria-label="Joined or print" value={filters.family[0] ?? 'any'} onValueChange={(v) => v && onFilters(withFamily(filters, v, catalogue))}>
+        <SegmentedItem value="any">Any</SegmentedItem>
+        <SegmentedItem value="print">Print</SegmentedItem>
+        <SegmentedItem value="script">Joined</SegmentedItem>
+      </Segmented>
+    </Group>
   );
 }
 
@@ -105,7 +115,7 @@ function FilterControl({ def, value, onChange, family, familyOf }: { def: Filter
 }
 
 /** Every filter as the tool's ¶ groups, the finer ones under its More row. The dock's panel and the rail both show it. */
-export function FilterGroups({ filters, onFilters, neatOnly, onNeatOnly, catalogue, pad = 'var(--pad,1.25rem)', flush }: Pick<Props, 'filters' | 'onFilters' | 'neatOnly' | 'onNeatOnly' | 'catalogue'> & { pad?: string; flush?: boolean }) {
+export function FilterGroups({ filters, onFilters, neatOnly, onNeatOnly, catalogue, pad = 'var(--pad,1.25rem)', flush, lead }: Pick<Props, 'filters' | 'onFilters' | 'neatOnly' | 'onNeatOnly' | 'catalogue'> & { pad?: string; flush?: boolean; lead?: boolean }) {
   const defs = filterDefs(catalogue).filter((d) => d.key !== 'family');
   const moreId = useId();
   const moreCount = defs.filter((d) => d.more && filters[d.key].length).length;
@@ -130,7 +140,7 @@ export function FilterGroups({ filters, onFilters, neatOnly, onNeatOnly, catalog
   ));
   return (
     <>
-      {groups(defs.filter((d) => !d.more), true)}
+      {groups(defs.filter((d) => !d.more), !lead)}
       <section data-row className="border-t border-border/70" style={{ marginInline: `calc(${pad} * -1)` }}>
         <MoreButton open={more} controls={moreId} flush={flush} summary={moreCount ? `${moreCount} on` : 'Joins, weight, spacing, pace…'} onClick={() => setMore((v) => !v)}>More</MoreButton>
       </section>
@@ -142,15 +152,16 @@ export function FilterGroups({ filters, onFilters, neatOnly, onNeatOnly, catalog
 /** The filters inside the shared Sheet: every group, then Clear filters and Done. On desktop the list scrolls
  *  inside the popover with the foot below it; in the phone sheet the sheet scrolls and the foot sticks to its bottom. */
 function FilterPanel({ filters, onFilters, neatOnly, onNeatOnly, catalogue, onDone, sheet }: Pick<Props, 'filters' | 'onFilters' | 'neatOnly' | 'onNeatOnly' | 'catalogue'> & { onDone: () => void; sheet: boolean }) {
-  const n = filterCount({ ...filters, family: [] });
+  const n = filterCount(filters);
   return (
     <div className={cn('filter-panel flex flex-col', !sheet && 'max-h-[min(72dvh,640px,var(--radix-popover-content-available-height))]')}>
       <div className={cn(!sheet && 'panel-scroll min-h-0 overflow-y-auto overscroll-contain px-[var(--pad,1.25rem)]')}>
         {/* in the sheet the groups' rules reach its edges: 1.25rem is its padding */}
-        <FilterGroups filters={filters} onFilters={onFilters} neatOnly={neatOnly} onNeatOnly={onNeatOnly} catalogue={catalogue} pad={sheet ? '1.25rem' : undefined} />
+        <FamilyGroup filters={filters} onFilters={onFilters} catalogue={catalogue} />
+        <FilterGroups filters={filters} onFilters={onFilters} neatOnly={neatOnly} onNeatOnly={onNeatOnly} catalogue={catalogue} pad={sheet ? '1.25rem' : undefined} lead />
       </div>
       <div className="filter-panel-foot flex shrink-0 items-center justify-between gap-2 border-t border-border/70 px-3 py-2">
-        <Button variant="ghost" size="sm" disabled={!n && neatOnly} onClick={() => onFilters({ ...NO_FILTERS, family: filters.family }, true)} className="text-muted-foreground">
+        <Button variant="ghost" size="sm" disabled={!n && neatOnly} onClick={() => onFilters(NO_FILTERS, true)} className="text-muted-foreground">
           Clear filters
         </Button>
         <Button size="sm" onClick={onDone} className="dock-primary">Done</Button>
@@ -159,75 +170,75 @@ function FilterPanel({ filters, onFilters, neatOnly, onNeatOnly, catalogue, onDo
   );
 }
 
-export function FontsDock(p: Props) {
-  const [open, setOpen] = useState(false);
-  const sheets = useSheets();
-  const n = filterCount({ ...p.filters, family: [] }) + (p.neatOnly ? 0 : 1);
-  useEffect(() => { if (p.view === 'saved') setOpen(false); }, [p.view]);
+/** A dock button's words: hidden on the narrowest phones (under 360 px), where the icon carries it (the words stay
+ *  for screen readers). */
+const Words = ({ children, className }: { children: string; className?: string }) => <span className={cn('max-[359px]:sr-only', className)}>{children}</span>;
 
-  const summary = describeFilters({ ...p.filters, family: [] }, p.catalogue);
-  const caption = !open && p.view === 'set' && (summary || !p.neatOnly) ? (
-    <div className="dock-caption pointer-events-auto flex max-w-[calc(100vw-24px)] items-center gap-1 rounded-full bg-panel py-1 pr-1 pl-3 text-[0.7812rem] text-muted-foreground">
-      <span className="truncate">{[summary, !p.neatOnly && 'every hand'].filter(Boolean).join(' · ')}</span>
-      <Button variant="ghost" size="icon" onClick={() => p.onFilters({ ...NO_FILTERS, family: p.filters.family }, true)} aria-label="Clear the filters" className="size-6 rounded-full text-[var(--muted-foreground)] pointer-coarse:size-8">
-        <X aria-hidden className="size-3.5" />
-      </Button>
-    </div>
-  ) : null;
+export function FontsDock(p: Props) {
+  const [open, setOpen] = useState<'' | 'filters' | 'text'>('');
+  const sheets = useSheets();
+  const n = filterCount(p.filters) + (p.neatOnly ? 0 : 1);
+  useEffect(() => { if (p.view === 'saved') setOpen(''); }, [p.view]);
+  const opener = (which: 'filters' | 'text') => (o: boolean) => setOpen(o ? which : '');
 
   return (
-    <div className={cn('pointer-events-none fixed inset-x-0 bottom-[calc(14px+env(safe-area-inset-bottom,0px))] z-30 flex flex-col items-center gap-2 px-3 transition-opacity duration-150', p.hidden && 'opacity-0 [&_*]:!pointer-events-none')}>
-      {caption}
-      <div role="toolbar" aria-label="Choose the fonts" className="archive-dock pointer-events-auto flex max-w-full items-center gap-1 rounded-2xl bg-panel p-1">
+    <div className={cn('fonts-dock pointer-events-none fixed inset-x-0 bottom-[calc(12px+env(safe-area-inset-bottom,0px))] z-30 flex justify-center px-3 transition-opacity duration-150', p.hidden && 'opacity-0 [&_*]:!pointer-events-none')}>
+      <div role="toolbar" aria-label="Choose the fonts" className="archive-dock pointer-events-auto flex w-full max-w-[28rem] min-w-0 items-center gap-1 rounded-2xl bg-panel p-1 sm:w-auto">
         {p.view === 'saved' ? (
           <>
             <Button variant="ghost" onClick={() => p.onView('set')}>
-              <ArrowLeft aria-hidden /> {p.narrow ? 'Back' : 'Back to the set'}
+              <ArrowLeft aria-hidden /> Back to the set
             </Button>
-            <Divider />
-            <span className="px-2.5 text-[0.8125rem] text-muted-foreground tabular">{p.savedCount ? `${p.savedCount} saved` : 'Nothing saved yet'}</span>
+            <span className="ml-auto px-3 text-[0.8125rem] text-muted-foreground tabular">{p.savedCount ? `${p.savedCount} saved` : 'Nothing saved yet'}</span>
           </>
         ) : (
           <>
             <Sheet
               title="Filters"
-              open={open}
-              onOpenChange={setOpen}
+              open={open === 'filters'}
+              onOpenChange={opener('filters')}
               side="top"
               align="start"
               className="w-[460px] overflow-hidden p-0"
               trigger={
-                <Button variant="ghost" size={p.narrow ? 'icon' : 'default'} aria-label={p.narrow ? (n ? `Filters, ${n} on` : 'Filters') : undefined} className={cn('relative', open && 'bg-accent')}>
+                <Button variant="ghost" className={cn('relative px-3', open === 'filters' && 'bg-accent')} aria-label={n ? `Filters, ${n} on` : undefined}>
                   <SlidersHorizontal aria-hidden />
-                  {!p.narrow && 'Filters'}
-                  {n > 0 && <span aria-hidden className={cn('dock-badge tabular', p.narrow && 'absolute -top-1 -right-1')}>{n}</span>}
+                  <Words>Filters</Words>
+                  {n > 0 && <span aria-hidden className="dock-badge tabular">{n}</span>}
                 </Button>
               }
             >
               {(close) => <FilterPanel {...p} onDone={close} sheet={sheets} />}
             </Sheet>
-            <Segmented slide type="single" aria-label="Joined or print" value={p.filters.family[0] ?? 'any'}
-              onValueChange={(v) => {
-                if (!v) return;
-                const fam = v === 'any' ? '' : v;
-                p.onFilters({ ...p.filters, family: fam ? [fam] : [], style: fam ? p.filters.style.filter((s) => (p.catalogue.styles.find((x) => x.id === s)?.family ?? fam) === fam) : p.filters.style });
-              }}>
-              <SegmentedItem value="any" className={cn(p.narrow && 'px-2.5')}>Any</SegmentedItem>
-              <SegmentedItem value="print" className={cn(p.narrow && 'px-2.5')}>Print</SegmentedItem>
-              <SegmentedItem value="script" className={cn(p.narrow && 'px-2.5')}>Joined</SegmentedItem>
-            </Segmented>
-            <Tip label={`Saved hands${p.savedCount ? ` (${p.savedCount})` : ''}`}>
-              <Button variant="ghost" size={p.savedCount ? 'default' : 'icon'} onClick={() => p.onView('saved')} aria-label={`Saved hands${p.savedCount ? ` (${p.savedCount})` : ''}`} className={cn(p.savedCount > 0 && 'gap-1.5 px-2.5')}>
-                <Heart aria-hidden />
-                {p.savedCount > 0 && <span aria-hidden className="tabular">{p.savedCount}</span>}
+            {p.text && (
+              <Sheet
+                title="What every hand writes"
+                open={open === 'text'}
+                onOpenChange={opener('text')}
+                side="top"
+                align="start"
+                className="w-[300px] p-2"
+                trigger={
+                  <Button variant="ghost" className={cn('px-3', open === 'text' && 'bg-accent')}>
+                    <CaseSensitive aria-hidden />
+                    {/* under 400 px, once the saved hands' heart joins the dock, Text keeps only its Aa (fonts.css) */}
+                    <Words className="dock-text-words">Text</Words>
+                  </Button>
+                }
+              >
+                {(close) => <TextPanel {...p.text!} onDone={close} />}
+              </Sheet>
+            )}
+            {p.savedCount > 0 && (
+              <Button variant="ghost" onClick={() => p.onView('saved')} aria-label={`Saved hands (${p.savedCount})`} className="dock-saved gap-1.5 px-3">
+                <Heart aria-hidden className="fill-current" />
+                <span aria-hidden className="tabular">{p.savedCount}</span>
               </Button>
-            </Tip>
-            <Tip label="New set (Space)" show={!p.narrow}>
-              <Button onClick={p.onNewSet} className={cn('dock-primary', p.narrow && 'px-3')}>
-                <RefreshCw aria-hidden />
-                New set
-              </Button>
-            </Tip>
+            )}
+            <Button onClick={p.onNewSet} className="dock-primary ml-auto px-3" title="New set (Space)">
+              <RefreshCw aria-hidden />
+              New set
+            </Button>
           </>
         )}
       </div>

@@ -1,8 +1,8 @@
-// One hand as a foundry line item: the writer's name and a few quiet tags (Joined · Palmer · fountain pen · Field
-// journal; a tag is a button that filters by it), the row's actions (save, write with it, download the font), and a
-// big specimen line. As a font, the line is set in the hand's real font (built for the characters it shows), so
-// what you see is what you download; Live hand, it's the engine's live writing on the hand's paper.
-// The row's height is set before anything arrives, so rows never move when their writing does.
+// One hand as a foundry line item: the writer's name (it opens the hand's record) and a few quiet words about it
+// (Joined · Palmer · fountain pen; plain words, the filters live in the dock or the rail), the row's actions (save,
+// write with it, download the font), and a big specimen line set in the hand's real font (built for the characters it
+// shows), so what you see is what you download. The live hand, the engine's own writing on the hand's paper, is in the
+// record. The row's height is set before anything arrives, so rows never move when their writing does.
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Heart, LoaderCircle, PenLine, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, saveBlob } from '@/lib/utils';
 import { toolHref } from '@/archive/SiteHeader';
-import { penWords, type FilterKey } from './filters';
-import { boxHeight, type FontEntry, type LiveSpec, type Mode } from './protocol';
+import { penWords } from './filters';
+import { boxHeight, type FontEntry, type LiveSpec } from './protocol';
 import { fonts, useRowFont, useRowLive } from './store';
 import { toggleSaved } from './favourites';
 import { useNear } from './near';
@@ -26,17 +26,16 @@ interface Props {
   index: number;
   /** the words this row writes (the writer's own name, for that line) */
   text: string;
-  mode: Mode;
-  /** live hand: what the image is written for (size settles when you let go of the slider) */
+  /** the live hand in the record: what its image is written for */
   live: Omit<LiveSpec, 'text'>;
-  /** the size the row is shown at right now (the slider, live) */
+  /** the specimen's size, px per em */
   em: number;
   lines: number;
   saved: boolean;
+  /** phones: two words about the hand (joined or print, the school), the actions as icons */
   compact: boolean;
-  /** wide screens: the kind of writer as a fourth tag */
+  /** wide screens: the kind of writer as a fourth word */
   wide: boolean;
-  onTag: (key: FilterKey, value: string) => void;
   /** this hand's record is open (one at a time, kept in the URL) */
   open: boolean;
   onOpen: (id: string | null) => void;
@@ -70,30 +69,27 @@ function Action({ label, onClick, href, pressed, busy, compact, children, text }
   );
 }
 
-function Tag({ children, onClick, title }: { children: React.ReactNode; onClick?: () => void; title: string }) {
-  if (!onClick) return <span className="font-tag is-plain">{children}</span>;
-  return <button type="button" className="font-tag" title={title} onClick={onClick}>{children}</button>;
-}
+const Tag = ({ children, title }: { children: React.ReactNode; title?: string }) => <span className="font-tag" title={title}>{children}</span>;
 
-export const FontRow = memo(function FontRow({ entry, index, text, mode, live, em, lines, saved, compact, wide, onTag, open, onOpen }: Props) {
+export const FontRow = memo(function FontRow({ entry, index, text, live, em, lines, saved, compact, wide, open, onOpen }: Props) {
   const ref = useRef<HTMLLIElement>(null);
   const near = useNear(ref);
   const [el, setEl] = useState<Element | null>(null);
   useEffect(() => setEl(ref.current), []);
-  const isLive = mode === 'live';
-  // as a font: the font, grown when the words need letters it hasn't got; meanwhile the last words it could set stay
-  // the record's "Every character" asks the font for its whole glyph set (also while the row shows the live hand)
+  // the font, grown when the words need letters it hasn't got; meanwhile the last words it could set stay. The
+  // record's "Every character" asks the font for its whole glyph set; its live-hand fold asks for the live writing
   const [allChars, setAllChars] = useState('');
-  useEffect(() => { if (!open) setAllChars(''); }, [open]);
-  const { font, failed } = useRowFont(isLive && !allChars ? undefined : entry, text + allChars, el, near || open);
+  const [showLive, setShowLive] = useState(false);
+  useEffect(() => { if (!open) { setAllChars(''); setShowLive(false); } }, [open]);
+  const { font, failed } = useRowFont(entry, text + allChars, el, near || open);
   const lastText = useRef(text);
   const shownText = font && covers(font.chars, text) ? text : lastText.current;
   if (font && covers(font.chars, text)) lastText.current = text;
   const spec = useMemo(() => ({ ...live, text }), [live, text]);
-  const image = useRowLive(entry, spec, el, near, isLive);
+  const image = useRowLive(entry, spec, el, near || open, open && showLive);
   const [building, setBuilding] = useState(false);
   const shownRef = useRef(false);
-  const ready = isLive ? !!image : !!font;
+  const ready = !!font;
   useEffect(() => {
     if (ready && !shownRef.current) { shownRef.current = true; fonts.shown(); }
   }, [ready]);
@@ -114,8 +110,7 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
     }
   };
 
-  const h = isLive ? boxHeight(em, lines) : fontBoxHeight(em, lines);
-  const alt = entry ? `“${text}”, in ${entry.name}’s hand` : '';
+  const h = fontBoxHeight(em, lines);
   return (
     <li ref={ref} className="font-row">
       <div className="font-row-meta">
@@ -127,10 +122,10 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
               </button>
             </h2>
             <p className="font-row-tags">
-              <Tag title={`Only ${entry.family === 'script' ? 'joined' : 'print'} hands`} onClick={() => onTag('family', entry.family)}>{entry.family === 'script' ? 'Joined' : 'Print'}</Tag>
-              <Tag title={entry.schooled || `Only hands taught this way`} onClick={() => onTag('style', entry.style)}>{entry.tradition}</Tag>
-              <Tag title="Only hands with this pen" onClick={() => onTag('pen', entry.pen)}>{penWords(entry.pen)}</Tag>
-              {wide && entry.kind && <Tag title="">{entry.kind}</Tag>}
+              <Tag>{entry.family === 'script' ? 'Joined' : 'Print'}</Tag>
+              <Tag title={entry.schooled || undefined}>{entry.tradition}</Tag>
+              {!compact && <Tag>{penWords(entry.pen)}</Tag>}
+              {wide && entry.kind && <Tag>{entry.kind}</Tag>}
               {!entry.matches && <span className="font-tag is-near" title="One of the closest hands to these filters">close match</span>}
             </p>
           </>
@@ -160,24 +155,12 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
         </div>
         )}
       </div>
-      {isLive ? (
-        <div className="font-row-specimen is-live" style={{ height: h, ...(entry ? { background: entry.tint } : {}) }}>
-          {/* exactly the CSS size it was made for, pixel for pixel; while the size slider moves, the last one is scaled
-              to the row until the new one arrives */}
-          {image && (
-            <img src={image.url} alt={alt} decoding="async" draggable={false} width={image.width} height={image.height}
-              className={cn('font-specimen-img', image.fresh && 'specimen-in')}
-              style={{ width: image.width, height: image.height, ...(em !== image.emPx ? { transform: `scale(${em / image.emPx})` } : {}) }} />
-          )}
-        </div>
-      ) : (
-        <div className={cn('font-row-specimen is-font', lines > 1 ? 'is-fade-2' : 'is-fade')} style={{ height: h, fontSize: em }}>
-          {font && entry && (
-            <p className={cn('font-line', lines > 1 && 'is-wrap', font.fresh && 'specimen-in')} style={{ fontFamily: `"${font.family}"` }}>{shownText}</p>
-          )}
-          {failed && !font && <span className="font-row-failed">This hand couldn’t be set as a font here.</span>}
-        </div>
-      )}
+      <div className={cn('font-row-specimen is-font', lines > 1 ? 'is-fade-2' : 'is-fade')} style={{ height: h, fontSize: em }}>
+        {font && entry && (
+          <p className={cn('font-line', lines > 1 && 'is-wrap', font.fresh && 'specimen-in')} style={{ fontFamily: `"${font.family}"` }}>{shownText}</p>
+        )}
+        {failed && !font && <span className="font-row-failed">This hand couldn’t be set as a font here.</span>}
+      </div>
       {open && entry && (
         <HandRecordView
           entry={entry}
@@ -185,6 +168,9 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
           family={font?.family ?? null}
           allLoaded={!!font && !!allChars && covers(font.chars, allChars)}
           onShowAll={setAllChars}
+          onLive={setShowLive}
+          live={image ? { ...image, alt: `“${text}”, in ${entry.name}’s hand, live` } : null}
+          liveHeight={boxHeight(em, lines)}
           toolHref={`${toolHref}#${entry.tool}`}
           saved={saved}
           onSave={() => toggleSaved(entry)}
