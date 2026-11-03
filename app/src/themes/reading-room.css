@@ -544,6 +544,53 @@ html[data-look='reading-room'] .rr-ledger-record {
 html[data-look='reading-room'] .rr-ledger-waiting {
   min-height: 26rem;
 }
+/* on the desk the record opens the column: its first rule on the sheet's top edge, then its number, its two-line
+   title and, as the head's last line, Bring another */
+html[data-look='reading-room'] .rr-desk .rr-ledger-record:first-child {
+  margin-top: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--rr-hair);
+}
+/* desktop: Bring another, the desk's main action, is a button (Rafael, 4 Nov): a light archival-red tint with no
+   edge, the controls' height, corners and type, in red, its key at the end. It sits under the two-line title, so it
+   never moves on Bring another or on reload. (Phones keep it in words, in the sheet's peek.) */
+/* (its class thrice: the action role's rule, at the end, carries a long :is() and the weight that comes with it) */
+html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring {
+  align-items: center;
+  min-height: 2.25rem;
+  margin: 0 0 1.25rem;
+  padding: 0 0.375rem 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--rr-red) 8%, transparent);
+  font-family: var(--rr-control-face);
+  font-size: var(--rr-control-size);
+  font-weight: 500;
+  letter-spacing: var(--rr-control-tracking);
+  line-height: 1;
+  color: var(--rr-red);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-desk .rr-bring .rr-bring-label {
+  text-decoration: none;
+}
+html[data-look='reading-room'] .rr-desk .rr-bring .rr-key {
+  background: color-mix(in oklab, var(--rr-red) 10%, transparent);
+  color: color-mix(in oklab, var(--rr-red) 75%, var(--rr-ink));
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-desk .rr-bring:hover {
+    background: color-mix(in oklab, var(--rr-red) 12%, transparent);
+    color: var(--rr-red-deep);
+  }
+}
+html[data-look='reading-room'] .rr-desk .rr-bring:active {
+  background: color-mix(in oklab, var(--rr-red) 16%, transparent);
+}
+html[data-look='reading-room'] .rr-desk .rr-bring:focus-visible {
+  outline: 2px solid var(--rr-red);
+  outline-offset: 2px;
+}
 html[data-look='reading-room'] .rr-ledger-head {
   display: flex;
   align-items: center;
