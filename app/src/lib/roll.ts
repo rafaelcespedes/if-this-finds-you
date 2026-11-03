@@ -10,7 +10,7 @@ import { CONTROLS, isShown, naturalValue, type PenSize } from './controls';
 import { MODELLED_INK } from './engine-features';
 import { pickNewHand, pickSimilarHand } from './hands';
 import { AUTO_INK, INK_FAMILIES } from './inks';
-import { PAPERS, type PaperId } from './papers';
+import { ALL_PAPERS, isPaperId, paperRollWeight, type PaperId } from './papers';
 import { PEN_CHOICES, PENS_LIVE } from './pens';
 import { SIZE_RANGE, type NoteState } from './state';
 import { clamp } from './utils';
@@ -37,8 +37,8 @@ function pick<T>(list: Weighted<T>): T {
   return list[list.length - 1][0];
 }
 
-// how often each thing turns up (est.: everyday paper and blue/black inks are the common case)
-const PAPER_WEIGHTS: Record<PaperId, number> = { plain: 18, laid: 13, college: 14, seyes: 11, feint: 12, squared: 10, dots: 12, postcard: 8 };
+// how often each thing turns up (est.: everyday paper and blue/black inks are the common case; papers carry
+// their own weights, lib/papers.ts)
 const PEN_WEIGHTS: Record<string, number> = { auto: 18, ballpoint: 26, gel: 16, fountain: 18, pointed: 5, italic: 5, felt: 10, pencil: 10 };
 const INK_WEIGHTS: Record<string, number> = { [AUTO_INK]: 28, 'blue-black': 18, 'royal-blue': 14, 'ballpoint-blue': 14, black: 18, sepia: 7, 'iron-gall': 6, red: 3, green: 3 };
 const TIP_WEIGHTS: Weighted<PenSize> = [['fine', 28], ['medium', 50], ['bold', 22]];
@@ -46,14 +46,15 @@ const TIP_WEIGHTS: Weighted<PenSize> = [['fine', 28], ['medium', 50], ['bold', 2
 interface EngineLook {
   seed?: string; style?: string; pen?: string; ink?: string; paper?: string; size?: number; params?: Record<string, number>;
 }
-type EngineSampler = (opts: { current: { seed: string; style: string }; locked: string[]; variety: number }) => EngineLook;
+type EngineSampler = (opts: { current: { seed: string; style: string }; locked: string[]; variety: number; textLength?: number }) => EngineLook;
 const engineSampler = (E as unknown as { sampleLook?: EngineSampler }).sampleLook;
 
 export function rollLook(s: NoteState, opts: { variety: number; locked: Set<LockKey> }): Partial<NoteState> {
   const { variety, locked } = opts;
   const sibling = variety <= 20;
   const wild = variety > 70;
-  const fromEngine = engineSampler?.({ current: { seed: s.seed, style: s.style }, locked: [...locked], variety });
+  // the letter's length, so the sampler leaves out papers too small for it (postcards, cards, an aerogramme)
+  const fromEngine = engineSampler?.({ current: { seed: s.seed, style: s.style }, locked: [...locked], variety, textLength: s.text.length });
 
   // the writer
   const who = fromEngine?.seed
@@ -78,10 +79,13 @@ export function rollLook(s: NoteState, opts: { variety: number; locked: Set<Lock
   }
   let paper = s.paper;
   if (!locked.has('paper') && !sibling) {
-    const fromEngineOk = fromEngine?.paper && PAPERS.some((p) => p.id === fromEngine.paper);
-    // postcards are for short notes
-    const long = s.text.length > 360;
-    paper = fromEngineOk ? (fromEngine!.paper as PaperId) : pick(PAPERS.map((p) => [p.id, p.id === 'postcard' && long ? 0 : PAPER_WEIGHTS[p.id]] as [PaperId, number]));
+    // cards and postcards are for short notes, an aerogramme for one sheet's worth
+    const n = s.text.length;
+    // the sampler's pick when it names one of today's papers and it fits
+    const fromEnginePaper = fromEngine?.paper;
+    paper = isPaperId(fromEnginePaper) && paperRollWeight(fromEnginePaper, n) > 0
+      ? fromEnginePaper
+      : pick(ALL_PAPERS.map((p) => [p.id, paperRollWeight(p.id, n)] as [PaperId, number]));
   }
   const size = sibling ? s.size : clamp(fromEngine?.size ?? 1 + gauss() * 0.11, 0.84, Math.min(1.28, SIZE_RANGE.max));
 

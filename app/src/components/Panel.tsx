@@ -24,7 +24,7 @@ import { branded } from '@/lib/brand';
 import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
-import { PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
+import { getPaper, PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
 import { PENS_LIVE, PENS_SHOWN, penName } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
 import type { LockKey } from '@/lib/roll';
@@ -276,8 +276,8 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
   const pad = flush ? '' : 'px-5';
   return (
     <>
-      <Group label="Paper" value={PAPERS.find((x) => x.id === state.paper)?.name} className={pad} first>
-        <PaperPicker value={state.paper} onChange={props.onPaper} rows />
+      <Group label="Paper" value={getPaper(state.paper).name} className={pad} first>
+        <PaperPicker value={getPaper(state.paper).family} onChange={props.onPaper} rows />
       </Group>
       {PENS_SHOWN && (
         <Group
@@ -638,12 +638,7 @@ const SliderRow = memo(function SliderRow({
 
 // paper swatches show a magnified corner of each sheet, where its character is
 const SWATCH = { w: 40, h: 30 };
-function swatchCrop(paper: PaperSpec) {
-  if (paper.swatch) return { ...paper.swatch, ...SWATCH };
-  const x = paper.margin ? paper.margin.x - 15 : paper.grid ? paper.grid.box[0] - 2 : paper.dots ? paper.dots.box[0] - 3 : 6;
-  const y = paper.lines ? paper.lines.first - 6 : paper.grid ? paper.grid.box[1] - 2 : paper.dots ? paper.dots.box[1] - 3 : 6;
-  return { x: Math.max(0, x), y: Math.max(0, y), ...SWATCH };
-}
+const swatchCrop = (paper: PaperSpec) => ({ ...paper.swatch, ...SWATCH });
 
 /** Papers as a grid (desktop panel) or one row that scrolls sideways (phone sheet). */
 const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value: PaperId; onChange: (id: PaperId) => void; rows?: boolean }) {

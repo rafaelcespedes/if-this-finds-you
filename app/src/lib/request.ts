@@ -29,7 +29,7 @@ export function lookOf(r: Pick<Req, 'seed' | 'style' | 'paper' | 'overrides' | '
 
 /** What the writer pencils in on an empty page: a salutation on letter paper, the date in a notebook. */
 export function placeholderFor(paper: string) {
-  if (paper === 'plain' || paper === 'laid' || paper === 'postcard') return 'Dear …,';
+  if (!paper.startsWith('notebook')) return 'Dear …,';
   try {
     return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
   } catch {

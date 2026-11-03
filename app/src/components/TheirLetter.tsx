@@ -9,6 +9,7 @@
 // click your sheet, ⌘], Esc, or "Back to your letter". On wide desks both are readable side by side, so you can
 // answer line by line; picking theirs up there just brings it to full size.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { PaperGuide } from '@/components/PaperCanvas';
 import { SheetView } from '@/components/SheetView';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { FoundLetter } from '@/lib/found';
@@ -189,11 +190,14 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
           tabIndex={forward ? 0 : -1}
           aria-label={forward ? who : undefined}
         >
-          <div className="flex flex-col pr-2" style={{ gap: SHEET_GAP_THEIRS }}>
-            {svgs.map((svg, i) => (
-              <SheetView key={i} paper={paper} pxPerMm={pxPerMm} svg={svg} ink={ink} index={i} count={svgs.length} />
-            ))}
-          </div>
+          {/* a letter that was sent: the guide sheet stayed in the writer's pad */}
+          <PaperGuide value={false}>
+            <div className="flex flex-col pr-2" style={{ gap: SHEET_GAP_THEIRS }}>
+              {svgs.map((svg, i) => (
+                <SheetView key={i} paper={paper} pxPerMm={pxPerMm} svg={svg} ink={ink} index={i} count={svgs.length} />
+              ))}
+            </div>
+          </PaperGuide>
           {/* the words, for screen readers (the handwriting is a picture) */}
           <div className="sr-only">{letter.text}</div>
         </div>
@@ -327,11 +331,13 @@ export function TheirLetterPull({ found, open, onOpen, onDismiss, viewport, reac
         }}
       >
         <div className="h-[calc(100%-56px)] overflow-y-auto overscroll-contain px-4 pt-[max(12px,env(safe-area-inset-top,0px))]">
-          <div className="mx-auto flex flex-col pb-3" style={{ width: paper.w * px, gap: SHEET_GAP_THEIRS }}>
-            {svgs.map((svg, i) => (
-              <SheetView key={i} paper={paper} pxPerMm={px} svg={svg} ink={ink} index={i} count={svgs.length} />
-            ))}
-          </div>
+          <PaperGuide value={false}>
+            <div className="mx-auto flex flex-col pb-3" style={{ width: paper.w * px, gap: SHEET_GAP_THEIRS }}>
+              {svgs.map((svg, i) => (
+                <SheetView key={i} paper={paper} pxPerMm={px} svg={svg} ink={ink} index={i} count={svgs.length} />
+              ))}
+            </div>
+          </PaperGuide>
           <div className="sr-only">{letter.text}</div>
         </div>
         <div
