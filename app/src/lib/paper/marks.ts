@@ -85,7 +85,7 @@ export type Flaw = 'bleed' | 'fill' | 'starved' | 'ghost' | 'smudge' | 'pad' | '
  * ?marks=plain|organic|adorned in the URL picks one for the session.
  */
 export type MarkMode = 'plain' | 'organic' | 'adorned';
-export const DEFAULT_MARK_MODE: MarkMode = 'plain';
+export const DEFAULT_MARK_MODE: MarkMode = 'adorned'; // Rafael, 2026-11-03: "I like the new style for the stamps and I like the adornments"
 const MODES: MarkMode[] = ['plain', 'organic', 'adorned'];
 let urlMode: MarkMode | null | undefined;
 export function markMode(input?: Pick<MarkInput, 'mode'>): MarkMode {
