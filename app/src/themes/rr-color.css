@@ -143,5 +143,8 @@ html[data-look='reading-room'][data-rrcolor='3'] .rr-drawer.is-open {
   background: var(--rc-surface-1);
   border: 1px solid var(--rr-edge);
   border-radius: 2px;
-  padding-inline: 14px;
+  /* the card reaches 14px past the column on each side, so the controls inside keep the column's width */
+  left: -14px;
+  right: -14px;
+  padding-inline: 13px;
 }
