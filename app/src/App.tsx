@@ -754,18 +754,19 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 px-4 pt-[calc(6rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[80px] lg:pb-16"
+          className="relative min-w-0 px-4 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
         >
           <header
             ref={headerRef}
             className={cn(
-              'absolute inset-x-4 top-[max(1rem,env(safe-area-inset-top,0px))] flex items-baseline justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
+              'absolute inset-x-4 top-[max(1rem,env(safe-area-inset-top,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
               !desk && 'opacity-0',
               !reader && 'pointer-events-none',
             )}
           >
-            <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">{APP_NAME}</span>
+            {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
+            <span className="flex min-h-8 items-start text-[13px] font-medium tracking-[-0.01em] text-foreground/80 lg:min-h-9">{APP_NAME}</span>
             <span className="flex min-w-0 items-baseline gap-2">
               {reader ? (
                 <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
@@ -775,7 +776,7 @@ export default function App() {
                 // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state
                 <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : ''}</span>
               )}
-              {/* the found letters, all of them (the archive) */}
+              {/* the whole library of found letters (the archive) */}
               <a
                 href={`${import.meta.env.BASE_URL}letters.html`}
                 className={cn(
@@ -784,7 +785,7 @@ export default function App() {
                   editing && !isDesktop && 'pointer-events-none opacity-0',
                 )}
               >
-                Letters
+                All letters
               </a>
             </span>
           </header>

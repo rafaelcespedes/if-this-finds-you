@@ -84,7 +84,7 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
     window.addEventListener('resize', on);
     return () => window.removeEventListener('resize', on);
   }, []);
-  const TOP = 80;
+  const TOP = 100;
   const CAPTION = 40;
   const cardH = Math.min(stackH, vh - TOP - 16 - CAPTION);
   const side = layout.mode === 'side';
