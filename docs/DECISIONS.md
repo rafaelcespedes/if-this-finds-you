@@ -43,6 +43,9 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **Reading Room direction approved in full** (Rafael, 2026-11-03): the layout study's seven house rules and four
+  proposals (tool as a ledger; All letters canvas on a hidden table grid with museum labels; the letter page as a spread;
+  Fonts with a foundry's manners) and the type study's pick, Junicode 2 + Ysabeau Office, with its icon set.
 - **Focus: the Reading Room look** (Rafael, 2026-11-03). Postmarked is paused as is at `?look=postmarked`; today's look
   stays the default for now while the Reading Room is refined (layout, type, icons research under way).
 - **All letters: the infinite canvas** is the default (Rafael, 2026-11-03); the grid stays at `?view=grid`.
