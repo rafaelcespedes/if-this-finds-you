@@ -213,7 +213,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     const ctx = c.getContext('2d');
     if (!ctx) return;
     ctx.translate(-overBox.x * k, -overBox.y * k);
-    perf.time('paper marks paint', () => printMarks(ctx, over, k, 'over'));
+    perf.time('paper marks paint', () => printMarks(ctx, over, k, 'over', paper));
     c.dataset.key = key;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, pxPerMm, overBox, cssW]);
