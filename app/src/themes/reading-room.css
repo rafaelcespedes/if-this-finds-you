@@ -209,9 +209,9 @@ html[data-look='reading-room'] .rr-icon svg {
   }
 }
 
-/* ---------- headers: the page links in small capitals ---------- */
-html[data-look='reading-room'] header a:not(:has(svg, img)),
-html[data-look='reading-room'] main > header button {
+/* ---------- the site header (components/SiteHeader.tsx): the places in small capitals ---------- */
+html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-action] button),
+html[data-look='reading-room'] [data-site-menu] [data-site-link] {
   font-family: var(--rr-caps);
   text-transform: lowercase;
   letter-spacing: 0.06em;
@@ -219,9 +219,14 @@ html[data-look='reading-room'] main > header button {
   font-weight: 400;
   color: var(--rr-ink);
 }
-/* the phone header's chips: ruled squares, no lift */
-html[data-look='reading-room'] main > header a[aria-label],
-html[data-look='reading-room'] main > header [data-chip] {
+html[data-look='reading-room'] [data-site-menu] [data-site-label] {
+  font-family: var(--rr-caps);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+/* the phone header's chips (Menu, Share): ruled squares, no lift */
+html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]) {
   border-radius: 3px;
   border-color: var(--rr-edge);
   background: var(--rr-card);

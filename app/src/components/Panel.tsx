@@ -4,7 +4,7 @@
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Info, Link, Loader2, Lock, LockOpen, Mails, Share, Shuffle, Users } from 'lucide-react';
+import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Info, Link, Loader2, Lock, LockOpen, Share, Shuffle, Users } from 'lucide-react';
 import { hasControl } from '@/controls-lab';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
@@ -20,7 +20,7 @@ import { ENGINE_TIPS, MODELLED_INK } from '@/lib/engine-features';
 import { describeHand, words } from '@/lib/hands';
 import { handSources } from '@/lib/credits';
 import { sampleById } from '@/lib/samples';
-import { TAB, draftLabel, type Draft } from '@/lib/drafts';
+import type { Draft } from '@/lib/drafts';
 import { branded } from '@/lib/brand';
 import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
@@ -323,71 +323,6 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
         {!letter.found && <button type="button" onClick={letter.onAnother} className={link}>Read a found letter</button>}
       </span>
     </div>
-  );
-}
-
-/**
- * Your letters kept on this device, beside All letters in the header: a quiet text link on desktop, a chip with a
- * count on phones; there only when one is kept. This tab's own comes first and says so.
- */
-export function MyLetters({ letter, variant, className }: { letter: NonNullable<PanelProps['letter']>; variant: 'link' | 'chip'; className?: string }) {
-  if (!letter.drafts) return null;
-  const now = Date.now();
-  const mine = letter.kept.findIndex((d) => d.tab === TAB);
-  const kept = mine > 0 ? [letter.kept[mine], ...letter.kept.filter((_, i) => i !== mine)] : letter.kept;
-  const n = letter.drafts;
-  return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        {variant === 'chip' ? (
-          <button
-            type="button"
-            aria-label={`My letters, ${n} kept`}
-            title="My letters"
-            className={cn("relative grid size-[32px] place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent", className)}
-          >
-            <Mails aria-hidden className="size-[16px]" />
-            <span aria-hidden className="absolute -top-1.5 -right-1.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--ink)] px-1 text-[10px] leading-none font-medium text-[var(--primary-foreground)] tabular-nums">{n}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            className={cn("pointer-events-auto relative inline-flex shrink-0 items-baseline gap-1 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground", className)}
-          >
-            My letters
-            <span className="font-normal text-muted-foreground tabular-nums">{n}</span>
-          </button>
-        )}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          side="bottom"
-          align="end"
-          sideOffset={8}
-          collisionPadding={12}
-          className="z-50 w-[min(18rem,calc(100vw-24px))] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,var(--popover)_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
-        >
-          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">Kept on this device</DropdownMenu.Label>
-          {kept.map((d, i) => {
-            const { words, when } = draftLabel(d, now);
-            const here = d.tab === TAB;
-            return (
-              <DropdownMenu.Item
-                key={d.savedAt + ':' + i}
-                onSelect={() => letter.onBackToMine(d.savedAt)}
-                className="flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 py-1.5 text-[0.875rem] text-foreground outline-none select-none data-[highlighted]:bg-accent"
-              >
-                <span className="grid min-w-0">
-                  <span className="truncate">{words}</span>
-                  {here && <span className="text-[0.7188rem] text-muted-foreground">{letter.found ? 'The one you were writing here' : 'Written in this tab'}</span>}
-                </span>
-                <span className="shrink-0 text-[0.75rem] text-muted-foreground">{when}</span>
-              </DropdownMenu.Item>
-            );
-          })}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
   );
 }
 

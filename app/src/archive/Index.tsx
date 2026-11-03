@@ -14,9 +14,7 @@ import { cardSize } from './cards';
 import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
 import type { ArchiveLetter } from './model';
 import { NO_FILTERS, type Filters } from './route';
-import { withLogo } from '@/lib/brand';
-import { FONTS_URL } from '@/fonts/links';
-import { headerLink, SiteHeader, toolHref } from './SiteHeader';
+import { SiteHeader } from './SiteHeader';
 // the look being compared (?look=reading-room): the heading as a finding aid (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { FindingAid } from '@/themes/reading-room/FindingAid';
@@ -154,10 +152,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
         />
         {/* the header stays legible over the letters */}
         <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[5] h-28 bg-gradient-to-b from-[var(--desk)] via-[color-mix(in_oklab,var(--desk)_70%,transparent)] to-transparent" />
-        <SiteHeader>
-          <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
-          <a href={withLogo(FONTS_URL)} className={`${headerLink} font-medium text-foreground/80`}>Fonts</a>
-        </SiteHeader>
+        <SiteHeader current="letters" />
         {TOOLBAR === '2' ? <SelectDock {...controls} /> : <TimelineDock {...controls} />}
       </div>
     );
@@ -165,10 +160,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
 
   return (
     <div className="min-h-dvh">
-      <SiteHeader>
-        <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
-        <a href={withLogo(FONTS_URL)} className={`${headerLink} font-medium text-foreground/80`}>Fonts</a>
-      </SiteHeader>
+      <SiteHeader current="letters" />
       <main className={cn('mx-auto w-full max-w-[1180px] px-4 sm:px-8 lg:px-10', dock ? 'pb-36' : 'pb-28')}>
         <section className={cn('pt-[calc(5.25rem+env(safe-area-inset-top,0px))] sm:pt-28', dock ? 'pb-10 sm:pb-12' : 'pb-6 sm:pb-8')}>
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">

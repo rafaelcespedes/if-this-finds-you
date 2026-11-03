@@ -9,7 +9,7 @@ import { loadLetters } from './data';
 import type { ArchiveLetter } from './model';
 import { indexHash, NO_FILTERS, parseRoute, type Filters } from './route';
 import { Index } from './Index';
-import { headerLink, Missing, SiteHeader } from './SiteHeader';
+import { Missing, SiteHeader } from './SiteHeader';
 
 // loaded when a letter opens (not ahead: evaluating the engine on the main thread would stutter the index's scroll)
 const LetterPage = lazy(() => import('./LetterPage'));
@@ -29,9 +29,7 @@ class LetterFailed extends Component<{ id: string; back: string; children: React
     const offline = !navigator.onLine;
     return (
       <div className="min-h-dvh">
-        <SiteHeader>
-          <a href={this.props.back} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
-        </SiteHeader>
+        <SiteHeader current="letters" inside hrefs={{ letters: this.props.back }} />
         <main className="mx-auto max-w-[1180px] px-4 pt-28 sm:px-8 lg:px-10">
           <Missing
             title="This letter couldn’t open."
