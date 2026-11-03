@@ -146,19 +146,47 @@ test; an Irish-language letter; a Vietnamese letter.
 
 - **The writer's own spelling,** including Middle English, 17th-century Dutch and Czech, Liselotte's 1659 German, and the
   unschooled spelling of many settlers and migrants ("i recived you bind leter"). Long s (ſ) becomes s, straight quotes
-  become curly, and editors' glosses and footnote marks are left out. The abbreviation "Dⁿ" in a Tejano letter is
-  expanded to "Don".
+  become curly, and editors' glosses and footnote marks are left out. The abbreviation "Dⁿ" (superscript n) in a
+  Tejano letter is written "Don", because the font set has no superscript n.
 - **Older hands only:** letters written before 1700 carry `olderHandsOnly: true` and pair only with pre-1700 traditions.
-- **Cuts:** "…" marks a cut inside a sentence or paragraph. Cuts at sentence or paragraph breaks, or around the greeting
-  and sign-off, aren't marked. A writer's own dots stay as full stops.
+- **Cuts:** every cut is marked with "…" (Rafael: "Keep '…' for cuts"). Inside a paragraph it sits between the two
+  parts (" … "). If the rest of a paragraph is cut, it closes that paragraph ("with profound emotion. …"); if the start
+  of a paragraph is cut, it opens it ("… The hills take off"). A writer's own dots stay as full stops.
 - **No invented greetings or signatures.**
 - **Undated letters** carry the year they were printed and a `dateNote`.
+
+## Layout
+
+Each letter keeps the paragraph and line breaks of its source. The layout pass went back to every enabled letter's
+printed page (page images, Gutenberg texts, Wikisource) and changed **only line breaks**: a script refused any change to
+the letters themselves.
+
+- **69 of 127 letters now have paragraph breaks** (before: none). Up to 7 paragraphs; 22 letters have 3 or more.
+- **`layout: "source"` for 100 letters:** the breaks follow the print, including letters that really are one paragraph
+  between a greeting and a closing printed on their own lines.
+- **`layout: "inferred"` for 27 letters:** the source runs the letter on (common in newspapers and unschooled writing),
+  so the body stays one paragraph and only the greeting, the closing and, in two letters, a P.S. are set apart.
+- Greetings are on their own line; multi-line closings keep their lines ("Your moste infenitt / affectionat Mother /
+  I. W."); a P.S. or N.B. is its own paragraph; datelines at the top stay on their own line.
+
+**The "…" pass.** The layout pass found 67 cuts in 48 letters that weren't marked: mostly cuts at a paragraph edge, which
+the earlier convention left unmarked, and two places where a line break hid a cut (Christiane Vulpius's letter). All are
+now marked as described under "How the text is written". A script confirmed the only change was "…" plus the space next
+to it.
+
+**Small corrections confirmed against the print:** "My dear Child,—" (the Christmas card), "Mé přenejmilejší dítě! —"
+(Zuzana Černínová), "MAYBELLE." as printed, "I am yours——." with its full stop, and "before you left home. and" (John
+Miller Jr). Two source references were corrected (Julien François's pages, Kateřina L.'s page link). Left as is: the
+1877 print splits "Alle-sandra" across a line end, so "Alessandra" stays; the Tejano "Dⁿ Santiago" stays "Don" because
+the font set has no superscript n.
 
 ## Fields
 
 ```
 id              lowercase kebab-case (e.g. "burke-1859", "critica-1923-pochi")
-text            the letter, with \n line breaks
+text            the letter: "\n\n" between paragraphs, "\n" between lines (dateline, greeting, closing lines)
+layout          "source" (breaks follow the printed page) | "inferred" (the source runs on; only the greeting,
+                closing and P.S. were set apart)
 kind            letter | note | postcard
 lang            BCP-47 (en-US, en-GB, es-AR, es-ES, es, fr, nl, cs, da, no, sv, cy, ...)
 title           short
@@ -239,7 +267,7 @@ Every enabled letter, grouped by origin, then the switched-off ones. The `id` li
 | **C. Fabregue** (d. by 1900) | Paradise is my house in Toulon, 1798, Cairo · `fabregue-1798` | Sent from Cairo to his brother’s frigate in August 1798, it was intercepted by Nelson’s fleet and printed in London in 1799 instead of being delivered. | [Correspondance intime de l'armée d'Égypte interceptée par la croisière anglaise, ed. Lorédan Larchey (Paris: R. Pincebourde, 1866), pp. 121-124](https://archive.org/details/correspondancein00larc) |
 | **Dezirad** (d. by 1900) | To Adeline in Marseille, 1798, Cairo · `dezirad-1798` | Written in Cairo in August 1798, it was intercepted by Nelson’s fleet before it could reach Adeline in Marseille, and the British printed it in London in 1799 among the captured letters of Bonaparte’s army. | [Correspondance intime de l'armée d'Égypte interceptée par la croisière anglaise, ed. Lorédan Larchey (Paris: R. Pincebourde, 1866), pp. 119-121](https://archive.org/details/correspondancein00larc) |
 | **Peter (brother of Catherine Russell; signature not given in the source)** (d. by 1850) | To his sister at the convent, 1744, Tenerife · `peter-1744` | Sent from Tenerife in 1744 with lemons and sugar sculptures for her, it was seized with the Hamburg ship Franciscus off Kent that June and is now in the Prize Papers at The National Archives. | [The National Archives (UK), On the Record podcast, 'Secrets of the Prize Papers: Trade, Loot and Letters' (episode 1), show notes and transcript, p. 20](https://cdn.nationalarchives.gov.uk/documents/prize-papers-episode-one-show-notes.pdf) (Open Government Licence v3.0) |
-| **B. Julien François** (d. by 1900) | The kisses I put on these lines, 1798, Alexandria · `julien-francois-1798` | Written at Alexandria on 30 July 1798, grumbling that the British had captured the boats bringing her letters from Toulon, it was itself intercepted by Nelson’s fleet and printed in London in 1799. | [Correspondance intime de l'armée d'Égypte interceptée par la croisière anglaise, ed. Lorédan Larchey (Paris: R. Pincebourde, 1866), pp. 87-97 (letter begins p. 87)](https://archive.org/details/correspondancein00larc) |
+| **B. Julien François** (d. by 1900) | The kisses I put on these lines, 1798, Alexandria · `julien-francois-1798` | Written at Alexandria on 30 July 1798, grumbling that the British had captured the boats bringing her letters from Toulon, it was itself intercepted by Nelson’s fleet and printed in London in 1799. | [Correspondance intime de l'armée d'Égypte interceptée par la croisière anglaise, ed. Lorédan Larchey (Paris: R. Pincebourde, 1866), pp. 87–95](https://archive.org/details/correspondancein00larc) |
 
 ### Emigrants writing home (29)
 
@@ -329,7 +357,7 @@ Every enabled letter, grouped by origin, then the switched-off ones. The `id` li
 | **Unknown (an 18-year-old in Indiana; name not printed)** (anonymous) | To the person in whose hands this message may fall, 1889 · `post-office-pen-friend` | Sent from Indiana to the General Post Office in London with an unsealed letter for any stranger who might like an American correspondent; Hyde printed it among the ‘social’ letters reaching St Martin’s-le-Grand. | [James Wilson Hyde, The Royal Mail: its Curiosities and Romance, 3rd ed. (London: Simpkin, Marshall, 1889; 1st ed. 1885), Project Gutenberg #39978, chapter XIX, p. 253-254](https://www.gutenberg.org/cache/epub/39978/pg39978-images.html) |
 | **Unknown (a schoolboy; name not printed)** (anonymous) | The live bullfinch, 1889 · `post-office-bullfinch` | A schoolboy demanded that the Post Office feed and forward a live bullfinch that had been posted as a letter and was being held at the Returned-letter Office; Hyde printed it as ‘not a bad effort for a schoolboy’. | [James Wilson Hyde, The Royal Mail: its Curiosities and Romance, 3rd ed. (London: Simpkin, Marshall, 1889; 1st ed. 1885), Project Gutenberg #39978, chapter XIX, p. 258-259](https://www.gutenberg.org/cache/epub/39978/pg39978-images.html) |
 | **Unknown (gives her name only as 'Julia')** (anonymous) | We’ll keep them till we’re twenty, 1924, Buenos Aires (Villa Urquiza) · `critica-1924-julia` | One of the children’s letters to the Three Kings that Crítica printed on 5 January 1924, the day the paper’s lorries handed out free toys to children across Buenos Aires. | [Diario Crítica, 5 Jan 1924 (no. 4035), page 6, Internet Archive scan BNA_S001181802_19240105N04035 (image 6)](https://archive.org/details/BNA_S001181802_19240105N04035/page/n5/mode/1up) |
-| **Kateřina L.** (d. by 1750) | To her friend Sylvie: be cheerful, 1643 · `katerina-l-1643` | An undated note to her friend Sylvie Černínová (strawberries went to the count, none to her), printed in 1869 in František Dvorský’s collection of old letters by Czech women. | [Dvorský, Staré písemné památky žen a dcer českých (1869), e-book of the Prague City Library (MKP), checked against the 1869 page scan at the Internet Archive (pp. 293–294)](https://archive.org/details/starpsemnpamtky01dvorgoog/page/n306/mode/1up) |
+| **Kateřina L.** (d. by 1750) | To her friend Sylvie: be cheerful, 1643 · `katerina-l-1643` | An undated note to her friend Sylvie Černínová (strawberries went to the count, none to her), printed in 1869 in František Dvorský’s collection of old letters by Czech women. | [Dvorský, Staré písemné památky žen a dcer českých (1869), e-book of the Prague City Library (MKP), checked against the 1869 page scan at the Internet Archive (pp. 293–294)](https://archive.org/details/starpsemnpamtky01dvorgoog/page/n305/mode/1up) |
 | **Edmund Verney** (d. 1690) | My father is under the razor, 1687, Claydon, Buckinghamshire · `verney-1687` | Mun Verney sent this note between the two Verney houses at Claydon around 1687, while his father was being shaved; the 1899 memoir prints it as ‘a note of Mun’s to his grandfather’ that survived. | [Memoirs of the Verney Family, vol. IV (1899), p. 398 (Internet Archive scan, page image read)](https://archive.org/details/memoirsofverneyf04vernuoft/page/398/mode/1up) |
 | **Unknown (signed 'Mary y Nelly'; first names only)** (anonymous) | A pianito for the shimmy, 1924, Buenos Aires · `critica-1924-mary-nelly` | Sent to Crítica with a request to print it; the paper did, on 5 January 1924, together with the editors’ playful reply that the Kings had granted each little sister’s wish. | [Diario Crítica, 5 Jan 1924 (no. 4035), page 6, Internet Archive scan BNA_S001181802_19240105N04035 (image 6)](https://archive.org/details/BNA_S001181802_19240105N04035/page/n5/mode/1up) |
 | **Ser Lapo Mazzei** (d. 1412) | Barefoot at the threshing, 1398, his country house ('in villa') · `mazzei-1398` | Written at harvest time from his country house to his friend’s wife in Prato, signed with a joke, and first printed in 1910 for the 500th anniversary of Francesco Datini’s death. | [Livi, Dall'archivio di Francesco Datini mercante pratese (Florence, 1910), pp. 37–38, Internet Archive scan (text read from the page images)](https://archive.org/details/dallarchivio-di-francesco-datini-mercante-pratese/page/n54/mode/1up) |

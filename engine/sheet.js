@@ -81,8 +81,31 @@ function newSheet(st, why) {
 // The whole log, from scratch.
 export function replay(p, doc, layoutOpts = {}) {
   const st = createState(p, doc, layoutOpts);
+  if (doc.complete) st.ahead = aheadOf(doc.log || []);
   (doc.log || []).forEach((e, i) => applyOne(st, e, i));
+  st.ahead = null;
   return finish(st);
+}
+// A finished letter (doc.complete: the journey, which every letter in the app goes through) is laid out
+// knowing what comes next, so layout can set it out as a letter (a closing block, a P.S. set apart, a
+// name at the end): for each write, the rest of its stream's text from the later writes. Live Ink mode
+// doesn't pass this: what the pen hasn't reached isn't in the log, and a replay must equal what was seen.
+function aheadOf(log) {
+  const out = new Map(), streams = new Map();
+  let sheet = 0, tag = 'm';
+  log.forEach((e, i) => {
+    if (e.t === 'sheet') { sheet++; tag = 'm'; return; }
+    if (e.t === 'move' && e.to === 'ps') { tag = 'p'; return; }
+    if (e.t !== 'write' && e.t !== 'break') return;
+    const k = sheet + tag;
+    if (!streams.has(k)) streams.set(k, []);
+    streams.get(k).push([i, e.t === 'break' ? '\n' : e.text || '']);
+  });
+  for (const list of streams.values()) {
+    let rest = '';
+    for (let j = list.length - 1; j >= 0; j--) { out.set(list[j][0], rest); rest = list[j][1] + rest; }
+  }
+  return out;
 }
 // New events: appended to doc.log and placed. Returns the same (updated) state.
 export function apply(st, events) {
@@ -103,8 +126,24 @@ const NOT_PLACED = new Set(['over', 'retrace', 'hyphen', 'mark']);
 const pushItem = (st, s, it) => {
   it.base = it.role || null; // what it was made as (finish() derives struck / wrong from the text)
   if (it.id != null && !NOT_PLACED.has(it.role)) { s.placed.set(it.id, it); s.at.set(it.id, s.items.length); }
+  if (it.kind === 'mark') s.runs.push(markRun(it, s.items.length));
   s.items.push(it);
 };
+// A correction mark is a run of its own (one item, frame at the mark's origin, no turn or lean), so run
+// renderers (renderRun / runChanges / the pen's paintPen) draw, ink and animate it like a word. Its id
+// changes only when its drawing does (a hash of its key and centerlines); pid also says where it sits.
+function markRun(it, i) {
+  let h = 2166136261;
+  const mix = (v) => { h ^= v; h = Math.imul(h, 16777619); };
+  for (const ch of String(it.key)) mix(ch.charCodeAt(0));
+  for (const st of it.g.strokes) for (const q of st.center) { mix(Math.round(q[0]) | 0); mix(Math.round(q[1]) | 0); }
+  const sp = spanOf([it]), pad = st0pad(it);
+  it.box = [sp.x0 - pad, sp.y0 - pad, sp.x1 + pad, sp.y1 + pad];
+  const id = 'mark:' + (h >>> 0).toString(36);
+  return { id, pid: id + '@' + Math.round(it.x) + ',' + Math.round(it.y), key: it.key, line: it.line, from: i, to: i + 1, x: it.x, y: it.y, a: 0, k: 0, box: it.box.slice(), mark: true };
+}
+// half the widest pen width in a mark (its outline reaches that far past the centerline)
+const st0pad = (it) => { let w = 0; for (const st of it.g.strokes) { const pr = st.contour && st.contour.ink; if (pr) for (let k = 0; k < pr.n; k++) w = Math.max(w, pr.w[k]); } return w / 2 + 2; };
 // runs from a write, re-indexed to where its items landed in the sheet
 const addRuns = (s, runs, base, lineBase = 0) => { for (const rn of runs) s.runs.push(Object.assign({}, rn, { from: rn.from + base, to: rn.to + base, line: rn.line + lineBase })); };
 const inky = (it) => it && (it.kind === 'glyph' || it.kind === 'mark') && it.g;
@@ -117,7 +156,7 @@ function applyOne(st, e, ev) {
   R.apply(e);
   switch (e.t) {
     case 'write': case 'break':
-      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev);
+      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev, st.ahead ? { ahead: st.ahead.get(ev) || '', complete: true } : undefined);
       break;
     case 'strike': {
       const struck = placedRun(s, e.from, e.to);
@@ -178,11 +217,11 @@ function applyOne(st, e, ev) {
 }
 
 // ---------- the text: written where the pen is ----------
-function writeToStream(st, s, S, text, firstId, ev) {
+function writeToStream(st, s, S, text, firstId, ev, wopts) {
   let id = firstId;
   for (const ch of text) { S.ids.push(id); if (ch.length === 2) S.ids.push(-1); id++; }
   S.text += text;
-  const pg = S.ink.write(text);
+  const pg = wopts ? S.ink.write(text, wopts) : S.ink.write(text);
   S.pages.push(pg);
   for (const ln of pg.lineInfo) s.lines.set(ln.n + S.lineBase, S.lineBase ? Object.assign({}, ln, { n: ln.n + S.lineBase }) : ln);
   if (pg.rules) for (const y of pg.rules) if (!s.rules.includes(y)) s.rules.push(y);
@@ -199,7 +238,9 @@ function writeToStream(st, s, S, text, firstId, ev) {
     if (boost && it.g && it.g.strokes.length) {
       // fresh ink after the pen ran dry: darker for a couple of words, a fountain pen's first touch pools
       const f = lerp(1.28, 1, clamp(boost.k / 12, 0, 1)), wet = boost.k === 0 && boost.kind === 'fountain';
-      it.g = reink(st.p, it.g, (pr, si) => { for (let i = 0; i < pr.n; i++) pr.d[i] *= f * (wet && si === 0 ? 1 + 0.9 * Math.exp(-((pr.s[i] / (0.7 * (pr.w[0] || 30))) ** 2)) : 1); });
+      const darker = (pr, si) => { for (let i = 0; i < pr.n; i++) pr.d[i] *= f * (wet && si === 0 ? 1 + 0.9 * Math.exp(-((pr.s[i] / (0.7 * (pr.w[0] || 30))) ** 2)) : 1); };
+      it.g = reink(st.p, it.g, darker);
+      if (it.glyph) it.glyph = reink(st.p, it.glyph, darker); // run renderers draw the unposed letter
       if (++boost.k > 12) st.boost = null;
     }
     pushItem(st, s, it);
@@ -280,7 +321,7 @@ function penEvent(st, s, e, ev) {
     run.forEach((it, k) => {
       const t = run.length > 1 ? k / (run.length - 1) : 1;
       const f = lerp(1, H.dryLow, Math.min(1, t * 1.15) ** 2 * (3 - 2 * Math.min(1, t * 1.15)));
-      const g = reink(p, it.g, (pr) => {
+      const fade = (pr) => {
         for (let i = 0; i < pr.n; i++) {
           let v = f;
           if (H.pen === 'ballpoint' || H.pen === 'gel') v *= 1 - 0.7 * t * clamp((p.noise.n1(pr.s[i] / 60 + k * 3.7) - 0.15) / 0.3, 0, 1); // skips
@@ -288,9 +329,10 @@ function penEvent(st, s, e, ev) {
         }
         if (H.pen === 'felt') { for (let i = 0; i < pr.n; i++) pr.w[i] *= 1 - 0.12 * t; return true; } // a drying felt tip narrows
         return false;
-      });
+      };
       const at = s.at.get(it.id);
-      const nu = Object.assign({}, it, { g, faint: true }); // (run renderers draw `glyph`: the fade shows in renderSVG / renderCanvas)
+      // the posed letter (renderSVG, canvas) and its unposed form (run renderers) fade alike
+      const nu = Object.assign({}, it, { g: reink(p, it.g, fade), faint: true }, it.glyph ? { glyph: reink(p, it.glyph, fade) } : {});
       if (at != null) s.items[at] = nu;
       s.placed.set(it.id, nu);
     });
