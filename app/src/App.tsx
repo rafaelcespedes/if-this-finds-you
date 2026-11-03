@@ -610,29 +610,33 @@ export default function App() {
         prefetch(withTheirs(reqs));
       }
       if (chain.length < AHEAD) { idle(step); return; }
-      idle(() => {
+      // the sibling (Shift R) is asked for less: rolled once the page has stayed on this hand a while
+      window.setTimeout(() => idle(() => {
         if (cancelled) return;
         const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters());
         similarAhead.current = { base, look };
         prefetch(withTheirs([...reqs, requestFor({ ...state, ...look })]));
-      });
+      }), 2500);
     };
     const t = window.setTimeout(() => idle(step), 80);
     return () => { cancelled = true; window.clearTimeout(t); };
     // `base` covers everything the rolls depend on
   }, [base, editing, state.reader]);
 
-  // the live page's first layout for a hand is the slow one: do it while the page sits still, so a tap to
-  // write starts at once
+  // the live page's first layout for a hand is the slow one: do it once the page has sat still on this hand a
+  // while (not between quick clicks: on a slow phone it's most of a second), so a tap to write starts at once.
+  // On a found letter the first key starts a reply on a fresh sheet: a few words warm the hand, not their letter.
   useEffect(() => {
     if (!LIVE || editing || state.reader) return;
+    const words = replyPending ? 'Dear friend, thank you' : state.text;
     const t = window.setTimeout(() => {
-      const run = () => { try { liveLayout(p, state.text, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
-      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 3000 });
+      const run = () => { try { liveLayout(p, words, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 4000 });
       else run();
-    }, 1400);
+    }, 3000);
     return () => window.clearTimeout(t);
-  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader, replyPending]);
 
   // ---------- actions ----------
   const share = useCallback(async () => {
