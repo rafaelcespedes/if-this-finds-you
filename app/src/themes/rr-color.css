@@ -21,6 +21,7 @@ html[data-look='reading-room'][data-rrcolor] {
   --popover: var(--rc-surface-2);
   --field: var(--rc-surface-2);
   --hairline: var(--rc-rule);
+  --rr-rule: var(--rc-rule); /* a row's rule: the ledger, lists, the sheets' rows */
   --chip: var(--rc-ctl);
   --chip-hover: var(--rc-ctl-hover);
   --tile-on: var(--rc-ctl-on);
@@ -33,7 +34,7 @@ html[data-look='reading-room'][data-rrcolor] {
 html[data-look='reading-room'][data-rrcolor] :is(.control-sheet, .sheet-surface) {
   background: var(--rc-surface-1);
 }
-html[data-look='reading-room'][data-rrcolor] .sheet-row:active {
+html[data-look='reading-room'][data-rrcolor] :is(.sheet-surface, .control-sheet) .sheet-row:active {
   background: var(--rc-ctl-press);
 }
 /* the controls you operate: fills, edges, the held-down state */

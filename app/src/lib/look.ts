@@ -3,6 +3,7 @@
 // for the tab (so the library and fonts pages keep it too); never put into share links.
 // Each look lives in its own stylesheet under src/themes/, scoped to html[data-look="…"]; "classic" sets no data-look,
 // so it is exactly the earlier default.
+import { applyRules } from './rules';
 import { applyRrColor } from '@/themes/rr-color';
 
 export type LookId = 'classic' | 'reading-room' | 'postmarked';
@@ -36,6 +37,7 @@ export function applyLook() {
   if (LOOK === 'classic') delete html.dataset.look;
   else html.dataset.look = LOOK;
   for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.setAttribute('content', DESK[LOOK]);
+  applyRules(LOOK);
   // the Reading Room colour pass (?rrcolor=1…3), temporary
   if (LOOK === 'reading-room') applyRrColor();
 }

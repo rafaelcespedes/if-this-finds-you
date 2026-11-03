@@ -86,7 +86,12 @@ html[data-look='reading-room'] {
   --rr-muted: #575146; /* 6.2:1 on the room */
   --rr-faint: #666052; /* 4.9:1 on the room */
   --rr-edge: #d6ccb7; /* a card's cut edge */
-  --rr-rule: color-mix(in oklab, var(--rr-ink) 15%, transparent); /* an index card's ruled lines */
+  --rr-rule: color-mix(in oklab, var(--rr-ink) 15%, transparent); /* a row's rule: the ledger, lists, the record */
+  --rr-hair: color-mix(in oklab, var(--rr-ink) 30%, transparent); /* a stronger rule: atop a column, a drawer, a spread */
+  /* the grid (house rules, layout study): 12 columns at 1440, 40 px margins, 32 px gutters; a side column is 3 of
+     them, the 20rem panel (density.css --panel-w) */
+  --rr-margin: 2.5rem;
+  --rr-gutter: 2rem;
   --rr-book: 'RR Junicode', 'Iowan Old Style', Georgia, serif;
   /* small capitals are the book face's own (Junicode keeps smcp and c2sc), switched on by the roles that use them */
   --rr-caps: var(--rr-book);
@@ -210,9 +215,7 @@ html[data-look='reading-room'] .rr-link {
   text-underline-offset: 3px;
   transition: text-decoration-color 150ms var(--ease-out);
 }
-html[data-look='reading-room'] .rr-link--quiet {
-  color: var(--rr-muted);
-}
+
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-link:hover {
     text-decoration-color: currentColor;
@@ -280,50 +283,6 @@ html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-ch
   box-shadow: none;
 }
 
-/* ---------- the catalogue card ---------- */
-html[data-look='reading-room'] .rr-card {
-  position: relative;
-  background: var(--rr-card);
-  border: 1px solid var(--rr-edge);
-  border-radius: 2px;
-  padding: 14px 18px 30px;
-  color: var(--rr-ink);
-  /* flat on the desk beside the letter, like the letter itself: an edge, no shadow */
-  box-shadow: none;
-}
-/* the rod hole every catalogue card has at its foot */
-html[data-look='reading-room'] .rr-card::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 9px;
-  width: 9px;
-  height: 9px;
-  margin-left: -4.5px;
-  border-radius: 50%;
-  background: var(--rr-room);
-  box-shadow: inset 0 1px 1.5px rgba(30, 39, 51, 0.35);
-}
-html[data-look='reading-room'] .rr-card--waiting {
-  min-height: 420px;
-}
-html[data-look='reading-room'] .rr-card--slip {
-  padding-bottom: 16px;
-  box-shadow: none;
-}
-html[data-look='reading-room'] .rr-card--slip::after {
-  display: none;
-}
-/* the card's head: its number in red, over the one red rule an index card carries */
-html[data-look='reading-room'] .rr-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 32px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid color-mix(in oklab, var(--rr-red) 55%, transparent);
-}
 html[data-look='reading-room'] .rr-card-no {
   margin: 0;
   color: var(--rr-red);
@@ -400,20 +359,7 @@ html[data-look='reading-room'] .rr-ref {
   vertical-align: 0.55em;
   font-variant-numeric: lining-nums;
 }
-html[data-look='reading-room'] .rr-notes ol {
-  list-style: decimal;
-  margin: 12px 0 0;
-  padding: 10px 0 0 1.2em;
-  border-top: 1px solid var(--rr-rule);
-  color: var(--rr-muted);
-}
-html[data-look='reading-room'] .rr-notes li + li {
-  margin-top: 5px;
-}
-html[data-look='reading-room'] .rr-notes li::marker {
-  color: var(--rr-red);
-  font-variant-numeric: lining-nums;
-}
+
 html[data-look='reading-room'] .rr-card-foot {
   margin: 10px 0 0;
   color: var(--rr-muted);
@@ -436,38 +382,10 @@ html[data-look='reading-room'] .rr-sig .writing svg {
   height: 100%;
   width: auto;
 }
-html[data-look='reading-room'] .rr-sig-chev,
-html[data-look='reading-room'] .rr-hand-chev {
-  width: 14px;
-  height: 14px;
-  flex: none;
-  color: var(--rr-muted);
-  transition: transform 200ms var(--ease-out);
-}
-html[data-look='reading-room'] .rr-sig[data-state='open'] .rr-sig-chev,
-html[data-look='reading-room'] .rr-hand[data-state='open'] .rr-hand-chev {
-  transform: rotate(180deg);
-}
-html[data-look='reading-room'] .rr-hand {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin: -2px -5px;
-  padding: 2px 5px;
-  border-radius: 3px;
-  text-align: left;
-  transition: background-color 150ms var(--ease-out);
-}
+
 @media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .rr-sig:hover,
-  html[data-look='reading-room'] .rr-hand:hover {
+  html[data-look='reading-room'] .rr-sig:hover {
     background: var(--chip);
-  }
-}
-@media (pointer: coarse) {
-  html[data-look='reading-room'] .rr-hand {
-    padding-block: 10px;
-    margin-block: -10px;
   }
 }
 
@@ -475,9 +393,6 @@ html[data-look='reading-room'] .rr-hand {
    House rules (layout study, Rafael 3 Nov): one 12-column grid at 1440 (40 px margins, 32 px gutters; the record column
    is 3 columns, the 20rem panel), and hairlines, never boxes: the paper is the only thing with an edge. */
 html[data-look='reading-room'] {
-  --rr-margin: 2.5rem; /* the grid's outer margin */
-  --rr-gutter: 2rem;
-  --rr-hair: color-mix(in oklab, var(--rr-ink) 30%, transparent); /* a stronger rule, above a column or a drawer */
   --rr-desk-top: 6.25rem; /* the record's first rule sits on the sheet's top edge (rem: the header above both grows with the text) */
 }
 /* the record column: on the grid's right margin, flush with the page, no inner box */
@@ -753,6 +668,41 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-
   background: transparent;
   white-space: nowrap;
 }
+/* the shared sheet (components/ui/sheet.tsx: Share and the other action sheets on phones), cut like the control sheet:
+   square-cut, ruled in ink along its top, its title a label in small capitals, its rows ruled lines rather than tiles */
+html[data-look='reading-room'] .sheet-surface {
+  border-radius: 4px 4px 0 0;
+  border-top: 1px solid var(--rr-ink);
+  background: var(--rr-card);
+  box-shadow: 0 -10px 30px -16px rgba(30, 39, 51, 0.4);
+}
+html[data-look='reading-room'] .sheet-surface > div:first-child > span {
+  background: color-mix(in oklab, var(--rr-ink) 22%, transparent);
+  border-radius: 2px;
+}
+html[data-look='reading-room'] .sheet-backdrop {
+  background: color-mix(in oklab, var(--rr-ink) 28%, transparent);
+}
+html[data-look='reading-room'] .sheet-surface .sheet-title {
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  font-weight: var(--rr-label-weight);
+  letter-spacing: var(--rr-label-tracking);
+  font-variant-caps: var(--rr-label-caps);
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .sheet-surface .sheet-row {
+  border-radius: 0;
+  border-top: 1px solid var(--rr-rule);
+}
+html[data-look='reading-room'] .sheet-surface .sheet-row:active {
+  background: color-mix(in oklab, var(--rr-ink) 6%, transparent);
+}
+/* between groups, a little space: the rows' own rules do the separating */
+html[data-look='reading-room'] .sheet-surface [role='presentation'][class*='h-px'] {
+  height: 0;
+  background: none;
+}
 /* the phone's writing tray (PenTray.tsx), its pen menu, and their letter pulled down over yours (TheirLetter.tsx):
    slips ruled in ink, not pills; Done, the action of the moment, in red words */
 html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'],
@@ -861,42 +811,6 @@ html[data-look='reading-room'] .lib-menu {
 }
 html[data-look='reading-room'] .canvas-title,
 html[data-look='reading-room'] .archive-card h3 {
-  color: var(--rr-ink);
-}
-
-/* ---------- the letter page (ReadingLetter.tsx) ---------- */
-html[data-look='reading-room'] .rr-letter-card {
-  position: sticky;
-  top: 84px;
-  align-self: start;
-  max-height: calc(100dvh - 84px - 88px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--rr-edge) transparent;
-  padding: 0 4px 12px;
-  margin: 0 -4px;
-}
-html[data-look='reading-room'] .rr-letter-kicker {
-  margin: 0 auto 16px;
-  max-width: 30rem;
-  text-align: center;
-  color: var(--rr-ink);
-  text-wrap: balance;
-}
-html[data-look='reading-room'] .rr-transcript-wrap {
-  max-width: 36rem;
-  margin: 28px auto 0;
-  text-align: center;
-}
-html[data-look='reading-room'] .rr-transcript {
-  display: grid;
-  gap: 0.8em;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--rr-rule);
-  text-align: left;
-  white-space: pre-line;
   color: var(--rr-ink);
 }
 
@@ -1029,7 +943,15 @@ html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :is([role='
 html[data-look='reading-room'] [role='menu'] [role^='menuitem'] {
   border-radius: 2px;
 }
-/* a menu's group label ("More formats", "Kept on this device") in small capitals */
+/* a menu's or sheet's group label ("More formats", "Kept on this device") in small capitals */
+html[data-look='reading-room'] :is([role='menu'] > div:not([role]), .sheet-surface [role='list'] > div:not([role]):not(.sheet-row)) {
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  font-weight: var(--rr-label-weight);
+  letter-spacing: var(--rr-label-tracking);
+  font-variant-caps: var(--rr-label-caps);
+  color: var(--rr-muted);
+}
 html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :has(> [role='tooltip']) {
   border-radius: 2px;
 }
@@ -1146,7 +1068,7 @@ html[data-look='reading-room'] [class*='tracking-['] {
 }
 
 /* title */
-html[data-look='reading-room'] :is(.rr-card-title, .rr-letter-kicker, [class*='text-[22px]']) {
+html[data-look='reading-room'] :is(.rr-card-title, [class*='text-[22px]']) {
   font-family: var(--rr-title-face);
   font-size: var(--rr-title-size);
   font-weight: var(--rr-title-weight);
@@ -1154,16 +1076,9 @@ html[data-look='reading-room'] :is(.rr-card-title, .rr-letter-kicker, [class*='t
   line-height: var(--rr-title-leading);
   letter-spacing: var(--rr-title-tracking);
 }
-/* reading */
-html[data-look='reading-room'] :is(.rr-transcript) {
-  font-family: var(--rr-reading-face);
-  font-size: var(--rr-reading-size);
-  font-weight: var(--rr-reading-weight);
-  line-height: var(--rr-reading-leading);
-  letter-spacing: var(--rr-reading-tracking);
-}
+
 /* text */
-html[data-look='reading-room'] :is(.rr-fact dd, .rr-slip-t, .rr-transcript-wrap, .font-row-name, .canvas-title, .archive-card h3) {
+html[data-look='reading-room'] :is(.rr-fact dd, .font-row-name, .canvas-title, .archive-card h3) {
   font-family: var(--rr-text-face);
   font-size: var(--rr-text-size);
   font-weight: var(--rr-text-weight);
@@ -1172,7 +1087,7 @@ html[data-look='reading-room'] :is(.rr-fact dd, .rr-slip-t, .rr-transcript-wrap,
   text-transform: none;
 }
 /* small */
-html[data-look='reading-room'] :is(.rr-sub, .rr-notes ol, .rr-card-foot, .rr-slip-v, .specimen-note, .set-note, .font-list-note) {
+html[data-look='reading-room'] :is(.rr-sub, .rr-card-foot, .specimen-note, .set-note, .font-list-note) {
   font-family: var(--rr-small-face);
   font-size: var(--rr-small-size);
   font-weight: var(--rr-small-weight);
@@ -1231,13 +1146,13 @@ html[data-look='reading-room'] .rr-ref {
 }
 /* control: everything you operate (the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
    tooltips, the writing tray), in the control face at one size; actions, numbers and labels inside keep their roles */
-html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .archive-dock, .rr-dock, [data-radix-popper-content-wrapper], .lib-menu, input, textarea, select, div.fixed.z-40 > div[class*='rounded-[22px]'], .rr-status, .rr-dock-word) {
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .sheet-surface, .archive-dock, .rr-dock, [data-radix-popper-content-wrapper], .lib-menu, input, textarea, select, div.fixed.z-40 > div[class*='rounded-[22px]'], .rr-status, .rr-dock-word) {
   font-family: var(--rr-control-face);
   font-weight: var(--rr-control-weight);
   letter-spacing: var(--rr-control-tracking);
 }
 html[data-look='reading-room'] :is(.rr-dock, .rr-dock-word, [role^='menuitem'], [data-radix-popper-content-wrapper] > :has(> [role='tooltip']), .control-sheet button[aria-expanded] > span[data-pill], .control-sheet button[aria-haspopup='menu']),
-html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .archive-dock, [data-radix-popper-content-wrapper], .lib-menu, div.fixed.z-40 > div[class*='rounded-[22px]']) :is([class*='text-[0.6875rem]'], [class*='text-[0.7188rem]'], [class*='text-[0.75rem]'], [class*='text-[0.7812rem]'], [class*='text-[0.78125rem]'], [class*='text-[0.8125rem]'], [class*='text-[11px]'], [class*='text-[11.5px]'], [class*='text-[12px]'], [class*='text-[12.5px]'], [class*='text-[13px]'], [class*='text-[13.5px]'], [class*='text-[0.8438rem]'], [class*='text-[0.875rem]'], [class*='text-[0.9375rem]'], [class*='text-[14px]'], [class*='text-[15px]']) {
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet, .sheet-surface, .archive-dock, [data-radix-popper-content-wrapper], .lib-menu, div.fixed.z-40 > div[class*='rounded-[22px]']) :is([class*='text-[0.6875rem]'], [class*='text-[0.7188rem]'], [class*='text-[0.75rem]'], [class*='text-[0.7812rem]'], [class*='text-[0.78125rem]'], [class*='text-[0.8125rem]'], [class*='text-[11px]'], [class*='text-[11.5px]'], [class*='text-[12px]'], [class*='text-[12.5px]'], [class*='text-[13px]'], [class*='text-[13.5px]'], [class*='text-[0.8438rem]'], [class*='text-[0.875rem]'], [class*='text-[0.9375rem]'], [class*='text-[14px]'], [class*='text-[15px]']) {
   font-size: var(--rr-control-size);
   line-height: var(--rr-control-leading);
 }
@@ -1263,7 +1178,6 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
 
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
-  html[data-look='reading-room'] .rr-card,
   html[data-look='reading-room'] .rr-dock {
     border: 1px solid CanvasText;
   }
