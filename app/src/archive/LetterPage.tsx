@@ -257,7 +257,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
         {/* title: above the sheet on phones, beside it on wide screens */}
         <header className="pt-2 pb-5 lg:col-start-2 lg:row-start-1 lg:pt-8 lg:pb-6">
           <p className="text-[12.5px] text-[var(--ink-soft)]">{circumstanceLabel(letter)}</p>
-          <h1 ref={titleRef} tabIndex={-1} className="mt-1.5 text-[26px] leading-[1.12] font-[560] tracking-[-0.025em] text-foreground text-balance outline-none sm:text-[30px]">
+          <h1 ref={titleRef} tabIndex={-1} className="font-letter mt-1.5 text-[calc(28px*var(--letter-scale))] leading-[1.1] font-normal tracking-[-0.012em] text-foreground text-balance outline-none sm:text-[calc(33px*var(--letter-scale))]">
             {letter.title ?? opening(letter.text, 60)}
           </h1>
           <p className="mt-2 text-[14.5px] leading-[1.45] text-muted-foreground text-pretty">{fromTo(letter)}</p>
@@ -344,8 +344,8 @@ function Provenance({ letter }: { letter: ArchiveLetter }) {
   const rightsLine = rights?.us && rights?.eu ? 'Public domain in the US and the EU' : rights?.us ? 'Public domain in the US' : rights?.eu ? 'Public domain in the EU' : f?.source?.licence ?? '';
   return (
     <div className="mt-8">
-      {f?.story && <p className="text-[14.5px] leading-[1.6] text-foreground/90 text-pretty">{f.story}</p>}
-      <dl className="mt-6 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-[13.5px] leading-[1.5]">
+      {f?.story && <p className="font-letter text-[calc(16px*var(--letter-scale))] leading-[1.6] text-foreground/90 text-pretty">{f.story}</p>}
+      <dl className="mt-6 grid grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-x-4 gap-y-3 text-[13.5px] leading-[1.5]">
         {letter.author && <Row term="Written by">{letter.author}{f?.heritage && <span className="block text-muted-foreground">{f.heritage}</span>}</Row>}
         {letter.recipient && <Row term="To">{letter.recipient}</Row>}
         {letter.place && <Row term="From">{letter.place}</Row>}
@@ -394,7 +394,7 @@ function Transcript({ letter }: { letter: ArchiveLetter }) {
       >
         {open ? 'Hide the text' : 'Read it as text'}
       </button>
-      <div id="transcript" lang={letter.lang} className={cn(open ? 'mt-4 grid w-full gap-3 text-[15px] leading-[1.65] whitespace-pre-line text-foreground/90' : 'sr-only')}>
+      <div id="transcript" lang={letter.lang} className={cn(open ? 'font-letter mt-4 grid w-full gap-3 text-[calc(17px*var(--letter-scale))] leading-[1.65] whitespace-pre-line text-foreground/90' : 'sr-only')}>
         {paras.map((para, i) => <p key={i}>{para}</p>)}
       </div>
     </div>
@@ -405,7 +405,7 @@ function Row({ term, children }: { term: string; children: ReactNode }) {
   return (
     <>
       <dt className="text-muted-foreground">{term}</dt>
-      <dd className="min-w-0 text-foreground/90">{children}</dd>
+      <dd className="font-letter min-w-0 text-[calc(14.5px*var(--letter-scale))] leading-[1.45] text-foreground/90">{children}</dd>
     </>
   );
 }
