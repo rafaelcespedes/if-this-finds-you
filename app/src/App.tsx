@@ -1116,6 +1116,8 @@ export default function App() {
       // grid's gutter before it and its margin after, reading-room.css), less the header row's own gap (gap-x-4)
       beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + var(--rr-gutter, 0rem) + var(--rr-margin, 0.75rem) - 1rem)' : undefined}
       quiet={editing && !isDesktop}
+      // pinned within its column (narrower than the window beside Classic's panel), not to the window
+      within
       style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
       className={cn('transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
     >

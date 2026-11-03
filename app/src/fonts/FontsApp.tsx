@@ -190,7 +190,7 @@ export function FontsApp() {
               view={route.view} onView={(v) => { update({ view: v }, true); listTop(); }} savedCount={saved.length} onNewSet={newSet} />
           )}
           <div className="min-w-0">
-          <div className={cn('specimen-bar-wrap z-20', !narrow && 'sticky top-0')}>
+          <div className={cn('specimen-bar-wrap z-20', !narrow && 'sticky top-[var(--site-head,0px)]')}>
             <SpecimenBar
               line={route.line}
               onLine={(l: Line) => { setText(''); update({ line: l, text: '' }); }}
