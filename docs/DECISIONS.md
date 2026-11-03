@@ -43,6 +43,8 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **Panel density:** controls one step tighter (shorter controls, 13.5 px text, 8 px corners, 320 px panel), but the roomier
+  spacing between sections stays (Rafael, 2026-11-02).
 - **Logo: wordmark #5** (Rafael, 2026-11-02; replaces #32 the same day): "If This Finds You" on one line in a Québec school
   print, felt marker. #32 (stacked, Spanish copybook) stays viewable with `?logo=32`. Files and settings in brand/wordmark/.
 - **Name: "If This Finds You"** (Rafael, 2026-11-02, "for now"). It's how a message in a bottle begins: a letter
