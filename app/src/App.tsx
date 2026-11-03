@@ -29,7 +29,7 @@ import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
-import { isNeat, rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib/roll';
+import { rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib/roll';
 import type { RollAsk, RollReply } from '@/lib/roll-protocol';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
@@ -965,7 +965,6 @@ export default function App() {
     // the engine tidies a hand unless this is off, so the page shows the change (a new look: it cross-fades),
     // and New hand brings only neat writers while it's on
     onNeatOnly: (v) => lookChange(() => update({ neatOnly: v })),
-    neatNow: isNeat(p),
     onShare: share,
     onDownload: download,
     onExportFont: font,
