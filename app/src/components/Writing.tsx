@@ -35,12 +35,26 @@ interface Props {
 const FADE_MS = 170;
 
 /**
+ * Safari (and every browser on iPhone and iPad, which are Safari underneath) draws an SVG image's ink-edge filter at
+ * a low resolution, so the letters come out soft at any size: only Chrome-based browsers, checked sharp, get the
+ * image; everywhere else the writing stays SVG in the page, as sharp as ever. `?svgwriting` does that anywhere.
+ */
+const IMAGES_SHARP = (() => {
+  if (typeof navigator === 'undefined') return false;
+  if (new URLSearchParams(location.search).has('svgwriting')) return false;
+  const ua = navigator.userAgent;
+  const apple = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  // checked sharp in Chrome-based browsers (Chrome, Edge, Opera, Android); elsewhere the SVG stays in the page
+  return !apple && /(Chrome|Chromium|Edg|OPR)\//.test(ua);
+})();
+
+/**
  * A still letter is shown as an image of its SVG: the browser draws it once, instead of building thousands of
  * paths (and their ink-edge filter) into the page; a paper change or a new hand then costs a fraction of the time.
  * The reader's write-out animates each stroke, and print for letters a hand can't write uses the page's styles:
  * those stay SVG in the page.
  */
-const asImage = (svg: string, playing: boolean) => !playing && typeof URL.createObjectURL === 'function' && !svg.includes('class="miss"');
+const asImage = (svg: string, playing: boolean) => IMAGES_SHARP && !playing && typeof URL.createObjectURL === 'function' && !svg.includes('class="miss"');
 
 /** Let go of a layer's image (its blob URL). */
 function release(layer: HTMLElement) {
