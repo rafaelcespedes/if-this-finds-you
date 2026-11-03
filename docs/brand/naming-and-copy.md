@@ -199,6 +199,32 @@ Dovecote, Lontananza. Taken outright: Marginalia, Lamplight, Forget-me-not, Vale
 **Verdict:** **Manent** is the strongest poetic name: short, timeless, and it carries the whole idea (letters that
 outlived their writers, ink that can't be unwritten). **Litterae** is the most exact if Rafael accepts the Brazil caution.
 
+### Tumblr pass: names in the voice of poets' blogs
+
+Method: read about 150 blog names from Tumblr's poetry and letter tags on 2 November 2026 (spilled ink,
+original poetry, poets on tumblr, unsent letters, love letters, handwritten letters, old letters, prose poetry,
+fragments, typewriter, romanticism). Used as a style reference only; no one's handle is reused. The patterns:
+intimate sentence fragments in the second person ("wrote you a thing", "here is what remains"), pressed and kept
+things ("tenderly pressed", "ink-pressed petals"), small Latin coinages, and hours of the day ("the other hour").
+
+All `.com` below are $12.03 a year; no live marks containing the phrase in TMview.
+
+| Name | Domain | What it carries |
+|---|---|---|
+| **In Another Hand** | inanotherhand.com | What archivists write when part of a document was written by someone else. Here every letter is written out again in another hand, and you reply in yours |
+| **If This Finds You** | ifthisfindsyou.app $15 (.com taken) | How a message in a bottle begins: a letter that may never arrive, and you're the one it found |
+| **Wherever This Finds You** | whereverthisfindsyou.com | The old "I hope this finds you well", turned toward a stranger centuries later |
+| Until It Reaches You | untilitreachesyou.com | Letters that waited for their reader |
+| Folded Small | foldedsmall.com | How letters were folded to travel and to keep |
+| The Paper Hours | thepaperhours.com | The hours people spent writing letters |
+| Not Yet Sent | notyetsent.com | The reply you haven't sent |
+| Yours, Somewhere | yourssomewhere.com | A sign-off with no address |
+
+Dropped: Tendresse (36 live marks), Another Hand (Korean marks), Twice Folded and Kept in Ink (.com taken).
+
+**Verdict:** **In Another Hand** is the find of this round: a real archivist's phrase that describes exactly what the
+product does, poetic without trying, and the `.com` is $12.03.
+
 ---
 
 ## 1. Naming
