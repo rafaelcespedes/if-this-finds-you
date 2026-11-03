@@ -10,7 +10,7 @@ import { writingLines, type PaperSpec } from './papers';
 import type { CaretPos, Geometry, Ribbon } from './geometry';
 import { JOURNEY, writeWithJourney } from './engine-features';
 import { REF_PX_PER_MM, scopeIds } from './writing';
-import { frameFor, paginate, sheetOf, type PageFrame, type Pagination } from './paginate';
+import { closingStart, frameFor, paginate, sheetOf, type PageFrame, type Pagination } from './paginate';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
@@ -235,7 +235,9 @@ export function liveExtras(live: Live, x: ExtrasInput): string[] {
       const psItem = glyphs.find((it) => it.charIndex === ps + 2);
       if (psItem) line = psItem.line - 1;
     }
-    const left = live.paper.text.left * live.unitsPerMm + 0.15 * live.lineMm * live.unitsPerMm;
+    // under the letter's own closing when it has one ("Yours," set right); else just in from the margin
+    const close = closingStart(page);
+    const left = close ?? live.paper.text.left * live.unitsPerMm + 0.15 * live.lineMm * live.unitsPerMm;
     // after the text: the line liveLayout kept for it (possibly on a sheet of its own)
     const y = line >= page.lines ? live.tailY : baseAt(line, left);
     const cs: number[][][] = [];

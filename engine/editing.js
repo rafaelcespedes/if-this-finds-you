@@ -35,6 +35,29 @@ export function geometry(p, pages, opts = {}) {
   const lineNums = [...onLine.keys()].sort((a, b) => a - b);
 
   const baseline = (n, x) => lineBaseline(p, lines.get(n), x);
+  // An empty line between paragraphs sits in the gap the writer left there: a whole line, half a line or
+  // almost none. Its caret, hit area and selection tab stay inside that gap, clear of the letters above
+  // and below. gaps: line n -> [the written line above, the written line below]
+  const gaps = new Map();
+  {
+    const all = [...lines.keys()].sort((a, b) => a - b);
+    all.forEach((n, i) => {
+      if (!lines.get(n).blank) return;
+      let a = i - 1; while (a >= 0 && lines.get(all[a]).blank) a--;
+      let b = i + 1; while (b < all.length && lines.get(all[b]).blank) b++;
+      if (a >= 0 && b < all.length) gaps.set(n, [all[a], all[b]]);
+    });
+  }
+  // above / below the baseline that line n's caret may reach at x (font units)
+  function reach(n, x) {
+    const g = gaps.get(n);
+    if (!g) return [ascent, descent];
+    const y = baseline(n, x);
+    const top = Math.max(y - ascent, baseline(g[0], x) + M.descender), bottom = Math.min(y + descent, baseline(g[1], x) - M.ascender);
+    if (bottom - top >= 0.2 * xh) return [y - top, bottom - y];
+    const mid = (top + bottom) / 2;
+    return [y - mid + 0.1 * xh, mid - y + 0.1 * xh];
+  }
   // lean of the writing at x on a line, degrees (the hand's slant + the line's own lean)
   const slant = (n, x) => (p.slant || 0) + lineLean(p, lines.get(n), x);
 
@@ -60,9 +83,10 @@ export function geometry(p, pages, opts = {}) {
   function caretAt(offset, aff = 'after') {
     const s = stopFor(offset, aff);
     if (!s) return null;
+    const [up, down] = reach(s.line, s.x);
     return {
       offset: s.o, aff: s.aff || aff, line: s.line, x: s.x, y: baseline(s.line, s.x), kind: s.kind,
-      top: framePoint(s.line, s.x, ascent), bottom: framePoint(s.line, s.x, -descent),
+      top: framePoint(s.line, s.x, up), bottom: framePoint(s.line, s.x, -down),
       angle: lineAngle(p, lines.get(s.line), s.x), slant: slant(s.line, s.x),
     };
   }
@@ -70,14 +94,21 @@ export function geometry(p, pages, opts = {}) {
   // the written line a point belongs to: the first line (top down) whose descenders the point hasn't
   // passed, so a click high on an ascender or low on a descender stays with its own line
   function lineAt(x, y) {
+    // an empty line between paragraphs: only inside its gap
+    for (const n of gaps.keys()) {
+      if (!onLine.has(n)) continue;
+      const b = baseline(n, x), [up, down] = reach(n, x);
+      if (y >= b - up && y <= b + down) return n;
+    }
     let best = null, by = Infinity;
     for (const n of lineNums) {
+      if (gaps.has(n)) continue;
       const b = baseline(n, x);
       if (y <= b + 1.05 * M.descender && b < by) { by = b; best = n; }
     }
     if (best != null) return best;
     let low = null, ly = -Infinity; // below every line: the last one
-    for (const n of lineNums) { const b = baseline(n, x); if (b > ly) { ly = b; low = n; } }
+    for (const n of lineNums) { if (gaps.has(n)) continue; const b = baseline(n, x); if (b > ly) { ly = b; low = n; } }
     return low;
   }
   // the stop on line n nearest to page x (already un-sheared)
@@ -113,7 +144,7 @@ export function geometry(p, pages, opts = {}) {
       let xa = Math.min(...inside.map((s) => s.x)), xb = Math.max(...inside.map((s) => s.x));
       if (xb - xa < 0.2 * xh) { if (inside.length === 1 && inside[0].o === to) continue; xb = xa + 0.2 * xh; } // a selected line end shows as a short tab
       const step = 0.5 * xh, top = [], bottom = [];
-      for (let x = xa; ; x = Math.min(xb, x + step)) { top.push(framePoint(n, x, ascent)); bottom.push(framePoint(n, x, -descent)); if (x >= xb) break; }
+      for (let x = xa; ; x = Math.min(xb, x + step)) { const [up, down] = reach(n, x); top.push(framePoint(n, x, up)); bottom.push(framePoint(n, x, -down)); if (x >= xb) break; }
       out.push({ line: n, from: Math.min(...inside.map((s) => s.o)), to: Math.max(...inside.map((s) => s.o)), points: top.concat(bottom.reverse()) });
     }
     return out;

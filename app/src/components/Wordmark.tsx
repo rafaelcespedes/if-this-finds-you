@@ -1,7 +1,7 @@
 // The header's wordmark: the logo's SVG drawn inline, so it takes the text colour (currentColor). Until the
 // file is there (or if it can't load), the product's name in type.
 import { useEffect, useState } from 'react';
-import { APP_NAME, faviconSrc, logoSrc } from '@/lib/brand';
+import { APP_NAME, faviconSrc, logoHeight, logoSrc } from '@/lib/brand';
 import { cn } from '@/lib/utils';
 
 let kept: string | null | undefined;
@@ -33,10 +33,10 @@ export function Wordmark({ className }: { className?: string }) {
     if (!icon) return;
     fetch(icon, { method: 'HEAD' }).then((r) => {
       if (!r.ok) return;
-      const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (link) link.href = icon;
+      const link = document.querySelector<HTMLLinkElement>('link[rel="icon"][type="image/svg+xml"]');
+      if (link && !link.href.endsWith(icon)) link.href = icon;
     }).catch(() => {});
   }, []);
   if (!svg) return <span className={cn('text-[13px] font-medium tracking-[-0.01em]', className)}>{APP_NAME}</span>;
-  return <span role="img" aria-label={APP_NAME} className={cn('block [&_svg]:block [&_svg]:h-full [&_svg]:w-auto', className)} dangerouslySetInnerHTML={{ __html: svg }} />;
+  return <span role="img" aria-label={APP_NAME} className={cn('block [&_svg]:block [&_svg]:h-full [&_svg]:w-auto', logoHeight, className)} dangerouslySetInnerHTML={{ __html: svg }} />;
 }

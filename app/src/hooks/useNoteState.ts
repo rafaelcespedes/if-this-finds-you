@@ -7,6 +7,8 @@ export function useNoteState(paused = false) {
     window.location.hash.length > 1 ? decodeState(window.location.hash) : DEFAULT_STATE,
   );
   const lastWritten = useRef<string>('');
+  // the next write is a step of its own (a new hand, another writer, another letter), so Back brings the last one back
+  const step = useRef(false);
 
   // write the hash (debounced, without adding history entries)
   useEffect(() => {
@@ -15,7 +17,10 @@ export function useNoteState(paused = false) {
     const id = window.setTimeout(() => {
       const h = encodeState(state);
       lastWritten.current = h;
-      if (window.location.hash.slice(1) !== h) history.replaceState(null, '', '#' + h);
+      if (window.location.hash.slice(1) === h) return;
+      if (step.current) history.pushState(null, '', '#' + h);
+      else history.replaceState(null, '', '#' + h);
+      step.current = false;
     }, 250);
     return () => window.clearTimeout(id);
   }, [state, paused]);
@@ -27,12 +32,20 @@ export function useNoteState(paused = false) {
       if (h && h !== lastWritten.current) setState(decodeState(h));
     };
     window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    // Back and Forward between the steps
+    window.addEventListener('popstate', onHash);
+    return () => {
+      window.removeEventListener('hashchange', onHash);
+      window.removeEventListener('popstate', onHash);
+    };
   }, []);
 
   const update = useCallback((patch: Partial<NoteState> | ((s: NoteState) => Partial<NoteState>)) => {
     setState((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }));
   }, []);
 
-  return [state, update] as const;
+  /** The change about to be made is a step in the browser's history (Back undoes it). */
+  const markStep = useCallback(() => { step.current = true; }, []);
+
+  return [state, update, markStep] as const;
 }

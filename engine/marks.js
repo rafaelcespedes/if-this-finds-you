@@ -190,7 +190,7 @@ export function markItem(p, kind, strokesPage, ref, o) {
   return {
     kind: 'mark', ch: '', x: ox, y: oy, rot: 0,
     g: { advance: 0, contours: strokes.map((s) => s.contour), strokes, variant: MARK_VARIANT, pose: POSE0 },
-    charIndex: -1, inkIndex: ref.inkIndex, line: ref.line, para: ref.para, word: ref.word, wk: o.wk || ref.wk,
+    charIndex: -1, inkIndex: ref.inkIndex, line: ref.line, para: ref.para, word: ref.word, wk: o.wk || ref.wk, wkey: ref.wkey, // the pen writes a delayed mark once its word is done
     tempo: (ref.tempo || 1) * (o.tempo || 1), role: 'mark', mark: kind, fix: o.fix, key: o.key,
   };
 }
@@ -335,7 +335,7 @@ export function blotItem(p, X, Y, ref, r, seed, o = {}) {
   return {
     kind: 'mark', ch: '', x: X, y: Y, rot: 0,
     g: { advance: 0, contours: [c], strokes: [st], variant: MARK_VARIANT, pose: POSE0 },
-    charIndex: -1, inkIndex: ref.inkIndex, line: ref.line, para: ref.para, word: ref.word, wk: o.wk || ref.wk,
+    charIndex: -1, inkIndex: ref.inkIndex, line: ref.line, para: ref.para, word: ref.word, wk: o.wk || ref.wk, wkey: ref.wkey, // the pen writes a delayed mark once its word is done
     tempo: ref.tempo || 1, role: 'mark', mark: 'blot', fix: o.fix, key: o.key,
   };
 }
@@ -366,20 +366,26 @@ export function overItem(p, heavy, H, wr, ch, seed, r) {
   const w = writeAt(p, ch, { x: wr.x, y: wr.y, angle: wr.rot || 0, lean: leanOf(p, wr), size: ((wr.g.pose && wr.g.pose.scale) || 1) * H.overSize, weight: H.overWeight, seed, line: wr.line });
   const it0 = w.items.find((it) => it.kind === 'glyph' && it.g);
   if (!it0) return null;
-  let g = it0.g;
+  let g = it0.g, glyph = it0.glyph;
   const main = g.strokes.reduce((b, st, i) => (!st.dot && st.center.length > (b < 0 ? 0 : g.strokes[b].center.length) ? i : b), -1);
   if (main >= 0 && r() < H.retrace) {
-    const off = (r() - 0.5) * 0.03 * UPM, st = g.strokes[main];
-    const center = st.center.map((q) => [q[0] + off, q[1] - off * 0.6]);
-    const c = penOutline(heavy, center, 501 + main * 3.1);
-    if (c) {
-      const strokes = [...g.strokes.slice(0, main + 1), Object.assign({}, st, { center, contour: c }), ...g.strokes.slice(main + 1)];
-      g = Object.assign({}, g, { strokes, contours: strokes.map((x) => x.contour) });
-    }
+    const off = (r() - 0.5) * 0.03 * UPM;
+    // the same second pass on the posed letter (renderSVG, canvas) and on its unposed form (run renderers)
+    const again = (gg) => {
+      if (!gg || !gg.strokes[main]) return gg;
+      const st = gg.strokes[main];
+      const center = st.center.map((q) => [q[0] + off, q[1] - off * 0.6]);
+      const c = penOutline(heavy, center, 501 + main * 3.1);
+      if (!c) return gg;
+      const strokes = [...gg.strokes.slice(0, main + 1), Object.assign({}, st, { center, contour: c }), ...gg.strokes.slice(main + 1)];
+      return Object.assign({}, gg, { strokes, contours: strokes.map((x) => x.contour) });
+    };
+    g = again(g);
+    glyph = again(glyph);
   }
   const a = spanOf([wr]), b = spanOf([Object.assign({}, it0, { g })]);
   const dx = (a.x0 + a.x1) / 2 - (b.x0 + b.x1) / 2 + r.gauss() * 0.035 * UPM, dy = r.gauss() * 0.012 * UPM;
-  const sh = shifted({ items: [Object.assign({}, it0, { g })], runs: w.runs, stops: [], endX: w.endX }, dx, dy);
+  const sh = shifted({ items: [Object.assign({}, it0, { g }, glyph ? { glyph } : {})], runs: w.runs, stops: [], endX: w.endX }, dx, dy);
   const item = Object.assign({}, sh.items[0], {
     inkIndex: wr.inkIndex, para: wr.para, word: wr.word, wk: wr.wk, tempo: (wr.tempo || 1) / 1.3, role: 'over', charIndex: -1,
   });
