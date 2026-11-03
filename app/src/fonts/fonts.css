@@ -544,3 +544,48 @@ html[data-look='reading-room'] .record-note,
 html[data-look='reading-room'] .record-wait {
   color: var(--rr-muted, var(--text-muted));
 }
+
+/* ---------- the Reading Room: hairlines, never boxes (layout study, house rule 3) ----------
+   The paper is the only thing with an edge: the sampler's note is a ruled line, and the quieter actions (Write with
+   it, New set) are words, beside the red one. */
+html[data-look='reading-room'] .set-note {
+  padding: 0.55rem 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--rr-rule, var(--fonts-rule));
+  background: transparent;
+  font-family: var(--rr-book, inherit);
+  font-style: italic;
+  color: var(--rr-muted, var(--text-muted));
+}
+html[data-look='reading-room'] :is(.record-actions, .font-list-end) [data-slot='button']:not(.dock-primary) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--rr-ink, var(--foreground));
+  font-family: var(--rr-book, inherit);
+  font-size: 1rem;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] :is(.record-actions, .font-list-end) [data-slot='button']:not(.dock-primary):hover {
+    background: transparent;
+    text-decoration-color: currentColor;
+  }
+}
+html[data-look='reading-room'] .record-actions {
+  align-items: center;
+  gap: 0.25rem 1.25rem;
+  border-bottom: 1px solid var(--rr-rule, var(--fonts-rule));
+}
+html[data-look='reading-room'] .record-actions [data-slot='button'] {
+  padding-inline: 0;
+}
+/* one column (phones): the rows' last rule is the sentence's top rule */
+@media (max-width: 899px) {
+  .record-about {
+    border-top: 0;
+  }
+}
