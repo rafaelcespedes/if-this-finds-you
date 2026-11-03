@@ -6,7 +6,7 @@
   "engines": {
     "node": "24.x"
   },
-  "description": "Seedhand: the product UI for the live handwriting engine (../engine).",
+  "description": "If This Finds You (code name Seedhand): the product UI for the live handwriting engine (../engine).",
   "scripts": {
     "start": "npm install --no-audit --no-fund --loglevel=error && vite",
     "dev": "vite",

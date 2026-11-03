@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { APP_NAME } from '@/lib/brand';
+import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
 import { Panel, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
@@ -26,6 +28,7 @@ import { rollHand, withSample, type LockKey } from '@/lib/roll';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleCredit, sampleForSeed, sawLetter } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
 import { ReplyPeek } from '@/components/ReplyPeek';
+import { WritingMenu } from '@/components/WritingMenu';
 import { DEFAULT_INK, INK_FAMILIES } from '@/lib/inks';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
@@ -244,7 +247,7 @@ export default function App() {
   const pxPerMm = deskW > 0 ? Math.min(MAX_PX_PER_MM, deskW / shownPaper.w) : 0;
 
   useEffect(() => {
-    document.title = `${name} – Seedhand`;
+    document.title = `${name} – ${APP_NAME}`;
   }, [name]);
 
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
@@ -374,9 +377,9 @@ export default function App() {
     const url = shareUrl(state);
     const ok = await copyText(url);
     // on phones (and anywhere with a share sheet) the toast offers to send it straight on
-    const action = canShareLinks() ? { label: 'Share…', onClick: () => void shareLink(url, `A note in ${name}’s hand`) } : undefined;
+    const action = canShareLinks() ? { label: 'Share…', onClick: () => void shareLink(url, `${name}’s letter – ${APP_NAME}`) } : undefined;
     if (ok) toast.success('Link copied', { description: 'It opens this exact note: hand, pen, paper and text.', action });
-    else if (action) void shareLink(url, `A note in ${name}’s hand`);
+    else if (action) void shareLink(url, `${name}’s letter – ${APP_NAME}`);
     else toast.error('Couldn’t copy the link', { description: 'Copy it from the address bar instead.' });
   }, [state, name]);
 
@@ -392,7 +395,7 @@ export default function App() {
           eff.inkKey && eff.inkKey !== 'auto' ? eff.inkKey : undefined, ink, pxPerMm || MAX_PX_PER_MM,
         )
         : await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
-      const filename = `${name} note`;
+      const filename = `${APP_NAME} – ${name}`;
       const done = (r: string) => {
         if (r === 'saved') toast.success('Note downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
       };
@@ -418,7 +421,7 @@ export default function App() {
     // let the spinner paint before the (blocking) font build
     await new Promise((r) => setTimeout(r, 40));
     try {
-      const res = await exportFont(p, `Seedhand ${name} ${state.style}`);
+      const res = await exportFont(p, `${APP_NAME} – ${name} (${styleCard(state.style).title})`);
       toast.success('Font exported', { description: `${res.glyphs} glyphs, 3 versions of each letter` });
     } catch (e) {
       console.error(e);
@@ -454,12 +457,11 @@ export default function App() {
     inkKey: eff.inkKey,
     variety,
     locks,
-    onToggleLock: (key) => setLocks((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
+    onKeepLook: (keep) => {
+      const next = new Set<LockKey>(keep ? ['paper', 'pen', 'ink'] : []);
       writePref('seedhand:locks', [...next].join(','));
-      return next;
-    }),
+      setLocks(next);
+    },
     busy,
     onNewHand: () => newHand(true),
     onSimilarHand: () => similarHand(true),
@@ -603,7 +605,7 @@ export default function App() {
               !reader && 'pointer-events-none',
             )}
           >
-            <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">Seedhand</span>
+            <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">{APP_NAME}</span>
             {reader ? (
               <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                 Write your own
@@ -678,29 +680,24 @@ export default function App() {
                   )}
                 </PaperEditor>
                 <div
-                  className={cn('mx-auto mt-4 flex items-center justify-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
+                  className={cn('mx-auto mt-3 flex items-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
                   style={{ width: shownPaper.w * pxPerMm }}
                 >
-                  {sample && (
-                    <>
-                      <span className="mr-auto truncate pr-3 text-[12px]" title={sample.title}>{sampleCredit(sample)}</span>
-                      <button
-                        type="button"
-                        onClick={() => update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) }))}
-                        className="mr-1 shrink-0 rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
-                      >
-                        Blank page
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
-                    className="shrink-0 rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
-                    aria-expanded={plainText}
-                  >
-                    {plainText ? 'Hide plain text' : 'Edit as plain text'}
-                  </button>
+                  {/* the letter's credit on the left, how you're writing on the right */}
+                  <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample ? sampleCredit(sample) : ''}</span>
+                  <WritingMenu
+                    inkAvailable={!!panelProps.ink}
+                    mode={state.pen === 'pencil' ? 'pencil' : state.mode}
+                    onMode={(m) => panelProps.ink?.onMode(m)}
+                    inkLetter={!!state.inkLog}
+                    onFairCopy={() => panelProps.ink?.onFairCopy()}
+                    onFreshSheet={() => panelProps.ink?.onFreshSheet()}
+                    onBlankPage={sample ? () => update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) })) : undefined}
+                    signed={state.signed}
+                    onSign={toggleSigned}
+                    plainText={plainText}
+                    onPlainText={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
+                  />
                 </div>
                 {state.replyTo && !sample && (
                   <ReplyPeek replyTo={state.replyTo} pxPerMm={pxPerMm} size={eff.size} lineSpacing={eff.lineSpacing} ink={ink} onDismiss={() => update({ replyTo: null })} />
@@ -729,6 +726,9 @@ export default function App() {
             onDone={() => editor.current?.blur()}
             ink={inkMode}
             onUndo={inkMode ? () => onEdit({ at: 0, del: 0, ins: '', kind: 'undo', t: Date.now(), source: 'paper' }) : undefined}
+            mode={panelProps.ink ? (state.pen === 'pencil' ? 'pencil' : state.mode) : undefined}
+            onMode={panelProps.ink?.onMode}
+            onFairCopy={inkMode && state.inkLog ? () => panelProps.ink?.onFairCopy() : undefined}
           />
         )}
         {!reader && (isDesktop ? (

@@ -107,5 +107,6 @@ export const Writing = memo(function Writing({ svg, ink, className, fade, play, 
     for (const a of ref.current.getAnimations({ subtree: true })) a.finish();
   }, [finishToken]);
 
-  return <div ref={ref} aria-hidden className={cn('writing pointer-events-none absolute inset-0', className)} />;
+  // clipped to the sheet: the fading old writing keeps its own size and never shows past the new sheet's edge
+  return <div ref={ref} aria-hidden className={cn('writing pointer-events-none absolute inset-0 overflow-hidden', className)} />;
 });
