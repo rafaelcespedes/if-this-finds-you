@@ -30,7 +30,7 @@ const SHADOW = 'rgba(60, 45, 20, A)';
 const CONTACT: [number, number, number][] = [[0.4, 0.8, 0.16], [1, 2.2, 0.09]];
 const AMBIENT: [number, number, number][] = [[4, 10, 0.08], [11, 20, 0.08]];
 /** how far (CSS px) the full shadow reaches beyond the sheet */
-export const SHADOW_BLEED = 28;
+export const SHADOW_BLEED = 32;
 
 /** Paint one sheet at (0,0) on ctx: paper.w * pxPerMm by paper.h * pxPerMm device pixels (a shadow may fall outside). */
 export function paintPaper(ctx: CanvasRenderingContext2D, paper: PaperSpec, o: PaintOptions) {

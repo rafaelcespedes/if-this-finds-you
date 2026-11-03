@@ -113,7 +113,7 @@ const FAMILIES: Family[] = [
       name: 'Airmail', variant: 'Pale blue', hint: 'Thin blue onionskin, B5',
       w: 182, h: 257, tint: '#e7eef5',
       guide: { color: '#17212d', weight: 0.45, pitch: 8, first: 20, last: 244, alpha: 0.2, blur: 0.22 },
-      finish: { grain: 0.03, mottle: 0.2, cockle: 0.7, translucency: 0.2 },
+      finish: { grain: 0.03, mottle: 0.2, cockle: 0.5, translucency: 0.2 },
       text: { left: 13, right: 169, first: 20, last: 244 },
       pitch: 8, xh: 2.6, overflow: 'sheets', roll: 9,
       swatch: { x: 0, y: 4 },
