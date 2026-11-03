@@ -264,6 +264,15 @@ html[data-look='reading-room'] .rr-icon svg {
   }
 }
 
+/* ---------- icons beside words (design QA) ----------
+   Centred in a row, an icon centres on the line box; Junicode's capitals sit 0.123 em above that centre (its ascent
+   and descent are uneven), so beside Junicode words an icon lifts by that much. Beside the controls' face or
+   Junicode's small capitals the centres already agree. Each icon reads what its words are set in and marks itself
+   [data-beside-text='book' | 'ui'] (icons/lucide.tsx). */
+html[data-look='reading-room'] .rr-pen-icon[data-beside-text='book'] {
+  translate: 0 -0.123em;
+}
+
 /* ---------- the site header (components/SiteHeader.tsx) as a running head (layouts, house rule 2): the wordmark,
    the page's middle and the places on one baseline over one hairline, in the label role's small capitals ---------- */
 html[data-look='reading-room'] [data-site-row] {
@@ -286,6 +295,14 @@ html[data-look='reading-room'] .sheet-surface [data-site-menu] [data-site-link] 
   font-size: 1.125rem;
   letter-spacing: 0.06em;
 }
+/* a place you can go, under the pointer: a faint underline (the place you're in keeps its own mark) */
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] [data-site-header] a[data-site-link]:not([aria-current]):hover [data-site-words],
+  html[data-look='reading-room'] .rr-full-head:hover .rr-sc {
+    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
+    text-underline-offset: 3px;
+  }
+}
 /* the letter's number: archival red, as on its sheet */
 html[data-look='reading-room'] [data-site-number] {
   color: var(--rr-red);
@@ -297,6 +314,27 @@ html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-ch
   border-color: transparent;
   background: transparent;
   box-shadow: none;
+}
+/* with no box, the Menu's lines end where the running head's rule ends */
+html[data-look='reading-room'] [data-site-header] [data-site-chip] {
+  margin-right: -8px;
+}
+/* how many letters you've kept: a small red figure by the Menu, as a number is written in the margin, not a disc */
+html[data-look='reading-room'] [data-site-header] [data-site-chip] > span[aria-hidden] {
+  /* at the lines' top left, so it stays inside the rule's end */
+  top: 3px;
+  right: auto;
+  left: 1px;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--rr-red);
+  font-family: var(--rr-number-face);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1;
 }
 
 html[data-look='reading-room'] .rr-card-no {
@@ -432,10 +470,12 @@ html[data-look='reading-room'] .rr-ledger {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* a 12 px gutter past the rules' right end, inside the scroll: Share's icon sits flush with the rules while its
-     button and focus ring reach into it, so nothing sticks out and the column never scrolls sideways */
-  padding: var(--rr-desk-top) 12px 1.5rem 0;
+  /* a 12 px gutter past the rules' right end and 4 px before their start, inside the scroll: Share's icon sits flush
+     with the rules while its button reaches into the gutter, and focus rings show whole on either side; nothing
+     sticks out and the column never scrolls sideways */
+  padding: var(--rr-desk-top) 12px 1.5rem 4px;
   margin-right: -12px;
+  margin-left: -4px;
   scrollbar-width: none;
 }
 html[data-look='reading-room'] .rr-desk-actions {
@@ -542,6 +582,7 @@ html[data-look='reading-room'] .rr-title-measure {
 }
 /* a note's number is a button: the note opens in place, under its row */
 html[data-look='reading-room'] .rr-ref-button {
+  position: relative;
   margin-left: 2px;
   padding: 0 3px;
   border-radius: 2px;
@@ -555,13 +596,14 @@ html[data-look='reading-room'] .rr-ref-button {
 html[data-look='reading-room'] .rr-ref-button[aria-expanded='true'] {
   background: color-mix(in oklab, var(--rr-red) 12%, transparent);
 }
+/* a small red number, a bigger target: 24 px with a mouse, 44 px to a finger */
+html[data-look='reading-room'] .rr-ref-button::after {
+  content: '';
+  position: absolute;
+  inset: -7px -6px;
+}
 @media (pointer: coarse) {
-  html[data-look='reading-room'] .rr-ref-button {
-    position: relative;
-  }
   html[data-look='reading-room'] .rr-ref-button::after {
-    content: '';
-    position: absolute;
     inset: -14px -10px;
   }
 }
@@ -629,8 +671,8 @@ html[data-look='reading-room'] .rr-drawer-head {
   color: var(--rr-ink);
 }
 html[data-look='reading-room'] .rr-drawer-chev {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   color: var(--rr-muted);
   transition: transform 260ms var(--ease-drawer);
 }
