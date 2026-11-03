@@ -61,6 +61,14 @@ export interface PanelProps {
   onExportFont: () => void;
   /** a text field in the panel took focus (the phone sheet opens fully, above the keyboard) */
   onFieldFocus?: () => void;
+  /** what's on the page: a found letter, or the writer's own (with kept drafts) */
+  letter?: {
+    found: boolean;
+    own: boolean;
+    drafts: number;
+    onAnother: () => void;
+    onBackToMine: () => void;
+  };
   /** Ink mode (when the engine writes in ink): the mode, and the letter's sheet commands */
   ink?: {
     on: boolean;
@@ -122,12 +130,39 @@ const WriterCard = memo(function WriterCard(props: PanelProps) {
           <TooltipContent>A sibling of this hand (Shift R)</TooltipContent>
         </Tooltip>
       </div>
+      <LetterStatus {...props} className="mt-3" />
       <div className="mt-4">
         <StylePicker seed={state.seed} style={state.style} ink={inkColor(state.ink)} onStyle={onStyle} />
       </div>
     </section>
   );
 });
+
+/**
+ * Which letter is on the page, and a way to the other kind: "A found letter · Another letter" (and "Back to my
+ * letter" when one is kept), or "Your letter · Read a found letter" (yours is kept on this device).
+ */
+export function LetterStatus({ letter, className, compact }: PanelProps & { className?: string; compact?: boolean }) {
+  if (!letter) return null;
+  const link = 'shrink-0 rounded-md px-1 py-0.5 font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5';
+  return (
+    <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted-foreground', className)}>
+      <span className="inline-flex items-center gap-1.5">
+        <span aria-hidden className={cn('size-1.5 rounded-full', letter.found ? 'bg-[#b89a62]' : 'bg-[var(--ink)]')} />
+        {letter.found ? 'A found letter' : letter.own ? 'Your letter' : 'A blank page'}
+      </span>
+      {!compact && letter.own && <span className="text-faint">kept as you change hands</span>}
+      <span className="ml-auto flex items-center gap-1">
+        {letter.found && letter.drafts > 0 && (
+          <button type="button" onClick={letter.onBackToMine} className={link}>Back to my letter</button>
+        )}
+        <button type="button" onClick={letter.onAnother} className={link}>
+          {letter.found ? 'Another letter' : 'Read a found letter'}
+        </button>
+      </span>
+    </div>
+  );
+}
 
 /** The phone sheet's Hand tab: style and school, a sibling hand, the seed. */
 export function HandControls(props: PanelProps) {

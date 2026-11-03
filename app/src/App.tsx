@@ -23,7 +23,8 @@ import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { pickSimilarHand, writerName } from '@/lib/hands';
 import { rollHand, withSample, type LockKey } from '@/lib/roll';
-import { SAMPLE_FIRST_KEY, sampleById, sampleCredit } from '@/lib/samples';
+import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleCredit, sampleForSeed, sawLetter } from '@/lib/samples';
+import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
 import { ReplyPeek } from '@/components/ReplyPeek';
 import { DEFAULT_INK, INK_FAMILIES } from '@/lib/inks';
 import { inkColor } from '@/lib/inks';
@@ -84,6 +85,40 @@ export default function App() {
   const name = useMemo(() => writerName(state.seed), [state.seed]);
   // the sample letter the page shows, while nobody has written (credited under the sheet)
   const sample = state.sample && state.text ? sampleById(state.sample) : undefined;
+  // every found letter shown joins the recent ones (not shown again within ten hands)
+  useEffect(() => { sawLetter(state.sample); }, [state.sample]);
+
+  // ---------- found letters and your own: always a way to each ----------
+  const [draftCount, setDraftCount] = useState(() => drafts().length);
+  const toFound = useCallback((next?: ReturnType<typeof sampleForSeed>) => {
+    const s = stateNow.current;
+    const pick = next ?? sampleForSeed(s.seed, s.style, new Set([...recentLetters(), ...(s.sample ? [s.sample] : [])]));
+    if (!pick) return;
+    inkRef.current = null;
+    update({ sample: pick.id, text: pick.text, inkLog: null, marks: [], replyTo: null, signed: false });
+  }, [update]);
+  const letterActions = {
+    found: !!sample,
+    own: !sample && (!!state.text.trim() || !!state.inkLog),
+    drafts: draftCount,
+    /** another found letter (your own, if any, is kept) */
+    onAnother: () => {
+      const s = stateNow.current;
+      if (!s.sample) { keepDraft(s); setDraftCount(drafts().length); }
+      toFound();
+    },
+    /** back to the letter you were writing */
+    onBackToMine: () => {
+      const s = stateNow.current;
+      // what's on the page now is kept too, unless it's a found letter
+      if (!s.sample) keepDraft(s);
+      const d = takeDraft();
+      setDraftCount(drafts().length);
+      if (!d) return;
+      inkRef.current = null;
+      update({ text: d.text, inkLog: d.inkLog, marks: d.marks ?? [], replyTo: d.replyTo ?? null, signed: !!d.signed, sample: null });
+    },
+  };
 
   const request = requestFor(state, natural, eff);
   const reqKey = JSON.stringify(request);
@@ -278,12 +313,12 @@ export default function App() {
     // for QA (window.__seedhandPerf): click → the new hand's writing in the page
     const now = ahead.current.find((a) => a.base === baseOf(stateNow.current));
     perf.lookAsked(!!now && written(requestFor({ ...stateNow.current, ...now.look })));
-    lookChange(() => update((s) => ahead.current.find((a) => a.base === baseOf(s))?.look ?? rollHand(s, { variety, locked: locks })), fade);
+    lookChange(() => update((s) => ahead.current.find((a) => a.base === baseOf(s))?.look ?? rollHand(s, { variety, locked: locks, avoid: recentLetters() })), fade);
   }, [update, baseOf, variety, locks, lookChange, written]);
   const similarHand = useCallback((fade = true) => {
     lookChange(() => update((s) => {
       const pre = similarAhead.current;
-      return pre && pre.base === baseOf(s) ? pre.look : withSample(s, { ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) });
+      return pre && pre.base === baseOf(s) ? pre.look : withSample(s, { ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) }, recentLetters());
     }), fade);
   }, [update, baseOf, lookChange]);
   const base = baseOf(state);
@@ -296,11 +331,14 @@ export default function App() {
       if (cancelled) return;
       const chain: { base: string; look: Partial<NoteState> }[] = [];
       const reqs: ReturnType<typeof requestFor>[] = [];
+      // the letters just shown, and the ones already lined up: no letter comes back within ten hands
+      const avoid = new Set(recentLetters());
       let s: NoteState = state;
       for (let i = 0; i < AHEAD; i++) {
         const b = baseOf(s);
         const kept = ahead.current.find((a) => a.base === b);
-        const look = kept?.look ?? rollHand(s, { variety, locked: locks });
+        const look = kept?.look ?? rollHand(s, { variety, locked: locks, avoid });
+        if (look.sample) avoid.add(look.sample);
         chain.push({ base: b, look });
         // each hand ahead is the one after the hand before it
         s = { ...s, ...look };
@@ -310,7 +348,7 @@ export default function App() {
       prefetch(reqs);
       idle(() => {
         if (cancelled) return;
-        const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) });
+        const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters());
         similarAhead.current = { base, look };
         prefetch([...reqs, requestFor({ ...state, ...look })]);
       });
@@ -425,7 +463,7 @@ export default function App() {
     busy,
     onNewHand: () => newHand(true),
     onSimilarHand: () => similarHand(true),
-    onSeed: (seed) => update((s) => withSample(s, { seed, offsets: offsetsForNewHand(s.offsets) })),
+    onSeed: (seed) => update((s) => withSample(s, { seed, offsets: offsetsForNewHand(s.offsets) }, recentLetters())),
     onStyle: (style) => lookChange(() => update({ style })),
     onControl: (key, v) => update((s) => ({ offsets: { ...s.offsets, [key]: offsetFor(key, v, natural, s) } })),
     onResetControl: (key) => update((s) => {
@@ -452,6 +490,7 @@ export default function App() {
     onDownload: download,
     onExportFont: font,
     onFieldFocus: () => setDetent('full'),
+    letter: letterActions,
     ink: INK ? {
       on: inkMode,
       letter: !!state.inkLog,
