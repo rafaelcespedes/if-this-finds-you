@@ -48,7 +48,9 @@ import { renderLiveNote } from '@/lib/actions';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
 import { PENS_LIVE } from '@/lib/pens';
 import { perf } from '@/lib/perf';
-import { offsetsForNewHand, shareUrl } from '@/lib/state';
+import { MAX_LETTER, linkIssue, offsetsForNewHand, shareUrl } from '@/lib/state';
+import { Notice } from '@/components/Notice';
+import { Button } from '@/components/ui/button';
 import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
 
@@ -70,8 +72,6 @@ function writePref(key: string, v: string) {
 const editLog = new EditLog();
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
 const TAIL_KEY = 'seedhand:typed';
-/** a letter's length at most: long letters get slow and heavy (memory grows with every sheet) */
-const MAX_LETTER = 10000;
 /** a paste (or dictation) this long is written down at once instead of at the pen's pace */
 const WRITE_AT_ONCE = 200;
 /** what the hands can write (the Latin alphabet and its marks); anything else stays in plain print */
@@ -83,7 +83,18 @@ const WRITING_LATELY_MS = 20000;
 
 export default function App() {
   const [composing, setComposing] = useState(false);
-  const [state, update, markStep, saveNow] = useNoteState(composing);
+  // what was wrong with the link this page opened from, said once (the state has already fallen back safely);
+  // a link cut short stays as it came (never rewritten or saved over) until the writer starts a letter of their own
+  const [linkTrouble, setLinkTrouble] = useState(() => linkIssue(window.location.hash));
+  const holdLink = linkTrouble === 'incomplete';
+  const holdLinkRef = useRef(holdLink);
+  holdLinkRef.current = holdLink;
+  const [state, update, markStep, saveNow] = useNoteState(composing || holdLink);
+  useEffect(() => {
+    if (linkTrouble === 'too-long') toast('This letter was longer than letters can be here', { id: 'link-long', duration: 10000, description: `It’s shown up to ${MAX_LETTER.toLocaleString()} characters.` });
+    if (linkTrouble === 'unknown-letter') toast('That letter wasn’t found', { id: 'link-unknown', duration: 8000, description: 'Here’s another one instead.' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
   const [busy, setBusy] = useState({ download: false, font: false, video: false });
@@ -154,7 +165,7 @@ export default function App() {
   // written ahead (prefetch). With the live page (engines with incremental layout), typing is drawn on the
   // main thread instead, from the moment the letter is tapped: same markup, so the switch shows nothing.
   const liveWanted = LIVE && (editing || state.reader);
-  const { writing, prefetch, written, lookup } = useWriting(request, composing || liveWanted);
+  const { writing, prefetch, written, lookup, failed: penFailed } = useWriting(request, composing || liveWanted);
   const requestRef = useRef(request);
   requestRef.current = request;
   const committed = useRef(state.text);
@@ -230,6 +241,7 @@ export default function App() {
   // the link saved at once, without waiting for the pen or the debounce
   useEffect(() => {
     const leave = () => {
+      if (holdLinkRef.current) return;
       const ink = inkRef.current;
       if (ink && inkFor.current === inkLook && ink.waiting) {
         ink.flush();
@@ -828,6 +840,7 @@ export default function App() {
   freshRef.current = panelProps.ink?.onFreshSheet;
   const desk = !posture.writing;
   const reader = state.reader;
+  const brokenLink = linkTrouble === 'incomplete';
 
   // ---------- phones: the control sheet, and the letter making room above it ----------
   const mobileSheet = !reader && !isDesktop;
@@ -1024,7 +1037,21 @@ export default function App() {
             )}
             style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : undefined}
           >
-            {pxPerMm > 0 && reader && (
+            {/* a link cut short on its way: no letter to show, and the one thing to do about it */}
+            {brokenLink && (
+              <Notice
+                title="This link looks incomplete"
+                action={<Button variant="secondary" onClick={() => { setLinkTrouble(null); update({ reader: false }); }}>Write a letter of your own</Button>}
+              >
+                Part of the letter didn’t arrive. Some apps shorten long links, so ask the sender to share it again.
+              </Notice>
+            )}
+            {!brokenLink && penFailed && !writing && (
+              <Notice title="The pen couldn’t load" action={<Button variant="secondary" onClick={() => window.location.reload()}>Reload</Button>}>
+                Your letter is safe in this page’s link. Reload to try again.
+              </Notice>
+            )}
+            {pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && (
               <ReaderView
                 writing={writing}
                 live={live ? { live, extras, inkKey: eff.inkKey } : null}
@@ -1037,7 +1064,7 @@ export default function App() {
                 onWriteYourOwn={() => update({ reader: false })}
               />
             )}
-            {pxPerMm > 0 && !reader && (
+            {pxPerMm > 0 && !reader && !brokenLink && !(penFailed && !writing) && (
               <div ref={fitRef} className="origin-top">
                 {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
                 {/* (with their letter picked up, its label covers this line: yours steps out of the way until it's back) */}
