@@ -164,6 +164,28 @@ function boxAt(local: Box, size: number, rot: number, x: number, y: number): Box
 const overlapArea = (a: Box, b: Box) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
 const area = (a: Box) => (a[2] - a[0]) * (a[3] - a[1]);
 
+/** Whether a mark's box (inset half a millimetre) lies on the sheet: inside its outline and clear of its holes. */
+function onSheet(o: { pts: number[]; holes: { x: number; y: number; r: number }[] }, local: Box, size: number, rot: number, x: number, y: number) {
+  const c = Math.cos(rot), s = Math.sin(rot);
+  const [l, r, t, b] = local;
+  const inset = 0.5 / Math.max(1, size);
+  for (const [u, v] of [[l, t], [r, t], [r, b], [l, b], [(l + r) / 2, t], [(l + r) / 2, b], [l, (t + b) / 2], [r, (t + b) / 2]]) {
+    const uu = u + (u < (l + r) / 2 ? inset : u > (l + r) / 2 ? -inset : 0), vv = v + (v < (t + b) / 2 ? inset : v > (t + b) / 2 ? -inset : 0);
+    const px = x + (uu * c - vv * s) * size, py = y + (uu * s + vv * c) * size;
+    if (!inPolygon(o.pts, px, py)) return false;
+    for (const h of o.holes) if (Math.hypot(px - h.x, py - h.y) < h.r + 1) return false;
+  }
+  return true;
+}
+function inPolygon(pts: number[], x: number, y: number) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 2; i < pts.length; j = i, i += 2) {
+    const xi = pts[i], yi = pts[i + 1], xj = pts[j], yj = pts[j + 1];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
 /** The ink box of a placed mark (mm), for layers sized to their marks. */
 export const markBox = (m: Pick<Mark, 'kind' | 'x' | 'y' | 'size' | 'rot'>) => boxAt(BOX[m.kind], m.size, m.rot, m.x, m.y);
 
@@ -233,9 +255,16 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   const placed: Box[] = [];
   const edgeIn = { left: 0, right: 0, top: 0, bottom: 0 };
   for (const side of ['left', 'right', 'top', 'bottom'] as const) { const e = paper.edges?.[side]; if (e) edgeIn[side] = e.depth + 0.8; }
+  // a printed border: a stamp may strike across it, but a pencilled note on its rules can't be read, so the note sits
+  // inside it
+  const border = paper.border ? paper.border.inset + (paper.border.count ?? 1) * (paper.border.gap ?? 0) + 1.5 : 0;
+  // a postcard's stamp box is the stamp's, not ours
+  if (paper.postcard) { const [sx, sy, sw, sh] = paper.postcard.stamp; placed.push([sx, sy, sx + sw, sy + sh]); }
+  // torn and deckled sides are kept off above; the aerogramme's cut corners and binder holes need the outline itself
+  const outline = paper.flaps || paper.holes ? outlineOf(paper, 0) : null;
   const place = (kind: Kind, size0: number) => {
     let best: { x: number; y: number; rot: number; size: number; z: number; cost: number } | null = null;
-    for (let tries = 0; tries < 10; tries++) {
+    for (let tries = 0, n = outline ? 16 : 10; tries < n; tries++) {
       // a pencilled note goes in the top or bottom margin, nowhere else
       const z = pickWeighted(r, zoneW.map((w, i) => (kind === 'pencil' && i > 5 ? 0 : used.has(i) ? w * 0.1 : w)));
       const zone = ZONES[z];
@@ -258,7 +287,9 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
       // the duplex's bars may run off the right edge: only its ring has to stay on
       const right = kind === 'duplex' ? boxAt([BOX.duplex[0], 0.05, -0.5, 0.5], size, rot, 0, 0)[2] : e[2];
       // a torn, deckled or spiral-ripped side takes its depth back from the room (so a word isn't lost in the fringe)
-      const L = -e[0] - over + edgeIn.left, R = right - over + edgeIn.right, U = -e[1] - over + edgeIn.top, D = e[3] - over + edgeIn.bottom;
+      // and a mark with words keeps a couple of millimetres off a straight edge too (a ring may run off, worded)
+      const safe = RINGS.has(kind) ? 0 : kind === 'pencil' ? Math.max(2, border) : 0.5;
+      const L = -e[0] - over + edgeIn.left + safe, R = right - over + edgeIn.right + safe, U = -e[1] - over + edgeIn.top + safe, D = e[3] - over + edgeIn.bottom + safe;
       const along = (lo: number, hi: number) => lo + t * Math.max(0, hi - lo);
       let x: number, y: number;
       switch (zone) {
@@ -283,6 +314,8 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
       let cost = Math.max(0, share - (zone === 'drift' ? 0.45 : 0.25)) * 4;
       if (inMiddle(x, y)) cost += 5;
       if (kind === 'duplex' && overlapArea(boxAt(BARS, size, rot, x, y), block) > 0) cost += 3;
+      // a shaped sheet (the aerogramme's cut corners, binder holes): a mark that isn't meant to run off stays on it
+      if (outline && !over && !onSheet(outline, kind === 'duplex' ? [BOX.duplex[0], 0.05, -0.5, 0.5] : BOX[kind], size, rot, x, y)) cost += 2;
       const pad: Box = [b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3];
       for (const p of placed) if (overlapArea(pad, p) > 0) cost += 3;
       if (!best || cost < best.cost) best = { x, y, rot, size, z, cost };
@@ -394,8 +427,9 @@ function adorn(paper: PaperSpec, input: MarkInput, seed: string, block: Box, pla
   const base = { press: 1, lean: 0, uneven: 0, bounce: null, layer: 'under' as const, text: {}, rot: 0 };
   const add = (m: Partial<Mark> & Pick<Mark, 'kind' | 'x' | 'y' | 'size' | 'ink'>) => marks.push({ ...base, seed: `${seed}:${m.kind}`, ...m });
   /** a box (mm) clear of the stamps (2 mm round them), and of the writing unless allowed */
-  const clear = (b: Box, writing = false) =>
-    placed.every((p) => overlapArea([b[0] - 2, b[1] - 2, b[2] + 2, b[3] + 2], p) === 0) && (writing || overlapArea(b, block) === 0);
+  const clear = (b: Box) => placed.every((p) => overlapArea([b[0] - 4, b[1] - 4, b[2] + 4, b[3] + 4], p) === 0) && overlapArea(b, block) === 0;
+  // a card or a postcard was never folded into a packet, sealed or pinned into a bundle
+  const card = paper.family === 'postcard' || paper.family === 'card';
 
   // creases, on any paper that folds (not card, not a postcard, not one that brings its own folds)
   if (!paper.folds && paper.family !== 'postcard' && paper.family !== 'card' && paper.family !== 'aerogramme' && !(note && r() < 0.5)) {
@@ -421,7 +455,7 @@ function adorn(paper: PaperSpec, input: MarkInput, seed: string, block: Box, pla
 
   let budget = all ? 6 : 3;
   // the seal: a wafer's fragment (1680-1849) or a smear of wax (before), on the edge band where the packet closed
-  const sealOdds = note ? 0 : y >= 1600 && y < 1850 ? 0.4 : y < 1600 ? 0.25 : 0;
+  const sealOdds = note || card ? 0 : y >= 1600 && y < 1850 ? 0.4 : y < 1600 ? 0.25 : 0;
   if (odds(sealOdds)) {
     const wax = y < 1680;
     const size = y < 1600 ? 5 + r() * 3 : wax ? 8 + r() * 6 : 10 + r() * 8;
@@ -440,7 +474,7 @@ function adorn(paper: PaperSpec, input: MarkInput, seed: string, block: Box, pla
     }
   }
   // a pin through the corner (brass, then steel), or from 1895 a paperclip's rust
-  const pinOdds = y < 1600 ? 0 : ['family', 'notable', 'emigrant', 'seized'].includes(origin) ? 0.2 : 0.1;
+  const pinOdds = y < 1600 || (card && y < 1895) ? 0 : ['family', 'notable', 'emigrant', 'seized'].includes(origin) ? 0.2 : 0.1;
   if (budget > 0 && odds(pinOdds)) {
     const clip = y >= 1895;
     for (let t = 0; t < 4 && budget > 0; t++) {
@@ -448,10 +482,13 @@ function adorn(paper: PaperSpec, input: MarkInput, seed: string, block: Box, pla
       const x = clip ? (left ? 12 + r() * 16 : W - 12 - r() * 16) : left ? 7 + r() * 7 : W - 7 - r() * 7;
       const yy = clip ? -1.5 : 6 + r() * 7;
       const rot = clip ? (r() - 0.5) * 0.14 : (left ? -1 : 1) * (r() - 0.2) * 0.35;
-      const size = clip ? 24 + r() * 8 : 4 + r() * 4;
+      // a clip's rust stops short of the writing: beside it, its full length; above it, what the margin holds
+      const beside = x + 5 < paper.text.left || x - 5 > paper.text.right;
+      const size = clip ? Math.min(24 + r() * 8, beside ? 40 : block[1] - 3) : 4 + r() * 4;
+      if (clip && size < 12) continue;
       const kind = clip ? 'clip' : 'pin';
       const b = boxAt(BOX[kind], size, rot, x, yy);
-      if (!clear(b, clip)) continue;
+      if (!clear(b)) continue;
       add({ kind, x, y: yy, size, rot, ink: '#000', text: { label: y < 1850 ? 'brass' : 'steel' } });
       placed.push(b);
       budget--;
@@ -463,7 +500,7 @@ function adorn(paper: PaperSpec, input: MarkInput, seed: string, block: Box, pla
   if (budget > 0 && odds(folioOdds)) {
     const n = 1 + Math.floor(r() * r() * 240);
     const pick = r();
-    const label = pick < 0.5 ? `f. ${n}` : pick < 0.7 ? `fol. ${n}` : String(n);
+    const label = pick < 0.3 ? `fol. ${n}` : String(n);
     const size = 4 + label.length * 1.6;
     for (let t = 0; t < 3; t++) {
       const x = W - 9 - size / 2 - t * 6, yy = 9 + r() * 3 + t * 2;
@@ -477,7 +514,13 @@ function adorn(paper: PaperSpec, input: MarkInput, seed: string, block: Box, pla
   }
   // the hard-travelled: a tide line from an edge (seized, undelivered); light foxing on rag paper of 1700-1889
   if (budget > 0 && odds(origin === 'seized' || origin === 'undelivered' ? 0.5 : 0)) {
-    const corner = Math.floor(r() * 4);
+    // from a corner that hasn't a mark in it
+    const first = Math.floor(r() * 4);
+    let corner = first;
+    for (let i = 0; i < 4; i++) {
+      const c = (first + i) % 4, cx = c % 2 ? W : 0, cy = c < 2 ? 0 : H;
+      if (placed.every((p) => overlapArea(p, [cx - 35, cy - 35, cx + 35, cy + 35]) === 0)) { corner = c; break; }
+    }
     const x = corner % 2 ? W + 4 : -4, yy = corner < 2 ? -4 : H + 4;
     add({ kind: 'tide', x, y: yy, size: 26 + r() * 22, ink: '#000' });
     budget--;
@@ -677,7 +720,7 @@ function printMark(ctx: Ctx2D, m: Mark, k: number, paper?: PaperSpec) {
   const rim = (a: number, f = 1) => [W / 2 + Math.cos(a) * ((br - bl) / 2) * m.size * k * f, H / 2 + Math.sin(a) * ((bb - bt) / 2) * m.size * k * f] as const;
   // over-inked: the ink swells into the counters and thickens the rim on the stamp's fuller side
   if (has('fill')) {
-    const d = Math.max(1, 0.16 * k);
+    const d = Math.max(1, (m.kind === 'number' ? 0.09 : 0.16) * k);
     const fat = makeCanvas(W, H);
     const fg = fat.getContext('2d') as Ctx2D;
     for (let i = 0; i < 8; i++) fg.drawImage(c, Math.cos((i * Math.PI) / 4) * d, Math.sin((i * Math.PI) / 4) * d);
