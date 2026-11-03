@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { AboutHand, LetterStatus, LookControls, MoreControls, type PanelProps } from '@/components/Panel';
 import { styleName } from '@/lib/styles';
 import { cn } from '@/lib/utils';
+import { LOOK } from '@/lib/look';
+import { PhoneStamp } from '@/themes/postmarked/tool';
 
 export type Detent = 'peek' | 'half' | 'full';
 /** How much of the screen the sheet covers at each height (px, safe area included). */
@@ -274,9 +276,12 @@ export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onD
               <span className="block truncate text-[12px] leading-snug text-muted-foreground">{styleName(props.state.style)}</span>
             </button>
           </AboutHand>
+          {/* look C (?look=postmarked): Find another is a round stamp */}
+          {LOOK === 'postmarked' ? <PhoneStamp {...props} /> : (
           <Button onClick={props.onNewHand} className="h-11 px-3.5">
             <Shuffle aria-hidden /> Find another
           </Button>
+          )}
         </div>
         {/* the ways to the other letters, when there are any (Find another brings the next found letter) */}
         {props.letter && (!props.letter.found || props.letter.drafts > 0) && (

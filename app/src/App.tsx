@@ -51,6 +51,8 @@ import { perf } from '@/lib/perf';
 import { offsetsForNewHand, shareUrl } from '@/lib/state';
 import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
+import { LOOK } from '@/lib/look';
+import { SheetPost, ToolArrival } from '@/themes/postmarked/tool';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
 const AHEAD = 5;
@@ -964,6 +966,8 @@ export default function App() {
             )}
             style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : undefined}
           >
+            {/* look C (?look=postmarked): a shared link arrives in its envelope, postmarked */}
+            {LOOK === 'postmarked' && pxPerMm > 0 && reader && <><ToolArrival sampleId={state.sample} writer={name} /><div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}><SheetPost sampleId={state.sample} width={shownPaper.w * pxPerMm} /></div></>}
             {pxPerMm > 0 && reader && (
               <ReaderView
                 writing={writing}
@@ -1004,6 +1008,8 @@ export default function App() {
                     <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
                   )}
                   {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
+                  {/* look C (?look=postmarked): a found letter's postmark on the sheet's corner */}
+                  {LOOK === 'postmarked' && <SheetPost sampleId={sample?.id} width={shownPaper.w * pxPerMm} />}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
                   {/* a ghost in the sheet's top margin, pointing in (clear of the label above and the first line below);
                       the first time you write on a desktop, the same place says how to stop */}

@@ -31,6 +31,8 @@ import type { LockKey } from '@/lib/roll';
 import { AMOUNT_RANGE, SIZE_RANGE, type NoteState } from '@/lib/state';
 import { cn, keepChosenInView } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { LOOK } from '@/lib/look';
+import { FindRow } from '@/themes/postmarked/tool';
 
 export interface PanelProps {
   state: NoteState;
@@ -127,12 +129,15 @@ function WriterHeader(props: PanelProps) {
         </span>
         <ShareMenu {...props} size="lg" />
       </div>
+      {/* look C (?look=postmarked): Find another is a round stamp */}
+      {LOOK === 'postmarked' ? <FindRow {...props} /> : (
       <Button size="lg" className="mt-2 w-full justify-between pr-3 pl-3.5" onClick={onNewHand} aria-keyshortcuts="R">
         <span className="flex items-center gap-2">
           <Shuffle aria-hidden /> Find another
         </span>
         <kbd aria-hidden className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
       </Button>
+      )}
       {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="mt-2.5 justify-center" />}
     </section>
   );

@@ -15,6 +15,8 @@ import { cardLetter } from './Card';
 import { circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
 import type { ArchiveLetter } from './model';
 import { letterHash } from './route';
+import { LOOK } from '@/lib/look';
+import { EnvelopeCard } from '@/themes/postmarked/EnvelopeCard';
 
 export type ViewId = 'canvas' | 'grid';
 function readView(): ViewId {
@@ -353,7 +355,9 @@ export function LetterCanvas({ shown, heading, empty, onOpen, active, onList }: 
               </li>
             );
           }
-          return <CanvasCard key={id} letter={it.letter!} aspect={it.aspect} size={size} style={style} itemRef={ref} onOpen={onOpen} />;
+          // look C (?look=postmarked): each letter in its addressed envelope
+          const Card = LOOK === 'postmarked' ? EnvelopeCard : CanvasCard;
+          return <Card key={id} letter={it.letter!} aspect={it.aspect} size={size} style={style} itemRef={ref} onOpen={onOpen} />;
         })}
       </ul>
     </div>

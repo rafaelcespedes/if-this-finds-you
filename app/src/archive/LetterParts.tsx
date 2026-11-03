@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { IconButton } from './Controls';
 import { fromTo, lostInTransit, circumstanceLabel } from './data';
 import type { ArchiveLetter } from './model';
+import { LOOK } from '@/lib/look';
+import { PostDock, PostEditorial, PostTitle } from '@/themes/postmarked/letter';
 
 // ---------- the detail switch: ?detail=1 (side by side) or 2 (letter first), kept for the tab ----------
 export type DetailId = '1' | '2';
@@ -99,6 +101,8 @@ function useKeyboardLift() {
 
 /** Everything you can do with the letter, in one small floating bar: turn, a new hand, share, more, and reply. */
 export function LetterDock(a: DockActions) {
+  // look C (?look=postmarked): its own dock (LOOK never changes while the page is open, so the hooks below keep their order)
+  if (LOOK === 'postmarked') return <PostDock {...a} />;
   const narrow = useMediaQuery('(max-width: 520px)');
   const lift = useKeyboardLift();
   return (
@@ -139,6 +143,7 @@ export function LetterDock(a: DockActions) {
 
 /** The title and the dateline: who wrote to whom, where and when. */
 export function TitleBlock({ letter, titleRef, centred }: { letter: ArchiveLetter; titleRef: RefObject<HTMLHeadingElement | null>; centred?: boolean }) {
+  if (LOOK === 'postmarked') return <PostTitle letter={letter} titleRef={titleRef} />;
   const lang = useLanguage(letter.lang);
   const where = [letter.place, letter.year != null ? String(letter.year) : ''].filter(Boolean).join(', ');
   return (
@@ -161,6 +166,7 @@ function useLanguage(tag: string) {
 
 /** The story, the record, the letter as text, and the notes (source, rights, the fictional hand). */
 export function Editorial({ letter, name, textOpen, onText, centred }: { letter: ArchiveLetter; name: string; textOpen: boolean; onText: (open: boolean) => void; centred?: boolean }) {
+  if (LOOK === 'postmarked') return <PostEditorial letter={letter} name={name} textOpen={textOpen} onText={onText} />;
   const f = letter.found;
   const lang = useLanguage(letter.lang);
   const [rightsOpen, setRightsOpen] = useState(false);

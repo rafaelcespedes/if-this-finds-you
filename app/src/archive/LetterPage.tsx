@@ -25,6 +25,8 @@ import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
 import { ARCHIVE_URL, headerLink, SiteHeader, toolHref } from './SiteHeader';
+import { LOOK } from '@/lib/look';
+import { LetterArrival } from '@/themes/postmarked/letter';
 
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
@@ -294,6 +296,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
           <div className="mt-12 sm:mt-14">{editorial}</div>
         </main>
       )}
+      {/* look C (?look=postmarked): the letter arrives in its envelope */}
+      {LOOK === 'postmarked' && <LetterArrival letter={letter} />}
       <LetterDock
         reply={replyHref(letter, look, replier)}
         prev={neighbour(-1) ? { title: neighbour(-1)!.title ?? 'A letter' } : null}
