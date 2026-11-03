@@ -71,10 +71,13 @@ function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, chil
   );
 }
 
-/** The slot at a row's end: its icon, a spinner while busy, a tick when done (always the same size). */
-function StatusSlot({ icon, status }: { icon?: ReactNode; status?: RowStatus }) {
+/**
+ * The slot at a row's end: its icon, a spinner while busy, a tick when done (always the same size). On a row with a
+ * hint it sits on the label's line, not the middle of the whole block.
+ */
+function StatusSlot({ icon, status, top }: { icon?: ReactNode; status?: RowStatus; top?: boolean }) {
   return (
-    <span aria-hidden className="grid size-5 shrink-0 place-items-center text-muted-foreground [&_svg]:size-[18px]">
+    <span aria-hidden className={cn('grid size-5 shrink-0 place-items-center text-muted-foreground [&_svg]:size-[18px]', top && 'mt-[calc((1lh-1.25rem)/2)] self-start')}>
       {status === 'busy' ? <Loader2 className="animate-spin" /> : status === 'done' ? <Check className="text-[var(--ink)]" /> : icon}
     </span>
   );
@@ -101,7 +104,7 @@ function SheetRow({ entry, close, checks }: { entry: Extract<SheetEntry, { onSel
         <span className="min-w-0">{entry.label}</span>
         {entry.hint && <span className="text-[0.75rem] leading-snug text-muted-foreground">{entry.hint}</span>}
       </span>
-      <StatusSlot icon={entry.icon} status={entry.status} />
+      <StatusSlot icon={entry.icon} status={entry.status} top={!!entry.hint} />
     </button>
   );
 }
@@ -178,7 +181,7 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
                       <span>{e.label}</span>
                       {e.hint && <span className="text-[0.7188rem] leading-snug text-muted-foreground">{e.hint}</span>}
                     </span>
-                    <StatusSlot icon={e.icon} status={e.status} />
+                    <StatusSlot icon={e.icon} status={e.status} top={!!e.hint} />
                   </MenuRow>
                 ),
           )}
