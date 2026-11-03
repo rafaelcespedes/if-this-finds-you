@@ -43,6 +43,10 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **Colour: "Rubric"** (the colour research's recommendation) is the default palette, replacing the navy CTA (Rafael,
+  2026-11-03). **Type:** Atkinson Hyperlegible Next (UI) and Piazzolla (letters), for now.
+- **Two looks to compare, today's design stays the default:** `?look=reading-room` (concept A, the reading room with a
+  catalogue card) and `?look=postmarked` (concept C, letters in transit). Builders may decide details overnight.
 - **All letters controls: the timeline dock** (option 3, Rafael 2026-11-03): a floating dock with search and a
   timeline of every letter by century. No count, no Shuffle. Next to explore: the letters floating on an infinite,
   looping canvas around a centred heading (drag in any direction), on desktop and phones.
