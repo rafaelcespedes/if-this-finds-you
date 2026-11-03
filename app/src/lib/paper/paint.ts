@@ -3,10 +3,11 @@
 // (tint, grain, formation, cockle, light); what's in the paper (laid lines); the guide's lines seen through it;
 // what's printed on it (rules, margins, borders, words, a motif); what's been done to it (creases, gum, a
 // torn or deckled rim, fibres). Lengths are mm; k is device pixels per mm.
-import { rng } from '@engine';
+import { rng } from './rng';
 import type { PaperSpec, Rule } from './types';
 import { fbm2 } from './noise';
 import { outlineOf, outlinePath, type Rim } from './outline';
+import { printMarks, type Mark } from './marks';
 
 export interface PaintOptions {
   /** device pixels per mm */
@@ -23,6 +24,8 @@ export interface PaintOptions {
   /** the shadow a shaped sheet casts: all of it (on screen, painted into a bleed), or only where it touches
    *  the desk (the JPEG, swatches) */
   shadow?: 'full' | 'contact' | 'none';
+  /** printed marks (lib/paper/marks.ts): those stamped before the letter was written are printed into the paper */
+  marks?: Mark[];
 }
 
 const SHADOW = 'rgba(60, 45, 20, A)';
@@ -32,8 +35,22 @@ const AMBIENT: [number, number, number][] = [[4, 10, 0.08], [11, 20, 0.08]];
 /** how far (CSS px) the full shadow reaches beyond the sheet */
 export const SHADOW_BLEED = 32;
 
+/** A 2D context on screen or in the paper worker. */
+export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+type AnyCanvas = HTMLCanvasElement | OffscreenCanvas;
+/** A scratch canvas: a DOM canvas on the page, an OffscreenCanvas in the worker. */
+function makeCanvas(w: number, h: number): AnyCanvas {
+  if (typeof document === 'undefined') return new OffscreenCanvas(w, h);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  return c;
+}
+const ctx2d = (c: AnyCanvas) => c.getContext('2d') as Ctx2D;
+const letterWidths = new Map<string, number>();
+
 /** Paint one sheet at (0,0) on ctx: paper.w * pxPerMm by paper.h * pxPerMm device pixels (a shadow may fall outside). */
-export function paintPaper(ctx: CanvasRenderingContext2D, paper: PaperSpec, o: PaintOptions) {
+export function paintPaper(ctx: Ctx2D, paper: PaperSpec, o: PaintOptions) {
   const k = o.pxPerMm;
   const W = paper.w * k, H = paper.h * k;
   const sheet = o.sheet ?? 0;
@@ -146,6 +163,7 @@ export function paintPaper(ctx: CanvasRenderingContext2D, paper: PaperSpec, o: P
   if (paper.folds) folds(ctx, paper, k);
   if (paper.flaps) flaps(ctx, paper, k);
   if (fin.gum) gumEdge(ctx, paper, k, seed);
+  if (o.marks?.length) printMarks(ctx, o.marks, k, 'under');
   if (outline) for (const rim of outline.rims) rimLayer(ctx, rim, k, o.holeFill);
   ctx.restore();
   // fibres poke out past a deckled or torn edge
@@ -154,7 +172,7 @@ export function paintPaper(ctx: CanvasRenderingContext2D, paper: PaperSpec, o: P
 
 // ---------- the shadow on the desk ----------
 const FAR = 20000;
-function castShadow(ctx: CanvasRenderingContext2D, path: Path2D, dpr: number, full: boolean) {
+function castShadow(ctx: Ctx2D, path: Path2D, dpr: number, full: boolean) {
   const layers = full ? [...CONTACT, ...AMBIENT] : CONTACT;
   for (const [oy, blur, a] of layers) {
     ctx.save();
@@ -175,14 +193,13 @@ function castShadow(ctx: CanvasRenderingContext2D, path: Path2D, dpr: number, fu
 // Darkening is baked as black with alpha (multiplying by grey v at alpha a is the same as black at a·(1−v)),
 // so every layer draws source-over and the GPU never has to read the sheet back.
 
-let grainTile: HTMLCanvasElement | null = null;
+let grainTile: AnyCanvas | null = null;
 /** A soft, seeded paper grain that tiles seamlessly. */
-function grainCanvas(): HTMLCanvasElement {
+function grainCanvas(): AnyCanvas {
   if (grainTile) return grainTile;
   const S = 256;
-  const c = document.createElement('canvas');
-  c.width = c.height = S;
-  const ctx = c.getContext('2d')!;
+  const c = makeCanvas(S, S);
+  const ctx = ctx2d(c);
   const r = rng('paper:grain');
   // fibres first, as light and dark marks on mid grey, wrapped at the edges so the tile still tiles
   ctx.fillStyle = 'rgb(128,128,128)';
@@ -220,7 +237,7 @@ function grainCanvas(): HTMLCanvasElement {
   return c;
 }
 
-function grainLayer(ctx: CanvasRenderingContext2D, W: number, H: number, scale: number, alpha: number) {
+function grainLayer(ctx: Ctx2D, W: number, H: number, scale: number, alpha: number) {
   const pat = ctx.createPattern(grainCanvas(), 'repeat');
   if (!pat) return;
   pat.setTransform(new DOMMatrix().scale(scale * 0.75));
@@ -241,7 +258,7 @@ const FIELD = {
   cockle: { cell: 2.2, octaves: [[58, 1], [24, 0.55], [10, 0.22]] as [number, number][], gain: 3.2, alpha: 0.06 },
 };
 type FieldKind = keyof typeof FIELD;
-const fields: Partial<Record<FieldKind, HTMLCanvasElement>> = {};
+const fields: Partial<Record<FieldKind, AnyCanvas>> = {};
 
 function fieldCanvas(kind: FieldKind) {
   const made = fields[kind];
@@ -251,9 +268,8 @@ function fieldCanvas(kind: FieldKind) {
   const f = fbm2('paper-field:' + kind, F.octaves);
   const e = 1.5;
   const fn = kind === 'mottle' ? f : (x: number, y: number) => (f(x - e, y - e) - f(x + e, y + e)) * F.gain;
-  const c = document.createElement('canvas');
-  c.width = c.height = n;
-  const cx = c.getContext('2d')!;
+  const c = makeCanvas(n, n);
+  const cx = ctx2d(c);
   const img = cx.createImageData(n, n);
   for (let j = 0; j < n; j++) {
     for (let i = 0; i < n; i++) {
@@ -269,7 +285,7 @@ function fieldCanvas(kind: FieldKind) {
   return c;
 }
 
-function fieldLayer(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number, kind: FieldKind, amount: number) {
+function fieldLayer(ctx: Ctx2D, paper: PaperSpec, k: number, kind: FieldKind, amount: number) {
   const F = FIELD[kind];
   const c = fieldCanvas(kind);
   // each paper (and each sheet size) takes its own window onto the field
@@ -287,7 +303,7 @@ function fieldLayer(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number, 
 export function warmPaperArt(outlines: PaperSpec[]) {
   const jobs: (() => void)[] = [() => grainCanvas(), () => fieldCanvas('mottle'), () => fieldCanvas('cockle'), ...outlines.map((p) => () => outlineOf(p, 0))];
   const idle = (cb: (d: { timeRemaining(): number }) => void) =>
-    'requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(() => cb({ timeRemaining: () => 8 }), 50);
+    typeof requestIdleCallback === 'function' ? requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(() => cb({ timeRemaining: () => 8 }), 50);
   const run = (d: { timeRemaining(): number }) => {
     while (jobs.length && d.timeRemaining() > 4) jobs.shift()!();
     if (jobs.length) idle(run);
@@ -295,7 +311,7 @@ export function warmPaperArt(outlines: PaperSpec[]) {
   idle(run);
 }
 
-function laidLines(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number, seed: string) {
+function laidLines(ctx: Ctx2D, paper: PaperSpec, k: number, seed: string) {
   const { pitch, chain, color } = paper.laid!;
   const W = paper.w * k, H = paper.h * k;
   const r = rng('laid:' + seed);
@@ -334,7 +350,7 @@ function laidLines(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number, s
 }
 
 /** Handmade paper: flecks of bark and dark fibre caught in the pulp. */
-function specks(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number, seed: string, amount: number) {
+function specks(ctx: Ctx2D, paper: PaperSpec, k: number, seed: string, amount: number) {
   const r = rng('specks:' + seed);
   const n = Math.round((paper.w * paper.h) / 900 * amount);
   ctx.save();
@@ -363,7 +379,7 @@ function specks(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number, seed
 interface Guide {
   /** the guide sheet's rectangle in its own frame: x, y, w, h (mm) */
   rect: [number, number, number, number];
-  apply(ctx: CanvasRenderingContext2D, k: number): void;
+  apply(ctx: Ctx2D, k: number): void;
 }
 
 /**
@@ -385,18 +401,16 @@ function placeGuide(paper: PaperSpec, seed: string): Guide {
   };
 }
 
-const guideArt = new Map<string, HTMLCanvasElement>();
-function guideLines(ctx: CanvasRenderingContext2D, paper: PaperSpec, guide: Guide, k: number, edge: boolean) {
+const guideArt = new Map<string, AnyCanvas>();
+function guideLines(ctx: Ctx2D, paper: PaperSpec, guide: Guide, k: number, edge: boolean) {
   const G = paper.guide!;
   // drawn small and stretched: the stretch is the blur of lines seen through paper
   const res = Math.max(2, Math.min(5, 1 / Math.max(0.2, G.blur)));
   const key = `${paper.id}|${guide.rect.join(',')}|${res}|${edge}`;
   let c = guideArt.get(key);
   if (!c) {
-    c = document.createElement('canvas');
-    c.width = Math.ceil(paper.w * res);
-    c.height = Math.ceil(paper.h * res);
-    const g = c.getContext('2d')!;
+    c = makeCanvas(Math.ceil(paper.w * res), Math.ceil(paper.h * res));
+    const g = ctx2d(c);
     const [rx, ry, rw, rh] = guide.rect;
     g.fillStyle = G.color;
     const lw = Math.max(1, G.weight * res);
@@ -421,7 +435,7 @@ function guideLines(ctx: CanvasRenderingContext2D, paper: PaperSpec, guide: Guid
 }
 
 // ---------- printed ----------
-function printWord(ctx: CanvasRenderingContext2D, w: NonNullable<PaperSpec['print']>[number], k: number) {
+function printWord(ctx: Ctx2D, w: NonNullable<PaperSpec['print']>[number], k: number) {
   const px = (w.size / 0.71) * k;
   ctx.save();
   ctx.font = `500 ${px}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
@@ -430,7 +444,13 @@ function printWord(ctx: CanvasRenderingContext2D, w: NonNullable<PaperSpec['prin
   ctx.textBaseline = 'alphabetic';
   const spacing = 0.16 * w.size * k;
   // letter-spaced small caps, set by hand so it works where canvas letterSpacing doesn't
-  const widths = [...w.text].map((ch) => ctx.measureText(ch).width);
+  // measured once per letter and size (measuring is slow on a slow phone)
+  const widths = [...w.text].map((ch) => {
+    const key = ctx.font + '|' + ch;
+    let v = letterWidths.get(key);
+    if (v == null) letterWidths.set(key, (v = ctx.measureText(ch).width));
+    return v;
+  });
   const total = widths.reduce((a, b) => a + b, 0) + spacing * (widths.length - 1);
   let x = w.x * k - (w.align === 'right' ? total : w.align === 'center' ? total / 2 : 0);
   [...w.text].forEach((ch, i) => {
@@ -441,7 +461,7 @@ function printWord(ctx: CanvasRenderingContext2D, w: NonNullable<PaperSpec['prin
 }
 
 /** A small flowering sprig, printed in two soft colours slightly out of register (ippitsusen). */
-function sprig(ctx: CanvasRenderingContext2D, m: NonNullable<PaperSpec['motif']>, k: number, seed: string) {
+function sprig(ctx: Ctx2D, m: NonNullable<PaperSpec['motif']>, k: number, seed: string) {
   const r = rng('sprig:' + seed);
   const s = m.size;
   const P = (x: number, y: number): [number, number] => [(m.x + x * s) * k, (m.y + y * s) * k];
@@ -485,7 +505,7 @@ function sprig(ctx: CanvasRenderingContext2D, m: NonNullable<PaperSpec['motif']>
 
 // ---------- what's been done to the sheet ----------
 /** Creases: a soft valley of shade with a bright lip, alternating mountain and valley. Panels sit a touch apart in the light. */
-function folds(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number) {
+function folds(ctx: Ctx2D, paper: PaperSpec, k: number) {
   const W = paper.w * k;
   const ys = paper.folds!;
   ctx.save();
@@ -516,7 +536,7 @@ function folds(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number) {
 }
 
 /** Aerogramme flaps: scored where they fold, and a band of dried gum along their outer edges. */
-function flaps(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number) {
+function flaps(ctx: Ctx2D, paper: PaperSpec, k: number) {
   const f = paper.flaps!;
   const x0 = f.sides, x1 = paper.w - f.sides, y0 = f.top;
   ctx.save();
@@ -549,7 +569,7 @@ function flaps(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number) {
 }
 
 /** A sheet torn off a glued pad keeps a hairline of dried glue along its top. */
-function gumEdge(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number, seed: string) {
+function gumEdge(ctx: Ctx2D, paper: PaperSpec, k: number, seed: string) {
   const r = rng('gum:' + seed);
   ctx.save();
   ctx.fillStyle = 'rgba(176, 160, 120, 0.22)';
@@ -568,7 +588,7 @@ function gumEdge(ctx: CanvasRenderingContext2D, paper: PaperSpec, k: number, see
 }
 
 /** The rim of a shaped edge: a deckle thins out, a tear shows its lighter, split fibres. */
-function rimLayer(ctx: CanvasRenderingContext2D, rim: Rim, k: number, holeFill: string) {
+function rimLayer(ctx: Ctx2D, rim: Rim, k: number, holeFill: string) {
   if (rim.kind === 'perforated') return;
   const path = new Path2D();
   path.moveTo(rim.pts[0] * k, rim.pts[1] * k);
@@ -598,7 +618,7 @@ function rimLayer(ctx: CanvasRenderingContext2D, rim: Rim, k: number, holeFill: 
 }
 
 /** Loose fibres past a deckled or torn edge. */
-function wisps(ctx: CanvasRenderingContext2D, rim: Rim, paper: PaperSpec, k: number, seed: string) {
+function wisps(ctx: Ctx2D, rim: Rim, paper: PaperSpec, k: number, seed: string) {
   if (rim.kind === 'perforated') return;
   const r = rng('wisps:' + seed + rim.side);
   const out = { top: [0, -1], right: [1, 0], bottom: [0, 1], left: [-1, 0] }[rim.side];
@@ -637,7 +657,7 @@ function mixWhite(hex: string, t: number) {
 }
 
 /** A thin hairline drawn at a crisp device-pixel position; weights under 1px become lighter instead. */
-function line(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, rule: Rule, k: number) {
+function line(ctx: Ctx2D, x0: number, y0: number, x1: number, y1: number, rule: Rule, k: number) {
   let w = rule.weight * k;
   let alpha = 1;
   if (w < 1) { alpha = Math.max(0.35, w); w = 1; }

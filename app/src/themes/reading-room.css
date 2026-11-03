@@ -8,6 +8,8 @@
    Garamonds the brief suggested lose their small capitals in the web files (Google's subsets drop smcp and onum);
    Alegreya SC is a true small-caps family, and Alegreya's figures are old-style by default, with tabular ones.
    The faces are declared under their own names, so the default look never downloads them.
+   Text sizes are in rem, so the room follows the browser's text size as the tool does; the stamps on a sheet are
+   sized in the paper's millimetres instead (SheetMarks.tsx).
 */
 
 /* ---------- type ---------- */
@@ -96,7 +98,6 @@ html[data-look='reading-room'] {
   --rr-faint: #666052; /* 4.9:1 on the room */
   --rr-edge: #d6ccb7; /* a card's cut edge */
   --rr-rule: color-mix(in oklab, var(--rr-ink) 15%, transparent); /* an index card's ruled lines */
-  --rr-postmark: #2b3443;
   --rr-book: 'RR Book', 'Iowan Old Style', Georgia, serif;
   --rr-caps: 'RR Caps', 'RR Book', Georgia, serif;
 
@@ -144,7 +145,7 @@ html[data-look='reading-room'] body {
   --letter-scale: 1;
   --letter-variation: normal;
   font-family: var(--rr-book);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-variant-numeric: oldstyle-nums proportional-nums;
   font-feature-settings: normal;
 }
@@ -192,8 +193,8 @@ html[data-look='reading-room'] .rr-icon {
   transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
 }
 html[data-look='reading-room'] .rr-icon svg {
-  width: 17px;
-  height: 17px;
+  width: 1.0625rem;
+  height: 1.0625rem;
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-icon:hover {
@@ -214,7 +215,7 @@ html[data-look='reading-room'] main > header button {
   font-family: var(--rr-caps);
   text-transform: lowercase;
   letter-spacing: 0.06em;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 400;
   color: var(--rr-ink);
 }
@@ -273,7 +274,7 @@ html[data-look='reading-room'] .rr-card-head {
 html[data-look='reading-room'] .rr-card-no {
   margin: 0;
   color: var(--rr-red);
-  font-size: 16px;
+  font-size: 1rem;
   letter-spacing: 0.04em;
 }
 html[data-look='reading-room'] .rr-card-actions {
@@ -291,8 +292,8 @@ html[data-look='reading-room'] .rr-card-actions [data-slot='button'] {
   border: 0;
 }
 html[data-look='reading-room'] .rr-card-actions [data-slot='button'] svg {
-  width: 17px;
-  height: 17px;
+  width: 1.0625rem;
+  height: 1.0625rem;
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-card-actions [data-slot='button']:hover {
@@ -303,7 +304,7 @@ html[data-look='reading-room'] .rr-card-actions [data-slot='button'] svg {
 html[data-look='reading-room'] .rr-card-title {
   margin: 12px 0 12px;
   font-family: var(--rr-book);
-  font-size: 23px;
+  font-size: 1.4375rem;
   line-height: 1.12;
   font-weight: 500;
   letter-spacing: -0.005em;
@@ -314,7 +315,7 @@ html[data-look='reading-room'] .rr-facts {
 }
 html[data-look='reading-room'] .rr-fact {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
+  grid-template-columns: 5.375rem minmax(0, 1fr);
   gap: 10px;
   align-items: baseline;
   padding: 5px 0 6px;
@@ -324,20 +325,20 @@ html[data-look='reading-room'] .rr-fact:has(.rr-sig) {
   align-items: center;
 }
 html[data-look='reading-room'] .rr-fact dt {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-fact dd {
   margin: 0;
   min-width: 0;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.32;
   overflow-wrap: anywhere;
 }
 html[data-look='reading-room'] .rr-sub {
   display: block;
   margin-top: 1px;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-ref {
@@ -354,7 +355,7 @@ html[data-look='reading-room'] .rr-notes ol {
   margin: 12px 0 0;
   padding: 10px 0 0 1.2em;
   border-top: 1px solid var(--rr-rule);
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   line-height: 1.42;
   color: var(--rr-muted);
 }
@@ -368,7 +369,7 @@ html[data-look='reading-room'] .rr-notes li::marker {
 }
 html[data-look='reading-room'] .rr-card-foot {
   margin: 10px 0 0;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--rr-muted);
 }
 /* the writer's name in their own hand, on the card (it opens what's known about the hand) */
@@ -383,7 +384,7 @@ html[data-look='reading-room'] .rr-sig {
   transition: background-color 150ms var(--ease-out);
 }
 html[data-look='reading-room'] .rr-sig .writing {
-  max-width: 190px;
+  max-width: 11.875rem;
 }
 html[data-look='reading-room'] .rr-sig .writing svg {
   height: 100%;
@@ -450,14 +451,14 @@ html[data-look='reading-room'] .rr-bring {
   border-bottom: 1px solid var(--rr-rule);
   color: var(--rr-red);
   font-family: var(--rr-book);
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 600;
   text-align: left;
   transition: color 150ms var(--ease-out);
 }
 html[data-look='reading-room'] .rr-bring-icon {
-  width: 17px;
-  height: 17px;
+  width: 1.0625rem;
+  height: 1.0625rem;
   flex: none;
 }
 html[data-look='reading-room'] .rr-bring-label {
@@ -493,7 +494,7 @@ html[data-look='reading-room'] .rr-callno {
 }
 html[data-look='reading-room'] .rr-callno-k {
   font-family: var(--rr-caps);
-  font-size: 10px;
+  font-size: 0.625rem;
   letter-spacing: 0.08em;
   text-transform: lowercase;
   font-weight: 400;
@@ -501,7 +502,7 @@ html[data-look='reading-room'] .rr-callno-k {
 html[data-look='reading-room'] .rr-callno-v {
   margin-top: 1px;
   font-family: var(--rr-book);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
 }
 @media (pointer: coarse) {
@@ -535,13 +536,13 @@ html[data-look='reading-room'] .rr-slip-head {
 }
 html[data-look='reading-room'] .rr-slip-k {
   grid-column: 1;
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-slip-t {
   grid-column: 1;
   margin-top: 2px;
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.2;
   font-weight: 500;
   color: var(--rr-ink);
@@ -549,7 +550,7 @@ html[data-look='reading-room'] .rr-slip-t {
 html[data-look='reading-room'] .rr-slip-v {
   grid-column: 1;
   margin-top: 2px;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-slip-chev {
@@ -585,7 +586,7 @@ html[data-look='reading-room'] .control-sheet section[data-row] h3 {
   font-family: var(--rr-caps);
   text-transform: lowercase;
   letter-spacing: 0.055em;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 400;
 }
 html[data-look='reading-room'] .rr-slip-inner section[data-row] h3 > span,
@@ -593,7 +594,7 @@ html[data-look='reading-room'] .control-sheet section[data-row] h3 > span {
   font-family: var(--rr-book);
   text-transform: none;
   letter-spacing: 0;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 html[data-look='reading-room'] .rr-slip-inner section[data-row] {
   border-color: var(--rr-rule);
@@ -624,7 +625,7 @@ html[data-look='reading-room'] .control-sheet .rr-bring {
   min-height: 44px;
   padding: 6px 4px 6px 10px;
   border: 0;
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-pill] {
   border-radius: 2px;
@@ -633,7 +634,7 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-
   font-family: var(--rr-caps);
   text-transform: lowercase;
   letter-spacing: 0.06em;
-  font-size: 14.5px;
+  font-size: 0.9062rem;
   font-weight: 400;
 }
 /* the catalogue slip under the sheet (phones) */
@@ -643,91 +644,34 @@ html[data-look='reading-room'] .rr-under-sheet {
   color: var(--rr-ink);
 }
 
-/* ---------- the stamps on a sheet: the number (signature) and the postmark (from Postmarked) ---------- */
-html[data-look='reading-room'] .rr-marks {
-  z-index: 2;
-}
-html[data-look='reading-room'] .rr-stamp {
+/* ---------- the number on a library card: a small paper tag on the sheet's top edge, clear of the writing ----------
+   (the marks on a letter's own sheets are printed into the paper: SheetMarks.tsx, lib/paper/marks.ts) */
+html[data-look='reading-room'] .rr-card-tag {
   position: absolute;
+  top: 0;
+  left: 9%;
+  z-index: 1;
   display: inline-flex;
   align-items: baseline;
   gap: 0.3em;
-  padding: 0.16em 0.5em 0.2em;
-  border: 1.5px solid currentColor;
-  outline: 0.75px solid currentColor;
-  outline-offset: 1.5px;
+  padding: 0.14em 0.5em 0.18em;
+  border: 1px solid var(--rr-edge);
   border-radius: 2px;
+  background: var(--rr-slip);
+  box-shadow: 0 1px 2px rgba(30, 39, 51, 0.12);
   color: var(--rr-red);
   font-family: var(--rr-caps);
+  font-size: 0.65625rem;
   letter-spacing: 0.06em;
   line-height: 1.1;
   white-space: nowrap;
-  opacity: 0.86;
-  transform: rotate(-2.5deg);
-  transform-origin: left top;
-  animation: rr-stamp 260ms var(--ease-out) 380ms both;
+  transform: translateY(-62%) rotate(-1.5deg);
 }
-html[data-look='reading-room'] .rr-stamp-n {
+html[data-look='reading-room'] .rr-card-tag-n {
   font-family: var(--rr-book);
   font-weight: 600;
   letter-spacing: 0.05em;
   font-variant-numeric: oldstyle-nums tabular-nums;
-}
-/* on a library card the number is a small tag pinned to the sheet's top edge, clear of the writing */
-html[data-look='reading-room'] .rr-stamp--card {
-  top: 0;
-  left: 9%;
-  z-index: 1;
-  font-size: 10.5px;
-  padding: 0.14em 0.5em 0.18em;
-  border: 1px solid var(--rr-edge);
-  outline: 0;
-  background: var(--rr-slip);
-  box-shadow: 0 1px 2px rgba(30, 39, 51, 0.12);
-  opacity: 1;
-  transform: translateY(-62%) rotate(-1.5deg);
-  animation: rr-fade 200ms var(--ease-out) 120ms both;
-}
-html[data-look='reading-room'] .rr-postmark {
-  position: absolute;
-  color: var(--rr-postmark);
-  opacity: 0.68;
-  transform: rotate(-11deg);
-  overflow: visible;
-  animation: rr-postmark 300ms var(--ease-out) 620ms both;
-}
-html[data-look='reading-room'] .rr-postmark-text {
-  font-family: var(--rr-caps);
-  font-weight: 500;
-}
-html[data-look='reading-room'] .rr-postmark-year {
-  font-family: var(--rr-book);
-  font-weight: 700;
-  font-variant-numeric: lining-nums;
-  letter-spacing: 0.04em;
-}
-@keyframes rr-stamp {
-  from {
-    opacity: 0;
-    transform: rotate(-2.5deg) scale(1.14);
-  }
-}
-@keyframes rr-postmark {
-  from {
-    opacity: 0;
-    transform: rotate(-11deg) scale(1.12);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  html[data-look='reading-room'] .rr-stamp,
-  html[data-look='reading-room'] .rr-postmark {
-    animation-name: rr-fade;
-    animation-duration: 160ms;
-  }
-  html[data-look='reading-room'] .rr-slip-body,
-  html[data-look='reading-room'] .rr-slip-chev {
-    transition: none;
-  }
 }
 @keyframes rr-fade {
   from {
@@ -742,7 +686,7 @@ html[data-look='reading-room'] .rr-aid {
   padding-top: 10px;
   border-top: 1px solid color-mix(in oklab, var(--rr-ink) 60%, transparent);
   font-family: var(--rr-caps);
-  font-size: 15px;
+  font-size: 0.9375rem;
   letter-spacing: 0.05em;
   text-transform: lowercase;
   color: var(--rr-muted);
@@ -797,7 +741,7 @@ html[data-look='reading-room'] .rr-letter-kicker {
   margin: 0 auto 16px;
   max-width: 30rem;
   text-align: center;
-  font-size: 22px;
+  font-size: 1.375rem;
   line-height: 1.18;
   font-weight: 500;
   color: var(--rr-ink);
@@ -807,7 +751,7 @@ html[data-look='reading-room'] .rr-transcript-wrap {
   max-width: 36rem;
   margin: 28px auto 0;
   text-align: center;
-  font-size: 16px;
+  font-size: 1rem;
 }
 html[data-look='reading-room'] .rr-transcript {
   display: grid;
@@ -816,7 +760,7 @@ html[data-look='reading-room'] .rr-transcript {
   padding-top: 16px;
   border-top: 1px solid var(--rr-rule);
   text-align: left;
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1.6;
   white-space: pre-line;
   color: var(--rr-ink);
@@ -834,7 +778,7 @@ html[data-look='reading-room'] .rr-dock {
   border-top: 1px solid var(--rr-ink);
   border-radius: 2px;
   box-shadow: 0 12px 28px -16px rgba(30, 39, 51, 0.45);
-  font-size: 16px;
+  font-size: 1rem;
   animation: dock-in 320ms var(--ease-out) both;
 }
 html[data-look='reading-room'] .rr-dock-no {
@@ -876,8 +820,8 @@ html[data-look='reading-room'] .rr-dock-reply {
   font-weight: 600;
 }
 html[data-look='reading-room'] .rr-dock-reply svg {
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-dock-word:hover,
@@ -899,7 +843,7 @@ html[data-look='reading-room'] .rr-dock-reply svg {
   html[data-look='reading-room'] .rr-dock {
     gap: 0;
     padding-inline: 2px;
-    font-size: 15.5px;
+    font-size: 0.9688rem;
   }
   html[data-look='reading-room'] .rr-dock .rr-icon {
     width: 40px;
@@ -926,10 +870,6 @@ html[data-look='reading-room'] .rr-dock-reply svg {
 
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
-  html[data-look='reading-room'] .rr-stamp,
-  html[data-look='reading-room'] .rr-postmark {
-    forced-color-adjust: auto;
-  }
   html[data-look='reading-room'] .rr-card,
   html[data-look='reading-room'] .rr-dock,
   html[data-look='reading-room'] .rr-slip {

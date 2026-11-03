@@ -1,5 +1,5 @@
 // The Reading Room's letter page (archive/LetterPage.tsx renders this when ?look=reading-room): the sheet on the left
-// like an object on a desk, with its number stamped on it and a postmark; a narrow catalogue card on the right that
+// like an object on a desk, with its number and a location badge printed into the paper; a narrow catalogue card on the right that
 // stays put while you read, carrying the title, the facts, the hand menu and Share, with numbered notes. On phones the
 // card is a slip under the sheet. The dock becomes a request slip along the bottom edge (SlipDock).
 import { useId, type ReactNode, type RefObject } from 'react';
@@ -12,8 +12,9 @@ import type { DockActions } from '@/archive/LetterParts';
 import { circumstanceLabel, lostInTransit, shortAuthor, shortRecipient } from '@/archive/data';
 import type { ArchiveLetter } from '@/archive/model';
 import { CatalogueCard } from './CatalogueCard';
-import { callNo, useRecord, type CardRecord } from './catalogue';
-import { SheetMarks } from './SheetMarks';
+import { callNo, type CardRecord } from './catalogue';
+import { useMarks } from './useCatalogue';
+import { LetterMarks } from './SheetMarks';
 
 const languages = (() => {
   try { return new Intl.DisplayNames(['en'], { type: 'language' }); } catch { return null; }
@@ -49,6 +50,8 @@ function recordOf(l: ArchiveLetter, no?: number): CardRecord {
 interface Props {
   letter: ArchiveLetter;
   name: string;
+  /** the hand's seed: with the letter, it seeds where the printed marks land */
+  hand: string;
   /** the sheet, as the letter page builds it (write-on, tap to finish, swipe to turn) */
   sheet: ReactNode;
   /** the column the sheet fills (the page measures it) */
@@ -68,8 +71,8 @@ interface Props {
 
 export function ReadingLetter(p: Props) {
   const { letter } = p;
-  const no = useRecord(letter.id)?.no;
-  const record = recordOf(letter, no);
+  const marks = useMarks(letter.id);
+  const record = recordOf(letter, marks?.no);
   const wide = useMediaQuery('(min-width: 1024px)');
   const textId = useId();
   const paras = letter.text.split(/\n{2,}/);
@@ -89,14 +92,13 @@ export function ReadingLetter(p: Props) {
     />
   );
   return (
-    <main className="rr-letter mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-14 px-4 pt-[calc(4.75rem+env(safe-area-inset-top,0px))] pb-40 sm:px-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:px-10 lg:pt-24">
+    <main className="rr-letter mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-14 px-4 pt-[calc(4.75rem+env(safe-area-inset-top,0px))] pb-40 sm:px-8 lg:grid-cols-[minmax(0,1fr)_min(21.25rem,34vw)] lg:px-10 lg:pt-24">
       <div className="min-w-0">
         {/* phones: the title above the sheet, for bearings (the card under the sheet holds the heading itself) */}
         {!wide && <p aria-hidden className="rr-letter-kicker">{record.title}</p>}
         <div ref={p.colRef} className="min-w-0">
           <div className="relative mx-auto" style={{ width: p.paperW * p.pxPerMm || undefined }}>
-            {p.sheet}
-            <SheetMarks key={letter.id} no={no} place={letter.place} year={letter.year} pxPerMm={p.pxPerMm} />
+            <LetterMarks id={letter.id} hand={p.hand}>{p.sheet}</LetterMarks>
           </div>
         </div>
         {!wide && <div className="mt-8">{card}</div>}
@@ -115,12 +117,12 @@ export function ReadingLetter(p: Props) {
   );
 }
 
-const itemCls = 'flex min-h-10 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent pointer-coarse:min-h-11';
+const itemCls = 'flex min-h-10 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[0.875rem] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent pointer-coarse:min-h-11';
 
 function Menu({ children, side = 'top', align = 'end' }: { children: ReactNode; side?: 'top' | 'bottom'; align?: 'start' | 'center' | 'end' }) {
   return (
     <DropdownMenu.Portal>
-      <DropdownMenu.Content side={side} align={align} sideOffset={8} collisionPadding={12} className="lib-menu z-50 w-[248px] p-1.5 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
+      <DropdownMenu.Content side={side} align={align} sideOffset={8} collisionPadding={12} className="lib-menu z-50 w-[15.5rem] p-1.5 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
         {children}
       </DropdownMenu.Content>
     </DropdownMenu.Portal>
@@ -155,7 +157,7 @@ function HandMenu({ name, keep, onKeep, onNewHand, onReplay, canReplay }: {
           <span className="mt-0.5 grid size-4 shrink-0 place-items-center"><DropdownMenu.ItemIndicator><Check aria-hidden className="size-4 text-[var(--lib-accent)]" /></DropdownMenu.ItemIndicator></span>
           <span>
             Keep this hand
-            <span className="block text-[12.5px] text-muted-foreground">for the next letters you open</span>
+            <span className="block text-[0.78125rem] text-muted-foreground">for the next letters you open</span>
           </span>
         </DropdownMenu.CheckboxItem>
       </Menu>
@@ -175,7 +177,7 @@ function useKeyboardLift() {
 export function SlipDock(a: DockActions & { id?: string }) {
   const narrow = useMediaQuery('(max-width: 520px)');
   const lift = useKeyboardLift();
-  const no = useRecord(a.id)?.no;
+  const no = useMarks(a.id)?.no;
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(12px+env(safe-area-inset-bottom,0px))] z-30 flex justify-center px-3" style={lift ? { transform: `translateY(${-lift}px)` } : undefined}>
       <div role="toolbar" aria-label="The letter" className="rr-dock pointer-events-auto">

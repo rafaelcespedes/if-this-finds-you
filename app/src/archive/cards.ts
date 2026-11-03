@@ -88,7 +88,7 @@ class CardStore {
     const n = cores >= 6 ? 2 : 1;
     for (let i = 0; i < n; i++) {
       // built as a classic worker (the build's worker format); in development it's served as a module
-      const worker = new Worker(workerSrc, { type: import.meta.env.DEV ? 'module' : 'classic', name: 'lost-letters-cards' });
+      const worker = new Worker(workerSrc, { type: 'module', name: 'lost-letters-cards' });
       const slot = { worker, job: null as number | null, key: null as string | null };
       worker.onmessage = (e: MessageEvent<CardResult>) => this.finished(slot, e.data);
       worker.onerror = () => { if (slot.key) this.fail(slot.key); slot.job = null; slot.key = null; this.pump(); };

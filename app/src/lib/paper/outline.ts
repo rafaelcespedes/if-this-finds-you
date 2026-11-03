@@ -3,7 +3,7 @@
 // falls on the desk around it. Everything here is in mm.
 import type { Edge, PaperSpec, Side } from './types';
 import { fbm1, noise1 } from './noise';
-import { rng } from '@engine';
+import { rng } from './rng';
 
 export interface Rim {
   kind: Edge['kind'];

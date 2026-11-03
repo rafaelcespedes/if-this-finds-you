@@ -118,6 +118,61 @@ for (let k = 0; k < SESSIONS; k++) {
   void c;
 }
 
+// Contract: a whole-word replacement (a phone's autocorrect after the pen wrote the word) is fixed the way
+// a person would: one or two letters written over, otherwise the WHOLE word struck in the writer's own style
+// and the new one written after it (or above it, mid-text). Never a strike through part of a word.
+{
+  const diff = (b, a, kind) => { let i = 0; const mx = Math.min(a.length, b.length); while (i < mx && b[i] === a[i]) i++; let s = 0; while (s < mx - i && b[b.length - 1 - s] === a[a.length - 1 - s]) s++; return { at: i, del: b.length - s - i, ins: a.slice(i, a.length - s), kind }; };
+  const CASES = [
+    ['I think teh cat is here.', '', 'teh', 'the', 'over'],
+    ['I will recieve it soon.', '', 'recieve', 'receive', 'over'],
+    ['We dont know yet.', '', 'dont', "don't", 'strike'],
+    ['It was definately fine.', '', 'definately', 'definitely', 'over'],
+    ['See you tomorow ', '', 'tomorow', 'tomorrow', 'strike'],
+    ['See you tomorow', '', 'tomorow', 'tomorrow', 'strike'],
+    ['I have alot', '', 'alot', 'a lot', 'strike'],
+    ['Its fine', ' now', 'Its', "It's", 'strike'],
+    ['I will recie', 've it', 'recieve', 'receive', 'strike'],
+    ['See you tom', 'orow and', 'tomorow', 'tomorrow', 'none'],
+  ];
+  let n = 0;
+  for (const [si, seed] of ['quiet-heron-17', 'maple-river-42', 'north-moth-22', 'ink-atlas-78'].entries()) {
+    const style = si % 2 ? 'script' : 'print';
+    const p = E.makeHand(seed, style);
+    const H = E.fixHabits(p);
+    for (const [inked, tail, from, to, expect] of CASES) {
+      const doc = E.newInkDoc({ seed, style, salt: 'ac' });
+      const st = E.replay(p, doc, OPTS);
+      E.apply(st, [{ t: 'write', text: inked }]);
+      let view = E.newView();
+      view.tail = tail;
+      const before = E.viewText(st, view), after = before.replace(from, to);
+      const firstNew = st.reader.nextId, n0 = doc.log.length;
+      const r = E.plan(st, view, diff(before, after, 'replace'));
+      E.apply(st, r.events); view = r.view;
+      const where = `${seed}/${style} "${from}"→"${to}"`;
+      if (E.viewText(st, view) !== after) fail(`${where}: the text box would read ${JSON.stringify(E.viewText(st, view))}`);
+      const w = E.penStep(st, view, { final: true }); E.apply(st, w.events); view = w.view;
+      if (E.logicalText(st) !== after) fail(`${where}: the letter says ${JSON.stringify(E.logicalText(st))}`);
+      const evs = doc.log.slice(n0), strikes = evs.filter((e) => e.t === 'strike'), overs = evs.filter((e) => e.t === 'over');
+      if (expect === 'over' && (strikes.length || !overs.length)) fail(`${where}: a one- or two-letter change should be written over, got ${evs.map((e) => e.t).join(' ')}`);
+      if (expect === 'strike' && !strikes.length) fail(`${where}: should strike the word, got ${evs.map((e) => e.t).join(' ')}`);
+      if (expect === 'none' && (strikes.length || overs.length)) fail(`${where}: the word wasn't ink yet, nothing to strike`);
+      for (const e of strikes) if (e.how !== H.strike && e.how !== 'scribble') fail(`${where}: struck with ${e.how}, not the writer's own ${H.strike}`);
+      // no partial strike: every word that lost a letter to this edit's strikes lost all of its letters
+      const struckNow = new Set();
+      for (const e of strikes) for (let id = e.from; id <= e.to; id++) struckNow.add(id);
+      const recs = st.reader.recs.filter((x) => x.id >= 0 && x.id < firstNew);
+      let word = [];
+      const check = () => { if (word.some((x) => struckNow.has(x.id)) && !word.every((x) => x.struck)) fail(`${where}: a strike through part of "${word.map((x) => x.ch).join('')}"`); word = []; };
+      for (const x of recs) { if (/[\p{L}\p{N}'’]/u.test(x.ch)) word.push(x); else check(); }
+      check();
+      n++;
+    }
+  }
+  console.log(`  autocorrect replacements: ${n} cases, whole words only (written over, or struck and written again)`);
+}
+
 // commands
 {
   const p = E.makeHand('quiet-heron-17', 'script');

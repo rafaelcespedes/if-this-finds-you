@@ -145,7 +145,7 @@ html[data-look='postmarked'] ::selection {
 /* the look's small type: postal labels, counts */
 html[data-look='postmarked'] .pm-label {
   font-family: var(--pm-mono);
-  font-size: 10.5px;
+  font-size: 0.65625rem;
   font-weight: 500;
   line-height: 1.2;
   letter-spacing: 0.14em;
@@ -154,7 +154,7 @@ html[data-look='postmarked'] .pm-label {
 }
 html[data-look='postmarked'] .pm-bag {
   font-family: var(--pm-mono);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.35;
   letter-spacing: 0.01em;
   color: var(--text-muted);
@@ -166,7 +166,7 @@ html[data-look='postmarked'] .pm-bag b {
 }
 html[data-look='postmarked'] .pm-hint {
   margin-top: 2px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-faint);
 }
 
@@ -193,7 +193,7 @@ html[data-look='postmarked'] [data-radix-popper-content-wrapper] > [role='dialog
 /* the panel's group names read like a form's fields */
 html[data-look='postmarked'] section[data-row][aria-labelledby] h3 {
   font-family: var(--pm-mono);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -206,7 +206,7 @@ html[data-look='postmarked'] section[data-row][aria-labelledby] h3 > span[aria-h
 }
 html[data-look='postmarked'] section[data-row][aria-labelledby] h3 > span {
   font-family: var(--font-sans);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -215,7 +215,7 @@ html[data-look='postmarked'] section[data-row][aria-labelledby] h3 > span {
 html[data-look='postmarked'] header a.font-medium,
 html[data-look='postmarked'] header > span > button.underline {
   font-family: var(--pm-mono);
-  font-size: 11.5px;
+  font-size: 0.71875rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -251,25 +251,6 @@ html[data-look='postmarked'] .pm-cancel {
   opacity: 0.95;
   mix-blend-mode: multiply;
   pointer-events: none;
-}
-
-/* on a found letter's sheet in the tool: over the paper's top-right corner */
-html[data-look='postmarked'] .pm-sheet-post > * {
-  position: absolute;
-}
-html[data-look='postmarked'] .pm-sheet-post .pm-postmark {
-  opacity: 0.74;
-}
-/* the "click the letter" ghost moves to the other corner, clear of the postmark */
-html[data-look='postmarked'] .pm-sheet-post ~ .top-2\.5.right-2\.5 {
-  right: auto;
-  left: 10px;
-}
-@media (max-width: 640px) {
-  html[data-look='postmarked'] .pm-sheet-cancel {
-    font-size: 9.5px;
-    padding: 4px 5px 3px;
-  }
 }
 
 /* ---------- Find another: the round stamp ---------- */
@@ -367,11 +348,11 @@ html[data-look='postmarked'] .pm-write {
   flex: none;
   align-items: center;
   gap: 6px;
-  height: 38px;
-  padding: 0 12px;
+  min-height: 38px;
+  padding: 3px 12px;
   border-radius: 5px;
   color: var(--pm-ink);
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 600;
   white-space: nowrap;
   transition: scale 120ms var(--ease-out);
@@ -395,7 +376,7 @@ html[data-look='postmarked'] .pm-write:focus-visible {
 }
 @media (pointer: coarse) {
   html[data-look='postmarked'] .pm-write {
-    height: 40px;
+    min-height: 40px;
   }
 }
 /* the tool's shared letter: "Write your own" is the reader's writing back */
@@ -418,6 +399,10 @@ html[data-look='postmarked'] [data-slot='button']:has(> .lucide-pen-line) > svg 
 html[data-look='postmarked'] .pm-find-row {
   min-height: 76px;
   padding-right: 6px;
+}
+/* large text: the count wraps beside the stamp rather than running under it */
+html[data-look='postmarked'] .pm-find-row .pm-bag {
+  white-space: normal;
 }
 
 /* ---------- a shared letter arriving in its envelope (Arrival.tsx), about 0.65 s ---------- */
@@ -555,7 +540,7 @@ html[data-look='postmarked'] .pm-envelope-from {
   gap: 12px;
   align-items: baseline;
   font-family: var(--pm-mono);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.5;
   color: var(--text-muted);
 }
@@ -578,7 +563,7 @@ html[data-look='postmarked'] .pm-envelope-to {
 }
 html[data-look='postmarked'] .pm-envelope-address {
   font-family: var(--pm-mono);
-  font-size: 15.5px;
+  font-size: 0.96875rem;
   line-height: 1.5;
   color: var(--text);
   text-wrap: pretty;
@@ -590,11 +575,11 @@ html[data-look='postmarked'] .pm-envelope-address {
     margin-top: 24px;
     padding: 16px 88px 18px 16px;
   }
-  html[data-look='postmarked'] .pm-envelope-from { font-size: 11px; }
+  html[data-look='postmarked'] .pm-envelope-from { font-size: 0.6875rem; }
   html[data-look='postmarked'] .pm-envelope-mark { top: -12px; right: 10px; width: 70px !important; height: 70px !important; }
   html[data-look='postmarked'] .pm-envelope-cancel { top: 66px; right: 6px; font-size: 8.5px; padding: 3px 4px 2px; letter-spacing: 0.12em; }
   html[data-look='postmarked'] .pm-envelope-to { margin-left: 0; gap: 10px; }
-  html[data-look='postmarked'] .pm-envelope-address { font-size: 13.5px; }
+  html[data-look='postmarked'] .pm-envelope-address { font-size: 0.84375rem; }
 }
 
 /* ---------- the letter page: the route ---------- */
@@ -641,7 +626,7 @@ html[data-look='postmarked'] .pm-route > li.is-now::before {
 html[data-look='postmarked'] .pm-route-head {
   display: block;
   font-family: var(--pm-mono);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.5;
   letter-spacing: 0.1em;
@@ -666,13 +651,13 @@ html[data-look='postmarked'] .pm-route-body a {
 html[data-look='postmarked'] .pm-route-sub {
   display: block;
   margin-top: 6px;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.55;
   color: var(--text-muted);
 }
 html[data-look='postmarked'] .pm-route-more {
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 html[data-look='postmarked'] .pm-route > li:target .pm-route-head {
   text-decoration: underline;
@@ -681,6 +666,9 @@ html[data-look='postmarked'] .pm-route > li:target .pm-route-head {
 
 /* the letter page's dock */
 html[data-look='postmarked'] .pm-dock {
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 4px;
   border-radius: 10px;
   padding-right: 10px;
 }

@@ -139,7 +139,13 @@ export const FontRow = memo(function FontRow({ entry, index, text, mode, live, e
       </div>
       {isLive ? (
         <div className="font-row-specimen is-live" style={{ height: h, ...(entry ? { background: entry.tint } : {}) }}>
-          {image && <img src={image.url} alt={alt} decoding="async" draggable={false} className={cn('font-specimen-img', image.fresh && 'specimen-in')} style={{ aspectRatio: `${image.width} / ${image.height}` }} />}
+          {/* exactly the CSS size it was made for, pixel for pixel; while the size slider moves, the last one is scaled
+              to the row until the new one arrives */}
+          {image && (
+            <img src={image.url} alt={alt} decoding="async" draggable={false} width={image.width} height={image.height}
+              className={cn('font-specimen-img', image.fresh && 'specimen-in')}
+              style={{ width: image.width, height: image.height, ...(em !== image.emPx ? { transform: `scale(${em / image.emPx})` } : {}) }} />
+          )}
         </div>
       ) : (
         <div className={cn('font-row-specimen is-font', lines > 1 ? 'is-fade-2' : 'is-fade')} style={{ height: h, fontSize: em }}>
