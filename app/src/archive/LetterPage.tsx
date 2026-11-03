@@ -25,9 +25,9 @@ import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
 import { ARCHIVE_URL, Missing, SiteHeader, toolHref } from './SiteHeader';
-// the look being compared (?look=reading-room): its own letter layout and dock (src/themes/reading-room/)
+// the Reading Room: its own letter layout (ReadingSpread.tsx) and, where the spread doesn't fit, its slip dock (SlipDock.tsx)
 import { LOOK } from '@/lib/look';
-import { SlipDock } from '@/themes/reading-room/ReadingLetter';
+import { SlipDock } from './SlipDock';
 import { LetterCounter, ReadingSpread, SPREAD_QUERY } from './ReadingSpread';
 const Dock: (a: DockActions & { id?: string }) => ReactNode = LOOK === 'reading-room' ? SlipDock : LetterDock;
 import { LetterArrival } from '@/themes/postmarked/letter';
@@ -153,6 +153,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // a menu or sheet that's open takes its own keys (Escape closes it, and only it)
+      if ((e.target as Element | null)?.closest?.('[role=menu], [role=dialog], [data-vaul-drawer]') || document.querySelector('[role=menu], [data-vaul-drawer]')) return;
       if (e.key === 'Escape') { back(); return; }
       const t = e.target as HTMLElement | null;
       const typing = t && /^(input|textarea|select)$/i.test(t.tagName) && (t as HTMLInputElement).type !== 'checkbox';
