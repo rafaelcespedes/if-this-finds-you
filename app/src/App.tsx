@@ -29,7 +29,7 @@ import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { isNeat, rollHand, rollLook, withSample, type LockKey } from '@/lib/roll';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
-import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
+import { drafts, keepDraft, takeDraft, type Draft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
@@ -105,7 +105,7 @@ export default function App() {
   useEffect(() => { sawLetter(state.sample); }, [state.sample]);
 
   // ---------- found letters and your own: always a way to each ----------
-  const [draftCount, setDraftCount] = useState(() => drafts().length);
+  const [kept, setKept] = useState<Draft[]>(() => drafts());
   const toFound = useCallback((next?: ReturnType<typeof sampleForSeed>) => {
     markStep();
     const s = stateNow.current;
@@ -117,21 +117,23 @@ export default function App() {
   const letterActions = {
     found: !!sample,
     own: !sample && (!!state.text.trim() || !!state.inkLog),
-    drafts: draftCount,
+    drafts: kept.length,
+    kept,
     /** another found letter (your own, if any, is kept) */
     onAnother: () => {
       const s = stateNow.current;
-      if (!s.sample) { keepDraft(s); setDraftCount(drafts().length); }
+      if (!s.sample) { keepDraft(s); setKept(drafts()); }
       toFound();
     },
-    /** back to the letter you were writing */
-    onBackToMine: () => {
+    /** back to a letter you were writing (the newest, or the one picked from the list) */
+    onBackToMine: (index = 0) => {
       const s = stateNow.current;
+      const d = takeDraft(index);
       // what's on the page now is kept too, unless it's a found letter
       if (!s.sample) keepDraft(s);
-      const d = takeDraft();
-      setDraftCount(drafts().length);
+      setKept(drafts());
       if (!d) return;
+      markStep();
       inkRef.current = null;
       update({ text: d.text, inkLog: d.inkLog, marks: d.marks ?? [], replyTo: d.replyTo ?? null, signed: !!d.signed, sample: null });
     },

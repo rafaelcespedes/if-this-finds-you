@@ -24,10 +24,21 @@ export function keepDraft(s: NoteState) {
   try { localStorage.setItem(KEY, JSON.stringify([d, ...rest].slice(0, KEEP))); } catch { /* private mode: fine */ }
 }
 
-/** The newest kept letter, taken off the pile. */
-export function takeDraft(): Draft | null {
+/** A kept letter (the newest by default), taken off the pile. */
+export function takeDraft(index = 0): Draft | null {
   const all = drafts();
-  if (!all.length) return null;
-  try { localStorage.setItem(KEY, JSON.stringify(all.slice(1))); } catch { /* fine */ }
-  return all[0];
+  const d = all[index];
+  if (!d) return null;
+  try { localStorage.setItem(KEY, JSON.stringify(all.filter((_, i) => i !== index))); } catch { /* fine */ }
+  return d;
+}
+
+/** How a kept letter is named in a list: its first words, and when it was put down. */
+export function draftLabel(d: Draft, now = Date.now()): { words: string; when: string } {
+  const flat = d.text.replace(/\s+/g, ' ').trim();
+  const words = flat ? (flat.length > 34 ? flat.slice(0, 34).replace(/\s+\S*$/, '') + '…' : flat) : 'A letter in ink';
+  const mins = Math.round((now - d.savedAt) / 60000);
+  const when = mins < 1 ? 'just now' : mins < 60 ? `${mins} min ago` : mins < 60 * 24 ? `${Math.round(mins / 60)} h ago`
+    : new Date(d.savedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return { words, when };
 }

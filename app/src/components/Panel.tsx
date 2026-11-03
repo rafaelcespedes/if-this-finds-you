@@ -19,6 +19,7 @@ import { ENGINE_TIPS, MODELLED_INK } from '@/lib/engine-features';
 import { describeHand, words } from '@/lib/hands';
 import { handSources } from '@/lib/credits';
 import { sampleById } from '@/lib/samples';
+import { draftLabel, type Draft } from '@/lib/drafts';
 import { branded } from '@/lib/brand';
 import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
@@ -88,8 +89,10 @@ export interface PanelProps {
     found: boolean;
     own: boolean;
     drafts: number;
+    /** the kept letters, newest first */
+    kept: Draft[];
     onAnother: () => void;
-    onBackToMine: () => void;
+    onBackToMine: (index?: number) => void;
   };
   /** Ink mode (when the engine writes in ink): used by the writing menu and the pen tray, not the panel */
   ink?: {
@@ -305,13 +308,55 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
     // what the letter is lives on the sheet now (its label); here, only the ways to the others
     <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted-foreground', className)}>
       <span className="flex items-center gap-1">
-        {letter.found && letter.drafts > 0 && (
-          <button type="button" onClick={letter.onBackToMine} className={link}>Back to my letter</button>
+        {letter.found && letter.drafts === 1 && (
+          <button type="button" onClick={() => letter.onBackToMine()} className={link}>Back to my letter</button>
+        )}
+        {/* more than one kept (or any, beside your own): each of them, by its first words */}
+        {(letter.drafts > 1 || (!letter.found && letter.drafts > 0)) && (
+          <KeptLetters kept={letter.kept} label={letter.found ? 'My letters' : 'My other letters'} onOpen={letter.onBackToMine} className={link} />
         )}
         {/* on a found letter, Find another brings the next one */}
         {!letter.found && <button type="button" onClick={letter.onAnother} className={link}>Read a found letter</button>}
       </span>
     </div>
+  );
+}
+
+function KeptLetters({ kept, label, onOpen, className }: { kept: Draft[]; label: string; onOpen: (i: number) => void; className: string }) {
+  const now = Date.now();
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button type="button" className={cn(className, 'group inline-flex items-center gap-0.5')}>
+          {label}
+          <ChevronDown aria-hidden className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          side="top"
+          align="center"
+          sideOffset={6}
+          collisionPadding={12}
+          className="z-50 w-[min(288px,calc(100vw-24px))] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,var(--popover)_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
+        >
+          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[11.5px] text-muted-foreground">Kept on this device</DropdownMenu.Label>
+          {kept.map((d, i) => {
+            const { words, when } = draftLabel(d, now);
+            return (
+              <DropdownMenu.Item
+                key={d.savedAt + ':' + i}
+                onSelect={() => onOpen(i)}
+                className="flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 py-1.5 text-[14px] text-foreground outline-none select-none data-[highlighted]:bg-accent"
+              >
+                <span className="min-w-0 truncate">{words}</span>
+                <span className="shrink-0 text-[12px] text-muted-foreground">{when}</span>
+              </DropdownMenu.Item>
+            );
+          })}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
