@@ -1,8 +1,9 @@
 // The library's browsing controls, kept small so the letters are the main attraction (CONTROLS.md). Three
 // arrangements to compare, ?toolbar=1…3 (kept for the tab, never in share links):
 //   1  in the heading: a search icon beside "All letters", and one sentence that is also the filter
-//   2  a floating dock like the tool's right panel: search, era and language menus (the default)
-//   3  a floating dock with search and a timeline of every letter, by century, as the era filter
+//   2  a floating dock like the tool's right panel: search, era and language menus
+//   3  a floating dock with search and a timeline of every letter, by century, as the era filter (the default:
+//      Rafael, "the kind of control that adds delight")
 // No count on screen and no Shuffle here (Rafael): screen readers hear the count after each change.
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
@@ -23,9 +24,9 @@ function readToolbar(): ToolbarId {
     const kept = sessionStorage.getItem('seedhand:toolbar');
     if (kept === '1' || kept === '2' || kept === '3') return kept;
   } catch { /* storage off: the default */ }
-  return '2';
+  return '3';
 }
-export const TOOLBAR: ToolbarId = typeof location !== 'undefined' ? readToolbar() : '2';
+export const TOOLBAR: ToolbarId = typeof location !== 'undefined' ? readToolbar() : '3';
 
 export interface Option { value: string; label: string; n?: number }
 
