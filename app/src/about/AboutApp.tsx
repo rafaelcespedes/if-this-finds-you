@@ -3,10 +3,9 @@
 // wide screen, catalogue-style facts and footnote credits. Every claim here is checked against the repo (the letters'
 // counts against content/check-texts.mjs); lines marked "Rafael" in about/README.md wait for his sign-off.
 import { useEffect, type ReactNode } from 'react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { APP_NAME, NAME_WITH_DESCRIPTOR, withLogo } from '@/lib/brand';
-import { ARCHIVE_URL, headerLink, SiteHeader, toolHref } from '@/archive/SiteHeader';
-import { FONTS_URL } from '@/fonts/links';
+import { SiteHeader } from '@/components/SiteHeader';
+import { ARCHIVE_URL, FONTS_URL } from '@/lib/places';
 import { LiveLine } from './LiveLine';
 
 // ---------- the letters, as `node content/check-texts.mjs` counted them on 3 November 2026 ----------
@@ -97,17 +96,12 @@ function Out({ href, children }: { href: string; children: ReactNode }) {
 }
 
 export function AboutApp() {
-  const narrow = useMediaQuery('(max-width: 639px)');
   useEffect(() => { document.title = `About · ${APP_NAME}`; }, []);
   const L = LETTERS;
 
   return (
     <div className="about min-h-dvh">
-      <SiteHeader>
-        {!narrow && <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>}
-        <a href={withLogo(ARCHIVE_URL)} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
-        <a href={withLogo(FONTS_URL)} className={`${headerLink} font-medium text-foreground/80`}>Fonts</a>
-      </SiteHeader>
+      <SiteHeader current="about" />
 
       <main className="about-main">
         <div className="about-head">

@@ -13,9 +13,9 @@ What If This Finds You is, where the letters and the hands come from, the fonts,
 
 ## The header
 
-The page uses today's shared header (`archive/SiteHeader.tsx`) with the three places. The one-navigation work is
-building a single header for every page; when it lands, swap it in here and decide where "About" is linked from (the
-header, the phone menu or a footer). No other page links to About yet.
+The site's one header (`components/SiteHeader.tsx`), with About as the fourth and last place (`lib/places.ts`,
+docs/NAVIGATION.md). The page renders `<SiteHeader current="about" />`; where the four places don't fit (phones), the
+header's Menu takes them. The 404 page's hand-made copy of the header lists About too.
 
 ## Lines waiting for Rafael
 
