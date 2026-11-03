@@ -33,7 +33,7 @@ export interface MarkInput {
 
 /** 1 double-ring datestamp · 2 ring with bars · 3 receipt oval · 4 registry box · 5 straight-line mark · 6 pencil note */
 export type BadgeKind = 1 | 2 | 3 | 4 | 5 | 6;
-type Kind = 'datestamp' | 'duplex' | 'oval' | 'registry' | 'line' | 'pencil' | 'number' | 'inked-number' | 'cancel';
+type Kind = 'datestamp' | 'duplex' | 'oval' | 'registry' | 'line' | 'pencil' | 'number' | 'cancel';
 const BADGES: Kind[] = ['datestamp', 'duplex', 'oval', 'registry', 'line', 'pencil'];
 
 export interface Mark {
@@ -69,7 +69,6 @@ const INKS = {
   violet: '#3d3050', // violet-black
   blue: '#3f5f93', // faded blue
   pencil: '#55555b',
-  ironGall: '#3a2f28',
 };
 
 /** Badge weights per look: the reading room leans to the archive's own stamps, postmarked to the post's. */
@@ -173,17 +172,19 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
       seed: seed + ':badge',
     });
   }
-  // the number: a numbering machine, or written in by hand in ink
+  // the number: always the numbering machine's stamp (never handwriting, which would fight the letter's own hand);
+  // now and then the machine was pressed unevenly
   if (input.number != null) {
     const n = String(input.number).padStart(4, '0');
-    const handInked = r() < 0.3;
+    const unevenStrike = r() < 0.3;
     const size = clamp(minSide * 0.11, 12, 19) * (0.9 + r() * 0.2);
     const c = common(size * 2.4, 0.7, [size * 0.9, size * 0.25]);
     marks.push({
-      kind: handInked ? 'inked-number' : 'number',
+      kind: 'number',
       ...c,
-      rot: handInked ? c.rot * 0.3 : c.rot * 0.6,
-      ink: handInked ? INKS.ironGall : inkFor(['red', 'red', 'violet']),
+      rot: c.rot * 0.6,
+      uneven: unevenStrike ? Math.min(0.95, c.uneven + 0.3) : c.uneven,
+      ink: inkFor(['red', 'red', 'violet', 'blue']),
       size,
       text: { number: n },
       seed: seed + ':no',
@@ -272,7 +273,7 @@ export function printMarks(ctx: Ctx2D, marks: Mark[], k: number, layer: 'under' 
 function printMark(ctx: Ctx2D, m: Mark, k: number) {
   const r = rng(m.seed);
   // the mark's own canvas, room for its widest form
-  const span = m.kind === 'duplex' ? m.size * 2.3 : m.kind === 'line' || m.kind === 'pencil' || m.kind === 'number' || m.kind === 'inked-number' ? m.size * 2.6 : m.kind === 'cancel' ? m.size * 1.6 : m.size * 1.4;
+  const span = m.kind === 'duplex' ? m.size * 2.3 : m.kind === 'line' || m.kind === 'pencil' || m.kind === 'number' ? m.size * 2.6 : m.kind === 'cancel' ? m.size * 1.6 : m.size * 1.4;
   const W = Math.ceil(span * k), H = Math.ceil(m.size * 1.4 * k);
   const c = makeCanvas(W, H);
   const g = c.getContext('2d') as Ctx2D;
@@ -285,35 +286,32 @@ function printMark(ctx: Ctx2D, m: Mark, k: number) {
   g.setTransform(1, 0, 0, 1, 0, 0);
 
   const pencil = m.kind === 'pencil';
-  const pen = m.kind === 'inked-number';
   // ink: voids where the rubber missed (pencil: the paper's tooth catching graphite)
   g.globalCompositeOperation = 'destination-out';
   const sp = g.createPattern(speckle(), 'repeat');
   if (sp) {
     sp.setTransform(new DOMMatrix().translate(r() * 128, r() * 128).scale(Math.max(0.6, k / 7)));
-    g.globalAlpha = pencil ? 0.75 : pen ? 0.12 : 0.38 + m.uneven * 0.3;
+    g.globalAlpha = pencil ? 0.75 : 0.38 + m.uneven * 0.3;
     g.fillStyle = sp;
     g.fillRect(0, 0, W, H);
     // and wider patches the rubber didn't reach at all
-    if (!pen && !pencil) {
+    if (!pencil) {
       sp.setTransform(new DOMMatrix().translate(r() * 300, r() * 300).scale(Math.max(1.6, k / 2.6)).rotate(r() * 90));
       g.globalAlpha = 0.22 + m.uneven * 0.25;
       g.fillRect(0, 0, W, H);
     }
   }
-  if (!pen) {
-    // under- and over-inking: soft blotches, and one side of the impression fainter than the other
-    g.globalAlpha = 0.34 + m.uneven * 0.36;
-    g.imageSmoothingEnabled = true;
-    g.drawImage(blotch(), -W * r() * 0.5, -H * r() * 0.5, W * 1.6, H * 1.6);
-    const dx = Math.cos(m.lean), dy = Math.sin(m.lean);
-    const grad = g.createLinearGradient(W / 2 - dx * W / 2, H / 2 - dy * H / 2, W / 2 + dx * W / 2, H / 2 + dy * H / 2);
-    grad.addColorStop(0, `rgba(0,0,0,${(0.75 * m.uneven).toFixed(3)})`);
-    grad.addColorStop(0.55, 'rgba(0,0,0,0)');
-    g.globalAlpha = 1;
-    g.fillStyle = grad;
-    g.fillRect(0, 0, W, H);
-  }
+  // under- and over-inking: soft blotches, and one side of the impression fainter than the other
+  g.globalAlpha = 0.34 + m.uneven * 0.36;
+  g.imageSmoothingEnabled = true;
+  g.drawImage(blotch(), -W * r() * 0.5, -H * r() * 0.5, W * 1.6, H * 1.6);
+  const dx = Math.cos(m.lean), dy = Math.sin(m.lean);
+  const grad = g.createLinearGradient(W / 2 - dx * W / 2, H / 2 - dy * H / 2, W / 2 + dx * W / 2, H / 2 + dy * H / 2);
+  grad.addColorStop(0, `rgba(0,0,0,${(0.75 * m.uneven).toFixed(3)})`);
+  grad.addColorStop(0.55, 'rgba(0,0,0,0)');
+  g.globalAlpha = 1;
+  g.fillStyle = grad;
+  g.fillRect(0, 0, W, H);
   // colour it
   g.globalCompositeOperation = 'source-in';
   g.globalAlpha = 1;
@@ -326,14 +324,14 @@ function printMark(ctx: Ctx2D, m: Mark, k: number) {
   ctx.rotate(m.rot);
   ctx.globalCompositeOperation = 'multiply';
   // the darker the ink, the more a thin inking shows
-  ctx.globalAlpha = pencil ? 0.62 : m.ink === INKS.violet || m.ink === INKS.ironGall ? m.press * 0.82 : m.press;
+  ctx.globalAlpha = pencil ? 0.62 : m.ink === INKS.violet ? m.press * 0.82 : m.press;
   if (!pencil) {
     ctx.shadowColor = m.ink;
     ctx.shadowBlur = Math.max(0.6, 0.18 * k);
   }
   ctx.drawImage(c, -W / 2, -H / 2);
   ctx.shadowBlur = 0;
-  if (m.bounce && !pencil && !pen) {
+  if (m.bounce && !pencil) {
     ctx.globalAlpha = m.press * 0.22;
     ctx.drawImage(c, -W / 2 + m.bounce[0] * k, -H / 2 + m.bounce[1] * k);
   }
@@ -502,14 +500,6 @@ const SHAPES: Record<Kind, Shape> = {
     x += lw + px * 0.35;
     g.font = font(px, MONO, 700);
     g.fillText(n, x, px * 0.35);
-  },
-  // the number written in by hand, in ink
-  'inked-number'(g, m) {
-    const px = m.size * 0.36;
-    g.font = `400 ${(px * 1.15).toFixed(2)}px ${HAND}`;
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.fillText(`No. ${String(Number(m.text.number))}`, 0, 0);
   },
   // a boxed cancellation word
   cancel(g, m) {
