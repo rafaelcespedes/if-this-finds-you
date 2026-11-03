@@ -89,7 +89,7 @@ export function ReadingLetter(p: Props) {
     />
   );
   return (
-    <main className="rr-letter mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-14 px-4 pt-[calc(4.75rem+env(safe-area-inset-top,0px))] pb-40 sm:px-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:px-10 lg:pt-24">
+    <main className="rr-letter mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-14 px-4 pt-[calc(4.75rem+env(safe-area-inset-top,0px))] pb-40 sm:px-8 lg:grid-cols-[minmax(0,1fr)_min(21.25rem,34vw)] lg:px-10 lg:pt-24">
       <div className="min-w-0">
         {/* phones: the title above the sheet, for bearings (the card under the sheet holds the heading itself) */}
         {!wide && <p aria-hidden className="rr-letter-kicker">{record.title}</p>}
@@ -115,12 +115,12 @@ export function ReadingLetter(p: Props) {
   );
 }
 
-const itemCls = 'flex min-h-10 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent pointer-coarse:min-h-11';
+const itemCls = 'flex min-h-10 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[0.875rem] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent pointer-coarse:min-h-11';
 
 function Menu({ children, side = 'top', align = 'end' }: { children: ReactNode; side?: 'top' | 'bottom'; align?: 'start' | 'center' | 'end' }) {
   return (
     <DropdownMenu.Portal>
-      <DropdownMenu.Content side={side} align={align} sideOffset={8} collisionPadding={12} className="lib-menu z-50 w-[248px] p-1.5 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
+      <DropdownMenu.Content side={side} align={align} sideOffset={8} collisionPadding={12} className="lib-menu z-50 w-[15.5rem] p-1.5 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
         {children}
       </DropdownMenu.Content>
     </DropdownMenu.Portal>
@@ -155,7 +155,7 @@ function HandMenu({ name, keep, onKeep, onNewHand, onReplay, canReplay }: {
           <span className="mt-0.5 grid size-4 shrink-0 place-items-center"><DropdownMenu.ItemIndicator><Check aria-hidden className="size-4 text-[var(--lib-accent)]" /></DropdownMenu.ItemIndicator></span>
           <span>
             Keep this hand
-            <span className="block text-[12.5px] text-muted-foreground">for the next letters you open</span>
+            <span className="block text-[0.78125rem] text-muted-foreground">for the next letters you open</span>
           </span>
         </DropdownMenu.CheckboxItem>
       </Menu>
