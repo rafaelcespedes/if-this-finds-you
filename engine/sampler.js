@@ -10,8 +10,9 @@
 // Pure: the same opts give the same pick. The UI passes fresh `entropy` (any string) on each click.
 
 import { rng, clamp } from './core.js';
-import { makeHand, archetypeOf, latentOf, baseSeed, ARCHETYPES } from './hand.js';
-import { describeHabits, families, getStyle } from './glyphs.js';
+import { makeHand, archetypeOf, latentOf, baseSeed, ARCHETYPES, care, skeleton, builtInSlant, CAP } from './hand.js';
+import { describeHabits, families, getStyle, choose, allographOf, isHistorical, CONFUSABLE } from './glyphs.js';
+import { layout } from './layout.js';
 
 export const VARIETY = {
   sibling: { label: 'Sibling', note: 'a close relative of the current hand' },
@@ -54,7 +55,10 @@ function profile(h) {
     texture: clamp((h.tremor - 0.4) / 2.8, 0, 1),
   };
 }
-const asHand = (x) => (x && x.habits ? x : makeHand(x.seed, x.style ? { style: x.style } : x.family || 'print'));
+// a history item says whether it was a Neat only hand; when it doesn't, it follows the current setting
+const asHand = (x, neat = true) => (x && x.habits ? x : makeHand(x.seed, x.style ? { style: x.style } : x.family || 'print',
+  { neatOnly: x.neatOnly == null ? neat : x.neatOnly !== 'off' && x.neatOnly !== false }));
+const neatOpt = (opts) => opts.neatOnly !== false && opts.neatOnly !== 'off'; // Neat only is on unless switched off
 
 // Perceived distance between two writers (controls-and-feel.md §5.2 step 5 weights). About 1 = clearly different.
 export function handDistance(a, b) {
@@ -81,6 +85,54 @@ function extraD2(A, B) {
   return d2;
 }
 
+// How readable a hand is at a glance, 0..1 (1 = a stranger reads it straight off). Not pretty: readable. Sums
+// penalties for what makes our hands hard to read: little care, a lot of hurry, extreme lean, letters far wider or
+// narrower than usual, a small x-height or a pen heavy enough to fill the counters, extreme movement (huge loops,
+// long lead-ins, flourishes, hard angles), a historical tradition, capitals that read as another character.
+// Cheap: two skeletons and a few capitals. Neat only keeps hands at NEAT_MIN or above.
+export const NEAT_MIN = 0.77;
+const CTX = { prev: 'a', next: 'a', index: 1 };
+export function legibility(p) {
+  const parts = legibilityParts(p);
+  let pen = 0;
+  for (const k in parts) pen += parts[k];
+  return Math.max(0, Math.min(1, 1 - 0.6 * pen)); // about 0.4 = hard work; Neat only asks for 0.77
+}
+// The ink gap between two words, in x-heights ('an an', laid out as the page would)
+function wordGap(p) {
+  const items = layout(p, 'an an', { maxWidth: 1e6 }).items.filter((it) => it.kind === 'glyph');
+  if (items.length < 4) return 1;
+  const edge = (it, right) => { let m = right ? -Infinity : Infinity; for (const c of it.g.contours) for (const q of c) m = right ? Math.max(m, it.x + q[0]) : Math.min(m, it.x + q[0]); return m; };
+  return (edge(items[2], false) - edge(items[1], true)) / (p.xHeight * CAP);
+}
+
+// The penalties behind legibility(p), by cause (for calibration, the lab and the provenance card)
+export function legibilityParts(p) {
+  const st = getStyle(p.style) || {};
+  const joined = !!st.connected;
+  const xhU = p.xHeight * CAP;
+  const P = {};
+  P.careless = 1.3 * Math.max(0, 0.55 - care(p));
+  P.rushed = 0.9 * Math.max(0, (p.hurry || 0) - 0.7);
+  const lean = builtInSlant(p.style) + (p.slant || 0);
+  P.lean = 0.035 * Math.max(0, lean - 28) + 0.04 * Math.max(0, -10 - lean);
+  const nW = skeleton(p, 'n', CTX).advance / xhU, oW = skeleton(p, 'o', CTX).advance / xhU;
+  const band = (w, lo, hi) => 0.45 * (Math.max(0, w - hi) + Math.max(0, lo - w));
+  P.proportions = joined ? band(nW, 0.6, 2.05) + band(oW, 0.35, 1.9) : band(nW, 0.5, 1.55) + band(oW, 0.4, 1.5);
+  // words must stand apart: the ink gap between two laid-out words (exit strokes and lead-ins eat into the space)
+  P.wordsRunTogether = 2 * Math.max(0, 0.7 - wordGap(p));
+  P.smallXHeight = 3 * Math.max(0, (joined ? 0.4 : 0.47) - p.xHeight);
+  P.heavyPen = 5 * Math.max(0, p.penWidth / xhU - 0.17);
+  P.tremor = 0.15 * Math.max(0, (p.tremor || 0) - 2.1);
+  // only the 'more' side of a movement dimension hurts reading (fewer loops or no lead-ins read fine); rhythm both ways
+  const dim = (k, at, w = 0.5, both = false) => (typeof p[k] === 'number' ? w * Math.max(0, (both ? Math.abs(p[k]) : p[k]) - at) : 0);
+  P.movement = dim('loops', 0.7, 0.25) + dim('leadIns', 0.6, 0.35) + dim('flourish', 0.6, 0.15) + dim('angularity', 0.6, 0.4) + dim('loopHeight', 0.7, 0.2) + dim('joinLength', 0.7, 0.3) + dim('rhythm', 0.7, 0.3, true);
+  P.tradition = isHistorical(p.style) ? 0.5 : st.tradition && st.tradition.legibility === 'specialist' ? 0.2 : 0;
+  P.confusable = 0;
+  for (const ch of 'AGIQT') { const v = choose(p, ch); if (v && CONFUSABLE.has(allographOf(v))) P.confusable += ch === 'A' || ch === 'I' || ch === 'T' ? 0.12 : 0.06; }
+  return P;
+}
+
 // Legibility cap (§5.2 step 6): a writer may be messy, fast, shaky, steep or extreme in proportion, not all at once.
 export function chaos(h) {
   const xhLow = h.family === 'script' ? clamp((0.44 - h.xHeight) / 0.08, 0, 1) : clamp((0.52 - h.xHeight) / 0.1, 0, 1);
@@ -103,21 +155,24 @@ export function sampleHand(opts = {}) {
   const r = rng('sampler:' + (opts.entropy == null ? '' : opts.entropy) + ':' + history.map((x) => x.seed + '/' + x.family).join(','));
   const fams = families();
   const last = history[history.length - 1];
-  const recent = history.map((x) => profile(asHand(x)));
+  const recent = history.map((x) => profile(asHand(x, neatOpt(opts))));
 
   // Sibling: a relative of the last hand, same family, about one notch away
   if (variety === 'sibling' && last) {
     const fam = opts.family || last.family || 'print';
     const base = baseSeed(last.seed);
     let best = null;
-    for (let i = 0; i < (opts.candidates || 12); i++) {
+    for (let i = 0, tries = 0; i < (opts.candidates || 12) && tries < 60; tries++) {
       const seed = `${base}~${1 + Math.floor(r() * 998)}`;
-      const P = profile(makeHand(seed, fam));
+      const h = makeHand(seed, fam, { neatOnly: neatOpt(opts) });
+      if (neatOpt(opts) && legibility(h) < NEAT_MIN && tries < 48) continue; // Neat only: skip unreadable relatives
+      i++;
+      const P = profile(h);
       const d = handDistance(P, recent[recent.length - 1]);
       const score = -Math.abs(d - 0.32);                    // close, but visibly someone else
       if (!best || score > best.score) best = { seed, family: fam, P, d, score };
     }
-    return result(best, variety);
+    return result(best, variety, neatOpt(opts));
   }
 
   // Family: pinned, or random with long runs broken up
@@ -137,12 +192,16 @@ export function sampleHand(opts = {}) {
   const cfg = VARIETY[variety];
   const n = opts.candidates || 12;
   const cands = [];
+  let spare = null; // the most readable hand seen, if none clears Neat only
   for (let k = 0; cands.length < n && k < 4000; k++) {
     const seed = seedFrom(rng('sampler-seed:' + r() + ':' + k));
     if (archetypeOf(seed).id !== target) continue;
-    const h = makeHand(seed, family);
+    const h = makeHand(seed, family, { neatOnly: neatOpt(opts) });
+    const L = neatOpt(opts) ? legibility(h) : 1;
+    if (L < NEAT_MIN) { if (!spare || L > spare.L) spare = { seed, family, h, L }; continue; }
     cands.push({ seed, family, h, P: profile(h), chaos: chaos(h) });
   }
+  if (!cands.length && spare) cands.push({ ...spare, P: profile(spare.h), chaos: chaos(spare.h) });
   let best = null;
   for (const c of cands) {
     const ds = recent.map((P) => handDistance(c.P, P));
@@ -157,13 +216,14 @@ export function sampleHand(opts = {}) {
     }
     if (!best || score > best.score) best = { ...c, d: dmin, score };
   }
-  return result(best, variety);
+  return result(best, variety, neatOpt(opts));
 }
 
-function result(b, variety) {
+function result(b, variety, neat = true) {
   if (!b) return null;
   const arch = archetypeOf(b.seed);
-  return { seed: b.seed, family: b.family, style: (b.h || makeHand(b.seed, b.family)).style, archetype: arch.id, label: arch.label, variety, distance: b.d };
+  const h = b.h || makeHand(b.seed, b.family, { neatOnly: neat });
+  return { seed: b.seed, family: b.family, style: h.style, archetype: arch.id, label: arch.label, variety, distance: b.d, neatOnly: h.neatOnly, legibility: +legibility(h).toFixed(2) };
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -270,7 +330,7 @@ const inkFits = (pen, ink) => (PEN_INKS[pen] && PEN_INKS[pen][ink] ? 1 : ink ===
 //                  every hand, e.g. the style dimensions loops, joinLength, rhythm }  (absolute values)
 //        offsets: { same keys }  (params minus this hand's natural values: the look's nudges) }
 export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
-  const h = makeHand(seed, family);
+  const h = makeHand(seed, family, { neatOnly: neatOpt(opts) });
   const base = baseSeed(seed);
   const A = ARCH_LOOK[h.archetype] || ARCH_LOOK.friend;
   // a sibling keeps most of the base seed's look, and re-rolls a few parts of it
@@ -320,6 +380,7 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   for (const k in off) off[k] = +(params[k] - nat[k]).toFixed(3);
   const arch = archetypeOf(seed);
   return { seed: String(seed), family: h.family, style: h.style, archetype: arch.id, label: arch.label, schooling: h.schooling, traditions: h.traditions,
+    neatOnly: h.neatOnly, legibility: +legibility(h).toFixed(2),
     pen, tip, ink, inkAge, inkVariation, paper, size, params, offsets: off };
 }
 
@@ -339,6 +400,8 @@ export function lookDistance(a, b) {
 //                 (0-20 Sibling, 21-70 Stranger, 71-100 Wild). opts.locked: { family?, pen?, tip?, ink?, paper?, size?,
 //                 inkAge? } kept as given; a list of keys keeps opts.current's values. opts.entropy: any fresh string.
 //                 opts.textLength: the letter's length in characters, so a postcard isn't offered for a long letter.
+//                 opts.neatOnly (default true): only hands with legibility >= NEAT_MIN, tidied (hand.js tidyHand);
+//                 false offers every hand, ugly ones too. The look carries neatOnly and legibility for share links.
 //   Compatible with the earlier shape: { current: { seed, style }, locked: ['style'], variety: 60 }.
 export function sampleLook(opts = {}) {
   let variety = opts.variety == null ? 'stranger' : opts.variety;
@@ -347,16 +410,16 @@ export function sampleLook(opts = {}) {
   const famOf = (x) => x.family || (getStyle(x.style) || {}).family || 'print';
   const cur = opts.current && opts.current.seed ? { ...opts.current, family: famOf(opts.current) } : null;
   const hist = (opts.history || (cur ? [cur] : [])).map((x) => (typeof x === 'string' ? { seed: x, family: 'print' } : x)).slice(-6);
-  const looks = hist.map((x) => (x.pen && x.paper && x.ink ? x : { ...lookOf(x.seed, famOf(x)), ...x }));
+  const looks = hist.map((x) => (x.pen && x.paper && x.ink ? x : { ...lookOf(x.seed, famOf(x), {}, { neatOnly: x.neatOnly == null ? neatOpt(opts) : x.neatOnly }), ...x }));
   let locked = opts.locked || {};
   if (Array.isArray(locked)) {
-    const ref = cur ? { ...lookOf(cur.seed, cur.family), ...cur } : looks[looks.length - 1] || {};
+    const ref = cur ? { ...lookOf(cur.seed, cur.family, {}, { neatOnly: neatOpt(opts) }), ...cur } : looks[looks.length - 1] || {};
     locked = Object.fromEntries(locked.map((k) => [k === 'style' ? 'family' : k, k === 'style' ? ref.family : ref[k]]).filter(([, v]) => v != null));
   }
   const family = locked.family || opts.family;
   const lockedLook = Object.fromEntries(Object.entries(locked).filter(([k]) => LOOK_KEYS.includes(k)));
   const r = rng('look-sampler:' + (opts.entropy == null ? '' : opts.entropy) + ':' + looks.map((x) => x.seed + '/' + x.family + '/' + x.pen + '/' + x.paper).join(',') + ':' + JSON.stringify(locked));
-  const P = looks.map((x) => ({ ...x, P: profile(asHand(x)) }));
+  const P = looks.map((x) => ({ ...x, P: profile(asHand(x, neatOpt(opts))) }));
   const last = P[P.length - 1];
   const finish = (best) => best && { ...best.look, variety, distance: +best.d.toFixed(3) };
 
@@ -365,10 +428,12 @@ export function sampleLook(opts = {}) {
     const lastLocks = { ...lockedLook };
     for (const k of ['pen', 'paper']) if (lastLocks[k] == null && last[k]) lastLocks[k] = last[k]; // same desk, a relative
     let best = null;
-    for (let i = 0; i < (opts.candidates || 12); i++) {
+    for (let i = 0, tries = 0; i < (opts.candidates || 12) && tries < 60; tries++) {
       const seed = `${baseSeed(last.seed)}~${1 + Math.floor(r() * 998)}`;
-      const look = lookOf(seed, fam, lastLocks, { textLength: opts.textLength });
-      const d = lookDistance({ ...look, P: profile(makeHand(seed, fam)) }, last);
+      const look = lookOf(seed, fam, lastLocks, { textLength: opts.textLength, neatOnly: neatOpt(opts) });
+      if (neatOpt(opts) && look.legibility < NEAT_MIN && tries < 48) continue; // Neat only: skip unreadable relatives
+      i++;
+      const d = lookDistance({ ...look, P: profile(makeHand(seed, fam, { neatOnly: neatOpt(opts) })) }, last);
       const score = -Math.abs(d - 0.38);
       if (!best || score > best.score) best = { look, d, score };
     }
@@ -386,13 +451,15 @@ export function sampleLook(opts = {}) {
   const bag = ARCHETYPES.filter((a) => !seen.has(a.id));
   const target = r.weighted(bag.length ? bag : ARCHETYPES).id;
   const cfg = VARIETY[variety];
-  let best = null;
+  let best = null, spare = null;
   for (let k = 0, n = 0; n < (opts.candidates || 12) && k < 4000; k++) {
     const seed = seedFrom(rng('look-seed:' + r() + ':' + k));
     if (archetypeOf(seed).id !== target) continue;
+    const h = makeHand(seed, fam, { neatOnly: neatOpt(opts) });
+    const look = lookOf(seed, fam, lockedLook, { wild: variety === 'wild', textLength: opts.textLength, neatOnly: neatOpt(opts) });
+    // Neat only: hands a stranger can't read at a glance are skipped (the most readable is kept in case none pass)
+    if (neatOpt(opts) && look.legibility < NEAT_MIN) { if (!spare || look.legibility > spare.look.legibility) spare = { look, d: 0, score: -9 }; continue; }
     n++;
-    const h = makeHand(seed, fam);
-    const look = lookOf(seed, fam, lockedLook, { wild: variety === 'wild', textLength: opts.textLength });
     const C = { ...look, P: profile(h) };
     const ds = P.map((x) => lookDistance(C, x));
     const dmin = ds.length ? Math.min(...ds) : 1;
@@ -404,5 +471,5 @@ export function sampleLook(opts = {}) {
     if (variety === 'wild') score += 0.12 * Object.values(latentOf(seed)).reduce((s, v) => s + Math.abs(v), 0) / 7;
     if (!best || score > best.score) best = { look, d: dmin, score };
   }
-  return finish(best);
+  return finish(best || spare);
 }
