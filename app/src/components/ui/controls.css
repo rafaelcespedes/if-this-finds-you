@@ -4,22 +4,22 @@
    layers; imported by each page's entry after the looks. Compact sizes stay (density.css). */
 
 /* ---------- sliders: the row is the slider (an ink bar) ---------- */
-/* name and word sit inside a 28px bar (44 on phones); the bar fills with a light wash of the accent up to the
+/* name and word sit inside a 1.75rem bar (2.75rem on phones); the bar fills with a light wash of the accent up to the
    value; a thin upright line marks it, darker while you drag. Tens marks show while the pointer is over it. */
 :root [data-row].grid:has(> [data-slot='slider']) {
   grid-template-columns: minmax(0, 1fr);
-  row-gap: 4px;
+  row-gap: 0.25rem;
 }
 :root [data-row].grid:has(> [data-slot='slider']) > div:first-child {
   grid-area: 1 / 1;
   z-index: 1;
   align-self: center;
-  padding-inline: 10px;
+  padding-inline: 0.625rem;
   pointer-events: none;
 }
 :root [data-row].grid:has(> [data-slot='slider']) > [data-slot='slider'] {
   grid-area: 1 / 1;
-  height: 28px;
+  height: 1.75rem;
   cursor: ew-resize;
 }
 :root [data-row].grid:has(> [data-slot='slider']) > span {
@@ -40,7 +40,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), color-mix(in oklab, var(--text) 18%, transparent) calc(10% - 1px) 10%) center / 100% 8px no-repeat;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), color-mix(in oklab, var(--text) 18%, transparent) calc(10% - 1px) 10%) center / 100% 0.5rem no-repeat;
   opacity: 0;
   transition: opacity 200ms var(--ease-out);
   pointer-events: none;
@@ -51,7 +51,7 @@
 /* the value: a thin upright line, not a knob */
 :root [data-slot='slider'] [role='slider'] {
   width: 2px !important;
-  height: 16px !important;
+  height: 1rem !important;
   border-radius: 1px;
   border: 0;
   background: color-mix(in oklab, var(--mark) 55%, transparent);
@@ -62,10 +62,10 @@
 :root [data-slot='slider']:is(:hover, [data-active]) [role='slider'],
 :root [data-slot='slider'] [role='slider']:active {
   background: var(--mark);
-  height: 20px !important;
+  height: 1.25rem !important;
 }
 :root [data-slot='slider'] [role='slider']::after {
-  inset: -8px -10px;
+  inset: -0.75rem; /* a 26 × 40 px hit area around the 2 px line (24 px or more) */
 }
 /* near the name or the word the line steps back so the words stay readable (DialKit's value dodge) */
 :root [data-slot='slider'][data-edge]:not(:hover):not([data-active]) [role='slider'] {
@@ -74,7 +74,7 @@
 /* the writer's own value: a short tick in the bar */
 :root [data-slot='slider'] > span[aria-hidden] {
   width: 1px !important;
-  height: 10px !important;
+  height: 0.625rem !important;
   border-radius: 0 !important;
   background: color-mix(in oklab, var(--text) 45%, transparent) !important;
   box-shadow: none !important;
@@ -82,10 +82,10 @@
 }
 @media (pointer: coarse) {
   :root [data-row].grid:has(> [data-slot='slider']) > [data-slot='slider'] {
-    height: 44px;
+    height: 2.75rem;
   }
   :root [data-slot='slider'] [role='slider'] {
-    height: 22px !important;
+    height: 1.375rem !important;
   }
 }
 
@@ -108,7 +108,7 @@
 :root [data-slot='slider'][data-caught] > span[aria-hidden] {
   box-shadow: none !important;
   background: var(--mark) !important;
-  height: 14px !important;
+  height: 0.875rem !important;
 }
 @media (prefers-reduced-motion: reduce) {
   :root [data-slot='slider'] * {
@@ -151,13 +151,13 @@
 
 /* ---------- words, not switches (ui/switch.tsx with words) ---------- */
 :root [data-words] > [data-slot='segmented-item'] {
-  height: var(--seg-h, 28px);
-  font-size: var(--seg-text, 12.5px);
-  padding-inline: 8px;
+  height: var(--seg-h, 1.75rem);
+  font-size: var(--seg-text, 0.78125rem);
+  padding-inline: 0.5rem;
 }
 @media (pointer: coarse) {
   :root [data-words] > [data-slot='segmented-item'] {
-    height: var(--m-seg-h, 40px);
+    height: var(--m-seg-h, 2.5rem);
   }
 }
 

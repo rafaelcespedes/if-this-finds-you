@@ -22,7 +22,6 @@ html[data-look='reading-room']:not([data-rrcolor='0']) {
   --popover: var(--rc-surface-2);
   --field: var(--rc-surface-2);
   --hairline: var(--rc-rule);
-  --rr-rule: var(--rc-rule); /* a row's rule: the ledger, lists, the sheets' rows */
   --chip: var(--rc-ctl);
   --chip-hover: var(--rc-ctl-hover);
   --tile-on: var(--rc-ctl-on);
@@ -97,9 +96,9 @@ html[data-look='reading-room'][data-rrcolor='1'] {
   --rc-room: #e6e4de;
   --rc-surface-1: #f3eee1; /* card buff, as today */
   --rc-surface-2: #f8f5ec;
-  --rc-rule: color-mix(in oklab, var(--rr-ink) 16%, transparent);
+  --rc-rule: var(--rr-rule); /* the room's own soft rule */
   --rc-ctl: transparent;
-  --rc-ctl-edge: color-mix(in oklab, var(--rr-ink) 30%, transparent); /* 1.8:1: a drawn line, not a fill */
+  --rc-ctl-edge: color-mix(in oklab, var(--rr-ink) 24%, transparent); /* a drawn line, soft: never a hard black one */
   --rc-ctl-hover: color-mix(in oklab, var(--rr-ink) 6%, transparent);
   --rc-ctl-press: color-mix(in oklab, var(--rr-ink) 11%, transparent);
   --rc-ctl-on: #fbfaf6;
@@ -116,7 +115,7 @@ html[data-look='reading-room'][data-rrcolor='2'] {
   --rc-room: #e6e4de;
   --rc-surface-1: #efeee9; /* a lighter sheet of the room's grey */
   --rc-surface-2: #f8f6f1;
-  --rc-rule: color-mix(in oklab, var(--rr-ink) 14%, transparent);
+  --rc-rule: var(--rr-rule);
   --rc-ctl: color-mix(in oklab, var(--rr-ink) 7%, transparent);
   --rc-ctl-edge: transparent;
   --rc-ctl-hover: color-mix(in oklab, var(--rr-ink) 11%, transparent);
