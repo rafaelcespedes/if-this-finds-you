@@ -20,6 +20,12 @@
 // No hard rule a real writer doesn't keep (docs/PRINCIPLES.md #1): on ruled paper lines stray off the
 // rule and a rule is sometimes skipped; on plain paper the first line, paragraph gaps and pitch vary.
 //
+// A letter is set out the way this writer sets out letters (letter-shape.js says what each line is): a
+// blank line between paragraphs is a whole line, half a line or none at all (then the writer indents),
+// paragraphs are indented or not, the greeting sits on its own line and the first paragraph may start
+// under it, the closing and the name drift right or to the centre as a block (or stay at the margin),
+// and a P.S. stands apart, often smaller. Each habit is the writer's own, drawn from the seed.
+//
 // layout() can continue from where an earlier call stopped: pass { start: page.pen }. Everything the
 // pen needs to keep writing (line, position, word counts, fatigue) travels in that object, so text
 // written earlier never moves (Ink mode's frozen placements). With { ink: { salt } } letters are keyed
@@ -33,6 +39,7 @@
 import { rng, clamp, smooth, DEG } from './core.js';
 import { makeGlyph, markHabits, has, UPM, CAP } from './hand.js';
 import { getStyle } from './glyphs.js';
+import { newLetter, beginLine, noteWord, noteBlank, isPS, isShort } from './letter-shape.js';
 
 export const MISS_ADVANCE = 560; // fallback; a placeholder takes the width of this hand's 'n'
 
@@ -48,7 +55,7 @@ export const spreadOf = (care) => 0.5 + (1 - clamp(care, 0, 1));
 // The writer's page habits, fixed per seed ('page:' namespace). Ranges: human-feel.md §4.1–4.3, §9.
 export function pageHabits(p) {
   const r = rng('page:' + p.seed);
-  return {
+  const H = {
     slope: r.range(-1.0, 1.8),        // degrees, + = lines climb to the right
     slopeSd: r.range(0.4, 0.9),       // line-to-line deviation...
     slopeRho: r.range(0.6, 0.85),      // ...correlated: each line takes the one above as its guide
@@ -76,7 +83,31 @@ export function pageHabits(p) {
     skipRule: r() < 0.35 ? r.range(0.1, 0.4) : 0, // ruled: chance to skip a rule before a paragraph
     stray: r.range(0.05, 0.2),        // ruled: chance that a line drifts off its rule
     lineSlantSd: r.range(0.3, 0.7),   // degrees: each line leans a little on its own
+    // how this writer sets out a letter
+    blank: pick(r, [[0.45, () => r.range(0.85, 1.1)], [0.3, () => r.range(0.35, 0.65)], [0.25, () => 0]]), // a blank line between paragraphs: a whole line, half, or none (pitches)
+    indent: pick(r, [[0.3, () => 0], [0.45, () => r.range(2, 4)], [0.25, () => r.range(5, 8)]]), // paragraph indent (x-heights; 1–2 cm on paper): none, small, deep
+    greetGap: r() < 0.45 ? r.range(0.15, 0.55) : 0, // a little space after the greeting (pitches)
+    under: r() < 0.3,                 // the first paragraph starts under the end of the greeting
+    block: pick(r, [[0.2, () => r.range(0, 0.02)], [0.4, () => r.range(0.22, 0.38)], [0.4, () => r.range(0.42, 0.58)]]), // closing block: margin, centre, right (of the line)
+    nameDx: r() < 0.5 ? r.range(0, 0.6) : r.range(1.2, 4.5), // the name sits further right than the closing (x-heights)
+    closeGap: r() < 0.5 ? r.range(0.15, 0.5) : 0, // space before a closing that follows the text directly
+    sigGap: r() < 0.4 ? r.range(0.05, 0.3) : 0,   // the name a little apart from the closing
+    nameSize: r.range(0.98, 1.12),    // the name written a touch bigger, or not
+    psGap: r.range(0.7, 1.3),         // space above a P.S. (pitches; at least a line on ruled paper)
+    psSize: pick(r, [[0.55, () => r.range(0.78, 0.92)], [0.25, () => r.range(0.95, 1)], [0.2, () => r.range(0.86, 0.92)]]),
+    psPitch: 0,                       // (below: a smaller P.S. sits on closer lines)
   };
+  H.psPitch = H.psSize < 0.93 ? clamp(H.psSize + r.range(-0.08, 0.06), 0.78, 0.98) : r.range(0.95, 1);
+  // a writer who leaves no blank line between paragraphs indents them
+  if (H.blank === 0 && H.indent < 3) H.indent = r.range(3, 5);
+  return H;
+}
+
+// one of several habits, by weight: [[weight, draw], ...]
+function pick(r, opts) {
+  let u = r();
+  for (const [w, f] of opts) { if (u < w) return f(); u -= w; }
+  return opts[opts.length - 1][1]();
 }
 
 // The hand's vertical extent and its natural line pitch (font units), for UIs that size paper to a hand.
@@ -207,6 +238,7 @@ function constants(p, hc) {
     missAdv: has(p, 'n') ? makeGlyph(p, 'n', null).advance : MISS_ADVANCE,
     hyphen, hyInk: hyphen ? 0.7 * inkX(makeGlyph(p, '-', null))[1] : 0,
     pageSlant: pr.gauss() * 0.5, pageSize: 1 + pr.gauss() * 0.015,
+    advs: new Map(), // a letter's usual width (canonical advance), for rough line widths
   };
   return hc.k;
 }
@@ -225,7 +257,13 @@ function graphemes(tok, base) {
 
 // opts: { maxWidth (font units), lineHeight, firstBaseline, marginLeft (font units, default 0),
 //         ruled (bool), start (a page.pen to continue from), ink ({ salt }: Ink mode seeding),
-//         salt (another letter by the same hand: different letter instances), size, weight }
+//         salt (another letter by the same hand: different letter instances), size, weight,
+//         letter (false: no letter shape, every line at the margin), ahead (the text still to be written,
+//         as far as it's known: Ink mode's thought letters), complete (the text ends where the letter
+//         ends; default true, false in Ink mode) }
+// Letter shape: each line's role (greeting, paragraph, closing, name, P.S.) is decided when the line
+// begins, from what's known of it then (this text plus `ahead`), so ink placed once never moves. With
+// `complete`, a closing is also recognised by where it sits (only short lines follow it).
 // Prefix-stable: with firstBaseline given, appending text never moves or changes complete earlier words
 // (only the word still being typed can change). tools/qa/prefix.mjs checks it.
 // Plain paper: lineHeight is the mean pitch (default: from the hand, pageMetrics(p).pitch) and each line
@@ -252,8 +290,12 @@ function graphemes(tok, base) {
 //     each letter, between spaces, at line ends and starts (a wrap has both, aff 'before' / 'after'),
 //     and on empty lines. kind: 'glyph' | 'space' | 'lineEnd' | 'lineStart' | 'empty'.
 //   lineInfo: per line { n (= item.line), y, x0, x1, slope (deg, + = uphill), lean (deg), flow, bow and
-//     droop (font units at the middle / end), drift, phase, wave, edge, rule? }: lineBaseline(p, line, x)
-//     rebuilds the curve. rules: ruled baselines used; ruling: { first, pitch } (ruled only).
+//     droop (font units at the middle / end), drift, phase, wave, edge, rule?, start (x where the writing
+//     starts: an indent, a closing block), role, blank? }: lineBaseline(p, line, x) rebuilds the curve.
+//     role: what the line is in the letter (letter-shape.js: 'first', 'opening', 'para', 'cont',
+//     'closing', 'signature', 'name', 'ps', 'ps-para', 'ps-cont'), 'wrap' (the writing ran on from the
+//     line above) or 'blank' (an empty line between paragraphs: it has no ink and only holds the caret;
+//     with blank: true). rules: ruled baselines used; ruling: { first, pitch } (ruled only).
 //   ink: { top, bottom, left, right } of all ink (page units); height covers it.
 //   pen: where writing stopped, to continue with layout(p, more, { ...opts, start: page.pen }).
 export function layout(p, text, opts = {}) {
@@ -275,12 +317,19 @@ export function layout(p, text, opts = {}) {
   // (an overwrite pressed over a wrong letter): pen width × weight, and item.weight for the ink
   const sizeK = opts.size || 1, weight = opts.weight || 1;
   const pw = weight === 1 ? p : Object.assign(Object.create(p), { penWidth: p.penWidth * weight });
+  // letter shape: the letter's lines as far as they're known (this text, then what's still to come)
+  const knownText = opts.ahead ? text + String(opts.ahead).normalize('NFC') : text;
+  const known = opts.letter === false ? null : knownText.split('\n');
+  const complete = opts.complete != null ? !!opts.complete : !ink;
 
   // ----- the pen: everything needed to keep writing (a fresh page, or opts.start) -----
   const pen = opts.start ? JSON.parse(JSON.stringify(opts.start)) : {
     lineNo: -1, line: null, lp: 0, x: 0, wp: 0, wordsBefore: 0, offset: 0, para: -1, words: 0,
     pending: 0, prevEnd: '', seen: {}, glyphs: 0, open: null, endO: null, endX: 0,
+    letter: newLetter(), lastText: null, textEnd: null, wrapDx: 0, pk: 1, size: 1, blockX: null, sigX: null,
   };
+  if (!pen.letter) pen.letter = newLetter();
+  const L = pen.letter;
   const from = pen.offset;
   const seen = Object.assign(Object.create(null), pen.seen);
   const zOf = (name, key) => clamp(rng(S + name + ':' + key).gauss(), -2.5, 2.5);
@@ -297,8 +346,17 @@ export function layout(p, text, opts = {}) {
   const baseY = (ln, x) => baseAt(ln, x, N);
   const stop = (o, ln, x, kind, aff) => { const s = { o, line: ln.n, x, y: baseY(ln, x), kind }; if (aff) s.aff = aff; stops.push(s); };
 
-  function newLine(care, paraStart) {
+  // A new line. sp says how it starts (null: the writing wrapped onto it):
+  //   { role, para (a paragraph starts: a writer may add a little space, or skip a rule), adv (more space
+  //     above: pitches, or rules on ruled paper), k (pitch factor: a postscript's lines sit closer), dx
+  //     (where the writing starts, from the line's own margin) or x (a page x: a closing block, the first
+  //     paragraph under the greeting), w (the line's rough width, so a block still fits), blank + at (an
+  //     empty line between paragraphs, `at` pitches or rules below the last written line) }
+  // Space is measured from the last written line: empty lines in between only hold the caret.
+  function newLine(care, sp) {
     const prev = pen.line;
+    if (prev && !prev.blank) pen.lastText = prev;
+    const ref = sp ? pen.lastText || prev : prev;
     const lineNo = ++pen.lineNo;
     const lr = rng(S + 'line:' + lineNo);
     const ls = wander * (0.6 + 0.8 * (1 - care)); // how much this line wanders
@@ -319,36 +377,55 @@ export function layout(p, text, opts = {}) {
       x0: marginL + curveU * (clamp(H.marginSd * ls * (1 + 0.9 * lr.gauss()), 0, 0.03) + Math.min(0.04, H.marginDrift * wander * pen.lp)),
       x1: maxU,
       edge: maxU - curveU * (H.reach * (0.3 + 0.7 * lr()) * Math.min(1.5, ls) + (prev && prev.packed ? 0.025 : 0)),
-      float: 0, y: 0, rule: undefined, count: 0, packed: false,
+      float: 0, y: 0, rule: undefined, count: 0, packed: false, start: 0, role: sp ? sp.role : 'wrap',
     };
+    if (sp && sp.blank) ln.blank = true;
+    const k = sp ? sp.k || 1 : pen.pk || 1;
+    const between = sp && sp.blank && sp.at != null;
     if (ruled) {
-      // sometimes a rule is skipped before a new paragraph
-      const prevRule = prev && prev.rule != null ? Math.round((prev.rule - firstY) / lineH) : -1;
-      const skip = paraStart && prev && lr() < H.skipRule * (0.5 + (1 - care)) * Math.min(1, wander) ? 1 : 0;
-      ln.rule = firstY + (prevRule + 1 + skip) * lineH;
-      // words float a little above the rule; now and then a whole line strays off it
-      ln.float = xh * (H.float + 0.025 * ls * series(hc, S + 'float', 0.6, lineNo));
-      if (lr() < H.stray * (0.4 + (1 - care)) * Math.min(1.5, wander)) ln.float += xh * (lr() < 0.8 ? lr.range(0.06, 0.16) : -lr.range(0.03, 0.07));
-      ln.float = clamp(ln.float, -0.07 * xh, 0.2 * xh);
-      ln.y = ln.rule - ln.float;
-      rules.push(ln.rule);
-    } else if (!prev) {
+      const prevRule = ref && ref.rule != null ? Math.round((ref.rule - firstY) / lineH) : -1;
+      if (between) {
+        // an empty line between paragraphs: on the rule the writer skips, or between two rules
+        if (ref) Object.assign(ln, { slope: ref.slope, x0: ref.x0 });
+        ln.y = firstY + (prevRule + sp.at) * lineH;
+        if (Number.isInteger(sp.at)) { ln.rule = ln.y; rules.push(ln.rule); }
+      } else {
+        // sometimes a rule is skipped before a new paragraph
+        const skip = sp && sp.para && ref && lr() < H.skipRule * (0.5 + (1 - care)) * Math.min(1, wander) ? 1 : 0;
+        ln.rule = firstY + (prevRule + 1 + (sp ? Math.round(sp.adv || 0) : 0) + skip) * lineH;
+        // words float a little above the rule; now and then a whole line strays off it
+        ln.float = xh * (H.float + 0.025 * ls * series(hc, S + 'float', 0.6, lineNo));
+        if (lr() < H.stray * (0.4 + (1 - care)) * Math.min(1.5, wander)) ln.float += xh * (lr() < 0.8 ? lr.range(0.06, 0.16) : -lr.range(0.03, 0.07));
+        ln.float = clamp(ln.float, -0.07 * xh, 0.2 * xh);
+        ln.y = ln.rule - ln.float;
+        rules.push(ln.rule);
+      }
+    } else if (!ref) {
       ln.y = firstY + (placed ? 0 : 0.12 * xh * H.startY * Math.min(1, wander));
+    } else if (between) {
+      // (it follows the line above, so it stays between that line and the next)
+      Object.assign(ln, { slope: ref.slope, bow: ref.bow, droop: ref.droop, drift: ref.drift, phase: ref.phase, x0: ref.x0 });
+      ln.y = ref.y + pitch * sp.at;
     } else {
-      const gap = paraStart ? 1 + H.paraGap * (0.5 + lr()) * Math.min(1, wander) : 1;
-      ln.y = prev.y + pitch * (gap + H.pitchCv * Math.min(1.1, ls) * clamp(lr.gauss(), -1.7, 1.7));
+      const gap = 1 + (sp && sp.para ? H.paraGap * (0.5 + lr()) * Math.min(1, wander) : 0) + (sp ? sp.adv || 0 : 0);
+      ln.y = ref.y + pitch * k * (gap + H.pitchCv * Math.min(1.1, ls) * clamp(lr.gauss(), -1.7, 1.7));
       // lines fan, but never close up enough to collide (≥ 86% of the pitch along the line):
       // like a writer, first follow the line above more closely, and only then move down
-      const tight = () => Math.min(...[ln.x0, maxU * 0.5, maxU].map((x) => baseY(ln, x) - baseY(prev, x)));
-      for (let i = 0; i < 4 && tight() < 0.86 * pitch; i++) {
-        ln.slope = (ln.slope + prev.slope) / 2; ln.bow = (ln.bow + prev.bow) / 2; ln.droop = (ln.droop + prev.droop) / 2;
+      const near = 0.86 * pitch * k;
+      const tight = () => Math.min(...[ln.x0, maxU * 0.5, maxU].map((x) => baseY(ln, x) - baseY(ref, x)));
+      for (let i = 0; i < 4 && tight() < near; i++) {
+        ln.slope = (ln.slope + ref.slope) / 2; ln.bow = (ln.bow + ref.bow) / 2; ln.droop = (ln.droop + ref.droop) / 2;
       }
       const t = tight();
-      if (t < 0.86 * pitch) ln.y += 0.86 * pitch - t;
+      if (t < near) ln.y += near - t;
     }
+    // where the writing starts: the margin, an indent, a closing block, under the greeting
+    let start = sp && sp.x != null ? sp.x : ln.x0 + (sp ? sp.dx || 0 : pen.wrapDx || 0);
+    if (sp && sp.w) start = Math.min(start, Math.min(ln.edge, maxU - padFor(ln, 0)) - sp.w);
+    ln.start = Math.max(ln.x0, start);
     lineInfo.push(ln);
     pen.line = ln;
-    pen.x = ln.x0;
+    pen.x = ln.start;
     return ln;
   }
   const line = () => pen.line;
@@ -387,7 +464,7 @@ export function layout(p, text, opts = {}) {
         return;
       }
       const ctx = {
-        prev: wi ? chars[wi - 1][0] : ctxBase.prev, next: wi + 1 < chars.length ? chars[wi + 1][0] : null,
+        prev: wi ? chars[wi - 1][0] : ctxBase.prev, next: wi + 1 < chars.length ? chars[wi + 1][0] : ctxBase.next || null,
         index: ctxBase.index + wi, wordStart: ctxBase.index + wi === 0, wordEnd: wi === chars.length - 1 && ctxBase.closed, bar: bars[wi],
       };
       const g = letter(ch, seedKey, ctx, w);
@@ -506,7 +583,7 @@ export function layout(p, text, opts = {}) {
         }
         stop(o, line(), f.X + endL, 'lineEnd', 'before');
         closeRun(hyItem);
-        newLine(w.care, false);
+        newLine(w.care, null);
         pen.lp++;
         pad = padFor(line(), tilt);
         f = frameAt(pen.x, it.dx);
@@ -558,12 +635,102 @@ export function layout(p, text, opts = {}) {
     return {
       key: wkey, seed: seedBase, n: pen.words++, prog, care,
       slant: q(clamp(K.pageSlant + 1.25 * spread * z.slant, -4, 4), 0.01),
-      scale: q(clamp(K.pageSize * (1 + 0.04 * spread * z.size) * (1 + 0.1 * tire * prog), 0.88, 1.16) * sizeK, 0.001),
+      scale: q(clamp(K.pageSize * (1 + 0.04 * spread * z.size) * (1 + 0.1 * tire * prog), 0.88, 1.16) * sizeK * (pen.size || 1), 0.001),
       lift: xh * 0.006 * (0.35 + 0.65 * spread) * (0.6 + 0.6 * (p.drift == null ? 0.7 : p.drift)) * z.base,
       tilt: clamp(z.tilt * 0.3 * spread, -0.9, 0.9) * DEG, gapZ: z.gap, u1: z.u1, u2: z.u2, waveZ: z.wave,
       tempo: H.tempo * (1 + 0.12 * tire * prog) * (1.15 - 0.3 * care),
     };
   }
+
+  // ----- a written line begins: what it is in the letter, and how this writer sets that out -----
+  const block = (role) => role === 'closing' || role === 'name' || role === 'signature';
+  const isPs = (role) => role === 'ps' || role === 'ps-para' || role === 'ps-cont';
+  // a line's rough width before it's written (its letters' usual widths, a little generous), so a
+  // closing block can still fit on the line
+  const roughWidth = (t) => {
+    let w = 0;
+    for (const [ch] of graphemes(t.trim(), 0)) {
+      if (ch === ' ') { w += spaceAdv * 1.25; continue; }
+      let a = K.advs.get(ch);
+      if (a == null) { a = has(p, ch) ? makeGlyph(p, ch, null).advance + (connected ? 0 : 0.15 * p.sidebearing) : missAdv; K.advs.set(ch, a); }
+      w += a;
+    }
+    return w * K.pageSize * 1.08;
+  };
+  function startLine(pi) {
+    if (!known) { newLine(care0, { role: 'para', para: pen.lineNo >= 0 }); return; }
+    const t = known[pi].trim();
+    const wrote = !!(pen.lastText || (pen.line && !pen.line.blank)); // a line has been written above
+    if (!t && pi < known.length - 1) {
+      // an empty line between paragraphs: it holds the caret, between the line above and the next one
+      noteBlank(L);
+      if (!wrote) newLine(care0, { role: 'blank', blank: true, para: pen.lineNo >= 0 });
+      else {
+        // (a P.S. after it always stands apart)
+        let j = pi + 1;
+        while (j < known.length - 1 && !known[j].trim()) j++;
+        let B = ruled ? (H.blank > 0.2 ? 1 : 0) : H.blank;
+        if (isPS(known[j])) B = Math.max(B, ruled ? 1 : H.psGap);
+        newLine(care0, { role: 'blank', blank: true, at: L.blanks - 1 + (1 + B) / 2 });
+      }
+      pen.wrapDx = 0;
+      return;
+    }
+    const kb = wrote ? L.blanks : 0;
+    const role = beginLine(L, known, pi, complete);
+    const xr = rng(S + 'shape:' + (pen.lineNo + 1)); // this line's own draws
+    const spread = spreadOf(care0), W = maxU - marginL;
+    // on ruled paper extra space is a skipped rule, or none
+    const R = ruled ? (v) => (v > 0.35 ? 1 : 0) : (v) => v;
+    // the space a blank line leaves: a whole line, half a line, or none (this writer indents instead);
+    // a P.S. always stands apart
+    let space = kb ? (ruled ? (H.blank > 0.2 ? 1 : 0) : H.blank * (0.9 + 0.2 * xr())) + (kb - 1) : 0;
+    if (role === 'ps') space = Math.max(space, ruled ? 1 : H.psGap * (0.85 + 0.3 * xr()));
+    let adv = space;
+    if (L.afterOpen) adv += Math.max(0, R(H.greetGap * (0.7 + 0.6 * xr())) - space);
+    if (role === 'closing' || role === 'name') adv += Math.max(0, R(H.closeGap * (0.6 + 0.8 * xr())) - space);
+    if (role === 'signature' && L.sigs === 1) adv += R(H.sigGap * (0.6 + 0.8 * xr()));
+    const sp = { role, para: role === 'para' || role === 'closing' || role === 'name' || role === 'ps' || role === 'ps-para', adv, k: role === 'ps-para' || role === 'ps-cont' ? H.psPitch : 1, dx: 0 };
+    if (role === 'para' || role === 'ps-para') {
+      // a paragraph indent: this writer's habit, never quite the same twice
+      if (H.indent) sp.dx = Math.max(0.6 * xh, H.indent * xh * (1 + 0.1 * spread * xr.gauss()) + 0.25 * xh * spread * xr.gauss());
+      // or the first paragraph starts under the end of the greeting
+      if (L.afterOpen && H.under && pen.textEnd != null) sp.x = clamp(pen.textEnd - xh * xr.range(0, 0.8), marginL + 1.5 * xh, marginL + Math.min(0.35 * W, 14 * xh));
+    } else if (block(role)) {
+      // the closing and the name, as a block: at the margin, the centre or to the right (each writer's
+      // own place), the name a little further right; a block that wouldn't fit moves left
+      sp.w = roughWidth(known[pi]) * (role === 'closing' ? 1 : H.nameSize);
+      if (role === 'closing') {
+        // the block fits as a whole: the writer starts the closing far enough left for the name below
+        for (let j = pi + 1, n = 0; j < known.length && n < 4; j++) {
+          const u = known[j].trim();
+          if (!u) { if (n) break; continue; }
+          if (isPS(u) || !isShort(u)) break;
+          sp.w = Math.max(sp.w, roughWidth(u) * H.nameSize + H.nameDx * xh);
+          n++;
+        }
+      }
+      if (role === 'signature' && pen.blockX != null) {
+        sp.x = L.sigs === 1 ? pen.blockX + H.nameDx * xh * (0.7 + 0.6 * xr()) : (pen.sigX == null ? pen.blockX : pen.sigX) + 0.35 * xh * spread * xr.gauss();
+      } else {
+        sp.x = marginL + W * H.block * (1 + 0.06 * spread * xr.gauss()) + 0.4 * xh * spread * xr.gauss() + (role === 'name' ? 0.5 * H.nameDx * xh : 0);
+      }
+    }
+    const ln = newLine(care0, sp);
+    if (role === 'closing' || role === 'name') { pen.blockX = ln.start; pen.sigX = null; }
+    if (role === 'signature') pen.sigX = ln.start;
+    pen.wrapDx = block(role) ? ln.start - ln.x0 : 0; // a block's lines run on at the block, not the margin
+    pen.size = isPs(role) ? H.psSize : role === 'signature' || role === 'name' ? H.nameSize : 1;
+    pen.pk = isPs(role) ? H.psPitch : 1;
+  }
+
+  // Ink mode: the letter that comes next in the same word, when a piece ends mid-word and it's known
+  // (`ahead`): some hands shape a letter by the one after it, as they would in one pass
+  const nextAfter = (o) => {
+    const i = o - from;
+    if (i >= knownText.length || /\s/.test(knownText[i])) return null;
+    return graphemes(knownText.slice(i, i + 8), 0)[0][0];
+  };
 
   const paras = text.split('\n');
   paras.forEach((para, pi) => {
@@ -571,8 +738,8 @@ export function layout(p, text, opts = {}) {
     const paraStops = stops.length, paraStart = pen.offset, fresh = pi > 0 || !pen.line;
     if (fresh) {
       pen.para++; pen.lp = 0; pen.wordsBefore += pen.wp; pen.wp = 0; pen.pending = 0; pen.prevEnd = ''; pen.open = null;
-      newLine(care0, pen.lineNo >= 0);
-      pen.endO = null; pen.endX = line().x0;
+      startLine(pi);
+      pen.endO = null; pen.endX = line().start;
     }
     const tokens = para.match(/ +|[^ ]+/g) || [];
     let tokOff = 0;
@@ -590,13 +757,14 @@ export function layout(p, text, opts = {}) {
       if (ink && pen.open && pen.pending === 0) {
         const o = pen.open;
         const w = o.w;
-        const sh = shapeWord(chars, w, (wi) => 'ink:' + ink.salt + ':' + (pen.glyphs + wi), { prev: o.last, index: o.count, closed: false });
+        const sh = shapeWord(chars, w, (wi) => 'ink:' + ink.salt + ':' + (pen.glyphs + wi), { prev: o.last, index: o.count, closed: false, next: nextAfter(tokStart + tok.length) });
         pen.glyphs += chars.length;
         // the new letters continue the word's own frame, right after its last letter
         const sh2 = Object.assign({}, sh, { glyphs: sh.glyphs.map((g) => Object.assign({}, g, { dx: g.dx + o.dx })), ink: sh.ink + o.dx, wx: sh.wx + o.dx });
         const r = place(w, sh2, pen.x, tokStart, { frame: o.frame, mayBreak: true, mustBreak: true, onLine: o.onLine, prevIt: o.prevIt, prevEndX: o.prevEndX, inkIndex });
         o.last = chars[chars.length - 1][0]; o.count += chars.length; o.frame = r.frame; o.prevIt = r.prevIt; o.prevEndX = r.prevEndX; o.onLine = r.onLine; o.dx += sh.wx;
-        pen.x = r.endX; pen.endO = tokStart + tok.length; pen.endX = pen.x; pen.prevEnd += tok;
+        pen.x = r.endX; pen.endO = tokStart + tok.length; pen.endX = pen.x; pen.prevEnd += tok; pen.textEnd = pen.x;
+        if (known) { L.chars += tok.length; L.end = tok[tok.length - 1]; }
         continue;
       }
       // ----- identity: this word's text and which occurrence of it this is -----
@@ -617,7 +785,7 @@ export function layout(p, text, opts = {}) {
       // whole words are cached (fair copy): same identity and values -> the same letters
       const wck = ink ? null : wkey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + w.prog;
       let sh = wck && hc.words.get(wck);
-      if (!sh) { sh = shapeWord(chars, w, seedOf, { prev: null, index: 0, closed: !ink }); if (wck) hc.words.set(wck, sh); }
+      if (!sh) { sh = shapeWord(chars, w, seedOf, { prev: null, index: 0, closed: !ink, next: ink ? nextAfter(tokStart + tok.length) : null }); if (wck) hc.words.set(wck, sh); }
       // ----- word gap: lognormal, wider after punctuation and when tired -----
       const sigW = clamp(0.2 * spreadOf(w.care), 0.08, 0.32);
       const punct = /[.!?]["'’”)]*$/.test(pen.prevEnd) ? H.stop : /[,;:]["'’”)]*$/.test(pen.prevEnd) ? H.pause : 1;
@@ -645,7 +813,7 @@ export function layout(p, text, opts = {}) {
           }
           if (fits) line().packed = true;
           else {
-            newLine(w.care, false);
+            newLine(w.care, null);
             pen.lp++;
             gap = 0; wrapped = true;
           }
@@ -657,7 +825,7 @@ export function layout(p, text, opts = {}) {
           // spaces stay at the end of the line above; the boundary after them is also this line's start
           for (let j = 1; j <= spaces; j++) stop(spaceFrom + j, lineBefore, endXBefore + j * spaceAdv, j === spaces ? 'lineEnd' : 'space', j === spaces ? 'before' : undefined);
         } else {
-          const x0 = endOBefore == null ? lineBefore.x0 : endXBefore;
+          const x0 = endOBefore == null ? lineBefore.start : endXBefore;
           for (let j = 1; j < spaces; j++) stop(spaceFrom + j, line(), x0 + (pen.x + gap - x0) * j / spaces, 'space');
           if (endOBefore == null) stop(spaceFrom, line(), x0, 'space'); // an indent: the paragraph's own start
         }
@@ -666,20 +834,21 @@ export function layout(p, text, opts = {}) {
       const r = place(w, sh, pen.x, tokStart, { mayBreak: true, onLine: 0, inkIndex, wrapped });
       // caret stop after the word
       stop(tokStart + tok.length, line(), r.endX, 'glyph');
-      pen.x = r.endX; pen.endO = tokStart + tok.length; pen.endX = r.endX;
+      pen.x = r.endX; pen.endO = tokStart + tok.length; pen.endX = r.endX; pen.textEnd = r.endX;
       line().count++;
       pen.prevEnd = tok;
+      if (known) noteWord(L, tok);
       if (ink) pen.open = { w, last: chars[chars.length - 1][0], count: chars.length, frame: r.frame, prevIt: r.prevIt, prevEndX: r.prevEndX, onLine: r.onLine, dx: sh.wx };
     }
     // trailing spaces at the end of a paragraph (or of the text so far)
     if (pen.pending) {
-      const x0 = pen.endO == null ? line().x0 : pen.endX;
+      const x0 = pen.endO == null ? line().start : pen.endX;
       for (let j = 1; j <= pen.pending; j++) stop(pen.spaceFrom + j, line(), x0 + j * spaceAdv, 'space');
       if (pen.endO == null) stop(pen.spaceFrom, line(), x0, 'space');
       if (pi + 1 < paras.length) pen.pending = 0;
     }
     // an empty paragraph (or empty text) still has a caret stop
-    if (fresh && stops.length === paraStops) stop(paraStart, line(), line().x0, 'empty');
+    if (fresh && stops.length === paraStops) stop(paraStart, line(), line().start, 'empty');
     pen.offset += para.length + (pi + 1 < paras.length ? 1 : 0);
   });
 
@@ -717,6 +886,8 @@ export function layout(p, text, opts = {}) {
 //   const sheet = inkPage(p, { maxWidth, firstBaseline, ruled, lineHeight, salt });
 //   sheet.write('Dear Ada, ')      // commit: frozen items, returns the new page piece
 //   sheet.draft('how are')         // thought letters for typing not yet inked (not committed)
+//   sheet.write('Your', { ahead: ' loving daughter,\nMary' })  // what the writer is about to write: a
+//                                  // line's role in the letter (a closing, a P.S.) is decided as it begins
 //   sheet.pages / sheet.items / sheet.pen
 // Commit whole words where you can: a word split across commits is continued in the same frame, but
 // the first piece can't know whether the whole word would have wrapped.
@@ -730,8 +901,8 @@ export function inkPage(p, opts = {}) {
     get pen() { return pen; },
     pages,
     get items() { return pages.flatMap((pg) => pg.items); },
-    write(text) { const pg = layout(p, text, Object.assign({}, base, { start: pen })); pages.push(pg); pen = pg.pen; return pg; },
-    draft(text) { return layout(p, text, Object.assign({}, base, { start: pen })); },
+    write(text, o) { const pg = layout(p, text, Object.assign({}, base, o, { start: pen })); pages.push(pg); pen = pg.pen; return pg; },
+    draft(text, o) { return layout(p, text, Object.assign({}, base, o, { start: pen })); },
   };
 }
 
@@ -749,7 +920,7 @@ export function writeAt(p, text, opts = {}) {
   const line = {
     n: opts.line == null ? -1 : opts.line, y, x0: x, x1: x + 1e6, slope: (opts.angle || 0) / DEG,
     lean: opts.lean || 0, flow: 0, bow: 0, droop: 0, drift: 0, phase: 0.37, wave: 1e4, edge: Infinity,
-    float: 0, rule: undefined, count: 0, packed: false,
+    float: 0, rule: undefined, count: 0, packed: false, start: x, role: 'wrap',
   };
   const start = {
     lineNo: line.n, line, lp: 0, x, wp: 0, wordsBefore: 0, offset: 0, para: 0, words: 0, pending: 0,

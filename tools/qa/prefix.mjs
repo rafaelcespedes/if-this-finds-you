@@ -3,12 +3,14 @@
 // For many cut points, layout(text.slice(0, cut)) vs layout(text): every item of a word that ended before
 // the cut (a space or newline followed it) must be identical (key, position, angle, outline). Also checks
 // that opts.salt gives different letters with the same layout rules.
+// Each cut passes the rest as `ahead` (what the writer is about to write): a line's place in the letter (a
+// closing drifts right, a P.S. stands apart) is decided as the line begins, from the whole line.
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 const rootArg = process.argv.find((a) => a.startsWith('--root='));
 const root = rootArg ? path.resolve(rootArg.slice(7)) : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const E = await import(pathToFileURL(path.join(root, 'engine/index.js')).href);
-const TEXT = 'Dear Ada,\nI have been meaning to write to you for weeks, but the days keep folding into each other. The tomatoes finally came in!  Supercalifragilisticexpialidocious, said the little kittens.\n\nWith love, always.';
+const TEXT = 'Dear Ada,\nI have been meaning to write to you for weeks, but the days keep folding into each other. The tomatoes finally came in!  Supercalifragilisticexpialidocious, said the little kittens.\n\nWith love, always,\nMary\n\nP.S. The cat sends a paw.';
 const sig = (it) => [it.key, it.ch, it.x.toFixed(4), it.y.toFixed(4), it.rot, it.g.contours[0] ? it.g.contours[0][0].map((v) => v.toFixed(3)).join(',') : ''].join(';');
 let bad = 0;
 for (const style of E.styleNames()) for (const mode of ['fair', 'ink']) for (const ruled of [false, true]) {
@@ -18,7 +20,7 @@ for (const style of E.styleNames()) for (const mode of ['fair', 'ink']) for (con
   const full = E.layout(p, TEXT, opts).items;
   let broken = 0, cuts = 0;
   for (let cut = 1; cut < TEXT.length; cut += 3) {
-    const part = E.layout(p, TEXT.slice(0, cut), opts).items;
+    const part = E.layout(p, TEXT.slice(0, cut), Object.assign({ ahead: TEXT.slice(cut) }, opts)).items;
     // the prefix's complete words: those whose last letter is followed by a space or newline inside the cut
     for (let i = 0; i < part.length; i++) {
       const it = part[i];
