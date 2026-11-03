@@ -1,14 +1,13 @@
 // The library: every letter as the letter itself, a sheet of its paper in its own hand with its title underneath,
 // laid out like letters spread on a table (masonry: each goes into the shortest column, in reading order, so Tab
 // and screen readers follow the same order as the eye). Search, filters and Shuffle above, as the tool's controls.
-import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
-import { ChevronDown, Search, Shuffle, X } from 'lucide-react';
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { useElementWidth } from '@/hooks/useElementWidth';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 import allLetters from './all-letters.svg?raw';
 import { Card } from './Card';
+import { HeadingTools, SelectDock, SentenceFilter, TimelineDock, TOOLBAR, useSlashToSearch, type ControlsProps } from './Controls';
 import { cardAspect } from './card-protocol';
 import { cardSize } from './cards';
 import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
@@ -38,7 +37,6 @@ function grid(width: number) {
 
 export function Index({ letters, error, onRetry, filters, onFilters, onOpen, active }: Props) {
   const q = useDeferredValue(filters.q);
-  const narrow = useMediaQuery('(max-width: 639px)');
   const set = (patch: Partial<Filters>) => onFilters({ ...filters, ...patch });
 
   const pool = useMemo(() => letters ?? [], [letters]);
@@ -112,84 +110,39 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
     window.location.hash = letterHash(from[randomIndex(from.length)].id, randomHand());
   };
 
-  // "/" finds; Escape in the search clears it
+  // search starts folded to an icon; "/" opens it
   const searchRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (!active) return;
-    const on = (e: KeyboardEvent) => {
-      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
-      e.preventDefault();
-      searchRef.current?.focus();
-    };
-    window.addEventListener('keydown', on);
-    return () => window.removeEventListener('keydown', on);
-  }, [active]);
-
-  const count = letters ? pool.length : 0;
-  const noun = (n: number) => `${n} ${n === 1 ? 'letter' : 'letters'}`;
+  const [searchOpen, setSearchOpen] = useState(false);
+  const search = useMemo(() => ({ open: searchOpen, setOpen: setSearchOpen, inputRef: searchRef }), [searchOpen]);
+  useSlashToSearch(active, search);
+  const controls: ControlsProps = { pool, shown: shown.length, filters, set, clear, filtered, facets, shuffle, search, ready: !!letters };
+  const dock = TOOLBAR !== '1';
 
   return (
     <div className="min-h-dvh">
       <SiteHeader>
         <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
       </SiteHeader>
-      <main className="mx-auto w-full max-w-[1180px] px-4 pb-28 sm:px-8 lg:px-10">
-        <section className="pt-[calc(5.25rem+env(safe-area-inset-top,0px))] pb-8 sm:pt-28 sm:pb-10">
-          {/* "All letters" in the logo's hand (#5: Québec school print, felt marker; heading.mjs) */}
-          <h1 className="text-foreground">
-            <span className="sr-only">All letters</span>
-            <span aria-hidden className="block h-[46px] [&_svg]:h-full [&_svg]:w-auto sm:h-[60px]" dangerouslySetInnerHTML={{ __html: allLetters }} />
-          </h1>
+      <main className={cn('mx-auto w-full max-w-[1180px] px-4 sm:px-8 lg:px-10', dock ? 'pb-36' : 'pb-28')}>
+        <section className={cn('pt-[calc(5.25rem+env(safe-area-inset-top,0px))] sm:pt-28', dock ? 'pb-10 sm:pb-12' : 'pb-6 sm:pb-8')}>
+          <div className="flex items-end justify-between gap-4">
+            {/* "All letters" in the logo's hand (#5: Québec school print, felt marker; heading.mjs) */}
+            <h1 className="text-foreground">
+              <span className="sr-only">All letters</span>
+              <span aria-hidden className="block h-[46px] [&_svg]:h-full [&_svg]:w-auto sm:h-[60px]" dangerouslySetInnerHTML={{ __html: allLetters }} />
+            </h1>
+            {TOOLBAR === '1' && <HeadingTools {...controls} />}
+          </div>
           <p className="mt-4 max-w-[34rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">
             Real letters by ordinary people, each written out by hand. Some never reached the person they were meant for.
           </p>
+          {TOOLBAR === '1' && <div className="mt-5"><SentenceFilter {...controls} /></div>}
         </section>
+        {/* the dock floats at the bottom, but comes first in reading order, before the letters */}
+        {TOOLBAR === '2' && <SelectDock {...controls} />}
+        {TOOLBAR === '3' && <TimelineDock {...controls} />}
 
         <div ref={panelRef}>
-          {/* in reading order: search, filters, Shuffle (on phones Shuffle sits beside the search) */}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pb-2 sm:flex sm:items-center sm:gap-2">
-            <label className="relative col-start-1 row-start-1 min-w-0 sm:max-w-[340px] sm:flex-1">
-              <span className="sr-only">Search letters</span>
-              <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-              <input
-                ref={searchRef}
-                type="search"
-                value={filters.q}
-                onChange={(e) => set({ q: e.target.value })}
-                onKeyDown={(e) => { if (e.key === 'Escape' && filters.q) { e.preventDefault(); set({ q: '' }); } }}
-                placeholder={narrow ? 'Words, writers, places' : 'Search words, writers, places'}
-                autoComplete="off"
-                spellCheck={false}
-                className="archive-field h-9 w-full pr-3 pl-9 text-[13.5px] placeholder:text-faint pointer-coarse:h-11"
-              />
-            </label>
-            <div className="col-span-2 grid grid-cols-[1fr_1.3fr_1fr] gap-2 sm:flex sm:gap-2">
-              <Select label="Era" value={filters.era} onChange={(v) => set({ era: v })} any={narrow ? 'Era' : 'Any era'} options={facets.eras} />
-              <Select label="Language" value={filters.lang} onChange={(v) => set({ lang: v })} any={narrow ? 'Language' : 'Any language'} options={facets.langs} />
-              <Select
-                label="Letters or notes"
-                value={filters.kind}
-                onChange={(v) => set({ kind: v as Filters['kind'] })}
-                any={narrow ? 'Kind' : 'Letters and notes'}
-                options={[{ value: 'letter', label: 'Letters' }, { value: 'note', label: 'Notes' }]}
-              />
-            </div>
-            <Button variant="outline" onClick={shuffle} disabled={!letters} className="col-start-2 row-start-1 h-9 pointer-coarse:h-11 sm:ml-auto">
-              <Shuffle aria-hidden /> Shuffle
-            </Button>
-          </div>
-
-          <p aria-live="polite" className="flex min-h-8 items-center gap-2 text-[12.5px] text-faint tabular">
-            {letters && (filtered ? `${noun(shown.length)} of ${count}` : noun(count))}
-            {filtered && (
-              <button type="button" onClick={clear} className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-muted-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-2.5">
-                <X aria-hidden className="size-3.5" /> Clear
-              </button>
-            )}
-          </p>
-
           {error ? (
             <Empty title="The letters didn’t load." action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>
               Check your connection, then try again.
@@ -199,11 +152,11 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
               Try fewer words, or another era or language.
             </Empty>
           ) : letters ? (
-            <ul ref={listRef} role="list" aria-label="All letters" className="masonry relative mt-6" style={{ '--col-w': `${g.colW}px` } as CSSProperties}>
+            <ul ref={listRef} role="list" aria-label="All letters" className="masonry relative mt-2" style={{ '--col-w': `${g.colW}px` } as CSSProperties}>
               {shown.map((l) => <Card key={l.id} letter={l} size={size} aspect={aspects.get(l.id) ?? 1} onOpen={onOpen} />)}
             </ul>
           ) : (
-            <div aria-hidden className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-9">
+            <div aria-hidden className="mt-2 grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-9">
               {[1.1, 0.8, 1.3, 0.9, 1.2, 0.7].map((a, i) => (
                 <div key={i} className="archive-sheet-blank rounded-[1px] bg-[var(--paper)]" style={{ aspectRatio: `1 / ${a}` }} />
               ))}
@@ -212,25 +165,6 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
         </div>
       </main>
     </div>
-  );
-}
-
-function Select({ label, value, onChange, any, options }: { label: string; value: string; onChange: (v: string) => void; any: string; options: { value: string; label: string; n?: number }[] }) {
-  return (
-    <label className="relative min-w-0 sm:flex-none">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn('archive-field h-9 w-full min-w-0 appearance-none truncate pr-7 pl-2.5 text-[13.5px] pointer-coarse:h-11 sm:w-auto', value ? 'text-foreground' : 'text-muted-foreground')}
-      >
-        <option value="">{any}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.n != null ? `${o.label} (${o.n})` : o.label}</option>
-        ))}
-      </select>
-      <ChevronDown aria-hidden className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-faint" />
-    </label>
   );
 }
 

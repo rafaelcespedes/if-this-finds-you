@@ -109,3 +109,84 @@ select.archive-field {
     text-decoration-color: currentColor;
   }
 }
+
+/* ---------- browsing controls (Controls.tsx) ---------- */
+
+/* the floating dock: the tool's right panel surface (bg-panel, rounded-2xl, its soft shadow), a touch more lift
+   because it floats over the letters; it rises in once on arrival */
+.archive-dock {
+  box-shadow:
+    0 0 0 0.5px rgba(60, 45, 20, 0.08),
+    0 1px 2px rgba(60, 45, 20, 0.08),
+    0 12px 32px -12px rgba(60, 45, 20, 0.3);
+  animation: dock-in 320ms var(--ease-out) both;
+}
+@keyframes dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .archive-dock {
+    animation: card-in 200ms var(--ease-out) both;
+  }
+}
+
+/* light menus: words and a chevron; a soft chip under the pointer, a ring for the keyboard */
+.quiet-select {
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .quiet-select:hover {
+    background: var(--chip);
+    color: var(--foreground);
+  }
+}
+.quiet-select:has(select:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+/* in a sentence (#1): the choice reads as part of it, underlined like a link */
+.sentence-pick > span:first-child {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-color: #cfc8b9;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* search opening in place: the field fades and grows from the icon */
+.search-open {
+  animation: search-in 180ms var(--ease-out) both;
+  transform-origin: left center;
+}
+@keyframes search-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.92);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-open {
+    animation: card-in 120ms var(--ease-out) both;
+  }
+}
+
+/* the timeline (#3): a century darkens under the pointer; the chosen one in ink, on a soft chip */
+.era-seg {
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .era-seg:hover {
+    color: var(--text-muted);
+    background: color-mix(in oklab, var(--chip) 60%, transparent);
+  }
+}
+.era-seg.is-on {
+  background: var(--chip);
+}
+.era-seg:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}

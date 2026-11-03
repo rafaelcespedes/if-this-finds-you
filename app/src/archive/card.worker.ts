@@ -17,6 +17,27 @@ const post = (msg: CardResult) => (self as unknown as Worker).postMessage(msg);
 /** A card's sheet is at most this wide (mm): A5, the size most of the stationery is. */
 const CARD_SHEET_MM = 148;
 
+/**
+ * The ink multiplied into the paper, pixel by pixel, keeping the paper's own transparency. (A canvas 'multiply'
+ * draw would also paint the ink layer's white, opaque, wherever the paper isn't: round deckled and torn edges and
+ * in punched holes. Here a pixel outside the paper stays clear, and the paper's soft edge keeps its own alpha.)
+ * The ink layer is white where there's no ink (or clear, on the 2D fallback): either way it leaves the paper as is.
+ */
+function inkOnPaper(ctx: OffscreenCanvasRenderingContext2D, ink: OffscreenCanvas, at: number, W: number, H: number) {
+  const paper = ctx.getImageData(at, at, W, H);
+  const layer = ink.getContext('2d')!.getImageData(0, 0, W, H);
+  const p = paper.data, k = layer.data;
+  for (let i = 0; i < p.length; i += 4) {
+    if (!p[i + 3]) continue;
+    const a = k[i + 3] / 255;
+    // the ink over white, then multiplied into the paper's colour; the paper's alpha unchanged
+    p[i] = (p[i] * (k[i] * a + 255 * (1 - a))) / 255;
+    p[i + 1] = (p[i + 1] * (k[i + 1] * a + 255 * (1 - a))) / 255;
+    p[i + 2] = (p[i + 2] * (k[i + 2] * a + 255 * (1 - a))) / 255;
+  }
+  ctx.putImageData(paper, at, at);
+}
+
 self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
   if ('warm' in e.data) {
     // compile the ink renderer's shaders and build a first hand while the page is still loading the letters
@@ -59,15 +80,13 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
     ctx.translate(B, B);
     paintPaper(ctx as unknown as CanvasRenderingContext2D, paper as typeof full, { pxPerMm: k, grainScale: scale, holeFill: 'clear', shadow: 'none' });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // ink, multiplied onto the paper (the engine's canvas renderer: ink as density, colour from the ink model)
+    // ink (the engine's canvas renderer: ink as density, colour from the ink model), multiplied into the paper
     const u = live.unitsPerMm;
     const ink = new OffscreenCanvas(W, H);
     engine.renderCanvas(ink, r.p, { items, height: hMm * u, lineHeight: live.lineMm * u }, {
       width: W, height: H, emPx: live.emMm * k, dpr: 1, style: false, paper: { transparent: true }, ink: r.inkKey ?? r.inkColor,
     });
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.drawImage(ink, B, B);
-    ctx.globalCompositeOperation = 'source-over';
+    inkOnPaper(ctx, ink, B, W, H);
 
     let blob: Blob;
     try { blob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.86 }); } catch { blob = await canvas.convertToBlob(); }
