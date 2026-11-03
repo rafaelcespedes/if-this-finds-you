@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { ARCHIVE_URL, SiteHeader } from '@/archive/SiteHeader';
 import heading from './fonts.svg?raw';
 import { FontsDock } from './Dock';
+import { FontsRail } from './Rail';
+import { LOOK } from '@/lib/look';
 import { FontRow } from './FontRow';
 import { SpecimenBar } from './SpecimenBar';
 import { useSaved } from './favourites';
@@ -79,6 +81,8 @@ export function FontsApp() {
   const [route, update] = useRoute();
   const narrow = useMediaQuery('(max-width: 639px)');
   const wide = useMediaQuery('(min-width: 1024px)');
+  // the Reading Room on a wide screen: the filters as a rail beside the list (the layout study's Proposal 4); else the dock
+  const rail = wide && LOOK === 'reading-room';
   const catalogue = useCatalogue();
   const saved = useSaved();
   const savedIds = useMemo(() => new Set(saved.map((e) => e.id)), [saved]);
@@ -129,13 +133,18 @@ export function FontsApp() {
     const y = el.getBoundingClientRect().top + window.scrollY - (narrow ? 16 : 96);
     if (window.scrollY > y) window.scrollTo({ top: y, behavior: 'auto' });
   };
-  const newSet = () => { update({ set: newSetSeed(), view: 'set' }, true); listTop(); };
+  const newSet = () => { update({ set: newSetSeed(), view: 'set', hand: '' }, true); listTop(); };
   const setFilters = (filters: Filters, neatOnly?: boolean) => update({ filters, view: 'set', ...(neatOnly != null ? { neatOnly } : {}) });
+  // Neat hands only back on: Messy (which needs it off) steps out of Tidy to wild
+  const onNeatOnly = (v: boolean) => update({ neatOnly: v, view: 'set', ...(v && route.filters.tidy.includes('messy') ? { filters: { ...route.filters, tidy: route.filters.tidy.filter((x) => x !== 'messy') } } : {}) });
   const onTag = useCallback((key: FilterKey, value: string) => {
     const family = key === 'family' ? { style: route.filters.style.filter((s) => catalogue.styles.find((x) => x.id === s)?.family === value) } : {};
     update({ filters: { ...NO_FILTERS, ...route.filters, [key]: [value], ...family }, view: 'set' });
     listTop();
   }, [route.filters, catalogue]);
+
+  // a hand's record opens in place, one at a time, and the link keeps it
+  const onOpen = useCallback((id: string | null) => update({ hand: id ?? '' }), []);
 
   // Space draws a new set (when nothing that takes Space has focus)
   useEffect(() => {
@@ -171,10 +180,16 @@ export function FontsApp() {
               {/* "Fonts" in the logo's hand (#5: Québec school print, felt marker; heading.mjs) */}
               <span aria-hidden className="block h-[50px] [&_svg]:h-full [&_svg]:w-auto sm:h-[64px]" dangerouslySetInnerHTML={{ __html: heading }} />
             </h1>
-            <p className="mt-4 max-w-[36rem] text-[0.9375rem] leading-[1.55] text-muted-foreground text-pretty sm:text-[1rem]">
+            <p className="fonts-intro mt-4 max-w-[36rem] text-[0.9375rem] leading-[1.55] text-muted-foreground text-pretty sm:text-[1rem]">
               {route.view === 'saved' ? 'The hands you saved, kept in this browser. Each one downloads as a free, open-source font.' : INTRO}
             </p>
           </section>
+          <div className={cn(rail && 'font-with-rail')}>
+          {rail && (
+            <FontsRail filters={route.filters} onFilters={setFilters} neatOnly={route.neatOnly} onNeatOnly={onNeatOnly} catalogue={catalogue}
+              view={route.view} onView={(v) => { update({ view: v }, true); listTop(); }} savedCount={saved.length} onNewSet={newSet} />
+          )}
+          <div className="min-w-0">
           <div className={cn('specimen-bar-wrap z-20', !narrow && 'sticky top-0')}>
             <SpecimenBar
               line={route.line}
@@ -204,7 +219,7 @@ export function FontsApp() {
           <ol ref={listRef} className="font-list" aria-label={route.view === 'saved' ? 'Saved hands' : 'Fonts'} aria-busy={!set.done}>
             {entries.map((e, i) => (
               <FontRow key={e?.id ?? `slot-${i}`} entry={e} index={i} text={rowText(e)} mode={route.mode} live={live} em={liveSize} lines={lines}
-                saved={!!e && savedIds.has(e.id)} compact={narrow} wide={wide} onTag={onTag} />
+                saved={!!e && savedIds.has(e.id)} compact={narrow} wide={wide} onTag={onTag} open={!!e && e.id === route.hand} onOpen={onOpen} />
             ))}
           </ol>
           <footer className="font-list-end">
@@ -225,12 +240,14 @@ export function FontsApp() {
               {ABOUT} Free to use under the SIL Open Font License.
             </p>
           </footer>
+          </div>
+          </div>
         </main>
-        <FontsDock
+        {!rail && <FontsDock
           filters={route.filters}
           onFilters={setFilters}
           neatOnly={route.neatOnly}
-          onNeatOnly={(v) => update({ neatOnly: v, view: 'set', ...(v && route.filters.tidy.includes('messy') ? { filters: { ...route.filters, tidy: route.filters.tidy.filter((x) => x !== 'messy') } } : {}) })}
+          onNeatOnly={onNeatOnly}
           catalogue={catalogue}
           view={route.view}
           onView={(v) => { update({ view: v }, true); listTop(); }}
@@ -238,7 +255,7 @@ export function FontsApp() {
           onNewSet={newSet}
           narrow={narrow}
           hidden={typing && coarse}
-        />
+        />}
         <Toaster />
       </div>
     </TooltipProvider>

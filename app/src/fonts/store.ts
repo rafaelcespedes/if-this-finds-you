@@ -8,7 +8,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import workerSrc from './fonts.worker.ts?worker&url';
 import { constraintsOf, filterKey, STATIC_CATALOGUE, type Catalogue, type Filters } from './filters';
-import type { FontEntry, FromWorker, LiveSpec, Opening, ToWorker } from './protocol';
+import type { FontEntry, FromWorker, HandRecord, LiveSpec, Opening, ToWorker } from './protocol';
 
 export interface LiveImage {
   key: string;
@@ -256,6 +256,11 @@ class FontStore {
         }, () => this.fail(job.key));
         return;
       }
+      case 'record': {
+        this.recordJobs.get(m.job)?.(m.record);
+        this.recordJobs.delete(m.job);
+        return;
+      }
       case 'live': {
         const job = this.finish(slot, m.job);
         this.pump();
@@ -302,6 +307,22 @@ class FontStore {
     const t = Math.round(performance.now() - this.stats.start);
     if (this.stats.rows === 1) { this.stats.firstRowMs = t; performance.mark?.('fonts:first-row'); }
     if (this.stats.rows === 10) { this.stats.tenthRowMs = t; performance.mark?.('fonts:tenth-row'); }
+  }
+
+  // ---------- a hand's record (asked of the first worker, kept for the visit) ----------
+  private records = new Map<string, Promise<HandRecord>>();
+  private recordJobs = new Map<number, (r: HandRecord) => void>();
+  record(entry: FontEntry) {
+    const key = `${entry.id}|${entry.neatOnly ? 1 : 0}`;
+    let r = this.records.get(key);
+    if (!r) {
+      this.ensurePool();
+      const job = ++this.jobs;
+      r = new Promise<HandRecord>((resolve) => this.recordJobs.set(job, resolve));
+      this.records.set(key, r);
+      this.pool[0].worker.postMessage({ type: 'record', job, entry } satisfies ToWorker);
+    }
+    return r;
   }
 
   /** The whole font package for a hand (.otf, .ttf, licence, credits), built in a worker of its own. */
