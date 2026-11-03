@@ -1,0 +1,445 @@
+/* The Fonts view: its own few styles, on top of the tool's palette (index.css) and the library's surfaces
+   (archive/archive.css: the dock, menus, fields). Swap fonts, colours and spacing in the tokens. */
+
+/* ---------- tokens ---------- */
+:root {
+  /* the list */
+  --fonts-rule: var(--hairline);
+  --fonts-row-pad: 18px;
+  --fonts-row-gap: 8px;
+  --fonts-name-size: 14.5px;
+  --fonts-attr-size: 13px;
+  --fonts-name: var(--text);
+  --fonts-attr: var(--text-muted);
+  /* as a font: the line in the UI's ink */
+  --fonts-ink: var(--ink);
+  /* ink on paper: a strip of the hand's own paper */
+  --fonts-strip-radius: 6px;
+  --fonts-strip-edge: 0 0 0 0.5px rgba(60, 45, 20, 0.1), 0 1px 2px rgba(60, 45, 20, 0.06);
+  /* controls */
+  --fonts-control: var(--text-muted);
+  --fonts-control-hover-bg: var(--chip);
+  --fonts-chip-bg: #fdfcf9;
+  --fonts-chip-border: var(--border);
+  --fonts-chip-on-bg: var(--chip);
+  --fonts-chip-on-border: color-mix(in oklab, var(--ink) 35%, var(--border));
+  --fonts-chip-on-text: var(--ink);
+  --fonts-accent: var(--ink);
+  --fonts-accent-text: var(--primary-foreground);
+  --fonts-bar-bg: var(--desk);
+}
+@media (min-width: 640px) {
+  :root {
+    --fonts-row-pad: 22px;
+    --fonts-row-gap: 10px;
+  }
+}
+
+/* ---------- the specimen bar ---------- */
+.specimen-bar-wrap {
+  background: var(--fonts-bar-bg);
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--fonts-rule);
+}
+
+/* ---------- rows ---------- */
+.font-list {
+  display: block;
+}
+.font-row {
+  padding: var(--fonts-row-pad) 0;
+  border-bottom: 1px solid var(--fonts-rule);
+}
+.font-row-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'name actions' 'attrs actions';
+  align-items: center;
+  column-gap: 12px;
+  min-height: 32px;
+}
+@media (min-width: 640px) {
+  .font-row-meta {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'name attrs actions';
+    column-gap: 14px;
+  }
+}
+.font-row-name {
+  grid-area: name;
+  font-size: var(--fonts-name-size);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--fonts-name);
+  white-space: nowrap;
+}
+.font-row-tags {
+  grid-area: attrs;
+  display: flex;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 2px;
+  overflow: hidden;
+  font-size: var(--fonts-attr-size);
+  line-height: 1.35;
+  color: var(--fonts-attr);
+  white-space: nowrap;
+}
+/* a tag: quiet words that filter by themselves; dots between them */
+.font-tag {
+  flex-shrink: 0;
+  border-radius: 4px;
+  padding: 1px 2px;
+  color: inherit;
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
+}
+.font-tag + .font-tag::before {
+  content: '·';
+  display: inline-block;
+  margin-right: 4px;
+  color: var(--text-faint);
+}
+.font-tag.is-near {
+  color: var(--text-faint);
+  font-style: italic;
+}
+@media (hover: hover) and (pointer: fine) {
+  button.font-tag:hover {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+    text-underline-offset: 3px;
+  }
+}
+button.font-tag:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.font-row-actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.font-row-skeleton {
+  grid-area: name;
+  display: block;
+  width: 160px;
+  height: 11px;
+  border-radius: 6px;
+  background: var(--chip);
+}
+.font-action {
+  color: var(--fonts-control);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 150ms var(--ease-out);
+}
+.font-action:active {
+  transform: scale(0.96);
+}
+.font-action.is-on {
+  color: var(--fonts-accent);
+}
+.font-action:disabled {
+  cursor: progress;
+}
+@media (hover: hover) and (pointer: fine) {
+  .font-action:hover {
+    background: var(--fonts-control-hover-bg);
+    color: var(--foreground);
+  }
+  .font-row:hover .font-action {
+    color: var(--foreground);
+  }
+  .font-row:hover .font-action.is-on {
+    color: var(--fonts-accent);
+  }
+}
+
+/* the specimen: as tall as the page reserved for it; the writing runs off the right edge on wide screens */
+.font-row-specimen {
+  position: relative;
+  margin-top: var(--fonts-row-gap);
+  overflow-x: clip;
+  color: var(--fonts-ink);
+}
+.font-row-specimen.is-live {
+  overflow: hidden;
+  border-radius: var(--fonts-strip-radius);
+  box-shadow: var(--fonts-strip-edge);
+}
+/* as a font: the line set in the hand's own font. A line box tall enough for every glyph (the font's metrics cover
+   all its ink), the font's own joins, alternates and kerning (calt, kern) as any app would use them */
+.font-line {
+  margin: 0;
+  padding-left: 0.04em;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--fonts-ink);
+  font-kerning: normal;
+  font-feature-settings: 'calt' 1, 'kern' 1;
+  font-variant-ligatures: contextual;
+  font-synthesis: none;
+  letter-spacing: normal;
+  word-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+.font-line.is-wrap {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.font-row-specimen.is-fade {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent);
+}
+/* two lines (phones): the first stays whole, the second fades out at its end */
+.font-row-specimen.is-fade-2 {
+  -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 50%), linear-gradient(to right, #000 calc(100% - 56px), transparent);
+  mask-image: linear-gradient(to bottom, #000 50%, transparent 50%), linear-gradient(to right, #000 calc(100% - 56px), transparent);
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+.font-specimen-img {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.font-row-failed {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+/* a specimen arriving: opacity only, as a card or a new hand arrives */
+@keyframes specimen-in {
+  from {
+    opacity: 0;
+  }
+}
+.specimen-in {
+  animation: specimen-in 240ms var(--ease-out) both;
+}
+
+.font-list-end {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  padding-top: 36px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.specimen-note {
+  margin-top: 10px;
+  max-width: 44rem;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+/* the sampler's own words when the filters were too tight ("9 of 24 hands meet every filter…") */
+.set-note {
+  margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--chip) 70%, transparent);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.outline-btn {
+  border: 1px solid var(--border);
+  background: var(--fonts-chip-bg);
+  color: var(--foreground);
+  box-shadow: 0 1px 1px rgba(60, 45, 20, 0.04);
+  transition: background-color 150ms var(--ease-out), transform 150ms var(--ease-out);
+}
+.outline-btn:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .outline-btn:hover {
+    background: #f4f1ea;
+  }
+}
+.font-list-note {
+  max-width: 36rem;
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-faint);
+  text-wrap: pretty;
+}
+
+/* ---------- the dock and the filter panel (Dock.tsx) ---------- */
+.dock-btn {
+  color: var(--fonts-control);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+.dock-btn.is-on {
+  background: var(--fonts-control-hover-bg);
+  color: var(--foreground);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dock-btn:hover {
+    background: var(--fonts-control-hover-bg);
+    color: var(--foreground);
+  }
+}
+.dock-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--fonts-accent);
+  color: var(--fonts-accent-text);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+.seg-btn {
+  color: var(--fonts-control);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .seg-btn:hover {
+    color: var(--foreground);
+  }
+}
+.seg-btn[aria-checked='true'] {
+  background: #fffefb;
+  color: var(--foreground);
+  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.12), 0 0 0 0.5px rgba(40, 30, 10, 0.06);
+}
+.dock-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 1px 2px rgba(20, 24, 40, 0.25);
+  transition: background-color 150ms var(--ease-out), transform 150ms var(--ease-out);
+}
+.dock-primary:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .dock-primary:hover {
+    background: var(--ink-soft);
+  }
+}
+.dock-caption {
+  background: var(--lib-surface);
+  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 6px 16px -8px rgba(60, 45, 20, 0.3);
+}
+.filter-panel {
+  animation: filter-panel-in 200ms var(--ease-out) both;
+  transform-origin: bottom center;
+}
+@keyframes filter-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .filter-panel {
+    animation: specimen-in 150ms var(--ease-out) both;
+  }
+}
+.filter-group {
+  min-width: 0;
+}
+.filter-label {
+  margin-bottom: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.filter-hint {
+  font-weight: 400;
+  color: var(--text-faint);
+}
+.filter-era + .filter-era {
+  margin-top: 10px;
+}
+.filter-era-label {
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+/* stops on a scale (tidy to wild, slant): one stop or a run of neighbours, chosen ones joined in ink on paper */
+.run-stop {
+  color: var(--fonts-control);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .run-stop:hover {
+    color: var(--foreground);
+  }
+}
+.run-stop.is-on {
+  background: #fffefb;
+  color: var(--fonts-chip-on-text);
+  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.12), 0 0 0 0.5px rgba(40, 30, 10, 0.06);
+}
+.run-stop.is-on + .run-stop.is-on {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.run-stop.is-on:has(+ .run-stop.is-on) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.line-pick {
+  transition: color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .line-pick:hover {
+    color: var(--foreground);
+  }
+}
+.line-pick:has(select:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+.archive-field:has(input:focus-visible) {
+  border-color: color-mix(in oklab, var(--ink) 35%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink) 12%, transparent);
+}
+.filter-chip {
+  border: 1px solid var(--fonts-chip-border);
+  background: var(--fonts-chip-bg);
+  color: var(--foreground);
+  transition: background-color 150ms var(--ease-out), border-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .filter-chip:hover {
+    border-color: var(--input);
+  }
+}
+.filter-chip.is-on {
+  border-color: var(--fonts-chip-on-border);
+  background: var(--fonts-chip-on-bg);
+  color: var(--fonts-chip-on-text);
+}
+.neat-switch {
+  background: var(--input);
+  transition: background-color 150ms var(--ease-out);
+}
+.neat-switch > span {
+  transition: transform 180ms var(--ease-out);
+}
+.neat-switch[aria-checked='true'] {
+  background: var(--fonts-accent);
+}
+.neat-switch[aria-checked='true'] > span {
+  transform: translateX(16px);
+}

@@ -19,6 +19,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
+import { useWideScale } from '@/hooks/useWideScale';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
 import { FONT_PACKAGE, canShareLinks, copyText, exportFont, exportFontPackage, renderNote, saveNote, shareLink } from '@/lib/actions';
@@ -26,10 +27,11 @@ import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
-import { isNeat, rollHand, rollLook, withSample, type LockKey } from '@/lib/roll';
+import { isNeat, rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib/roll';
+import type { RollAsk, RollReply } from '@/lib/roll-protocol';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
-import { drafts, keepDraft, takeDraft, type Draft } from '@/lib/drafts';
+import { DRAFTS_KEY, drafts, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
@@ -48,13 +50,17 @@ import { renderLiveNote } from '@/lib/actions';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
 import { PENS_LIVE } from '@/lib/pens';
 import { perf } from '@/lib/perf';
-import { offsetsForNewHand, shareUrl } from '@/lib/state';
+import { MAX_LETTER, linkIssue, offsetsForNewHand, shareUrl } from '@/lib/state';
+import { Notice } from '@/components/Notice';
+import { FONTS_URL } from '@/fonts/links';
+import { Button } from '@/components/ui/button';
 import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
 // the look being compared (?look=reading-room): its desk, card and sheet marks (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
 import { SampleMarks } from '@/themes/reading-room/SheetMarks';
+import { SheetPost, ToolArrival } from '@/themes/postmarked/tool';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
 const AHEAD = 5;
@@ -74,8 +80,6 @@ function writePref(key: string, v: string) {
 const editLog = new EditLog();
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
 const TAIL_KEY = 'seedhand:typed';
-/** a letter's length at most: long letters get slow and heavy (memory grows with every sheet) */
-const MAX_LETTER = 10000;
 /** a paste (or dictation) this long is written down at once instead of at the pen's pace */
 const WRITE_AT_ONCE = 200;
 /** what the hands can write (the Latin alphabet and its marks); anything else stays in plain print */
@@ -87,7 +91,18 @@ const WRITING_LATELY_MS = 20000;
 
 export default function App() {
   const [composing, setComposing] = useState(false);
-  const [state, update, markStep, saveNow] = useNoteState(composing);
+  // what was wrong with the link this page opened from, said once (the state has already fallen back safely);
+  // a link cut short stays as it came (never rewritten or saved over) until the writer starts a letter of their own
+  const [linkTrouble, setLinkTrouble] = useState(() => linkIssue(window.location.hash));
+  const holdLink = linkTrouble === 'incomplete';
+  const holdLinkRef = useRef(holdLink);
+  holdLinkRef.current = holdLink;
+  const [state, update, markStep, saveNow] = useNoteState(composing || holdLink);
+  useEffect(() => {
+    if (linkTrouble === 'too-long') toast('This letter was longer than letters can be here', { id: 'link-long', duration: 10000, description: `It’s shown up to ${MAX_LETTER.toLocaleString()} characters.` });
+    if (linkTrouble === 'unknown-letter') toast('That letter wasn’t found', { id: 'link-unknown', duration: 8000, description: 'Here’s another one instead.' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
   const [busy, setBusy] = useState({ download: false, font: false, video: false });
@@ -117,6 +132,23 @@ export default function App() {
 
   // ---------- found letters and your own: always a way to each ----------
   const [kept, setKept] = useState<Draft[]>(() => drafts());
+  // another tab kept or took a letter: the list follows
+  useEffect(() => {
+    const on = (e: StorageEvent) => { if (e.key === DRAFTS_KEY || e.key == null) setKept(drafts()); };
+    window.addEventListener('storage', on);
+    return () => window.removeEventListener('storage', on);
+  }, []);
+  /** keep your letter as you step away from it; when the device won't, say so (it lasts while the page is open) */
+  const keepMine = (s: NoteState) => {
+    if (s.sample) return;
+    if (!keepDraft(s)) {
+      toast('Your letter can’t be kept on this device', {
+        id: 'no-storage',
+        duration: 12000,
+        description: 'Its storage is full or blocked. It’s kept while this page is open; copy its link to keep it for later.',
+      });
+    }
+  };
   const toFound = useCallback((next?: ReturnType<typeof sampleForSeed>) => {
     markStep();
     const s = stateNow.current;
@@ -130,20 +162,25 @@ export default function App() {
     own: !sample && (!!state.text.trim() || !!state.inkLog),
     drafts: kept.length,
     kept,
+    mine: mineIndex(kept) >= 0,
     /** another found letter (your own, if any, is kept) */
     onAnother: () => {
       const s = stateNow.current;
-      if (!s.sample) { keepDraft(s); setKept(drafts()); }
+      keepMine(s);
+      setKept(drafts());
       toFound();
     },
-    /** back to a letter you were writing (the newest, or the one picked from the list) */
-    onBackToMine: (index = 0) => {
+    /** back to a letter you were writing (this tab's newest, or the one picked from the list) */
+    onBackToMine: (savedAt?: number) => {
       const s = stateNow.current;
-      const d = takeDraft(index);
+      const d = takeDraft(savedAt);
       // what's on the page now is kept too, unless it's a found letter
-      if (!s.sample) keepDraft(s);
+      if (d) keepMine(s);
       setKept(drafts());
-      if (!d) return;
+      if (!d) {
+        toast('That letter isn’t here any more', { id: 'draft-gone', description: 'It was opened in another tab, or this device’s storage was cleared.' });
+        return;
+      }
       markStep();
       inkRef.current = null;
       update({ text: d.text, inkLog: d.inkLog, marks: d.marks ?? [], replyTo: d.replyTo ?? null, signed: !!d.signed, sample: null });
@@ -158,7 +195,7 @@ export default function App() {
   // written ahead (prefetch). With the live page (engines with incremental layout), typing is drawn on the
   // main thread instead, from the moment the letter is tapped: same markup, so the switch shows nothing.
   const liveWanted = LIVE && (editing || state.reader);
-  const { writing, prefetch, written, lookup } = useWriting(request, composing || liveWanted);
+  const { writing, prefetch, written, lookup, failed: penFailed } = useWriting(request, composing || liveWanted);
   const requestRef = useRef(request);
   requestRef.current = request;
   const committed = useRef(state.text);
@@ -234,6 +271,7 @@ export default function App() {
   // the link saved at once, without waiting for the pen or the debounce
   useEffect(() => {
     const leave = () => {
+      if (holdLinkRef.current) return;
       const ink = inkRef.current;
       if (ink && inkFor.current === inkLook && ink.waiting) {
         ink.flush();
@@ -307,7 +345,7 @@ export default function App() {
   // paper and writing switch together when the result arrives
   const shownPaper = shownLive ? shownLive.live.paper : writing ? getPaper(writing.paper) : paper;
   const geometry = useMemo(() => {
-    if (inkActive && live) return inkGeometry(engineGeometry(live), live, inkRef.current!.draft(), inkRef.current!.text());
+    if (inkActive && live) return inkGeometry(live, p, inkRef.current!.draft(), inkRef.current!.text());
     return shownLive ? engineGeometry(shownLive.live) : writing ? mapGeometry(writing) : null;
   }, [shownLive?.live, writing, inkActive, live, inkTick]);
 
@@ -327,7 +365,10 @@ export default function App() {
 
   const deskRef = useRef<HTMLDivElement>(null);
   const deskW = useElementWidth(deskRef);
-  const pxPerMm = deskW > 0 ? Math.min(MAX_PX_PER_MM, deskW / shownPaper.w) : 0;
+  // a very wide screen draws the sheet (and the panel and header) bigger, in step with it
+  const wide = useWideScale();
+  const maxPxPerMm = MAX_PX_PER_MM * (isDesktop ? wide : 1);
+  const pxPerMm = deskW > 0 ? Math.min(maxPxPerMm, deskW / shownPaper.w) : 0;
 
   // ---------- a reply: their letter on the desk beside yours (desktop) ----------
   const stageRef = useRef<HTMLDivElement>(null);
@@ -389,7 +430,7 @@ export default function App() {
     if (r && w) theirsShown.current = { key: foundKey(r), result: w };
   };
   // the layout comes from the papers alone, so it's settled the moment a reply starts
-  const replyDesk = isDesktop && found && stageW > 0 ? deskLayout(stageW, shownPaper.w, found.paper.w, MAX_PX_PER_MM) : null;
+  const replyDesk = isDesktop && found && stageW > 0 ? deskLayout(stageW, shownPaper.w, found.paper.w, maxPxPerMm) : null;
   const [theirsForward, setTheirsForward] = useState(false);
   const theirsForwardRef = useRef(false);
   const wroteRef = useRef(false);
@@ -435,6 +476,15 @@ export default function App() {
     if (theirsForwardRef.current) setTheirsForward(false);
     if (!wroteRef.current) { wroteRef.current = true; setWrote(true); writePref('seedhand:wrote', '1'); }
     if (e.source === 'paper') posture.onTyped();
+    // invisible characters (zero-width spaces and joiners, soft hyphens, stray control codes) would be drawn as
+    // gaps or boxes: they're left out, and a tab is a space
+    if (e.ins) {
+      const clean = e.ins.replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, '').replace(/\t/g, ' ').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+      if (clean !== e.ins) {
+        e = { ...e, ins: clean };
+        if (!e.ins && !e.del) return;
+      }
+    }
     // the letter's length at most: what doesn't fit is left out, and said so
     {
       const s = stateNow.current;
@@ -468,9 +518,17 @@ export default function App() {
     }
     if (inkMode) {
       const s = stateNow.current;
-      // Undo lifts only wet ink (the newest event, within 3 s)
+      // Undo takes back what the pen hasn't written yet, and lifts wet ink (written in the last 3 s) back to what
+      // the undo asks for; only when there's nothing wet to lift does it say the ink is dry
       if (e.kind === 'undo') {
-        if (inkRef.current?.undo()) syncInk();
+        const ink = inkRef.current;
+        if (!ink) return;
+        if (ink.waiting) { ink.edit({ ...e, kind: e.ins ? 'replace' : 'delete' }); syncInk(); return; }
+        const now = ink.text();
+        const want = now.slice(0, e.at) + e.ins + now.slice(e.at + e.del);
+        let lifted = false;
+        while (ink.text().length > want.length && ink.undo()) lifted = true;
+        if (lifted) syncInk();
         else toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
         return;
       }
@@ -549,60 +607,107 @@ export default function App() {
     }), fade);
   }, [update, baseOf, lookChange]);
   const base = baseOf(state);
+  // the roll worker: the hands ahead are rolled there, off the page (lib/roll-protocol.ts); the page rolls a hand
+  // itself only when it's asked for one before the worker has it
+  const roller = useRef<Worker | null>(null);
+  const rollAsk = useRef(0);
+  useEffect(() => {
+    let w: Worker | null = null;
+    try { w = new Worker(new URL('./workers/roll.worker.ts', import.meta.url), { type: 'module' }); } catch { w = null; }
+    if (w) w.onerror = () => { if (roller.current === w) roller.current = null; };
+    roller.current = w;
+    return () => { w?.terminate(); roller.current = null; };
+  }, []);
   useEffect(() => {
     if (state.reader || editing) return;
     // in idle moments: keep a few new hands (and one sibling) rolled and written ahead of this state
     let cancelled = false;
+    const timers: number[] = [];
     const idle = (fn: () => void) => (typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(fn, { timeout: 600 }) : window.setTimeout(fn, 60));
     const chain: { base: string; look: Partial<NoteState> }[] = [];
     const reqs: ReturnType<typeof requestFor>[] = [];
     // the letters just shown, and the ones already lined up: no letter comes back within ten hands
     const avoid = new Set(recentLetters());
     let s: NoteState = state;
-    // one new roll per idle moment (the engine's sampler takes 40-60 ms a hand); hands already rolled are reused
-    const step = () => {
+    const add = (look: Partial<NoteState>) => {
+      chain.push({ base: baseOf(s), look });
+      if (look.sample) avoid.add(look.sample);
+      // each hand ahead is the one after the hand before it
+      s = { ...s, ...look };
+      reqs.push(requestFor(s));
+    };
+    // the next click's hand is written as soon as it's known; the rest follow in one list
+    const publish = () => {
+      ahead.current = chain.length === AHEAD ? chain : [...chain, ...ahead.current.filter((a) => !chain.some((c) => c.base === a.base))];
+      prefetch(withTheirs(reqs));
+    };
+    const id = ++rollAsk.current;
+    const w = roller.current;
+    // the sibling (Shift R) is asked for less: rolled once the page has stayed on this hand a while
+    const sibling = () => timers.push(window.setTimeout(() => {
       if (cancelled) return;
-      let rolled = false;
-      while (chain.length < AHEAD && !rolled) {
-        const b = baseOf(s);
-        const kept = ahead.current.find((a) => a.base === b);
-        const look = kept?.look ?? rollHand(s, { variety, locked: locks, avoid });
-        rolled = !kept;
-        if (look.sample) avoid.add(look.sample);
-        chain.push({ base: b, look });
-        // each hand ahead is the one after the hand before it
-        s = { ...s, ...look };
-        reqs.push(requestFor(s));
-      }
-      // the next click's hand is written as soon as it's known; the rest follow in one list
-      if (chain.length === 1 || chain.length === AHEAD) {
-        ahead.current = chain.length === AHEAD ? chain : [...chain, ...ahead.current.filter((a) => !chain.some((c) => c.base === a.base))];
-        prefetch(withTheirs(reqs));
-      }
-      if (chain.length < AHEAD) { idle(step); return; }
-      idle(() => {
-        if (cancelled) return;
-        const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters());
+      const done = (look: Partial<NoteState>) => {
         similarAhead.current = { base, look };
         prefetch(withTheirs([...reqs, requestFor({ ...state, ...look })]));
-      });
+      };
+      if (similarAhead.current?.base === base) return done(similarAhead.current.look);
+      if (w) w.postMessage({ id, kind: 'similar', visit: visitChance(), state, avoid: [...recentLetters()] } satisfies RollAsk);
+      else idle(() => { if (!cancelled) done(withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters())); });
+      onSimilar.current = (look) => { if (!cancelled) done(look); };
+    }, 2500));
+    const onSimilar = { current: (_: Partial<NoteState>) => {} };
+    // hands already rolled are reused, as far as they go
+    for (let kept = ahead.current.find((a) => a.base === baseOf(s)); kept && chain.length < AHEAD; kept = ahead.current.find((a) => a.base === baseOf(s))) add(kept.look);
+    if (chain.length) publish();
+    let onMessage: ((e: MessageEvent<RollReply>) => void) | null = null;
+    if (w) {
+      onMessage = (e) => {
+        const m = e.data;
+        if (cancelled || m.id !== id) return;
+        if (m.kind === 'similar') { onSimilar.current(m.look); return; }
+        add(m.look);
+        if (chain.length === 1 || chain.length === AHEAD) publish();
+        if (chain.length === AHEAD) sibling();
+      };
+      w.addEventListener('message', onMessage);
+      if (chain.length === AHEAD) sibling();
+      else timers.push(window.setTimeout(() => {
+        if (!cancelled) w.postMessage({ id, kind: 'next', visit: visitChance(), state: s, variety, locked: [...locks], avoid: [...avoid], n: AHEAD - chain.length } satisfies RollAsk);
+      }, 80));
+    } else if (chain.length === AHEAD) sibling();
+    else {
+      // no worker: one roll per idle moment on the page
+      const step = () => {
+        if (cancelled) return;
+        add(rollHand(s, { variety, locked: locks, avoid }));
+        if (chain.length === 1 || chain.length === AHEAD) publish();
+        if (chain.length < AHEAD) idle(step);
+        else sibling();
+      };
+      timers.push(window.setTimeout(() => idle(step), 80));
+    }
+    return () => {
+      cancelled = true;
+      timers.forEach((t) => window.clearTimeout(t));
+      if (w && onMessage) w.removeEventListener('message', onMessage);
     };
-    const t = window.setTimeout(() => idle(step), 80);
-    return () => { cancelled = true; window.clearTimeout(t); };
     // `base` covers everything the rolls depend on
   }, [base, editing, state.reader]);
 
-  // the live page's first layout for a hand is the slow one: do it while the page sits still, so a tap to
-  // write starts at once
+  // the live page's first layout for a hand is the slow one: do it once the page has sat still on this hand a
+  // while (not between quick clicks: on a slow phone it's most of a second), so a tap to write starts at once.
+  // On a found letter the first key starts a reply on a fresh sheet: a few words warm the hand, not their letter.
   useEffect(() => {
     if (!LIVE || editing || state.reader) return;
+    const words = replyPending ? 'Dear friend, thank you' : state.text;
     const t = window.setTimeout(() => {
-      const run = () => { try { liveLayout(p, state.text, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
-      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 3000 });
+      const run = () => { try { liveLayout(p, words, paper, eff.size, eff.lineSpacing, state.signed); } catch { /* fine */ } };
+      if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 4000 });
       else run();
-    }, 1400);
+    }, 3000);
     return () => window.clearTimeout(t);
-  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p, paper, eff.size, eff.lineSpacing, state.signed, editing, state.reader, replyPending]);
 
   // ---------- actions ----------
   const share = useCallback(async () => {
@@ -617,7 +722,11 @@ export default function App() {
 
   // the download never carries the empty-page placeholder
   const requestKey = JSON.stringify({ ...request, placeholder: undefined });
+  const downloading = useRef(false);
   const download = useCallback(async () => {
+    // a second tap while it's being made does nothing (one image, one share sheet)
+    if (downloading.current) return;
+    downloading.current = true;
     setBusy((b) => ({ ...b, download: true }));
     try {
       const res = live
@@ -642,8 +751,9 @@ export default function App() {
       } else done(r);
     } catch (e) {
       console.error(e);
-      toast.error('Couldn’t make the image', { description: e instanceof Error ? e.message : String(e) });
+      toast.error('Couldn’t make the image', { description: 'Something went wrong while it was being made. Try again in a moment.' });
     } finally {
+      downloading.current = false;
       setBusy((b) => ({ ...b, download: false }));
     }
   }, [requestKey, ink, pxPerMm, name, coarse, live, state.marks, state.signed, eff.inkKey, inkActive]);
@@ -690,16 +800,24 @@ export default function App() {
       toast.dismiss('export');
       if (coarse && navigator.canShare?.({ files: [file] })) {
         // making it took a few seconds, so the share sheet needs a fresh tap (then Save Video puts it in Photos)
-        toast.success(`Your ${what} is ready`, { id: 'export-done', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
+        // it waits until it's saved or put away: making it again takes a while
+        toast.success(`Your ${what} is ready`, { id: 'export-done', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: Infinity, closeButton: true });
       } else {
         saveBlob(res.blob, filename);
         toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export-done', description, duration: 4000 });
       }
     } catch (e) {
-      if ((e as Error)?.name === 'AbortError') toast('Stopped', { id: 'export', duration: 2000 });
+      // a fresh toast each way, so the progress one's Stop button and percentage don't linger
+      toast.dismiss('export');
+      if ((e as Error)?.name === 'AbortError') toast(`The ${what} was stopped`, { id: 'export-done', description: 'No file was made.', duration: 4000 });
       else {
         console.error(e);
-        toast.error(`Couldn’t make the ${what}`, { id: 'export', description: e instanceof Error ? e.message : String(e) });
+        toast.error(`Couldn’t make the ${what}`, {
+          id: 'export-done',
+          description: 'Something went wrong while it was being made.',
+          action: { label: 'Try again', onClick: () => void exportLetter(kind) },
+          duration: 10000,
+        });
       }
     } finally {
       exporting.current = null;
@@ -832,9 +950,13 @@ export default function App() {
   freshRef.current = panelProps.ink?.onFreshSheet;
   const desk = !posture.writing;
   const reader = state.reader;
+  const brokenLink = linkTrouble === 'incomplete';
 
   // ---------- phones: the control sheet, and the letter making room above it ----------
-  const mobileSheet = !reader && !isDesktop;
+  // a window too short for a sheet over the page (400% zoom, a tiny split screen): the controls go in the page,
+  // under the letter, instead of floating over it
+  const tinyWindow = useMediaQuery('(max-height: 300px)');
+  const mobileSheet = !reader && !isDesktop && !tinyWindow;
   const sheetOpen = mobileSheet && !editing;
   const [metrics, setMetrics] = useState<SheetMetrics>({ peek: 124, half: 406, top: 8 });
   const metricsRef = useRef(metrics);
@@ -930,21 +1052,27 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 overflow-x-clip px-4 pt-[calc(7.25rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
-          style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
+          className={cn(
+            'relative min-w-0 overflow-x-clip px-4 pb-32 sm:px-8 lg:px-10 lg:pt-[6.25rem] lg:pb-16',
+            // phones: room for the header (the letter's label row is in the page, under it, 2.75rem of the same 7.25)
+            reader ? 'pt-[calc(7.25rem+env(safe-area-inset-top,0px))]' : 'pt-[calc(4.5rem+env(safe-area-inset-top,0px))]',
+          )}
+          style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: `${(6.25 * wide).toFixed(3)}rem` } : undefined}
         >
           <header
             ref={headerRef}
+            style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
             className={cn(
               // clear of a notch or camera island when the phone is sideways
-              'absolute top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:right-[max(2rem,env(safe-area-inset-right,0px))] sm:left-[max(2rem,env(safe-area-inset-left,0px))] lg:inset-x-10 lg:top-5',
+              'absolute top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] flex items-start justify-between gap-4 text-[0.7812rem] text-muted-foreground transition-opacity duration-200 ease-out sm:right-[max(2rem,env(safe-area-inset-right,0px))] sm:left-[max(2rem,env(safe-area-inset-left,0px))] lg:inset-x-10 lg:top-5',
               !desk && 'opacity-0',
               !reader && 'pointer-events-none',
             )}
           >
             {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
             <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
-            <span className={cn('flex min-w-0 gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
+            {/* large text: the links and chips wrap onto a second row rather than running off the screen */}
+            <span className={cn('flex min-w-0 flex-wrap justify-end gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
               {reader ? (
                 <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[var(--rule-link)] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                   Write your own
@@ -961,17 +1089,17 @@ export default function App() {
                     href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                     aria-label="All letters"
                     title="All letters"
-                    className="relative grid size-8 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="relative grid size-[32px] place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    <LayoutDashboard aria-hidden className="size-4" />
+                    <LayoutDashboard aria-hidden className="size-[16px]" />
                   </a>
                   <a
-                    href={withLogo(`${import.meta.env.BASE_URL}fonts.html`)}
+                    href={withLogo(FONTS_URL)}
                     aria-label="Fonts"
                     title="Fonts"
-                    className="relative grid size-8 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="relative grid size-[32px] place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    <CaseSensitive aria-hidden className="size-4" />
+                    <CaseSensitive aria-hidden className="size-[16px]" />
                   </a>
                   <ShareMenu {...panelProps} size="chip" />
                 </span>
@@ -989,7 +1117,7 @@ export default function App() {
               </a>
               {/* every hand as an open font (the fonts page) */}
               <a
-                href={withLogo(`${import.meta.env.BASE_URL}fonts.html`)}
+                href={withLogo(FONTS_URL)}
                 className={cn(
                   // a big enough target without making the line taller (the sheet's label sits just under it)
                   "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
@@ -1026,9 +1154,25 @@ export default function App() {
               replyDesk && 'relative z-10 mx-0 shrink-0 transition-opacity duration-300 ease-out',
               replyDesk && theirsForward && 'opacity-50',
             )}
-            style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : undefined}
+            style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : wide > 1 && isDesktop ? { maxWidth: Math.round(820 * wide) } : undefined}
           >
-            {pxPerMm > 0 && reader && (
+            {/* a link cut short on its way: no letter to show, and the one thing to do about it */}
+            {brokenLink && (
+              <Notice
+                title="This link looks incomplete"
+                action={<Button variant="secondary" onClick={() => { setLinkTrouble(null); update({ reader: false }); }}>Write a letter of your own</Button>}
+              >
+                Part of the letter didn’t arrive. Some apps shorten long links, so ask the sender to share it again.
+              </Notice>
+            )}
+            {!brokenLink && penFailed && !writing && (
+              <Notice title="The pen couldn’t load" action={<Button variant="secondary" onClick={() => window.location.reload()}>Reload</Button>}>
+                Your letter is safe in this page’s link. Reload to try again.
+              </Notice>
+            )}
+            {/* look C (?look=postmarked): a shared link arrives in its envelope, postmarked */}
+            {LOOK === 'postmarked' && pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && <><ToolArrival sampleId={state.sample} writer={name} /><div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}><SheetPost sampleId={state.sample} width={shownPaper.w * pxPerMm} /></div></>}
+            {pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && (
               <ReaderView
                 writing={writing}
                 live={live ? { live, extras, inkKey: eff.inkKey } : null}
@@ -1041,41 +1185,51 @@ export default function App() {
                 onWriteYourOwn={() => update({ reader: false })}
               />
             )}
-            {pxPerMm > 0 && !reader && (
+            {pxPerMm > 0 && !reader && !brokenLink && !(penFailed && !writing) && (
               <div ref={fitRef} className="origin-top">
+                {/* phones: the label and how you're writing share a row above the sheet, in the page: with large text the
+                    menu drops under the label and the sheet moves down, rather than anything running into the header */}
+                {!isDesktop && (
+                  <div className="relative z-20 mx-auto flex flex-wrap items-end justify-between gap-x-3" style={{ width: shownPaper.w * pxPerMm }}>
+                    <SheetLabel title={sheetTitle} hand={myHandWords} stack className="mb-2.5 min-w-[10rem] flex-1" />
+                    <div className="-mr-1.5 ml-auto shrink-0">{writingMenu}</div>
+                  </div>
+                )}
                 {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
                 {/* (with their letter picked up, its label covers this line: yours steps out of the way until it's back) */}
                 <div
                   className={cn('relative z-20 mx-auto transition-opacity duration-300 ease-out', replyDesk && theirsForward && 'pointer-events-none opacity-0')}
-                  style={{ width: shownPaper.w * pxPerMm }}
+                  // on a very wide screen the label grows with the sheet (zoomed, so its width is in its own px)
+                  style={wide > 1 && isDesktop ? { width: (shownPaper.w * pxPerMm) / wide, zoom: wide } : { width: shownPaper.w * pxPerMm }}
                 >
                   {isDesktop ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
-                    <div className="absolute bottom-1.5 left-0 flex max-w-full items-baseline gap-2.5">
+                    // (one row with how you're writing at its right; with large text the menu drops under it)
+                    <div className="absolute inset-x-0 bottom-0.5 flex flex-wrap items-end gap-x-2.5">
                       <AboutHand {...panelProps}>
                         <button
                           type="button"
                           aria-label={`${name}: about this hand`}
-                          className="group -ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] font-medium tracking-[-0.01em] text-foreground transition-colors duration-150 hover-device:hover:bg-[#e6e2d8] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+                          className="group relative -ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[0.8125rem] font-medium tracking-[-0.01em] text-foreground transition-colors duration-150 after:absolute after:-inset-y-1.5 after:inset-x-0 after:content-[''] hover-device:hover:bg-[var(--chip-hover)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
                         >
                           {name}
                           <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </button>
                       </AboutHand>
-                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 260)} />
+                      <SheetLabel title={sheetTitle} stack className="mb-1 min-w-[8rem] flex-1" />
+                      <div className="ml-auto shrink-0">{writingMenu}</div>
                     </div>
-                  ) : (
-                    <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
-                  )}
-                  {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
+                  ) : null}
                   {LOOK === 'reading-room' && sample && !replyDesk && <SampleMarks id={sample.id} pxPerMm={pxPerMm} />}
+                  {/* look C (?look=postmarked): a found letter's postmark on the sheet's corner */}
+                  {LOOK === 'postmarked' && <SheetPost sampleId={sample?.id} width={shownPaper.w * pxPerMm} />}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
                   {/* a ghost in the sheet's top margin, pointing in (clear of the label above and the first line below);
                       the first time you write on a desktop, the same place says how to stop */}
                   {(hintShown || escHint) && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700 motion-reduce:slide-in-from-top-0"
+                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[0.75rem] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700 motion-reduce:slide-in-from-top-0"
                     >
                       {escHint ? 'Press Esc when you’re done' : <><Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write</>}
                     </div>
@@ -1131,7 +1285,7 @@ export default function App() {
                   )}
                 </PaperEditor>
                 <div
-                  className={cn('mx-auto mt-3 flex items-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
+                  className={cn('mx-auto mt-3 flex items-center text-[0.7812rem] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
                   style={{ width: shownPaper.w * pxPerMm }}
                 >
                   {/* the letter's credit on the left, how you're writing on the right */}
@@ -1141,16 +1295,15 @@ export default function App() {
                       type="button"
                       aria-expanded={theirsForward}
                       onClick={() => setTheirsForward(true)}
-                      className="mr-auto inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-3 text-[12px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
+                      className="mr-auto inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-3 text-[0.75rem] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
                     >
                       <span className="truncate">Read their letter</span>
                       <ChevronDown aria-hidden className="size-3.5 shrink-0" />
                     </button>
                   ) : (
                     // the letter's name is on the sheet now; a translation still says who translated it
-                    <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
+                    <span className="mr-auto min-w-0 truncate pr-3 text-[0.75rem]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
-                  {!isDesktop && writingMenu}
                 </div>
                 {LOOK === 'reading-room' && !isDesktop && sample && <CatalogueSlip id={sample.id} name={name} />}
                 {plainText && (
@@ -1163,6 +1316,11 @@ export default function App() {
           </div>
           </div>
           </div>
+          {!reader && !isDesktop && tinyWindow && (
+            <section aria-label="Hand, paper and ink" className="mx-auto mt-10 max-w-[480px] rounded-2xl bg-panel">
+              <Panel {...panelProps} />
+            </section>
+          )}
         </main>
 
         {!reader && !isDesktop && editing && (
@@ -1197,7 +1355,7 @@ export default function App() {
             )}
           >
             {LOOK === 'reading-room' ? <ReadingDesk {...panelProps} /> : (
-            <div className="panel-scroll h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
+            <div style={wide > 1 ? { zoom: wide } : undefined} className="panel-scroll h-full w-[21rem] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>
             )}

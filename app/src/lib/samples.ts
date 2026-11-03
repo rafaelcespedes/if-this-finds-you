@@ -4,7 +4,8 @@
 // the oldest spellings (before 1660) only come with historical hands. Once the note is edited, the text is the
 // writer's and stays.
 import { getStyle } from '@engine';
-import raw from '../../../content/sample-texts.json';
+// the letters the tool uses, and only what it shows of them (vite.config.ts, toolLetters)
+import raw from 'virtual:tool-letters';
 
 export interface SampleText {
   id: string;
@@ -15,7 +16,7 @@ export interface SampleText {
   author: string;
   year: number;
   translator?: { name: string };
-  source?: { name: string; url: string };
+  source?: { name?: string; url: string };
   traditions?: string[];
   enabled?: boolean;
 }

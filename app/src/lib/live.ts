@@ -7,7 +7,7 @@ import * as E from '@engine';
 import { CAP, layout, penOutline, rng, UPM, withOverrides, type Hand } from '@engine';
 import type { Mark } from './doc';
 import { writingLines, type PaperSpec } from './papers';
-import type { CaretPos, Geometry, Ribbon } from './geometry';
+import type { CaretPos, Geometry, Ribbon, Side } from './geometry';
 import { JOURNEY, writeWithJourney } from './engine-features';
 import { REF_PX_PER_MM, scopeIds } from './writing';
 import { closingStart, frameFor, paginate, sheetOf, type PageFrame, type Pagination } from './paginate';
@@ -111,18 +111,25 @@ export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number
 export const sheetOfLine = (live: Live, line: number) => sheetOf(live.pages, line);
 
 /** The engine's caret geometry, in the editor's sheet-local terms (lib/geometry.ts). */
-export function engineGeometry(live: Live): Geometry {
-  const { geo, page } = live;
+/**
+ * `over`: another geometry on the same sheets (Ink: the written letter and the pen's thought letters as one, whose
+ * lines are placed on their sheets by height rather than by line number).
+ */
+export function engineGeometry(live: Live, over?: { geo: any; text: string }): Geometry {
+  const geo = over?.geo ?? live.geo;
+  const text: string = over?.text ?? live.page.text;
   const shift = (s: number) => live.sheets[s]?.shiftU ?? 0;
+  const sheetU = live.paper.h * live.unitsPerMm;
+  const sheetOf = (line: number, y: number) => (over ? Math.min(live.sheets.length - 1, Math.max(0, Math.floor(y / sheetU))) : sheetOfLine(live, line));
   const lineNums = [...(geo.lines as Map<number, unknown>).keys()].filter((n) => geo.lineStops(n).length).sort((a, b) => a - b);
-  const caret = (o: number): CaretPos | null => {
-    const c = geo.caretAt(o, 'after');
+  const caret = (o: number, side: Side = 'after'): CaretPos | null => {
+    const c = geo.caretAt(o, side);
     if (!c) return null;
-    const sheet = sheetOfLine(live, c.line);
+    const sheet = sheetOf(c.line, c.y);
     return { sheet, x: c.x, y: c.y - shift(sheet), top: [c.top[0], c.top[1] - shift(sheet)], line: c.line };
   };
   return {
-    text: page.text,
+    text,
     unitsPerMm: live.unitsPerMm,
     emMm: live.emMm,
     lineMm: live.lineMm,
@@ -132,28 +139,25 @@ export function engineGeometry(live: Live): Geometry {
     summary: live.summary,
     caret,
     hit: (sheet, x, y) => geo.hitTest(x, y + shift(sheet)).offset,
-    vertical: (o, dir, goalX) => {
-      const c = geo.caretAt(o, 'after');
+    vertical: (o, dir, goalX, side = 'after') => {
+      const c = geo.caretAt(o, side);
       if (!c) return { o, goalX: goalX ?? 0 };
       const gx = goalX ?? c.x;
       const at = lineNums.indexOf(c.line);
       const next = lineNums[at + dir];
-      if (next == null) return { o: dir < 0 ? 0 : page.text.length, goalX: gx };
+      if (next == null) return { o: dir < 0 ? 0 : text.length, goalX: gx };
       return { o: geo.stopNear(next, gx).o, goalX: gx };
     },
-    edges: (o) => {
-      const c = geo.caretAt(o, 'after');
+    edges: (o, side = 'after') => {
+      const c = geo.caretAt(o, side);
       const stops = c ? geo.lineStops(c.line) : [];
       if (!stops.length) return { start: o, end: o };
       const os = stops.map((s: { o: number }) => s.o);
-      // the last written line runs to the letter's last letter: an ink page has no stop after its final glyph
-      const last = c!.line === lineNums[lineNums.length - 1];
-      const end = Math.max(...os);
-      return { start: Math.min(...os), end: last ? Math.max(end, String(page.text).replace(/\s+$/, '').length) : end };
+      return { start: Math.min(...os), end: Math.max(...os) };
     },
     ribbons: (from, to): Ribbon[] =>
       geo.selection(from, to).map((r: { line: number; points: [number, number][] }) => {
-        const sheet = sheetOfLine(live, r.line);
+        const sheet = sheetOf(r.line, r.points[0]?.[1] ?? 0);
         return { sheet, points: r.points.map(([x, y]) => [x, y - shift(sheet)] as [number, number]) };
       }),
   };

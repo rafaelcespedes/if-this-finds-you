@@ -18,7 +18,7 @@ export function DraftSlip({ value, onEdit, width, onComposingChange }: { value: 
   }, [value, width]);
   return (
     <div className="relative rounded-xl border border-border bg-[#f8f6f1] px-4 pt-3 pb-3" style={{ width: Math.max(0, width - 16) }}>
-      <label htmlFor={id} className="mb-1 block text-[12px] text-muted-foreground">
+      <label htmlFor={id} className="mb-1 block text-[0.75rem] text-muted-foreground">
         Plain text
       </label>
       <textarea
@@ -29,7 +29,7 @@ export function DraftSlip({ value, onEdit, width, onComposingChange }: { value: 
         spellCheck
         {...input}
         placeholder="Write your note…"
-        className="block w-full resize-none overflow-hidden bg-transparent text-[15px] leading-[1.6] text-foreground placeholder:text-faint focus:outline-none pointer-coarse:text-[16px]"
+        className="block w-full resize-none overflow-hidden bg-transparent text-[0.9375rem] leading-[1.6] text-foreground placeholder:text-faint focus:outline-none pointer-coarse:text-[1rem]"
       />
     </div>
   );

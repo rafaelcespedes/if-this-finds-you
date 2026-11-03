@@ -7,7 +7,7 @@
 // - Pen-only formatting: ⌘U/⌘I underline by hand (again for double), ⌘B press harder, ⌘↩ P.S.
 // - Up/Down/Home/End follow the written lines; IME compositions own the keys while they last.
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { across, type Geometry } from '@/lib/geometry';
+import { across, type Geometry, type Side } from '@/lib/geometry';
 import type { Edit } from '@/lib/edits';
 import { wordAt } from '@/lib/doc';
 import { isComposingKey, isMac, useEditInput, type Composition } from '@/hooks/useEditInput';
@@ -72,6 +72,10 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   const goalX = useRef<number | null>(null);
   const [sel, setSel] = useState<Sel>({ start: text.length, end: text.length, dir: 'none', focused: false });
   const [composition, setComposition] = useState<Composition | null>(null);
+  // where a wrapped line's end and the next line's start share an offset, which one the caret is on: the line's
+  // end after End or ⌘→ (until the caret moves), the next line's start otherwise
+  const [side, setSide] = useState<Side>('after');
+  const sideAt = useRef<number | null>(null);
   const onComposition = useCallback((c: Composition | null) => {
     setComposition(c);
     onComposingChange?.(c != null);
@@ -91,6 +95,10 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     const el = ta.current;
     if (!el) return;
     const focused = document.activeElement === el;
+    if (sideAt.current != null && (el.selectionStart !== sideAt.current || el.selectionEnd !== sideAt.current)) {
+      sideAt.current = null;
+      setSide('after');
+    }
     setSel((s) =>
       s.start === el.selectionStart && s.end === el.selectionEnd && s.focused === focused && s.dir === el.selectionDirection
         ? s
@@ -243,7 +251,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     const lineKey = e.key === 'Home' || e.key === 'End' || (isMac() && e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight'));
     if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.altKey && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
-      const v = geo.vertical(toMap(head), e.key === 'ArrowUp' ? -1 : 1, goalX.current);
+      const v = geo.vertical(toMap(head), e.key === 'ArrowUp' ? -1 : 1, goalX.current, side);
       goalX.current = v.goalX;
       focusAt(fromMap(v.o), e.shiftKey);
       return;
@@ -251,9 +259,13 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     goalX.current = null;
     if (lineKey && !e.altKey) {
       e.preventDefault();
-      const edges = geo.edges(toMap(head));
+      const edges = geo.edges(toMap(head), side);
       const toEnd = e.key === 'End' || e.key === 'ArrowRight';
-      focusAt(toEnd ? fromMapEnd(edges.end) : fromMap(edges.start), e.shiftKey);
+      const to = toEnd ? fromMapEnd(edges.end) : fromMap(edges.start);
+      // the end of this line, not the start of the next (the same offset where the line wraps)
+      sideAt.current = toEnd && !e.shiftKey ? to : null;
+      setSide(toEnd && !e.shiftKey ? 'before' : 'after');
+      focusAt(to, e.shiftKey);
     }
   };
 
@@ -274,7 +286,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
 
   // ---------- caret & selection geometry ----------
   const head = sel.dir === 'backward' ? sel.start : sel.end;
-  const caret = useMemo(() => (geo ? geo.caret(toMap(head)) : null), [geo, head, toMap]);
+  const caret = useMemo(() => (geo ? geo.caret(toMap(head), side) : null), [geo, head, toMap, side]);
   const asc = geo ? geo.ascU : 740, desc = geo ? geo.descU : 200;
   const caretPx = caret ? { left: caret.x * k, top: caret.sheet * pitch + (caret.y - asc) * k } : { left: 0, top: 0 };
   const caretH = (asc + desc) * k;
@@ -386,7 +398,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       </div>
       {chip && (
         <div
-          className="selection-chip absolute z-10 flex h-8 items-center gap-0.5 rounded-md bg-panel px-1 text-[12.5px] shadow-[0_1px_2px_rgba(60,45,20,0.1),0_8px_24px_-10px_rgba(60,45,20,0.35)]"
+          className="selection-chip absolute z-10 flex h-8 items-center gap-0.5 rounded-md bg-panel px-1 text-[0.7812rem] shadow-[0_1px_2px_rgba(60,45,20,0.1),0_8px_24px_-10px_rgba(60,45,20,0.35)]"
           style={{ left: Math.max(0, chip.left - 6), top: Math.max(-36, chip.top) }}
           onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
         >
@@ -413,7 +425,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
         autoComplete="off"
         enterKeyHint="enter"
         {...{ writingsuggestions: 'false', 'data-gramm': 'false', 'data-gramm_editor': 'false', 'data-enable-grammarly': 'false' }}
-        className="pointer-events-none absolute m-0 resize-none overflow-hidden border-0 p-0 text-[16px] leading-none whitespace-pre opacity-0 outline-none"
+        className="pointer-events-none absolute m-0 resize-none overflow-hidden border-0 p-0 text-[1rem] leading-none whitespace-pre opacity-0 outline-none"
         style={{ left: caretPx.left, top: caretPx.top, width: lineW, height: lineH, caretColor: 'transparent' }}
       />
       <span id={descId} hidden>

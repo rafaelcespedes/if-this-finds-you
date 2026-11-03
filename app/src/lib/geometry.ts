@@ -22,6 +22,12 @@ export interface Ribbon {
   points: [number, number][];
 }
 
+/**
+ * Which side of an offset the caret sits on where two lines meet (a wrapped line's end and the next line's start
+ * are the same offset): 'before' after End or ⌘→, 'after' everywhere else.
+ */
+export type Side = 'before' | 'after';
+
 export interface Geometry {
   /** the text this geometry was made for (the live text may be a keystroke ahead) */
   text: string;
@@ -32,12 +38,12 @@ export interface Geometry {
   /** caret band above / below the baseline, font units */
   ascU: number;
   descU: number;
-  caret(o: number): CaretPos | null;
+  caret(o: number, side?: Side): CaretPos | null;
   hit(sheet: number, x: number, y: number): number;
   /** Up/Down: the offset on the next line, keeping a goal x */
-  vertical(o: number, dir: -1 | 1, goalX: number | null): { o: number; goalX: number };
-  /** Home/End: the written line's start and end around o */
-  edges(o: number): { start: number; end: number };
+  vertical(o: number, dir: -1 | 1, goalX: number | null, side?: Side): { o: number; goalX: number };
+  /** Home/End: the written line's start and end around o (on the line `side` puts it on) */
+  edges(o: number, side?: Side): { start: number; end: number };
   ribbons(from: number, to: number): Ribbon[];
   /** the draft's corrections in words (journey), for screen readers */
   summary?: string;

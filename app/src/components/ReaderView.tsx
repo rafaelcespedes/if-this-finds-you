@@ -98,7 +98,7 @@ export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, text
         {text.split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)}
       </article>
       <div className="mx-auto mt-6 flex max-w-[480px] flex-col items-center gap-3 text-center">
-        <p aria-hidden className="text-[13px] text-muted-foreground">A letter in {name}’s hand.</p>
+        <p aria-hidden className="text-[0.8125rem] text-muted-foreground">A letter in {name}’s hand.</p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => { setFinish(0); setToken((n) => n + 1); }}>
             <RotateCcw aria-hidden /> Replay

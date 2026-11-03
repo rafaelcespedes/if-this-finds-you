@@ -59,6 +59,20 @@ const NEAT_BANDS: Record<string, [number, number]> = {
   neatness: [0.55, 0.95], hurry: [0, 0.6], mistakes: [0, 0.4], tremor: [0.3, 1.2], fatigue: [0.2, 0.9], lineWander: [0.3, 1.1], drift: [0.2, 0.9],
 };
 
+/**
+ * This visit's chance: each visitor's Find another takes its own path from the same first hand (links still
+ * name the exact hand they show). `?repeatable` keeps the old fixed path, for QA.
+ */
+let VISIT = (() => {
+  try { if (new URLSearchParams(window.location.search).has('repeatable')) return ''; } catch { /* no window */ }
+  const a = new Uint32Array(2);
+  globalThis.crypto?.getRandomValues?.(a);
+  return (a[0] || Math.floor(Math.random() * 2 ** 32)).toString(36) + a[1].toString(36);
+})();
+/** the page's chance, and the roll worker taking the same (so its hands are the ones the page would roll) */
+export const visitChance = () => VISIT;
+export const takeVisitChance = (v: string) => { VISIT = v; };
+
 /** Is this hand easy to read? (The engine's score when it has one; else its neatness and hurry.) */
 export function isNeat(p: Hand) {
   if (engineLegibility) return engineLegibility(p) >= NEAT_MIN;
@@ -72,7 +86,7 @@ export function rollLook(s: NoteState, opts: { variety: number; locked: Set<Lock
   const neat = s.neatOnly;
   // the letter's length, so the sampler leaves out papers too small for it (postcards, cards, an aerogramme)
   // (the sampler is repeatable for the same note; a retry asks it with a different word)
-  const ask = (retry = 0) => engineSampler?.({ current: { seed: s.seed, style: s.style }, locked: [...locked], variety, textLength: s.text.length, neatOnly: neat, ...(retry ? { entropy: `neat-${retry}` } : {}) });
+  const ask = (retry = 0) => engineSampler?.({ current: { seed: s.seed, style: s.style }, locked: [...locked], variety, textLength: s.text.length, neatOnly: neat, ...(retry || VISIT ? { entropy: [VISIT, retry ? `neat-${retry}` : ''].filter(Boolean).join('-') } : {}) });
   const choose = (fromEngine: EngineLook | undefined) => fromEngine?.seed
     ? { seed: fromEngine.seed, style: fromEngine.style ?? s.style }
     : sibling ? pickSimilarHand({ seed: s.seed, style: s.style }) : pickNewHand({ seed: s.seed, style: s.style }, variety);

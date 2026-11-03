@@ -96,8 +96,8 @@ function SchoolCard({ seed, style, ink, selected, onPick }: { seed: string; styl
         color={ink}
         className="-ml-1.5 h-[34px] w-full overflow-hidden"
       />
-      <span className="mt-1.5 w-full truncate text-[12.5px] leading-tight font-medium text-foreground">{title}</span>
-      <span className="w-full truncate text-[11.5px] leading-tight text-muted-foreground">{sub}</span>
+      <span className="mt-1.5 w-full truncate text-[0.7812rem] leading-tight font-medium text-foreground">{title}</span>
+      <span className="w-full truncate text-[0.7188rem] leading-tight text-muted-foreground">{sub}</span>
     </button>
   );
 }

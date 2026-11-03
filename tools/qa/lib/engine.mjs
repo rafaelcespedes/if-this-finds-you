@@ -91,3 +91,16 @@ export function buildMatrix(E) {
   }
   return specs;
 }
+
+// ---------- the quick sample (--quick; CI runs it on every push, see docs/CHECKS.md) ----------
+// Every style writes the Kernel, the paragraph and a phone-width letter with its own pen, and the pangram with
+// every pen; then a fixed 1-in-QUICK_EVERY share of everything else, picked by a hash of the item id so the
+// sample doesn't shift when items are added. About 6% of the matrix; the full matrix runs nightly.
+export const QUICK_EVERY = 30;
+export function quickMatrix(E, specs = buildMatrix(E)) {
+  const pen0 = Object.keys(E.PENS)[0], seed0 = MATRIX_SEEDS[0];
+  const core = (s) => !s.overrides && s.seed === seed0 && (s.textId === 'pangram' ? !s.width :
+    s.pen === pen0 && ((s.textId === 'kernel' && !s.width) || s.textId === 'paragraph' || (s.textId === 'letter' && s.width)));
+  const sampled = (s) => parseInt(crypto.createHash('sha256').update(s.id).digest('hex').slice(0, 8), 16) % QUICK_EVERY === 0;
+  return specs.filter((s) => core(s) || sampled(s));
+}
