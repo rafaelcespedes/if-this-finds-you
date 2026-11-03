@@ -316,8 +316,7 @@ html[data-look='reading-room'] .sheet-surface [data-site-menu] [data-site-link] 
 }
 /* a place you can go, under the pointer: a faint underline (the place you're in keeps its own mark) */
 @media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] [data-site-header] a[data-site-link]:not([aria-current]):hover [data-site-words],
-  html[data-look='reading-room'] .rr-full-head:hover .rr-sc {
+  html[data-look='reading-room'] [data-site-header] a[data-site-link]:not([aria-current]):hover [data-site-words] {
     text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
     text-underline-offset: 3px;
   }
@@ -1497,6 +1496,18 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
     --rr-rule: color-mix(in oklab, var(--rr-ink) 45%, transparent);
     --rr-hair: color-mix(in oklab, var(--rr-ink) 60%, transparent);
   }
+}
+/* the ruled rows that open things (Full record, Writing materials, Handwriting and more): under the pointer their
+   name underlines faintly, pressed the row takes the press wash. TEMPORARY, the same as ui/controls.css's shared
+   .ruled-row from the components owner: delete this once that lands */
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .ruled-row:hover > :first-child {
+    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
+    text-underline-offset: 3px;
+  }
+}
+html[data-look='reading-room'] .ruled-row:active {
+  background: var(--st-press);
 }
 /* pressed, every control answers, phones included (the tap highlight is off everywhere): icons and quiet words on the
    ink press wash, red words on their red one in the deeper red (red on the ink wash would be 4.4:1) */
