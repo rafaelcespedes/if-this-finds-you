@@ -169,7 +169,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
   return (
     <div className="min-h-dvh">
       <SiteHeader current="letters" />
-      <main className={cn('mx-auto w-full max-w-[1180px] px-4 sm:px-8 lg:px-10', dock ? 'pb-36' : 'pb-28')}>
+      <main className={cn('lib-main mx-auto w-full max-w-[1180px] px-4 sm:px-8 lg:px-10', dock ? 'pb-36' : 'pb-28')}>
         <section className={cn('pt-[calc(5.25rem+env(safe-area-inset-top,0px))] sm:pt-28', dock ? 'pb-10 sm:pb-12' : 'pb-6 sm:pb-8')}>
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
             {/* "All letters" in the logo's hand (#5: Québec school print, felt marker; heading.mjs) */}
