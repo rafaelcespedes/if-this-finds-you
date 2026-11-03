@@ -1112,8 +1112,9 @@ export default function App() {
       action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
       // the running head's middle: a found letter's number, place and year (the Reading Room's catalogue)
       centre={folio.centre}
-      // over the whole window, the middle centred over the letter's side (the aside: the desk and its pr-3)
-      beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + 0.75rem)' : undefined}
+      // over the whole window, the middle centred over the letter's side: the aside (the Reading Room's desk, with the
+      // grid's gutter before it and its margin after, reading-room.css), less the header row's own gap (gap-x-4)
+      beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + var(--rr-gutter, 0rem) + var(--rr-margin, 0.75rem) - 1rem)' : undefined}
       quiet={editing && !isDesktop}
       style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
       className={cn('z-auto transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
