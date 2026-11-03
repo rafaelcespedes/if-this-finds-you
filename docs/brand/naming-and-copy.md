@@ -157,6 +157,25 @@ Dear Ink, Dear Paper (.com), Dear Elsewhere.
 
 **Verdict:** **Dear Long Ago** if the name should feel romantic; **Dear Finder** if it should invite exploring.
 
+### Letter language: sign-offs and old letter formulas
+
+No live exact marks in TMview unless noted. Per year (renewal).
+
+| Name | Domain | Where it comes from |
+|---|---|---|
+| **These Few Lines** | thesefewlines.com $12.03 (.app $15) | The stock phrase of ordinary 19th-century letters: "I take pen in hand to write you these few lines", often followed by the hope that they find you in good health. Fits an archive of ordinary people's letters exactly |
+| **Pen in Hand** | peninhand.app $15; takepeninhand.com $12.03 | "I take my pen in hand", the standard opening of personal letters for over a century |
+| **Write Soon** | writesoon.app $15 (.com taken) | The everyday sign-off, and an invitation to reply: the archive's loop in two words |
+| Yours in Haste | yoursinhaste.com $12.03 (In Haste: inhaste.app $15) | A real closing for hurried letters; matches the hurried, imperfect hands |
+| I Remain | iremain.app $15 | From "I remain, yours faithfully"; also, the letters that remain |
+| Yours Aye | yoursaye.com $12.03 | A Scottish sign-off ("yours always"). Charming, regional |
+
+Dropped: **Sincerely** (every ending taken, plus an EU mark in classes 9, 16, 41, 42), As Ever (27 live marks),
+Yours Ever (marks in several countries), Fondly, Warmly, Cordially, Yours Truly, Yours Always (domains taken).
+
+**Verdict:** **These Few Lines** is the best fit for an archive of ordinary people's letters, and the `.com` is
+$12.03. **Write Soon** is the warmest invitation to write back.
+
 ---
 
 ## 1. Naming
