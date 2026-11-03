@@ -654,6 +654,39 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded] > span.round
   font-weight: 400;
   white-space: nowrap;
 }
+/* the phone's writing tray (PenTray.tsx), its pen menu, and their letter pulled down over yours (TheirLetter.tsx):
+   slips ruled in ink, not pills; Done, the action of the moment, in red words */
+html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'],
+html[data-look='reading-room'] div.fixed.z-40 [class*='w-64'][class*='rounded-2xl'] {
+  border: 1px solid var(--rr-edge);
+  border-top-color: var(--rr-ink);
+  border-radius: 3px;
+  background: var(--rr-card);
+  backdrop-filter: none;
+  box-shadow: 0 10px 24px -14px rgba(30, 39, 51, 0.42);
+}
+html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'] [class*='rounded-full'] {
+  border-radius: 3px;
+}
+html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'] [data-slot='button'] {
+  border-radius: 3px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--rr-red);
+  font-size: 1rem;
+  font-weight: 600;
+}
+html[data-look='reading-room'] [class*='rounded-b-[22px]'] {
+  border-radius: 0 0 3px 3px;
+  border-bottom: 1px solid var(--rr-ink);
+}
+/* the quiet pointer on the sheet ("Click the letter to write", "Press Esc when you're done"): a slip too */
+html[data-look='reading-room'] [class*='rounded-full'][class*='bg-panel/95'] {
+  border-radius: 2px;
+  border: 1px solid var(--rr-edge);
+  background: var(--rr-slip);
+  color: var(--rr-muted);
+}
 /* the catalogue slip under the sheet (phones) */
 html[data-look='reading-room'] .rr-under-sheet {
   margin-top: 20px;
