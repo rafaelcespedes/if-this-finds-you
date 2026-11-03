@@ -208,10 +208,10 @@ export default function App() {
         const doc = decodeInk(state.inkLog);
         if (doc) return inkLive(p, inkPage(p, doc, paper, eff.size, eff.lineSpacing), paper, eff.size, eff.lineSpacing);
       }
-      return liveWanted ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed) : null;
+      return liveWanted ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed, !editing) : null;
     },
     // laid out from the committed text: an IME's composing text waits until it commits
-    [liveWanted, p, committed.current, paper, eff.size, eff.lineSpacing, state.signed, inkActive, inkTick, state.reader, inkMode, state.inkLog],
+    [liveWanted, p, committed.current, paper, eff.size, eff.lineSpacing, state.signed, inkActive, inkTick, state.reader, inkMode, state.inkLog, editing],
   );
   const extras = useMemo(
     () => {

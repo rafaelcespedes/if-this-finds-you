@@ -73,9 +73,15 @@ export function pageSetup(p: Hand, paper: PaperSpec, size: number, lineSpacing: 
   return { emMm, u, lines, lineMm, opts };
 }
 
-/** `signed`: the writer signs after the text, so a line is kept for the name (on a sheet of its own if need be). */
-export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing: number, signed = false): Live {
-  const { emMm, u, lines, lineMm, opts } = pageSetup(p, paper, size, lineSpacing);
+/**
+ * `signed`: the writer signs after the text, so a line is kept for the name (on a sheet of its own if need be).
+ * `complete`: the letter is finished as far as anyone knows; false while someone is typing, so a paragraph that
+ * starts like a closing ("Your letter…") isn't set as one until it's clearly more.
+ */
+export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing: number, signed = false, complete = true): Live {
+  const setup = pageSetup(p, paper, size, lineSpacing);
+  const { emMm, u, lines, lineMm } = setup;
+  const opts = complete ? setup.opts : { ...setup.opts, complete: false };
   const j = JOURNEY && writeWithJourney && text ? writeWithJourney(p, text, opts, { seed: String(p.seed) }) : null;
   const page: any = j && j.ok ? j.page : layout(p, text, opts as never);
   // sheets break where the lines really are: each hand has its own pitch, and lines vary and float
