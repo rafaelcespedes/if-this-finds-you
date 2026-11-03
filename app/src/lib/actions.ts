@@ -1,4 +1,5 @@
 // The three actions: share a link, download the note as a JPEG, export the hand as a font file.
+import * as E from '@engine';
 import { buildFont, verify, type Hand } from '@engine';
 import { getPaper, paintPaper } from './papers';
 import { rasterizeWriting } from './writing';
@@ -125,6 +126,25 @@ export async function shareLink(url: string, title: string) {
   }
 }
 export const canShareLinks = () => typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
+/** The engine builds the open font package (zip: .otf, .ttf, how to install it, the licence, the credits). */
+export const FONT_PACKAGE = typeof (E as unknown as { buildFontPackage?: unknown }).buildFontPackage === 'function';
+
+/** The open font package, built in a worker, saved as the engine names it ("IfThisFindsYou-Yara-Rowe.zip"). */
+export function exportFontPackage(req: import('@/workers/font.worker').FontRequest) {
+  return new Promise<{ filename: string; family: string; glyphs: number; bytes: number }>((resolve, reject) => {
+    const w = new Worker(new URL('../workers/font.worker.ts', import.meta.url), { type: 'module' });
+    w.onmessage = (e: MessageEvent<import('@/workers/font.worker').FontReply>) => {
+      w.terminate();
+      const r = e.data;
+      if (!r.ok) { reject(new Error(r.error)); return; }
+      saveBlob(new Blob([r.zip], { type: 'application/zip' }), r.filename);
+      resolve({ filename: r.filename, family: r.info.family, glyphs: r.info.glyphs, bytes: r.zip.byteLength });
+    };
+    w.onerror = (e) => { w.terminate(); reject(new Error(e.message || 'The font couldn’t be built')); };
+    w.postMessage(req);
+  });
+}
 
 /** Build the .otf with the engine's font builder (opentype.js is loaded only when needed). */
 export async function exportFont(p: Hand, filename: string) {

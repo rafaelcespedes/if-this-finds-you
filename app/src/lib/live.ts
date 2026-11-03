@@ -73,9 +73,15 @@ export function pageSetup(p: Hand, paper: PaperSpec, size: number, lineSpacing: 
   return { emMm, u, lines, lineMm, opts };
 }
 
-/** `signed`: the writer signs after the text, so a line is kept for the name (on a sheet of its own if need be). */
-export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing: number, signed = false): Live {
-  const { emMm, u, lines, lineMm, opts } = pageSetup(p, paper, size, lineSpacing);
+/**
+ * `signed`: the writer signs after the text, so a line is kept for the name (on a sheet of its own if need be).
+ * `complete`: the letter is finished as far as anyone knows; false while someone is typing, so a paragraph that
+ * starts like a closing ("Your letter…") isn't set as one until it's clearly more.
+ */
+export function liveLayout(p: Hand, text: string, paper: PaperSpec, size: number, lineSpacing: number, signed = false, complete = true): Live {
+  const setup = pageSetup(p, paper, size, lineSpacing);
+  const { emMm, u, lines, lineMm } = setup;
+  const opts = complete ? setup.opts : { ...setup.opts, complete: false };
   const j = JOURNEY && writeWithJourney && text ? writeWithJourney(p, text, opts, { seed: String(p.seed) }) : null;
   const page: any = j && j.ok ? j.page : layout(p, text, opts as never);
   // sheets break where the lines really are: each hand has its own pitch, and lines vary and float
@@ -253,6 +259,22 @@ export function liveExtras(live: Live, x: ExtrasInput): string[] {
     const cs: number[][][] = [];
     for (const it of items) for (const c of it.g.contours as number[][][]) cs.push(c.map(([qx, qy]) => [x0 + (it.x + qx) * 0.82, -(y + (it.y - qy) * 0.82)]));
     add(s, cs);
+  }
+
+  // a notecard that goes on to its back: "over" at the foot of each front, inside the border, in the hand
+  if (live.paper.overflow === 'back') {
+    for (let s = 0; s < live.sheets.length - 1; s += 2) {
+      const over = layout(p, 'over', { maxWidth: 1e7, firstBaseline: 0, lineHeight: UPM });
+      const items = (over.items as any[]).filter((it) => it.kind === 'glyph');
+      const minX = items.length ? Math.min(...items.map((it) => it.x)) : 0;
+      const w = items.reduce((a, it) => Math.max(a, it.x - minX + it.g.advance), 0) * 0.82;
+      const x0 = live.paper.text.right * live.unitsPerMm - w - minX * 0.82;
+      // about one x-height under the last line ("over" has no descenders, so it clears the border)
+      const y = live.sheets[s].shiftU + (live.paper.text.last + live.paper.xh) * live.unitsPerMm;
+      const cs: number[][][] = [];
+      for (const it of items) for (const c of it.g.contours as number[][][]) cs.push(c.map(([qx, qy]) => [x0 + (it.x + qx) * 0.82, -(y + (it.y - qy) * 0.82)]));
+      add(s, cs);
+    }
   }
 
   // an empty page: the writer pencils in where the writing goes, in faint graphite

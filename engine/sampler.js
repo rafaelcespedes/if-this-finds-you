@@ -10,8 +10,9 @@
 // Pure: the same opts give the same pick. The UI passes fresh `entropy` (any string) on each click.
 
 import { rng, clamp } from './core.js';
-import { makeHand, archetypeOf, latentOf, baseSeed, ARCHETYPES } from './hand.js';
-import { describeHabits, families, getStyle } from './glyphs.js';
+import { makeHand, archetypeOf, latentOf, baseSeed, ARCHETYPES, care, skeleton, builtInSlant, CAP } from './hand.js';
+import { describeHabits, families, getStyle, choose, allographOf, isHistorical, CONFUSABLE } from './glyphs.js';
+import { layout } from './layout.js';
 
 export const VARIETY = {
   sibling: { label: 'Sibling', note: 'a close relative of the current hand' },
@@ -54,7 +55,10 @@ function profile(h) {
     texture: clamp((h.tremor - 0.4) / 2.8, 0, 1),
   };
 }
-const asHand = (x) => (x && x.habits ? x : makeHand(x.seed, x.style ? { style: x.style } : x.family || 'print'));
+// a history item says whether it was a Neat only hand; when it doesn't, it follows the current setting
+const asHand = (x, neat = true) => (x && x.habits ? x : makeHand(x.seed, x.style ? { style: x.style } : x.family || 'print',
+  { neatOnly: x.neatOnly == null ? neat : x.neatOnly !== 'off' && x.neatOnly !== false }));
+const neatOpt = (opts) => opts.neatOnly !== false && opts.neatOnly !== 'off'; // Neat only is on unless switched off
 
 // Perceived distance between two writers (controls-and-feel.md §5.2 step 5 weights). About 1 = clearly different.
 export function handDistance(a, b) {
@@ -81,6 +85,54 @@ function extraD2(A, B) {
   return d2;
 }
 
+// How readable a hand is at a glance, 0..1 (1 = a stranger reads it straight off). Not pretty: readable. Sums
+// penalties for what makes our hands hard to read: little care, a lot of hurry, extreme lean, letters far wider or
+// narrower than usual, a small x-height or a pen heavy enough to fill the counters, extreme movement (huge loops,
+// long lead-ins, flourishes, hard angles), a historical tradition, capitals that read as another character.
+// Cheap: two skeletons and a few capitals. Neat only keeps hands at NEAT_MIN or above.
+export const NEAT_MIN = 0.77;
+const CTX = { prev: 'a', next: 'a', index: 1 };
+export function legibility(p) {
+  const parts = legibilityParts(p);
+  let pen = 0;
+  for (const k in parts) pen += parts[k];
+  return Math.max(0, Math.min(1, 1 - 0.6 * pen)); // about 0.4 = hard work; Neat only asks for 0.77
+}
+// The ink gap between two words, in x-heights ('an an', laid out as the page would)
+function wordGap(p) {
+  const items = layout(p, 'an an', { maxWidth: 1e6 }).items.filter((it) => it.kind === 'glyph');
+  if (items.length < 4) return 1;
+  const edge = (it, right) => { let m = right ? -Infinity : Infinity; for (const c of it.g.contours) for (const q of c) m = right ? Math.max(m, it.x + q[0]) : Math.min(m, it.x + q[0]); return m; };
+  return (edge(items[2], false) - edge(items[1], true)) / (p.xHeight * CAP);
+}
+
+// The penalties behind legibility(p), by cause (for calibration, the lab and the provenance card)
+export function legibilityParts(p) {
+  const st = getStyle(p.style) || {};
+  const joined = !!st.connected;
+  const xhU = p.xHeight * CAP;
+  const P = {};
+  P.careless = 1.3 * Math.max(0, 0.55 - care(p));
+  P.rushed = 0.9 * Math.max(0, (p.hurry || 0) - 0.7);
+  const lean = builtInSlant(p.style) + (p.slant || 0);
+  P.lean = 0.035 * Math.max(0, lean - 28) + 0.04 * Math.max(0, -10 - lean);
+  const nW = skeleton(p, 'n', CTX).advance / xhU, oW = skeleton(p, 'o', CTX).advance / xhU;
+  const band = (w, lo, hi) => 0.45 * (Math.max(0, w - hi) + Math.max(0, lo - w));
+  P.proportions = joined ? band(nW, 0.6, 2.05) + band(oW, 0.35, 1.9) : band(nW, 0.5, 1.55) + band(oW, 0.4, 1.5);
+  // words must stand apart: the ink gap between two laid-out words (exit strokes and lead-ins eat into the space)
+  P.wordsRunTogether = 2 * Math.max(0, 0.7 - wordGap(p));
+  P.smallXHeight = 3 * Math.max(0, (joined ? 0.4 : 0.47) - p.xHeight);
+  P.heavyPen = 5 * Math.max(0, p.penWidth / xhU - 0.17);
+  P.tremor = 0.15 * Math.max(0, (p.tremor || 0) - 2.1);
+  // only the 'more' side of a movement dimension hurts reading (fewer loops or no lead-ins read fine); rhythm both ways
+  const dim = (k, at, w = 0.5, both = false) => (typeof p[k] === 'number' ? w * Math.max(0, (both ? Math.abs(p[k]) : p[k]) - at) : 0);
+  P.movement = dim('loops', 0.7, 0.25) + dim('leadIns', 0.6, 0.35) + dim('flourish', 0.6, 0.15) + dim('angularity', 0.6, 0.4) + dim('loopHeight', 0.7, 0.2) + dim('joinLength', 0.7, 0.3) + dim('rhythm', 0.7, 0.3, true);
+  P.tradition = isHistorical(p.style) ? 0.5 : st.tradition && st.tradition.legibility === 'specialist' ? 0.2 : 0;
+  P.confusable = 0;
+  for (const ch of 'AGIQT') { const v = choose(p, ch); if (v && CONFUSABLE.has(allographOf(v))) P.confusable += ch === 'A' || ch === 'I' || ch === 'T' ? 0.12 : 0.06; }
+  return P;
+}
+
 // Legibility cap (§5.2 step 6): a writer may be messy, fast, shaky, steep or extreme in proportion, not all at once.
 export function chaos(h) {
   const xhLow = h.family === 'script' ? clamp((0.44 - h.xHeight) / 0.08, 0, 1) : clamp((0.52 - h.xHeight) / 0.1, 0, 1);
@@ -103,21 +155,24 @@ export function sampleHand(opts = {}) {
   const r = rng('sampler:' + (opts.entropy == null ? '' : opts.entropy) + ':' + history.map((x) => x.seed + '/' + x.family).join(','));
   const fams = families();
   const last = history[history.length - 1];
-  const recent = history.map((x) => profile(asHand(x)));
+  const recent = history.map((x) => profile(asHand(x, neatOpt(opts))));
 
   // Sibling: a relative of the last hand, same family, about one notch away
   if (variety === 'sibling' && last) {
     const fam = opts.family || last.family || 'print';
     const base = baseSeed(last.seed);
     let best = null;
-    for (let i = 0; i < (opts.candidates || 12); i++) {
+    for (let i = 0, tries = 0; i < (opts.candidates || 12) && tries < 60; tries++) {
       const seed = `${base}~${1 + Math.floor(r() * 998)}`;
-      const P = profile(makeHand(seed, fam));
+      const h = makeHand(seed, fam, { neatOnly: neatOpt(opts) });
+      if (neatOpt(opts) && legibility(h) < NEAT_MIN && tries < 48) continue; // Neat only: skip unreadable relatives
+      i++;
+      const P = profile(h);
       const d = handDistance(P, recent[recent.length - 1]);
       const score = -Math.abs(d - 0.32);                    // close, but visibly someone else
       if (!best || score > best.score) best = { seed, family: fam, P, d, score };
     }
-    return result(best, variety);
+    return result(best, variety, neatOpt(opts));
   }
 
   // Family: pinned, or random with long runs broken up
@@ -137,12 +192,16 @@ export function sampleHand(opts = {}) {
   const cfg = VARIETY[variety];
   const n = opts.candidates || 12;
   const cands = [];
+  let spare = null; // the most readable hand seen, if none clears Neat only
   for (let k = 0; cands.length < n && k < 4000; k++) {
     const seed = seedFrom(rng('sampler-seed:' + r() + ':' + k));
     if (archetypeOf(seed).id !== target) continue;
-    const h = makeHand(seed, family);
+    const h = makeHand(seed, family, { neatOnly: neatOpt(opts) });
+    const L = neatOpt(opts) ? legibility(h) : 1;
+    if (L < NEAT_MIN) { if (!spare || L > spare.L) spare = { seed, family, h, L }; continue; }
     cands.push({ seed, family, h, P: profile(h), chaos: chaos(h) });
   }
+  if (!cands.length && spare) cands.push({ ...spare, P: profile(spare.h), chaos: chaos(spare.h) });
   let best = null;
   for (const c of cands) {
     const ds = recent.map((P) => handDistance(c.P, P));
@@ -157,13 +216,14 @@ export function sampleHand(opts = {}) {
     }
     if (!best || score > best.score) best = { ...c, d: dmin, score };
   }
-  return result(best, variety);
+  return result(best, variety, neatOpt(opts));
 }
 
-function result(b, variety) {
+function result(b, variety, neat = true) {
   if (!b) return null;
   const arch = archetypeOf(b.seed);
-  return { seed: b.seed, family: b.family, style: (b.h || makeHand(b.seed, b.family)).style, archetype: arch.id, label: arch.label, variety, distance: b.d };
+  const h = b.h || makeHand(b.seed, b.family, { neatOnly: neat });
+  return { seed: b.seed, family: b.family, style: h.style, archetype: arch.id, label: arch.label, variety, distance: b.d, neatOnly: h.neatOnly, legibility: +legibility(h).toFixed(2) };
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -176,7 +236,14 @@ function result(b, variety) {
 
 export const LOOK_PENS = ['ballpoint', 'gel', 'fountain', 'pointed', 'italic', 'felt', 'pencil'];
 export const LOOK_TIPS = ['fine', 'medium', 'bold'];
-export const LOOK_PAPERS = ['plain', 'us-ruled', 'seyes', 'uk-feint', 'grid', 'dots'];
+// Papers are the app's ids (app/src/lib/papers.ts, docs/research/stationery.md): a family or family-variant.
+export const LOOK_PAPERS = ['pad', 'pad-uk', 'pad-binsen', 'pad-a4', 'laid', 'laid-blue', 'laid-cotton', 'airmail', 'airmail-white',
+  'aerogramme', 'notebook', 'notebook-loose', 'notebook-legal', 'notebook-uk', 'notebook-fr', 'postcard', 'postcard-us', 'card', 'card-ippitsusen'];
+// how common each is on its own (the app's own roll uses the same numbers)
+const PAPER_BASE = { pad: 10, 'pad-uk': 5, 'pad-binsen': 2, 'pad-a4': 3, laid: 8, 'laid-blue': 3, 'laid-cotton': 3, airmail: 9, 'airmail-white': 3,
+  aerogramme: 9, notebook: 4, 'notebook-loose': 4, 'notebook-legal': 3, 'notebook-uk': 2.5, 'notebook-fr': 2.5, postcard: 5, 'postcard-us': 3, card: 6, 'card-ippitsusen': 2 };
+// papers that only hold so much text (characters); sampleLook({ textLength }) skips them for longer letters
+const PAPER_FITS = { postcard: 360, 'postcard-us': 360, card: 420, 'card-ippitsusen': 160, aerogramme: 1500 };
 // Which inks go in which pen (mirrors pen.js SPECS[pen].inks on the pens branch)
 const PEN_INKS = {
   ballpoint: { 'ballpoint-blue': 50, black: 38, 'blue-black': 5, red: 4, green: 3 },
@@ -190,33 +257,57 @@ const PEN_INKS = {
 const INK_RGB = { 'ballpoint-blue': [38, 48, 132], 'royal-blue': [45, 82, 180], 'blue-black': [35, 50, 80], 'iron-gall': [42, 46, 66], sepia: [98, 66, 40], black: [38, 38, 46], red: [176, 36, 42], green: [30, 104, 70], graphite: [82, 82, 88] };
 const PEN_TIPS = { ballpoint: { fine: 2, medium: 3, bold: 0.6 }, gel: { fine: 2, medium: 2.5, bold: 1 }, fountain: { fine: 2.2, medium: 2.5, bold: 0.8 }, pointed: { fine: 1.5, medium: 2, bold: 0.8 }, italic: { fine: 0.6, medium: 2.4, bold: 1.6 }, felt: { fine: 1.2, medium: 2.4, bold: 2.4 }, pencil: { fine: 1, medium: 3, bold: 0.8 } };
 const PEN_PAPER = {
-  pencil: { grid: 2, dots: 1.4, seyes: 1.2 }, fountain: { seyes: 2, 'uk-feint': 1.5, plain: 1.4, 'us-ruled': 0.8 },
-  ballpoint: { 'us-ruled': 2, plain: 1, grid: 1 }, felt: { plain: 1.6, grid: 1.3, dots: 1.3, seyes: 0.5 },
-  pointed: { plain: 1.8, 'uk-feint': 1.4, seyes: 1.2, grid: 0.4, dots: 0.5 }, italic: { plain: 2, 'uk-feint': 1.2, grid: 0.5 },
-  gel: { dots: 1.5, plain: 1.2, 'us-ruled': 1.2 },
+  pencil: { notebook: 2, 'notebook-loose': 2, 'notebook-legal': 1.5, 'notebook-fr': 1.2, 'notebook-uk': 1.2, card: 0.6, laid: 0.4, airmail: 0.3, 'airmail-white': 0.3 },
+  fountain: { laid: 1.8, 'laid-blue': 1.5, pad: 1.5, 'pad-uk': 1.5, 'pad-binsen': 1.4, airmail: 1.3, 'notebook-fr': 1.6, card: 1.2, postcard: 0.8, notebook: 0.7, 'notebook-legal': 0.5 },
+  ballpoint: { aerogramme: 2, postcard: 1.8, 'postcard-us': 1.8, notebook: 1.6, 'notebook-loose': 1.6, 'notebook-legal': 1.6, airmail: 1.2, pad: 1, 'laid-cotton': 0.5 },
+  gel: { card: 1.5, 'card-ippitsusen': 1.2, pad: 1.2, notebook: 1.2, postcard: 1.2 },
+  felt: { 'notebook-legal': 1.5, card: 1.2, postcard: 1, laid: 0.6, airmail: 0.3, 'airmail-white': 0.3, aerogramme: 0.5 },
+  pointed: { laid: 3, 'laid-blue': 2.5, 'laid-cotton': 1.5, pad: 1, airmail: 0.4, postcard: 0.4, notebook: 0.2, 'notebook-loose': 0.2, 'notebook-legal': 0.2, aerogramme: 0.2 },
+  italic: { laid: 2, 'laid-cotton': 1.5, card: 1.5, pad: 1.2, notebook: 0.3, 'notebook-legal': 0.3 },
 };
-// where a writer learned shows in the paper they reach for: Seyès in France, college ruled in the US, feint
-// ruled in the UK, squared paper across much of continental Europe and Latin America
+// where a writer learned shows in the paper they reach for: the cahier in France, filler paper and legal pads in the
+// US, the blue pad and exercise book in Britain, A4 pads in Germany, airmail home from Latin America
 const SCHOOL_PAPER = {
-  french: { seyes: 6 }, american: { 'us-ruled': 3 }, british: { 'uk-feint': 3 }, continental: { grid: 2.2, 'uk-feint': 1.2 },
-  polish: { grid: 3 }, 'latin-american': { grid: 1.6, 'us-ruled': 1.6 }, italic: { plain: 1.4, 'uk-feint': 1.3 }, 'adult-print': { dots: 1.6, plain: 1.3, 'us-ruled': 1.2 },
+  french: { 'notebook-fr': 4, pad: 1.3, laid: 1.2 },
+  american: { notebook: 2, 'notebook-loose': 2.5, 'notebook-legal': 2, 'postcard-us': 2, card: 1.4, postcard: 0.5, 'pad-uk': 0.4, 'pad-a4': 0.3 },
+  british: { 'pad-uk': 3, 'notebook-uk': 2.5, postcard: 1.3, card: 1.2, 'notebook-loose': 0.4, 'notebook-legal': 0.3, 'postcard-us': 0.3 },
+  continental: { 'pad-a4': 2.5, pad: 1.5, 'notebook-fr': 0.6, 'notebook-loose': 0.3, 'notebook-legal': 0.2, 'postcard-us': 0.4 },
+  polish: { pad: 1.5, 'pad-a4': 1.5, 'notebook-uk': 0.8, 'notebook-legal': 0.2, 'postcard-us': 0.3 },
+  'latin-american': { notebook: 1.5, 'notebook-loose': 1.2, pad: 1.2, airmail: 1.5, aerogramme: 1.5, 'notebook-legal': 0.5 },
+  italic: { laid: 2, 'laid-cotton': 1.5, card: 1.5, 'pad-binsen': 0.8 },
+  'adult-print': { pad: 1.2, notebook: 1.4, card: 1.2, 'notebook-legal': 0.8 },
+};
+// when the hand was taught (the style's tradition.era): laid sheets before envelopes, airmail and aerogrammes in the
+// 20th century, pads and notebook pages now
+const ERA_PAPER = {
+  early: { laid: 3, 'laid-blue': 2, 'laid-cotton': 1.5, card: 0.3, pad: 0.3, 'pad-uk': 0.2, 'pad-a4': 0.2, 'pad-binsen': 0.2, airmail: 0.05, 'airmail-white': 0.05, aerogramme: 0.05,
+    notebook: 0.1, 'notebook-loose': 0.1, 'notebook-legal': 0.05, 'notebook-uk': 0.1, 'notebook-fr': 0.1, postcard: 0.1, 'postcard-us': 0.1, 'card-ippitsusen': 0.2 },
+  c19: { laid: 2.5, 'laid-blue': 1.5, card: 1.2, pad: 0.8, postcard: 0.6, 'postcard-us': 0.6, notebook: 0.4, 'notebook-loose': 0.4, 'notebook-legal': 0.3, airmail: 0.2, 'airmail-white': 0.2, aerogramme: 0.1 },
+  c20a: { airmail: 2, 'airmail-white': 1.6, aerogramme: 1.5, pad: 1.5, 'pad-uk': 1.5, postcard: 1.4, 'postcard-us': 1.4, card: 1, laid: 1, notebook: 0.8 },
+  c20b: { aerogramme: 1.8, airmail: 1.6, pad: 1.6, 'pad-uk': 1.4, notebook: 1.2, 'notebook-loose': 1.2, postcard: 1.2, card: 1 },
+  now: { notebook: 1.8, 'notebook-loose': 1.6, 'notebook-legal': 1.4, pad: 1.4, card: 1.2, postcard: 1.1, laid: 0.6, airmail: 0.4, 'airmail-white': 0.4, aerogramme: 0.25 },
+};
+const eraOf = (style) => {
+  const y = parseInt((String(((getStyle(style) || {}).tradition || {}).era || '').match(/\d{4}/) || [])[0], 10);
+  return !y ? 'now' : y < 1750 ? 'early' : y < 1900 ? 'c19' : y < 1950 ? 'c20a' : y < 2000 ? 'c20b' : 'now';
 };
 // what each kind of writer writes with and on (fonts-study.md §6); size = x-height in mm
 const ARCH_LOOK = {
-  friend: { pens: { ballpoint: 4, fountain: 2, gel: 2, pencil: 0.5, felt: 0.5 }, papers: { plain: 2, 'us-ruled': 1.5, 'uk-feint': 1.2, dots: 0.8 }, size: [2.8, 3.6] },
-  thanks: { pens: { gel: 3, fountain: 3, ballpoint: 1.5, pointed: 0.6 }, papers: { plain: 4, dots: 0.6 }, size: [3, 4] },
-  architect: { pens: { felt: 2.5, ballpoint: 1.5, pencil: 2.5, gel: 1 }, papers: { grid: 3, dots: 2, plain: 1.5 }, size: [2.4, 3.2], tips: { fine: 3, medium: 1 } },
-  field: { pens: { pencil: 4, ballpoint: 2, felt: 0.8, gel: 0.8 }, papers: { dots: 2, grid: 2, plain: 1.5, 'us-ruled': 0.6 }, size: [2.2, 2.9], tips: { fine: 2, medium: 1 } },
-  whiteboard: { pens: { felt: 6, gel: 0.6, ballpoint: 0.5 }, papers: { plain: 3, grid: 1.6, dots: 1 }, size: [4.2, 6.4], tips: { bold: 3, medium: 1 } },
-  margin: { pens: { felt: 3, gel: 2, ballpoint: 1.5 }, papers: { plain: 2, 'us-ruled': 1.4, 'uk-feint': 1 }, size: [3.6, 5], inks: { red: 8, green: 3 } },
-  postcard: { pens: { fountain: 2.5, ballpoint: 2.5, gel: 1.5, felt: 0.5 }, papers: { plain: 5 }, size: [2.3, 3.1] },
-  recipe: { pens: { fountain: 3, pointed: 1.4, ballpoint: 2, pencil: 0.6 }, papers: { 'uk-feint': 2, plain: 2, 'us-ruled': 1.5, grid: 0.4 }, size: [2.8, 3.8], inks: { sepia: 3, 'iron-gall': 3, 'blue-black': 1.5 }, age: [0.35, 0.95] },
-  first: { pens: { pencil: 6, felt: 1.4, ballpoint: 0.5 }, papers: { seyes: 2, 'us-ruled': 2, 'uk-feint': 1.4, grid: 1.2 }, size: [4.4, 6.6], tips: { medium: 2, bold: 1 } },
-  italic: { pens: { italic: 5, fountain: 2, pointed: 0.8 }, papers: { plain: 3, 'uk-feint': 1.4, dots: 0.6 }, size: [3.2, 4.4] },
-  signature: { pens: { fountain: 3, gel: 2, ballpoint: 2, felt: 0.8 }, papers: { plain: 4 }, size: [3.4, 5] },
-  backhand: { pens: { gel: 3, ballpoint: 2, felt: 1.2, pencil: 1 }, papers: { dots: 2.5, plain: 2, 'us-ruled': 1.2, grid: 1 }, size: [2.4, 3.2] },
+  friend: { pens: { ballpoint: 4, fountain: 2, gel: 2, pencil: 0.5, felt: 0.5 }, papers: { pad: 3, 'pad-uk': 1.5, airmail: 1.5, aerogramme: 1.2, notebook: 1, 'notebook-loose': 1, laid: 1, postcard: 0.6 }, size: [2.8, 3.6] },
+  thanks: { pens: { gel: 3, fountain: 3, ballpoint: 1.5, pointed: 0.6 }, papers: { card: 4, 'card-ippitsusen': 1.5, laid: 2, 'laid-cotton': 1.2, 'pad-binsen': 1.2, pad: 1 }, size: [3, 4] },
+  architect: { pens: { felt: 2.5, ballpoint: 1.5, pencil: 2.5, gel: 1 }, papers: { 'pad-a4': 2, 'notebook-legal': 1.5, pad: 1.5, card: 1 }, size: [2.4, 3.2], tips: { fine: 3, medium: 1 } },
+  field: { pens: { pencil: 4, ballpoint: 2, felt: 0.8, gel: 0.8 }, papers: { notebook: 2, 'notebook-uk': 1.2, 'notebook-legal': 1, airmail: 1, aerogramme: 1.4, postcard: 1 }, size: [2.2, 2.9], tips: { fine: 2, medium: 1 } },
+  whiteboard: { pens: { felt: 6, gel: 0.6, ballpoint: 0.5 }, papers: { 'notebook-legal': 2, 'pad-a4': 1.5, notebook: 1 }, size: [4.2, 6.4], tips: { bold: 3, medium: 1 } },
+  margin: { pens: { felt: 3, gel: 2, ballpoint: 1.5 }, papers: { 'notebook-legal': 1.5, 'notebook-loose': 1.2, pad: 1, card: 0.6 }, size: [3.6, 5], inks: { red: 8, green: 3 } },
+  postcard: { pens: { fountain: 2.5, ballpoint: 2.5, gel: 1.5, felt: 0.5 }, papers: { postcard: 5, 'postcard-us': 3, card: 1 }, size: [2.3, 3.1] },
+  recipe: { pens: { fountain: 3, pointed: 1.4, ballpoint: 2, pencil: 0.6 }, papers: { card: 3, 'notebook-uk': 1.5, pad: 1.5, 'notebook-legal': 0.8 }, size: [2.8, 3.8], inks: { sepia: 3, 'iron-gall': 3, 'blue-black': 1.5 }, age: [0.35, 0.95] },
+  first: { pens: { pencil: 6, felt: 1.4, ballpoint: 0.5 }, papers: { 'notebook-fr': 2, 'notebook-loose': 2, 'notebook-uk': 1.5, notebook: 1.5, pad: 0.5 }, size: [4.4, 6.6], tips: { medium: 2, bold: 1 } },
+  italic: { pens: { italic: 5, fountain: 2, pointed: 0.8 }, papers: { laid: 2.5, 'laid-cotton': 2, 'laid-blue': 1.2, card: 1.5, 'pad-binsen': 1 }, size: [3.2, 4.4] },
+  signature: { pens: { fountain: 3, gel: 2, ballpoint: 2, felt: 0.8 }, papers: { card: 2, laid: 2, pad: 1.5 }, size: [3.4, 5] },
+  backhand: { pens: { gel: 3, ballpoint: 2, felt: 1.2, pencil: 1 }, papers: { notebook: 1.5, pad: 1.5, 'notebook-loose': 1, 'card-ippitsusen': 0.8 }, size: [2.4, 3.2] },
 };
-const RULED = new Set(['us-ruled', 'seyes', 'uk-feint']);
+// printed rules and guide sheets keep lines close (writers follow a guide sheet under airmail paper too)
+const RULED = new Set(['pad', 'pad-uk', 'pad-binsen', 'pad-a4', 'airmail', 'airmail-white', 'notebook', 'notebook-loose', 'notebook-legal', 'notebook-uk', 'notebook-fr', 'card-ippitsusen']);
 const LOOK_KEYS = ['pen', 'tip', 'ink', 'paper', 'size', 'inkAge', 'inkVariation'];
 
 // pick a key from { key: weight } tables multiplied together (a key a table doesn't list gets its __floor, else 1);
@@ -232,13 +323,14 @@ function draw(r, keys, tables, flat = 1) {
 const inkFits = (pen, ink) => (PEN_INKS[pen] && PEN_INKS[pen][ink] ? 1 : ink === 'graphite' || pen === 'pencil' ? 0 : 0.15);
 
 // The natural look of a seed (family: 'print' | 'script'; locked: { pen?, tip?, ink?, paper?, size?, inkAge? } kept
-// as given, with everything else chosen to suit them). opts.wild flattens the odds. Pure.
+// as given, with everything else chosen to suit them). opts.wild flattens the odds; opts.textLength (characters) leaves
+// out papers too small for the letter (postcards, notecards, ippitsusen, aerogrammes). Pure.
 //   -> { seed, family, style, archetype, label, schooling, pen, tip, ink, inkAge, inkVariation, paper, size,
 //        params: { neatness, slant, pressure, hurry, blend, lineWander, fatigue, ...traits other modules add to
 //                  every hand, e.g. the style dimensions loops, joinLength, rhythm }  (absolute values)
 //        offsets: { same keys }  (params minus this hand's natural values: the look's nudges) }
 export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
-  const h = makeHand(seed, family);
+  const h = makeHand(seed, family, { neatOnly: neatOpt(opts) });
   const base = baseSeed(seed);
   const A = ARCH_LOOK[h.archetype] || ARCH_LOOK.friend;
   // a sibling keeps most of the base seed's look, and re-rolls a few parts of it
@@ -253,7 +345,11 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
     L.ink ? Object.fromEntries(LOOK_PENS.map((p) => [p, inkFits(p, L.ink)])) : null,
     L.tip ? Object.fromEntries(LOOK_PENS.map((p) => [p, PEN_TIPS[p][L.tip]])) : null,
   ], flat);
-  const paper = L.paper && LOOK_PAPERS.includes(L.paper) ? L.paper : draw(rFor('paper'), LOOK_PAPERS, [{ ...A.papers, __floor: 0.25 }, SCHOOL_PAPER[h.schooling], { ...PEN_PAPER[pen], __floor: 0.7 }], flat);
+  // paper: how common it is, what this kind of writer uses, where and when they learned, what suits the pen; papers too
+  // small for opts.textLength are left out
+  const fits = opts.textLength > 0 ? Object.fromEntries(Object.entries(PAPER_FITS).filter(([, n]) => opts.textLength > n).map(([k]) => [k, 0])) : null;
+  const paper = L.paper && LOOK_PAPERS.includes(L.paper) ? L.paper : draw(rFor('paper'), LOOK_PAPERS,
+    [PAPER_BASE, { ...A.papers, __floor: 0.35 }, SCHOOL_PAPER[h.schooling], ERA_PAPER[eraOf(h.style)], { ...PEN_PAPER[pen], __floor: 0.7 }, fits], flat);
   const tip = L.tip && LOOK_TIPS.includes(L.tip) ? L.tip : draw(rFor('tip'), LOOK_TIPS, [PEN_TIPS[pen], A.tips ? { ...A.tips, __floor: 0.4 } : null], flat);
   // the pen's usual inks; an archetype's own inks (red for margin notes, sepia for recipes) can go in most pens
   const inkPool = { ...PEN_INKS[pen] };
@@ -275,8 +371,8 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   if (pen === 'pointed' || pen === 'italic') off.pressure += 0.25;
   if (pen === 'pencil') off.pressure += 0.1;
   if (pen === 'fountain') off.pressure += 0.08;
-  if (RULED.has(paper)) off.lineWander -= 0.22 * nat.lineWander; else if (paper === 'plain' || paper === 'dots') off.lineWander += 0.08 * nat.lineWander;
-  if (paper === 'seyes') off.neatness += 0.04;
+  if (RULED.has(paper)) off.lineWander -= 0.22 * nat.lineWander; else off.lineWander += 0.08 * nat.lineWander;
+  if (paper === 'notebook-fr') off.neatness += 0.04;
   for (const k of addedNumbers(h)) { nat[k] = h[k]; off[k] = 0; } // e.g. style dimensions, as the writer has them
   const params = {};
   const lo = (k) => (k in NEG || nat[k] < 0 ? -1 : 0);
@@ -284,6 +380,7 @@ export function lookOf(seed, family = 'print', locked = {}, opts = {}) {
   for (const k in off) off[k] = +(params[k] - nat[k]).toFixed(3);
   const arch = archetypeOf(seed);
   return { seed: String(seed), family: h.family, style: h.style, archetype: arch.id, label: arch.label, schooling: h.schooling, traditions: h.traditions,
+    neatOnly: h.neatOnly, legibility: +legibility(h).toFixed(2),
     pen, tip, ink, inkAge, inkVariation, paper, size, params, offsets: off };
 }
 
@@ -302,6 +399,9 @@ export function lookDistance(a, b) {
 //                 the last 6 count. opts.variety: 'sibling' | 'stranger' (default) | 'wild', or 0..100
 //                 (0-20 Sibling, 21-70 Stranger, 71-100 Wild). opts.locked: { family?, pen?, tip?, ink?, paper?, size?,
 //                 inkAge? } kept as given; a list of keys keeps opts.current's values. opts.entropy: any fresh string.
+//                 opts.textLength: the letter's length in characters, so a postcard isn't offered for a long letter.
+//                 opts.neatOnly (default true): only hands with legibility >= NEAT_MIN, tidied (hand.js tidyHand);
+//                 false offers every hand, ugly ones too. The look carries neatOnly and legibility for share links.
 //   Compatible with the earlier shape: { current: { seed, style }, locked: ['style'], variety: 60 }.
 export function sampleLook(opts = {}) {
   let variety = opts.variety == null ? 'stranger' : opts.variety;
@@ -310,16 +410,16 @@ export function sampleLook(opts = {}) {
   const famOf = (x) => x.family || (getStyle(x.style) || {}).family || 'print';
   const cur = opts.current && opts.current.seed ? { ...opts.current, family: famOf(opts.current) } : null;
   const hist = (opts.history || (cur ? [cur] : [])).map((x) => (typeof x === 'string' ? { seed: x, family: 'print' } : x)).slice(-6);
-  const looks = hist.map((x) => (x.pen && x.paper && x.ink ? x : { ...lookOf(x.seed, famOf(x)), ...x }));
+  const looks = hist.map((x) => (x.pen && x.paper && x.ink ? x : { ...lookOf(x.seed, famOf(x), {}, { neatOnly: x.neatOnly == null ? neatOpt(opts) : x.neatOnly }), ...x }));
   let locked = opts.locked || {};
   if (Array.isArray(locked)) {
-    const ref = cur ? { ...lookOf(cur.seed, cur.family), ...cur } : looks[looks.length - 1] || {};
+    const ref = cur ? { ...lookOf(cur.seed, cur.family, {}, { neatOnly: neatOpt(opts) }), ...cur } : looks[looks.length - 1] || {};
     locked = Object.fromEntries(locked.map((k) => [k === 'style' ? 'family' : k, k === 'style' ? ref.family : ref[k]]).filter(([, v]) => v != null));
   }
   const family = locked.family || opts.family;
   const lockedLook = Object.fromEntries(Object.entries(locked).filter(([k]) => LOOK_KEYS.includes(k)));
   const r = rng('look-sampler:' + (opts.entropy == null ? '' : opts.entropy) + ':' + looks.map((x) => x.seed + '/' + x.family + '/' + x.pen + '/' + x.paper).join(',') + ':' + JSON.stringify(locked));
-  const P = looks.map((x) => ({ ...x, P: profile(asHand(x)) }));
+  const P = looks.map((x) => ({ ...x, P: profile(asHand(x, neatOpt(opts))) }));
   const last = P[P.length - 1];
   const finish = (best) => best && { ...best.look, variety, distance: +best.d.toFixed(3) };
 
@@ -328,10 +428,12 @@ export function sampleLook(opts = {}) {
     const lastLocks = { ...lockedLook };
     for (const k of ['pen', 'paper']) if (lastLocks[k] == null && last[k]) lastLocks[k] = last[k]; // same desk, a relative
     let best = null;
-    for (let i = 0; i < (opts.candidates || 12); i++) {
+    for (let i = 0, tries = 0; i < (opts.candidates || 12) && tries < 60; tries++) {
       const seed = `${baseSeed(last.seed)}~${1 + Math.floor(r() * 998)}`;
-      const look = lookOf(seed, fam, lastLocks);
-      const d = lookDistance({ ...look, P: profile(makeHand(seed, fam)) }, last);
+      const look = lookOf(seed, fam, lastLocks, { textLength: opts.textLength, neatOnly: neatOpt(opts) });
+      if (neatOpt(opts) && look.legibility < NEAT_MIN && tries < 48) continue; // Neat only: skip unreadable relatives
+      i++;
+      const d = lookDistance({ ...look, P: profile(makeHand(seed, fam, { neatOnly: neatOpt(opts) })) }, last);
       const score = -Math.abs(d - 0.38);
       if (!best || score > best.score) best = { look, d, score };
     }
@@ -349,13 +451,15 @@ export function sampleLook(opts = {}) {
   const bag = ARCHETYPES.filter((a) => !seen.has(a.id));
   const target = r.weighted(bag.length ? bag : ARCHETYPES).id;
   const cfg = VARIETY[variety];
-  let best = null;
+  let best = null, spare = null;
   for (let k = 0, n = 0; n < (opts.candidates || 12) && k < 4000; k++) {
     const seed = seedFrom(rng('look-seed:' + r() + ':' + k));
     if (archetypeOf(seed).id !== target) continue;
+    const h = makeHand(seed, fam, { neatOnly: neatOpt(opts) });
+    const look = lookOf(seed, fam, lockedLook, { wild: variety === 'wild', textLength: opts.textLength, neatOnly: neatOpt(opts) });
+    // Neat only: hands a stranger can't read at a glance are skipped (the most readable is kept in case none pass)
+    if (neatOpt(opts) && look.legibility < NEAT_MIN) { if (!spare || look.legibility > spare.look.legibility) spare = { look, d: 0, score: -9 }; continue; }
     n++;
-    const h = makeHand(seed, fam);
-    const look = lookOf(seed, fam, lockedLook, { wild: variety === 'wild' });
     const C = { ...look, P: profile(h) };
     const ds = P.map((x) => lookDistance(C, x));
     const dmin = ds.length ? Math.min(...ds) : 1;
@@ -367,5 +471,5 @@ export function sampleLook(opts = {}) {
     if (variety === 'wild') score += 0.12 * Object.values(latentOf(seed)).reduce((s, v) => s + Math.abs(v), 0) / 7;
     if (!best || score > best.score) best = { look, d: dmin, score };
   }
-  return finish(best);
+  return finish(best || spare);
 }

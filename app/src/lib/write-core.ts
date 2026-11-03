@@ -114,6 +114,19 @@ export function write(req: WriteRequest): WriteResult {
     for (const it of items) drawn[si].items.push({ ...it, x: x0 + it.x * 0.82, y, g: scaleGlyph(it.g, 0.82), inkIndex: 9500 + it.charIndex });
   }
 
+  // a notecard that goes on to its back: "over" at the foot of each front, inside the border, in the hand
+  if (paper.overflow === 'back') {
+    for (let si = 0; si < drawn.length - 1; si += 2) {
+      const over = layout(p, 'over', { maxWidth: 1e7, firstBaseline: 0, lineHeight: UPM });
+      const items = over.items.filter((it): it is GlyphItem => it.kind === 'glyph');
+      const w = items.reduce((a, it) => Math.max(a, it.x + it.g.advance), 0) * 0.82;
+      const x0 = paper.text.right * u - w;
+      // about one x-height under the last line ("over" has no descenders, so it clears the border)
+      const y = (paper.text.last + paper.xh) * u;
+      for (const it of items) drawn[si].items.push({ ...it, x: x0 + it.x * 0.82, y, g: scaleGlyph(it.g, 0.82), inkIndex: 9600 + it.charIndex });
+    }
+  }
+
   // an empty note: the writer's hand shows where the writing goes, in faint graphite (never ink)
   let ghost: Sheet | undefined;
   if (!req.text && req.placeholder) {

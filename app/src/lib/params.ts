@@ -1,7 +1,7 @@
 // natural hand (seed) + your offsets + occasion -> what the engine is asked to draw.
 import { withOverrides, type Hand } from '@engine';
 import { CONTROLS, naturalValue, penSizeFactor } from './controls';
-import { ENGINE_TIPS, MODELLED_INK } from './engine-features';
+import { ENGINE_NEAT, ENGINE_TIPS, MODELLED_INK } from './engine-features';
 import { AUTO_INK } from './inks';
 import { getOccasion } from './occasions';
 import type { NoteState } from './state';
@@ -36,6 +36,8 @@ export function effective(natural: Hand, s: NoteState): Effective {
       if (c.key === 'lineSpacing') lineSpacing = v;
     } else overrides[c.key] = v;
   }
+  // the hand exactly as the seed wrote it, untidied (the page, the worker and downloads all build from these)
+  if (ENGINE_NEAT && !s.neatOnly) overrides.neatOnly = 'off';
   if (s.pen !== 'auto') overrides.pen = s.pen;
   if (ENGINE_TIPS && s.penSize !== 'medium') overrides.tip = s.penSize;
   const inkKey = MODELLED_INK ? s.ink : null;

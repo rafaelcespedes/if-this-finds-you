@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME } from '@/lib/brand';
 import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
-import { Panel, type PanelProps } from '@/components/Panel';
+import { AboutHand, Panel, type PanelProps } from '@/components/Panel';
+import { Signature } from '@/components/Signature';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -19,15 +21,19 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
-import { canShareLinks, copyText, exportFont, renderNote, saveNote, shareLink } from '@/lib/actions';
+import { FONT_PACKAGE, canShareLinks, copyText, exportFont, exportFontPackage, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
-import { pickSimilarHand, writerName } from '@/lib/hands';
-import { rollHand, withSample, type LockKey } from '@/lib/roll';
-import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleCredit, sampleForSeed, sawLetter } from '@/lib/samples';
+import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
+import { isNeat, rollHand, withSample, type LockKey } from '@/lib/roll';
+import { handOpts } from '@/lib/engine-features';
+import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
-import { ReplyPeek } from '@/components/ReplyPeek';
+import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
+import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
+import { SheetLabel } from '@/components/SheetLabel';
+import type { WriteResult } from '@/lib/write-protocol';
 import { WritingMenu } from '@/components/WritingMenu';
 import { DEFAULT_INK, INK_FAMILIES } from '@/lib/inks';
 import { inkColor } from '@/lib/inks';
@@ -43,7 +49,7 @@ import { effective, effectiveHand, offsetFor } from '@/lib/params';
 import { PENS_LIVE } from '@/lib/pens';
 import { perf } from '@/lib/perf';
 import { offsetsForNewHand, shareUrl } from '@/lib/state';
-import { placeholderFor, requestFor } from '@/lib/request';
+import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
@@ -69,7 +75,7 @@ export default function App() {
   const [state, update] = useNoteState(composing);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
-  const [busy, setBusy] = useState({ download: false, font: false });
+  const [busy, setBusy] = useState({ download: false, font: false, video: false });
   const [editing, setEditing] = useState(false);
   const [plainText, setPlainText] = useState(() => readPref('seedhand:plain-text') === '1');
   const [variety, setVariety] = useState(() => Number(readPref('seedhand:variety') ?? 60) || 60);
@@ -78,7 +84,7 @@ export default function App() {
   const viewport = useVisualViewport();
 
   // natural hand (seed) + your offsets + occasion -> the hand on the page
-  const natural = useMemo(() => makeHand(state.seed, state.style), [state.seed, state.style]);
+  const natural = useMemo(() => makeHand(state.seed, state.style, handOpts(state)), [state.seed, state.style, state.neatOnly]);
   const lookKey = JSON.stringify([state.offsets, state.pen, state.penSize, state.ink, state.occasion, state.amount, state.size]);
   // keyed on the look only: typing must keep the same hand object, so the engine's caches stay warm
   const eff = useMemo(() => effective(natural, state), [natural, lookKey]);
@@ -131,7 +137,9 @@ export default function App() {
   // written ahead (prefetch). With the live page (engines with incremental layout), typing is drawn on the
   // main thread instead, from the moment the letter is tapped: same markup, so the switch shows nothing.
   const liveWanted = LIVE && (editing || state.reader);
-  const { writing, prefetch, written } = useWriting(request, composing || liveWanted);
+  const { writing, prefetch, written, lookup } = useWriting(request, composing || liveWanted);
+  const requestRef = useRef(request);
+  requestRef.current = request;
   const committed = useRef(state.text);
   if (!composing) committed.current = state.text;
 
@@ -201,10 +209,10 @@ export default function App() {
         const doc = decodeInk(state.inkLog);
         if (doc) return inkLive(p, inkPage(p, doc, paper, eff.size, eff.lineSpacing), paper, eff.size, eff.lineSpacing);
       }
-      return liveWanted ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed) : null;
+      return liveWanted ? liveLayout(p, committed.current, paper, eff.size, eff.lineSpacing, state.signed, !editing) : null;
     },
     // laid out from the committed text: an IME's composing text waits until it commits
-    [liveWanted, p, committed.current, paper, eff.size, eff.lineSpacing, state.signed, inkActive, inkTick, state.reader, inkMode, state.inkLog],
+    [liveWanted, p, committed.current, paper, eff.size, eff.lineSpacing, state.signed, inkActive, inkTick, state.reader, inkMode, state.inkLog, editing],
   );
   const extras = useMemo(
     () => {
@@ -246,6 +254,65 @@ export default function App() {
   const deskW = useElementWidth(deskRef);
   const pxPerMm = deskW > 0 ? Math.min(MAX_PX_PER_MM, deskW / shownPaper.w) : 0;
 
+  // ---------- a reply: their letter on the desk beside yours (desktop) ----------
+  const stageRef = useRef<HTMLDivElement>(null);
+  const stageW = useElementWidth(stageRef);
+  const replyKey = state.replyTo ? foundKey(state.replyTo) : '';
+  const replying = !!state.replyTo && !sample && !state.reader;
+  // a reply started here keeps the found letter exactly as it was on the page; a link has it written again
+  const theirsShown = useRef<{ key: string; result: WriteResult } | null>(null);
+  const theirReq = useMemo(() => (replying && state.replyTo ? theirRequest(state.replyTo) : null), [replying, replyKey]);
+  const theirWriting = (theirsShown.current?.key === replyKey ? theirsShown.current.result : undefined) ?? (theirReq ? lookup(theirReq) : undefined);
+  // fetched ahead with the next hands (one list: a new list replaces the last), theirs first
+  const theirReqRef = useRef(theirReq);
+  theirReqRef.current = theirReq;
+  const withTheirs = (reqs: Req[]) => (theirReqRef.current ? [theirReqRef.current, ...reqs] : reqs);
+  useEffect(() => { if (theirReq && !theirWriting) prefetch(withTheirs([])); }, [theirReq, !!theirWriting, prefetch]);
+  const found = useMemo(
+    () => (replying && state.replyTo ? foundLetter(state.replyTo, theirWriting) : null),
+    [replying, replyKey, theirWriting],
+  );
+  // each sheet's name, like an artboard's: which letter it is, and how the hand writes
+  const theirHandWords = useMemo(() => {
+    const h = replying && state.replyTo ? foundHand(state.replyTo) : null;
+    return h ? describeHand(h) : undefined;
+  }, [replying, replyKey]);
+  const myHandWords = useMemo(() => describeHand(p), [p]);
+  // the "click the letter" hint, desktop: only after a while without writing, and never again once you have
+  const [wrote, setWrote] = useState(() => readPref('seedhand:wrote') === '1');
+  const [idleLong, setIdleLong] = useState(false);
+  useEffect(() => {
+    if (wrote || !isDesktop || state.reader) return;
+    const t = window.setTimeout(() => setIdleLong(true), 9000);
+    return () => window.clearTimeout(t);
+  }, [wrote, isDesktop, state.reader]);
+  const hintShown = isDesktop && idleLong && !wrote && !editing && !state.reader && !replying;
+  /** beside the sheet when the desk has room for it, else on the label's line */
+  const hintBeside = stageW > 0 && (stageW - shownPaper.w * pxPerMm) / 2 >= 124;
+  const foundName = (l: { author: string; year?: number }) => `${shortAuthor(l.author)}${l.year ? `, ${l.year}` : ''}`;
+  const sheetTitle = sample ? foundName(sample) : found ? `Your reply to ${shortAuthor(found.letter.author)}` : 'A letter from you';
+  /** At a reply's first moment: keep the found letter's writing, as read. */
+  const keepTheirs = (s: NoteState) => {
+    const r = replyOf(s);
+    const req = requestRef.current;
+    const w = lookup(req) ?? (writing && writing.key === JSON.stringify(req) && !writing.partial ? writing : undefined);
+    if (r && w) theirsShown.current = { key: foundKey(r), result: w };
+  };
+  // the layout comes from the papers alone, so it's settled the moment a reply starts
+  const replyDesk = isDesktop && found && stageW > 0 ? deskLayout(stageW, shownPaper.w, found.paper.w, MAX_PX_PER_MM) : null;
+  const [theirsForward, setTheirsForward] = useState(false);
+  const theirsForwardRef = useRef(false);
+  const wroteRef = useRef(false);
+  theirsForwardRef.current = theirsForward;
+  useEffect(() => { setTheirsForward(false); }, [replyKey]);
+  /** a reply just started here (not opened from a link): their letter slides off your fresh sheet */
+  const replyArrive = useRef(false);
+  useEffect(() => { replyArrive.current = false; }, [replyKey]);
+  const onComposingChange = useCallback((c: boolean) => {
+    setComposing(c);
+    if (c && theirsForwardRef.current) setTheirsForward(false);
+  }, []);
+
   useEffect(() => {
     document.title = `${name} – ${APP_NAME}`;
   }, [name]);
@@ -254,6 +321,9 @@ export default function App() {
   const posture = usePosture(editing);
   const onEdit = useCallback((e: Edit) => {
     editLog.push(e);
+    // typing is writing yours: their letter goes back down
+    if (theirsForwardRef.current) setTheirsForward(false);
+    if (!wroteRef.current) { wroteRef.current = true; setWrote(true); writePref('seedhand:wrote', '1'); }
     if (e.source === 'paper') posture.onTyped();
     if (inkMode) {
       const s = stateNow.current;
@@ -269,13 +339,15 @@ export default function App() {
       const reply = onSample && SAMPLE_FIRST_KEY === 'reply';
       const ink = !onSample ? inkSession() : inkSession(reply ? newInkDoc(s.seed, s.style) : inkFromText(s.seed, s.style, s.text));
       ink.edit(reply ? { ...e, at: 0, del: 0 } : e);
-      if (reply) update({ replyTo: replyOf(s) });
+      if (reply) { replyArrive.current = true; keepTheirs(s); update({ replyTo: replyOf(s) }); }
       syncInk();
       return;
     }
     const s0 = stateNow.current;
     if (s0.sample && SAMPLE_FIRST_KEY === 'reply') {
       // a reply: the found letter steps aside, what was typed starts the writer's own
+      replyArrive.current = true;
+      keepTheirs(s0);
       update({ text: e.ins, marks: [], sample: null, replyTo: replyOf(s0) });
       return;
     }
@@ -311,7 +383,7 @@ export default function App() {
   const lockKey = [...locks].sort().join(',');
   const ahead = useRef<{ base: string; look: Partial<NoteState> }[]>([]);
   const similarAhead = useRef<{ base: string; look: Partial<NoteState> } | null>(null);
-  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.mode, s.inkLog, s.marks, s.signed, variety, lockKey]), [variety, lockKey]);
+  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.mode, s.inkLog, s.marks, s.signed, s.neatOnly, variety, lockKey]), [variety, lockKey]);
   const newHand = useCallback((fade = true) => {
     // for QA (window.__seedhandPerf): click → the new hand's writing in the page
     const now = ahead.current.find((a) => a.base === baseOf(stateNow.current));
@@ -330,32 +402,40 @@ export default function App() {
     // in idle moments: keep a few new hands (and one sibling) rolled and written ahead of this state
     let cancelled = false;
     const idle = (fn: () => void) => (typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(fn, { timeout: 600 }) : window.setTimeout(fn, 60));
-    const t = window.setTimeout(() => idle(() => {
+    const chain: { base: string; look: Partial<NoteState> }[] = [];
+    const reqs: ReturnType<typeof requestFor>[] = [];
+    // the letters just shown, and the ones already lined up: no letter comes back within ten hands
+    const avoid = new Set(recentLetters());
+    let s: NoteState = state;
+    // one new roll per idle moment (the engine's sampler takes 40-60 ms a hand); hands already rolled are reused
+    const step = () => {
       if (cancelled) return;
-      const chain: { base: string; look: Partial<NoteState> }[] = [];
-      const reqs: ReturnType<typeof requestFor>[] = [];
-      // the letters just shown, and the ones already lined up: no letter comes back within ten hands
-      const avoid = new Set(recentLetters());
-      let s: NoteState = state;
-      for (let i = 0; i < AHEAD; i++) {
+      let rolled = false;
+      while (chain.length < AHEAD && !rolled) {
         const b = baseOf(s);
         const kept = ahead.current.find((a) => a.base === b);
         const look = kept?.look ?? rollHand(s, { variety, locked: locks, avoid });
+        rolled = !kept;
         if (look.sample) avoid.add(look.sample);
         chain.push({ base: b, look });
         // each hand ahead is the one after the hand before it
         s = { ...s, ...look };
         reqs.push(requestFor(s));
       }
-      ahead.current = chain;
-      prefetch(reqs);
+      // the next click's hand is written as soon as it's known; the rest follow in one list
+      if (chain.length === 1 || chain.length === AHEAD) {
+        ahead.current = chain.length === AHEAD ? chain : [...chain, ...ahead.current.filter((a) => !chain.some((c) => c.base === a.base))];
+        prefetch(withTheirs(reqs));
+      }
+      if (chain.length < AHEAD) { idle(step); return; }
       idle(() => {
         if (cancelled) return;
         const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters());
         similarAhead.current = { base, look };
-        prefetch([...reqs, requestFor({ ...state, ...look })]);
+        prefetch(withTheirs([...reqs, requestFor({ ...state, ...look })]));
       });
-    }), 80);
+    };
+    const t = window.setTimeout(() => idle(step), 80);
     return () => { cancelled = true; window.clearTimeout(t); };
     // `base` covers everything the rolls depend on
   }, [base, editing, state.reader]);
@@ -416,20 +496,83 @@ export default function App() {
     }
   }, [requestKey, ink, pxPerMm, name, coarse, live, state.marks, state.signed, eff.inkKey, inkActive]);
 
+  // ---------- the letter writing itself out, as a video or a GIF (lib in src/export, loaded when first used) ----------
+  const [exportable, setExportable] = useState<{ video: boolean; gif: boolean } | null>(null);
+  const checkExport = useCallback(() => {
+    if (exportable) return;
+    import('@/export')
+      .then((m) => m.exportSupport())
+      .then((s) => setExportable({ video: s.mp4 || s.webm, gif: s.gif }))
+      .catch(() => setExportable({ video: false, gif: false }));
+  }, [exportable]);
+  const exporting = useRef<AbortController | null>(null);
+  const exportLetter = useCallback(async (kind: 'video' | 'gif') => {
+    if (exporting.current) return;
+    const ac = new AbortController();
+    exporting.current = ac;
+    setBusy((b) => ({ ...b, video: true }));
+    const what = kind === 'gif' ? 'GIF' : 'video';
+    const stop = { label: 'Stop', onClick: () => ac.abort() };
+    toast.loading(`Making the ${what}…`, { id: 'export', description: 'The letter writes itself out, then it saves', action: stop, duration: Infinity });
+    try {
+      const { exportWriting, exportSupport } = await import('@/export');
+      const can = await exportSupport();
+      let last = 0;
+      const res = await exportWriting(stateNow.current, {
+        format: kind === 'gif' ? 'gif' : can.mp4 ? 'mp4' : 'webm',
+        aspect: '4:5',
+        framing: 'lines',
+        branding: true,
+        signal: ac.signal,
+        onProgress: ({ fraction }) => {
+          const now = performance.now();
+          if (now - last < 100) return;
+          last = now;
+          toast.loading(`Making the ${what}…`, { id: 'export', description: `${Math.round(fraction * 100)}%`, action: stop, duration: Infinity });
+        },
+      });
+      const filename = `${fileSafe(`${APP_NAME} – ${name}`)}.${res.ext}`;
+      const description = `${Math.round(res.seconds)} s, ${res.width} × ${res.height}, ${(res.blob.size / 1e6).toFixed(1)} MB`;
+      const file = new File([res.blob], filename, { type: res.mime });
+      if (coarse && navigator.canShare?.({ files: [file] })) {
+        // making it took a few seconds, so the share sheet needs a fresh tap (then Save Video puts it in Photos)
+        toast.success(`Your ${what} is ready`, { id: 'export', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
+      } else {
+        saveBlob(res.blob, filename);
+        toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export', description, duration: 4000 });
+      }
+    } catch (e) {
+      if ((e as Error)?.name === 'AbortError') toast('Stopped', { id: 'export', duration: 2000 });
+      else {
+        console.error(e);
+        toast.error(`Couldn’t make the ${what}`, { id: 'export', description: e instanceof Error ? e.message : String(e) });
+      }
+    } finally {
+      exporting.current = null;
+      setBusy((b) => ({ ...b, video: false }));
+    }
+  }, [name, coarse]);
+
   const font = useCallback(async () => {
     setBusy((b) => ({ ...b, font: true }));
     // let the spinner paint before the (blocking) font build
     await new Promise((r) => setTimeout(r, 40));
     try {
-      const res = await exportFont(p, `${APP_NAME} – ${name} (${styleCard(state.style).title})`);
-      toast.success('Font exported', { description: `${res.glyphs} glyphs, 3 versions of each letter` });
+      if (FONT_PACKAGE) {
+        // the open font, zipped with how to install it, its licence and credits (built in a worker)
+        const res = await exportFontPackage({ seed: state.seed, style: state.style, overrides: eff.overrides, name });
+        toast.success('Font downloaded', { description: `${res.family}: ${res.glyphs} glyphs. Install it from the zip.` });
+      } else {
+        const res = await exportFont(p, `${APP_NAME} – ${name} (${styleCard(state.style).title})`);
+        toast.success('Font exported', { description: `${res.glyphs} glyphs, 3 versions of each letter` });
+      }
     } catch (e) {
       console.error(e);
       toast.error('Couldn’t build the font', { description: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy((b) => ({ ...b, font: false }));
     }
-  }, [p, name, state.style]);
+  }, [p, name, state.seed, state.style, eff.overrides]);
 
   // R for a new hand, Shift R for a similar one, when not typing; ⌘\\ shows or hides the desk while writing
   useEffect(() => {
@@ -488,9 +631,16 @@ export default function App() {
     onAmount: (amount) => update({ amount }),
     onSign: toggleSigned,
     onVariety: (v) => { setVariety(v); writePref('seedhand:variety', String(Math.round(v))); },
+    // the engine tidies a hand unless this is off, so the page shows the change (a new look: it cross-fades),
+    // and New hand brings only neat writers while it's on
+    onNeatOnly: (v) => lookChange(() => update({ neatOnly: v })),
+    neatNow: isNeat(p),
     onShare: share,
     onDownload: download,
     onExportFont: font,
+    onExportVideo: exportLetter,
+    exportable,
+    onShareOpen: checkExport,
     onFieldFocus: () => setDetent('full'),
     letter: letterActions,
     ink: INK ? {
@@ -594,7 +744,7 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 px-4 pt-[calc(3rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-14 lg:pb-16"
+          className="relative min-w-0 px-4 pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
         >
           <header
@@ -606,17 +756,55 @@ export default function App() {
             )}
           >
             <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">{APP_NAME}</span>
-            {reader ? (
-              <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
-                Write your own
-              </button>
-            ) : (
-              <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
-                {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write on it' : 'Click the letter to write on it'}
-              </span>
-            )}
+            <span className="flex min-w-0 items-baseline gap-2">
+              {reader ? (
+                <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
+                  Write your own
+                </button>
+              ) : (
+                <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
+                  {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : isDesktop ? '' : coarse ? 'Tap the letter to write' : 'Click the letter to write on it'}
+                </span>
+              )}
+              {/* the found letters, all of them (the archive) */}
+              <a
+                href={`${import.meta.env.BASE_URL}letters.html`}
+                className={cn(
+                  // a big enough target without making the line taller (the sheet's label sits just under it)
+                  "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
+                  editing && !isDesktop && 'pointer-events-none opacity-0',
+                )}
+              >
+                Letters
+              </a>
+            </span>
           </header>
-          <div ref={deskRef} className="mx-auto w-full max-w-[820px]">
+          <div ref={stageRef} className="w-full">
+          <div className={cn(replyDesk && 'mx-auto flex items-start')} style={replyDesk ? { width: replyDesk.colW + replyDesk.mineW } : undefined}>
+          {replyDesk && found && pxPerMm > 0 && (
+            <TheirLetterDesk
+              found={found}
+              layout={replyDesk}
+              pxPerMm={pxPerMm}
+              forward={theirsForward}
+              onForward={setTheirsForward}
+              onDismiss={() => update({ replyTo: null })}
+              arriving={replyArrive.current}
+              title={foundName(found.letter)}
+              hand={theirHandWords}
+            />
+          )}
+          <div
+            ref={deskRef}
+            // with their letter in front, yours waits behind it; a click on yours brings it back (and writes there)
+            onPointerDownCapture={replyDesk && theirsForward ? () => setTheirsForward(false) : undefined}
+            className={cn(
+              'mx-auto w-full max-w-[820px]',
+              replyDesk && 'relative z-10 mx-0 shrink-0 transition-opacity duration-300 ease-out',
+              replyDesk && theirsForward && 'opacity-50',
+            )}
+            style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : undefined}
+          >
             {pxPerMm > 0 && reader && (
               <ReaderView
                 writing={writing}
@@ -631,6 +819,41 @@ export default function App() {
             )}
             {pxPerMm > 0 && !reader && (
               <div ref={fitRef} className="origin-top">
+                <div className="relative mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
+                  {isDesktop ? (
+                    // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
+                    <div className="absolute bottom-1.5 left-0 flex max-w-full items-end gap-2.5">
+                      <AboutHand {...panelProps}>
+                        <button
+                          type="button"
+                          aria-label={`${name}: about this hand`}
+                          className="group -ml-1.5 flex shrink-0 items-end gap-1 rounded-lg px-1.5 pt-0.5 transition-colors duration-150 hover-device:hover:bg-[#e6e2d8] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+                        >
+                          <span key={state.seed + state.style} className="hand-in block" style={{ color: ink }}>
+                            <Signature p={p} name={name} ink="currentColor" emPx={26} className="h-[42px] overflow-visible" />
+                          </span>
+                          <ChevronDown aria-hidden className="mb-2.5 size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        </button>
+                      </AboutHand>
+                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 220)} className="mb-3" />
+                      {hintShown && hintBeside === false && (
+                        <span className="mb-3 animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">Click the letter to write on it</span>
+                      )}
+                    </div>
+                  ) : (
+                    <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} className="absolute bottom-2 left-0" />
+                  )}
+                  {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
+                  {hintShown && hintBeside && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute top-36 right-full mr-3 flex w-[108px] animate-in items-center gap-1.5 rounded-xl bg-panel px-2.5 py-2 text-[12px] leading-snug text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_8px_20px_-10px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-left-1 duration-700"
+                    >
+                      Click the letter to write on it
+                      <ArrowRight className="size-3.5 shrink-0" />
+                    </div>
+                  )}
+                </div>
                 <PaperEditor
                   ref={editor}
                   text={inkActive ? inkRef.current!.text() : state.text}
@@ -647,7 +870,7 @@ export default function App() {
                   penWidthU={p.penWidth as number}
                   xHeightU={(p.xHeight as number) * CAP}
                   onEditingChange={setEditing}
-                  onComposingChange={setComposing}
+                  onComposingChange={onComposingChange}
                 >
                   {shownLive ? (
                     <LiveSheets
@@ -684,7 +907,21 @@ export default function App() {
                   style={{ width: shownPaper.w * pxPerMm }}
                 >
                   {/* the letter's credit on the left, how you're writing on the right */}
-                  <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample ? sampleCredit(sample) : ''}</span>
+                  {found && !replyDesk ? (
+                    // a reply, one letter at a time: theirs is a tap away
+                    <button
+                      type="button"
+                      aria-expanded={theirsForward}
+                      onClick={() => setTheirsForward(true)}
+                      className="mr-auto inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-3 text-[12px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
+                    >
+                      <span className="truncate">Read their letter</span>
+                      <ChevronDown aria-hidden className="size-3.5 shrink-0" />
+                    </button>
+                  ) : (
+                    // the letter's name is on the sheet now; a translation still says who translated it
+                    <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
+                  )}
                   <WritingMenu
                     inkAvailable={!!panelProps.ink}
                     mode={state.pen === 'pencil' ? 'pencil' : state.mode}
@@ -692,16 +929,13 @@ export default function App() {
                     inkLetter={!!state.inkLog}
                     onFairCopy={() => panelProps.ink?.onFairCopy()}
                     onFreshSheet={() => panelProps.ink?.onFreshSheet()}
-                    onBlankPage={sample ? () => update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) })) : undefined}
+                    onBlankPage={sample ? () => { replyArrive.current = true; keepTheirs(stateNow.current); update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) })); } : undefined}
                     signed={state.signed}
                     onSign={toggleSigned}
                     plainText={plainText}
                     onPlainText={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
                   />
                 </div>
-                {state.replyTo && !sample && (
-                  <ReplyPeek replyTo={state.replyTo} pxPerMm={pxPerMm} size={eff.size} lineSpacing={eff.lineSpacing} ink={ink} onDismiss={() => update({ replyTo: null })} />
-                )}
                 {plainText && (
                   <div className="mt-3 flex justify-center">
                     <DraftSlip value={state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
@@ -709,6 +943,8 @@ export default function App() {
                 )}
               </div>
             )}
+          </div>
+          </div>
           </div>
         </main>
 
@@ -729,6 +965,8 @@ export default function App() {
             mode={panelProps.ink ? (state.pen === 'pencil' ? 'pencil' : state.mode) : undefined}
             onMode={panelProps.ink?.onMode}
             onFairCopy={inkMode && state.inkLog ? () => panelProps.ink?.onFairCopy() : undefined}
+            onTheirLetter={found && !replyDesk ? () => setTheirsForward((v) => !v) : undefined}
+            theirOpen={theirsForward}
           />
         )}
         {!reader && (isDesktop ? (
@@ -748,6 +986,18 @@ export default function App() {
         ) : null)}
       </div>
 
+      {found && !replyDesk && !reader && (
+        <TheirLetterPull
+          found={found}
+          open={theirsForward}
+          onOpen={setTheirsForward}
+          onDismiss={() => update({ replyTo: null })}
+          viewport={viewport}
+          // above the keyboard and tray while writing; down to the control sheet otherwise
+          reach={editing ? Math.max(220, Math.round(viewport.height * 0.58)) : Math.max(260, viewport.height - (mobileSheet ? metrics.peek : 0) - 12)}
+          pxPerMm={pxPerMm}
+        />
+      )}
       {mobileSheet && (
         <>
           {/* with the sheet up, a tap on the letter folds it back down (a second tap writes) */}
@@ -775,7 +1025,9 @@ function insertPS(api: PaperEditorApi, text: string, onEdit: (e: Edit) => void) 
   requestAnimationFrame(() => api.setSelection(t.length + ins.length));
 }
 
-/** The found letter a reply answers: the sample, in the hand and on the paper it was found in. */
+/** The found letter a reply answers: the sample, in the hand, paper, pen and ink it was found in. */
 function replyOf(s: NoteState): NoteState['replyTo'] {
-  return s.sample ? { id: s.sample, seed: s.seed, style: s.style, paper: s.paper } : s.replyTo;
+  return s.sample
+    ? { id: s.sample, seed: s.seed, style: s.style, paper: s.paper, pen: s.pen, ink: s.ink, tip: s.penSize, size: s.size, offsets: s.offsets }
+    : s.replyTo;
 }

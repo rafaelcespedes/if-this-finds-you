@@ -132,6 +132,8 @@ export function useWriting(req: Req, paused = false) {
 
   /** this request is already written (a cached or prefetched result) */
   const written = useCallback((r: Req) => cache.current.has(JSON.stringify(r)), []);
+  /** the writing for this request, if it's been written (kept or fetched ahead) */
+  const lookup = useCallback((r: Req) => cache.current.get(JSON.stringify(r)), []);
 
-  return { writing: hit ?? result, prefetch, written };
+  return { writing: hit ?? result, prefetch, written, lookup };
 }
