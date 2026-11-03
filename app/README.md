@@ -94,9 +94,11 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     British blue, binsen or German A4; going on past one sheet the way that stationery does: a postcard's next
     card is numbered, a notecard says "over" and goes on to its plain back, a second aerogramme follows), **Pen** (each
     swatch is the word "ink" written with that pen; Fine / Medium / Bold beside it), **Ink**, **Handwriting**
-    (Print or Joined, the school cards, Similar, and **Neat hands only**: on by default, New hand skips the
-    hard-to-read writers; it never changes the hand on the page, and offers "Roll a neat one" when that hand
-    isn't neat; `neat=0` in links when it's off), **How they write** (Neatness, Hurry, Size, each with plain
+    (Print or Joined, the school cards, Similar, and **Neat hands only**: on by default, the engine tidies a
+    hand a little (slant, pen width, spacing, hurry, capitals) and New hand skips writers below its `NEAT_MIN`
+    readability; switched off, the page shows the hand exactly as its seed wrote it (a cross-fade) and New
+    hand picks from everyone. "Roll a neat one" appears when the hand on the page still isn't easy to read;
+    `neat=0` in links when it's off), **How they write** (Neatness, Hurry, Size, each with plain
     words at its ends: Messy / Neat, Calm / Rushed, Small / Large).
   - *More* (folded): the other sliders (Pressure, Slant), an Occasion with an Amount, Keep my
     paper, pen and ink, Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle, Line spacing,

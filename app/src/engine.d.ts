@@ -74,7 +74,7 @@ declare module '@engine' {
   export const PARAMS: ParamDef[];
 
   export function rng(seed: string): Rng;
-  export function makeHand(seed: string, style: string): Hand;
+  export function makeHand(seed: string, style: string, opts?: { neatOnly?: boolean | 'on' | 'off' }): Hand;
   export function withOverrides(hand: Hand, overrides: Record<string, unknown> | null | undefined): Hand;
   export function makeGlyph(p: Hand, ch: string, inst: unknown, ctx?: unknown): Glyph;
   export function has(p: Hand, ch: string): boolean;

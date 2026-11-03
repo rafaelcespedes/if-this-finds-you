@@ -19,6 +19,13 @@ export const ENGINE_INKS = (engine.INKS as Record<string, { label: string; rgb: 
 /** When true, renderSVG models ink itself from a swatch key, so we pass the key instead of a colour. */
 export const MODELLED_INK = typeof engine.inkModel === 'function' && !!ENGINE_INKS;
 
+/** Neat only, in the engine (letter-variety session): a hand tidies itself unless told not to, `legibility(p)` scores
+ * how easy it is to read (0..1) and NEAT_MIN is where easy starts. */
+export const ENGINE_NEAT = typeof engine.NEAT_MIN === 'number' && typeof engine.legibility === 'function';
+export const NEAT_MIN = ENGINE_NEAT ? (engine.NEAT_MIN as number) : 0.5;
+/** The hand as the note asks for it: tidied unless Neat hands only is off. */
+export const handOpts = (s: { neatOnly: boolean }) => (ENGINE_NEAT && !s.neatOnly ? { neatOnly: false } : undefined);
+
 function readPreview() {
   try {
     if (new URLSearchParams(location.search).has('preview')) return true;

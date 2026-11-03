@@ -26,6 +26,7 @@ import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { isNeat, rollHand, withSample, type LockKey } from '@/lib/roll';
+import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
@@ -82,7 +83,7 @@ export default function App() {
   const viewport = useVisualViewport();
 
   // natural hand (seed) + your offsets + occasion -> the hand on the page
-  const natural = useMemo(() => makeHand(state.seed, state.style), [state.seed, state.style]);
+  const natural = useMemo(() => makeHand(state.seed, state.style, handOpts(state)), [state.seed, state.style, state.neatOnly]);
   const lookKey = JSON.stringify([state.offsets, state.pen, state.penSize, state.ink, state.occasion, state.amount, state.size]);
   // keyed on the look only: typing must keep the same hand object, so the engine's caches stay warm
   const eff = useMemo(() => effective(natural, state), [natural, lookKey]);
@@ -387,32 +388,40 @@ export default function App() {
     // in idle moments: keep a few new hands (and one sibling) rolled and written ahead of this state
     let cancelled = false;
     const idle = (fn: () => void) => (typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(fn, { timeout: 600 }) : window.setTimeout(fn, 60));
-    const t = window.setTimeout(() => idle(() => {
+    const chain: { base: string; look: Partial<NoteState> }[] = [];
+    const reqs: ReturnType<typeof requestFor>[] = [];
+    // the letters just shown, and the ones already lined up: no letter comes back within ten hands
+    const avoid = new Set(recentLetters());
+    let s: NoteState = state;
+    // one new roll per idle moment (the engine's sampler takes 40-60 ms a hand); hands already rolled are reused
+    const step = () => {
       if (cancelled) return;
-      const chain: { base: string; look: Partial<NoteState> }[] = [];
-      const reqs: ReturnType<typeof requestFor>[] = [];
-      // the letters just shown, and the ones already lined up: no letter comes back within ten hands
-      const avoid = new Set(recentLetters());
-      let s: NoteState = state;
-      for (let i = 0; i < AHEAD; i++) {
+      let rolled = false;
+      while (chain.length < AHEAD && !rolled) {
         const b = baseOf(s);
         const kept = ahead.current.find((a) => a.base === b);
         const look = kept?.look ?? rollHand(s, { variety, locked: locks, avoid });
+        rolled = !kept;
         if (look.sample) avoid.add(look.sample);
         chain.push({ base: b, look });
         // each hand ahead is the one after the hand before it
         s = { ...s, ...look };
         reqs.push(requestFor(s));
       }
-      ahead.current = chain;
-      prefetch(withTheirs(reqs));
+      // the next click's hand is written as soon as it's known; the rest follow in one list
+      if (chain.length === 1 || chain.length === AHEAD) {
+        ahead.current = chain.length === AHEAD ? chain : [...chain, ...ahead.current.filter((a) => !chain.some((c) => c.base === a.base))];
+        prefetch(withTheirs(reqs));
+      }
+      if (chain.length < AHEAD) { idle(step); return; }
       idle(() => {
         if (cancelled) return;
         const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters());
         similarAhead.current = { base, look };
         prefetch(withTheirs([...reqs, requestFor({ ...state, ...look })]));
       });
-    }), 80);
+    };
+    const t = window.setTimeout(() => idle(step), 80);
     return () => { cancelled = true; window.clearTimeout(t); };
     // `base` covers everything the rolls depend on
   }, [base, editing, state.reader]);
@@ -545,8 +554,9 @@ export default function App() {
     onAmount: (amount) => update({ amount }),
     onSign: toggleSigned,
     onVariety: (v) => { setVariety(v); writePref('seedhand:variety', String(Math.round(v))); },
-    // changes what New hand brings next, never the hand on the page
-    onNeatOnly: (v) => update({ neatOnly: v }),
+    // the engine tidies a hand unless this is off, so the page shows the change (a new look: it cross-fades),
+    // and New hand brings only neat writers while it's on
+    onNeatOnly: (v) => lookChange(() => update({ neatOnly: v })),
     neatNow: isNeat(p),
     onShare: share,
     onDownload: download,

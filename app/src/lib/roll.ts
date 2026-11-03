@@ -7,7 +7,8 @@
 import * as E from '@engine';
 import { makeHand, type Hand } from '@engine';
 import { CONTROLS, isShown, naturalValue, type PenSize } from './controls';
-import { MODELLED_INK } from './engine-features';
+import { effective, effectiveHand } from './params';
+import { ENGINE_NEAT, MODELLED_INK, NEAT_MIN, handOpts } from './engine-features';
 import { pickNewHand, pickSimilarHand } from './hands';
 import { AUTO_INK, INK_FAMILIES } from './inks';
 import { ALL_PAPERS, isPaperId, paperRollWeight, type PaperId } from './papers';
@@ -48,8 +49,8 @@ interface EngineLook {
 }
 type EngineSampler = (opts: { current: { seed: string; style: string }; locked: string[]; variety: number; textLength?: number; neatOnly?: boolean; entropy?: string }) => EngineLook;
 const engineSampler = (E as unknown as { sampleLook?: EngineSampler }).sampleLook;
-// how easy a hand is to read, 0..1, when the engine has it (it comes with `neatOnly` in its sampler)
-const engineLegibility = (E as unknown as { legibility?: (p: Hand) => number }).legibility;
+// how easy a hand is to read, 0..1, when the engine has it (it comes with `neatOnly` in its sampler, and NEAT_MIN)
+const engineLegibility = ENGINE_NEAT ? (E as unknown as { legibility: (p: Hand) => number }).legibility : undefined;
 
 // Neat hands only, until the engine decides it: writers whose own hand is at least relaxed, and every roll
 // kept inside a tidy band on the sliders that make writing hard to read.
@@ -60,7 +61,7 @@ const NEAT_BANDS: Record<string, [number, number]> = {
 
 /** Is this hand easy to read? (The engine's score when it has one; else its neatness and hurry.) */
 export function isNeat(p: Hand) {
-  if (engineLegibility) return engineLegibility(p) >= 0.5;
+  if (engineLegibility) return engineLegibility(p) >= NEAT_MIN;
   return (p.neatness as number) >= 0.45 && ((p.hurry as number) ?? 0) <= 0.7;
 }
 
@@ -79,11 +80,11 @@ export function rollLook(s: NoteState, opts: { variety: number; locked: Set<Lock
   // the writer (neat only: a few more tries for one who writes legibly by nature; the engine's own pick when it decides)
   let fromEngine = ask();
   let who = choose(fromEngine);
-  let natural = makeHand(who.seed, who.style);
+  let natural = makeHand(who.seed, who.style, handOpts(s));
   for (let i = 1; neat && !engineLegibility && i <= 8 && (natural.neatness as number) < NEAT_WRITER; i++) {
     fromEngine = ask(i);
     who = choose(fromEngine);
-    natural = makeHand(who.seed, who.style);
+    natural = makeHand(who.seed, who.style, handOpts(s));
   }
 
   // with what, on what (siblings keep the look; locks always win)
@@ -114,7 +115,16 @@ export function rollLook(s: NoteState, opts: { variety: number; locked: Set<Lock
   const size = sibling ? s.size : clamp(fromEngine?.size ?? 1 + gauss() * 0.11, 0.84, Math.min(1.28, SIZE_RANGE.max));
 
   // every slider: a fresh offset around this writer's natural value, inside a band that stays legible
-  const offsets = rollOffsets(natural, who.style, { scale: sibling ? 0.35 : wild ? 1.5 : 1, wild, neat, params: fromEngine?.params });
+  const scale = sibling ? 0.35 : wild ? 1.5 : 1;
+  let offsets = rollOffsets(natural, who.style, { scale, wild, neat, params: fromEngine?.params });
+  // neat only, with the engine judging: the sliders' fresh offsets can still push a neat writer past easy reading
+  // (your own slider moves always win, but a roll shouldn't), so smaller swings, then the writer's own hand
+  if (neat && engineLegibility) {
+    const look = (o: Record<string, number>) => ({ ...s, ...who, pen, penSize, ink, paper, size, offsets: o, occasion: null, amount: 1 });
+    const readable = (o: Record<string, number>) => isNeat(effectiveHand(natural, effective(natural, look(o))));
+    for (let i = 1; i <= 3 && !readable(offsets); i++) offsets = rollOffsets(natural, who.style, { scale: scale * 0.5 ** i, wild: false, neat, params: undefined });
+    if (!readable(offsets)) offsets = {};
+  }
 
   return { ...who, pen, penSize, ink, paper, size, offsets, occasion: null, amount: 1 };
 }

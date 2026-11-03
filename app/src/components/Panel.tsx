@@ -312,7 +312,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
         <div className="mt-3.5 grid gap-1.5">
           <Switch
             label="Neat hands only"
-            hint="Skip the hard-to-read writers when you roll a new hand"
+            hint="Tidies messy hands a little, and New hand skips the hard-to-read ones"
             checked={state.neatOnly}
             onChange={props.onNeatOnly}
           />
