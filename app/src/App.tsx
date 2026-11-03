@@ -1105,7 +1105,6 @@ export default function App() {
       action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
       // the running head's middle: a found letter's number, place and year (the Reading Room's catalogue)
       centre={folio.centre}
-      centreShort={folio.centreShort}
       // over the whole window, the middle centred over the letter's side (the aside: the desk and its pr-3)
       beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + 0.75rem)' : undefined}
       quiet={editing && !isDesktop}
