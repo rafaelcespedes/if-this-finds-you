@@ -29,7 +29,7 @@ export function fixHabits(p) {
   let H = habitCache.get(p);
   if (H) return H;
   const r = rng('fix:' + p.seed);
-  const u = Array.from({ length: 32 }, () => r()); // drawn up front: overriding one input never reshuffles the rest
+  const u = Array.from({ length: 40 }, () => r()); // drawn up front: overriding one input never reshuffles the rest
   const neat = clamp(p.neatness == null ? 0.6 : p.neatness, 0, 1);
   const hurry = typeof p.hurry === 'number' ? clamp(p.hurry, 0, 1) : clamp(0.62 * (1 - neat) + 0.5 * u[0] - 0.12, 0, 1);
   const st = getStyle(p.style);
@@ -70,6 +70,16 @@ export function fixHabits(p) {
     psSize: 0.74 + 0.16 * u[28],
     psTilt: (1 - tidy) * 3.5 * u[29],
     wordStrike: clamp(lerp(0.55, 0.95, tidy) + 0.15 * (u[30] - 0.5), 0, 1), // a fix inside a word: strike the whole word?
+    // how this writer scribbles a word out: a temperament (tight zig-zags, big angry blackouts, loopy coils)
+    // and how big, dense and wild their scribbles run; every scribble still varies a lot around it
+    scribble: {
+      kinds: { zigzag: 0.35 + 0.9 * tidy * u[32], blackout: 0.1 + 1.6 * (1 - tidy) * (0.4 + hurry) * u[33], coil: (joined ? 0.55 : 0.15) + 0.5 * u[34] },
+      size: 0.85 + 0.25 * (1 - tidy) + 0.2 * u[35],      // height, × the instance's own
+      dense: 0.75 + 0.5 * u[36],                          // spacing of the back-and-forth (smaller = denser)
+      chaos: clamp(0.25 + 0.6 * (1 - tidy) + 0.3 * (u[37] - 0.5), 0.1, 1), // how much one scribble changes along the way
+      lean: (u[38] - 0.5) * 30,                           // degrees: the hand's habitual tilt of the zig-zag
+      lift: u[39],                                        // how often a second pass starts with the pen lifted
+    },
     mix, pen,
   };
   habitCache.set(p, H);
@@ -232,28 +242,108 @@ export function strikeStrokes(H, N, how, x0, x1, base, h, xh, W, r) {
       for (let i = 0; i <= n; i++) { const th = T * i / n, x = xs + rr * th + rx * Math.sin(th); pts.push([x, mid(x, 0) + ry * Math.cos(th) * (1 + 0.12 * N.n1(th * 0.4 + nOff))]); }
       return [pts];
     }
-    case 'scribble': {
-      // fast zig-zags until the word is gone: right across the word, then back at a slant
-      const dx = clamp(2.4 * W, 0.05 * UPM, 0.14 * UPM); // dense enough to hide the word, open enough to read as zig-zags
-      const top = -1.02 * xh, bot = 0.1 * xh;
-      const pass = (a, b, lean, k) => {
-        const half = Math.max(3, Math.round(Math.abs(b - a) / dx)), n = half * 10, pts = [];
-        for (let i = 0; i <= n; i++) {
-          const th = Math.PI * i / 10, u = i / n;
-          const amp = 0.5 * (bot - top) * (0.88 + 0.24 * N.n1(i / 13 + k * 7 + nOff));
-          const cy = 0.5 * (top + bot) + 0.06 * xh * N.n1(i / 29 + k * 3);
-          const off = amp * Math.cos(th);
-          const x = a + (b - a) * u + lean * off;
-          pts.push([x, base(x) + cy + off]);
-        }
-        return pts;
-      };
-      const lean = Math.tan((20 + 18 * r()) * DEG);
-      const s = pass(xs, xe, 0.15, 1).concat(pass(xe, xs, lean, 2).slice(1));
-      return [r() < 0.4 * (1 - H.tidy) ? s.concat(pass(xs, xe, -lean * 0.6, 3).slice(1)) : s];
-    }
+    case 'scribble': return scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff);
     default: return [line(0, 0, 1)]; // 'line': one fast, firm stroke, slightly rising
   }
+}
+
+// A word scribbled out (Rafael: "when humans are really crossing something out, they get messy with it ...
+// it becomes quite tall, there's a lot of overlap, it hides more of the word, and it varies drastically").
+// Each scribble is one of the writer's kinds, with its own size, density and wildness around their habit:
+//   zigzag    quick back-and-forth, a hair taller than the x-height, one or two passes
+//   blackout  big and angry: tall (into ascenders and descenders), dense, three or four overlapping passes
+//             at changing slants, back-tracking, heavier ink
+//   coil      loopy overlapping loops that grow and shrink, spilling above and below
+// Along the way the pitch, the height, the slant of the strokes and the line it follows all drift, passes
+// double back, and a pass may start with the pen lifted. The pen model then darkens the turns (slow) and the
+// crossings (ink adds up). Returns strokes (page points); .ink and .tempo say how heavy and fast it went.
+function scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff) {
+  const S = H.scribble || { kinds: { zigzag: 1 }, size: 1, dense: 1, chaos: 0.5, lean: 0, lift: 0.3 };
+  let tot = 0;
+  for (const k in S.kinds) tot += S.kinds[k];
+  let pk = r() * tot, kind = 'zigzag';
+  for (const k in S.kinds) { pk -= S.kinds[k]; if (pk < 0) { kind = k; break; } }
+  const chaos = clamp(S.chaos + 0.25 * r.gauss(), 0.05, 1.2);
+  const L0 = Math.max(1, xe - xs);
+  // this one's size and density (a wide per-instance spread around the writer's habit)
+  const tall = S.size * (kind === 'blackout' ? 1.35 + 0.6 * r() : kind === 'coil' ? 1.1 + 0.5 * r() : 0.95 + 0.4 * r());
+  const half = 0.5 * tall * xh;                                           // half the scribble's height
+  const mid0 = (0.45 + 0.12 * r.gauss()) * xh;                            // its middle, above the baseline
+  const dx0 = clamp(S.dense * (kind === 'blackout' ? 1.1 + 0.9 * r() : kind === 'coil' ? 2.4 + 1.4 * r() : 1.25 + 1.05 * r()) * W, 0.035 * UPM, 0.16 * UPM);
+  let passes = kind === 'blackout' ? 3 + (r() < 0.45 ? 1 : 0) : kind === 'coil' ? (r() < 0.35 + 0.3 * chaos ? 2 : 1) : (r() < 0.5 + 0.4 * chaos ? 2 : 1);
+  passes = Math.max(1, Math.min(passes, Math.floor(80 / Math.max(3, L0 / dx0)))); // a long word: fewer passes
+  const ex = (0.05 + 0.3 * chaos * r()) * xh;                             // past the word's ends
+  const a0 = xs - ex * r(), b0 = xe + ex * r();
+  const drift = (r() - 0.5) * 2 * (2 + 7 * chaos) * DEG;                  // off the line's own angle
+  const tiltAt = (x, t) => Math.tan(t) * (x - (a0 + b0) / 2);
+  const strokes = [];
+  let cur = [];
+  let seedK = nOff;
+  for (let k = 0; k < passes; k++) {
+    // each pass: its own direction, slant, height and line; later passes often shorter, shifted, crossing
+    const back = k % 2 === 1;
+    const lean0 = (S.lean + (k === 0 ? r.gauss() * 10 : (back ? 1 : -1) * (15 + 30 * r()))) * DEG;
+    const ampK = (k === 0 ? 1 : 0.7 + 0.45 * r()) * (kind === 'blackout' ? 1 : 1 - 0.1 * k);
+    const dyK = (k === 0 ? 0 : r.gauss() * 0.12) * xh;
+    let a = a0 + (k ? 0.18 * r() * L0 : 0), b = b0 - (k ? 0.18 * r() * L0 : 0);
+    if (back) [a, b] = [b, a];
+    const dir = Math.sign(b - a) || 1;
+    const tiltK = drift + (k ? r.gauss() * 4 * chaos * DEG : 0);
+    const dxK = dx0 * (0.8 + 0.4 * r());
+    const loop = kind === 'coil' ? 0.55 + 0.5 * r() : kind === 'blackout' ? 0.45 * r() : 0.08 + 0.3 * r() * (0.4 + chaos); // curl at the turns
+    // turning points: each stroke its own length, spacing and slant; now and then the pen steps back
+    const turns = [];
+    let x = a, side = r() < 0.5 ? 1 : -1, guard = 0;
+    let doubledBack = false;
+    while ((dir > 0 ? x < b : x > b) && guard++ < 400) {
+      const t = (x - a) / (b - a);
+      let step = dxK * Math.exp(0.55 * chaos * r.gauss()) * (0.7 + 0.6 * r());
+      if (!doubledBack && t > 0.3 && r() < 0.06 + 0.12 * chaos) { step = -dxK * (2 + 4 * r()); doubledBack = true; } // scrub back over it, once
+      x = clamp(x + dir * step, Math.min(a, b) - dxK, Math.max(a, b) + dxK);
+      let h = half * ampK * ((k ? 0.55 : 0.7) + (k ? 0.6 : 0.45) * r()); // (the first pass covers the word)
+      if (r() < 0.12 + 0.2 * chaos) h *= 1.15 + 0.25 * r();                 // a big angry one
+      h = Math.min(h, 1.3 * xh);                                           // into ascenders and descenders, not the next line
+      const mid = mid0 + dyK + 0.16 * xh * chaos * N.n1(t * 4 + seedK);     // the scribble wanders up and down
+      const lean = clamp(lean0 + r.gauss() * (9 + 18 * chaos) * DEG, -50 * DEG, 50 * DEG); // (past ~50° a stroke lies flat)
+      const px = clamp(x + side * h * Math.tan(lean), Math.min(a, b) - 0.6 * xh, Math.max(a, b) + 0.6 * xh);
+      turns.push([px, clamp(mid + side * h, -1.0 * xh, 2.0 * xh), side, step]); // from descenders to ascenders
+      side = -side;
+    }
+    // through the turning points: rounded turns, curling into loops where this scribble loops
+    const pts = [];
+    for (let j = 0; j < turns.length; j++) {
+      const [px, v, sd] = turns[j];
+      const c = loop * dxK * (0.6 + 0.8 * r()) * dir * (kind === 'coil' ? 1 : sd);
+      pts.push([px - 0.5 * c, v - sd * 0.12 * Math.abs(c)], [px + 0.5 * c, v - sd * 0.12 * Math.abs(c)]);
+    }
+    const curve = catmullRom(pts, 7);
+    for (const [px, v] of curve) cur.push([px, base(px) - v - tiltAt(px, tiltK)]);
+    seedK += 3.7;
+    if (k < passes - 1 && r() < S.lift * 0.6) { if (cur.length > 1) strokes.push(cur); cur = []; } // a lift before the next pass
+  }
+  if (cur.length > 1) strokes.push(cur);
+  strokes.ink = kind === 'blackout' ? 1.15 + 0.2 * r() : 1 + 0.12 * r();
+  strokes.tempo = kind === 'blackout' ? 3.2 : kind === 'coil' ? 2.4 : 2.8;
+  strokes.kind = kind;
+  return strokes;
+}
+
+// Catmull-Rom (uniform) through pts, n samples per segment: a pen's rounded path through its turns. Uniform,
+// so it can never fly off: it strays from the points by at most a fraction of their spacing.
+function catmullRom(pts0, n) {
+  const pts = [];
+  for (const q of pts0) { const l = pts[pts.length - 1]; if (!l || Math.hypot(q[0] - l[0], q[1] - l[1]) > 2) pts.push(q); }
+  if (pts.length < 3) return pts.slice();
+  const P = [pts[0], ...pts, pts[pts.length - 1]], out = [pts[0]];
+  for (let i = 1; i < P.length - 2; i++) {
+    const p0 = P[i - 1], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2];
+    for (let j = 1; j <= n; j++) {
+      const t = j / n, t2 = t * t, t3 = t2 * t;
+      const f = (k) => 0.5 * (2 * p1[k] + (p2[k] - p0[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (3 * p1[k] - p0[k] - 3 * p2[k] + p3[k]) * t3);
+      out.push([f(0), f(1)]);
+    }
+  }
+  return out;
 }
 
 // Strike glyph items (one stroke set per line). firm: params with the firmer pressure people cross out with.
@@ -270,7 +360,8 @@ export function strikeItems(p, firm, H, struck, how, r, o = {}) {
     const h = small ? H.strikeY * xh * (1 + 0.08 * r.gauss()) : 0.45 * CAP * scaleOf(run);
     const strokes = strikeStrokes(H, p.noise, how, sp.x0, sp.x1, base, h, xh, W, r);
     ref = run[run.length - 1];
-    const mi = markItem(firm, how === 'scribble' ? 'scribble' : 'strike', strokes, ref, Object.assign({ delayed: true, tempo: how === 'scribble' ? 2.6 : 1.25 }, o, { lines: undefined, seed: (o.seed || 311) + n * 13.7, key: o.key ? o.key + ':' + n : undefined }));
+    const mi = markItem(firm, how === 'scribble' ? 'scribble' : 'strike', strokes, ref, Object.assign({ delayed: true, tempo: strokes.tempo || 1.25 }, o, { lines: undefined, ink: strokes.ink, seed: (o.seed || 311) + n * 13.7, key: o.key ? o.key + ':' + n : undefined }));
+    if (mi && strokes.kind) mi.scribble = strokes.kind;
     if (mi) items.push(mi);
     if (!start) start = strokes[0][0];
     n++;
