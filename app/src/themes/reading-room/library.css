@@ -1,0 +1,78 @@
+/* The library in the Reading Room (All letters and the letter page), after the approved layout study
+   (https://claude.ai/artifact/NXikDzoCmM4KFa41nvzsG7, proposals 2 and 3). Written by the library session; the look's
+   tokens and type (--rr-*) are reading-room.css's. House rules: one grid, hairlines never boxes, notes beside facts. */
+
+/* ---------- All letters: the timeline as a ruled strip on the room, no box ---------- */
+html[data-look='reading-room'] .archive-dock {
+  border: 0;
+  border-top: 1px solid color-mix(in oklab, var(--rr-ink) 35%, transparent);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding-inline: 0.25rem;
+}
+/* the room fades in under the strip (and its caption), so letters pass beneath it, never through its words */
+html[data-look='reading-room'] .archive-dock-box::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -3rem 0 calc(-14px - env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--desk) calc(100% - 3rem), color-mix(in oklab, var(--desk) 0%, transparent));
+}
+html[data-look='reading-room'] .era-seg,
+html[data-look='reading-room'] .era-seg.is-on {
+  background: none;
+  border-radius: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .era-seg:hover {
+    background: none;
+    color: var(--rr-ink);
+  }
+}
+/* the chosen century: ink, underlined; the others step back (archive.css dims their marks) */
+html[data-look='reading-room'] .era-seg.is-on {
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .era-seg.is-on > span:last-child {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+/* the open search: a ruled line to write on, not a box */
+html[data-look='reading-room'] .archive-dock .archive-field {
+  border: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--rr-ink) 35%, transparent);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+html[data-look='reading-room'] .archive-dock .archive-field:focus {
+  border-bottom-color: var(--rr-ink);
+}
+/* "Letters from the 1800s ×": a line of small capitals over the strip */
+html[data-look='reading-room'] .archive-caption {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .dock-switch {
+  border-radius: 2px;
+  color: var(--rr-ink);
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .dock-switch:hover {
+    background: none;
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+    text-decoration-thickness: 1px;
+  }
+}

@@ -2,21 +2,20 @@
 // laid out like letters spread on a table (masonry: each goes into the shortest column, in reading order, so Tab
 // and screen readers follow the same order as the eye). Search, filters and Shuffle above, as the tool's controls.
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { cn } from '@/lib/utils';
 import allLetters from './all-letters.svg?raw';
 import { Card } from './Card';
 import { LetterCanvas, VIEW, type ViewId } from './Canvas';
-import { HeadingTools, SelectDock, SentenceFilter, TimelineDock, TOOLBAR, useSlashToSearch, type ControlsProps } from './Controls';
+import { HeadingTools, SelectDock, SentenceFilter, TimelineDock, TOOLBAR, useSlashToSearch, type ControlsProps, type ViewSwitch } from './Controls';
 import { cardAspect } from './card-protocol';
 import { cardSize } from './cards';
 import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
 import type { ArchiveLetter } from './model';
 import { NO_FILTERS, type Filters } from './route';
-import { withLogo } from '@/lib/brand';
-import { FONTS_URL } from '@/fonts/links';
-import { headerLink, SiteHeader, toolHref } from './SiteHeader';
+import { SiteHeader } from './SiteHeader';
 // the look being compared (?look=reading-room): the heading as a finding aid (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { FindingAid } from '@/themes/reading-room/FindingAid';
@@ -117,10 +116,15 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
   const dock = TOOLBAR !== '1';
   // the letters as a table you wander (canvas) or as a grid; "Show the letters as a list" switches to the grid
   const [view, setView] = useState<ViewId>(VIEW);
-  const showList = () => {
-    try { sessionStorage.setItem('seedhand:view', 'grid'); } catch { /* fine */ }
-    setView('grid');
+  const showView = (v: ViewId) => {
+    try { sessionStorage.setItem('seedhand:view', v); } catch { /* fine */ }
+    setView(v);
   };
+  const showList = () => showView('grid');
+  // the Reading Room: the other view one switch away, at the timeline's end (layout study, proposal 2)
+  const switchTo: ViewSwitch | undefined = LOOK !== 'reading-room' ? undefined
+    : view === 'canvas' ? { label: 'List', icon: <List aria-hidden />, onClick: showList }
+    : { label: 'Table', icon: <LayoutGrid aria-hidden />, onClick: () => showView('canvas') };
 
   const intro = 'Real letters by ordinary people, each written out by hand. Some never reached the person they were meant for.';
   if (view === 'canvas') {
@@ -152,23 +156,17 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             ) : null
           }
         />
-        {/* the header stays legible over the letters */}
-        <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[5] h-28 bg-gradient-to-b from-[var(--desk)] via-[color-mix(in_oklab,var(--desk)_70%,transparent)] to-transparent" />
-        <SiteHeader>
-          <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
-          <a href={withLogo(FONTS_URL)} className={`${headerLink} font-medium text-foreground/80`}>Fonts</a>
-        </SiteHeader>
-        {TOOLBAR === '2' ? <SelectDock {...controls} /> : <TimelineDock {...controls} />}
+        {/* letters pass under a soft fade, never under the header's words */}
+        <div aria-hidden className="canvas-fade-top" />
+        <SiteHeader current="letters" />
+        {TOOLBAR === '2' ? <SelectDock {...controls} /> : <TimelineDock {...controls} viewSwitch={switchTo} />}
       </div>
     );
   }
 
   return (
     <div className="min-h-dvh">
-      <SiteHeader>
-        <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
-        <a href={withLogo(FONTS_URL)} className={`${headerLink} font-medium text-foreground/80`}>Fonts</a>
-      </SiteHeader>
+      <SiteHeader current="letters" />
       <main className={cn('mx-auto w-full max-w-[1180px] px-4 sm:px-8 lg:px-10', dock ? 'pb-36' : 'pb-28')}>
         <section className={cn('pt-[calc(5.25rem+env(safe-area-inset-top,0px))] sm:pt-28', dock ? 'pb-10 sm:pb-12' : 'pb-6 sm:pb-8')}>
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
@@ -185,7 +183,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
         </section>
         {/* the dock floats at the bottom, but comes first in reading order, before the letters */}
         {TOOLBAR === '2' && <SelectDock {...controls} />}
-        {TOOLBAR === '3' && <TimelineDock {...controls} />}
+        {TOOLBAR === '3' && <TimelineDock {...controls} viewSwitch={switchTo} />}
 
         <div ref={panelRef}>
           {error ? (

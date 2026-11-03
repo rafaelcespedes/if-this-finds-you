@@ -12,9 +12,8 @@ import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { APP_NAME, withLogo } from '@/lib/brand';
 import { cn } from '@/lib/utils';
-import { ARCHIVE_URL, headerLink, SiteHeader, toolHref } from '@/archive/SiteHeader';
+import { ARCHIVE_URL, SiteHeader } from '@/archive/SiteHeader';
 import heading from './fonts.svg?raw';
-import { FONTS_URL } from './links';
 import { FontsDock } from './Dock';
 import { FontsRail } from './Rail';
 import { LOOK } from '@/lib/look';
@@ -173,11 +172,7 @@ export function FontsApp() {
   return (
     <TooltipProvider>
       <div className="min-h-dvh">
-        <SiteHeader>
-          {!narrow && <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>}
-          <a href={withLogo(ARCHIVE_URL)} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
-          <a href={withLogo(FONTS_URL)} aria-current="page" className={`${headerLink} font-medium text-foreground`}>Fonts</a>
-        </SiteHeader>
+        <SiteHeader current="fonts" />
         <main className="mx-auto w-full max-w-[1180px] px-4 pb-40 sm:px-8 lg:px-10">
           <section className="pt-[calc(5.25rem+env(safe-area-inset-top,0px))] pb-8 sm:pt-28 sm:pb-10">
             <h1 className="text-foreground">
