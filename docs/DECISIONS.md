@@ -11,6 +11,10 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **Fonts are to be downloadable and open source.**
 - Goal: bring underrepresented content, people and techniques into the spotlight, and inspire other designers.
   Rafael plans to share it on X.
+- **Scope from this purpose:** keep "Write a reply" and "write your own letter"; **no submissions for now** (add later
+  only if it gets popular); an easy-to-browse library of all letters; **share-ready video/GIF** of a letter writing
+  itself (prototype first); **open-source fonts** (every hand downloadable, plus a curated pack); an **open-source
+  release** of the project when polished. No case study for now. The X posts get planned in a few days.
 
 ### Editor and writing experience
 - **First visit starts in Ink mode.** Edits behave like real ink: deleting crosses words out, a retyped letter
