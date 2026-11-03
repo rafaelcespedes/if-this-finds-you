@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME } from '@/lib/brand';
 import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
@@ -74,7 +74,7 @@ export default function App() {
   const [state, update] = useNoteState(composing);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
-  const [busy, setBusy] = useState({ download: false, font: false });
+  const [busy, setBusy] = useState({ download: false, font: false, video: false });
   const [editing, setEditing] = useState(false);
   const [plainText, setPlainText] = useState(() => readPref('seedhand:plain-text') === '1');
   const [variety, setVariety] = useState(() => Number(readPref('seedhand:variety') ?? 60) || 60);
@@ -482,6 +482,63 @@ export default function App() {
     }
   }, [requestKey, ink, pxPerMm, name, coarse, live, state.marks, state.signed, eff.inkKey, inkActive]);
 
+  // ---------- the letter writing itself out, as a video or a GIF (lib in src/export, loaded when first used) ----------
+  const [exportable, setExportable] = useState<{ video: boolean; gif: boolean } | null>(null);
+  const checkExport = useCallback(() => {
+    if (exportable) return;
+    import('@/export')
+      .then((m) => m.exportSupport())
+      .then((s) => setExportable({ video: s.mp4 || s.webm, gif: s.gif }))
+      .catch(() => setExportable({ video: false, gif: false }));
+  }, [exportable]);
+  const exporting = useRef<AbortController | null>(null);
+  const exportLetter = useCallback(async (kind: 'video' | 'gif') => {
+    if (exporting.current) return;
+    const ac = new AbortController();
+    exporting.current = ac;
+    setBusy((b) => ({ ...b, video: true }));
+    const what = kind === 'gif' ? 'GIF' : 'video';
+    const stop = { label: 'Stop', onClick: () => ac.abort() };
+    toast.loading(`Making the ${what}…`, { id: 'export', description: 'The letter writes itself out, then it saves', action: stop, duration: Infinity });
+    try {
+      const { exportWriting, exportSupport } = await import('@/export');
+      const can = await exportSupport();
+      let last = 0;
+      const res = await exportWriting(stateNow.current, {
+        format: kind === 'gif' ? 'gif' : can.mp4 ? 'mp4' : 'webm',
+        aspect: '4:5',
+        framing: 'lines',
+        branding: true,
+        signal: ac.signal,
+        onProgress: ({ fraction }) => {
+          const now = performance.now();
+          if (now - last < 100) return;
+          last = now;
+          toast.loading(`Making the ${what}…`, { id: 'export', description: `${Math.round(fraction * 100)}%`, action: stop, duration: Infinity });
+        },
+      });
+      const filename = `${fileSafe(`${APP_NAME} – ${name}`)}.${res.ext}`;
+      const description = `${Math.round(res.seconds)} s, ${res.width} × ${res.height}, ${(res.blob.size / 1e6).toFixed(1)} MB`;
+      const file = new File([res.blob], filename, { type: res.mime });
+      if (coarse && navigator.canShare?.({ files: [file] })) {
+        // making it took a few seconds, so the share sheet needs a fresh tap (then Save Video puts it in Photos)
+        toast.success(`Your ${what} is ready`, { id: 'export', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
+      } else {
+        saveBlob(res.blob, filename);
+        toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export', description, duration: 4000 });
+      }
+    } catch (e) {
+      if ((e as Error)?.name === 'AbortError') toast('Stopped', { id: 'export', duration: 2000 });
+      else {
+        console.error(e);
+        toast.error(`Couldn’t make the ${what}`, { id: 'export', description: e instanceof Error ? e.message : String(e) });
+      }
+    } finally {
+      exporting.current = null;
+      setBusy((b) => ({ ...b, video: false }));
+    }
+  }, [name, coarse]);
+
   const font = useCallback(async () => {
     setBusy((b) => ({ ...b, font: true }));
     // let the spinner paint before the (blocking) font build
@@ -561,6 +618,9 @@ export default function App() {
     onShare: share,
     onDownload: download,
     onExportFont: font,
+    onExportVideo: exportLetter,
+    exportable,
+    onShareOpen: checkExport,
     onFieldFocus: () => setDetent('full'),
     letter: letterActions,
     ink: INK ? {

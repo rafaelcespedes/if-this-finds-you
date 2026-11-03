@@ -109,8 +109,11 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     keeps your How and With-what offsets and clears the Who ones (slant, proportions, spacing).
 - **Share** (one icon): Copy link (a URL that restores the exact note; the toast offers the share sheet
   where there is one), Download image (JPEG at 3x the screen, paper and writing exactly as shown; on phones
-  it opens the share sheet, so Save Image puts it in Photos), and under More formats, Font file (.otf from
-  the engine's `buildFont`, opentype.js 1.3.4, loaded only when used).
+  it opens the share sheet, so Save Image puts it in Photos), Download video (the letter writing itself out:
+  MP4, 4:5, the first lines, made in a few seconds by `src/export`, loaded when first used; progress and Stop in
+  a toast; on phones a Save button opens the share sheet), and under More formats, Animated GIF and Font file
+  (.otf from the engine's `buildFont`, opentype.js 1.3.4, loaded only when used). Formats the browser can't
+  make are greyed out.
 - **On phones** the controls live in a sheet that's always there, at three heights (`ControlSheet.tsx`):
   - *peek:* the writer's name (About this hand), New hand, Share, what's on the page ("A found letter" /
     "Another letter") and "Paper, pen & ink" to open it.

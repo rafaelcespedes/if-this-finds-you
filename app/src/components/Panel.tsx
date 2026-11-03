@@ -4,7 +4,7 @@
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useEffect, useId, useState } from 'react';
-import { CaseSensitive, ChevronDown, Download, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
+import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,12 @@ export interface PanelProps {
   locks: Set<LockKey>;
   /** keep the paper, pen and ink (all three) when rolling a new hand, or not */
   onKeepLook: (keep: boolean) => void;
-  busy: { download: boolean; font: boolean };
+  busy: { download: boolean; font: boolean; video: boolean };
+  /** the letter writing itself out, as a video or a GIF (null until the browser's been asked what it can make) */
+  onExportVideo: (kind: 'video' | 'gif') => void;
+  exportable: { video: boolean; gif: boolean } | null;
+  /** the share menu opened: a moment to ask the browser */
+  onShareOpen: () => void;
   onNewHand: () => void;
   onSimilarHand: () => void;
   onSeed: (seed: string) => void;
@@ -198,10 +203,10 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
 }
 
 /** Share: copy a link, save the image; the font file is a quieter extra. One icon wherever it sits. */
-export function ShareMenu({ busy, onShare, onDownload, onExportFont, size }: PanelProps & { size?: 'lg' }) {
-  const working = busy.download || busy.font;
+export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVideo, exportable, onShareOpen, size }: PanelProps & { size?: 'lg' }) {
+  const working = busy.download || busy.font || busy.video;
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root onOpenChange={(o) => o && onShareOpen()}>
       <DropdownMenu.Trigger asChild>
         <Button variant="secondary" size="icon" aria-label="Share" className={cn('size-11', size === 'lg' && 'size-11')}>
           {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}
@@ -219,8 +224,15 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, size }: Pan
           <MenuItem onSelect={onDownload} icon={busy.download ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />} disabled={busy.download}>
             Download image
           </MenuItem>
+          {/* the letter writing itself out: made in a few seconds, saved when it's done */}
+          <MenuItem onSelect={() => onExportVideo('video')} icon={busy.video ? <Loader2 className="animate-spin" aria-hidden /> : <Film aria-hidden />} disabled={busy.video || exportable?.video === false}>
+            Download video
+          </MenuItem>
           <DropdownMenu.Separator className="mx-2 my-1 h-px bg-border" />
           <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[11.5px] text-muted-foreground">More formats</DropdownMenu.Label>
+          <MenuItem onSelect={() => onExportVideo('gif')} icon={<ImagePlay aria-hidden />} disabled={busy.video || exportable?.gif === false} quiet>
+            Animated GIF
+          </MenuItem>
           <MenuItem onSelect={onExportFont} icon={busy.font ? <Loader2 className="animate-spin" aria-hidden /> : <CaseSensitive aria-hidden />} disabled={busy.font} quiet>
             Font file (.otf)
           </MenuItem>
