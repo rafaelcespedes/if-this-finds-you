@@ -151,7 +151,7 @@ export function FontsApp() {
     return () => window.removeEventListener('keydown', on);
   }, [route.view]);
 
-  useEffect(() => { document.title = `${route.view === 'saved' ? 'Saved hands' : 'Fonts'} – ${APP_NAME}`; }, [route.view]);
+  useEffect(() => { document.title = `${route.view === 'saved' ? 'Saved hands' : 'Fonts'} · ${APP_NAME}`; }, [route.view]);
 
   // phones: the dock steps aside while the keyboard is up for your words
   const [typing, setTyping] = useState(false);
