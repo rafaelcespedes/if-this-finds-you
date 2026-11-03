@@ -1308,6 +1308,9 @@ export default function App() {
                     // the letter's name is on the sheet now; a translation still says who translated it
                     <span className="mr-auto min-w-0 truncate pr-3 text-[0.75rem]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
+                  {/* phones: how you're writing, right under the letter (the bottom sheet keeps to the essentials; while
+                      writing, the pen tray has the same) */}
+                  {!isDesktop && <div className="-mr-1.5 shrink-0">{writingMenu}</div>}
                 </div>
                 {/* phones: the letter leads (nothing above it but the header); what it is comes after it, once: the
                     Reading Room's catalogue slip for a found letter, else the letter's name and how the hand writes */}
@@ -1391,7 +1394,7 @@ export default function App() {
         <>
           {/* with the sheet up, a tap on the letter folds it back down (a second tap writes) */}
           {sheetOpen && detent !== 'peek' && <div aria-hidden className="fixed inset-0 z-30 touch-none" onClick={() => setDetent('peek')} />}
-          <ControlSheet {...panelProps} writingMenu={writingMenu} open={sheetOpen} detent={detent} onDetent={setDetent} onMetrics={onMetrics} onDragging={onSheetDrag} onAdjusting={onAdjusting} />
+          <ControlSheet {...panelProps} open={sheetOpen} detent={detent} onDetent={setDetent} onMetrics={onMetrics} onDragging={onSheetDrag} onAdjusting={onAdjusting} />
         </>
       )}
       <Toaster offset={isDesktop ? 24 : 96} mobileOffset={{ bottom: mobileSheet ? metrics.peek + 12 : 96 }} />
