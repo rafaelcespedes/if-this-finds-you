@@ -393,6 +393,8 @@ textarea {
 html { scroll-padding-top: var(--site-head-clear); }
 /* a page's chip in the header (Share on the desk) gets the same 48 px target as the Menu chip beside it */
 [data-site-header] [data-site-action] [data-chip]::after { inset: -8px; }
+/* a place you can go answers a press with an underline (the place you're in isn't a link, so never) */
+[data-site-header] a[data-site-link]:active [data-site-words] { text-decoration: underline 1px currentColor; text-underline-offset: 3px; }
 
 /* ---------- the place you're in (SiteHeader's [aria-current]): quiet, no underline. ?navsel=1|2|3 to compare ----------
    1 (default) its words in the look's red (--site-here: Rubric's vermilion; the Reading Room's archival red);
