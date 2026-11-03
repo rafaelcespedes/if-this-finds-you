@@ -9,14 +9,16 @@ Run it with the app (`cd app && npm run dev`) and open **/letters.html**.
 
 ## Pages
 
-- **Index** (`Index.tsx`, `Card.tsx`): "All letters" written in the logo's hand (#5, `all-letters.svg`, drawn by
-  `heading.mjs` with brand/wordmark/wordmark.mjs), then every letter as the letter itself: a sheet of its paper
-  with the letter written on it in its own hand, flat on the page (no shadow, nothing behind it), a touch askew, and
-  its title underneath (in the letter face).
-  Who wrote it, where and when are in the link's hover title and its screen-reader text. Masonry: three columns
-  on wide screens, two from a phone up; each card goes into the shortest column, in reading order, so Tab follows
-  the eye. Search, filters (era, language, letters or notes) and Shuffle above, bordered like the tool's controls.
-  `/` searches.
+- **Index** (`Index.tsx`, `Card.tsx`, `Controls.tsx`): "All letters" written in the logo's hand (#5,
+  `all-letters.svg`, drawn by `heading.mjs` with brand/wordmark/wordmark.mjs), then every letter as the letter
+  itself: a sheet of its paper with the letter written on it in its own hand, flat on the page (no shadow, nothing
+  behind it), a touch askew, and its title underneath (in the letter face). Who wrote it, where and when are in the
+  link's hover title and its screen-reader text. Masonry: three columns on wide screens, two from a phone up; each
+  card goes into the shortest column, in reading order, so Tab follows the eye.
+  Browsing controls stay small (research and reasoning in `CONTROLS.md`), three arrangements to compare with
+  `?toolbar=1…3`: 1 search and Shuffle icons in the heading plus a one-sentence filter ("127 letters from any time
+  in any language"); 2 a floating dock like the tool's right panel (the default); 3 the dock with a timeline of
+  every letter by century as the era filter. Search starts folded to an icon; `/` opens it; Esc clears, then closes.
 - **Letter** (`LetterPage.tsx`, loaded on demand with the engine): the whole letter written out in front of you
   (the tool's reader: `ReaderSheets`, engine `timeline` + `playSVG`, about 3x, a tap or key finishes it), the
   provenance (story, writer, recipient, place, date, source, rights, translator), Read it as text, and Write a
