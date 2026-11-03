@@ -28,7 +28,7 @@ export function DraftSlip({ value, onEdit, width, onComposingChange }: { value: 
         rows={3}
         spellCheck
         {...input}
-        placeholder="Write your note…"
+        placeholder="Write your letter…"
         className="block w-full resize-none overflow-hidden bg-transparent text-[0.9375rem] leading-[1.6] text-foreground placeholder:text-faint focus:outline-none pointer-coarse:text-[1rem]"
       />
     </div>

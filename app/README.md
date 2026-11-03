@@ -107,7 +107,7 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     (Print or Joined, the school cards, Similar, and **Neat hands only**: on by default, the engine tidies a
     hand a little (slant, pen width, spacing, hurry, capitals) and New hand skips writers below its `NEAT_MIN`
     readability; switched off, the page shows the hand exactly as its seed wrote it (a cross-fade) and New
-    hand picks from everyone. "Roll a neat one" appears when the hand on the page still isn't easy to read;
+    hand picks from everyone. "Find a neater hand" appears when the hand on the page still isn't easy to read;
     `neat=0` in links when it's off), **How they write** (Neatness, Hurry, Size, each with plain
     words at its ends: Messy / Neat, Calm / Rushed, Small / Large).
   - *More* (folded): the other sliders (Pressure, Slant), an Occasion with an Amount, Keep my

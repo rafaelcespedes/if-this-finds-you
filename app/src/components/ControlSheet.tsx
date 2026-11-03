@@ -304,7 +304,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
             className="group flex h-11 w-full items-center select-none focus-visible:outline-none"
           >
             <span data-pill className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-secondary px-3.5 text-[0.8125rem] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
-              Paper, pen & ink
+              Paper, pen and ink
               <ChevronUp aria-hidden className={cn('size-3.5 text-muted-foreground transition-transform duration-300 ease-[var(--ease-drawer)]', expanded && 'rotate-180')} />
             </span>
           </button>
