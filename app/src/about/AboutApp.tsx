@@ -227,7 +227,8 @@ export function AboutApp() {
         </Section>
 
         {/* the full credits: the licences ask for them, so they stay, folded away and quiet */}
-        <details className="about-credits">
+        <div className="about-credits">
+        <details>
           <summary>Full credits and licences</summary>
           <div className="about-notes">
             <h3 className="about-subhead">The letters</h3>
@@ -283,6 +284,7 @@ export function AboutApp() {
             </p>
           </div>
         </details>
+        </div>
 
         <footer className="about-colophon">
           <p className="about-colophon-name">{NAME_WITH_DESCRIPTOR}</p>

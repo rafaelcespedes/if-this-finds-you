@@ -1,5 +1,8 @@
 /* About: a quiet reading page. One column of text, its sections ruled off like a finding aid, their labels in the
-   margin on a wide screen; catalogue facts, a ledger of the hands and footnote credits.
+   margin on a wide screen; catalogue facts and folded credits.
+   The grid (from 56rem): the site's page block (1180px, the header's gutters, as the Fonts page and the library), 12
+   columns inside it. Labels sit in columns 1–3, everything read in 4–10, and every rule spans 1–10, so rules, rows
+   and text share one right edge. Below 56rem, one column.
    Today's look (?look=classic) reads in the letter face (Piazzolla, --font-letter) with Atkinson capitals for the
    labels and vermilion numbers. The Reading Room (the default) swaps in its book face, true small capitals and
    archival red at the bottom of this file. Sizes in rem, so the page follows the browser's text size. Paper lies
@@ -18,13 +21,15 @@
   --about-label-spacing: 0.09em;
   --about-label-case: uppercase;
   --about-label-caps: normal;
+  --about-gap: 1.5rem;
   background: var(--desk);
   color: var(--about-text);
 }
 
 .about-main {
   margin: 0 auto;
-  max-width: 68rem;
+  /* the site's page block, as the Fonts page and the library (max-w-[1180px] with the header's gutters) */
+  max-width: 1180px;
   padding: calc(5.25rem + env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px)) 6rem
     max(1rem, env(safe-area-inset-left, 0px));
   font-family: var(--about-book);
@@ -44,6 +49,43 @@
   .about-main {
     padding-inline: 2.5rem;
     font-size: calc(1.125rem * var(--letter-scale, 1));
+  }
+}
+/* the grid: 12 columns; each row (the head, a section, the credits, the footer) spans 1–10 and shares the columns */
+@media (min-width: 56rem) {
+  .about-main {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--about-gap);
+    align-items: start;
+  }
+  .about-main > * {
+    grid-column: 1 / 11;
+    display: grid;
+    grid-template-columns: 3fr 7fr;
+    column-gap: var(--about-gap);
+  }
+  @supports (grid-template-columns: subgrid) {
+    .about-main > * {
+      grid-template-columns: subgrid;
+    }
+  }
+  /* in a row: the label in columns 1–3, the rest in 4–10 */
+  .about-main > * > * {
+    grid-column: 4 / -1;
+  }
+  .about-main > * > .about-section-title,
+  .about-head > .about-kicker {
+    grid-column: 1 / 4;
+  }
+  .about-head > .about-kicker {
+    grid-row: 1;
+    align-self: baseline;
+  }
+  .about-head > .about-title {
+    grid-row: 1;
+    align-self: baseline;
+    margin-top: 0;
   }
 }
 
@@ -97,9 +139,6 @@
 }
 
 /* ---------- the head ---------- */
-.about-head {
-  max-width: 44rem;
-}
 .about-kicker {
   color: var(--about-number);
 }
@@ -114,7 +153,6 @@
 }
 .about-lede {
   margin-top: 0.875rem !important;
-  max-width: 32rem;
   font-size: 1.1875em;
   line-height: 1.42;
   color: var(--about-muted);
@@ -128,7 +166,6 @@
 /* the line written live: a slip of paper, flat, with a hairline edge */
 .about-line {
   margin: 2rem 0 0;
-  max-width: 40rem;
   padding: 1rem 1.125rem 0.875rem;
   background: var(--about-slip);
   border: 1px solid var(--about-slip-edge);
@@ -245,13 +282,12 @@
   letter-spacing: -0.005em;
 }
 .about-section-body {
-  max-width: 38rem;
+  /* the facts choose their columns from the text column's own width */
+  container: about-body / inline-size;
+  min-width: 0;
 }
 @media (min-width: 56rem) {
   .about-section {
-    display: grid;
-    grid-template-columns: 13rem minmax(0, 38rem);
-    column-gap: 3rem;
     margin-top: 3.5rem;
   }
   .about-section-title {
@@ -276,21 +312,15 @@
 .about-facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 1.25rem;
+  gap: 0 1rem;
   margin: 0;
 }
-/* wide: four columns; the dates and the longer labels take two, so each row fills: letters, written (2), languages;
-   writers, by women, by ordinary people (2); then the two groups, two each */
-@media (min-width: 40rem) {
+/* a wide text column: four equal columns, two rows that line up; longer labels wrap inside their cell. "1395–1929"
+   keeps to one line there; in two columns (phones, large text) it may wrap rather than run off the screen */
+@container about-body (min-width: 37rem) {
   .about-facts {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .about-facts > div:nth-child(2),
-  .about-facts > div:nth-child(n + 6) {
-    grid-column: span 2;
-  }
-  /* "1395–1929" stays on one line in the narrow columns of a wide screen; on a phone (or at a large text size) it may
-     wrap rather than run off the screen */
   .about-facts dd {
     white-space: nowrap;
   }
@@ -308,7 +338,7 @@
 }
 .about-facts dd {
   margin: 0;
-  font-size: 1.625em;
+  font-size: 1.4em;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
@@ -422,8 +452,7 @@
 }
 
 .about-credit-line {
-  padding: 0.75rem 0;
-  border-block: 1px solid var(--about-rule);
+  margin-top: 1.75rem !important;
   font-style: italic;
 }
 
@@ -453,8 +482,13 @@
 }
 /* the full credits, folded away: a quiet ruled line that opens to the list */
 .about-credits {
-  margin-top: 3.5rem;
+  margin-top: 2.5rem;
   border-top: 1px solid var(--about-rule);
+}
+@media (min-width: 56rem) {
+  .about-credits {
+    margin-top: 3.5rem;
+  }
 }
 .about-credits summary {
   display: flex;
@@ -475,7 +509,7 @@
   color: var(--about-number);
   font-variant-numeric: tabular-nums;
 }
-.about-credits[open] summary::before {
+.about-credits details[open] summary::before {
   content: '−';
 }
 @media (hover: hover) and (pointer: fine) {
@@ -484,7 +518,6 @@
   }
 }
 .about-credits .about-notes {
-  max-width: 38rem;
   padding-bottom: 1rem;
 }
 .about-credits .about-subhead:first-child {
@@ -494,18 +527,9 @@
   color: var(--about-number);
   font-variant-numeric: tabular-nums;
 }
-@media (min-width: 56rem) {
-  .about-credits {
-    padding-left: 16rem;
-    border-top: 0;
-  }
-  .about-credits summary {
-    border-top: 1px solid var(--about-rule);
-  }
-}
 
 .about-colophon {
-  margin-top: 4rem;
+  margin-top: 2.5rem;
   padding-top: 1rem;
   border-top: 1px solid var(--about-rule);
   font-size: 0.875em;
@@ -513,7 +537,7 @@
 }
 @media (min-width: 56rem) {
   .about-colophon {
-    padding-left: 16rem;
+    margin-top: 3.5rem;
   }
 }
 
