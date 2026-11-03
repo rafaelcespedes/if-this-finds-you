@@ -1,4 +1,30 @@
-/* Lost Letters: the archive's own few styles, on top of the tool's palette (index.css). */
+/* The library (All letters and the letter page): its own few styles, on top of the tool's palette (index.css). */
+
+/* ---------- tokens: swap fonts, colours and surfaces here ---------- */
+:root {
+  /* floating surfaces: the dock (the tool's right panel) and menus (the tool's dropdowns) */
+  --lib-surface: var(--panel);
+  --lib-surface-shadow:
+    0 0 0 0.5px rgba(60, 45, 20, 0.08),
+    0 1px 2px rgba(60, 45, 20, 0.08),
+    0 12px 32px -12px rgba(60, 45, 20, 0.3);
+  --lib-menu-surface: color-mix(in oklab, #fdfcf9 96%, transparent);
+  --lib-menu-border: var(--border);
+  --lib-menu-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 16px 40px -12px rgba(40, 30, 10, 0.35);
+  /* the reading: the letter face (serif.ts sets --font-letter and --letter-scale), sizes, colours, measure */
+  --lib-title-size: calc(34px * var(--letter-scale, 1));
+  --lib-title-size-lg: calc(44px * var(--letter-scale, 1));
+  --lib-dateline-size: calc(18px * var(--letter-scale, 1));
+  --lib-body-size: calc(18px * var(--letter-scale, 1));
+  --lib-fact-size: calc(15px * var(--letter-scale, 1));
+  --lib-note-size: 13px;
+  --lib-text: var(--foreground);
+  --lib-text-soft: var(--text-muted);
+  --lib-text-faint: var(--text-faint);
+  --lib-accent: var(--ink);
+  --lib-rule: var(--hairline);
+  --lib-measure: 36rem;
+}
 
 /* the letter face (serif.ts: ?serif=1…4) */
 .font-letter {
@@ -115,11 +141,17 @@ select.archive-field {
 /* the floating dock: the tool's right panel surface (bg-panel, rounded-2xl, its soft shadow), a touch more lift
    because it floats over the letters; it rises in once on arrival */
 .archive-dock {
-  box-shadow:
-    0 0 0 0.5px rgba(60, 45, 20, 0.08),
-    0 1px 2px rgba(60, 45, 20, 0.08),
-    0 12px 32px -12px rgba(60, 45, 20, 0.3);
+  background: var(--lib-surface);
+  box-shadow: var(--lib-surface-shadow);
   animation: dock-in 320ms var(--ease-out) both;
+}
+/* menus from the dock and the hand label: the tool's dropdown surface */
+.lib-menu {
+  border: 1px solid var(--lib-menu-border);
+  border-radius: 16px;
+  background: var(--lib-menu-surface);
+  box-shadow: var(--lib-menu-shadow);
+  backdrop-filter: blur(12px);
 }
 @keyframes dock-in {
   from {
@@ -189,4 +221,124 @@ select.archive-field {
 .era-seg:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
+}
+
+/* ---------- the letter page: editorial text (LetterParts.tsx) ---------- */
+.ed-title {
+  font-size: var(--lib-title-size);
+  line-height: 1.08;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  color: var(--lib-text);
+}
+@media (min-width: 1024px) {
+  .ed-title {
+    font-size: var(--lib-title-size-lg);
+  }
+}
+.ed-dateline {
+  font-size: var(--lib-dateline-size);
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--lib-text-soft);
+}
+.ed-meta {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--lib-text-faint);
+}
+.ed-story {
+  font-size: var(--lib-body-size);
+  line-height: 1.62;
+  color: var(--lib-text);
+}
+/* the record: small sans labels, the facts in the letter face, a hairline between */
+.ed-facts {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  align-items: stretch;
+  column-gap: 1.25rem;
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--lib-rule);
+}
+.ed-facts dt,
+.ed-facts dd {
+  padding-block: 0.7rem;
+  border-bottom: 1px solid var(--lib-rule);
+}
+.ed-facts dt {
+  font-size: 12.5px;
+  /* the label's line as tall as the fact's first line, so the two sit on one baseline */
+  line-height: calc(var(--lib-fact-size) * 1.45);
+  color: var(--lib-text-faint);
+}
+.ed-facts dd {
+  font-size: var(--lib-fact-size);
+  line-height: 1.45;
+  color: var(--lib-text);
+}
+.ed-sub {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--lib-text-soft);
+}
+.ed-transcript {
+  font-size: var(--lib-body-size);
+  line-height: 1.65;
+  color: var(--lib-text);
+}
+/* a link in the reading: underlined softly, darker under the pointer */
+.ed-link,
+.editorial dd a,
+.ed-notes a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 30%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ed-link:hover,
+  .editorial dd a:hover,
+  .ed-notes a:hover {
+    color: var(--lib-text);
+    text-decoration-color: currentColor;
+  }
+}
+.ed-link {
+  color: var(--lib-text-soft);
+}
+/* footnotes: the source, the rights, the hand */
+.ed-ref {
+  margin-left: 0.15em;
+  font-family: var(--font-sans);
+  font-size: 0.6em;
+  font-style: normal;
+}
+.ed-ref a {
+  color: var(--lib-accent);
+  text-decoration: none;
+  padding: 0 0.15em;
+}
+.ed-notes {
+  margin-top: 2.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--lib-rule);
+}
+.ed-notes ol {
+  display: grid;
+  gap: 0.6rem;
+  padding-left: 1.1rem;
+  list-style: decimal;
+  font-size: var(--lib-note-size);
+  line-height: 1.55;
+  color: var(--lib-text-faint);
+}
+.ed-notes li::marker {
+  color: var(--lib-accent);
+  font-variant-numeric: tabular-nums;
+}
+.ed-notes li:target {
+  color: var(--lib-text-soft);
 }

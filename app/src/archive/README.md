@@ -19,11 +19,19 @@ Run it with the app (`cd app && npm run dev`) and open **/letters.html**.
   `?toolbar=1…3`: 1 search and Shuffle icons in the heading plus a one-sentence filter ("127 letters from any time
   in any language"); 2 a floating dock like the tool's right panel (the default); 3 the dock with a timeline of
   every letter by century as the era filter. Search starts folded to an icon; `/` opens it; Esc clears, then closes.
-- **Letter** (`LetterPage.tsx`, loaded on demand with the engine): the whole letter written out in front of you
-  (the tool's reader: `ReaderSheets`, engine `timeline` + `playSVG`, about 3x, a tap or key finishes it), the
-  provenance (story, writer, recipient, place, date, source, rights, translator), Read it as text, and Write a
-  reply, Another (random), Share, Image (JPEG). **Previous / Next** (header, ← →, or a sideways swipe on phones)
-  turn through the letters the index was showing. New hand and Keep this hand change the writer. Esc goes back.
+- **Letter** (`LetterPage.tsx`, `LetterParts.tsx`, loaded on demand with the engine): a quiet reading page. The
+  letter written out in front of you is the hero (the tool's reader: `ReaderSheets`, engine `timeline` +
+  `playSVG`, about 3x, a tap or key finishes it). The words around it are editorial, in the letter face: title,
+  an italic dateline (who to whom), where and when, the story, the record (written by, to, from, when, language,
+  translator), the letter as text, and numbered notes for the source, the rights and the fictional hand.
+  Everything you can do sits in one floating dock (the library's and the tool's right panel's family):
+  Previous / Next (also ← →, and a sideways swipe on phones), Another hand, Share, More (read it as text, save as
+  an image, a letter at random) and Write a reply. "In Ilse Pryor's hand ⌄" under the sheet holds Another hand,
+  Write it out again and Keep this hand (the tool's writer-dropdown pattern). Two layouts to compare with
+  `?detail=1|2`: 1 side by side (the letter left, the reading right), 2 letter first, one column (the default).
+  Esc goes back to all letters.
+
+Colours, sizes and surfaces for the library are `--lib-*` tokens at the top of `archive.css`.
 
 Everything is in the URL hash (`route.ts`), so every view can be shared and Back works.
 

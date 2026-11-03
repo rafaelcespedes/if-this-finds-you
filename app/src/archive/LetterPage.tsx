@@ -4,7 +4,6 @@
 // Loaded on demand (its own chunk, with the engine); the index never waits for it.
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Download, Link2, PenLine, RefreshCw, RotateCcw, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PaperCanvas, PaperGuide } from '@/components/PaperCanvas';
 import { ReaderSheets } from '@/components/ReaderSheets';
@@ -20,7 +19,8 @@ import { LIVE, liveExtras, liveLayout, type Live } from '@/lib/live';
 import { sheetShadow } from '@/lib/papers';
 import { clamp, cn } from '@/lib/utils';
 import { cards } from './cards';
-import { circumstanceLabel, filterLetters, fromTo, opening } from './data';
+import { filterLetters } from './data';
+import { DETAIL, Editorial, HandMenu, LetterDock, TitleBlock } from './LetterParts';
 import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
@@ -201,6 +201,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     });
   };
   const [saving, setSaving] = useState(false);
+  // the letter as text, open or folded (the dock's "Read it as text" opens it)
+  const [textOpen, setTextOpen] = useState(false);
   const download = async () => {
     if (!ready || !r || !letter) return;
     setSaving(true);
@@ -237,176 +239,80 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   }
 
   const sheetH = r.paper.h * pxPerMm;
+  const sheet = (
+    <div
+      className="flex touch-pan-y flex-col items-center"
+      onClick={onSheetClick}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      role="img"
+      aria-label={`The letter, written out by hand on ${r.paper.name.toLowerCase()} paper`}
+    >
+      {/* a sent letter: no guide sheet under the paper */}
+      <PaperGuide value={false}>
+        {pxPerMm > 0 && (ready ? (
+          <ReaderSheets live={ready.live} extras={ready.extras} inkKey={r.inkKey} ink={r.inkColor} pxPerMm={pxPerMm} gapPx={SHEET_GAP} token={token} finishToken={finish} />
+        ) : (
+          <div className="relative isolate shrink-0 rounded-[1.5px]" style={{ width: r.paper.w * pxPerMm, height: sheetH, boxShadow: sheetShadow(r.paper) }}>
+            <PaperCanvas paper={r.paper} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
+          </div>
+        ))}
+      </PaperGuide>
+    </div>
+  );
+  const handMenu = (
+    <div className="mt-4 flex justify-center">
+      <HandMenu name={name} keep={keep} onKeep={setKeep} onNewHand={newHand} onReplay={() => { setFinish(0); setToken((n) => n + 1); }} canReplay={!!ready} />
+    </div>
+  );
+  const editorial = <Editorial letter={letter} name={name} textOpen={textOpen} onText={setTextOpen} centred={DETAIL === '2'} />;
   return (
     <div className="min-h-dvh">
       <SiteHeader>
         <a href={backHref} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
-        {list.length > 1 && at >= 0 && (
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" onClick={() => turn(-1)} aria-label={`Previous letter: ${neighbour(-1)?.title ?? ''}`} className="size-8 text-muted-foreground pointer-coarse:size-11">
-              <ChevronLeft aria-hidden />
-            </Button>
-            <span className="min-w-[4.5rem] text-center tabular" aria-label={`Letter ${at + 1} of ${list.length}`}>{at + 1} of {list.length}</span>
-            <Button variant="ghost" size="icon" onClick={() => turn(1)} aria-label={`Next letter: ${neighbour(1)?.title ?? ''}`} className="size-8 text-muted-foreground pointer-coarse:size-11">
-              <ChevronRight aria-hidden />
-            </Button>
-          </div>
-        )}
       </SiteHeader>
-      <main className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-14 px-4 pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-28 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:grid-rows-[auto_1fr] lg:px-10 lg:pt-16">
-        {/* title: above the sheet on phones, beside it on wide screens */}
-        <header className="pt-2 pb-5 lg:col-start-2 lg:row-start-1 lg:pt-8 lg:pb-6">
-          <p className="text-[12.5px] text-[var(--ink-soft)]">{circumstanceLabel(letter)}</p>
-          <h1 ref={titleRef} tabIndex={-1} className="font-letter mt-1.5 text-[calc(28px*var(--letter-scale))] leading-[1.1] font-normal tracking-[-0.012em] text-foreground text-balance outline-none sm:text-[calc(33px*var(--letter-scale))]">
-            {letter.title ?? opening(letter.text, 60)}
-          </h1>
-          <p className="mt-2 text-[14.5px] leading-[1.45] text-muted-foreground text-pretty">{fromTo(letter)}</p>
-        </header>
-
-        <div ref={colRef} className="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:pt-8">
-          <div
-            className="flex touch-pan-y flex-col items-center"
-            onClick={onSheetClick}
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
-            role="img"
-            aria-label={`The letter, written out by hand on ${r.paper.name.toLowerCase()} paper`}
-          >
-            {/* a sent letter: no guide sheet under the paper */}
-            <PaperGuide value={false}>
-              {pxPerMm > 0 && (ready ? (
-                <ReaderSheets live={ready.live} extras={ready.extras} inkKey={r.inkKey} ink={r.inkColor} pxPerMm={pxPerMm} gapPx={SHEET_GAP} token={token} finishToken={finish} />
-              ) : (
-                <div className="relative isolate shrink-0 rounded-[1.5px]" style={{ width: r.paper.w * pxPerMm, height: sheetH, boxShadow: sheetShadow(r.paper) }}>
-                  <PaperCanvas paper={r.paper} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
-                </div>
-              ))}
-            </PaperGuide>
+      {DETAIL === '1' ? (
+        // 1 side by side: the letter on the left, the reading on the right (above it on phones)
+        <main className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-16 px-4 pt-[calc(5rem+env(safe-area-inset-top,0px))] pb-36 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:grid-rows-[auto_1fr] lg:px-10 lg:pt-24">
+          <div className="pb-7 lg:col-start-2 lg:row-start-1 lg:pb-8">
+            <TitleBlock letter={letter} titleRef={titleRef} />
           </div>
-
-          <div className="mx-auto mt-5 flex max-w-[640px] flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[13px] text-muted-foreground">
-            <span>In {name}’s hand</span>
-            <span className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" onClick={newHand}>
-                <RefreshCw aria-hidden /> New hand
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => { setFinish(0); setToken((n) => n + 1); }} disabled={!ready}>
-                <RotateCcw aria-hidden /> Replay
-              </Button>
-            </span>
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 select-none pointer-coarse:py-2.5">
-              <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} className="size-3.5 accent-[var(--ink)]" />
-              Keep this hand
-            </label>
+          <div ref={colRef} className="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+            {sheet}
+            {handMenu}
           </div>
-          <Transcript letter={letter} />
-        </div>
-
-        <aside className="provenance mt-10 min-w-0 lg:col-start-2 lg:row-start-2 lg:mt-0">
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-            <Button size="lg" asChild className="sm:col-span-2 lg:col-span-1">
-              <a href={replyHref(letter, look, replier)}>
-                <PenLine aria-hidden /> Write a reply
-              </a>
-            </Button>
-            <div className="grid grid-cols-3 gap-2 sm:col-span-2 lg:col-span-1">
-              <Button variant="outline" onClick={another} className="px-2">
-                <Shuffle aria-hidden /> <span className="truncate">Another</span><span className="sr-only"> letter</span>
-              </Button>
-              <Button variant="outline" onClick={share} className="px-2">
-                <Link2 aria-hidden /> Share
-              </Button>
-              <Button variant="outline" onClick={download} disabled={!ready || saving} className="px-2">
-                <Download aria-hidden /> <span className="truncate">{saving ? 'Saving…' : 'Image'}</span><span className="sr-only"> download</span>
-              </Button>
-            </div>
+          <div className="mt-10 min-w-0 lg:col-start-2 lg:row-start-2 lg:mt-0">{editorial}</div>
+        </main>
+      ) : (
+        // 2 letter first: one column, like a feature: title, the letter, then the story and the record
+        <main className="mx-auto w-full max-w-[860px] px-4 pt-[calc(5rem+env(safe-area-inset-top,0px))] pb-36 sm:px-8 lg:pt-24">
+          <TitleBlock letter={letter} titleRef={titleRef} centred />
+          <div ref={colRef} className="mt-9 min-w-0 sm:mt-11">
+            {sheet}
+            {handMenu}
           </div>
-
-          <Provenance letter={letter} />
-
-          <p className="mt-6 border-t border-border pt-4 text-[12.5px] leading-[1.5] text-faint text-pretty">
-            The words are the original writer’s. The handwriting is not: {name} is a fictional writer, and every hand here is drawn fresh.
-          </p>
-        </aside>
-      </main>
+          <div className="mt-12 sm:mt-14">{editorial}</div>
+        </main>
+      )}
+      <LetterDock
+        reply={replyHref(letter, look, replier)}
+        prev={neighbour(-1) ? { title: neighbour(-1)!.title ?? 'A letter' } : null}
+        next={neighbour(1) ? { title: neighbour(1)!.title ?? 'A letter' } : null}
+        at={at}
+        total={at >= 0 ? list.length : 0}
+        onPrev={() => turn(-1)}
+        onNext={() => turn(1)}
+        onNewHand={newHand}
+        onShare={share}
+        onImage={download}
+        imageReady={!!ready && !saving}
+        onRandom={another}
+        onText={() => {
+          setTextOpen(true);
+          requestAnimationFrame(() => document.querySelector('.ed-transcript')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
+        }}
+      />
     </div>
-  );
-}
-
-/** Who, to whom, where, when, the story, the source and the rights: the curator's record, as it is. */
-function Provenance({ letter }: { letter: ArchiveLetter }) {
-  const f = letter.found;
-  const [rightsOpen, setRightsOpen] = useState(false);
-  const lang = useMemo(() => {
-    try { return new Intl.DisplayNames(['en'], { type: 'language' }).of(letter.lang) ?? letter.lang; } catch { return letter.lang; }
-  }, [letter.lang]);
-  const rights = f?.rights;
-  const rightsLine = rights?.us && rights?.eu ? 'Public domain in the US and the EU' : rights?.us ? 'Public domain in the US' : rights?.eu ? 'Public domain in the EU' : f?.source?.licence ?? '';
-  return (
-    <div className="mt-8">
-      {f?.story && <p className="font-letter text-[calc(16px*var(--letter-scale))] leading-[1.6] text-foreground/90 text-pretty">{f.story}</p>}
-      <dl className="mt-6 grid grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-x-4 gap-y-3 text-[13.5px] leading-[1.5]">
-        {letter.author && <Row term="Written by">{letter.author}{f?.heritage && <span className="block text-muted-foreground">{f.heritage}</span>}</Row>}
-        {letter.recipient && <Row term="To">{letter.recipient}</Row>}
-        {letter.place && <Row term="From">{letter.place}</Row>}
-        {letter.year != null && <Row term="When"><span className="tabular">{letter.year}</span>{f?.dateNote && <span className="block text-muted-foreground">{f.dateNote}</span>}</Row>}
-        <Row term="Language">{lang}</Row>
-        {f?.translator && <Row term="Translated by">{f.translator.url ? <a href={f.translator.url} target="_blank" rel="noreferrer">{f.translator.name}</a> : f.translator.name}</Row>}
-        {f?.source && (
-          <Row term="Source">
-            {f.source.url ? <a href={f.source.url} target="_blank" rel="noreferrer" className="break-words">{f.source.name}</a> : f.source.name}
-          </Row>
-        )}
-        {(rightsLine || rights?.basis) && (
-          <Row term="Rights">
-            {rightsLine}
-            {rights?.basis && (
-              <>
-                {' '}
-                <button type="button" aria-expanded={rightsOpen} onClick={() => setRightsOpen((o) => !o)} className="text-muted-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground">
-                  {rightsOpen ? 'Less' : 'How we know'}
-                </button>
-                {rightsOpen && <span className="mt-1.5 block text-[12.5px] text-muted-foreground">{rights.basis}</span>}
-              </>
-            )}
-          </Row>
-        )}
-      </dl>
-    </div>
-  );
-}
-
-/**
- * The letter as plain text. Screen readers always have it (the sheet is a picture of it); anyone can open it, for
- * hands that are hard to read.
- */
-function Transcript({ letter }: { letter: ArchiveLetter }) {
-  const [open, setOpen] = useState(false);
-  const paras = letter.text.split(/\n{2,}/);
-  return (
-    <div className="mx-auto mt-2 flex max-w-[34rem] flex-col items-center">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls="transcript"
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 rounded-md py-1 text-[13.5px] text-foreground/85 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-2.5"
-      >
-        {open ? 'Hide the text' : 'Read it as text'}
-      </button>
-      <div id="transcript" lang={letter.lang} className={cn(open ? 'font-letter mt-4 grid w-full gap-3 text-[calc(17px*var(--letter-scale))] leading-[1.65] whitespace-pre-line text-foreground/90' : 'sr-only')}>
-        {paras.map((para, i) => <p key={i}>{para}</p>)}
-      </div>
-    </div>
-  );
-}
-
-function Row({ term, children }: { term: string; children: ReactNode }) {
-  return (
-    <>
-      <dt className="text-muted-foreground">{term}</dt>
-      <dd className="font-letter min-w-0 text-[calc(14.5px*var(--letter-scale))] leading-[1.45] text-foreground/90">{children}</dd>
-    </>
   );
 }
 
