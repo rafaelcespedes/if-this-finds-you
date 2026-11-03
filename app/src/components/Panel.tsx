@@ -218,7 +218,8 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
           className={cn(
             'size-11',
             // the phone header's small chip: drawn 32 px, still a 44 px target
-            size === 'chip' && "relative size-8 rounded-[9px] after:absolute after:-inset-1.5 after:content-[''] pointer-coarse:size-8 [&_svg]:size-4",
+            // (a lighter fill, a hairline and a soft shadow, so it reads as a button on the warm desk)
+            size === 'chip' && "relative size-8 rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 after:absolute after:-inset-1.5 after:content-[''] pointer-coarse:size-8 [&_svg]:size-4",
           )}
         >
           {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}

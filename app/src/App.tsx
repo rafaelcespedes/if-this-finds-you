@@ -815,7 +815,7 @@ export default function App() {
                     href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                     aria-label="All letters"
                     title="All letters"
-                    className="relative grid size-8 place-items-center rounded-[9px] bg-secondary text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="relative grid size-8 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
                     <Mails aria-hidden className="size-4" />
                   </a>
