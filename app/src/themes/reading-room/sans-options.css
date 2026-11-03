@@ -6,7 +6,7 @@
    2 Libertinus Sans (after Linux Biolinum): flared humanist from the same scholarly-typesetting world as Junicode.
    3 Commissioner (Kostas Bartsokas) with its flare axis at 60: chiselled ends that echo Junicode's wedge serifs.
    4 Cabin (Pablo Impallari), after Johnston and Gill: the British museum and railway sans of the 1910s-30s.
-   5 Junicode alone: controls in the book face, labels in its small capitals; no sans at all.
+   5 Junicode alone: controls in the book face (sized to the controls' x-height), labels in its small capitals; no sans.
    6 Junicode alone, with Courier Prime (Alan Dague-Greene) typing the catalogue numbers and record labels. */
 @font-face {
   font-family: 'RRS Source Sans';
@@ -152,6 +152,25 @@
   src: url('@fontsource/courier-prime/files/courier-prime-latin-700-normal.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* options 5 and 6: the same Junicode files, enlarged only to the controls' x-height (the book roles use 115%) */
+@font-face {
+  font-family: 'RRS Junicode Controls';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  size-adjust: 106%;
+  src: url('./fonts/junicode-latin-ext-roman.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Junicode Controls';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  size-adjust: 106%;
+  src: url('./fonts/junicode-latin-roman.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 html[data-look='reading-room'][data-rrsans='1'] {
   --rr-ui: 'RRS Source Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
 }
@@ -170,7 +189,7 @@ html[data-look='reading-room'][data-rrsans='4'] {
 }
 html[data-look='reading-room'][data-rrsans='5'],
 html[data-look='reading-room'][data-rrsans='6'] {
-  --rr-ui: var(--rr-book);
+  --rr-ui: 'RRS Junicode Controls', var(--rr-book);
 }
 html[data-look='reading-room'][data-rrsans='6'] {
   --rr-number-face: 'RRS Courier Prime', ui-monospace, monospace;
