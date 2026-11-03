@@ -253,25 +253,6 @@ html[data-look='postmarked'] .pm-cancel {
   pointer-events: none;
 }
 
-/* on a found letter's sheet in the tool: over the paper's top-right corner */
-html[data-look='postmarked'] .pm-sheet-post > * {
-  position: absolute;
-}
-html[data-look='postmarked'] .pm-sheet-post .pm-postmark {
-  opacity: 0.74;
-}
-/* the "click the letter" ghost moves to the other corner, clear of the postmark */
-html[data-look='postmarked'] .pm-sheet-post ~ .top-2\.5.right-2\.5 {
-  right: auto;
-  left: 10px;
-}
-@media (max-width: 640px) {
-  html[data-look='postmarked'] .pm-sheet-cancel {
-    font-size: 9.5px;
-    padding: 4px 5px 3px;
-  }
-}
-
 /* ---------- Find another: the round stamp ---------- */
 html[data-look='postmarked'] .pm-stamp {
   position: relative;

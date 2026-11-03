@@ -4,8 +4,9 @@
 default never changes. Open any page with `?look=postmarked` (kept for the tab; `?look=default` goes back).
 
 ## What it changes
-- **Tool:** a found letter's sheet wears a postmark (its town and year, "found 2026" on the lower arc) and, where
-  the provenance says so, a red INTERCEPTED or UNDELIVERED cancellation. "Find another" is a round red stamp: pressing
+- **Tool:** a found letter's first sheet has its marks printed into the paper (the stationery session's printed
+  marks, `PaperMarks` in components/PaperCanvas.tsx): an invented datestamp or line mark with its town and year and,
+  where the provenance says so, a red INTERCEPTED or UNDELIVERED cancellation. Never animated (Rafael's call). "Find another" is a round red stamp: pressing
   it lands a postmark on it (with the next letter's town and year) and the next letter arrives at once. Beside it:
   "4 of 127 in the bag". A shared link arrives in its envelope first.
 - **All letters:** a wall of envelopes, each addressed "To: …" as the letter really was and postmarked, the letter
@@ -33,5 +34,5 @@ default never changes. Open any page with `?look=postmarked` (kept for the tab; 
 - **Not done:** the Fonts page (not on this branch yet); the grid view (`?view=grid`) keeps sheets in this palette.
 
 ## Where it hooks in (each one line, behind `LOOK === 'postmarked'`)
-App.tsx (sheet postmark, shared-link envelope), Panel.tsx and ControlSheet.tsx (the stamp), archive/Canvas.tsx
+App.tsx (`PostSheetMarks` around the sheets, shared-link envelope), Panel.tsx and ControlSheet.tsx (the stamp), archive/Canvas.tsx
 (envelope cards), archive/LetterParts.tsx (title, route, dock), archive/LetterPage.tsx (arrival).

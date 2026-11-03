@@ -60,7 +60,7 @@ import type { NoteState } from '@/lib/state';
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
 import { SampleMarks } from '@/themes/reading-room/SheetMarks';
-import { SheetPost, ToolArrival } from '@/themes/postmarked/tool';
+import { PostSheetMarks, ToolArrival } from '@/themes/postmarked/tool';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
 const AHEAD = 5;
@@ -1165,6 +1165,8 @@ export default function App() {
             )}
             style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : wide > 1 && isDesktop ? { maxWidth: Math.round(820 * wide) } : undefined}
           >
+            {/* look C (?look=postmarked): a found letter's marks printed into its first sheet (passes through otherwise) */}
+            <PostSheetMarks sampleId={state.sample} hand={state.seed}>
             {/* a link cut short on its way: no letter to show, and the one thing to do about it */}
             {brokenLink && (
               <Notice
@@ -1180,7 +1182,7 @@ export default function App() {
               </Notice>
             )}
             {/* look C (?look=postmarked): a shared link arrives in its envelope, postmarked */}
-            {LOOK === 'postmarked' && pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && <><ToolArrival sampleId={state.sample} writer={name} /><div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}><SheetPost sampleId={state.sample} width={shownPaper.w * pxPerMm} /></div></>}
+            {LOOK === 'postmarked' && pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && <ToolArrival sampleId={state.sample} writer={name} />}
             {pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && (
               <ReaderView
                 writing={writing}
@@ -1230,8 +1232,6 @@ export default function App() {
                     </div>
                   ) : null}
                   {LOOK === 'reading-room' && sample && !replyDesk && <SampleMarks id={sample.id} pxPerMm={pxPerMm} />}
-                  {/* look C (?look=postmarked): a found letter's postmark on the sheet's corner */}
-                  {LOOK === 'postmarked' && <SheetPost sampleId={sample?.id} width={shownPaper.w * pxPerMm} />}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
                   {/* a ghost in the sheet's top margin, pointing in (clear of the label above and the first line below);
                       the first time you write on a desktop, the same place says how to stop */}
@@ -1322,6 +1322,7 @@ export default function App() {
                 )}
               </div>
             )}
+            </PostSheetMarks>
           </div>
           </div>
           </div>

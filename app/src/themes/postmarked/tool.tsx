@@ -1,32 +1,32 @@
 // The tool in the Postmarked look (rendered only when LOOK === 'postmarked'; hooks in App.tsx, Panel.tsx and
 // ControlSheet.tsx are one line each):
-//   SheetPost   the postmark (and, where true, a red cancellation) on a found letter's sheet
+//   PostSheetMarks  a found letter's marks printed into its first sheet's paper (stationery's PaperMarks: a datestamp
+//                   with its town and year, and where the provenance says so a red cancellation); never animated
 //   FindRow     the panel's "Find another": a round stamp, with "4 of 127 in the bag" beside it
 //   PhoneStamp  the same stamp in the phone's control sheet
 //   ToolArrival a shared link's envelope, before the letter writes itself
+import type { ReactNode } from 'react';
+import { PaperMarks } from '@/components/PaperCanvas';
+import { LOOK } from '@/lib/look';
 import { SAMPLES, sampleById, type SampleText } from '@/lib/samples';
 import type { PanelProps } from '@/components/Panel';
 import { Arrival } from './Arrival';
-import { Cancellation, Postmark } from './Postmark';
 import { StampButton } from './Stamp';
-import { addressee, cancellationOf, FOUND_YEAR, postTown, sender, tiltFor } from './model';
+import { addressee, cancellationOf, FOUND_YEAR, postTown, sender } from './model';
 
 type Sample = SampleText & { place?: string | null; recipient?: string; origin?: string };
 
 const asPost = (s: Sample) => ({ town: postTown(s.place), year: s.year, cancel: cancellationOf(s.origin) });
 
-/** The postmark on the sheet's top-right corner, over the paper like a real one (pointer-transparent). */
-export function SheetPost({ sampleId, width }: { sampleId?: string | null; width: number }) {
-  const s = sampleById(sampleId) as Sample | undefined;
-  if (!s) return null;
+/**
+ * Wraps the letter's sheets: in this look a found letter's first sheet has its marks printed into the paper, seeded by
+ * the letter and the hand (stable on reload). Anything else (another look, your own letter, a reply) passes through.
+ */
+export function PostSheetMarks({ sampleId, hand, children }: { sampleId?: string | null; hand: string; children: ReactNode }) {
+  const s = LOOK === 'postmarked' ? (sampleById(sampleId) as Sample | undefined) : undefined;
+  if (!s) return <>{children}</>;
   const { town, year, cancel } = asPost(s);
-  const size = Math.round(Math.min(108, Math.max(60, width * 0.15)));
-  return (
-    <div aria-hidden className="pm-sheet-post pointer-events-none absolute top-0 right-0 z-10" style={{ width: size * 3.4, height: size * 1.3 }}>
-      <Postmark key={s.id} town={town} year={year} size={size} tilt={tiltFor(s.id)} className="pm-sheet-mark" style={{ top: size * 0.16, right: size * 0.14 }} />
-      {cancel && <Cancellation key={s.id + 'c'} label={cancel} tilt={-8 + tiltFor(s.id, 6)} className="pm-sheet-cancel" style={{ top: size * 0.3, right: size * 1.08 }} />}
-    </div>
-  );
+  return <PaperMarks value={{ id: s.id, hand, place: town, year, cancel, look: 'postmarked' }}>{children}</PaperMarks>;
 }
 
 /** Which found letter this is, out of all of them ("4 of 127 in the bag"); your own letter says so. */
