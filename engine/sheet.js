@@ -176,7 +176,8 @@ function applyOne(st, e, ev) {
   R.apply(e);
   switch (e.t) {
     case 'write': case 'break':
-      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev, st.ahead && st.ahead.has(ev) ? { ahead: st.ahead.get(ev), complete: true } : undefined);
+      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev,
+        st.ahead && st.ahead.has(ev) ? { ahead: st.ahead.get(ev), complete: true } : e.rest ? { ahead: e.rest } : undefined);
       break;
     case 'strike': {
       const struck = placedRun(s, e.from, e.to);
@@ -735,7 +736,15 @@ export function penStep(st, view, opts = {}) {
   if (v.tail && !v.mid) {
     const chunk = ready(v.tail);
     if (chunk) {
-      chunk.split('\n').forEach((part, i) => { if (i) emit({ t: 'break' }); if (part) emit({ t: 'write', text: part }); });
+      // a piece that stops inside a word carries the rest of that word (what's typed of it so far), so
+      // layout decides the line end on the whole word, where the thought letters showed it. It's kept in
+      // the event, so a replay passes the same
+      const restWord = /[^\s]$/.test(chunk) ? (v.tail.slice(chunk.length).match(/^[^\s]+/) || [''])[0] : '';
+      const parts = chunk.split('\n');
+      parts.forEach((part, i) => {
+        if (i) emit({ t: 'break' });
+        if (part) emit(i === parts.length - 1 && restWord ? { t: 'write', text: part, rest: restWord } : { t: 'write', text: part });
+      });
       v.tail = v.tail.slice(chunk.length);
       if (opts.dt != null && !final) v.budget -= cps(chunk);
     }
