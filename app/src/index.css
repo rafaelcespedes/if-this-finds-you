@@ -391,3 +391,35 @@ textarea {
   :root { --site-head: 0px; --site-head-clear: 0px; }
 }
 html { scroll-padding-top: var(--site-head-clear); }
+
+/* ---------- the place you're in (SiteHeader's [aria-current]): quiet, no underline. ?navsel=1|2|3 to compare ----------
+   1 (default) its words in the look's red (--site-here: Rubric's vermilion; the Reading Room's archival red);
+   2 a soft tint of that red behind them (8 %, no edge, the controls' radius), the words in it;
+   3 the place you're in in full ink, the others (and My letters) quieter at 68 % (the least that keeps them at
+     4.5:1 on the room and the desk).
+   A letter's page marks All letters the same way (aria-current="true"). In forced colours the words are underlined. */
+:root { --site-here: var(--mark); }
+html [data-site-header][data-navsel='1'] [data-site-link][aria-current],
+html [data-site-menu][data-navsel='1'] [data-site-link][aria-current],
+html [data-site-header][data-navsel='2'] [data-site-link][aria-current],
+html [data-site-menu][data-navsel='2'] [data-site-link][aria-current] {
+  color: var(--site-here);
+}
+html [data-site-header][data-navsel='2'] [data-site-link][aria-current] {
+  background: color-mix(in oklab, var(--site-here) 8%, transparent);
+  border-radius: var(--radius);
+}
+html [data-site-menu][data-navsel='2'] [data-site-link][aria-current] {
+  background: color-mix(in oklab, var(--site-here) 8%, transparent);
+}
+html [data-site-header][data-navsel='3'] :is([data-site-link]:not([aria-current]), [data-site-kept]),
+html [data-site-menu][data-navsel='3'] [data-site-link]:not([aria-current]) {
+  color: color-mix(in oklab, var(--foreground) 68%, transparent);
+}
+html [data-site-header][data-navsel='3'] [data-site-link][aria-current],
+html [data-site-menu][data-navsel='3'] [data-site-link][aria-current] {
+  color: var(--foreground);
+}
+@media (forced-colors: active) {
+  [data-site-link][aria-current] [data-site-words] { text-decoration: underline; text-underline-offset: 4px; }
+}

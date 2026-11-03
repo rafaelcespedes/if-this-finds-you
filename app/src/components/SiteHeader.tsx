@@ -56,8 +56,21 @@ const CHIP = 32;
 // a place in the header: a big enough target without making the line taller
 const link =
   "pointer-events-auto relative inline-flex shrink-0 items-baseline gap-1 rounded-[3px] px-1.5 py-0.5 font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground";
-// the place you're in: a short rule under its words (Rubric's vermilion, one of the few marks that guide the eye)
-const mark = "relative before:pointer-events-none before:absolute before:inset-x-0 before:bottom-px before:h-[1.5px] before:bg-[var(--mark)] before:content-[''] forced-colors:before:bg-[CanvasText]";
+/**
+ * How the place you're in shows (index.css): 1 its words in the look's red (the default), 2 a soft tint of it behind
+ * them, 3 full ink with the other places quieter. ?navsel=1|2|3 to compare; kept for the tab, as ?look= is.
+ */
+export type NavSel = '1' | '2' | '3';
+function readNavSel(): NavSel {
+  try {
+    const asked = new URLSearchParams(location.search).get('navsel');
+    if (asked === '1' || asked === '2' || asked === '3') { sessionStorage.setItem('seedhand:navsel', asked); return asked; }
+    const kept = sessionStorage.getItem('seedhand:navsel');
+    if (kept === '1' || kept === '2' || kept === '3') return kept;
+  } catch { /* storage off: the default */ }
+  return '1';
+}
+export const NAV_SEL: NavSel = typeof location !== 'undefined' ? readNavSel() : '1';
 // a piece that isn't shown right now: still laid out (so it can be measured), out of sight and out of reach
 const away = 'invisible absolute top-0 right-0';
 
@@ -79,6 +92,7 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
     <header
       ref={m.headerRef}
       data-site-header
+      data-navsel={NAV_SEL}
       style={beside ? { ...style, ['--site-beside' as string]: beside } : style}
       className={cn(
         // over the page, clear of a notch or camera island (the phone sideways too); only its links take clicks, so
@@ -242,7 +256,7 @@ function PlaceLink({ place, current, inside, href, className }: {
   className: string;
 }) {
   const at = current === place.id;
-  const words = <span data-site-words className={cn(at && mark)}>{place.label}</span>;
+  const words = <span data-site-words>{place.label}</span>;
   if (at && !inside) return <span data-site-link aria-current="page" className={cn(className, 'cursor-default text-foreground')}>{words}</span>;
   return (
     <a data-site-link href={href ?? withLogo(place.href)} aria-current={at ? 'true' : undefined} className={cn(className, at && 'text-foreground')}>
@@ -361,7 +375,7 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
       }
     >
       {(close) => (
-        <div ref={body} data-site-menu className={cn('grid', sheets && 'pb-1')}>
+        <div ref={body} data-site-menu data-navsel={NAV_SEL} className={cn('grid', sheets && 'pb-1')}>
           <nav aria-label="Site">
             <ul className="grid">
               {PLACES.map((p) => (
