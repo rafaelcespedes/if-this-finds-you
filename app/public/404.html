@@ -40,35 +40,43 @@
       header img { display: block; height: 21px; width: auto; }
       main { display: grid; place-items: center; padding: 24px 0 12vh; }
       .sheet {
+        position: relative;
         width: min(420px, 100%);
         background: var(--paper);
         border: 1px solid var(--hairline);
         border-radius: 2px;
-        box-shadow: 0 0.5px 0 rgba(30, 39, 51, 0.1), 0 1px 2px rgba(30, 39, 51, 0.08), 0 26px 44px -24px rgba(30, 39, 51, 0.28);
+        /* flat on the desk, like the letters (no shadow) */
         /* a catalogue card's ruled lines */
         background-image: repeating-linear-gradient(to bottom, transparent 0 calc(1.55em - 1px), color-mix(in oklab, #1e2733 7%, transparent) calc(1.55em - 1px) 1.55em);
         background-position: 0 4.2rem;
-        padding: 36px 32px 32px;
+        padding: 30px 32px 44px;
       }
-      .mark { color: var(--mark); font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 10px; font-variant-numeric: lining-nums; }
+      /* the rod hole every catalogue card has at its foot */
+      .sheet::after {
+        content: ''; position: absolute; left: 50%; bottom: 12px; width: 9px; height: 9px; margin-left: -4.5px;
+        border-radius: 50%; background: var(--desk); box-shadow: inset 0 1px 1.5px rgba(30, 39, 51, 0.35);
+      }
+      .mark { color: var(--mark); font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid color-mix(in oklab, #9b3b2a 55%, transparent); font-variant-numeric: lining-nums; }
       h1 { font-size: 1.625rem; line-height: 1.2; font-weight: 500; margin: 0; text-wrap: balance; }
       p { margin: 10px 0 0; color: var(--muted); max-width: 34ch; }
       .ways { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
+      /* the main action in archival red words, as everywhere in the room */
       .button {
-        display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 2px;
-        background: var(--ink); color: #f3eee1; text-decoration: none; font-weight: 500; letter-spacing: 0.01em;
-        transition: background-color 150ms ease-out;
+        display: inline-flex; align-items: center; min-height: 44px; padding: 0;
+        color: var(--mark); font-weight: 600; font-size: 1.0625rem;
+        text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 4px;
+        transition: color 150ms ease-out, text-decoration-color 150ms ease-out;
       }
-      .button:active { background: #10161f; }
+      .button:active { transform: translateY(0.5px); }
       .link { color: var(--text); font-weight: 500; text-decoration: underline; text-decoration-color: var(--rule-link); text-underline-offset: 3px; padding: 10px 0; }
-      a:focus-visible { outline: 2px solid var(--mark); outline-offset: 3px; }
+      a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
       @media (hover: hover) and (pointer: fine) {
-        .button:hover { background: var(--ink-soft); }
+        .button:hover { color: #7e2f21; text-decoration-color: currentColor; }
         .link:hover { text-decoration-color: var(--text); }
       }
       @media (forced-colors: active) {
         .sheet { border-color: CanvasText; }
-        .button { border: 1px solid ButtonText; }
+        .button { color: LinkText; }
       }
     </style>
   </head>
