@@ -54,7 +54,7 @@ export function CatalogueCard({ record: r, hand, handName, actions, titleAs = 'h
   ];
   if (r.to) rows.push(['To', r.to]);
   if (r.where) rows.push(['Where', r.where]);
-  if (r.year != null) rows.push(['When', <><span className="rr-figures">{r.year}</span>{r.dateNote && <span className="rr-sub">{r.dateNote}</span>}</>]);
+  if (r.year != null) rows.push(['When', <><span>{r.year}</span>{r.dateNote && <span className="rr-sub">{r.dateNote}</span>}</>]);
   rows.push(['Language', r.language]);
   if (r.translator) rows.push(['Translated by', r.translator.url ? <a href={r.translator.url} target="_blank" rel="noreferrer" className="rr-link">{r.translator.name}</a> : r.translator.name]);
   rows.push(['Status', <><span className={cn(r.lost && 'rr-red')}>{r.status}</span>{statusRef}</>]);
@@ -65,7 +65,7 @@ export function CatalogueCard({ record: r, hand, handName, actions, titleAs = 'h
     <section aria-labelledby={`${id}-t`} className={cn('rr-card', slip && 'rr-card--slip', className)}>
       <div className="rr-card-head">
         <p className="rr-card-no">
-          {r.no != null ? <><span className="rr-sc">No.</span> <span className="rr-figures">{callNo(r.no)}</span><span className="sr-only">, in the collection</span></> : <span className="rr-sc">In the collection</span>}
+          {r.no != null ? <><span className="rr-sc">No.</span> {callNo(r.no)}<span className="sr-only">, in the collection</span></> : <span className="rr-sc">In the collection</span>}
         </p>
         {actions && <div className="rr-card-actions">{actions}</div>}
       </div>

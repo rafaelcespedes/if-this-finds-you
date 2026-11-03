@@ -14,7 +14,7 @@ export function FindingAid({ letters }: { letters: ArchiveLetter[] }) {
   if (!facts) return null;
   return (
     <p className="rr-aid">
-      <span className="rr-figures">{facts.n}</span> letters <span aria-hidden>·</span> <span className="rr-figures">{facts.from}</span> to <span className="rr-figures">{facts.to}</span> <span aria-hidden>·</span> <span className="rr-figures">{facts.langs}</span> languages
+      {facts.n} letters <span aria-hidden>·</span> {facts.from} to {facts.to} <span aria-hidden>·</span> {facts.langs} languages
     </p>
   );
 }
