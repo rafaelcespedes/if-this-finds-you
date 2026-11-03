@@ -8,8 +8,8 @@
 //   - InkSession: the live sheet while someone writes (main thread, like the live page): edits go through
 //     plan(), a ~130 ms tick runs penStep(), the textarea shows viewText()
 //   - inkLive(): the sheet's page as a Live (one sheet), so LiveSheets, the caret geometry and the JPEG draw it
-//   - inkExtras(): what runs don't carry: correction marks, and the faint "thought" letters the pen hasn't
-//     reached yet
+//   - inkExtras(): what runs don't carry: the faint "thought" letters the pen hasn't reached yet (and, from
+//     engines that keep marks outside runs, correction marks)
 //   - writeInk(): the same page written in the worker from the log (looks change there, and are prefetched)
 import * as E from '@engine';
 import { UPM, type Hand } from '@engine';
@@ -83,14 +83,18 @@ function itemContours(it: any): number[][][] {
 }
 
 /**
- * Extra ink on the ink page: correction marks (they aren't in runs), the thought letters the pen hasn't
+ * Extra ink on the ink page: correction marks not in a run (older engines), the thought letters the pen hasn't
  * reached yet (faint graphite, where they'll be written), and the signature.
  */
 export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerName: string }): string[] {
   const sc = live.emPx / UPM;
   let out = '';
-  for (const it of live.page.items as any[]) {
-    if (it.kind !== 'mark') continue;
+  // newer engines put each correction mark in a run of its own (LiveSheets draws and inks it with the
+  // words); only marks outside every run are drawn here, flat
+  const inRun = new Set<number>();
+  for (const r of (live.page.runs ?? []) as any[]) for (let i = r.from; i < r.to; i++) inRun.add(i);
+  for (const [i, it] of (live.page.items as any[]).entries()) {
+    if (it.kind !== 'mark' || inRun.has(i)) continue;
     const cs = itemContours(it);
     if (cs.length) out += `<path data-key="${String(it.key).replace(/"/g, '')}" d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
   }

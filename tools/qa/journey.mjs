@@ -72,6 +72,63 @@ for (const [i, s] of seeds.entries()) {
     }
   }
 }
+// The app's render path (live sheets: page.runs drawn with renderRun, inked by createPen + paintPen):
+// every correction must leave visible ink there. A bug-only guard (missing ink), not a taste check.
+//   - every mark item sits in a run, and renderRun draws a keyed, non-empty path for each of its strokes
+//   - every fix leaves its ink: a strike or scribble for struck words, a caret for a forgotten word, a
+//     letter written over for an overwrite (in a run too)
+//   - the pen inks every mark stroke, and a strike only once the word it crosses out is written
+let markChecks = 0;
+for (const [i, s] of seeds.slice(0, 24).entries()) {
+  const style = i % 2 ? 'print' : 'script';
+  const p = E.makeHand(s, style);
+  for (const text of [LETTER, TEXTS[1]]) {
+    const j = E.writeWithJourney(p, text, OPTS, { amount: 1 });
+    const pg = j.page;
+    const runOf = new Map();
+    for (const r of pg.runs || []) for (let k = r.from; k < r.to; k++) runOf.set(k, r);
+    pg.items.forEach((it, k) => {
+      if (it.kind !== 'mark' && it.role !== 'over') return;
+      markChecks++;
+      const r = runOf.get(k);
+      if (!r) { fail(`${s}/${style}: ${it.kind === 'mark' ? it.mark : 'overwrite'} ${it.key} is in no run (the app's live sheets would never draw it)`); return; }
+      const svg = E.renderRun(p, pg, r, { emPx: 40, strokeKeys: true });
+      const drawn = (svg.match(new RegExp(`data-s="${it.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}#\\d+"`, 'g')) || []).length;
+      if (drawn < it.g.strokes.length || !/ d="M/.test(svg)) fail(`${s}/${style}: ${it.key} drew ${drawn}/${it.g.strokes.length} strokes in renderRun`);
+    });
+    j.fixes.forEach((f, n) => {
+      const mine = pg.items.filter((it) => it.fix === n);
+      const want = f.type === 'omit' ? (it) => it.mark === 'caret' : f.how === 'over' ? (it) => it.role === 'over' : (it) => it.mark === 'strike' || it.mark === 'scribble';
+      if (!mine.some(want)) fail(`${s}/${style}: fix ${n} (${f.type}/${f.how} "${f.wrote}") left no ${f.type === 'omit' ? 'caret' : f.how === 'over' ? 'overwrite' : 'strike'} on the page`);
+    });
+    // the pen, as the app runs it: it inks every mark stroke, and a strike after its word
+    const pen = E.createPen({ hold: 'word', fast: 12, reducedMotion: false });
+    pen.sync(pg, 0);
+    const first = new Map(), done = new Map();
+    const strokes = pg.items.filter((it) => it.kind === 'glyph' || it.kind === 'mark').flatMap((it) => it.g.strokes.map((_, si) => [it.key, si]));
+    for (let t = 0.05; t < 400 && done.size < strokes.length; t += 0.05) {
+      const st = pen.at(t);
+      for (const [key, si] of strokes) {
+        const v = st.ink(key, si), id = key + '#' + si;
+        if (v > 0 && !first.has(id)) first.set(id, t);
+        if (v >= 1 && !done.has(id)) done.set(id, t);
+      }
+      if (!st.busy && !st.writing) break;
+    }
+    for (const it of pg.items) {
+      if (it.kind !== 'mark') continue;
+      it.g.strokes.forEach((_, si) => { if (!done.has(it.key + '#' + si)) fail(`${s}/${style}: the pen never inks ${it.mark} ${it.key} stroke ${si}`); });
+      if ((it.mark === 'strike' || it.mark === 'scribble') && it.fix != null) {
+        const struck = pg.items.filter((x) => x.fix === it.fix && x.role === 'struck' && x.kind === 'glyph');
+        const t0 = first.get(it.key + '#0');
+        const last = Math.max(...struck.flatMap((x) => x.g.strokes.map((_, si) => done.get(x.key + '#' + si) || 0)));
+        if (t0 != null && struck.length && t0 < last - 1e-9) fail(`${s}/${style}: ${it.key} is struck before its word is written (${t0.toFixed(2)} s < ${last.toFixed(2)} s)`);
+      }
+    }
+  }
+}
+console.log(`  app render path: ${markChecks} marks and overwrites drawn in runs and inked by the pen`);
+
 // more amount only adds mistakes
 for (const [i, s] of seeds.slice(0, 30).entries()) {
   const p = E.makeHand(s, i % 2 ? 'print' : 'script');
