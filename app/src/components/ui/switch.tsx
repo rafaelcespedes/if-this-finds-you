@@ -1,17 +1,16 @@
 // The tool's on/off switch (with its plain label, an optional hint and an ⓘ tip), as the panel draws it. Shared by the
-// tool's panel and the Fonts page, so both look and behave the same. Controls research #4 (?controls=4) shows the two
-// states as words instead.
+// tool's panel and the Fonts page, so both look and behave the same. Given `words`, the two states are named instead
+// ("Neat only | Any hand"): you read the state rather than decode a switch.
 import { useId, useState } from 'react';
 import { Info } from 'lucide-react';
-import { hasControl } from '@/controls-lab';
 import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 /** An on/off switch with a plain label. */
 export function Switch({ label, hint, tip, checked, onChange, words: say }: { label: string; hint?: string; tip?: string; checked: boolean; onChange: (v: boolean) => void; words?: [string, string] }) {
-  // controls research #4: the two states as words, one face sliding between them
-  if (say && hasControl(4)) return <WordToggle label={label} tip={tip} say={say} checked={checked} onChange={onChange} />;
+  // the two states as words, one face sliding between them
+  if (say) return <WordToggle label={label} tip={tip} say={say} checked={checked} onChange={onChange} />;
   const id = useId();
   const tipId = useId();
   return (
@@ -54,7 +53,7 @@ export function WordToggle({ label, tip, say, checked, onChange }: { label: stri
         {name}
         {tip && <InfoTip id={tipId} text={tip} />}
       </span>
-      <Segmented type="single" aria-label={label} data-lab-words="" value={checked ? 'on' : 'off'} onValueChange={(v) => v && onChange(v === 'on')} className="w-[176px]">
+      <Segmented slide type="single" aria-label={label} data-words="" value={checked ? 'on' : 'off'} onValueChange={(v) => v && onChange(v === 'on')} className="w-[176px]">
         <SegmentedItem value="on">{say[0]}</SegmentedItem>
         <SegmentedItem value="off">{say[1]}</SegmentedItem>
       </Segmented>

@@ -1,4 +1,5 @@
-/* Reading Room colour pass (Nov 2026): three tuned sets of surface and control colours, ?rrcolor=1…3 (rr-color.ts).
+/* Reading Room colour pass (Nov 2026): three tuned sets of surface and control colours. Set 1, Ruled, is the default
+   (4 Nov); ?rrcolor=2 and 3 compare the others and ?rrcolor=0 shows the colours before the pass (rr-color.ts).
    Today the controls are filled with a buff (#e9e2d2) that sits at the room's own lightness: on the grey room they
    read as muddy patches (1.01:1) and on the buff phone sheet they almost vanish (1.11:1); the slider's empty track is
    2.7:1 on the room. Each set below is a full token ladder, room → surface → control → chosen, with the same
@@ -14,7 +15,7 @@
    --rc-ctl-on      a chosen control's face (with a 1.5px ledger-ink rule)
    --rc-track       a slider's empty track, a switch that's off (3:1 or more on every surface) */
 
-html[data-look='reading-room'][data-rrcolor] {
+html[data-look='reading-room']:not([data-rrcolor='0']) {
   --desk: var(--rc-room);
   --rr-room: var(--rc-room);
   --rr-slip: var(--rc-surface-2);
@@ -31,14 +32,14 @@ html[data-look='reading-room'][data-rrcolor] {
   --lib-menu-surface: var(--rc-surface-2);
 }
 /* the phone's control sheet and the writing tray: surface 1 */
-html[data-look='reading-room'][data-rrcolor] :is(.control-sheet, .sheet-surface) {
+html[data-look='reading-room']:not([data-rrcolor='0']) :is(.control-sheet, .sheet-surface) {
   background: var(--rc-surface-1);
 }
-html[data-look='reading-room'][data-rrcolor] :is(.sheet-surface, .control-sheet) .sheet-row:active {
+html[data-look='reading-room']:not([data-rrcolor='0']) :is(.sheet-surface, .control-sheet) .sheet-row:active {
   background: var(--rc-ctl-press);
 }
 /* the controls you operate: fills, edges, the held-down state */
-html[data-look='reading-room'][data-rrcolor] :is(
+html[data-look='reading-room']:not([data-rrcolor='0']) :is(
     [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
     [role='radiogroup']:is([aria-label='Pen'], [aria-label='School']) > button,
     [data-slot='button'].bg-secondary
@@ -47,7 +48,7 @@ html[data-look='reading-room'][data-rrcolor] :is(
   box-shadow: inset 0 0 0 1px var(--rc-ctl-edge);
 }
 @media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'][data-rrcolor] :is(
+  html[data-look='reading-room']:not([data-rrcolor='0']) :is(
       [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
       [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
       [data-slot='button'].bg-secondary
@@ -55,7 +56,7 @@ html[data-look='reading-room'][data-rrcolor] :is(
     background-color: var(--rc-ctl-hover);
   }
 }
-html[data-look='reading-room'][data-rrcolor] :is(
+html[data-look='reading-room']:not([data-rrcolor='0']) :is(
     [data-slot='segmented'] > [data-slot='segmented-item'],
     [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
     [data-slot='button'].bg-secondary
@@ -63,24 +64,25 @@ html[data-look='reading-room'][data-rrcolor] :is(
   background-color: var(--rc-ctl-press);
 }
 /* Print / Joined: its track is a control at rest, its chosen half the chosen face */
-html[data-look='reading-room'][data-rrcolor] [data-slot='segmented']:not(.bg-transparent):not([aria-label='Ink']):not([aria-label='Paper']):not([aria-label^='Kind of']) {
+html[data-look='reading-room']:not([data-rrcolor='0']) [data-slot='segmented']:not(.bg-transparent):not([aria-label='Ink']):not([aria-label='Paper']):not([aria-label^='Kind of']) {
   background-color: var(--rc-ctl);
   box-shadow: inset 0 0 0 1px var(--rc-ctl-edge);
 }
-html[data-look='reading-room'][data-rrcolor] [data-slot='segmented'] > [data-slot='segmented-item'][data-state='on'] {
+html[data-look='reading-room']:not([data-rrcolor='0']) [data-slot='segmented'] > [data-slot='segmented-item'][data-state='on'] {
   background-color: var(--rc-ctl-on);
   box-shadow: 0 0 0 1px var(--rr-ink);
 }
-/* a slider's empty track and the switch at rest */
-html[data-look='reading-room'][data-rrcolor] [data-slot='slider'] > span:first-child {
-  background-color: var(--rc-track);
+/* the ink-bar slider (ui/controls.css): the bar is a control at rest, with its edge; the switch at rest */
+html[data-look='reading-room']:not([data-rrcolor='0']) [data-slot='slider'] > span:first-child {
+  background-color: var(--rc-ctl) !important;
+  box-shadow: inset 0 0 0 1px var(--rc-ctl-edge);
 }
-html[data-look='reading-room'][data-rrcolor] [role='switch'][aria-checked='false'] {
+html[data-look='reading-room']:not([data-rrcolor='0']) [role='switch'][aria-checked='false'] {
   background-color: var(--rc-track-soft);
   box-shadow: inset 0 0 0 1.5px var(--rc-track);
 }
 /* the Fonts page's chips */
-html[data-look='reading-room'][data-rrcolor] {
+html[data-look='reading-room']:not([data-rrcolor='0']) {
   --fonts-chip-bg: var(--rc-ctl);
 }
 
@@ -88,7 +90,9 @@ html[data-look='reading-room'][data-rrcolor] {
    1 · Ruled. Controls are drawn, not filled: a hairline of ledger ink around each, the room showing through.
    Hover lays a faint ink wash; held down, a deeper one; chosen, the paper-white face with an ink rule.
    This is what the stylesheet already says it wants ("hairline tiles, square corners, ink for what's chosen").
+   The default.
    ====================================================================================== */
+html[data-look='reading-room']:not([data-rrcolor]),
 html[data-look='reading-room'][data-rrcolor='1'] {
   --rc-room: #e6e4de;
   --rc-surface-1: #f3eee1; /* card buff, as today */
@@ -148,4 +152,13 @@ html[data-look='reading-room'][data-rrcolor='3'] .rr-drawer.is-open {
   left: -14px;
   right: -14px;
   padding-inline: 13px;
+}
+
+/* the sliding face (ui/toggle-group.tsx) in the room: the chosen face, ruled in ink like every chosen control */
+html[data-look='reading-room']:not([data-rrcolor='0']) [data-slot='segmented'][data-slide] > .seg-face {
+  background: var(--rc-ctl-on);
+  box-shadow: 0 0 0 1px var(--rr-ink);
+}
+html[data-look='reading-room']:not([data-rrcolor='0']) [data-slot='segmented'][data-slide][aria-label^='Kind of'] > .seg-face {
+  box-shadow: 0 0 0 1.5px var(--rr-ink);
 }

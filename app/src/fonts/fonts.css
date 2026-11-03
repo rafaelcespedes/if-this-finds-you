@@ -299,7 +299,7 @@ html[data-look='reading-room'] .specimen-bar-wrap {
 html[data-look='reading-room'] .specimen-bar {
   column-gap: 1.75rem;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--rr-ink, var(--fonts-rule));
+  border-bottom: 1px solid var(--rr-hair, var(--fonts-rule));
 }
 /* what every hand writes: a small-capital word with its chevron */
 html[data-look='reading-room'] .specimen-bar [data-slot='button'][aria-haspopup] {

@@ -5,7 +5,6 @@
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useDeferredValue, useEffect, useId, useRef, useState } from 'react';
 import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
-import { hasControl } from '@/controls-lab';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
 import { Segmented, SegmentedChip, SegmentedItem } from '@/components/ui/toggle-group';
@@ -393,7 +392,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
 }
 
 function lockFor(props: PanelProps, key: LockKey) {
-  if (!hasControl(5) || !props.onLock) return undefined;
+  if (!props.onLock) return undefined;
   const on = props.locks.has(key);
   return { on, toggle: () => props.onLock!(key, !on) };
 }
@@ -626,6 +625,7 @@ function PaperVariants({ value, onChange }: { value: PaperId; onChange: (id: Pap
   if (variants.length < 2) return null;
   return (
     <Segmented
+      slide
       type="single"
       aria-label={`Kind of ${getPaper(value).name.toLowerCase()}`}
       value={getPaper(value).id}

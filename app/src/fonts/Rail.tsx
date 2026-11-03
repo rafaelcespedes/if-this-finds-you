@@ -27,7 +27,7 @@ export function FontsRail(p: Props) {
   return (
     <aside aria-label="Choose the fonts" className="font-rail panel-scroll">
       <Group label="Show" first>
-        <Segmented type="single" aria-label="Joined or print" value={p.view === 'saved' ? '' : family}
+        <Segmented slide type="single" aria-label="Joined or print" value={p.view === 'saved' ? '' : family}
           onValueChange={(v) => {
             if (!v) return;
             const fam = v === 'any' ? '' : v;

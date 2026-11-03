@@ -206,7 +206,7 @@ export function FontsDock(p: Props) {
             >
               {(close) => <FilterPanel {...p} onDone={close} sheet={sheets} />}
             </Sheet>
-            <Segmented type="single" aria-label="Joined or print" value={p.filters.family[0] ?? 'any'}
+            <Segmented slide type="single" aria-label="Joined or print" value={p.filters.family[0] ?? 'any'}
               onValueChange={(v) => {
                 if (!v) return;
                 const fam = v === 'any' ? '' : v;

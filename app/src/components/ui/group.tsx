@@ -17,7 +17,7 @@ export function Group({ label, value, aside, children, className, first, lock }:
           {label}
           {value && <span className="truncate font-normal text-muted-foreground"><span className="sr-only">: </span>{value}</span>}
           {lock && (
-            <button type="button" aria-pressed={lock.on} aria-label={`Keep this ${label.toLowerCase()} when finding another`} onClick={lock.toggle} data-lab-lock="" className="lab-lock relative -my-1 grid size-6 shrink-0 place-items-center self-center rounded-[4px] after:absolute after:-inset-2 after:content-['']">
+            <button type="button" aria-pressed={lock.on} aria-label={`Keep this ${label.toLowerCase()} when finding another`} onClick={lock.toggle} data-lock="" className="group-lock relative -my-1 grid size-6 shrink-0 place-items-center self-center rounded-[4px] after:absolute after:-inset-2 after:content-['']">
               <Pad aria-hidden className="size-[13px]" strokeWidth={2} />
             </button>
           )}
