@@ -3,7 +3,8 @@
 _Set up 2026-11-03._ How people move around the site, in the same words and the same places on every page. Every
 page draws its header with one component, `app/src/components/SiteHeader.tsx`; the names, order and addresses come
 from `app/src/lib/places.ts`. Change them there, never in a page. The 404 page can't run app code, so it carries a
-hand-made copy (`app/public/404.html`); keep it in step.
+hand-made copy (`app/public/404.html`, the Reading Room by default and the earlier design under `?look=classic`); keep
+it in step: the label small caps (0.8125rem, 0.05em), the wordmark in ink at 85% sized in rem, the boxless Menu chip.
 
 ## The places
 

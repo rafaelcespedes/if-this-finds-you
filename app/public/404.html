@@ -12,6 +12,17 @@
     <!-- An address that isn't here: the site's own page, in the Reading Room (the room, an index card, ledger ink),
          and the two ways on. Self-contained on purpose: no app code, so it shows even when the rest of the site
          can't load. -->
+    <script>
+      // the look this tab is in, as the app keeps it (src/lib/look.ts): ?look=classic, or one kept for the tab, shows
+      // the earlier design; anything else stays in the Reading Room this page starts in
+      try {
+        var asked = (new URLSearchParams(location.search).get('look') || sessionStorage.getItem('seedhand:look') || '').toLowerCase();
+        if (/^(classic|original|before|today|current)$/.test(asked)) {
+          document.documentElement.dataset.look = 'classic';
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#eeeae2');
+        }
+      } catch (e) { /* storage off: the Reading Room */ }
+    </script>
     <style>
       :root {
         --desk: #e6e4de; /* the room */
@@ -37,23 +48,30 @@
         padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
       }
       /* the site's header, as every page has it (components/SiteHeader.tsx, docs/NAVIGATION.md): the wordmark, then
-         the three places in the same words and order (the room's small capitals); on phones a Menu chip opens
-         them. It can't share the app's code, so keep it in step by hand. */
+         the places in the same words and order (the room's label small capitals: 0.8125rem, 0.05em); on phones a
+         boxless Menu chip opens them. It can't share the app's code, so keep it in step by hand. */
       /* the running head: one hairline under the wordmark and the places */
       header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; padding-bottom: 8px; border-bottom: 1px solid color-mix(in oklab, var(--text) 22%, transparent); }
       header a { border-radius: 3px; }
       .logo { display: flex; align-items: center; height: 32px; margin: 0 -4px; padding: 0 4px; }
-      .logo img { display: block; height: 21px; width: auto; }
+      /* the wordmark in ink at 85%, as the app draws it (its SVG takes the text colour); in rem, so it grows with the
+         reader's text size */
+      .wordmark {
+        display: block; height: 1.3125rem; aspect-ratio: 708.4 / 97.5; background: color-mix(in oklab, var(--text) 85%, transparent);
+        -webkit-mask: url(/brand/wordmark-5.svg) center / contain no-repeat; mask: url(/brand/wordmark-5.svg) center / contain no-repeat;
+      }
       .places { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
       .places a {
         position: relative; display: inline-block; padding: 2px 6px; color: var(--text); text-decoration: none;
-        font-size: 0.875rem; font-weight: 400; letter-spacing: 0.05em; text-transform: lowercase; font-variant-caps: small-caps;
+        font-size: 0.8125rem; font-weight: 400; letter-spacing: 0.05em; font-variant-caps: all-small-caps;
       }
+      /* the last place's ink ends where the rule ends */
+      header > nav .places li:last-child { margin-right: -6px; }
       .places a::after { content: ''; position: absolute; inset: -12px -4px; }
       .menu { display: none; position: relative; }
       .menu summary {
         position: relative; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 3px; cursor: pointer;
-        list-style: none; border: 1px solid var(--hairline); background: var(--paper); color: var(--text);
+        list-style: none; border: 1px solid transparent; background: transparent; color: var(--text);
       }
       .menu summary::-webkit-details-marker { display: none; }
       .menu summary::after { content: ''; position: absolute; inset: -6px; }
@@ -76,7 +94,7 @@
         body { padding-top: max(20px, env(safe-area-inset-top)); padding-left: max(40px, env(safe-area-inset-left)); padding-right: max(40px, env(safe-area-inset-right)); }
         header { min-height: 36px; }
         .logo { height: 36px; }
-        .logo img { height: 22px; }
+        .wordmark { height: 1.375rem; }
       }
       main { display: grid; place-items: center; padding: 24px 0 12vh; }
       .sheet {
@@ -119,12 +137,36 @@
         .sheet { border-color: CanvasText; }
         .button { color: LinkText; }
         .menu summary { border-color: ButtonText; }
+        .wordmark { background: CanvasText; forced-color-adjust: none; }
+      }
+      /* ---------- the earlier design (?look=classic): Rubric on the desk, the plain header ---------- */
+      html[data-look='classic'] {
+        --desk: #eeeae2; --paper: #fffdf8; --text: #1e1a16; --muted: #675e54; --hairline: #dcd3c4;
+        --ink: #1e1a16; --ink-soft: #3a322b; --mark: #b0341c; --rule-link: #cbc1b1;
+      }
+      html[data-look='classic'] body { font: 15px/1.55 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      html[data-look='classic'] header { border-bottom: 0; padding-bottom: 0; }
+      html[data-look='classic'] .places a { font-size: 0.78125rem; font-weight: 500; letter-spacing: 0; font-variant-caps: normal; color: color-mix(in oklab, var(--text) 80%, transparent); }
+      html[data-look='classic'] .menu[open] .places a { font-size: 15px; color: var(--text); }
+      html[data-look='classic'] .menu summary { border-color: color-mix(in oklab, var(--text) 14%, transparent); background: var(--paper); border-radius: 9px; box-shadow: 0 1px 2px rgba(60, 45, 20, 0.1); }
+      html[data-look='classic'] .menu[open] .places { border-top-color: var(--hairline); border-radius: 16px; box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 16px 40px -12px rgba(40, 30, 10, 0.35); }
+      html[data-look='classic'] .sheet { background-image: none; border-radius: 0; padding: 36px 32px 32px; box-shadow: 0 1px 2px rgba(60, 45, 20, 0.06), 0 18px 40px -22px rgba(60, 45, 20, 0.35); }
+      html[data-look='classic'] .sheet::after { content: none; }
+      html[data-look='classic'] .mark { font-size: 12px; padding-bottom: 0; border-bottom: 0; margin-bottom: 10px; }
+      html[data-look='classic'] h1 { font-size: 22px; line-height: 1.25; font-weight: 600; }
+      html[data-look='classic'] .button { padding: 0 18px; border-radius: 3px; background: var(--ink); color: #faf7f1; font-size: inherit; font-weight: 500; text-decoration: none; }
+      html[data-look='classic'] .link { font-size: inherit; font-weight: 500; }
+      html[data-look='classic'] :is(a, summary):focus-visible { outline-color: var(--mark); }
+      @media (hover: hover) and (pointer: fine) {
+        html[data-look='classic'] .button:hover { background: var(--ink-soft); color: #faf7f1; }
+        html[data-look='classic'] .places a:hover { background: none; color: var(--text); }
+        html[data-look='classic'] .menu summary:hover { background: #e6dfd2; }
       }
     </style>
   </head>
   <body>
     <header>
-      <a class="logo" href="/" aria-label="If This Finds You: write a letter"><img src="/brand/wordmark-5.svg" alt="If This Finds You" /></a>
+      <a class="logo" href="/" aria-label="If This Finds You: write a letter"><span class="wordmark" aria-hidden="true"></span></a>
       <nav aria-label="Site">
         <ul class="places">
           <li><a href="/">Write a letter</a></li>

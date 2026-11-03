@@ -142,7 +142,8 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
             <nav aria-label="Site">
               <ul className="flex items-center gap-x-1">
                 {PLACES.map((p) => (
-                  <li key={p.id} className="flex">
+                  // the last place's ink ends where the rule ends (its padding reaches past the edge)
+                  <li key={p.id} className="flex last:-mr-1.5">
                     <PlaceLink place={p} current={current} inside={inside} href={hrefs?.[p.id]} className={link} />
                   </li>
                 ))}
