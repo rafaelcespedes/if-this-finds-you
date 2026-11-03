@@ -43,5 +43,6 @@ export function Wordmark({ className }: { className?: string }) {
     }).catch(() => {});
   }, []);
   if (!svg) return <span className={cn('text-[0.8125rem] font-medium tracking-[-0.01em]', className)}>{APP_NAME}</span>;
-  return <span role="img" aria-label={APP_NAME} className={cn('block [&_svg]:block [&_svg]:h-full [&_svg]:w-auto', logoHeight, className)} dangerouslySetInnerHTML={{ __html: svg }} />;
+  // never wider than its slot: where the header has to shrink it, the drawing scales down within its height
+  return <span role="img" aria-label={APP_NAME} className={cn('block min-w-0 max-w-full [&_svg]:block [&_svg]:h-full [&_svg]:w-auto [&_svg]:max-w-full', logoHeight, className)} dangerouslySetInnerHTML={{ __html: svg }} />;
 }

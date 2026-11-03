@@ -391,6 +391,8 @@ textarea {
   :root { --site-head: 0px; --site-head-clear: 0px; }
 }
 html { scroll-padding-top: var(--site-head-clear); }
+/* a page's chip in the header (Share on the desk) gets the same 48 px target as the Menu chip beside it */
+[data-site-header] [data-site-action] [data-chip]::after { inset: -8px; }
 
 /* ---------- the place you're in (SiteHeader's [aria-current]): quiet, no underline. ?navsel=1|2|3 to compare ----------
    1 (default) its words in the look's red (--site-here: Rubric's vermilion; the Reading Room's archival red);

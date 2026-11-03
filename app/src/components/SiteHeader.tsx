@@ -48,9 +48,10 @@ type Props = {
   children?: ReactNode;
 };
 
-/** The phone header's small chips (Menu here, Share in the tool): drawn 32 px, still a 44 px target. */
+/** The phone header's small chips (Menu here, Share in the tool): drawn 32 px, a 48 px target (44 at the least
+ * beside another chip, 12 px away). */
 export const headerChip =
-  "pointer-events-auto relative grid size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent [&_svg]:size-[16px]";
+  "pointer-events-auto relative grid size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-colors duration-150 after:absolute after:-inset-2 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent [&_svg]:size-[16px]";
 const CHIP = 32;
 
 // a place in the header: a big enough target without making the line taller
@@ -122,14 +123,17 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
         )}
       >
         {beside && <span ref={m.besideRef} aria-hidden className="invisible absolute top-0 left-0 h-0" style={{ width: 'var(--site-beside)' }} />}
-        <div ref={m.logoRef} className="col-start-1 flex min-h-8 shrink-0 items-center justify-self-start lg:min-h-9">
+        {/* the wordmark keeps its size, unless the Menu alone doesn't fit beside it (a narrow phone with very large
+            text): then, and only then, it shrinks to the room left */}
+        <div ref={m.logoRef} className={cn('col-start-1 flex min-h-8 items-center justify-self-start lg:min-h-9', fit === 'E' ? 'min-w-0 shrink' : 'shrink-0')}>
           {onTool ? (
-            <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
+            <span className="flex h-8 min-w-0 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
           ) : (
             <a
               href={withLogo(TOOL_URL)}
               aria-label={`${APP_NAME}: write a letter`}
-              className="pointer-events-auto -mx-1 flex h-8 items-center rounded-[3px] px-1 text-foreground/85 transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring lg:h-9"
+              // a 48 px tall target around the 32 px line
+              className="pointer-events-auto relative -mx-1 flex h-8 min-w-0 items-center rounded-[3px] px-1 after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] text-foreground/85 transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring lg:h-9"
             >
               <Wordmark />
             </a>
@@ -148,7 +152,8 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
         <div
           inert={quiet || undefined}
           className={cn(
-            'flex min-h-8 min-w-0 shrink-0 items-center justify-end gap-x-2 transition-opacity duration-150 lg:min-h-9',
+            // 12 px between the page's action and the Menu, so their 48 px targets don't take from each other
+            'flex min-h-8 min-w-0 shrink-0 items-center justify-end gap-x-3 transition-opacity duration-150 lg:min-h-9',
             fit === 'A' ? 'col-[3/-1] justify-self-end' : middle === 'none' && 'ml-auto',
             quiet && 'opacity-0',
           )}
@@ -215,8 +220,10 @@ function useFits(outer: React.ForwardedRef<HTMLElement>, pieces: string) {
       const room = row.clientWidth;
       const g = px(getComputedStyle(row).columnGap);
       const w = (el: HTMLElement | null) => (el ? el.offsetWidth : 0);
-      // the wordmark with its link's negative margins (it reaches a little past its slot)
-      const logo = w(logoRef.current);
+      // the wordmark at its own size (it may be shrunk to fit right now): its drawing's height times its proportions
+      const svg = logoRef.current?.querySelector('svg');
+      const vb = svg?.viewBox.baseVal;
+      const logo = svg && vb && vb.height ? Math.max(w(logoRef.current), Math.ceil(svg.getBoundingClientRect().height * (vb.width / vb.height))) : w(logoRef.current);
       const beside = w(besideRef.current);
       const centre = w(centreRef.current);
       const action = actionRef.current;
