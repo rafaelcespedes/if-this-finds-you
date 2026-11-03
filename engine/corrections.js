@@ -397,7 +397,8 @@ export function writeWithJourney(p, text, layoutOpts = {}, opts = {}) {
 
   // ----- the log, replayed through Ink mode -----
   const { events, evFix, idFix } = inkLog(acts, wtext, wmap, fixes, dry);
-  const doc = { v: 1, ev: INK_VERSION, salt: 'journey:' + draft, hand: { seed: p.seed, style: p.style }, mode: 'ink', log: events };
+  // complete: a finished letter, laid out knowing what comes next (sheet.js passes layout `ahead`)
+  const doc = { v: 1, ev: INK_VERSION, salt: 'journey:' + draft, hand: { seed: p.seed, style: p.style }, mode: 'ink', complete: true, log: events };
   let st = replay(p, doc, layoutOpts);
   // a P.S. that would run off the page squeezes into the room left (layoutOpts.pageHeight, font units)
   const bottom = layoutOpts.pageHeight || opts.pageHeight;
