@@ -4,7 +4,7 @@
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
+import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Info, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
@@ -337,7 +337,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
         <div className="mt-3.5 grid gap-1.5">
           <Switch
             label="Neat hands only"
-            hint="Tidies messy hands a little, and Find another skips the hard-to-read ones"
+            tip="Tidies messy hands a little, and Find another skips the hard-to-read ones"
             checked={state.neatOnly}
             onChange={props.onNeatOnly}
           />
@@ -507,13 +507,17 @@ function writeOpen(v: boolean) {
 }
 
 /** An on/off switch with a plain label. */
-function Switch({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Switch({ label, hint, tip, checked, onChange }: { label: string; hint?: string; tip?: string; checked: boolean; onChange: (v: boolean) => void }) {
   const id = useId();
+  const tipId = useId();
   return (
     <div data-row className="flex items-center justify-between gap-3">
       <span className="grid">
-        {/* the words flip it too (a bigger target than the switch alone) */}
-        <span id={id} onClick={() => onChange(!checked)} className="cursor-pointer text-[13px] font-medium select-none">{label}</span>
+        <span className="flex items-center gap-1">
+          {/* the words flip it too (a bigger target than the switch alone) */}
+          <span id={id} onClick={() => onChange(!checked)} className="cursor-pointer text-[13px] font-medium select-none">{label}</span>
+          {tip && <InfoTip id={tipId} text={tip} />}
+        </span>
         {hint && <span className="text-[12px] text-muted-foreground">{hint}</span>}
       </span>
       <button
@@ -521,6 +525,7 @@ function Switch({ label, hint, checked, onChange }: { label: string; hint?: stri
         role="switch"
         aria-checked={checked}
         aria-labelledby={id}
+        aria-describedby={tip ? tipId : undefined}
         onClick={() => onChange(!checked)}
         className={cn(
           "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring after:absolute after:-inset-2 after:content-['']",
@@ -533,6 +538,26 @@ function Switch({ label, hint, checked, onChange }: { label: string; hint?: stri
         />
       </button>
     </div>
+  );
+}
+
+/** A small ⓘ beside a label: its explanation on hover or focus, and on a tap (phones). Never flips what it's next to. */
+function InfoTip({ id, text }: { id: string; text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="What this does"
+          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+          className="relative grid size-5 place-items-center rounded-full text-faint transition-colors duration-150 after:absolute after:-inset-2.5 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+        >
+          <Info aria-hidden className="size-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent id={id} className="max-w-[240px]">{text}</TooltipContent>
+    </Tooltip>
   );
 }
 
