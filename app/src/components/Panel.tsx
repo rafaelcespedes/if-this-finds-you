@@ -3,8 +3,8 @@
 //   the look       Paper, Pen, Ink, Handwriting, How they write (three sliders)
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
-import { memo, useEffect, useId, useState } from 'react';
-import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
+import { memo, useEffect, useId, useRef, useState } from 'react';
+import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Info, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ import { PENS_LIVE, PENS_SHOWN, penName } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
 import type { LockKey } from '@/lib/roll';
 import { AMOUNT_RANGE, SIZE_RANGE, type NoteState } from '@/lib/state';
-import { cn } from '@/lib/utils';
+import { cn, keepChosenInView } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 export interface PanelProps {
@@ -125,11 +125,11 @@ function WriterHeader(props: PanelProps) {
         </span>
         <ShareMenu {...props} size="lg" />
       </div>
-      <Button size="lg" className="mt-2 w-full justify-between pr-3 pl-3.5" onClick={onNewHand}>
+      <Button size="lg" className="mt-2 w-full justify-between pr-3 pl-3.5" onClick={onNewHand} aria-keyshortcuts="R">
         <span className="flex items-center gap-2">
           <Shuffle aria-hidden /> Find another
         </span>
-        <kbd className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
+        <kbd aria-hidden className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
       </Button>
       {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="mt-2.5" />}
     </section>
@@ -186,7 +186,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
                 <dd className="grid gap-1">
                   {sources.map((s) => (
                     <span key={s.name}>
-                      {branded(s.name)}. <span className="text-muted-foreground">{readerCredit(s.credit)}</span>
+                      {sourceLine(s.name, readerCredit(s.credit))}
                       {s.url && <> <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">Source</a></>}
                     </span>
                   ))}
@@ -337,7 +337,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
         <div className="mt-3.5 grid gap-1.5">
           <Switch
             label="Neat hands only"
-            hint="Tidies messy hands a little, and Find another skips the hard-to-read ones"
+            tip="Tidies messy hands a little, and Find another skips the hard-to-read ones"
             checked={state.neatOnly}
             onChange={props.onNeatOnly}
           />
@@ -383,6 +383,14 @@ function learnedFrom(style: string) {
   return `${card.title} (${fam.toLowerCase()})${card.sub ? `, ${card.sub}` : ''}`;
 }
 
+/** A source and its credit, without saying the title twice ("Spencer, Compendium…" then "Platt Rogers Spencer, Compendium…"). */
+function sourceLine(name: string, credit: string) {
+  const title = branded(name).replace(/\s*\([^)]*\)\s*$/, '');
+  const core = title.includes(', ') ? title.slice(title.indexOf(', ') + 2) : title;
+  if (core.length > 8 && credit.includes(core)) return <span className="text-muted-foreground">{credit}</span>;
+  return <>{branded(name)}. <span className="text-muted-foreground">{credit}</span></>;
+}
+
 /** A source credit for readers: the product's name, and the engine's notes to its own docs ("(hand-traditions.md §4)") stay out. */
 function readerCredit(credit: string) {
   return branded(credit).replace(/\s*\([^)]*\.md[^)]*\)/g, '');
@@ -396,7 +404,7 @@ function Group({ label, value, aside, children, className, first }: { label: str
       <div className="flex min-h-7 items-center justify-between gap-3">
         <h3 id={id} className="flex min-w-0 items-baseline gap-2 text-[13px] font-medium">
           {label}
-          {value && <span className="truncate font-normal text-muted-foreground">{value}</span>}
+          {value && <span className="truncate font-normal text-muted-foreground"><span className="sr-only">: </span>{value}</span>}
         </h3>
         {aside}
       </div>
@@ -499,12 +507,17 @@ function writeOpen(v: boolean) {
 }
 
 /** An on/off switch with a plain label. */
-function Switch({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Switch({ label, hint, tip, checked, onChange }: { label: string; hint?: string; tip?: string; checked: boolean; onChange: (v: boolean) => void }) {
   const id = useId();
+  const tipId = useId();
   return (
     <div data-row className="flex items-center justify-between gap-3">
       <span className="grid">
-        <span id={id} className="text-[13px] font-medium">{label}</span>
+        <span className="flex items-center gap-1">
+          {/* the words flip it too (a bigger target than the switch alone) */}
+          <span id={id} onClick={() => onChange(!checked)} className="cursor-pointer text-[13px] font-medium select-none">{label}</span>
+          {tip && <InfoTip id={tipId} text={tip} />}
+        </span>
         {hint && <span className="text-[12px] text-muted-foreground">{hint}</span>}
       </span>
       <button
@@ -512,6 +525,7 @@ function Switch({ label, hint, checked, onChange }: { label: string; hint?: stri
         role="switch"
         aria-checked={checked}
         aria-labelledby={id}
+        aria-describedby={tip ? tipId : undefined}
         onClick={() => onChange(!checked)}
         className={cn(
           "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring after:absolute after:-inset-2 after:content-['']",
@@ -524,6 +538,26 @@ function Switch({ label, hint, checked, onChange }: { label: string; hint?: stri
         />
       </button>
     </div>
+  );
+}
+
+/** A small ⓘ beside a label: its explanation on hover or focus, and on a tap (phones). Never flips what it's next to. */
+function InfoTip({ id, text }: { id: string; text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="What this does"
+          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+          className="relative grid size-5 place-items-center rounded-full text-faint transition-colors duration-150 after:absolute after:-inset-2.5 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+        >
+          <Info aria-hidden className="size-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent id={id} className="max-w-[240px]">{text}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -701,7 +735,7 @@ function PaperVariants({ value, onChange }: { value: PaperId; onChange: (id: Pap
             <SegmentedItem
               value={v.id}
               aria-label={`${v.variant}: ${v.hint}`}
-              className="h-7 rounded-full bg-secondary px-2.5 text-[12px] aria-checked:bg-[#fffefb] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-9 pointer-coarse:px-3"
+              className="h-7 rounded-full bg-secondary px-2.5 text-[12px] aria-checked:bg-[#fffefb] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-11 pointer-coarse:px-3.5"
             >
               {v.variant}
             </SegmentedItem>
@@ -714,7 +748,11 @@ function PaperVariants({ value, onChange }: { value: PaperId; onChange: (id: Pap
 }
 
 const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value: PaperId; onChange: (id: PaperId) => void; rows?: boolean }) {
+  // the chosen paper stays in view when it changes from elsewhere (Find another, a link)
+  const host = useRef<HTMLDivElement>(null);
+  useEffect(() => { requestAnimationFrame(() => keepChosenInView(host.current?.querySelector<HTMLElement>('.sheet-row') ?? null)); }, [value]);
   return (
+    <div ref={host} className="contents">
     <Segmented
       type="single"
       aria-label="Paper"
@@ -751,6 +789,7 @@ const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value
       ))}
       {rows && <span aria-hidden className="w-3 shrink-0" />}
     </Segmented>
+    </div>
   );
 });
 
@@ -761,7 +800,9 @@ const InkPicker = memo(function InkPicker({ value, pen, onChange }: { value: str
   // balanced rows: as few rows as fit, then the same number of swatches in each
   const coarse = useMediaQuery('(pointer: coarse)');
   const max = coarse ? 7 : 9;
-  const cols = Math.ceil(options.length / Math.ceil(options.length / max));
+  // laid out for every ink there could be (a pencil's graphite too), so changing pens never adds a row
+  const all = INK_FAMILIES.length + (MODELLED_INK ? 1 : 0);
+  const cols = Math.ceil(all / Math.ceil(all / max));
   return (
     <Segmented
       type="single"
@@ -783,7 +824,7 @@ const InkPicker = memo(function InkPicker({ value, pen, onChange }: { value: str
                 className="block size-[22px] rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-offset-2 ring-offset-panel transition-[box-shadow] duration-150 [[aria-checked=true]>&]:ring-[1.5px] [[aria-checked=true]>&]:ring-[var(--ink)]"
                 style={{
                   // flat colours, like the rest of the panel; the pen's own ink is two of its usual colours, split
-                  background: ink.color ?? 'linear-gradient(135deg, #263084 50%, #26262e 50%)',
+                  background: ink.color || 'linear-gradient(135deg, #263084 50%, #26262e 50%)',
                 }}
               />
             </SegmentedItem>

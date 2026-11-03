@@ -5,7 +5,7 @@ import { makeHand } from '@engine';
 import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
 import { Specimen } from '@/components/Specimen';
 import { baseStyle, familyOf, styleCard, styleFamilies } from '@/lib/styles';
-import { cn } from '@/lib/utils';
+import { cn, keepChosenInView } from '@/lib/utils';
 
 /** the last school picked in each family, so Print → Joined → Print comes back to it */
 const lastInFamily = new Map<string, string>();
@@ -26,13 +26,7 @@ export const StylePicker = memo(function StylePicker({ seed, style, ink, onStyle
 
   // keep the chosen card in view when the style changes from elsewhere (New hand, a shared link)
   const row = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = row.current?.querySelector<HTMLElement>('[aria-checked="true"]');
-    const r = row.current;
-    if (!el || !r) return;
-    const left = el.offsetLeft - r.offsetLeft;
-    if (left < r.scrollLeft || left + el.offsetWidth > r.scrollLeft + r.clientWidth) r.scrollTo({ left: left - 20, behavior: 'smooth' });
-  }, [style]);
+  useEffect(() => { requestAnimationFrame(() => keepChosenInView(row.current)); }, [style]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     const i = styles.indexOf(style);
