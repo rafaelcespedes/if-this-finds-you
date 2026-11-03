@@ -34,8 +34,16 @@ for (const style of E.styleNames()) for (const ruled of [false, true]) {
   // (each letter written with what comes next: some hands shape a letter by the one after it)
   for (let i = 0; i < LINE.length; i++) lb.write(LINE[i], { ahead: LINE.slice(i + 1) });
   const byLetter = lb.items.map(sig), wholeLine = o1.items.map(sig);
+  // and on lines that wrap: with what comes next known, a word's first letters already know whether the
+  // whole word fits (they go where one pass puts them, and where the thought letters showed them). (Not a
+  // word longer than a whole line: split letter by letter, its hyphen may come a letter later.)
+  const WRAP = 'Dear Ruth, the garden came up all at once this week and I wanted you to see it before the rain. The beans are tall, the peas are climbing, and the roses are back.';
+  const ow = E.inkPage(p, opts); ow.write(WRAP);
+  const lw = E.inkPage(p, opts);
+  for (let i = 0; i < WRAP.length; i++) lw.write(WRAP[i], { ahead: WRAP.slice(i + 1) });
+  const wrapSame = ow.items.map(sig).join('\n') === lw.items.map(sig).join('\n');
   const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
-  const r = [same(whole, byWord), same(wholeLine, byLetter), draftOk, frozenOk];
+  const r = [same(whole, byWord), same(wholeLine, byLetter) && wrapSame, draftOk, frozenOk];
   if (r.includes(false)) bad++;
   console.log(`${style.padEnd(7)} ${ruled ? 'ruled' : 'plain'}  word-by-word = one pass: ${r[0]}  letter-by-letter = one pass: ${r[1]}  draft = commit: ${r[2]}  ink never moves: ${r[3]}`);
 }
