@@ -52,7 +52,8 @@ export function styleCard(name: string) {
 export function styleName(name: string) {
   const fam = FAMILY_LABEL[familyOf(name)] ?? cap(familyOf(name));
   const c = styleCard(name);
-  return c.title === 'Everyday' ? fam : `${fam}: ${c.title}`;
+  // a school named like its family ("Print") is just the family, never "Print: Print"
+  return c.title === 'Everyday' || c.title.toLowerCase() === fam.toLowerCase() ? fam : `${fam}: ${c.title}`;
 }
 
 function cap(s: string) {
