@@ -56,6 +56,8 @@ export interface PanelProps {
   onNewHand: () => void;
   /** the same letter in another writer's hand (stationery kept) */
   onChangeWriter: () => void;
+  /** after a choice in a popover (Change writer): back to the letter if it was in use; true when it took the focus */
+  resumeWriting?: () => boolean;
   onSimilarHand: () => void;
   onSeed: (seed: string) => void;
   onStyle: (style: string) => void;
@@ -142,6 +144,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
   const sources = handSources(p);
   const letter = state.sample ? sampleById(state.sample) : undefined;
   const dt = 'text-[11.5px] text-muted-foreground';
+  const changed = useRef(false);
   return (
     <Popover.Root>
       <Popover.Trigger asChild>{children}</Popover.Trigger>
@@ -155,6 +158,10 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           // scrolls it rather than dragging the sheet it opened from (React events bubble through the portal)
           onPointerDown={(e) => e.stopPropagation()}
           onPointerMove={(e) => e.stopPropagation()}
+          onCloseAutoFocus={(e) => {
+            if (changed.current && props.resumeWriting?.()) e.preventDefault();
+            changed.current = false;
+          }}
           className="z-50 max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-24px))] w-[min(320px,calc(100vw-24px))] origin-(--radix-popover-content-transform-origin) overflow-y-auto overscroll-contain rounded-2xl border border-border bg-[#fdfcf9] p-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
         >
           <div style={{ color: inkColor(state.ink) }}>
@@ -163,7 +170,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           <div className="mt-1 text-[15px] leading-tight font-medium">{name}</div>
           <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{describeHand(p)}</p>
           <Popover.Close asChild>
-            <Button variant="secondary" onClick={props.onChangeWriter} className="mt-3 w-full">
+            <Button variant="secondary" onClick={() => { changed.current = true; props.onChangeWriter(); }} className="mt-3 w-full">
               <Shuffle aria-hidden /> Change writer
             </Button>
           </Popover.Close>
