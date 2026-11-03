@@ -43,6 +43,9 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **Logo: wordmark #32 for now** (Rafael, 2026-11-02): stacked "If this finds / you" with a large stepped-in "you", Spanish
+  copybook hand (seed saffron-pebble-77, fountain pen). #5 stays viewable with `?logo=5` for comparison. Files and settings
+  in brand/wordmark/.
 - **Name: "If This Finds You"** (Rafael, 2026-11-02, "for now"). It's how a message in a bottle begins: a letter
   that may never have arrived, and you're the one it found. Domain: ifthisfindsyou.app (Rafael is buying it
   himself; .com is taken). Light trademark check only (no live marks found); since it's open source and
