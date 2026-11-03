@@ -402,10 +402,11 @@ function pick(p, ch, ctx) {
   if (pin) { const v = list.find((x) => x.id === pin) || list.find((x) => allographOf(x) === canon(pin)); if (v) return v; }
   const H = habitsFor(p);
   const run = ctx && isUpperCh(ch) && (isUpperCh(ctx.prev) || isUpperCh(ctx.next));
-  if (H.borrow.has(ch) && !run) return blendWith(p, H, ch, H.borrow.get(ch));
+  if (H.borrow.has(ch) && !run && !(neat(p) && CONFUSABLE.has(allographOf(H.borrow.get(ch))))) return blendWith(p, H, ch, H.borrow.get(ch));
   if (list.length === 1) return blendWith(p, H, ch, list[0]);
   const { main, positional } = groupsOf(list);
   let form = mainForm(H, ch), special = false;
+  if (neat(p) && CONFUSABLE.has(form)) form = readableForm(main, form) || form;
   if (ctx) {
     const alt = H.context.get(ch);
     if (run && !(main.get(form) || [])[0]?.tags?.caps) {
@@ -474,13 +475,27 @@ function secondForm(H, ch) {
   return g && g.length ? { v: g[0], style: S.style } : null;
 }
 
+// Neat only: forms that read as another character (Hershey Simplex Script's looped A reads as S or L, its Q as a
+// 2, its G and I as Y and J) give way to the writer's next most likely readable form.
+export const CONFUSABLE = new Set(['A.looped', 'Q.two', 'G.looped', 'I.looped']);
+const neat = (p) => p.neatOnly === 'on' || p.neatOnly === true;
+function readableForm(main, form) {
+  let best = null;
+  for (const [a, vs] of [...main].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
+    if (a === form || CONFUSABLE.has(a)) continue;
+    const w = groupWeight(vs);
+    if (w > 0 && (!best || w > best.w)) best = { a, w };
+  }
+  return best && best.a;
+}
+
 function blendWith(p, H, ch, vA) {
   const w = 0.6 * clamp(p.blend == null ? 0 : p.blend, 0, 1);
   if (!vA || !H.second || !(w > 0) || vA.resolve) return vA;
   const t = Math.round(letterBlend(H, ch, w) * 100) / 100;
   if (t <= 0) return vA;
   const B = secondForm(H, ch);
-  if (!B || B.v === vA || !joinsMeet(p.style, B.style, ch)) return vA;
+  if (!B || B.v === vA || !joinsMeet(p.style, B.style, ch) || (neat(p) && CONFUSABLE.has(allographOf(B.v)))) return vA;
   const stA = STYLES.get(p.style), stB = STYLES.get(B.style);
   const vB = B.style === p.style ? B.v : borrowed(stB, ch, B.v);
   const aA = allographOf(vA), aB = allographOf(vB);
