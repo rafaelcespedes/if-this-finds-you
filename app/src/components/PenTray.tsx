@@ -39,7 +39,7 @@ export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, 
       onPointerDown={keep}
       onMouseDown={keep}
       onClick={() => { run(); setMenu(false); }}
-      className="flex h-11 w-full items-center rounded-lg px-3 text-left text-[15px] transition-colors duration-150 active:bg-accent"
+      className="flex h-11 w-full items-center rounded-lg px-3 text-left text-[0.9375rem] transition-colors duration-150 active:bg-accent"
     >
       {label}
     </button>
@@ -61,7 +61,7 @@ export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, 
                   onPointerDown={keep}
                   onMouseDown={keep}
                   onClick={() => onMode(m)}
-                  className={cn('h-10 rounded-[3px] text-[13px] font-medium transition-colors duration-150', mode === m ? 'bg-[#fffefb] text-foreground shadow-[0_1px_2px_rgba(40,30,10,0.12)]' : 'text-muted-foreground')}
+                  className={cn('h-10 rounded-[3px] text-[0.8125rem] font-medium transition-colors duration-150', mode === m ? 'bg-[#fffefb] text-foreground shadow-[0_1px_2px_rgba(40,30,10,0.12)]' : 'text-muted-foreground')}
                 >
                   {m === 'ink' ? 'Ink' : m === 'pencil' ? 'Pencil' : 'Fair copy'}
                 </button>
@@ -83,7 +83,7 @@ export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, 
           onPointerDown={keep}
           onMouseDown={keep}
           onClick={() => setMenu((m) => !m)}
-          className={cn("relative flex h-9 items-center gap-1.5 rounded-full px-3 text-[14px] transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-1 after:content-['']", menu ? 'bg-accent' : 'active:bg-accent')}
+          className={cn("relative flex h-9 items-center gap-1.5 rounded-full px-3 text-[0.875rem] transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-1 after:content-['']", menu ? 'bg-accent' : 'active:bg-accent')}
         >
           <PenLine className="size-4" aria-hidden /> Pen
         </button>
@@ -104,7 +104,7 @@ export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, 
             onPointerDown={keep}
             onMouseDown={keep}
             onClick={onTheirLetter}
-            className={cn("relative flex h-9 items-center gap-1.5 rounded-full px-3 text-[14px] transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-1 after:content-['']", theirOpen ? 'bg-accent' : 'active:bg-accent')}
+            className={cn("relative flex h-9 items-center gap-1.5 rounded-full px-3 text-[0.875rem] transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-1 after:content-['']", theirOpen ? 'bg-accent' : 'active:bg-accent')}
           >
             <MailOpen className="size-4" aria-hidden /> Their letter
           </button>

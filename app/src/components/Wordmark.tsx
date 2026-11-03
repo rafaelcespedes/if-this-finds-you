@@ -42,6 +42,6 @@ export function Wordmark({ className }: { className?: string }) {
       if (link && !link.href.endsWith(icon)) link.href = icon;
     }).catch(() => {});
   }, []);
-  if (!svg) return <span className={cn('text-[13px] font-medium tracking-[-0.01em]', className)}>{APP_NAME}</span>;
+  if (!svg) return <span className={cn('text-[0.8125rem] font-medium tracking-[-0.01em]', className)}>{APP_NAME}</span>;
   return <span role="img" aria-label={APP_NAME} className={cn('block [&_svg]:block [&_svg]:h-full [&_svg]:w-auto', logoHeight, className)} dangerouslySetInnerHTML={{ __html: svg }} />;
 }

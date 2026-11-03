@@ -8,7 +8,7 @@ function Toaster(props: ToasterProps) {
       toastOptions={{
         classNames: {
           toast:
-            '!rounded-[4px] !border !border-[var(--ink-soft)] !bg-[var(--text)] !text-[var(--panel)] !shadow-[0_10px_30px_-10px_rgba(20,15,5,0.45)] !font-sans !text-[13px] !py-3 !px-4',
+            '!rounded-[4px] !border !border-[var(--ink-soft)] !bg-[var(--text)] !text-[var(--panel)] !shadow-[0_10px_30px_-10px_rgba(20,15,5,0.45)] !font-sans !text-[0.8125rem] !py-3 !px-4',
           description: '!text-[#bdb7aa]',
           icon: '!text-[var(--panel)]',
         },

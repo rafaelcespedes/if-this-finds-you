@@ -264,18 +264,19 @@ export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onD
         <div aria-hidden onClick={cycle} className="-mx-4 flex h-5 cursor-grab items-end justify-center">
           <span className="h-[5px] w-9 rounded-full bg-[#d4cec2]" />
         </div>
-        <div className="flex items-center gap-2 pt-1.5 pb-2.5">
+        {/* large text: Find another goes under the name rather than squeezing it to nothing */}
+        <div className="flex flex-wrap items-center gap-2 pt-1.5 pb-2.5">
           <AboutHand {...props}>
             <button
               type="button"
               aria-label={`${props.name}: about this hand`}
-              className="group min-h-11 min-w-0 flex-1 rounded-lg py-0.5 pl-1 text-left select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="group min-h-11 min-w-[7.5rem] flex-1 rounded-lg py-0.5 pl-1 text-left select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              <span className="flex items-center gap-1 truncate text-[15px] leading-tight font-medium tracking-[-0.01em]">
+              <span className="flex items-center gap-1 truncate text-[0.9375rem] leading-tight font-medium tracking-[-0.01em]">
                 <span className="truncate">{props.name}</span>
                 <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
               </span>
-              <span className="block truncate text-[12px] leading-snug text-muted-foreground">{styleName(props.state.style)}</span>
+              <span className="block truncate text-[0.75rem] leading-snug text-muted-foreground">{styleName(props.state.style)}</span>
             </button>
           </AboutHand>
           {/* look C (?look=postmarked): Find another is a round stamp; look A: Bring another, in words */}
@@ -298,7 +299,7 @@ export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onD
             onClick={() => onDetent(expanded ? 'peek' : 'half')}
             className="group inline-flex h-11 items-center px-2 select-none focus-visible:outline-none"
           >
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-secondary px-3.5 text-[12.5px] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-secondary px-3.5 text-[0.7812rem] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
               Paper, pen & ink
               <ChevronUp aria-hidden className={cn('size-3.5 text-muted-foreground transition-transform duration-300 ease-[var(--ease-drawer)]', expanded && 'rotate-180')} />
             </span>

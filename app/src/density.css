@@ -5,17 +5,17 @@
    Unlayered, so it beats Tailwind's layers; fold these into the components when convenient. */
 :root {
   /* −1 step: every control one Tailwind step (4px) shorter, a touch less air */
-  --panel-w: 320px; --pad: 18px; --radius: 0.1875rem; /* Rubric: square-cut */
+  --panel-w: 20rem; --pad: 18px; --radius: 0.1875rem; /* Rubric: square-cut */
   --sig-h: 48px;
-  --cta-h: 40px; --cta-text: 13.5px; --icon: 40px; --ghost-h: 28px;
-  --head-h: 24px; --label: 13px; --body: 13.5px;
-  --seg-h: 28px; --seg-text: 12.5px; --chip-h: 24px; --chip-text: 11.5px;
-  --paper-w: 78px; --tile-text: 11.5px; --pen-w: 72px; --pen-spec: 27px; --school-w: 116px; --school-spec: 30px; --card-r: 3px;
-  --tip-h: 32px; --tip-w: 50px; --ink-hit: 28px; --ink-dot: 20px;
+  --cta-h: 2.5rem; --cta-text: 0.8438rem; --icon: 40px; --ghost-h: 1.75rem;
+  --head-h: 1.5rem; --label: 0.8125rem; --body: 0.8438rem;
+  --seg-h: 1.75rem; --seg-text: 0.7812rem; --chip-h: 1.5rem; --chip-text: 0.7188rem;
+  --paper-w: 4.875rem; --tile-text: 0.7188rem; --pen-w: 4.5rem; --pen-spec: 27px; --school-w: 7.25rem; --school-spec: 30px; --card-r: 3px;
+  --tip-h: 2rem; --tip-w: 3.125rem; --ink-hit: 28px; --ink-dot: 20px;
   --sw-w: 36px; --sw-h: 20px; --sw-thumb: 16px;
   --thumb: 14px; 
   /* phone: visuals a step down, every tap target still 44 */
-  --m-pad: 18px; --m-cta-h: 44px; --m-icon: 44px; --m-seg-h: 40px; --m-chip-h: 32px; --m-tip-h: 40px; --m-tip-w: 48px;
+  --m-pad: 18px; --m-cta-h: 2.75rem; --m-icon: 44px; --m-seg-h: 2.5rem; --m-chip-h: 2rem; --m-tip-h: 2.5rem; --m-tip-w: 3rem;
   --m-ink-hit: 44px; --m-ink-dot: 22px; --m-thumb: 18px;
 }
 
