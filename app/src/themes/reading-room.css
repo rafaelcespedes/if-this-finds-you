@@ -463,46 +463,63 @@ html[data-look='reading-room'] .rr-hand {
   }
 }
 
-/* ---------- the tool's desk (ReadingDesk.tsx) ---------- */
-html[data-look='reading-room'] .rr-desk-inner {
-  padding: 84px 6px 48px 4px;
+/* ---------- the tool's desk, kept as a ledger (ReadingDesk.tsx, LedgerRecord.tsx) ----------
+   House rules (layout study, Rafael 3 Nov): one 12-column grid at 1440 (40 px margins, 32 px gutters; the record column
+   is 3 columns, the 20rem panel), and hairlines, never boxes: the paper is the only thing with an edge. */
+html[data-look='reading-room'] {
+  --rr-margin: 2.5rem; /* the grid's outer margin */
+  --rr-gutter: 2rem;
+  --rr-hair: color-mix(in oklab, var(--rr-ink) 30%, transparent); /* a stronger rule, above a column or a drawer */
+  --rr-desk-top: 100px; /* the record's first rule sits on the sheet's top edge */
 }
-html[data-look='reading-room'] .rr-desk-inner > .rr-card {
-  margin-top: 18px;
+/* the record column: on the grid's right margin, flush with the page, no inner box */
+html[data-look='reading-room'] aside:has(> .rr-desk) {
+  padding: 0 var(--rr-margin) 0 var(--rr-gutter);
+}
+html[data-look='reading-room'] .rr-desk {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+html[data-look='reading-room'] .rr-ledger {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--rr-desk-top) 0 1.5rem;
+  scrollbar-width: none;
 }
 html[data-look='reading-room'] .rr-desk-actions {
   display: grid;
   gap: 2px;
 }
 html[data-look='reading-room'] .rr-status {
-  justify-content: center;
+  justify-content: flex-start;
 }
-/* the main action, in words: archival red, a shuffle mark, and its key as a call number */
+/* the main action: a ruled row in archival red, an arrow, and its key at the row's end */
 html[data-look='reading-room'] .rr-bring {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 8px;
   width: 100%;
   min-height: 48px;
-  padding: 8px 6px 8px 4px;
-  border-top: 1px solid var(--rr-ink);
+  padding: 12px 0 10px;
+  border-top: 1px solid var(--rr-hair);
   border-bottom: 1px solid var(--rr-rule);
   color: var(--rr-red);
   text-align: left;
   transition: color 150ms var(--ease-out);
 }
-html[data-look='reading-room'] .rr-bring-icon {
-  width: 1.0625rem;
-  height: 1.0625rem;
-  flex: none;
-}
 html[data-look='reading-room'] .rr-bring-label {
-  flex: 1;
   text-decoration: underline;
   text-decoration-color: transparent;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
   transition: text-decoration-color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-bring-arrow {
+  flex: 1;
+  transition: transform 150ms var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-bring:hover {
@@ -511,21 +528,23 @@ html[data-look='reading-room'] .rr-bring-label {
   html[data-look='reading-room'] .rr-bring:hover .rr-bring-label {
     text-decoration-color: currentColor;
   }
+  html[data-look='reading-room'] .rr-bring:hover .rr-bring-arrow {
+    transform: translateX(2px);
+  }
 }
-html[data-look='reading-room'] .rr-bring:active .rr-bring-label {
-  transform: translateY(0.5px);
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] .rr-bring-arrow {
+    transition: none;
+  }
 }
-/* a spine label: "call" over the key */
 html[data-look='reading-room'] .rr-callno {
-  display: inline-grid;
-  justify-items: center;
-  min-width: 30px;
-  padding: 2px 6px 3px;
-  border: 1px solid color-mix(in oklab, var(--rr-red) 55%, transparent);
-  border-radius: 3px;
-  background: var(--rr-slip);
-  color: var(--rr-red);
-  line-height: 1;
+  color: var(--rr-muted);
+  white-space: nowrap;
+}
+html[data-look='reading-room'] .rr-callno-v {
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  letter-spacing: var(--rr-label-tracking);
 }
 @media (pointer: coarse) {
   html[data-look='reading-room'] .rr-callno {
@@ -533,73 +552,162 @@ html[data-look='reading-room'] .rr-callno {
   }
 }
 
-/* the request slip: the writing materials, folded away until asked for */
-html[data-look='reading-room'] .rr-slip {
-  margin-top: 12px;
-  background: var(--rr-slip);
-  border: 1px solid var(--rr-edge);
-  border-top: 1.5px dashed color-mix(in oklab, var(--rr-ink) 38%, transparent); /* torn along its perforation */
-  border-radius: 0 0 2px 2px;
-}
-html[data-look='reading-room'] .rr-slip-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 10px;
-  width: 100%;
-  padding: 12px 14px 13px 16px;
-  text-align: left;
-  border-radius: 0 0 2px 2px;
-  transition: background-color 150ms var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .rr-slip-head:hover {
-    background: color-mix(in oklab, var(--chip) 55%, transparent);
-  }
-}
-html[data-look='reading-room'] .rr-slip-k {
-  grid-column: 1;
-  color: var(--rr-muted);
-}
-html[data-look='reading-room'] .rr-slip-t {
-  grid-column: 1;
-  margin-top: 2px;
+/* the record: ruled rows on the room */
+html[data-look='reading-room'] .rr-ledger-record {
+  margin-top: 1.25rem;
   color: var(--rr-ink);
 }
-html[data-look='reading-room'] .rr-slip-v {
-  grid-column: 1;
-  margin-top: 2px;
+html[data-look='reading-room'] .rr-ledger-waiting {
+  min-height: 26rem;
+}
+html[data-look='reading-room'] .rr-ledger-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+}
+html[data-look='reading-room'] .rr-ledger-record .rr-card-title {
+  margin: 0.5rem 0 0.875rem;
+}
+/* a note's number is a button: the note opens in place, under its row */
+html[data-look='reading-room'] .rr-ref-button {
+  margin-left: 2px;
+  padding: 0 3px;
+  border-radius: 2px;
+  color: var(--rr-red);
+  font-size: 0.75em;
+  font-variant-numeric: lining-nums;
+  line-height: 1;
+  vertical-align: 0.5em;
+  cursor: pointer;
+}
+html[data-look='reading-room'] .rr-ref-button[aria-expanded='true'] {
+  background: color-mix(in oklab, var(--rr-red) 12%, transparent);
+}
+@media (pointer: coarse) {
+  html[data-look='reading-room'] .rr-ref-button {
+    position: relative;
+  }
+  html[data-look='reading-room'] .rr-ref-button::after {
+    content: '';
+    position: absolute;
+    inset: -14px -10px;
+  }
+}
+html[data-look='reading-room'] .rr-row-note {
+  margin: 0.375rem 0 0.125rem;
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+  font-style: italic;
   color: var(--rr-muted);
 }
-html[data-look='reading-room'] .rr-slip-chev {
-  grid-column: 2;
-  grid-row: 1 / span 3;
-  align-self: center;
+html[data-look='reading-room'] .rr-full {
+  border-top: 1px solid var(--rr-rule);
+}
+html[data-look='reading-room'] .rr-full-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 0 2px;
+  color: var(--rr-ink);
+  text-align: left;
+}
+html[data-look='reading-room'] .rr-full-sign {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-reading-size);
+  line-height: 1;
+}
+html[data-look='reading-room'] .rr-physical {
+  margin: 0.125rem 0 0;
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+  font-style: italic;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-full .rr-facts {
+  margin-top: 0.5rem;
+}
+html[data-look='reading-room'] .rr-small {
+  font-size: var(--rr-small-size);
+  line-height: var(--rr-small-leading);
+}
+html[data-look='reading-room'] .rr-cite {
+  overflow-wrap: anywhere;
+  color: var(--rr-muted);
+}
+
+/* the writing materials: a drawer pinned to the column's foot; opened, it rises over the record */
+html[data-look='reading-room'] .rr-drawer {
+  flex: none;
+  background: var(--rr-room);
+  border-top: 1px solid var(--rr-hair);
+}
+html[data-look='reading-room'] .rr-drawer-head {
+  /* one ruled row, like "Full record +": its name, and which way it opens */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 0 12px;
+  text-align: left;
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .rr-drawer-chev {
   width: 18px;
   height: 18px;
   color: var(--rr-muted);
   transition: transform 260ms var(--ease-drawer);
 }
-html[data-look='reading-room'] .rr-slip.is-open .rr-slip-chev {
+html[data-look='reading-room'] .rr-drawer-body {
+  display: none;
+  --pad: 0px; /* density.css: the sideways rows bleed by the panel's padding; the drawer has none */
+}
+html[data-look='reading-room'] .rr-drawer.is-open {
+  position: absolute;
+  inset: calc(var(--rr-desk-top) - 1px) 0 0 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  animation: rr-drawer-in 280ms var(--ease-drawer) both;
+}
+html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-chev {
   transform: rotate(180deg);
 }
-html[data-look='reading-room'] .rr-slip-body {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 300ms var(--ease-drawer);
-}
-html[data-look='reading-room'] .rr-slip.is-open .rr-slip-body {
-  grid-template-rows: 1fr;
-}
-html[data-look='reading-room'] .rr-slip-inner {
+html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-body {
+  display: block;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
-}
-html[data-look='reading-room'] .rr-slip.is-open .rr-slip-inner {
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-top: 1px solid var(--rr-rule);
 }
-/* the panel's groups inside the slip: a label in small capitals per group, on ruled lines */
+@keyframes rr-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] .rr-drawer.is-open {
+    animation: rr-fade 160ms linear both;
+  }
+  html[data-look='reading-room'] .rr-drawer-chev {
+    transition: none;
+  }
+}
+/* the panel's groups inside the drawer: a label in small capitals per group, on ruled lines */
 html[data-look='reading-room'] .rr-slip-inner section[data-row] {
   border-color: var(--rr-rule);
+}
+/* the drawer is on the room's grid: its groups take no inner margin of their own */
+html[data-look='reading-room'] .rr-slip-inner :is(section[data-row], .px-5) {
+  padding-inline: 0;
 }
 
 /* the tool's controls, in the room: hairline tiles, square corners, ink for what's chosen */
@@ -1154,8 +1262,7 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
 @media (forced-colors: active) {
   html[data-look='reading-room'] .rr-card,
-  html[data-look='reading-room'] .rr-dock,
-  html[data-look='reading-room'] .rr-slip {
+  html[data-look='reading-room'] .rr-dock {
     border: 1px solid CanvasText;
   }
 }
