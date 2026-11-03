@@ -4,7 +4,7 @@
 // counts against content/check-texts.mjs); lines marked "Rafael" in about/README.md wait for his sign-off.
 import { useEffect, type ReactNode } from 'react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { APP_NAME, withLogo } from '@/lib/brand';
+import { APP_NAME, NAME_WITH_DESCRIPTOR, withLogo } from '@/lib/brand';
 import { ARCHIVE_URL, headerLink, SiteHeader, toolHref } from '@/archive/SiteHeader';
 import { FONTS_URL } from '@/fonts/links';
 import { LiveLine } from './LiveLine';
@@ -98,7 +98,7 @@ function Out({ href, children }: { href: string; children: ReactNode }) {
 
 export function AboutApp() {
   const narrow = useMediaQuery('(max-width: 639px)');
-  useEffect(() => { document.title = `About – ${APP_NAME}`; }, []);
+  useEffect(() => { document.title = `About · ${APP_NAME}`; }, []);
   const L = LETTERS;
 
   return (
@@ -252,9 +252,9 @@ export function AboutApp() {
 
         <Section id="fonts">
           <p>
-            Every hand you meet can be downloaded as a font. The fonts are free and open source, under the SIL Open Font
-            License 1.1: use them for anything, commercial work included, and change them and share them. The one thing
-            you can’t do is sell a font on its own.
+            Every hand here is a font you can keep, free and open source under the SIL Open Font License 1.1. Use them
+            for anything, commercial work included, and change them and share them. The one thing you can’t do is sell a
+            font on its own.
           </p>
           <p>
             Each download has an .otf and a .ttf file with 319 characters, enough for most European languages, and a
@@ -358,9 +358,8 @@ export function AboutApp() {
         </Section>
 
         <footer className="about-colophon">
-          <p>
-            {APP_NAME}, a lab experiment. Letters in the public domain; fonts under the SIL Open Font License.
-          </p>
+          <p className="about-colophon-name">{NAME_WITH_DESCRIPTOR}</p>
+          <p>A lab experiment by Rafael Cespedes. Letters in the public domain; fonts under the SIL Open Font License.</p>
         </footer>
       </main>
     </div>

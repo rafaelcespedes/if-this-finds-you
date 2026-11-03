@@ -445,6 +445,9 @@
   padding: 0.5rem 0.25rem;
 }
 
+.about-colophon-name {
+  color: var(--about-text);
+}
 .about-colophon {
   margin-top: 4rem;
   padding-top: 1rem;

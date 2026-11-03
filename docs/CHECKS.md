@@ -40,7 +40,7 @@ Vercel matches the checks by job name, so the two names above must not change (o
 
 `tools/smoke/smoke.mjs` serves the built `app/dist` the way Vercel does (`/letters` → `letters.html`) and opens
 it in Chrome. Pages: `/` (the desk), `/letters` (all letters), the first card's letter page
-(`/letters#/letter/<id>`) and `/fonts`, each at desktop (1440×900) and phone (375×812) size. A page fails when it
+(`/letters#/letter/<id>`), `/fonts` and `/about`, each at desktop (1440×900) and phone (375×812) size. A page fails when it
 
 - logs a console error or throws an uncaught exception,
 - has a web worker that fails: the test watches every `new Worker` the page starts and counts its uncaught errors
@@ -49,7 +49,7 @@ it in Chrome. Pages: `/` (the desk), `/letters` (all letters), the first card's 
 - shows one of the site's own failure messages ("The fonts didn't load", "The letters didn't load", "couldn't be
   set as a font here"; `FAILURE_TEXTS` in the script), or
 - stays blank: within 30 s the desk's letter and the letter page need handwriting, `/letters` at least 6 painted
-  cards (not just the page shell) and `/fonts` at least 3 specimens set in the fonts the page made.
+  cards (not just the page shell) and `/fonts` at least 3 specimens set in the fonts the page made, and `/about` its one line written live.
 
 The library shuffles its cards, so the letter page it opens changes from run to run; the output names it.
 It finds what each page must draw by accessible names and links (`PAGES` at the top of the script). If a redesign
