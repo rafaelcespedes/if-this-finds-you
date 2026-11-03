@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import allLetters from './all-letters.svg?raw';
 import { Card } from './Card';
 import { FindingList } from './FindingList';
-import { LetterCanvas, VIEW, type ViewId } from './Canvas';
+import { LetterCanvas, useCanvasReadout, VIEW, type ViewId } from './Canvas';
 import { HeadingTools, SelectDock, SentenceFilter, TimelineDock, TOOLBAR, useSlashToSearch, type ControlsProps, type ViewSwitch } from './Controls';
 import { cardAspect } from './card-protocol';
 import { cardSize } from './cards';
@@ -159,7 +159,8 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
         />
         {/* letters pass under a soft fade, never under the header's words */}
         <div aria-hidden className="canvas-fade-top" />
-        <SiteHeader current="letters" />
+        {/* the Reading Room: where you are on the table, as the running head's middle (steps aside when it doesn't fit) */}
+        <SiteHeader current="letters" centre={LOOK === 'reading-room' ? <CanvasReadout /> : undefined} />
         {TOOLBAR === '2' ? <SelectDock {...controls} /> : <TimelineDock {...controls} viewSwitch={switchTo} />}
       </div>
     );
@@ -213,6 +214,12 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
       </main>
     </div>
   );
+}
+
+/** "the 1790s · Cairo, Madrid, Westminster": the decade under the middle of the screen, as you drag. */
+function CanvasReadout() {
+  const text = useCanvasReadout();
+  return text ? <span className="canvas-readout">{text}</span> : null;
 }
 
 function Empty({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
