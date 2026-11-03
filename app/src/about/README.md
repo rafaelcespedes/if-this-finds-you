@@ -2,8 +2,10 @@
 
 What If This Finds You is, where the letters and the hands come from, the fonts, how it was made, credits and contact.
 
-- `AboutApp.tsx`: the page and all of its copy. The letters' counts are in `LETTERS` at the top: copy them from
-  `node content/check-texts.mjs` whenever letters are switched on or off, and change the "Counted on" date.
+- `AboutApp.tsx`: the page and all of its copy, kept short (about 580 words to read); the full credits sit folded in a
+  "Full credits and licences" disclosure at the foot, since the licences ask for them. The letters' counts are in
+  `LETTERS` at the top: copy them from `node content/check-texts.mjs` whenever letters are switched on or off, and
+  change the "Counted on" date in the credits.
 - `LiveLine.tsx` + `write.ts`: the one live line ("I hope this finds you well."), written by a writer picked fresh on
   each visit. `write.ts` and the engine load only after the page has painted, so the text never waits for them; if
   the engine can't load, the line shows in type.
@@ -19,22 +21,20 @@ header's Menu takes them. The 404 page's hand-made copy of the header lists Abou
 
 ## Lines waiting for Rafael
 
-1. "Designed by Rafael Cespedes and built with Claude, an AI model made by Anthropic." (How it was made)
-2. "Rafael wanted to use AI in ways he finds clever, on things that used to take too many resources to try. Nobody
-   would draw hundreds of handwriting fonts by hand, trace copybooks letter by letter, or check the rights of two
-   hundred letters on two continents for a side project. With AI, one designer could."
-3. "It's free, and it isn't a business."
-4. "The hope is to bring letters, people and handwriting traditions that rarely get the spotlight into it, and maybe to
-   give other designers an idea or two."
-5. "The fonts are open source now; the rest of the project, code and all, will follow once it's polished."
-6. "Every source the project used, 484 so far, … is listed … in a reference library, to be published with the code."
-7. "If you spot a mistake in a letter or its story, he'd like to know." (Contact)
-8. The whole "Give back" section (section 8): its intro, the five sources and the Red Cross as the one related cause,
-   and the note that we aren't connected to any of them. Donation links checked on each organisation's own site on
+Trimmed on 3 November 2026 (Rafael: "way too long"; about 580 words to read, from about 1,700, credits folded away).
+The earlier "The hope is to bring letters, people and handwriting traditions…" line was cut.
+
+1. "Designed by Rafael Cespedes and built with Claude, an AI model made by Anthropic." (How it started)
+2. "It's a free lab experiment with nothing to sell. He wanted to use AI in ways he finds clever. Drawing hundreds of
+   handwriting fonts, for one, used to take too many resources to try."
+3. "The fonts are open source now, and the code will follow once it's polished."
+4. "Every source the project used, 484 so far, is listed with what it decided in a reference library, to be published
+   with the code." (Full credits, folded)
+5. "Spotted a mistake in a letter or its story? Rafael would like to know." (Contact)
+6. Give back: the intro, the five sources and the Red Cross, each with one short line, and "Each link opens the
+   organisation's own donation page. We get nothing from it." Links checked on each organisation's own site on
    3 November 2026; the Library of Congress was left out because its site's bot check blocked verification.
-9. The opening of "How it was made": "It started as a search for a font. Rafael was looking for a handwritten face for
-   Rueca, another project of his, and couldn't find the hand he had in mind, so he tried making one. The experiment grew from
-   there: a happy accident that got a little out of hand." (From Rafael's own account; Rueca isn't linked, as the repo
-   has no public address for it.)
-10. "Each visit opens on a writer and a letter picked at random." (What this is; true since 237360d: a fresh visit picks
-    one of 28 first hands and a letter that suits it, avoiding letters just read.)
+7. "It started as a search for a font. Rafael Cespedes, a designer, was looking for a handwritten face for Rueca,
+   another project of his. He couldn't find the hand he had in mind, so he tried making one. It grew from there, a
+   happy accident that got a little out of hand." (Rueca isn't linked: no public address in the repo.)
+8. "Each visit opens on a writer and a letter picked at random." (What this is; true since 237360d.)

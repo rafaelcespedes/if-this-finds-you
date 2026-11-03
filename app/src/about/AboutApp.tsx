@@ -1,7 +1,8 @@
-// About: what If This Finds You is, where the letters and the hands come from, the fonts, how it was made, credits.
-// A reading page: one column of text with its sections ruled off like a finding aid, their labels in the margin on a
-// wide screen, catalogue-style facts and footnote credits. Every claim here is checked against the repo (the letters'
-// counts against content/check-texts.mjs); lines marked "Rafael" in about/README.md wait for his sign-off.
+// About: what If This Finds You is, where the letters and the hands come from, the fonts, how it started, where to give
+// back, contact; then the full credits, folded away. A short reading page (Rafael, 3 Nov 2026: "way too long"; about
+// 600 words to read, under a minute): sections ruled off like a finding aid, their labels in the margin on a wide
+// screen. Every claim is checked against the repo (the letters' counts against content/check-texts.mjs); lines waiting
+// for Rafael's sign-off are listed in about/README.md.
 import { useEffect, type ReactNode } from 'react';
 import { APP_NAME, NAME_WITH_DESCRIPTOR, withLogo } from '@/lib/brand';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -16,14 +17,10 @@ const LETTERS = {
   to: 1929,
   languages: 14,
   writers: 123,
-  women: 75,
   womenShare: 59,
-  sexNotStated: 13,
   african: 25,
   hispanic: 21,
   ordinaryShare: 83,
-  minWords: 16,
-  maxWords: 89,
 };
 
 /** The taught hands the engine draws on (engine/sources/*.js, each file's own source line). */
@@ -63,17 +60,17 @@ const LETTER_SOURCES: { href: string; text: ReactNode }[] = [
  * content/sample-texts.json (letters whose source links there) and engine/sources/*.js (copybooks).
  */
 const GIVE: { name: string; href: string; kept: ReactNode }[] = [
-  { name: 'Internet Archive', href: 'https://archive.org/donate/', kept: <>77 of the 127 letters were read from its scans, and so were four of the copybooks the hands were traced from.</> },
-  { name: 'Project Gutenberg', href: 'https://www.gutenberg.org/donate/', kept: <>Its volunteers’ transcriptions carry 22 of the letters, from the Paston family to a homesteader in Wyoming.</> },
-  { name: 'Wikimedia Foundation', href: 'https://donate.wikimedia.org/', kept: <>Wikisource holds the transcriptions of six letters, and Wikimedia Commons the Sütterlin alphabet.</> },
-  { name: 'Fondation de BAnQ', href: 'https://www.jedonneenligne.org/fondationdebanq/', kept: <>It supports Québec’s national library, whose <cite>Copiste d’un jour</cite> volunteers gave the everyday print hand. The logo is written in it.</> },
-  { name: 'Project Runeberg', href: 'https://runeberg.org/admin/sponsors.html', kept: <>A volunteer library of Nordic texts at Linköping University. Two of the letters come from it.</> },
+  { name: 'Internet Archive', href: 'https://archive.org/donate/', kept: <>Scans of 77 of the letters and four of the copybooks.</> },
+  { name: 'Project Gutenberg', href: 'https://www.gutenberg.org/donate/', kept: <>Volunteers’ transcriptions of 22 letters.</> },
+  { name: 'Wikimedia Foundation', href: 'https://donate.wikimedia.org/', kept: <>Six letters on Wikisource, and the Sütterlin alphabet on Commons.</> },
+  { name: 'Fondation de BAnQ', href: 'https://www.jedonneenligne.org/fondationdebanq/', kept: <>For Québec’s national library, whose volunteers gave the hand our logo is written in.</> },
+  { name: 'Project Runeberg', href: 'https://runeberg.org/admin/sponsors.html', kept: <>A volunteer library of Nordic texts, and two of the letters.</> },
 ];
 /** One related cause, not a source: the people who still carry letters between families separated by war. */
 const GIVE_ALSO = {
   name: 'International Committee of the Red Cross',
   href: 'https://www.icrc.org/en/donate',
-  kept: <>Not one of our sources, but the same work today: the Red Cross still carries messages between families separated by war, and searches for people who have gone missing.</>,
+  kept: <>Not one of our sources. It still carries messages between families separated by war.</>,
 };
 
 const SECTIONS = [
@@ -81,10 +78,9 @@ const SECTIONS = [
   { id: 'letters', title: 'The letters' },
   { id: 'hands', title: 'The hands' },
   { id: 'fonts', title: 'Fonts' },
-  { id: 'made', title: 'How it was made' },
-  { id: 'credits', title: 'Credits and sources' },
-  { id: 'contact', title: 'Contact' },
+  { id: 'made', title: 'How it started' },
   { id: 'give', title: 'Give back' },
+  { id: 'contact', title: 'Contact' },
 ] as const;
 type SectionId = (typeof SECTIONS)[number]['id'];
 
@@ -99,15 +95,6 @@ function Section({ id, children }: { id: SectionId; children: ReactNode }) {
       </h2>
       <div className="about-section-body">{children}</div>
     </section>
-  );
-}
-
-/** A footnote mark in the text, and the way back from the note. */
-function Note({ n }: { n: number }) {
-  return (
-    <sup className="about-noteref">
-      <a id={`ref-${n}`} href={`#note-${n}`} aria-label={`Note ${n}`}>{n}</a>
-    </sup>
   );
 }
 
@@ -146,31 +133,15 @@ export function AboutApp() {
           <LiveLine />
         </div>
 
-        <nav className="about-contents" aria-label="On this page">
-          <p className="about-label">Contents</p>
-          <ol>
-            {SECTIONS.map((s, i) => (
-              <li key={s.id}>
-                <a href={`#${s.id}`}><span className="about-contents-no" aria-hidden>{i + 1}</span>{s.title}</a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-
         <Section id="what">
           <p>
-            {APP_NAME} is a small archive of real letters. Most were written by people nobody remembers: emigrants and
-            settlers, children and parents, soldiers, servants and farmers. Each letter is written out again on letter
-            paper, stroke by stroke, by a fictional writer with a hand of their own.
+            This is a small collection of real letters, most by people nobody remembers: emigrants, settlers, children,
+            soldiers, servants. A writer who never existed copies each one out by hand, stroke by stroke. Each visit
+            opens on a writer and a letter picked at random.
           </p>
           <p>
-            The name is how a message in a bottle begins. These letters were meant for one person, and some never reached
-            them. Now one has found you. Each visit opens on a writer and a letter picked at random. Read it, press
-            Find another for a new letter in a new hand, or write a reply and watch it go down in ink.
-          </p>
-          <p>
-            Keep one thing in mind as you read: the words are the original writer’s, but the handwriting never is. No
-            letter here is drawn the same way twice, because every stroke is written fresh.
+            The name is how a message in a bottle begins. Each of these letters was meant for one person. Now one has
+            found you. Only the words are the original writer’s.
           </p>
         </Section>
 
@@ -185,115 +156,32 @@ export function AboutApp() {
             <div><dt>By African and African American writers</dt><dd>{L.african}</dd></div>
             <div><dt>By Hispanic and Latin American writers</dt><dd>{L.hispanic}</dd></div>
           </dl>
-          <p className="about-facts-note">Counted on 3 November 2026.<Note n={1} /></p>
           <p>
-            Every letter comes with its true origin: who wrote it, to whom, when and where, and the book, newspaper or
-            archive it survives in, with a link to the page. If a source doesn’t say something, neither do we. We don’t
-            add a greeting, a signature or a back story the source doesn’t have.
-          </p>
-          <p>
-            Among them are children writing to Santa Claus and to the Three Kings, African American settlers in Liberia
-            writing home from 1832 on, families moving north in the Great Migration, a Tejana writing to Stephen F.
-            Austin in 1824, and Frenchmen in Egypt in 1798 whose letters home were seized at sea. A handful are by
-            famous writers, among them Phillis Wheatley, Ignatius Sancho, Sor Juana Inés de la Cruz and Emily Dickinson.
-          </p>
-          <p>
-            {L.women} of the {L.count} letters are by women. When a source doesn’t say whether the writer was a woman or
-            a man, we leave it blank, and {L.sexNotStated} letters are like that.
-          </p>
-          <h3 className="about-subhead">As printed</h3>
-          <p>
-            The letters are short, {L.minWords} to {L.maxWords} words. Where we cut, you’ll see “…”. The spelling is the
-            writer’s own, from Middle English to the unschooled spelling of settlers and migrants, and nothing is
-            translated: each letter is in the language it was written in.
-          </p>
-          <h3 className="about-subhead">How they were chosen</h3>
-          <p>
-            Each letter had to be in the public domain in both the United States and Europe. For most, that means it was
-            printed before 1931 and its writer died long ago.<Note n={2} /> We didn’t ask any archive for permission, so
-            some wonderful collections with non-commercial terms are left out.
-          </p>
-          <p>
-            The rest is balance, and a checker holds the collection to it: at least 70% of the letters by ordinary
-            people, at least 55% by women, and at least 15 each by African or African American writers and by Hispanic
-            or Latin American writers. Today that’s {L.ordinaryShare}%, {L.womenShare}%, {L.african} and {L.hispanic}.
+            Every letter is real and in the public domain. Each shows where it was found, with a link to the page, and
+            if the source doesn’t say something, neither do we. They’re short excerpts in the writer’s own spelling and
+            language. A “…” marks a cut.
           </p>
           <p><a className="about-link about-go" href={withLogo(ARCHIVE_URL)}>Read all the letters</a></p>
         </Section>
 
         <Section id="hands">
           <p>
-            Handwriting is learned. The way you make a g depends on where and when you went to school. So each writer
-            here starts from a hand someone was taught, traced from an old copybook or from real people’s writing, and
-            then makes it their own.
-          </p>
-          <p>The engine knows thirteen traditions, from five centuries:</p>
-          <ol className="about-ledger">
-            {HANDS.map((h) => (
-              <li key={h.year + h.name}>
-                <span className="about-ledger-year">{h.year}</span>
-                <span className="about-ledger-text">
-                  <span className="about-ledger-name">{h.name}</span>, {h.place}.{' '}
-                  <Out href={h.href}>{h.source}</Out>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p>
-            A writer is a seed, a short code like quiet-heron-17, and the seed settles everything about them: where they
-            went to school, and sometimes a second school they picked up later; how they slant, size and space their
-            letters, and how fast they write; which form they like for each letter, a looped l or a plain one, a 7 with a
-            bar or without. The same seed always gives the same writer. Their names are made up too, with first names
-            and surnames from many countries paired by chance.
+            Handwriting is learned, so every writer here starts from a hand someone was taught. The hands come from eight
+            copybooks, from Rome in 1522 to Berlin in 1917, from Dr. A. V. Hershey’s 1967 stroke letters, and from
+            volunteers in Québec and France today. Each writer then makes it their own, in slant, size, rhythm and the
+            shape of each letter. A simulated pen writes it in ink on the kinds of paper people really used. Writers
+            slip, too, and cross things out.
           </p>
           <p>
-            Then a simulated pen writes each letter along its traced path: a ballpoint, gel pen, fountain pen, pointed
-            dip pen, broad italic nib, felt-tip or pencil. Ink pools where the pen rests and runs heavier on slow
-            downstrokes, a ballpoint skips on a quick upstroke, and iron-gall ink browns with age. The paper is the kind
-            people wrote on: letter pads, laid paper, airmail sheets and aerogrammes, pages torn from school exercise
-            books, postcards.
+            No AI model draws the letters. The engine is plain code, and every letter shape carries its source. Most of
+            its thirteen traditions are European or American, and so far it writes only the Latin alphabet.
           </p>
-          <p>
-            And writers make mistakes. A wrong letter is written over in heavier ink, a misspelt word is struck out and
-            written again, a forgotten word goes in above the line with a caret. Each writer fixes things their own way:
-            a careful one rules a single straight line, a hurried one scribbles.
-          </p>
-          <h3 className="about-subhead">What it can’t do</h3>
-          <ul className="about-list">
-            <li>
-              No AI model draws these hands. The engine is ordinary code that runs in your browser: traced letters, rules
-              and chance. So the hands are only as varied as the traditions behind them.
-            </li>
-            <li>
-              Thirteen traditions are a start, and most are European or American. Many of the world’s school hands
-              aren’t here yet, and only the Latin alphabet is.
-            </li>
-            <li>
-              Some hands are messy, cramped or hard to read, as real hands are. We don’t tidy them, but the hardest to
-              read stay out of the mix unless you ask for them.
-            </li>
-            <li>
-              Kurrent and the Dutch running hand are hard for most people to read today. You meet them only when you ask,
-              or when a letter is old enough to call for the Dutch hand.
-            </li>
-          </ul>
         </Section>
 
         <Section id="fonts">
           <p>
-            Every hand here is a font you can keep, free and open source under the SIL Open Font License 1.1. Use them
-            for anything, commercial work included, and change them and share them. The one thing you can’t do is sell a
-            font on its own.
-          </p>
-          <p>
-            Each download has an .otf and a .ttf file with 319 characters, enough for most European languages, and a
-            list of every source its letters came from.
-          </p>
-          <p>
-            A font is steadier than the page. A font file can only hold a few versions of each letter, so ours swap
-            between four or five as you type, and a word rarely comes out the same twice. The rest stays on the site:
-            how a line drifts, how a word leans, how the ink runs thin. Most apps swap the versions on their own; in
-            Word, turn on contextual alternates.
+            Every hand here is a font you can keep, free and open source under the SIL Open Font License. A font holds
+            four or five versions of each letter, so it’s a little steadier than the page.
           </p>
           <p><a className="about-link about-go" href={withLogo(FONTS_URL)}>Browse the fonts</a></p>
         </Section>
@@ -301,33 +189,46 @@ export function AboutApp() {
         <Section id="made">
           {/* Rafael's own story (his words, 3 Nov 2026). Rueca has no public address in the repo, so it isn't linked */}
           <p>
-            It started as a search for a font. Rafael was looking for a handwritten face for Rueca, another project of
-            his, and couldn’t find the hand he had in mind, so he tried making one. The experiment grew from there: a happy
-            accident that got a little out of hand.
+            It started as a search for a font. Rafael Cespedes, a designer, was looking for a handwritten face for
+            Rueca, another project of his. He couldn’t find the hand he had in mind, so he tried making one. It grew
+            from there, a happy accident that got a little out of hand.
           </p>
           <p>
-            {APP_NAME} is a lab experiment by Rafael Cespedes, a designer. It’s free, and it isn’t a business.
-          </p>
-          <p>
-            Rafael wanted to use AI in ways he finds clever, on things that used to take too many resources to try.
-            Nobody would draw hundreds of handwriting fonts by hand, trace copybooks letter by letter, or check the
-            rights of two hundred letters on two continents for a side project. With AI, one designer could.
+            It’s a free lab experiment with nothing to sell. He wanted to use AI in ways he finds clever. Drawing
+            hundreds of handwriting fonts, for one, used to take too many resources to try. The fonts are open source
+            now, and the code will follow once it’s polished.
           </p>
           <p className="about-credit-line">
             Designed by Rafael Cespedes and built with Claude, an AI model made by Anthropic.
           </p>
-          <p>
-            The handwriting itself doesn’t come from an AI model. Once built, the engine is plain code, and every letter
-            shape it uses carries the source it came from.
-          </p>
-          <p>
-            The hope is to bring letters, people and handwriting traditions that rarely get the spotlight into it, and
-            maybe to give other designers an idea or two. The fonts are open source now; the rest of the project, code
-            and all, will follow once it’s polished.
-          </p>
         </Section>
 
-        <Section id="credits">
+        <Section id="give">
+          <p>
+            Found this useful? These are the people who kept the letters and the hands. If you’d like to give back, give
+            to them.
+          </p>
+          <ul className="about-give">
+            {GIVE.map((g) => <GiveRow key={g.name} {...g} />)}
+          </ul>
+          <h3 className="about-subhead">For letters still being written</h3>
+          <ul className="about-give">
+            <GiveRow {...GIVE_ALSO} />
+          </ul>
+          <p className="about-give-note">Each link opens the organisation’s own donation page. We get nothing from it.</p>
+        </Section>
+
+        <Section id="contact">
+          <p>Spotted a mistake in a letter or its story? Rafael would like to know.</p>
+          <dl className="about-contact">
+            <div><dt>Site</dt><dd><Out href="https://rafaelcespedes.com">rafaelcespedes.com</Out></dd></div>
+            <div><dt>X</dt><dd><Out href="https://x.com/rafcespedes">@rafcespedes</Out></dd></div>
+          </dl>
+        </Section>
+
+        {/* the full credits: the licences ask for them, so they stay, folded away and quiet */}
+        <details className="about-credits">
+          <summary>Full credits and licences</summary>
           <div className="about-notes">
             <h3 className="about-subhead">The letters</h3>
             <p>Every letter’s own page names its source and links to it. Most come from these:</p>
@@ -341,12 +242,27 @@ export function AboutApp() {
               Royal Danish Library, the National Library of Norway, the Prague City Library, the Hungarian Electronic
               Library, the DBNL, the Bavarian State Library, Project Runeberg, Wikisource and the UK National Archives.
             </p>
+            <p>
+              Each letter is in the public domain in both the United States and Europe: first printed before 1931 (125
+              letters), or first made public in 2003 or later by a writer who died before 1956 or, with no known date of
+              death, written before 1906 (2 letters); and its writer died before 1956 (98 letters) or it was printed
+              anonymously before 1956 (29 letters). Writers’ sex and heritage are counted only from what each source
+              says, never guessed from a name; a letter written in Spanish or Brazilian Portuguese counts as Hispanic or
+              Latin American. Counted on 3 November 2026.
+            </p>
 
             <h3 className="about-subhead">The hands</h3>
+            <ul className="about-sources">
+              {HANDS.map((h) => (
+                <li key={h.year + h.name}>
+                  <span className="about-ledger-year">{h.year}</span> {h.name}, {h.place}. <Out href={h.href}>{h.source}</Out>
+                </li>
+              ))}
+            </ul>
             <p>
-              Traced from the copybooks listed in section 3, all in the public domain. The Hershey Fonts were
-              originally created by Dr. A. V. Hershey while working at the U.S. National Bureau of Standards; the format
-              of the font data was originally created by James Hurt, Cognition, Inc. Present-day handwriting comes from{' '}
+              The copybooks are in the public domain. The Hershey Fonts were originally created by Dr. A. V. Hershey
+              while working at the U.S. National Bureau of Standards; the format of the font data was originally created
+              by James Hurt, Cognition, Inc. Present-day handwriting comes from{' '}
               <Out href="https://github.com/banq-dcn/Copiste-d-un-jour">Copiste d’un jour</Out> (Bibliothèque et
               Archives nationales du Québec, 2024) and{' '}
               <Out href="https://github.com/HTR-United/cremma-wikipedia">CREMMA-Wikipedia</Out> (HTR-United, 2022–23),
@@ -357,61 +273,16 @@ export function AboutApp() {
             <h3 className="about-subhead">Fonts and type</h3>
             <p>
               The downloadable fonts are under the <Out href="https://openfontlicense.org">SIL Open Font License 1.1</Out>.
-              This site is set in Alegreya, Alegreya SC and Piazzolla by Huerta Tipográfica, and Atkinson Hyperlegible
-              Next by the Braille Institute, all under the same licence.
+              This site is set in typefaces under the same licence.
             </p>
 
             <h3 className="about-subhead">Everything else</h3>
             <p>
-              Every source the project used, 484 so far, from archives and copybooks to research papers, is listed with
-              what it decided in a reference library, to be published with the code.
+              Every source the project used, 484 so far, is listed with what it decided in a reference library, to be
+              published with the code.
             </p>
-
-            <h3 className="about-subhead">Notes</h3>
-            <ol className="about-footnotes">
-              <li id="note-1">
-                Groups are counted only from what each source says, never guessed from a name. A letter written in
-                Spanish or Brazilian Portuguese counts as Hispanic or Latin American even when its source gives no
-                nationality. <a href="#ref-1" className="about-back" aria-label="Back to note 1 in the text">↩</a>
-              </li>
-              <li id="note-2">
-                In the United States, a letter passes if it was first printed before 1931 (125 letters), or if it was first
-                made public in 2003 or later and is old enough: its writer died before 1956 or, with no known date of
-                death, it was written before 1906 (2 letters). In Europe, it passes if its writer died
-                before 1956 (98 letters) or it was printed anonymously before 1956 (29 letters).{' '}
-                <a href="#ref-2" className="about-back" aria-label="Back to note 2 in the text">↩</a>
-              </li>
-            </ol>
           </div>
-        </Section>
-
-        <Section id="contact">
-          <p>
-            {APP_NAME} is made by Rafael Cespedes. If you spot a mistake in a letter or its story, he’d like to know.
-          </p>
-          <dl className="about-contact">
-            <div><dt>Site</dt><dd><Out href="https://rafaelcespedes.com">rafaelcespedes.com</Out></dd></div>
-            <div><dt>X</dt><dd><Out href="https://x.com/rafcespedes">@rafcespedes</Out></dd></div>
-          </dl>
-        </Section>
-
-        <Section id="give">
-          <p>
-            Found this useful? It exists because these people kept the letters and the hands, and each of them takes
-            donations. If you’d like to give back, give to them.
-          </p>
-          <ul className="about-give">
-            {GIVE.map((g) => <GiveRow key={g.name} {...g} />)}
-          </ul>
-          <h3 className="about-subhead">For letters still being written</h3>
-          <ul className="about-give">
-            <GiveRow {...GIVE_ALSO} />
-          </ul>
-          <p className="about-give-note">
-            Each link opens the organisation’s own donation page. We aren’t connected to any of them and get nothing
-            from them.
-          </p>
-        </Section>
+        </details>
 
         <footer className="about-colophon">
           <p className="about-colophon-name">{NAME_WITH_DESCRIPTOR}</p>
