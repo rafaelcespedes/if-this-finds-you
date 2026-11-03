@@ -114,11 +114,14 @@ export function Panel(props: PanelProps) {
 // ---------- always there: the writer, New hand, share, what's on the page ----------
 function WriterHeader(props: PanelProps) {
   const { onNewHand } = props;
-  // desktop: the writer's name (and what's known about the hand) sits on the letter itself; here, the ways on
+  // desktop: the writer's name in their own hand grounds the panel; the name in type, with what's known about
+  // the hand, sits on the letter's corner
   return (
     <section aria-label="Writer" className="px-5 pt-4 pb-4">
-      <div className="flex min-h-11 items-center gap-2">
-        <LetterStatus {...props} className="min-w-0 flex-1" />
+      <div className="flex items-start gap-2">
+        <span key={props.state.seed + props.state.style} aria-label={props.name} role="img" className="hand-in block min-w-0 flex-1" style={{ color: inkColor(props.state.ink) }}>
+          <Signature p={props.p} name={props.name} ink="currentColor" emPx={34} className="-ml-1 h-[54px] overflow-visible" />
+        </span>
         <ShareMenu {...props} size="lg" />
       </div>
       <Button size="lg" className="mt-2 w-full justify-between pr-3 pl-3.5" onClick={onNewHand}>
@@ -127,6 +130,7 @@ function WriterHeader(props: PanelProps) {
         </span>
         <kbd className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
       </Button>
+      <LetterStatus {...props} className="mt-2.5" />
     </section>
   );
 }

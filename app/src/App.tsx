@@ -6,7 +6,6 @@ import { APP_NAME } from '@/lib/brand';
 import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
 import { AboutHand, Panel, type PanelProps } from '@/components/Panel';
-import { Signature } from '@/components/Signature';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -755,7 +754,7 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 px-4 pt-[calc(6rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
+          className="relative min-w-0 px-4 pt-[calc(6rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[80px] lg:pb-16"
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
         >
           <header
@@ -832,22 +831,20 @@ export default function App() {
                 <div className="relative mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
                   {isDesktop ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
-                    <div className="absolute bottom-1.5 left-0 flex max-w-full items-end gap-2.5">
+                    <div className="absolute bottom-1.5 left-0 flex max-w-full items-baseline gap-2.5">
                       <AboutHand {...panelProps}>
                         <button
                           type="button"
                           aria-label={`${name}: about this hand`}
-                          className="group -ml-1.5 flex shrink-0 items-end gap-1 rounded-lg px-1.5 pt-0.5 transition-colors duration-150 hover-device:hover:bg-[#e6e2d8] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+                          className="group -ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] font-medium tracking-[-0.01em] text-foreground transition-colors duration-150 hover-device:hover:bg-[#e6e2d8] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
                         >
-                          <span key={state.seed + state.style} className="hand-in block" style={{ color: ink }}>
-                            <Signature p={p} name={name} ink="currentColor" emPx={26} className="h-[42px] overflow-visible" />
-                          </span>
-                          <ChevronDown aria-hidden className="mb-2.5 size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                          {name}
+                          <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </button>
                       </AboutHand>
-                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 220)} className="mb-3" />
+                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 160)} />
                       {((hintShown && !hintBeside) || (escHint && !hintBeside)) && (
-                        <span key={escHint ? 'esc' : 'click'} className="mb-3 animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">
+                        <span key={escHint ? 'esc' : 'click'} className="animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">
                           {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
                         </span>
                       )}
