@@ -626,7 +626,7 @@ html[data-look='reading-room'] .control-sheet .rr-bring {
   border: 0;
   font-size: 17px;
 }
-html[data-look='reading-room'] .control-sheet button[aria-expanded] > span.rounded-full {
+html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-pill] {
   border-radius: 2px;
   border: 1px dashed color-mix(in oklab, var(--rr-ink) 35%, transparent);
   background: transparent;

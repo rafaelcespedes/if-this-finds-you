@@ -290,16 +290,16 @@ export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onD
         {props.letter && !props.letter.found && (
           <LetterStatus {...props} compact className="min-w-0 justify-center pb-1" />
         )}
-        {/* the look, as a pull-up: a centred pill under the grabber's line of sight; its chevron says which way it goes */}
-        <div className="flex justify-center pb-2">
+        {/* the look, as a pull-up: as wide as Find another above it, quieter; its chevron says which way it goes */}
+        <div className="pb-2">
           <button
             ref={pillRef}
             type="button"
             aria-expanded={expanded}
             onClick={() => onDetent(expanded ? 'peek' : 'half')}
-            className="group inline-flex h-11 items-center px-2 select-none focus-visible:outline-none"
+            className="group flex h-11 w-full items-center select-none focus-visible:outline-none"
           >
-            <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-secondary px-3.5 text-[0.7812rem] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
+            <span data-pill className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-secondary px-3.5 text-[0.8125rem] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
               Paper, pen & ink
               <ChevronUp aria-hidden className={cn('size-3.5 text-muted-foreground transition-transform duration-300 ease-[var(--ease-drawer)]', expanded && 'rotate-180')} />
             </span>
