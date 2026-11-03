@@ -101,6 +101,53 @@ html[data-look='reading-room'] {
   --rr-book: 'RR Book', 'Iowan Old Style', Georgia, serif;
   --rr-caps: 'RR Caps', 'RR Book', Georgia, serif;
 
+  /* the type roles (TYPE, at the end of this file): each a face, a size, a weight, a leading and a tracking. A font
+     pairing swaps one face variable per role; the sizes are the scale 13 · 15 · 17 · 22 px, in rem */
+  --rr-title-face: var(--rr-book);
+  --rr-title-size: 1.375rem;
+  --rr-title-weight: 500;
+  --rr-title-leading: 1.15;
+  --rr-title-tracking: -0.005em;
+  --rr-reading-face: var(--rr-book);
+  --rr-reading-size: 1.0625rem;
+  --rr-reading-weight: 400;
+  --rr-reading-leading: 1.6;
+  --rr-reading-tracking: 0;
+  --rr-text-face: var(--rr-book);
+  --rr-text-size: 0.9375rem;
+  --rr-text-weight: 400;
+  --rr-text-leading: 1.4;
+  --rr-text-tracking: 0;
+  --rr-small-face: var(--rr-book);
+  --rr-small-size: 0.8125rem;
+  --rr-small-weight: 400;
+  --rr-small-leading: 1.45;
+  --rr-small-tracking: 0;
+  --rr-label-face: var(--rr-caps);
+  --rr-label-size: 0.8125rem;
+  --rr-label-weight: 400;
+  --rr-label-leading: 1.3;
+  --rr-label-tracking: 0.06em;
+  --rr-number-face: var(--rr-caps);
+  --rr-number-size: 0.9375rem;
+  --rr-number-weight: 400;
+  --rr-number-leading: 1.2;
+  --rr-number-tracking: 0.04em;
+  --rr-action-face: var(--rr-book);
+  --rr-action-size: 1.0625rem;
+  --rr-action-weight: 600;
+  --rr-action-leading: 1.2;
+  --rr-action-tracking: 0;
+  --rr-micro-size: 0.6875rem;
+  --rr-micro-leading: 1;
+  /* the tool's compact controls (density.css) take the small role */
+  --body: var(--rr-small-size);
+  --label: var(--rr-small-size);
+  --cta-text: var(--rr-small-size);
+  --seg-text: var(--rr-small-size);
+  --chip-text: var(--rr-small-size);
+  --tile-text: var(--rr-small-size);
+
   --desk: var(--rr-room);
   --ink: var(--rr-ink);
   --ink-soft: #33405a;
@@ -141,8 +188,9 @@ html[data-look='reading-room'] body {
   --font-letter: var(--rr-book);
   --letter-scale: 1;
   --letter-variation: normal;
-  font-family: var(--rr-book);
-  font-size: 0.9375rem;
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  line-height: var(--rr-text-leading);
   font-variant-numeric: oldstyle-nums proportional-nums;
   font-feature-settings: normal;
 }
@@ -151,15 +199,6 @@ html[data-look='reading-room'] .tabular {
 }
 
 /* ---------- small pieces ---------- */
-html[data-look='reading-room'] .rr-sc {
-  font-family: var(--rr-caps);
-  text-transform: lowercase;
-  letter-spacing: 0.055em;
-  font-weight: 400;
-}
-html[data-look='reading-room'] .rr-figures {
-  font-variant-numeric: oldstyle-nums tabular-nums;
-}
 html[data-look='reading-room'] .rr-red {
   color: var(--rr-red);
 }
@@ -280,8 +319,6 @@ html[data-look='reading-room'] .rr-card-head {
 html[data-look='reading-room'] .rr-card-no {
   margin: 0;
   color: var(--rr-red);
-  font-size: 1rem;
-  letter-spacing: 0.04em;
 }
 html[data-look='reading-room'] .rr-card-actions {
   display: flex;
@@ -309,11 +346,6 @@ html[data-look='reading-room'] .rr-card-actions [data-slot='button'] svg {
 }
 html[data-look='reading-room'] .rr-card-title {
   margin: 12px 0 12px;
-  font-family: var(--rr-book);
-  font-size: 1.4375rem;
-  line-height: 1.12;
-  font-weight: 500;
-  letter-spacing: -0.005em;
   color: var(--rr-ink);
 }
 html[data-look='reading-room'] .rr-facts {
@@ -339,20 +371,16 @@ html[data-look='reading-room'] .rr-fact:has(.rr-sig) {
   align-items: center;
 }
 html[data-look='reading-room'] .rr-fact dt {
-  font-size: 0.875rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-fact dd {
   margin: 0;
   min-width: 0;
-  font-size: 0.9375rem;
-  line-height: 1.32;
   overflow-wrap: anywhere;
 }
 html[data-look='reading-room'] .rr-sub {
   display: block;
   margin-top: 1px;
-  font-size: 0.8438rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-ref {
@@ -369,8 +397,6 @@ html[data-look='reading-room'] .rr-notes ol {
   margin: 12px 0 0;
   padding: 10px 0 0 1.2em;
   border-top: 1px solid var(--rr-rule);
-  font-size: 0.8438rem;
-  line-height: 1.42;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-notes li + li {
@@ -378,12 +404,10 @@ html[data-look='reading-room'] .rr-notes li + li {
 }
 html[data-look='reading-room'] .rr-notes li::marker {
   color: var(--rr-red);
-  font-weight: 600;
   font-variant-numeric: lining-nums;
 }
 html[data-look='reading-room'] .rr-card-foot {
   margin: 10px 0 0;
-  font-size: 0.8438rem;
   color: var(--rr-muted);
 }
 /* the writer's name in their own hand, on the card (it opens what's known about the hand) */
@@ -464,9 +488,6 @@ html[data-look='reading-room'] .rr-bring {
   border-top: 1px solid var(--rr-ink);
   border-bottom: 1px solid var(--rr-rule);
   color: var(--rr-red);
-  font-family: var(--rr-book);
-  font-size: 1.125rem;
-  font-weight: 600;
   text-align: left;
   transition: color 150ms var(--ease-out);
 }
@@ -506,19 +527,6 @@ html[data-look='reading-room'] .rr-callno {
   color: var(--rr-red);
   line-height: 1;
 }
-html[data-look='reading-room'] .rr-callno-k {
-  font-family: var(--rr-caps);
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
-  text-transform: lowercase;
-  font-weight: 400;
-}
-html[data-look='reading-room'] .rr-callno-v {
-  margin-top: 1px;
-  font-family: var(--rr-book);
-  font-size: 0.9375rem;
-  font-weight: 700;
-}
 @media (pointer: coarse) {
   html[data-look='reading-room'] .rr-callno {
     display: none;
@@ -550,21 +558,16 @@ html[data-look='reading-room'] .rr-slip-head {
 }
 html[data-look='reading-room'] .rr-slip-k {
   grid-column: 1;
-  font-size: 0.8438rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-slip-t {
   grid-column: 1;
   margin-top: 2px;
-  font-size: 1.0625rem;
-  line-height: 1.2;
-  font-weight: 500;
   color: var(--rr-ink);
 }
 html[data-look='reading-room'] .rr-slip-v {
   grid-column: 1;
   margin-top: 2px;
-  font-size: 0.875rem;
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .rr-slip-chev {
@@ -595,21 +598,6 @@ html[data-look='reading-room'] .rr-slip.is-open .rr-slip-inner {
   border-top: 1px solid var(--rr-rule);
 }
 /* the panel's groups inside the slip: a label in small capitals per group, on ruled lines */
-html[data-look='reading-room'] .rr-slip-inner section[data-row] h3,
-html[data-look='reading-room'] .control-sheet section[data-row] h3 {
-  font-family: var(--rr-caps);
-  text-transform: lowercase;
-  letter-spacing: 0.055em;
-  font-size: 0.9375rem;
-  font-weight: 400;
-}
-html[data-look='reading-room'] .rr-slip-inner section[data-row] h3 > span,
-html[data-look='reading-room'] .control-sheet section[data-row] h3 > span {
-  font-family: var(--rr-book);
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 0.875rem;
-}
 html[data-look='reading-room'] .rr-slip-inner section[data-row] {
   border-color: var(--rr-rule);
 }
@@ -639,17 +627,11 @@ html[data-look='reading-room'] .control-sheet .rr-bring {
   min-height: 44px;
   padding: 6px 4px 6px 10px;
   border: 0;
-  font-size: 1.0625rem;
 }
 html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-pill] {
   border-radius: 2px;
   border: 1px dashed color-mix(in oklab, var(--rr-ink) 35%, transparent);
   background: transparent;
-  font-family: var(--rr-caps);
-  text-transform: lowercase;
-  letter-spacing: 0.04em;
-  font-size: 0.9062rem;
-  font-weight: 400;
   white-space: nowrap;
 }
 /* the phone's writing tray (PenTray.tsx), its pen menu, and their letter pulled down over yours (TheirLetter.tsx):
@@ -671,8 +653,6 @@ html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'] [da
   background: transparent;
   box-shadow: none;
   color: var(--rr-red);
-  font-size: 1rem;
-  font-weight: 600;
 }
 html[data-look='reading-room'] [class*='rounded-b-[22px]'] {
   border-radius: 0 0 3px 3px;
@@ -708,18 +688,8 @@ html[data-look='reading-room'] .rr-card-tag {
   background: var(--rr-slip);
   box-shadow: none;
   color: var(--rr-red);
-  font-family: var(--rr-caps);
-  font-size: 0.65625rem;
-  letter-spacing: 0.06em;
-  line-height: 1.1;
   white-space: nowrap;
   transform: translateY(-62%) rotate(-1.5deg);
-}
-html[data-look='reading-room'] .rr-card-tag-n {
-  font-family: var(--rr-book);
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  font-variant-numeric: oldstyle-nums tabular-nums;
 }
 @keyframes rr-fade {
   from {
@@ -733,16 +703,8 @@ html[data-look='reading-room'] .rr-aid {
   margin: 14px auto 0;
   padding-top: 10px;
   border-top: 1px solid color-mix(in oklab, var(--rr-ink) 60%, transparent);
-  font-family: var(--rr-caps);
-  font-size: 0.8125rem;
-  letter-spacing: 0.05em;
-  text-transform: lowercase;
   color: var(--rr-muted);
   text-wrap: balance;
-}
-html[data-look='reading-room'] .rr-aid .rr-figures {
-  font-family: var(--rr-book);
-  letter-spacing: 0.02em;
 }
 /* the timeline dock and the letter dock: a hairline-ruled slip, not a pill */
 html[data-look='reading-room'] .archive-dock {
@@ -756,9 +718,8 @@ html[data-look='reading-room'] .era-seg {
   border-radius: 2px;
 }
 html[data-look='reading-room'] .era-seg span:not(.era-marks):not(:has(*)) {
-  font-family: var(--rr-caps);
+  font-family: var(--rr-label-face);
   text-transform: lowercase;
-  letter-spacing: 0.05em;
 }
 html[data-look='reading-room'] .archive-field {
   border-radius: 2px;
@@ -790,9 +751,6 @@ html[data-look='reading-room'] .rr-letter-kicker {
   margin: 0 auto 16px;
   max-width: 30rem;
   text-align: center;
-  font-size: 1.375rem;
-  line-height: 1.18;
-  font-weight: 500;
   color: var(--rr-ink);
   text-wrap: balance;
 }
@@ -800,7 +758,6 @@ html[data-look='reading-room'] .rr-transcript-wrap {
   max-width: 36rem;
   margin: 28px auto 0;
   text-align: center;
-  font-size: 1rem;
 }
 html[data-look='reading-room'] .rr-transcript {
   display: grid;
@@ -809,8 +766,6 @@ html[data-look='reading-room'] .rr-transcript {
   padding-top: 16px;
   border-top: 1px solid var(--rr-rule);
   text-align: left;
-  font-size: 1.125rem;
-  line-height: 1.6;
   white-space: pre-line;
   color: var(--rr-ink);
 }
@@ -827,14 +782,12 @@ html[data-look='reading-room'] .rr-dock {
   border-top: 1px solid var(--rr-ink);
   border-radius: 2px;
   box-shadow: 0 12px 28px -16px rgba(30, 39, 51, 0.45);
-  font-size: 1rem;
   animation: dock-in 320ms var(--ease-out) both;
 }
 html[data-look='reading-room'] .rr-dock-no {
   padding: 0 4px;
   white-space: nowrap;
   color: var(--rr-red);
-  letter-spacing: 0.03em;
 }
 html[data-look='reading-room'] .rr-dock-of {
   color: var(--rr-muted);
@@ -866,7 +819,6 @@ html[data-look='reading-room'] .rr-dock-word {
 }
 html[data-look='reading-room'] .rr-dock-reply {
   color: var(--rr-red);
-  font-weight: 600;
 }
 html[data-look='reading-room'] .rr-dock-reply svg {
   width: 1rem;
@@ -896,7 +848,6 @@ html[data-look='reading-room'] .rr-dock {
   html[data-look='reading-room'] .rr-dock {
     gap: 0;
     padding-inline: 2px;
-    font-size: 0.9688rem;
   }
   html[data-look='reading-room'] .rr-dock .rr-icon {
     width: 40px;
@@ -949,15 +900,8 @@ html[data-look='reading-room'] [role='menu'] [role^='menuitem'] {
   border-radius: 2px;
 }
 /* a menu's group label ("More formats", "Kept on this device") in small capitals */
-html[data-look='reading-room'] [role='menu'] > div:not([role]) {
-  font-family: var(--rr-caps);
-  font-size: 0.8125rem;
-  letter-spacing: 0.06em;
-  text-transform: lowercase;
-}
 html[data-look='reading-room'] [data-radix-popper-content-wrapper] > :has(> [role='tooltip']) {
   border-radius: 2px;
-  font-size: 0.8125rem;
 }
 html[data-look='reading-room'] kbd {
   font-family: inherit;
@@ -967,17 +911,18 @@ html[data-look='reading-room'] kbd {
    earlier base layer is the only thing that outranks them (important declarations reverse the layer order). */
 @layer base {
   html[data-look='reading-room'] [data-sonner-toast] {
-    font-family: var(--rr-book) !important;
-    font-size: 0.9375rem !important;
+    font-family: var(--rr-text-face) !important;
+    font-size: var(--rr-text-size) !important;
+    line-height: var(--rr-text-leading) !important;
     border-radius: 2px !important;
   }
-  html[data-look='reading-room'] [data-sonner-toast] [data-title] {
-    font-weight: 500;
+  html[data-look='reading-room'] [data-sonner-toast] :is([data-title], [data-description], [data-button], [data-cancel]) {
+    font-weight: var(--rr-text-weight) !important;
   }
   html[data-look='reading-room'] [data-sonner-toast] :is([data-button], [data-cancel]) {
     border-radius: 2px !important;
-    font-family: var(--rr-book) !important;
-    font-size: 0.875rem !important;
+    font-family: var(--rr-text-face) !important;
+    font-size: var(--rr-text-size) !important;
   }
 }
 
@@ -997,20 +942,11 @@ html[data-look='reading-room'] .font-row-name {
   min-width: 0;
   white-space: normal;
 }
-html[data-look='reading-room'] .font-tag {
-  font-family: var(--rr-caps);
-  font-size: 0.875rem;
-  letter-spacing: 0.03em;
-  text-transform: lowercase;
-}
 /* the main actions (New set, Show more, Done) in words and archival red, like Bring another letter */
 html[data-look='reading-room'] .dock-primary {
   background: transparent;
   box-shadow: none;
   color: var(--rr-red);
-  font-family: var(--rr-book);
-  font-size: 1rem;
-  font-weight: 600;
   text-decoration: underline;
   text-decoration-color: transparent;
   text-decoration-thickness: 1px;
@@ -1029,7 +965,6 @@ html[data-look='reading-room'] .dock-primary:active {
 }
 @media (max-width: 380px) {
   html[data-look='reading-room'] .dock-primary {
-    font-size: 0.875rem;
     padding-inline: 6px;
   }
 }
@@ -1046,6 +981,142 @@ html[data-look='reading-room'] .outline-btn {
 html[data-look='reading-room'] .dock-caption {
   border-radius: 2px;
   box-shadow: 0 0 0 1px var(--rr-edge), 0 8px 18px -10px rgba(30, 39, 51, 0.35);
+}
+
+/* =====================================================================================================================
+   TYPE. Eight roles, each with one purpose, and one size, weight, leading and tracking (Rafael, 3 Nov: "be very
+   intentful about the styling"). Faces and values are the --rr-<role>-* tokens at the top of this file.
+     display  the handwritten headings ("All letters", "Fonts") and the wordmark: drawn in the logo's hand, no font
+     title    a letter's title, wherever it names the letter (22 px, 500)
+     reading  text read at length: the transcript, a page's opening paragraph (17 px)
+     text     the interface's words and the record's values: card values, menus, docks, toasts, slips (15 px)
+     small    what comes second: notes, sub-lines, hints, times, tooltips, and the compact controls' words (13 px)
+     label    the keys of the record, group names and counts, in small capitals (13 px, tracked)
+     number   catalogue numbers: small capitals, old-style tabular figures, archival red (15 px)
+     action   the one thing to do next, in archival red words: Bring another letter, Write a reply, New set, Done (17 px, 600)
+   and one size outside the scale, for a reason:
+     micro    words inside fixed-size controls, under an icon or a bar: the pen tips (Fine, Medium, Bold) and the
+              timeline's centuries (11 px). Plain for a choice, small capitals for a group.
+   The same sizes on every screen; rem, so they follow the browser's text size. Small capitals only for keys and
+   numbers, where they help a reader scan a record. Tabular figures only for numbers that line up or tick.
+   Controls keep their own line boxes: their heights come from the compact density (density.css).
+   ===================================================================================================================== */
+
+/* the shared components' own sizes, snapped onto the scale (the classic look keeps them as they were) */
+html[data-look='reading-room'] :is([class*='text-[0.6875rem]'], [class*='text-[0.7188rem]'], [class*='text-[0.75rem]'], [class*='text-[0.7812rem]'], [class*='text-[0.78125rem]'], [class*='text-[0.8125rem]'], [class*='text-[11px]'], [class*='text-[11.5px]'], [class*='text-[12px]'], [class*='text-[12.5px]'], [class*='text-[13px]'], [class*='text-[13.5px]']):not(.era-seg *) {
+  font-size: var(--rr-small-size);
+}
+html[data-look='reading-room'] :is([class*='text-[0.8438rem]'], [class*='text-[0.875rem]'], [class*='text-[0.9375rem]'], [class*='text-[14px]'], [class*='text-[15px]']) {
+  font-size: var(--rr-text-size);
+}
+html[data-look='reading-room'] :is([class*='text-[16px]'], [class*='text-[1rem]'], [class*='text-[17px]']) {
+  font-size: var(--rr-reading-size);
+  line-height: var(--rr-reading-leading);
+}
+/* one weight for words, no hand-tuned tracking: emphasis comes from the role (a title, an action), not a heavier cut */
+html[data-look='reading-room'] :is(.font-medium, .font-semibold) {
+  font-weight: 400;
+}
+html[data-look='reading-room'] [class*='tracking-['] {
+  letter-spacing: 0;
+}
+
+/* title */
+html[data-look='reading-room'] :is(.rr-card-title, .rr-letter-kicker, [class*='text-[22px]']) {
+  font-family: var(--rr-title-face);
+  font-size: var(--rr-title-size);
+  font-weight: var(--rr-title-weight);
+  line-height: var(--rr-title-leading);
+  letter-spacing: var(--rr-title-tracking);
+}
+/* reading */
+html[data-look='reading-room'] :is(.rr-transcript) {
+  font-family: var(--rr-reading-face);
+  font-size: var(--rr-reading-size);
+  font-weight: var(--rr-reading-weight);
+  line-height: var(--rr-reading-leading);
+  letter-spacing: var(--rr-reading-tracking);
+}
+/* text */
+html[data-look='reading-room'] :is(.rr-fact dd, .rr-slip-t, .rr-dock, .rr-transcript-wrap, .font-row-name, .canvas-title, .archive-card h3, [role^='menuitem'], .control-sheet button[aria-expanded] > span[data-pill]) {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  font-weight: var(--rr-text-weight);
+  line-height: var(--rr-text-leading);
+  letter-spacing: var(--rr-text-tracking);
+  text-transform: none;
+}
+/* small */
+html[data-look='reading-room'] :is(.rr-sub, .rr-notes ol, .rr-card-foot, .rr-slip-v, .specimen-note, .set-note, .font-list-note, [role^='menuitem'] .text-muted-foreground, [data-radix-popper-content-wrapper] > :has(> [role='tooltip'])) {
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  font-weight: var(--rr-small-weight);
+  line-height: var(--rr-small-leading);
+  letter-spacing: var(--rr-small-tracking);
+}
+/* label: small capitals */
+html[data-look='reading-room'] :is(.rr-sc, .rr-aid, .font-tag, [role='menu'] > div:not([role]), .rr-slip-inner section[data-row] h3, .control-sheet section[data-row] h3) {
+  font-family: var(--rr-label-face);
+  font-size: var(--rr-label-size);
+  font-weight: var(--rr-label-weight);
+  line-height: var(--rr-label-leading);
+  letter-spacing: var(--rr-label-tracking);
+  text-transform: lowercase;
+}
+/* a group's name and its value sit a little closer (the pen's row shares its line with the tip buttons) */
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet) section[data-row] h3 {
+  column-gap: 0.375rem;
+}
+/* a group's current value beside its label comes second: the small role */
+html[data-look='reading-room'] :is(.rr-slip-inner, .control-sheet) section[data-row] h3 > span {
+  font-family: var(--rr-small-face);
+  font-size: var(--rr-small-size);
+  letter-spacing: var(--rr-small-tracking);
+  text-transform: none;
+}
+/* number */
+html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag, .rr-callno-v) {
+  font-family: var(--rr-number-face);
+  font-size: var(--rr-number-size);
+  font-weight: var(--rr-number-weight);
+  line-height: var(--rr-number-leading);
+  letter-spacing: var(--rr-number-tracking);
+  font-variant-numeric: oldstyle-nums tabular-nums;
+}
+/* the dock's place in the list ("4 of 127") is words around a count: the text face, figures that tick in place */
+html[data-look='reading-room'] .rr-dock-of {
+  font-family: var(--rr-text-face);
+  letter-spacing: var(--rr-text-tracking);
+}
+/* inside a number, "No." keeps the number's size (not the label's) */
+html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag) .rr-sc {
+  font-size: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+}
+/* a note's mark: a number in its line, set small and raised (it scales with the text it marks) */
+html[data-look='reading-room'] .rr-ref {
+  font-family: var(--rr-number-face);
+  font-weight: var(--rr-number-weight);
+}
+/* micro: words inside fixed-size controls */
+html[data-look='reading-room'] [class*='text-[0.6562rem]'] {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-micro-size);
+  line-height: var(--rr-micro-leading);
+}
+html[data-look='reading-room'] .era-seg span:not(.era-marks):not(:has(*)) {
+  font-size: var(--rr-micro-size);
+  line-height: var(--rr-micro-leading);
+  letter-spacing: var(--rr-label-tracking);
+}
+/* action */
+html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div.fixed.z-40 > div[class*='rounded-[22px]'] [data-slot='button']) {
+  font-family: var(--rr-action-face);
+  font-size: var(--rr-action-size);
+  font-weight: var(--rr-action-weight);
+  line-height: var(--rr-action-leading);
+  letter-spacing: var(--rr-action-tracking);
 }
 
 /* Windows contrast themes: the stamps and rules keep to the system's colours */
