@@ -321,7 +321,7 @@ html[data-look='reading-room'] .rr-facts {
   container: rr-facts / inline-size;
 }
 /* narrow for its text (a small phone, or a large text size): each label sits over its value */
-@container rr-facts (max-width: 18rem) {
+@container rr-facts (max-width: 16rem) {
   html[data-look='reading-room'] .rr-facts .rr-fact {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
