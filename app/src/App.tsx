@@ -2,7 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { ArrowRight, ChevronDown, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
-import { APP_NAME } from '@/lib/brand';
+import { APP_NAME, withLogo } from '@/lib/brand';
+import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
 import { AboutHand, Panel, type PanelProps } from '@/components/Panel';
@@ -766,7 +767,7 @@ export default function App() {
             )}
           >
             {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
-            <span className="flex min-h-8 items-start text-[13px] font-medium tracking-[-0.01em] text-foreground/80 lg:min-h-9">{APP_NAME}</span>
+            <span className="flex h-8 items-start text-foreground/85 lg:h-9"><Wordmark className="h-full" /></span>
             <span className="flex min-w-0 items-baseline gap-2">
               {reader ? (
                 <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
@@ -778,7 +779,7 @@ export default function App() {
               )}
               {/* the whole library of found letters (the archive) */}
               <a
-                href={`${import.meta.env.BASE_URL}letters.html`}
+                href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                 className={cn(
                   // a big enough target without making the line taller (the sheet's label sits just under it)
                   "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
