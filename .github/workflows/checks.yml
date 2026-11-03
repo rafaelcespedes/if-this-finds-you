@@ -89,12 +89,25 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the version before this update is checked out beside it (next step)
       - uses: actions/setup-node@v7
         with:
           node-version: 24
 
+      # baseline.json comes from a Mac, and this runner's CPU rounds a few final SVGs differently, so the QA also
+      # renders the version before this update here and compares the two (docs/CHECKS.md)
+      - name: Check out the version before this update
+        env:
+          BEFORE: ${{ github.event_name == 'push' && github.event.before || '' }}
+        run: |
+          prev="$BEFORE"
+          if [ -z "$prev" ] || ! git cat-file -e "$prev^{commit}" 2>/dev/null; then prev=$(git rev-parse HEAD^1); fi
+          git worktree add --detach "$RUNNER_TEMP/previous" "$prev"
+          echo "Comparing with $(git log -1 --format='%h %s' "$prev")"
+
       - name: Engine QA, quick sample (the whole matrix runs nightly)
-        run: node tools/qa/regress.mjs --quick
+        run: node tools/qa/regress.mjs --quick --against="$RUNNER_TEMP/previous"
 
       - name: Summary
         if: always()

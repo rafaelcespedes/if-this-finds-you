@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { buildMatrix, quickMatrix, renderSpec, layerHashes, LAYERS, QA_DIR } from '../engine.mjs';
+import { buildMatrix, quickMatrix, loadEngine, renderSpec, layerHashes, LAYERS, QA_DIR } from '../engine.mjs';
 import { MATRIX_SEEDS } from '../config.mjs';
 
 const snapshot = (p) => JSON.stringify(Object.keys(p).sort().filter((k) => typeof p[k] !== 'function' && typeof p[k] !== 'object').map((k) => [k, p[k]]));
@@ -102,6 +102,10 @@ export async function run(ctx) {
   const base = (ctx.baseline && ctx.baseline.items) || {};
   const cur = {};
   for (const [id, h] of fwd) cur[id] = LAYERS.map((k) => h[k]).join(':');
+  if (ctx.args.against) {
+    const regression = await regressionAgainst(ctx, specs, cur, base, lines, problems);
+    return { id: 'determinism', title: 'Determinism & regression', lines, problems, data: { regression, trap } };
+  }
   const changed = [], added = [], removed = [];
   for (const id in cur) {
     if (!(id in base)) added.push(id);
@@ -123,19 +127,7 @@ export async function run(ctx) {
   } else {
     lines.push(`regression vs baseline: ${regression.total - changed.length - added.length} unchanged · ${changed.length} changed · ${added.length} new · ${removed.length} removed`);
     if (changed.length) {
-      // group: which layers changed, and where
-      const bySig = new Map();
-      for (const c of changed) {
-        const [style, pen, , text] = c.id.split('/');
-        const sig = c.layers.join('+');
-        if (!bySig.has(sig)) bySig.set(sig, { n: 0, where: new Map() });
-        const g = bySig.get(sig); g.n++;
-        const w = `${style}/${pen}/${text}`; g.where.set(w, (g.where.get(w) || 0) + 1);
-      }
-      for (const [sig, g] of bySig) {
-        lines.push(`  changed layers [${sig}] in ${g.n} items: ${[...g.where].slice(0, 12).map(([w, n]) => `${w}×${n}`).join(', ')}${g.where.size > 12 ? ' …' : ''}`);
-      }
-      lines.push('  (layout = layout.js · center = letters/hand.js · outline = pen.js · svg = render-svg/ink)');
+      lines.push(...describeChanges(changed));
       if (!ctx.update) problems.push({ level: 'fail', msg: `${changed.length} matrix items changed vs baseline — if intentional, run with --update and say why` });
     }
     if (added.length) {
@@ -148,4 +140,64 @@ export async function run(ctx) {
     }
   }
   return { id: 'determinism', title: 'Determinism & regression', lines, problems, data: { regression, trap } };
+}
+
+// group changed items: which layers changed, and where
+function describeChanges(changed) {
+  const bySig = new Map();
+  for (const c of changed) {
+    const [style, pen, , text] = c.id.split('/');
+    const sig = c.layers.join('+');
+    if (!bySig.has(sig)) bySig.set(sig, { n: 0, where: new Map() });
+    const g = bySig.get(sig); g.n++;
+    const w = `${style}/${pen}/${text}`; g.where.set(w, (g.where.get(w) || 0) + 1);
+  }
+  const out = [];
+  for (const [sig, g] of bySig) {
+    out.push(`  changed layers [${sig}] in ${g.n} items: ${[...g.where].slice(0, 12).map(([w, n]) => `${w}×${n}`).join(', ')}${g.where.size > 12 ? ' …' : ''}`);
+  }
+  out.push('  (layout = layout.js · center = letters/hand.js · outline = pen.js · svg = render-svg/ink)');
+  return out;
+}
+
+// ---------- regression judged on this machine: --against=<a checkout of the previous version> (CI) ----------
+// baseline.json holds the hashes of the Mac that ran --update. On another CPU a few final SVGs differ from it by a
+// rounding flip (the outline simplifier keeps a point 0.4 px to one side; docs/CHECKS.md), so CI also renders the
+// previous version here and asks of every item: did its output change between the two versions, and if so, did its
+// baseline line change with it? Changed output with an untouched baseline line fails, as on the Mac.
+async function regressionAgainst(ctx, specs, cur, base, lines, problems) {
+  const prevRoot = path.resolve(ctx.args.against);
+  let P;
+  try { P = await loadEngine(prevRoot); } catch (e) {
+    problems.push({ level: 'fail', msg: `the previous version (${ctx.args.against}) did not load: ${(e && e.message) || e}` });
+    return null;
+  }
+  let prevBase = {};
+  try { prevBase = JSON.parse(fs.readFileSync(path.join(prevRoot, 'tools', 'qa', 'baseline.json'), 'utf8')).items || {}; } catch {}
+  const prevIds = new Set(buildMatrix(P).map((s) => s.id));
+  const steady = (h) => h.split(':').slice(0, 3).join(':'); // layout, center, outline: the same on every CPU so far
+  const changed = [], accepted = [], added = [], drift = [];
+  let svgOnly = 0, same = 0;
+  for (const spec of specs) {
+    const id = spec.id;
+    if (!(id in cur)) continue;
+    if (!(id in base)) added.push(id);
+    else if (steady(base[id]) !== steady(cur[id])) drift.push(id);
+    else if (base[id] !== cur[id]) svgOnly++;
+    let prev = null;
+    if (prevIds.has(id)) {
+      try { const r = renderSpec(P, spec); const h = layerHashes(r.page, r.svg); prev = LAYERS.map((k) => h[k]).join(':'); } catch {}
+    }
+    if (prev == null || prev === cur[id]) { same++; continue; } // new items are judged by `added` and `drift` above
+    const a = prev.split(':'), b = cur[id].split(':');
+    const c = { id, layers: LAYERS.filter((_, i) => a[i] !== b[i]) };
+    (base[id] !== prevBase[id] ? accepted : changed).push(c);
+  }
+  lines.push(`regression vs the previous version, both rendered here: ${same} unchanged · ${changed.length} changed with no baseline update · ${accepted.length} changed with one · ${added.length} new`);
+  if (changed.length) lines.push(...describeChanges(changed));
+  lines.push(`vs baseline.json (made on another machine): ${svgOnly} items differ only in the final SVG (a rounding flip on this CPU, expected) · ${drift.length} in layout, letters or outline`);
+  if (changed.length) problems.push({ level: 'fail', msg: `${changed.length} matrix items changed since the previous version but their baseline lines didn't — if intentional, run regress.mjs --update and commit baseline.json, saying why` });
+  if (drift.length) problems.push({ level: 'warn', msg: `${drift.length} items differ from baseline.json in layout, letters or outline (stale baseline?): ${drift.slice(0, 3).join(', ')}${drift.length > 3 ? ' …' : ''}` });
+  if (added.length) problems.push({ level: 'warn', msg: `${added.length} new matrix items not in baseline (new style/pen/param?) — run with --update to record them` });
+  return { against: ctx.args.against, same, changed, accepted, added, drift, svgOnly, total: Object.keys(cur).length };
 }

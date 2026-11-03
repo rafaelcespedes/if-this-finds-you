@@ -8,9 +8,9 @@ commit. If either fails, the live site stays on the last good version and the fa
 
 | When | Check (its name on GitHub and in Vercel) | What it does | Time on GitHub |
 |---|---|---|---|
-| Every push and PR to `preview` or `main` | **Site: build and smoke test** | Installs the app, typechecks it (any TypeScript error fails), builds it with Vercel's own command (`npm run build`), checks the Lost Letters texts (`content/check-texts.mjs`), then the smoke test (below) | ~2–3 min |
-| Same, side by side | **Engine: quick QA** | `node tools/qa/regress.mjs --quick` (below) | ~2–3 min |
-| Every night at 03:30 UTC, or by hand | **Engine: full QA (nightly)** | `node tools/qa/regress.mjs`, every matrix item. Skipped when nothing in `engine/` or `tools/qa/` changed in the last day. Not a Vercel check: it's too slow to hold every update | ~30–45 min (~21 min on an M1 Max) |
+| Every push and PR to `preview` or `main` | **Site: build and smoke test** | Installs the app, typechecks it (any TypeScript error fails), builds it with Vercel's own command (`npm run build`), checks the Lost Letters texts (`content/check-texts.mjs`), then the smoke test (below) | ~1 min |
+| Same, side by side | **Engine: quick QA** | `node tools/qa/regress.mjs --quick`, judged against the version before the update (below) | ~2 min |
+| Every night at 03:30 UTC, or by hand | **Engine: full QA (nightly)** | `node tools/qa/regress.mjs`, every matrix item, judged against the version from a day before. Skipped when nothing in `engine/` or `tools/qa/` changed in that day. Not a Vercel check: it's too slow to hold every update | ~35–50 min (~21 min on an M1 Max) |
 
 The workflows are `.github/workflows/checks.yml` and `.github/workflows/engine-full.yml`. A newer push to the
 same branch cancels a run that's still going: only the newest update can go live anyway.
@@ -68,20 +68,32 @@ letter proportions. The full matrix is 8,619 items; that's ~18 of its ~21 minute
 `--quick` (every push) runs a fixed sample of 440 items, picked in `quickMatrix` in `tools/qa/lib/engine.mjs`:
 every style writes the whole Kernel, the paragraph and a phone-width letter; every pen writes the pangram in
 every style; plus a stable 1-in-30 share of everything else. Each is rendered twice, in reverse order and in a
-fresh process, and compared with the baseline, as in the full run. Coverage, contracts and proportions run as
-usual; geometry is left to the nightly run. ~80 s on an M1 Max. A one-line change to a single pen changed 40
-of the 440 items, so the sample catches real changes; a change that only touches rare items may wait for the
-nightly run.
+fresh process, as in the full run. Coverage, contracts and proportions run as usual; geometry is left to the
+nightly run. ~60–80 s on an M1 Max. A one-line change to a single pen changed 40 of the 440 items, so the sample
+catches real changes; a change that only touches rare items may wait for the nightly run.
+
+### Why GitHub doesn't compare with baseline.json directly
+
+The baseline is made on an Apple-silicon Mac. GitHub's machines have other chips, whose maths functions round the
+last digit differently, and the ink renderer turns a few of those into visible-in-the-file (not on screen)
+differences: the outline simplifier keeps a point 0.4 px to one side. Layout, letter shapes and pen outlines
+match exactly; on 440 items the final SVG differed in 36 on Intel/AMD Linux and 6 on ARM Linux. So on GitHub
+(`--against=<previous version>`) the QA also renders the version before the update on the same machine, and
+asks of every item: did its output change between the two versions? If it did, its line in `baseline.json` must
+have changed in the same update, or the check fails, just as `regress.mjs` fails on the Mac. Items whose final
+SVG differs from the Mac's only by this rounding are counted, not failed. On the Mac nothing changes:
+`regress.mjs` compares with `baseline.json` exactly. (If GitHub ever flags an item that the full run on the Mac
+calls unchanged, it's this rounding: say so in the PR and Force Promote.)
 
 ## Changing the engine's output on purpose: updating the baseline
 
-Any change to what the engine draws fails both QA runs with "N matrix items changed vs baseline" until the
-baseline is updated. The update goes in the same branch as the change:
+Any change to what the engine draws fails the QA (on the Mac and on GitHub) until the baseline is updated. The
+update goes in the same branch as the change, so the push that brings the change also brings its baseline lines:
 
 1. Run the full check: `node tools/qa/regress.mjs`. Read the "changed layers" lines: the changes should be only
    where you meant them (one pen, one style, only the `outline` layer…).
-2. Accept them: `node tools/qa/regress.mjs --update` (~20 min). `--quick --update` is refused: it would write a
-   partial baseline.
+2. Accept them: `node tools/qa/regress.mjs --update` (~20 min), on the Mac. `--update` refuses `--quick` and
+   `--against`: it would write a partial baseline.
 3. Commit `tools/qa/baseline.json` and say why in the commit message ("baseline: felt pen spreads 5% more").
 
 When two merged branches both updated the baseline, re-run `--update` on the merged result: the merged

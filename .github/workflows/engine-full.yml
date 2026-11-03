@@ -26,38 +26,41 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 24
 
-      # Nightly only: skip when nothing in the engine or its QA changed in the last day (saves build minutes).
-      - name: Anything new since yesterday?
-        id: changed
-        env:
-          GH_TOKEN: ${{ github.token }}
+      # Judged against the version from a day ago, rendered here too (as in checks.yml). The nightly run is skipped
+      # when nothing in the engine or its QA changed since then.
+      - name: Check out the version from a day ago
+        id: prev
         run: |
-          if [ "${{ github.event_name }}" != "schedule" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
-          since=$(date -u -d '26 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          n=0
-          for p in engine tools/qa; do
-            c=$(gh api "repos/${{ github.repository }}/commits?sha=${{ github.sha }}&path=$p&since=$since&per_page=1" --jq length)
-            n=$((n + c))
-          done
-          if [ "$n" -gt 0 ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; echo "No engine or QA changes since $since: skipped." >> "$GITHUB_STEP_SUMMARY"; fi
+          prev=$(git rev-list -1 --before="26 hours ago" HEAD)
+          if [ -z "$prev" ]; then prev=$(git rev-list --max-parents=0 HEAD | tail -1); fi
+          if [ "${{ github.event_name }}" = "schedule" ] && git diff --quiet "$prev" HEAD -- engine tools/qa; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing in engine/ or tools/qa/ changed since $(git log -1 --format='%h, %cd' "$prev"): skipped." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git worktree add --detach "$RUNNER_TEMP/previous" "$prev"
+          echo "Comparing with $(git log -1 --format='%h %s' "$prev")"
+          echo "run=true" >> "$GITHUB_OUTPUT"
 
       - name: Engine QA, whole matrix
-        if: steps.changed.outputs.run == 'true'
-        run: node tools/qa/regress.mjs
+        if: steps.prev.outputs.run == 'true'
+        run: node tools/qa/regress.mjs --against="$RUNNER_TEMP/previous"
 
       - name: Summary
-        if: always() && steps.changed.outputs.run == 'true'
+        if: always() && steps.prev.outputs.run == 'true'
         run: |
           if [ -f tools/qa/out/summary.txt ]; then
             { echo '### Engine QA (full)'; echo '```'; cat tools/qa/out/summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Keep the report
-        if: always() && steps.changed.outputs.run == 'true'
+        if: always() && steps.prev.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: engine-qa-full

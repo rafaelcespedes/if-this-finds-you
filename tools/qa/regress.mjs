@@ -6,6 +6,8 @@
 //   node tools/qa/regress.mjs --quick    a few minutes: a fixed sample of the matrix (quickMatrix in lib/engine.mjs),
 //                                        coverage, contracts and proportions; no geometry. CI runs it on every push.
 //   node tools/qa/regress.mjs --update   accept intentional changes into baseline.json (say why in the commit)
+//   --against=<checkout of the previous version>   judge regression by rendering both versions on this machine
+//                                        (CI: its CPU rounds a few SVGs differently from the Mac that made the baseline)
 // See docs/CHECKS.md for what runs where.
 
 import { main } from './run.mjs';
