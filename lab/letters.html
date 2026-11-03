@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seedhand letters lab</title>
+<style>
+  :root { --bg: #eeebe4; --paper: #fffdf8; --line: #dcd7cc; --text: #23211d; --muted: #77736a; --ink: #1c2233;
+    --guide: #e3dccb; --guide2: #c9bfa8; --start: #c4532f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 ui-sans-serif, -apple-system, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: #f7f5f0; border-bottom: 1px solid var(--line);
+    padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  header b { font-size: 15px; }
+  header label { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+  header input, header select { font: 13px ui-monospace, Menlo, monospace; padding: 5px 7px; border: 1px solid var(--line);
+    border-radius: 6px; background: #fff; color: var(--text); }
+  header input.wide { width: min(420px, 80vw); }
+  header button { font: inherit; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; cursor: pointer; }
+  main { padding: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+  main.rows { flex-direction: column; flex-wrap: nowrap; }
+  .cell { background: var(--paper); border-radius: 4px; box-shadow: 0 1px 0 #0000000d; padding: 6px 8px 4px; }
+  .cell h4 { margin: 0 0 2px; font: 600 11px ui-monospace, Menlo, monospace; color: var(--muted); white-space: nowrap; }
+  .cell small { display: block; font: 10px ui-monospace, Menlo, monospace; color: var(--muted); max-width: 260px; }
+  .cell svg { display: block; }
+  .hand { width: 100%; }
+  .hand h4 { font-size: 12px; }
+  .hand small { max-width: none; }
+  svg .ink { fill: var(--ink); }
+  svg .sk { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+  svg .pt { fill: var(--ink); }
+  svg .st { fill: var(--start); }
+  svg .g1 { stroke: var(--guide); stroke-width: 1; }
+  svg .g2 { stroke: var(--guide2); stroke-width: 1; stroke-dasharray: 3 3; }
+  svg .box { fill: none; stroke: #b9d1e8; stroke-width: 1; }
+  @media (max-width: 600px) { header input.wide { width: 100%; } }
+</style>
+</head>
+<body>
+<header>
+  <b>Letters lab</b>
+  <label>view <select id="view">
+    <option value="skeleton">skeletons (source units)</option>
+    <option value="glyph">rendered, every variant</option>
+    <option value="hands">contact sheet of hands</option>
+  </select></label>
+  <label>style <select id="style"></select></label>
+  <label>chars <input id="chars" class="wide"></label>
+  <label>seed <input id="seed" size="16"></label>
+  <label>variety <select id="variety"></select></label>
+  <label>size <input id="size" type="number" min="2" max="20" step="1" size="3"></label>
+  <label>text <input id="text" class="wide"></label>
+  <button id="go">Draw</button>
+</header>
+<main id="out"></main>
+<script type="module" src="letters.js"></script>
+</body>
+</html>

@@ -5,6 +5,8 @@
 //  - i / j have a dot, separate from the stem; other dotted punctuation has the expected number of dots
 //  - script: each letter's exit lands on the next letter (gap distribution, in pen widths)
 //  - layout keeps glyphs inside maxWidth
+//  - style dimensions never break a letter: in context (word starts, ends, joins, lifts), no visible letter keeps
+//    less than 40% of the ink it has with every dimension at 0, and no new specks (tiny strokes touching nothing) appear
 
 import { KERNEL } from '../charsets.mjs';
 import { GEOM, RENDER, NARROW_WIDTH, TEXTS, PARAGRAPH, statSeeds } from '../config.mjs';
@@ -24,6 +26,7 @@ export async function run(ctx) {
   for (const style of E.styleNames()) {
     const connected = !!(E.getStyle(style) && E.getStyle(style).connected);
     const D = (data[style] = {});
+    const ijUses = { n: 0, skipped: [] };
     const bad = { nan: [], empty: [], degenerate: 0, adv: [], top: [], bottom: [], overhang: [], dots: [], dotCount: new Map() };
     const worst = new Map(); // ch -> { top, bottom, seedTop, seedBottom }
     const dotGaps = [];
@@ -71,7 +74,10 @@ export async function run(ctx) {
                 bad.dotCount.set(k, (bad.dotCount.get(k) || 0) + 1);
               }
               if ((ch === 'i' || ch === 'j')) {
-                if (!dots.length) bad.dots.push(`${tag} has no dot`);
+                // real writers occasionally forget a dot (human-feel rule 7: 0–3% of uses); the canonical form never does
+                ijUses.n++;
+                if (!dots.length && tag.includes('#qa')) ijUses.skipped.push(tag);
+                else if (!dots.length) bad.dots.push(`${tag} has no dot`);
                 else {
                   const stem = g.strokes.filter((s) => !s.dot).map((s) => s.contour);
                   const gap = bboxOf(dots.map((s) => s.contour)).y0 - bboxOf(stem).y1;
@@ -94,6 +100,11 @@ export async function run(ctx) {
     if (bad.top.length) problems.push({ level: 'fail', key: `${style}:top`, count: bad.top.length, msg: `${style}: ${bad.top.length} glyphs rise above the page top (> ${GEOM.topLimit}): ${list(bad.top)}` });
     if (bad.bottom.length) problems.push({ level: 'fail', key: `${style}:bottom`, count: bad.bottom.length, msg: `${style}: ${bad.bottom.length} glyphs drop below the page bottom (< ${GEOM.bottomLimit}): ${list(bad.bottom)}` });
     if (bad.overhang.length) problems.push({ level: 'warn', msg: `${style}: ${bad.overhang.length} print glyphs overhang their advance by > ${GEOM.overhangWarn * 100}%: ${list(bad.overhang)}` });
+    if (ijUses.skipped.length) {
+      const rate = ijUses.skipped.length / Math.max(1, ijUses.n);
+      lines.push(`${style}: forgotten i/j dots ${ijUses.skipped.length}/${ijUses.n} uses (${(rate * 100).toFixed(1)}%, allowed ≤ 3%)`);
+      if (rate > 0.03) bad.dots.push(`forgotten dots on ${(rate * 100).toFixed(1)}% of uses (> 3%): ${ijUses.skipped.slice(0, 3).join('; ')}`);
+    }
     if (bad.dots.length) problems.push({ level: 'fail', key: `${style}:dots`, count: bad.dots.length, msg: `${style}: i/j dot problems in ${bad.dots.length} instances: ${list(bad.dots)}` });
     for (const [k, n] of bad.dotCount) problems.push({ level: 'warn', msg: `${style}: ${k} (${n} instances)` });
     const tops = [...worst].sort((a, b) => b[1].top - a[1].top).slice(0, 4).map(([c, w]) => `${showCh(c)} ${fmt(w.top, 0)}`);
@@ -130,7 +141,7 @@ export async function run(ctx) {
     // ---------- script joins ----------
     if (connected) {
       const gaps = [], capGaps = [], byPair = new Map();
-      let noExit = 0;
+      let noExit = 0, lifts = 0, pairs = 0;
       for (const seed of seedsAll) {
         const p = E.makeHand(seed, style);
         const xh = p.xHeight * CAP;
@@ -140,6 +151,9 @@ export async function run(ctx) {
           const A = items[i], B = items[i + 1];
           if (B.charIndex !== A.charIndex + 1 || A.line !== B.line) continue;
           if (!isLower(B.ch) || !(isLower(A.ch) || isUpper(A.ch))) continue;
+          // deliberate pen lifts (style dimensions mark them on the variant) are the writer's habit, not broken joins
+          if (isLower(A.ch)) pairs++;
+          if ((A.g.variant && A.g.variant.lift && A.g.variant.lift.after) || (B.g.variant && B.g.variant.lift && B.g.variant.lift.before)) { if (isLower(A.ch)) lifts++; continue; }
           const zone = (q) => q[1] > -0.15 * xh && q[1] < 1.2 * xh;
           let exit = null;
           for (const s of A.g.strokes) if (!s.dot) { const q = s.center[s.center.length - 1]; if (zone(q) && (!exit || q[0] > exit[0])) exit = q; }
@@ -158,8 +172,9 @@ export async function run(ctx) {
       }
       const s = stats(gaps);
       const brokenRate = gaps.filter((g) => g > GEOM.joinBrokenPenWidths).length / Math.max(1, gaps.length);
-      D.joins = { stats: s, brokenRate, capJoinedRate: capGaps.filter((g) => g <= GEOM.joinBrokenPenWidths).length / Math.max(1, capGaps.length) };
+      D.joins = { stats: s, brokenRate, liftRate: lifts / Math.max(1, pairs), capJoinedRate: capGaps.filter((g) => g <= GEOM.joinBrokenPenWidths).length / Math.max(1, capGaps.length) };
       lines.push(`    joins lower→lower, exit-to-next-letter gap in pen widths: ${fmtStats(s, 2)}`);
+      if (lifts) lines.push(`    deliberate pen lifts (the writer's habit, marked by style dimensions): ${fmt(lifts / pairs * 100, 1)}% of ${pairs} lowercase pairs`);
       lines.push(`    joins broken (> ${GEOM.joinBrokenPenWidths} pen widths): ${fmt(brokenRate * 100, 1)}% of ${gaps.length} joins · capital→lower joined: ${fmt(D.joins.capJoinedRate * 100, 0)}% of ${capGaps.length}${noExit ? ` · ${noExit} letters without an exit in the join zone` : ''}`);
       const worstPairs = [...byPair].filter(([, e]) => e.broken).sort((a, b) => b[1].broken / b[1].n - a[1].broken / a[1].n || b[1].sum / b[1].n - a[1].sum / a[1].n).slice(0, 10);
       if (worstPairs.length) lines.push(`    pairs that break most: ${worstPairs.map(([k, e]) => `${k} ${e.broken}/${e.n} (avg ${fmt(e.sum / e.n, 1)})`).join(', ')}`);
@@ -195,6 +210,53 @@ export async function run(ctx) {
       if (!e) seen.set(k, { ...iss, n: 1 }); else { e.n++; if (iss.amt > e.amt) { e.amt = iss.amt; e.msg = iss.msg; } }
     }
     for (const v of seen.values()) problems.push({ level: v.level, key: v.key, count: v.n, msg: v.msg + (v.n > 1 ? ` (worst of ${v.n} seeds)` : '') });
+  }
+
+  // ---------- style dimensions: bugs only (ugly is allowed, broken letters are not) ----------
+  // Every tradition (style), each letter in word context, against the same letter with every dimension at 0.
+  if (E.STYLE_NEUTRAL) {
+    const text = (TEXTS.pangram + ' ' + PARAGRAPH.slice(0, 260) + ' ' + TEXTS.caps + ' bookkeeper committee minimum quite little').split(/\s+/);
+    const inkOf = (g) => g.strokes.filter((st) => !st.dot).reduce((n, st) => { let L = 0; for (let i = 1; i < st.center.length; i++) L += Math.hypot(st.center[i][0] - st.center[i - 1][0], st.center[i][1] - st.center[i - 1][1]); return n + L; }, 0);
+    // a speck: a short stroke that touches no other stroke (a short piece of one continuous movement, where the
+    // pen model splits a stroke at a cusp, is ink like any other)
+    const specks = (g, xh) => {
+      const body = g.strokes.filter((st) => !st.dot && !st.mark);
+      return body.filter((st) => {
+        let L = 0; for (let i = 1; i < st.center.length; i++) L += Math.hypot(st.center[i][0] - st.center[i - 1][0], st.center[i][1] - st.center[i - 1][1]);
+        if (!(st.center.length <= 3 || L < 0.06 * xh)) return false;
+        const ends = [st.center[0], st.center[st.center.length - 1]];
+        return !body.some((o) => o !== st && o.center.some((q) => ends.some((e) => Math.hypot(q[0] - e[0], q[1] - e[1]) < 0.12 * xh)));
+      }).length;
+    };
+    const lost = [], speck = [];
+    let checked = 0;
+    for (const style of E.styleNames()) {
+      for (const seed of statSeeds(24).slice(0, 12)) {
+        let p;
+        try { p = E.makeHand(seed, { style }); } catch { p = E.makeHand(seed, style); }
+        if (p.style !== style) continue;
+        const p0 = E.withOverrides(p, E.STYLE_NEUTRAL);
+        const xh = p.xHeight * CAP;
+        for (const word of text) {
+          const chars = [...word];
+          chars.forEach((ch, i) => {
+            if (!/^\p{L}$/u.test(ch) || !E.has(p, ch)) return;
+            const ctx = { prev: chars[i - 1] || null, next: chars[i + 1] || null, index: i, wordStart: i === 0, wordEnd: i === chars.length - 1 };
+            const g = E.makeGlyph(p, ch, null, ctx), g0 = E.makeGlyph(p0, ch, null, ctx);
+            checked++;
+            const a = inkOf(g), b = inkOf(g0);
+            const tag = `${seed} '${ch}' in "${word}"`;
+            if (b > 0 && a < 0.4 * b) lost.push(`${tag} keeps ${Math.round(a / b * 100)}% of its ink`);
+            const n = specks(g, xh), n0 = specks(g0, xh);
+            if (n > n0) speck.push(`${tag} has ${n - n0} new speck${n - n0 > 1 ? 's' : ''}`);
+          });
+        }
+      }
+    }
+    lines.push(`style dimensions: ${checked} letters in context across ${E.styleNames().length} traditions · letters that lost > 60% of their ink: ${lost.length} · new specks: ${speck.length}`);
+    const list = (arr, n = 6) => arr.slice(0, n).join('; ') + (arr.length > n ? ` … (+${arr.length - n})` : '');
+    if (lost.length) problems.push({ level: 'fail', key: 'dims:ink-lost', count: lost.length, msg: `style dimensions broke ${lost.length} letters (ink lost): ${list(lost)}` });
+    if (speck.length) problems.push({ level: 'fail', key: 'dims:specks', count: speck.length, msg: `style dimensions left specks in ${speck.length} letters: ${list(speck)}` });
   }
   return { id: 'geometry', title: 'Geometry sanity', lines, problems, data };
 }
