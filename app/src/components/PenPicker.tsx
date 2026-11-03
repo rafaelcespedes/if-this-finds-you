@@ -45,7 +45,7 @@ export const PenSwatches = memo(function PenSwatches({ seed, style, pen, penSize
       role="radiogroup"
       aria-label="Pen"
       onKeyDown={onKeyDown}
-      className="sheet-row -mx-5 flex snap-x scroll-px-5 gap-1.5 overflow-x-auto px-5 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="sheet-row -mx-5 flex snap-x scroll-px-5 gap-1.5 overflow-x-auto px-5 -my-[3px] py-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {PEN_CHOICES.map((c) => {
         const on = c.id === pen;
@@ -58,7 +58,7 @@ export const PenSwatches = memo(function PenSwatches({ seed, style, pen, penSize
             tabIndex={on ? 0 : -1}
             onClick={() => onPen(c.id)}
             className={cn(
-              'flex w-[78px] shrink-0 snap-start flex-col items-center gap-0.5 rounded-xl px-1.5 pt-1.5 pb-1.5 transition-[background-color,box-shadow] duration-150 ease-out select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.97] motion-reduce:active:scale-100',
+              'flex w-[78px] shrink-0 snap-start flex-col items-center gap-0.5 rounded-xl px-1.5 pt-1.5 pb-1.5 transition-[background-color,box-shadow] duration-150 ease-out select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
               on ? 'bg-[var(--tile-on)] shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)]' : 'bg-secondary hover-device:hover:bg-accent',
             )}
           >

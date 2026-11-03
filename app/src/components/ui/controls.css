@@ -46,7 +46,7 @@
   transition: opacity 200ms var(--ease-out);
   pointer-events: none;
 }
-:root [data-row]:not(.specimen-bar *) > [data-slot='slider']:is(:hover, [data-active], :focus-within) > span:first-child::after {
+:root [data-row]:not(.specimen-bar *) > [data-slot='slider']:is([data-active], :focus-within) > span:first-child::after {
   opacity: 1;
 }
 /* the value: a thin upright line, not a knob */
@@ -58,19 +58,40 @@
   background: color-mix(in oklab, var(--mark) 55%, transparent);
   box-shadow: none !important;
   scale: 1 !important;
-  transition: background-color 150ms var(--ease-out), height 150ms var(--ease-out);
+  transition: background-color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
 }
-:root [data-row]:not(.specimen-bar *) > [data-slot='slider']:is(:hover, [data-active]) [role='slider'],
+/* held: the line darkens and grows (by scale, so nothing reflows) */
+:root [data-row]:not(.specimen-bar *) > [data-slot='slider'][data-active] [role='slider'],
 :root [data-row]:not(.specimen-bar *) > [data-slot='slider'] [role='slider']:active {
   background: var(--mark);
-  height: 1.25rem !important;
+  scale: 1 1.25 !important;
 }
 :root [data-row]:not(.specimen-bar *) > [data-slot='slider'] [role='slider']::after {
   inset: -0.75rem; /* a 26 × 40 px hit area around the 2 px line (24 px or more) */
 }
 /* near the name or the word the line steps back so the words stay readable (DialKit's value dodge) */
-:root [data-row]:not(.specimen-bar *) > [data-slot='slider'][data-edge]:not(:hover):not([data-active]) [role='slider'] {
+:root [data-row]:not(.specimen-bar *) > [data-slot='slider'][data-edge]:not([data-active]) [role='slider'] {
   background: color-mix(in oklab, var(--mark) 22%, transparent);
+}
+/* a pointer over the bar shows the tens marks and the dark line; only where hover is real, so a finger's tap
+   doesn't leave them behind */
+@media (hover: hover) and (pointer: fine) {
+  :root [data-row]:not(.specimen-bar *) > [data-slot='slider']:hover > span:first-child::after {
+    opacity: 1;
+  }
+  :root [data-row]:not(.specimen-bar *) > [data-slot='slider']:hover [role='slider'],
+  :root [data-row]:not(.specimen-bar *) > [data-slot='slider'][data-edge]:hover:not([data-active]) [role='slider'] {
+    background: var(--mark);
+    scale: 1 1.25 !important;
+  }
+}
+/* the keyboard ring goes round the whole bar, not the 2 px line */
+:root [data-row]:not(.specimen-bar *) > [data-slot='slider'] [role='slider']:focus-visible {
+  outline: none;
+}
+:root [data-row]:not(.specimen-bar *) > [data-slot='slider']:has([role='slider']:focus-visible) > span:first-child {
+  outline: 2px solid var(--st-ring);
+  outline-offset: 2px;
 }
 /* the writer's own value: a short tick in the bar */
 :root [data-row]:not(.specimen-bar *) > [data-slot='slider'] > span[aria-hidden] {
@@ -171,6 +192,13 @@
   color: var(--mark);
   background: color-mix(in oklab, var(--mark) 10%, transparent);
 }
+:root .group-lock:active {
+  background: var(--st-press);
+  transition-duration: var(--dur-press);
+}
+:root .group-lock[aria-pressed='true']:active {
+  background: color-mix(in oklab, var(--mark) 16%, transparent);
+}
 :root .group-lock:focus-visible {
   outline: 1.5px solid var(--ring);
   outline-offset: 1px;
@@ -190,15 +218,24 @@
   transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out), background-color 150ms var(--ease-out);
 }
 :root :is([role='radiogroup'][aria-label='Pen'] > button, [role='radiogroup'][aria-label='School'] > button, [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item']):active {
-  transform: translateY(1px) scale(0.985);
+  transform: translateY(1px) scale(var(--st-scale-row));
+  scale: none; /* the one press: not also SegmentedItem's */
   transition-duration: 80ms;
 }
 /* the chosen ink: its ring draws in around the dot; a held dot presses in */
 :root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item'] > span {
   transition: scale 140ms var(--ease-out), box-shadow 150ms var(--ease-out);
 }
+:root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item']:active {
+  scale: none; /* the dot presses, not the swatch's box */
+}
 :root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item']:active > span {
   scale: 0.88;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root [data-slot='segmented'][aria-label='Ink'] > :not([aria-checked='true']):hover > span {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1), 0 0 0 2px var(--panel), 0 0 0 3.5px color-mix(in oklab, var(--ink) 30%, transparent);
+  }
 }
 :root [data-slot='segmented'][aria-label='Ink'] > [aria-checked='true'] > span {
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1), 0 0 0 2px var(--panel), 0 0 0 3.5px var(--ink);
@@ -213,7 +250,22 @@
   :root [data-slot='segmented'][aria-label='Ink'] > [aria-checked='true'] > span {
     animation: none;
   }
-  :root :is([role='radiogroup'][aria-label='Pen'] > button, [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item']):active {
+  :root :is([role='radiogroup'][aria-label='Pen'] > button, [role='radiogroup'][aria-label='School'] > button, [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item']):active {
     transform: none;
   }
+}
+
+/* ---------- ruled rows: a full-width row that opens something (More, a drawer's head, Full record) ---------- */
+:root .ruled-row {
+  transition: background-color var(--st-dur) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  :root .ruled-row:hover > :first-child {
+    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
+    text-underline-offset: 3px;
+  }
+}
+:root .ruled-row:active {
+  background: var(--st-press);
+  transition-duration: var(--dur-press);
 }

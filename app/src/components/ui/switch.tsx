@@ -71,7 +71,7 @@ export function InfoTip({ id, text }: { id: string; text: string }) {
           type="button"
           aria-label="What this does"
           onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
-          className="relative grid size-5 place-items-center rounded-full text-faint transition-colors duration-150 after:absolute after:-inset-2.5 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+          className="relative grid size-5 place-items-center rounded-full text-faint transition-colors duration-150 after:absolute after:-inset-2.5 after:content-[''] hover-device:hover:text-foreground active:bg-[var(--st-press)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
         >
           <Info aria-hidden className="size-3.5" />
         </button>

@@ -59,7 +59,7 @@ export const StylePicker = memo(function StylePicker({ seed, style, ink, onStyle
           role="radiogroup"
           aria-label="School"
           onKeyDown={onKeyDown}
-          className="sheet-row -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-2 overflow-x-auto px-5 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="sheet-row -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-2 overflow-x-auto px-5 -my-[3px] py-[5px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {styles.map((s) => (
             <SchoolCard key={s} seed={seed} style={s} ink={ink} selected={s === style} onPick={() => onStyle(s)} />
@@ -83,7 +83,7 @@ function SchoolCard({ seed, style, ink, selected, onPick }: { seed: string; styl
       tabIndex={selected ? 0 : -1}
       onClick={onPick}
       className={cn(
-        'group flex w-[128px] shrink-0 snap-start flex-col items-start rounded-xl px-2.5 pt-2 pb-2 text-left transition-[background-color,box-shadow] duration-150 ease-out select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98] motion-reduce:active:scale-100',
+        'group flex w-[128px] shrink-0 snap-start flex-col items-start rounded-xl px-2.5 pt-2 pb-2 text-left transition-[background-color,box-shadow] duration-150 ease-out select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         selected
           ? 'bg-[var(--tile-on)] shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)]'
           : 'bg-secondary hover-device:hover:bg-accent',
