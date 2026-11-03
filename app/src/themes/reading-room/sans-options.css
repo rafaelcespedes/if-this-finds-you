@@ -1,0 +1,201 @@
+/* TEMPORARY comparison (sans-switch.ts): the face beside Junicode for the controls (--rr-ui: the control and micro roles).
+   Labels and numbers stay Junicode's own small capitals except in option 6. Each face is enlarged (size-adjust) so its
+   x-height matches Ysabeau Office's at 105%, the size the control role was tuned for. All SIL OFL 1.1, from Fontsource
+   (controls need no small capitals or old-style figures, which Fontsource strips). Fonts download only when chosen.
+   1 Source Sans 3 (Paul D. Hunt, Adobe): a humanist sans, the steadiest at 13 px.
+   2 Libertinus Sans (after Linux Biolinum): flared humanist from the same scholarly-typesetting world as Junicode.
+   3 Commissioner (Kostas Bartsokas) with its flare axis at 60: chiselled ends that echo Junicode's wedge serifs.
+   4 Cabin (Pablo Impallari), after Johnston and Gill: the British museum and railway sans of the 1910s-30s.
+   5 Junicode alone: controls in the book face (sized to the controls' x-height), labels in its small capitals; no sans.
+   6 Junicode alone, with Courier Prime (Alan Dague-Greene) typing the catalogue numbers and record labels. */
+@font-face {
+  font-family: 'RRS Source Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  size-adjust: 95%;
+  src: url('@fontsource-variable/source-sans-3/files/source-sans-3-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Source Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  size-adjust: 95%;
+  src: url('@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RRS Libertinus Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 104%;
+  src: url('@fontsource/libertinus-sans/files/libertinus-sans-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Libertinus Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 104%;
+  src: url('@fontsource/libertinus-sans/files/libertinus-sans-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RRS Libertinus Sans';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 104%;
+  src: url('@fontsource/libertinus-sans/files/libertinus-sans-latin-ext-400-italic.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Libertinus Sans';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 104%;
+  src: url('@fontsource/libertinus-sans/files/libertinus-sans-latin-400-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RRS Libertinus Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500 900;
+  size-adjust: 104%;
+  src: url('@fontsource/libertinus-sans/files/libertinus-sans-latin-ext-700-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Libertinus Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500 900;
+  size-adjust: 104%;
+  src: url('@fontsource/libertinus-sans/files/libertinus-sans-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RRS Commissioner';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/commissioner/files/commissioner-latin-ext-full-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Commissioner';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/commissioner/files/commissioner-latin-full-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RRS Cabin';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  size-adjust: 93%;
+  src: url('@fontsource-variable/cabin/files/cabin-latin-ext-wdth-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Cabin';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  size-adjust: 93%;
+  src: url('@fontsource-variable/cabin/files/cabin-latin-wdth-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RRS Courier Prime';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 95%;
+  src: url('@fontsource/courier-prime/files/courier-prime-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Courier Prime';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 95%;
+  src: url('@fontsource/courier-prime/files/courier-prime-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RRS Courier Prime';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500 900;
+  size-adjust: 95%;
+  src: url('@fontsource/courier-prime/files/courier-prime-latin-ext-700-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Courier Prime';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500 900;
+  size-adjust: 95%;
+  src: url('@fontsource/courier-prime/files/courier-prime-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* options 5 and 6: the same Junicode files, enlarged only to the controls' x-height (the book roles use 115%) */
+@font-face {
+  font-family: 'RRS Junicode Controls';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  size-adjust: 106%;
+  src: url('./fonts/junicode-latin-ext-roman.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RRS Junicode Controls';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  size-adjust: 106%;
+  src: url('./fonts/junicode-latin-roman.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+html[data-look='reading-room'][data-rrsans='1'] {
+  --rr-ui: 'RRS Source Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+}
+html[data-look='reading-room'][data-rrsans='2'] {
+  --rr-ui: 'RRS Libertinus Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+}
+html[data-look='reading-room'][data-rrsans='3'] {
+  --rr-ui: 'RRS Commissioner', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+}
+/* Commissioner's flare (FLAR) and a touch of volume (VOLM) wherever it is the face */
+html[data-look='reading-room'][data-rrsans='3'] :is(button, input, select, textarea, [role='menuitem'], [role='tab'], [role='switch'], [data-slot], .rr-slip-inner, .control-sheet, .archive-dock, .rr-dock) {
+  font-variation-settings: 'FLAR' 60, 'VOLM' 10;
+}
+html[data-look='reading-room'][data-rrsans='4'] {
+  --rr-ui: 'RRS Cabin', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+}
+html[data-look='reading-room'][data-rrsans='5'],
+html[data-look='reading-room'][data-rrsans='6'] {
+  --rr-ui: 'RRS Junicode Controls', var(--rr-book);
+}
+html[data-look='reading-room'][data-rrsans='6'] {
+  --rr-number-face: 'RRS Courier Prime', ui-monospace, monospace;
+  --rr-number-caps: normal;
+  --rr-number-tracking: 0;
+  --rr-label-face: 'RRS Courier Prime', ui-monospace, monospace;
+  --rr-label-caps: normal;
+  --rr-label-tracking: 0;
+}

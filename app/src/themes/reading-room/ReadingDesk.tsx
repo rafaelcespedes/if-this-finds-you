@@ -4,7 +4,7 @@
 // column's foot. Opened, the drawer rises over the record, so the column never needs a scroll bar of its own. The
 // controls inside are the tool's own (Panel.tsx), so everything they do is unchanged.
 import { useEffect, useId, useState } from 'react';
-import { ChevronUp } from 'lucide-react';
+import { ChevronRight, ChevronUp } from 'lucide-react';
 import { AboutHand, LetterStatus, LookControls, MoreControls, ShareMenu, type PanelProps } from '@/components/Panel';
 import { Signature } from '@/components/Signature';
 import { inkColor, inkName } from '@/lib/inks';
@@ -128,9 +128,15 @@ function WritingDrawer(props: PanelProps) {
   );
 }
 
-/** Phones: the same record as ruled rows under the sheet (found letters only). */
-export function CatalogueSlip({ id, name }: { id: string | null | undefined; name: string }) {
+/** Phones: the same record as ruled rows under the sheet (found letters only). Its Hand row is the clear way into
+ * what's known about the writer: "About this hand ›" under their name. */
+export function CatalogueSlip({ id, name, panel }: { id: string | null | undefined; name: string; panel?: PanelProps }) {
   const record = useRecord(id);
   if (!record) return null;
-  return <LedgerRecord record={record} hand={name} handName={name} className="rr-under-sheet" />;
+  const about = panel && (
+    <AboutHand {...panel}>
+      <button type="button" className="rr-hand-link">About this hand<ChevronRight aria-hidden /></button>
+    </AboutHand>
+  );
+  return <LedgerRecord record={record} hand={name} handAction={about} handName={name} className="rr-under-sheet" />;
 }
