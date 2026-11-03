@@ -8,7 +8,7 @@ commit. If either fails, the live site stays on the last good version and the fa
 
 | When | Check (its name on GitHub and in Vercel) | What it does | Time on GitHub |
 |---|---|---|---|
-| Every push and PR to `preview` or `main` | **Site: build and smoke test** | Installs the app, typechecks it (any TypeScript error fails), builds it with Vercel's own command (`npm run build`), checks the Lost Letters texts (`content/check-texts.mjs`), then the smoke test (below) | ~1 min |
+| Every push and PR to `preview` or `main` | **Site: build and smoke test** | Installs the app, typechecks it (any TypeScript error fails), builds it with Vercel's own command (`npm run build`), checks the Lost Letters texts (`content/check-texts.mjs`), checks that every web worker starts as the build makes it, then the smoke test (below) | ~1 min |
 | Same, side by side | **Engine: quick QA** | `node tools/qa/regress.mjs --quick`, judged against the version before the update (below) | ~1.5–2 min |
 | Every night at 03:30 UTC, or by hand | **Engine: full QA (nightly)** | `node tools/qa/regress.mjs`, every matrix item, judged against the version from a day before. Skipped when nothing in `engine/` or `tools/qa/` changed in that day. Not a Vercel check: it's too slow to hold every update | ~35–50 min (~21 min on an M1 Max) |
 
@@ -39,16 +39,27 @@ Vercel matches the checks by job name, so the two names above must not change (o
 ## The smoke test
 
 `tools/smoke/smoke.mjs` serves the built `app/dist` the way Vercel does (`/letters` → `letters.html`) and opens
-it in Chrome. Pages: `/` (the desk), `/letters` (all letters) and the first card's letter page
-(`/letters#/letter/<id>`), each at desktop (1440×900) and phone (375×812) size. A page fails when it
+it in Chrome. Pages: `/` (the desk), `/letters` (all letters), the first card's letter page
+(`/letters#/letter/<id>`) and `/fonts`, each at desktop (1440×900) and phone (375×812) size. A page fails when it
 
 - logs a console error or throws an uncaught exception,
-- gets a 4xx/5xx (or no answer) for one of the site's own files, or
-- shows a blank sheet: no handwriting on the letter within 30 s.
+- has a web worker that fails: the test watches every `new Worker` the page starts and counts its uncaught errors
+  and console errors (a worker that doesn't start throws inside the worker, where the page never sees it),
+- gets a 4xx/5xx (or no answer) for one of the site's own files,
+- shows one of the site's own failure messages ("The fonts didn't load", "The letters didn't load", "couldn't be
+  set as a font here"; `FAILURE_TEXTS` in the script), or
+- stays blank: within 30 s the desk's letter and the letter page need handwriting, `/letters` at least 6 painted
+  cards (not just the page shell) and `/fonts` at least 3 specimens set in the fonts the page made.
 
 The library shuffles its cards, so the letter page it opens changes from run to run; the output names it.
-It finds each page's letter by its accessible name or link (`SHEETS` at the top of the script). If a redesign
-renames one, the failure says so plainly; update the selector there. About 25 s on an M1 Max.
+It finds what each page must draw by accessible names and links (`PAGES` at the top of the script). If a redesign
+renames one, the failure says so plainly; update the selector there. About 26 s on an M1 Max.
+
+Before the build, `tools/smoke/check-workers.mjs` reads `app/vite.config.ts`: when the build makes ES-module
+workers (`worker: { format: 'es' }`), every `new Worker(` in `app/src` must start with `{ type: 'module' }`, in
+development and in the build alike. A classic worker fails in production only, with "Unexpected token 'export'"
+(3 Nov 2026: the Fonts page and the All letters cards), and on paths the smoke test doesn't open, such as the
+font download, so this check reads the code instead.
 
 ```bash
 cd app && npm ci && npm run build && cd ..
