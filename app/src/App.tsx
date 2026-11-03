@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ChevronDown, Pointer } from 'lucide-react';
+import { ChevronDown, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, withLogo } from '@/lib/brand';
@@ -306,8 +306,6 @@ export default function App() {
     const t = window.setTimeout(() => setEscHint(false), 4500);
     return () => window.clearTimeout(t);
   }, [editing, isDesktop]);
-  /** beside the sheet when the desk has room for it, else on the label's line */
-  const hintBeside = stageW > 0 && (stageW - shownPaper.w * pxPerMm) / 2 >= 124;
   const foundName = (l: { author: string; year?: number }) => `${shortAuthor(l.author)}${l.year ? `, ${l.year}` : ''}`;
   const sheetTitle = sample ? foundName(sample) : found ? `Your reply to ${shortAuthor(found.letter.author)}` : 'A letter from you';
   /** At a reply's first moment: keep the found letter's writing, as read. */
@@ -864,7 +862,11 @@ export default function App() {
             {pxPerMm > 0 && !reader && (
               <div ref={fitRef} className="origin-top">
                 {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
-                <div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
+                {/* (with their letter picked up, its label covers this line: yours steps out of the way until it's back) */}
+                <div
+                  className={cn('relative z-20 mx-auto transition-opacity duration-300 ease-out', replyDesk && theirsForward && 'pointer-events-none opacity-0')}
+                  style={{ width: shownPaper.w * pxPerMm }}
+                >
                   {isDesktop ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
                     <div className="absolute bottom-1.5 left-0 flex max-w-full items-baseline gap-2.5">
@@ -879,34 +881,20 @@ export default function App() {
                         </button>
                       </AboutHand>
                       <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 260)} />
-                      {((hintShown && !hintBeside) || (escHint && !hintBeside)) && (
-                        <span key={escHint ? 'esc' : 'click'} className="animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">
-                          {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
-                        </span>
-                      )}
                     </div>
                   ) : (
                     <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
                   )}
                   {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
-                  {isDesktop && (hintShown || escHint) && hintBeside && (
-                    <div
-                      key={escHint ? 'esc' : 'click'}
-                      aria-hidden
-                      className="pointer-events-none absolute top-36 right-full mr-3 flex w-[108px] animate-in items-center gap-1.5 rounded-xl bg-panel px-2.5 py-2 text-[12px] leading-snug text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_8px_20px_-10px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-left-1 duration-700"
-                    >
-                      {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
-                      {!escHint && <ArrowRight className="size-3.5 shrink-0" />}
-                    </div>
-                  )}
-                  {/* phones: a ghost in the sheet's top margin, pointing in (never over the label, never near the sheet below) */}
-                  {!isDesktop && hintShown && (
+                  {/* a ghost in the sheet's top margin, pointing in (clear of the label above and the first line below);
+                      the first time you write on a desktop, the same place says how to stop */}
+                  {(hintShown || escHint) && (
                     <div
                       aria-hidden
                       className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700"
                     >
-                      <Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write
+                      {escHint ? 'Press Esc when you’re done' : <><Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write</>}
                     </div>
                   )}
                 </div>
