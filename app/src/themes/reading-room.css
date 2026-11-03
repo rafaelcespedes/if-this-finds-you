@@ -123,11 +123,8 @@ html[data-look='reading-room'] {
   --field: var(--rr-slip);
   --switch-off: #d6cdb9;
   --rule-link: color-mix(in oklab, var(--rr-ink) 30%, transparent);
-  --sheet-shadow:
-    0 0.5px 0 rgba(30, 39, 51, 0.1),
-    0 1px 2px rgba(30, 39, 51, 0.08),
-    0 8px 16px -8px rgba(30, 39, 51, 0.16),
-    0 26px 44px -24px rgba(30, 39, 51, 0.28);
+  /* the letter lies flat on the desk: no shadow under a sheet (Rafael, 3 Nov) */
+  --sheet-shadow: none;
 
   /* the library's tokens (archive.css) */
   --lib-surface: var(--rr-card);
@@ -244,7 +241,8 @@ html[data-look='reading-room'] .rr-card {
   border-radius: 2px;
   padding: 14px 18px 30px;
   color: var(--rr-ink);
-  box-shadow: 0 1px 0 rgba(30, 39, 51, 0.04), 0 10px 22px -16px rgba(30, 39, 51, 0.35);
+  /* flat on the desk beside the letter, like the letter itself: an edge, no shadow */
+  box-shadow: none;
 }
 /* the rod hole every catalogue card has at its foot */
 html[data-look='reading-room'] .rr-card::after {
@@ -708,7 +706,7 @@ html[data-look='reading-room'] .rr-card-tag {
   border: 1px solid var(--rr-edge);
   border-radius: 2px;
   background: var(--rr-slip);
-  box-shadow: 0 1px 2px rgba(30, 39, 51, 0.12);
+  box-shadow: none;
   color: var(--rr-red);
   font-family: var(--rr-caps);
   font-size: 0.65625rem;
