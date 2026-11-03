@@ -647,7 +647,11 @@ export default function App() {
 
   // the download never carries the empty-page placeholder
   const requestKey = JSON.stringify({ ...request, placeholder: undefined });
+  const downloading = useRef(false);
   const download = useCallback(async () => {
+    // a second tap while it's being made does nothing (one image, one share sheet)
+    if (downloading.current) return;
+    downloading.current = true;
     setBusy((b) => ({ ...b, download: true }));
     try {
       const res = live
@@ -672,8 +676,9 @@ export default function App() {
       } else done(r);
     } catch (e) {
       console.error(e);
-      toast.error('Couldn’t make the image', { description: e instanceof Error ? e.message : String(e) });
+      toast.error('Couldn’t make the image', { description: 'Something went wrong while it was being made. Try again in a moment.' });
     } finally {
+      downloading.current = false;
       setBusy((b) => ({ ...b, download: false }));
     }
   }, [requestKey, ink, pxPerMm, name, coarse, live, state.marks, state.signed, eff.inkKey, inkActive]);
@@ -720,16 +725,24 @@ export default function App() {
       toast.dismiss('export');
       if (coarse && navigator.canShare?.({ files: [file] })) {
         // making it took a few seconds, so the share sheet needs a fresh tap (then Save Video puts it in Photos)
-        toast.success(`Your ${what} is ready`, { id: 'export-done', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
+        // it waits until it's saved or put away: making it again takes a while
+        toast.success(`Your ${what} is ready`, { id: 'export-done', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: Infinity, closeButton: true });
       } else {
         saveBlob(res.blob, filename);
         toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export-done', description, duration: 4000 });
       }
     } catch (e) {
-      if ((e as Error)?.name === 'AbortError') toast('Stopped', { id: 'export', duration: 2000 });
+      // a fresh toast each way, so the progress one's Stop button and percentage don't linger
+      toast.dismiss('export');
+      if ((e as Error)?.name === 'AbortError') toast(`The ${what} was stopped`, { id: 'export-done', description: 'No file was made.', duration: 4000 });
       else {
         console.error(e);
-        toast.error(`Couldn’t make the ${what}`, { id: 'export', description: e instanceof Error ? e.message : String(e) });
+        toast.error(`Couldn’t make the ${what}`, {
+          id: 'export-done',
+          description: 'Something went wrong while it was being made.',
+          action: { label: 'Try again', onClick: () => void exportLetter(kind) },
+          duration: 10000,
+        });
       }
     } finally {
       exporting.current = null;

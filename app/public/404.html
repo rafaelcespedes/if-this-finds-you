@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#eeeae2" />
+    <meta name="robots" content="noindex" />
+    <title>Not found – If This Finds You</title>
+    <link rel="icon" href="/brand/favicon-5.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/favicon-5.ico" sizes="32x32" />
+    <!-- An address that isn't here: the site's own page (desk, paper, the wordmark), and the two ways on.
+         Self-contained on purpose: no app code, so it shows even when the rest of the site can't load. -->
+    <style>
+      :root {
+        --desk: #eeeae2;
+        --paper: #fffdf8;
+        --text: #1e1a16;
+        --muted: #675e54;
+        --hairline: #dcd3c4;
+        --ink: #1e1a16;
+        --ink-soft: #3a322b;
+        --mark: #b0341c;
+        --rule-link: #cbc1b1;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        min-height: 100dvh;
+        background: var(--desk);
+        color: var(--text);
+        font: 15px/1.55 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      }
+      header { padding: 4px 0 0; }
+      header a { display: inline-block; border-radius: 3px; }
+      header img { display: block; height: 21px; width: auto; }
+      main { display: grid; place-items: center; padding: 24px 0 12vh; }
+      .sheet {
+        width: min(420px, 100%);
+        background: var(--paper);
+        border: 1px solid var(--hairline);
+        box-shadow: 0 1px 2px rgba(60, 45, 20, 0.06), 0 18px 40px -22px rgba(60, 45, 20, 0.35);
+        padding: 36px 32px 32px;
+      }
+      .mark { color: var(--mark); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 10px; }
+      h1 { font-size: 22px; line-height: 1.25; font-weight: 600; margin: 0; text-wrap: balance; }
+      p { margin: 10px 0 0; color: var(--muted); max-width: 34ch; }
+      .ways { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
+      .button {
+        display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 3px;
+        background: var(--ink); color: #faf7f1; text-decoration: none; font-weight: 500;
+        transition: background-color 150ms ease-out;
+      }
+      .button:active { background: #0d0b09; }
+      .link { color: var(--text); font-weight: 500; text-decoration: underline; text-decoration-color: var(--rule-link); text-underline-offset: 3px; padding: 10px 0; }
+      a:focus-visible { outline: 2px solid var(--mark); outline-offset: 3px; }
+      @media (hover: hover) and (pointer: fine) {
+        .button:hover { background: var(--ink-soft); }
+        .link:hover { text-decoration-color: var(--text); }
+      }
+      @media (forced-colors: active) {
+        .sheet { border-color: CanvasText; }
+        .button { border: 1px solid ButtonText; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="/" aria-label="If This Finds You, home"><img src="/brand/wordmark-5.svg" alt="If This Finds You" /></a>
+    </header>
+    <main>
+      <div class="sheet">
+        <p class="mark">Not found</p>
+        <h1>This page isn’t here</h1>
+        <p>The address may be mistyped, or the page has moved. The letters are all still here.</p>
+        <div class="ways">
+          <a class="button" href="/">Write a letter</a>
+          <a class="link" href="/letters">All letters</a>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
