@@ -48,13 +48,15 @@
       html[data-look='postmarked'] { --boot-desk: #f1ebdc; --boot-panel: #f8f4ea; --boot-panel-r: 16px; }
       html, body { margin: 0; background: var(--boot-desk); }
       .boot { min-height: 100dvh; display: flex; }
-      .boot-main { position: relative; flex: 1; min-width: 0; padding: calc(7.25rem + env(safe-area-inset-top, 0px)) 16px 32px; }
+      .boot-main { position: relative; flex: 1; min-width: 0; padding: calc(4.5rem + env(safe-area-inset-top, 0px)) 16px 32px; }
+      /* phones: the letter comes right under the header (a letter sent to read keeps more room above) */
+      .boot-read .boot-main { padding-top: calc(7.25rem + env(safe-area-inset-top, 0px)); }
       .boot-logo { position: absolute; top: max(1rem, env(safe-area-inset-top, 0px)); left: max(1rem, env(safe-area-inset-left, 0px)); height: 32px; display: flex; align-items: center; }
       .boot-logo img { display: block; height: 21px; width: auto; opacity: 0.85; }
       .boot-sheet { margin: 0 auto; width: min(577px, 100%); aspect-ratio: 148 / 210; background: #fffdf8; border-radius: 1.5px; box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 14px 34px -20px rgba(60, 45, 20, 0.35); }
       .boot-panel { display: none; }
       @media (min-width: 1024px) {
-        .boot-main { padding: 100px 40px 64px; }
+        .boot-main, .boot-read .boot-main { padding: 100px 40px 64px; }
         .boot-logo { top: 1.25rem; left: 2.5rem; height: 36px; }
         .boot-logo img { height: 22px; }
         .boot-panel { display: block; position: sticky; top: 0; height: 100dvh; padding: 12px 12px 12px 0; box-sizing: border-box; }
