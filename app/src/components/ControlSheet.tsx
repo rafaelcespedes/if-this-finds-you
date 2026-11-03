@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 // the look being compared (?look=reading-room): "Bring another" in words (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { BringAnother } from '@/themes/reading-room/BringAnother';
+import { PhoneStamp } from '@/themes/postmarked/tool';
 
 export type Detent = 'peek' | 'half' | 'full';
 /** How much of the screen the sheet covers at each height (px, safe area included). */
@@ -277,7 +278,8 @@ export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onD
               <span className="block truncate text-[12px] leading-snug text-muted-foreground">{styleName(props.state.style)}</span>
             </button>
           </AboutHand>
-          {LOOK === 'reading-room' ? <BringAnother onClick={props.onNewHand} label={props.letter?.found ? 'Bring another' : 'Another hand'} shortcut="" /> : (
+          {/* look C (?look=postmarked): Find another is a round stamp; look A: Bring another, in words */}
+          {LOOK === 'postmarked' ? <PhoneStamp {...props} /> : LOOK === 'reading-room' ? <BringAnother onClick={props.onNewHand} label={props.letter?.found ? 'Bring another' : 'Another hand'} shortcut="" /> : (
           <Button onClick={props.onNewHand} className="h-11 px-3.5">
             <Shuffle aria-hidden /> Find another
           </Button>

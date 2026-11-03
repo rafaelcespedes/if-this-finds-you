@@ -57,6 +57,7 @@ import type { NoteState } from '@/lib/state';
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
 import { SampleMarks } from '@/themes/reading-room/SheetMarks';
+import { SheetPost, ToolArrival } from '@/themes/postmarked/tool';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
 const AHEAD = 5;
@@ -1094,6 +1095,8 @@ export default function App() {
                 Your letter is safe in this page’s link. Reload to try again.
               </Notice>
             )}
+            {/* look C (?look=postmarked): a shared link arrives in its envelope, postmarked */}
+            {LOOK === 'postmarked' && pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && <><ToolArrival sampleId={state.sample} writer={name} /><div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}><SheetPost sampleId={state.sample} width={shownPaper.w * pxPerMm} /></div></>}
             {pxPerMm > 0 && reader && !brokenLink && !(penFailed && !writing) && (
               <ReaderView
                 writing={writing}
@@ -1135,6 +1138,8 @@ export default function App() {
                   )}
                   {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
                   {LOOK === 'reading-room' && sample && !replyDesk && <SampleMarks id={sample.id} pxPerMm={pxPerMm} />}
+                  {/* look C (?look=postmarked): a found letter's postmark on the sheet's corner */}
+                  {LOOK === 'postmarked' && <SheetPost sampleId={sample?.id} width={shownPaper.w * pxPerMm} />}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
                   {/* a ghost in the sheet's top margin, pointing in (clear of the label above and the first line below);
                       the first time you write on a desktop, the same place says how to stop */}
