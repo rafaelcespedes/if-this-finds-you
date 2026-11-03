@@ -391,6 +391,10 @@ html[data-look='reading-room'] .specimen-bar [data-slot='button'][aria-haspopup]
     color: var(--rr-ink, var(--foreground));
   }
 }
+/* open: in ink while its menu is up (it opens on pointerdown, before any hover look would show) */
+html[data-look='reading-room'] .specimen-bar [data-slot='button'][aria-haspopup][data-state='open'] {
+  color: var(--rr-ink, var(--foreground));
+}
 /* the words themselves: in the reading face, no box */
 html[data-look='reading-room'] .specimen-bar input[type='text'] {
   height: auto;
@@ -430,6 +434,11 @@ html[data-look='reading-room'] :is(.font-action[aria-pressed='true'], .record-ac
 }
 .font-row-open[aria-expanded='true'] {
   text-decoration-color: currentColor;
+}
+/* a press answers at once, on phones too (the shared state tokens, with the room's own until they land) */
+.font-row-open:active {
+  text-decoration-color: currentColor;
+  background: var(--st-hover, var(--rc-ctl-hover, color-mix(in oklab, currentColor 8%, transparent)));
 }
 .font-record {
   display: grid;
@@ -570,6 +579,9 @@ html[data-look='reading-room'] :is(.record-actions, .font-list-end) [data-slot='
     background: transparent;
     text-decoration-color: currentColor;
   }
+}
+html[data-look='reading-room'] :is(.record-actions, .font-list-end) [data-slot='button']:not(.dock-primary):active {
+  background: var(--st-press, var(--rc-ctl-press, #ddd4c5));
 }
 html[data-look='reading-room'] .record-actions {
   align-items: center;
