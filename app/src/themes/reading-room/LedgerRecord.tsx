@@ -62,7 +62,7 @@ export function LedgerRecord({ record: r, hand, handAction, handName, actions, h
   const order: NoteKey[] = [...(r.story ? ['story' as const] : []), 'hand', ...(r.source ? ['source' as const] : [])];
   const noteBody: Record<NoteKey, ReactNode> = {
     story: r.story,
-    hand: <>The words are the original writer’s. The handwriting is {handName}’s, a fictional writer; every hand here is drawn fresh.</>,
+    hand: <>The words are the original writer’s. The handwriting is {handName}’s, a writer who never existed.</>,
     source: r.source ? <>{r.source.url ? <a href={r.source.url} target="_blank" rel="noreferrer" className="rr-link">{r.source.name}</a> : r.source.name}.</> : null,
   };
   const mark = (key: NoteKey, what: string) => {

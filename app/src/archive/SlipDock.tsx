@@ -40,10 +40,10 @@ export function SlipDock(a: DockActions & { id?: string }) {
           side="top"
           trigger={<button type="button" className="rr-icon hit-44" aria-label="More"><Ellipsis aria-hidden /></button>}
           entries={[
-            { id: 'text', label: 'Read the transcript', icon: <FileText />, onSelect: a.onText },
-            { id: 'image', label: 'Save as an image', icon: <Download />, onSelect: a.onImage, disabled: !a.imageReady },
+            { id: 'text', label: 'Read as text', icon: <FileText />, onSelect: a.onText },
+            { id: 'image', label: 'Download image', icon: <Download />, onSelect: a.onImage, disabled: !a.imageReady },
             { id: 'hand', label: 'Another hand', icon: <Shuffle />, onSelect: a.onNewHand },
-            { id: 'share', label: 'Share a link', icon: <Link2 />, onSelect: a.onShare },
+            { id: 'share', label: 'Copy link', icon: <Link2 />, onSelect: a.onShare },
           ]}
         />
         <span aria-hidden className="rr-dock-rule" />

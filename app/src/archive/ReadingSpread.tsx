@@ -103,7 +103,7 @@ export function ReadingSpread(p: Props) {
   // a writer known by a signature in quotes, or only described, is "the writer" here ("‘M. L. H.’’s" reads badly)
   const author = shortAuthor(l);
   const whose = /^[‘'"“]/.test(author) || /^unknown/i.test(l.author ?? '') ? 'the writer’s own' : `${author}’s`;
-  notes.push({ key: 'hand', body: <>The words are {whose}. The handwriting is {p.name}’s, a fictional writer; every hand here is drawn fresh.</> });
+  notes.push({ key: 'hand', body: <>The words are {whose}. The handwriting is {p.name}’s, a writer who never existed.</> });
   const rights = f?.rights?.us && f?.rights?.eu ? 'Public domain in the US and the EU' : f?.rights?.us ? 'Public domain in the US' : f?.rights?.eu ? 'Public domain in the EU' : f?.source?.licence;
   if (f?.source) notes.push({ key: 'source', body: <>{f.source.url ? <a href={f.source.url} target="_blank" rel="noreferrer" className="sp-link">{f.source.name}</a> : f.source.name}.{rights ? ` ${rights}.` : ''}</> });
   const n = (key: string) => notes.findIndex((x) => x.key === key) + 1;
@@ -175,7 +175,7 @@ export function ReadingSpread(p: Props) {
             <span className="sp-quiet">
               <button type="button" onClick={cite}>cite</button><span aria-hidden> · </span>
               <button type="button" onClick={p.onShare}>share</button><span aria-hidden> · </span>
-              <button type="button" onClick={p.onImage} disabled={!p.imageReady}>save as an image</button>
+              <button type="button" onClick={p.onImage} disabled={!p.imageReady}>download image</button>
             </span>
           </div>
           {recordOpen && (
