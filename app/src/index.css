@@ -12,7 +12,7 @@
   --ink-soft: #2c3550;
   --text: #23211d;
   --text-muted: #6c685f;
-  --text-faint: #8f8a80;
+  --text-faint: #736e66; /* 4.5:1 on the panel and the desk (small grey text stays readable) */
   --panel: #f8f6f1;
   --hairline: #e2ddd2;
   --chip: #ece8df;
@@ -34,7 +34,7 @@
   --accent-foreground: var(--text);
   --border: var(--hairline);
   --input: #d6d0c3;
-  --ring: color-mix(in oklab, var(--ink) 42%, transparent);
+  --ring: color-mix(in oklab, var(--ink) 80%, transparent); /* the focus ring: well over 3:1 on desk and panel */
   --radius: 0.625rem;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -81,7 +81,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     -webkit-text-size-adjust: 100%;
@@ -309,4 +309,16 @@ textarea {
   border-radius: 12px;
   background-color: var(--panel);
   box-shadow: 0 0 0 10px var(--panel), 0 14px 36px -6px rgba(40, 30, 10, 0.38);
+}
+
+/* Windows contrast themes: swatches keep their own colours, and what's chosen is outlined in the system's
+   highlight (the app's own rings and fills are dropped in forced colours) */
+@media (forced-colors: active) {
+  .swatch { forced-color-adjust: none; }
+  [data-slot='segmented-item'][aria-checked='true'],
+  [role='radio'][aria-checked='true'],
+  [role='radio'][aria-pressed='true'],
+  [aria-pressed='true'] { outline: 2px solid Highlight; outline-offset: 2px; }
+  [data-slot='button'] { border: 1px solid ButtonText; }
+  [role='switch'] { border: 1px solid ButtonText; }
 }

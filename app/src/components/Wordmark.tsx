@@ -13,7 +13,12 @@ function clean(svg: string) {
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
     .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi, '')
-    .replace(/(href\s*=\s*["'])\s*javascript:[^"']*/gi, '$1#');
+    .replace(/(href\s*=\s*["'])\s*javascript:[^"']*/gi, '$1#')
+    // the wrapper is the image (role and name); the drawing inside stays silent
+    .replace(/<title>[\s\S]*?<\/title>/gi, '')
+    .replace(/<svg([^>]*?)\s(role|aria-label)="[^"]*"/gi, '<svg$1')
+    .replace(/<svg([^>]*?)\s(role|aria-label)="[^"]*"/gi, '<svg$1')
+    .replace(/<svg/i, '<svg aria-hidden="true"');
 }
 
 export function Wordmark({ className }: { className?: string }) {

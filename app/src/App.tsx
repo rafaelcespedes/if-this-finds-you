@@ -288,6 +288,14 @@ export default function App() {
     return h ? describeHand(h) : undefined;
   }, [replying, replyKey]);
   const myHandWords = useMemo(() => describeHand(p), [p]);
+  // a new hand or letter, said once for screen readers (the page changes silently otherwise)
+  const [announced, setAnnounced] = useState('');
+  const firstLook = useRef(true);
+  useEffect(() => {
+    if (firstLook.current) { firstLook.current = false; return; }
+    setAnnounced(`${name}’s hand: ${sample ? `a letter from ${foundName(sample)}` : sheetTitle}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.seed, state.style, state.sample]);
   // the "click the letter" hint, desktop: only after a while without writing, and never again once you have
   const [wrote, setWrote] = useState(() => readPref('seedhand:wrote') === '1');
   const [idleLong, setIdleLong] = useState(false);
@@ -786,13 +794,14 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 px-4 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
+          className="relative min-w-0 overflow-x-clip px-4 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
         >
           <header
             ref={headerRef}
             className={cn(
-              'absolute inset-x-4 top-[max(1rem,env(safe-area-inset-top,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
+              // clear of a notch or camera island when the phone is sideways
+              'absolute top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:right-[max(2rem,env(safe-area-inset-right,0px))] sm:left-[max(2rem,env(safe-area-inset-left,0px))] lg:inset-x-10 lg:top-5',
               !desk && 'opacity-0',
               !reader && 'pointer-events-none',
             )}
@@ -805,8 +814,9 @@ export default function App() {
                   Write your own
                 </button>
               ) : (
-                // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state
-                <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : ''}</span>
+                // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state,
+                // and what Find another (or a link) brought
+                <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : announced}</span>
               )}
               {/* the whole library of found letters (the archive); on phones a small chip, with Share beside it */}
               {!isDesktop && !reader ? (
@@ -907,7 +917,7 @@ export default function App() {
                   {(hintShown || escHint) && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700"
+                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700 motion-reduce:slide-in-from-top-0"
                     >
                       {escHint ? 'Press Esc when you’re done' : <><Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write</>}
                     </div>
@@ -1040,8 +1050,9 @@ export default function App() {
           onOpen={setTheirsForward}
           onDismiss={() => update({ replyTo: null })}
           viewport={viewport}
-          // above the keyboard and tray while writing; down to the control sheet otherwise
-          reach={editing ? Math.max(220, Math.round(viewport.height * 0.58)) : Math.max(260, viewport.height - (mobileSheet ? metrics.peek : 0) - 12)}
+          // while writing, a little under half of what the keyboard leaves (the line you're on stays in view below);
+          // down to the control sheet otherwise
+          reach={editing ? Math.max(200, Math.round(viewport.height * 0.45)) : Math.max(260, viewport.height - (mobileSheet ? metrics.peek : 0) - 12)}
           pxPerMm={pxPerMm}
         />
       )}
