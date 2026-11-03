@@ -5,6 +5,7 @@
 //
 // The page never loads the engine: its workers choose the hands and make the specimens (store.ts, fonts.worker.ts).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
@@ -94,6 +95,9 @@ export function FontsApp() {
   const size = route.size || defaultSize(narrow);
   const [liveSize, setLiveSize] = useState(size);
   useEffect(() => { setLiveSize(size); }, [size]);
+  // the tool's slider row reports every step: the size is kept (and live images remade) once it rests
+  const restingSize = useSettled(liveSize, 300);
+  useEffect(() => { if (restingSize !== size) update({ size: restingSize === defaultSize(narrow) ? 0 : restingSize }); }, [restingSize]);
 
   // the list's exact width (live-hand images are made for it, pixel for pixel, once a resize has settled) and the
   // screen's own density, up to 3x (iPhones), followed when the window moves to another screen or the page zooms
@@ -183,7 +187,6 @@ export function FontsApp() {
               placeholder={placeholder}
               size={liveSize}
               onSize={setLiveSize}
-              onSizeCommit={(v) => update({ size: v === defaultSize(narrow) ? 0 : v })}
               mode={route.mode}
               onMode={(m: Mode) => update({ mode: m })}
               onFocusChange={setTyping}
@@ -209,7 +212,7 @@ export function FontsApp() {
           </ol>
           <footer className="font-list-end">
             {set.failed ? (
-              <p>The fonts didn’t load. <button type="button" className="ed-link" onClick={newSet}>Try again</button></p>
+              <p>The fonts didn’t load. <Button variant="link" onClick={newSet}>Try again</Button></p>
             ) : route.view === 'saved' ? (
               empty ? <p>Nothing saved yet. Tap the heart on a hand to keep it here.</p> : null
             ) : empty ? (
@@ -217,8 +220,8 @@ export function FontsApp() {
               <p>{set.note ?? 'No hands match all of these.'} <button type="button" className="ed-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
             ) : set.done ? (
               <div className="flex flex-wrap items-center gap-2">
-                {!set.exhausted && <button type="button" onClick={() => fonts.more()} className="dock-primary inline-flex h-10 items-center rounded-lg px-4 text-[14px] font-medium">Show {SET_COUNT} more</button>}
-                <button type="button" onClick={newSet} className="outline-btn inline-flex h-10 items-center rounded-lg px-4 text-[14px] font-medium">New set</button>
+                {!set.exhausted && <Button onClick={() => fonts.more()} className="dock-primary">Show {SET_COUNT} more</Button>}
+                <Button variant="outline" onClick={newSet}>New set</Button>
               </div>
             ) : null}
             <p className="font-list-note">
