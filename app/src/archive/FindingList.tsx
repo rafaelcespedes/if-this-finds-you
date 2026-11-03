@@ -115,14 +115,14 @@ function Row({ letter: l, onOpen }: { letter: ArchiveLetter; onOpen: () => void 
   return (
     <li>
       <a href={letterHash(l.id)} onClick={onOpen} className="fa-row">
-        <span className="fa-no">{no != null && <>No. <span className="rr-figures">{callNo(no)}</span></>}</span>
+        <span className="fa-no">{no != null && <>No. {callNo(no)}</>}</span>
         <span className="fa-title">{l.title ?? opening(l.text, 60)}</span>
         <span className="fa-writer">{fromTo(l)}</span>
         <span className="fa-place">
           {place}
           {lost && <>{place ? ' · ' : ''}<span className="fa-status">{circumstanceLabel(l)}</span></>}
         </span>
-        <span className="fa-year rr-figures">{l.year ?? ''}</span>
+        <span className="fa-year">{l.year ?? ''}</span>
       </a>
     </li>
   );
