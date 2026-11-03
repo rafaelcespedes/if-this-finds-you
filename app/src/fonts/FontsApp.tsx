@@ -1,7 +1,9 @@
 // Fonts: every hand as a free, open-source font, served like a foundry's list. A set of 24 hands, each a big line set
-// in its own font with the writer's name, a few tags and its actions. Filters and "New set" draw new sets until one
-// is right; "Show 24 more" carries on with the same set. Everything that decides a set is in the URL (route.ts), so a
-// set is a link. As a font is the default (what you download); Live hand shows the engine's live writing instead.
+// in its own font (what you download) with the writer's name, a few words about the hand and its actions. Filters
+// and "New set" draw new sets until one is right; "Show 24 more" carries on with the same set. Everything that decides
+// a set is in the URL (route.ts), so a set is a link. The controls have one home at a time: the rail and a ruled
+// tester line on wide Reading Room screens, the tester line and the dock on other wide screens, the dock alone
+// (Filters, Text, saved hands, New set) below 1024 px.
 //
 // The page never loads the engine: its workers choose the hands and make the specimens (store.ts, fonts.worker.ts).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -20,8 +22,8 @@ import { LOOK } from '@/lib/look';
 import { FontRow } from './FontRow';
 import { SpecimenBar } from './SpecimenBar';
 import { useSaved } from './favourites';
-import { filterKey, NO_FILTERS, type FilterKey, type Filters } from './filters';
-import type { FontEntry, LiveSpec, Mode } from './protocol';
+import { filterKey, NO_FILTERS, type Filters } from './filters';
+import type { FontEntry, LiveSpec } from './protocol';
 import { defaultSize, FALLBACK_TEXT, LINES, newSetSeed, readRoute, routeSearch, SET_COUNT, type FontsRoute, type Line } from './route';
 import { fonts, useCatalogue, useSet } from './store';
 
@@ -59,6 +61,28 @@ function useSettled<T>(value: T, ms: number) {
   return v;
 }
 
+/** px per rem: the root's font size, which the reader's text size scales (read again on resize). */
+function useRootRem() {
+  const read = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const [rem, setRem] = useState(read);
+  useEffect(() => {
+    const on = () => setRem(read());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return rem;
+}
+
+function useViewportWidth() {
+  const [w, setW] = useState(() => document.documentElement.clientWidth || innerWidth);
+  useEffect(() => {
+    const on = () => setW(document.documentElement.clientWidth || innerWidth);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return w;
+}
+
 /** The screen's pixel density (capped at 3), kept up to date when it changes (another screen, browser zoom). */
 function useDevicePixelRatio() {
   const read = () => Math.min(3, Math.max(1, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1));
@@ -75,12 +99,16 @@ function useDevicePixelRatio() {
 
 // the pitch and the longer intro: docs/brand/naming-and-copy.md §2.11 (Rafael's approved copy)
 const INTRO = 'Every hand here is a font you can keep. Free and open source.';
-const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font can only keep a few versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
+const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font keeps four or five versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
 
 export function FontsApp() {
   const [route, update] = useRoute();
-  const narrow = useMediaQuery('(max-width: 639px)');
-  const wide = useMediaQuery('(min-width: 1024px)');
+  // the layout's widths in the reader's own text size (rem), so 200% text gets the narrower layout: phones under
+  // 40rem (640 px at the usual size), wide from 64rem (1024 px)
+  const rem = useRootRem();
+  const viewport = useViewportWidth();
+  const narrow = viewport < 40 * rem;
+  const wide = viewport >= 64 * rem;
   // the Reading Room on a wide screen: the filters as a rail beside the list (the layout study's Proposal 4); else the dock
   const rail = wide && LOOK === 'reading-room';
   const catalogue = useCatalogue();
@@ -96,13 +124,8 @@ export function FontsApp() {
     else if (!settledText && route.line === 'own') update({ line: 'letter', text: '' });
   }, [settledText]);
 
-  // the size: the rows follow the slider live; live-hand images are made again when you let go
-  const size = route.size || defaultSize(narrow);
-  const [liveSize, setLiveSize] = useState(size);
-  useEffect(() => { setLiveSize(size); }, [size]);
-  // the tool's slider row reports every step: the size is kept (and live images remade) once it rests
-  const restingSize = useSettled(liveSize, 300);
-  useEffect(() => { if (restingSize !== size) update({ size: restingSize === defaultSize(narrow) ? 0 : restingSize }); }, [restingSize]);
+  // the specimens' size: one for phones, one for everything wider
+  const size = defaultSize(narrow);
 
   // the list's exact width (live-hand images are made for it, pixel for pixel, once a resize has settled) and the
   // screen's own density, up to 3x (iPhones), followed when the window moves to another screen or the page zooms
@@ -127,24 +150,35 @@ export function FontsApp() {
   const rowText = (e: FontEntry | undefined) => (route.line === 'name' ? e?.name ?? '' : lineText);
   const placeholder = route.line === 'name' ? 'Each writer’s own name' : route.line === 'own' ? FALLBACK_TEXT : lineText;
 
+  // phones: the dock steps aside while the keyboard is up for your words
+  const [typing, setTyping] = useState(false);
+  const coarse = useMediaQuery('(pointer: coarse)');
+
+  const textProps = {
+    line: route.line,
+    onLine: (l: Line) => { setText(''); update({ line: l, text: '' }); },
+    text,
+    onText: setText,
+    placeholder,
+    onFocusChange: setTyping,
+  };
+
   const listTop = () => {
     const el = listRef.current;
     if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - (narrow ? 16 : 96);
+    // clear of the pinned site header (the page's scroll padding) and, on wide screens, the sticky tester line
+    const head = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    const bar = document.querySelector('.specimen-bar-wrap')?.getBoundingClientRect().height ?? 0;
+    const y = el.getBoundingClientRect().top + window.scrollY - head - bar - 12;
     if (window.scrollY > y) window.scrollTo({ top: y, behavior: 'auto' });
   };
   const newSet = () => { update({ set: newSetSeed(), view: 'set', hand: '' }, true); listTop(); };
   const setFilters = (filters: Filters, neatOnly?: boolean) => update({ filters, view: 'set', ...(neatOnly != null ? { neatOnly } : {}) });
   // Neat hands only back on: Messy (which needs it off) steps out of Tidy to wild
   const onNeatOnly = (v: boolean) => update({ neatOnly: v, view: 'set', ...(v && route.filters.tidy.includes('messy') ? { filters: { ...route.filters, tidy: route.filters.tidy.filter((x) => x !== 'messy') } } : {}) });
-  const onTag = useCallback((key: FilterKey, value: string) => {
-    const family = key === 'family' ? { style: route.filters.style.filter((s) => catalogue.styles.find((x) => x.id === s)?.family === value) } : {};
-    update({ filters: { ...NO_FILTERS, ...route.filters, [key]: [value], ...family }, view: 'set' });
-    listTop();
-  }, [route.filters, catalogue]);
-
   // a hand's record opens in place, one at a time, and the link keeps it
-  const onOpen = useCallback((id: string | null) => update({ hand: id ?? '' }), []);
+  // opening one is a step in the history, so Back closes it again
+  const onOpen = useCallback((id: string | null) => update({ hand: id ?? '' }, !!id), []);
 
   // Space draws a new set (when nothing that takes Space has focus)
   useEffect(() => {
@@ -160,10 +194,6 @@ export function FontsApp() {
   }, [route.view]);
 
   useEffect(() => { document.title = `${route.view === 'saved' ? 'Saved hands' : 'Fonts'} · ${APP_NAME}`; }, [route.view]);
-
-  // phones: the dock steps aside while the keyboard is up for your words
-  const [typing, setTyping] = useState(false);
-  const coarse = useMediaQuery('(pointer: coarse)');
 
   const entries: (FontEntry | undefined)[] = [...set.entries, ...Array.from({ length: set.pending }, () => undefined)];
   const empty = set.done && !set.entries.length;
@@ -190,51 +220,36 @@ export function FontsApp() {
               view={route.view} onView={(v) => { update({ view: v }, true); listTop(); }} savedCount={saved.length} onNewSet={newSet} />
           )}
           <div className="min-w-0">
-          <div className={cn('specimen-bar-wrap z-20', !narrow && 'sticky top-[var(--site-head,0px)]')}>
-            <SpecimenBar
-              line={route.line}
-              onLine={(l: Line) => { setText(''); update({ line: l, text: '' }); }}
-              text={text}
-              onText={setText}
-              placeholder={placeholder}
-              size={liveSize}
-              onSize={setLiveSize}
-              mode={route.mode}
-              onMode={(m: Mode) => update({ mode: m })}
-              onFocusChange={setTyping}
-              narrow={narrow}
-            />
-            {(route.mode === 'live' || (route.line === 'letter' && set.opening)) && (
-              <p className="specimen-note">
-                {route.mode === 'live'
-                  ? 'Live hand: how each writer writes on the page, with their own pen, ink and paper. The font you download keeps a few versions of each letter, so it repeats a little more.'
-                  : set.opening && (
-                    <>The opening of a letter by {set.opening.by}{set.opening.year ? `, ${set.opening.year}` : ''}. <a className="ed-link" href={withLogo(`${ARCHIVE_URL}#/letter/${encodeURIComponent(set.opening.id)}`)}>Read it</a></>
-                  )}
-              </p>
-            )}
-          </div>
+          {/* wide screens: what every hand writes, as one ruled tester line above the list (below 1024 px it's the dock's Text) */}
+          {wide && (
+            <div className="specimen-bar-wrap sticky top-[var(--site-head,0px)] z-20">
+              <SpecimenBar {...textProps} />
+            </div>
+          )}
+          {/* the letter's credit: its line is kept from the start, so the list doesn't drop when the credit arrives */}
+          {route.line === 'letter' && route.view === 'set' && (
+            <p className="specimen-note">
+              {set.opening && <>The opening of a letter by {set.opening.by}{set.opening.year ? `, ${set.opening.year}` : ''}. <a className="ed-link" href={withLogo(`${ARCHIVE_URL}#/letter/${encodeURIComponent(set.opening.id)}`)}>Read it</a></>}
+            </p>
+          )}
           {set.note && route.view === 'set' && !empty && <p className="set-note" role="status">{set.note}</p>}
           <span aria-live="polite" className="sr-only">{announce}</span>
           <ol ref={listRef} className="font-list" aria-label={route.view === 'saved' ? 'Saved hands' : 'Fonts'} aria-busy={!set.done}>
             {entries.map((e, i) => (
-              <FontRow key={e?.id ?? `slot-${i}`} entry={e} index={i} text={rowText(e)} mode={route.mode} live={live} em={liveSize} lines={lines}
-                saved={!!e && savedIds.has(e.id)} compact={narrow} wide={wide} onTag={onTag} open={!!e && e.id === route.hand} onOpen={onOpen} />
+              <FontRow key={e?.id ?? `slot-${i}`} entry={e} index={i} text={rowText(e)} live={live} em={size} lines={lines}
+                saved={!!e && savedIds.has(e.id)} compact={narrow || width < 44 * rem} wide={wide} open={!!e && e.id === route.hand} onOpen={onOpen} />
             ))}
           </ol>
           <footer className="font-list-end">
             {set.failed ? (
               <p>The fonts didn’t load. <Button variant="link" onClick={newSet}>Try again</Button></p>
             ) : route.view === 'saved' ? (
-              empty ? <p>Nothing saved yet. Tap the heart on a hand to keep it here.</p> : null
+              empty ? <p>Nothing saved yet. Save a hand with the heart and it stays here.</p> : null
             ) : empty ? (
               // the sampler says why in its own words (impossible pairs come back at once with a note)
-              <p>{set.note ?? 'No hands match all of these.'} <button type="button" className="ed-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
+              <p>{set.note ?? 'No hands match these filters.'} <button type="button" className="ed-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
             ) : set.done ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {!set.exhausted && <Button onClick={() => fonts.more()} className="dock-primary">Show {SET_COUNT} more</Button>}
-                <Button variant="outline" onClick={newSet}>New set</Button>
-              </div>
+              !set.exhausted && <Button onClick={() => fonts.more()} className="dock-primary">Show {SET_COUNT} more</Button>
             ) : null}
             <p className="font-list-note">
               {ABOUT} Free to use under the SIL Open Font License.
@@ -253,7 +268,7 @@ export function FontsApp() {
           onView={(v) => { update({ view: v }, true); listTop(); }}
           savedCount={saved.length}
           onNewSet={newSet}
-          narrow={narrow}
+          text={wide ? undefined : textProps}
           hidden={typing && coarse}
         />}
         <Toaster />
