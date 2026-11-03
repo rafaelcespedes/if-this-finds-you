@@ -117,7 +117,8 @@ function WriterHeader(props: PanelProps) {
   // desktop: the writer's name in their own hand grounds the panel; the name in type, with what's known about
   // the hand, sits on the letter's corner
   return (
-    <section aria-label="Writer" className="px-5 pt-4 pb-4">
+    // a hairline under it, like the panel's other groups, instead of a wide gap
+    <section aria-label="Writer" className="border-b border-border/70 px-5 pt-4 pb-4">
       <div className="flex items-start gap-2">
         <span key={props.state.seed + props.state.style} aria-label={props.name} role="img" className="hand-in block min-w-0 flex-1" style={{ color: inkColor(props.state.ink) }}>
           <Signature p={props.p} name={props.name} ink="currentColor" emPx={34} className="-ml-1 h-[54px] overflow-visible" />
@@ -130,7 +131,7 @@ function WriterHeader(props: PanelProps) {
         </span>
         <kbd className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
       </Button>
-      <LetterStatus {...props} className="mt-2.5" />
+      {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="mt-2.5" />}
     </section>
   );
 }
@@ -155,15 +156,13 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           <div style={{ color: inkColor(state.ink) }}>
             <Signature p={p} name={name} ink="currentColor" emPx={30} className="-ml-1 h-[46px] overflow-visible" />
           </div>
-          <div className="mt-1 flex items-center justify-between gap-3">
-            <span className="text-[15px] leading-tight font-medium">{name}</span>
-            <Popover.Close asChild>
-              <Button variant="secondary" size="sm" onClick={props.onChangeWriter} className="shrink-0">
-                <Shuffle aria-hidden /> Change writer
-              </Button>
-            </Popover.Close>
-          </div>
+          <div className="mt-1 text-[15px] leading-tight font-medium">{name}</div>
           <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{describeHand(p)}</p>
+          <Popover.Close asChild>
+            <Button variant="secondary" onClick={props.onChangeWriter} className="mt-3 w-full">
+              <Shuffle aria-hidden /> Change writer
+            </Button>
+          </Popover.Close>
           <dl className="mt-3.5 grid gap-2.5 border-t border-border pt-3 text-[12.5px] leading-snug">
             <div>
               <dt className={dt}>Learned to write</dt>

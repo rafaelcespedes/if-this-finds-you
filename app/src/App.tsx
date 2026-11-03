@@ -828,7 +828,8 @@ export default function App() {
             )}
             {pxPerMm > 0 && !reader && (
               <div ref={fitRef} className="origin-top">
-                <div className="relative mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
+                {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
+                <div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
                   {isDesktop ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
                     <div className="absolute bottom-1.5 left-0 flex max-w-full items-baseline gap-2.5">
