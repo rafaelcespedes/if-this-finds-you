@@ -1,4 +1,4 @@
-import { createContext, memo, useContext, useLayoutEffect, useRef } from 'react';
+import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { isShaped, paintPaper, SHADOW_BLEED, warmPapers, type PaperSpec } from '@/lib/papers';
 import { perf } from '@/lib/perf';
 import { cn } from '@/lib/utils';
@@ -33,10 +33,25 @@ function desk() {
   return getComputedStyle(document.documentElement).getPropertyValue('--desk').trim() || '#eeebe4';
 }
 
-/** A sheet of paper painted on a canvas at the screen's pixel density. */
+/** How far past the screen a sheet keeps its painted paper (a screen's height above and below). */
+const NEAR = '100% 0px';
+
+/**
+ * A sheet of paper painted on a canvas at the screen's pixel density. A long letter's sheets far from the screen
+ * give their bitmaps back (each is several megabytes) and are painted again as they come near.
+ */
 export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fade, sheet = 0, className }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const shown = useRef<string | null>(null);
+  // the first sheets start painted (they're the ones on screen); the rest wait to be seen near
+  const [near, setNear] = useState(() => !!crop || sheet < 2);
+  useEffect(() => {
+    const c = ref.current;
+    if (crop || !c || typeof IntersectionObserver === 'undefined') { setNear(true); return; }
+    const io = new IntersectionObserver(([e]) => setNear(e.isIntersecting), { rootMargin: NEAR });
+    io.observe(c);
+    return () => io.disconnect();
+  }, [crop]);
   const guide = useContext(PaperGuide);
   const region = crop ?? { x: 0, y: 0, w: paper.w, h: paper.h };
   // a shaped sheet (deckle, tear, flaps) paints its own shadow just outside itself
@@ -47,6 +62,12 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
   useLayoutEffect(() => {
     const c = ref.current;
     if (!c || cssW <= 0) return;
+    if (!near) {
+      // far from the screen: the bitmap goes (the sheet keeps its size; it's painted again on the way back)
+      if (c.width) { c.width = 0; c.height = 0; }
+      shown.current = null;
+      return;
+    }
     const dpr = Math.min(3, window.devicePixelRatio || 1);
     const k = pxPerMm * dpr;
     const b = Math.round(bleed * dpr);
@@ -89,7 +110,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     c.getContext('2d')?.drawImage(src, 0, 0);
     shown.current = key;
     warmPapers();
-  }, [paper, pxPerMm, region.x, region.y, region.w, region.h, cssW, fade, crop, guide, sheet, bleed]);
+  }, [paper, pxPerMm, region.x, region.y, region.w, region.h, cssW, fade, crop, guide, sheet, bleed, near]);
 
   return (
     <canvas
