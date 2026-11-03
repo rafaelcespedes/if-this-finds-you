@@ -290,7 +290,7 @@ export async function buildScene(state: NoteState, o: SceneOptions): Promise<Sce
     overMarks = document.createElement('canvas');
     overMarks.width = Math.round(paper.w * kSheet);
     overMarks.height = Math.round(paper.h * kSheet);
-    printMarks(overMarks.getContext('2d')!, marks, kSheet, 'over');
+    printMarks(overMarks.getContext('2d')!, marks, kSheet, 'over', paper);
   }
 
   // ---- the ink: flat colour when the engine doesn't model ink, else the swatch (or the pen's own)

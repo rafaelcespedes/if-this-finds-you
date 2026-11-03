@@ -73,6 +73,11 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* the overlay system's timing (ui/sheet.tsx): a press answers at once, a menu pops from its trigger, closing is
+     quicker than opening; a sheet moves on vaul's spring-like curve (--ease-drawer) */
+  --dur-press: 100ms;
+  --dur-pop: 180ms;
+  --dur-out: 130ms;
 
   --sheet-shadow:
     0 0.5px 0 rgba(60, 45, 20, 0.08),
@@ -358,4 +363,13 @@ textarea {
   [aria-pressed='true'] { outline: 2px solid Highlight; outline-offset: 2px; }
   [data-slot='button'] { border: 1px solid ButtonText; }
   [role='switch'] { border: 1px solid ButtonText; }
+}
+
+/* Sheets (ui/sheet.tsx, vaul): under reduced motion they still move, briefly, rather than jump */
+@media (prefers-reduced-motion: reduce) {
+  [data-vaul-drawer],
+  [data-vaul-overlay] {
+    transition-duration: 160ms !important;
+    animation-duration: 160ms !important;
+  }
 }

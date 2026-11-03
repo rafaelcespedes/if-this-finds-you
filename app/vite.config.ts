@@ -45,10 +45,13 @@ export default defineConfig({
   // the writing, roll and font workers read the letters too
   worker: { format: 'es', plugins: () => [toolLetters()] },
   resolve: {
-    alias: {
-      '@engine': path.join(engineDir, 'index.js'),
-      '@': path.resolve(import.meta.dirname, 'src'),
-    },
+    alias: [
+      { find: '@engine', replacement: path.join(engineDir, 'index.js') },
+      // the Reading Room's icons: every 'lucide-react' import (exactly that name) goes through its icon file, which
+      // swaps in the icons drawn with the engine's pen in that look and passes Lucide's through otherwise
+      { find: /^lucide-react$/, replacement: path.resolve(import.meta.dirname, 'src/themes/reading-room/icons/lucide.tsx') },
+      { find: '@', replacement: path.resolve(import.meta.dirname, 'src') },
+    ],
   },
   server: {
     host: '127.0.0.1',
@@ -60,13 +63,14 @@ export default defineConfig({
   // the main chunk is React + the engine's letter data; opentype.js and the writer worker load separately
   build: {
     chunkSizeWarningLimit: 800,
-    // three pages: the tool (index.html), the Letters library (letters.html, src/archive/) and Fonts (fonts.html,
-    // src/fonts/), split apart
+    // four pages: the tool (index.html), the Letters library (letters.html, src/archive/), Fonts (fonts.html,
+    // src/fonts/) and About (about.html, src/about/), split apart
     rollupOptions: {
       input: {
         main: path.resolve(import.meta.dirname, 'index.html'),
         letters: path.resolve(import.meta.dirname, 'letters.html'),
         fonts: path.resolve(import.meta.dirname, 'fonts.html'),
+        about: path.resolve(import.meta.dirname, 'about.html'),
       },
     },
   },

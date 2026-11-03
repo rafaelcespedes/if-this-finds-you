@@ -1,11 +1,20 @@
 // A few words written in a hand, for pickers (school cards, pen swatches). Each sample is a real layout and
-// render, so they're made one at a time in idle moments and kept: opening a picker never blocks a frame.
+// render, so they're written in a worker (a copy of the writing worker, workers/specimen.ts) and kept: a new hand
+// never stops the page for them. Without the worker, the page makes them one at a time in idle moments.
 import { memo, useEffect, useState } from 'react';
 import type { Hand } from '@engine';
 import { inlineSVG } from '@/lib/writing';
 import { cn } from '@/lib/utils';
+import type { SpecimenAsk, SpecimenJob, SpecimenReply } from '@/lib/specimen-protocol';
 
+/** samples kept (a new hand brings about twenty): the newest few hundred */
+const KEEP = 400;
 const cache = new Map<string, string>();
+function remember(key: string, svg: string) {
+  cache.delete(key);
+  cache.set(key, svg);
+  if (cache.size > KEEP) cache.delete(cache.keys().next().value!);
+}
 const queue: (() => void)[] = [];
 let scheduled = false;
 
@@ -29,6 +38,60 @@ function schedule(job: () => void) {
   }
 }
 
+// ---------- the worker that writes them ----------
+/** undefined: not started yet; null: none (it failed or can't start), the page writes them itself */
+let sampler: Worker | null | undefined;
+/** samples asked of the worker, with who waits for each and how the page would write it instead */
+const waiting = new Map<string, { done: Set<(svg: string) => void>; here: () => string }>();
+
+function startSampler() {
+  if (sampler !== undefined) return sampler;
+  try {
+    // the writing worker's own script (already downloaded for the letter)
+    sampler = new Worker(new URL('../workers/write.worker.ts', import.meta.url), { type: 'module', name: 'samples' });
+  } catch {
+    sampler = null;
+    return null;
+  }
+  sampler.onmessage = (e: MessageEvent<SpecimenReply>) => {
+    const { specimen: key, svg } = e.data;
+    remember(key, svg);
+    const w = waiting.get(key);
+    waiting.delete(key);
+    w?.done.forEach((f) => f(svg));
+  };
+  sampler.onerror = () => {
+    // the page writes what was still waiting, and every sample from now on
+    sampler?.terminate();
+    sampler = null;
+    for (const [key, w] of waiting) schedule(() => { const svg = w.here(); remember(key, svg); w.done.forEach((f) => f(svg)); });
+    waiting.clear();
+  };
+  return sampler;
+}
+
+/** Ask the worker for a sample; returns how to stop waiting (it's dropped when nobody waits), or null without one. */
+function fromWorker(job: SpecimenJob, here: () => string, done: (svg: string) => void) {
+  const w = startSampler();
+  if (!w) return null;
+  let entry = waiting.get(job.key);
+  if (!entry) {
+    entry = { done: new Set(), here };
+    waiting.set(job.key, entry);
+    w.postMessage({ kind: 'specimen', job } satisfies SpecimenAsk);
+  }
+  entry.done.add(done);
+  return () => {
+    const e = waiting.get(job.key);
+    if (!e) return;
+    e.done.delete(done);
+    if (!e.done.size) {
+      waiting.delete(job.key);
+      sampler?.postMessage({ kind: 'specimen', drop: job.key } satisfies SpecimenAsk);
+    }
+  };
+}
+
 function hash(s: string) {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
@@ -38,8 +101,10 @@ function hash(s: string) {
 interface Props {
   /** everything the sample depends on, as one string */
   sampleKey: string;
-  /** the hand to write with (only called when the sample isn't made yet) */
+  /** the hand to write with (only called when the sample isn't made yet, and the worker can't write it) */
   hand: () => Hand;
+  /** the same hand for the worker: `withOverrides(makeHand(seed, style), overrides)` */
+  recipe?: { seed: string; style: string; overrides?: Record<string, string> };
   text: string;
   emPx: number;
   /** CSS colour for flat ink */
@@ -49,7 +114,7 @@ interface Props {
   className?: string;
 }
 
-export const Specimen = memo(function Specimen({ sampleKey, hand, text, emPx, color, inkKey, className }: Props) {
+export const Specimen = memo(function Specimen({ sampleKey, hand, recipe, text, emPx, color, inkKey, className }: Props) {
   const key = `${sampleKey}|${text}|${emPx}|${inkKey ?? ''}`;
   const [svg, setSvg] = useState(() => cache.get(key) ?? null);
   useEffect(() => {
@@ -57,20 +122,26 @@ export const Specimen = memo(function Specimen({ sampleKey, hand, text, emPx, co
     if (hit) { setSvg(hit); return; }
     setSvg(null);
     let live = true;
-    schedule(() => {
-      if (!live) return;
-      const ink = inkKey && inkKey !== 'auto' ? inkKey : inkKey === 'auto' ? undefined : 'currentColor';
-      let out = '';
+    const ink = inkKey && inkKey !== 'auto' ? inkKey : inkKey === 'auto' ? undefined : 'currentColor';
+    const uid = 's' + hash(key);
+    const here = () => {
       try {
-        out = inlineSVG(hand(), text, emPx, 's' + hash(key), ink);
+        return inlineSVG(hand(), text, emPx, uid, ink);
       } catch (e) {
         console.warn('specimen', e);
+        return '';
       }
-      cache.set(key, out);
+    };
+    const stop = recipe && fromWorker({ key, ...recipe, text, emPx, uid, ink }, here, (out) => { if (live) setSvg(out); });
+    if (stop) return () => { live = false; stop(); };
+    schedule(() => {
+      if (!live) return;
+      const out = here();
+      remember(key, out);
       if (live) setSvg(out);
     });
     return () => { live = false; };
-    // hand() is read only when the key changes
+    // hand() and recipe are read only when the key changes
   }, [key]);
   return (
     <div

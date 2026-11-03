@@ -4,16 +4,16 @@
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Mails, Share, Shuffle, Users } from 'lucide-react';
+import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
 import { hasControl } from '@/controls-lab';
-import { DropdownMenu, Popover } from 'radix-ui';
+import { Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
 import { Segmented, SegmentedChip, SegmentedItem } from '@/components/ui/toggle-group';
 import { Switch } from '@/components/ui/switch';
 import { SliderRow, Soon } from '@/components/ui/slider-row';
 import { Group, MoreButton } from '@/components/ui/group';
-import { MenuItem, menuContent } from '@/components/ui/menu';
+import { ActionSheet, type SheetEntry } from '@/components/ui/sheet';
 import { inputField } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PenSwatches, TipChoice } from '@/components/PenPicker';
@@ -24,7 +24,7 @@ import { ENGINE_TIPS, MODELLED_INK } from '@/lib/engine-features';
 import { describeHand, words } from '@/lib/hands';
 import { handSources } from '@/lib/credits';
 import { sampleById } from '@/lib/samples';
-import { TAB, draftLabel, type Draft } from '@/lib/drafts';
+import type { Draft } from '@/lib/drafts';
 import { branded } from '@/lib/brand';
 import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
@@ -236,9 +236,33 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
 /** Share: copy a link, save the image; the font file is a quieter extra. One icon wherever it sits. */
 export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVideo, exportable, onShareOpen, size }: PanelProps & { size?: 'lg' | 'chip' }) {
   const working = busy.download || busy.font || busy.video;
+  // each row shows what it's doing: a spinner while it's made, a tick for a moment once it's saved
+  const done = useJustDone(busy);
+  const status = (k: keyof typeof busy) => (busy[k] ? 'busy' as const : done[k] ? 'done' as const : null);
+  const entries: SheetEntry[] = [
+    { id: 'link', label: 'Copy link', icon: <Link />, onSelect: onShare },
+    { id: 'image', label: 'Download image', icon: <Download />, status: status('download'), hint: busy.download ? 'Preparing…' : undefined, onSelect: onDownload },
+    // the letter writing itself out: made in a few seconds, saved when it's done
+    { id: 'video', label: 'Download video', icon: <Film />, status: busy.video ? 'busy' : done.video ? 'done' : null, hint: busy.video ? 'Being made…' : undefined, disabled: exportable?.video === false, onSelect: () => onExportVideo('video') },
+    { kind: 'separator', id: 's1' },
+    { kind: 'label', id: 'more', label: 'More formats' },
+    { id: 'gif', label: 'Animated GIF', icon: <ImagePlay />, quiet: true, disabled: busy.video || exportable?.gif === false, onSelect: () => onExportVideo('gif') },
+    {
+      id: 'font',
+      label: FONT_PACKAGE ? 'Download font (.zip)' : 'Font file (.otf)',
+      icon: <CaseSensitive />,
+      quiet: true,
+      status: status('font'),
+      hint: busy.font ? 'Being made…' : FONT_PACKAGE ? 'Install it on your computer. It cycles a few versions of each letter.' : undefined,
+      onSelect: onExportFont,
+    },
+  ];
   return (
-    <DropdownMenu.Root onOpenChange={(o) => o && onShareOpen()}>
-      <DropdownMenu.Trigger asChild>
+    <ActionSheet
+      title="Share this letter"
+      entries={entries}
+      onOpenChange={(o) => o && onShareOpen()}
+      trigger={
         <Button
           variant="secondary"
           size="icon"
@@ -253,41 +277,25 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
         >
           {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}
         </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          side="bottom"
-          align="end"
-          sideOffset={8}
-          collisionPadding={12}
-          className={cn(menuContent, 'w-[236px]')}
-        >
-          <MenuItem onSelect={onShare} icon={<Link aria-hidden />}>Copy link</MenuItem>
-          <MenuItem onSelect={onDownload} icon={busy.download ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />} disabled={busy.download}>
-            Download image
-          </MenuItem>
-          {/* the letter writing itself out: made in a few seconds, saved when it's done */}
-          <MenuItem onSelect={() => onExportVideo('video')} icon={busy.video ? <Loader2 className="animate-spin" aria-hidden /> : <Film aria-hidden />} disabled={busy.video || exportable?.video === false}>
-            Download video
-          </MenuItem>
-          <DropdownMenu.Separator className="mx-2 my-1 h-px bg-border" />
-          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">More formats</DropdownMenu.Label>
-          <MenuItem onSelect={() => onExportVideo('gif')} icon={<ImagePlay aria-hidden />} disabled={busy.video || exportable?.gif === false} quiet>
-            Animated GIF
-          </MenuItem>
-          <MenuItem
-            onSelect={onExportFont}
-            icon={busy.font ? <Loader2 className="animate-spin" aria-hidden /> : <CaseSensitive aria-hidden />}
-            disabled={busy.font}
-            quiet
-            hint={FONT_PACKAGE ? 'Install it on your computer. It cycles a few versions of each letter.' : undefined}
-          >
-            {FONT_PACKAGE ? 'Download font (.zip)' : 'Font file (.otf)'}
-          </MenuItem>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      }
+    />
   );
+}
+
+/** Which of the busy jobs finished in the last couple of seconds (for a tick on its row). */
+function useJustDone(busy: PanelProps['busy']) {
+  const prev = useRef(busy);
+  const [done, setDone] = useState<Partial<Record<keyof PanelProps['busy'], boolean>>>({});
+  useEffect(() => {
+    const was = prev.current;
+    prev.current = busy;
+    const finished = (Object.keys(busy) as (keyof PanelProps['busy'])[]).filter((k) => was[k] && !busy[k]);
+    if (!finished.length) return;
+    setDone((d) => ({ ...d, ...Object.fromEntries(finished.map((k) => [k, true])) }));
+    const t = window.setTimeout(() => setDone((d) => ({ ...d, ...Object.fromEntries(finished.map((k) => [k, false])) })), 2200);
+    return () => window.clearTimeout(t);
+  }, [busy]);
+  return done;
 }
 
 /**
@@ -305,71 +313,6 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
         {!letter.found && <button type="button" onClick={letter.onAnother} className={link}>Read a found letter</button>}
       </span>
     </div>
-  );
-}
-
-/**
- * Your letters kept on this device, beside All letters in the header: a quiet text link on desktop, a chip with a
- * count on phones; there only when one is kept. This tab's own comes first and says so.
- */
-export function MyLetters({ letter, variant, className }: { letter: NonNullable<PanelProps['letter']>; variant: 'link' | 'chip'; className?: string }) {
-  if (!letter.drafts) return null;
-  const now = Date.now();
-  const mine = letter.kept.findIndex((d) => d.tab === TAB);
-  const kept = mine > 0 ? [letter.kept[mine], ...letter.kept.filter((_, i) => i !== mine)] : letter.kept;
-  const n = letter.drafts;
-  return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        {variant === 'chip' ? (
-          <button
-            type="button"
-            aria-label={`My letters, ${n} kept`}
-            title="My letters"
-            className={cn("relative grid size-[32px] place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent", className)}
-          >
-            <Mails aria-hidden className="size-[16px]" />
-            <span aria-hidden className="absolute -top-1.5 -right-1.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--ink)] px-1 text-[10px] leading-none font-medium text-[var(--primary-foreground)] tabular-nums">{n}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            className={cn("pointer-events-auto relative inline-flex shrink-0 items-baseline gap-1 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground", className)}
-          >
-            My letters
-            <span className="font-normal text-muted-foreground tabular-nums">{n}</span>
-          </button>
-        )}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          side="bottom"
-          align="end"
-          sideOffset={8}
-          collisionPadding={12}
-          className="z-50 w-[min(18rem,calc(100vw-24px))] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,var(--popover)_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
-        >
-          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">Kept on this device</DropdownMenu.Label>
-          {kept.map((d, i) => {
-            const { words, when } = draftLabel(d, now);
-            const here = d.tab === TAB;
-            return (
-              <DropdownMenu.Item
-                key={d.savedAt + ':' + i}
-                onSelect={() => letter.onBackToMine(d.savedAt)}
-                className="flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 py-1.5 text-[0.875rem] text-foreground outline-none select-none data-[highlighted]:bg-accent"
-              >
-                <span className="grid min-w-0">
-                  <span className="truncate">{words}</span>
-                  {here && <span className="text-[0.7188rem] text-muted-foreground">{letter.found ? 'The one you were writing here' : 'Written in this tab'}</span>}
-                </span>
-                <span className="shrink-0 text-[0.75rem] text-muted-foreground">{when}</span>
-              </DropdownMenu.Item>
-            );
-          })}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
   );
 }
 
