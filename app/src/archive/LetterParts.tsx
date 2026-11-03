@@ -1,11 +1,12 @@
 // The letter page's pieces: the floating dock (the same family as the library's and the tool's right panel), the
-// hand menu under the sheet (like the tool's writer dropdown), the "more" menu, and the editorial text: title,
-// dateline, story, the record, the letter as text, and footnotes for the source, the rights and the hand.
+// hand menu under the sheet and the dock's "more" menu (the site's overlay system, components/ui/sheet.tsx), and the
+// editorial text: title, dateline, story, the record, the letter as text, and footnotes for the source, the rights and
+// the hand.
 // Colours, sizes and surfaces come from the --lib-* tokens in archive.css, so they can be swapped in one place.
-import { useId, useMemo, useState, type ReactNode, type RefObject } from 'react';
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Ellipsis, FileText, Link2, PenLine, RotateCcw, Shuffle } from 'lucide-react';
-import { DropdownMenu } from 'radix-ui';
+import { useId, useMemo, useState, type ReactElement, type ReactNode, type RefObject } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, Download, Ellipsis, FileText, Link2, PenLine, RotateCcw, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ActionSheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { cn } from '@/lib/utils';
@@ -28,52 +29,32 @@ function readDetail(): DetailId {
 }
 export const DETAIL: DetailId = typeof location !== 'undefined' ? readDetail() : '2';
 
-// ---------- menus (the tool's dropdown: WritingMenu.tsx) ----------
-const itemCls = 'flex min-h-10 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent pointer-coarse:min-h-11';
+// ---------- menus: the site's one overlay system (components/ui/sheet.tsx: a menu on desktop, a sheet on phones) ----------
 
-function MenuContent({ children, side = 'top', align = 'end' }: { children: ReactNode; side?: 'top' | 'bottom'; align?: 'start' | 'center' | 'end' }) {
-  return (
-    <DropdownMenu.Portal>
-      <DropdownMenu.Content side={side} align={align} sideOffset={8} collisionPadding={12} className="lib-menu z-50 w-[248px] origin-(--radix-dropdown-menu-content-transform-origin) p-1.5 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100">
-        {children}
-      </DropdownMenu.Content>
-    </DropdownMenu.Portal>
-  );
-}
-function Item({ icon, children, onSelect, disabled }: { icon: ReactNode; children: ReactNode; onSelect: () => void; disabled?: boolean }) {
-  return (
-    <DropdownMenu.Item className={itemCls} onSelect={onSelect} disabled={disabled}>
-      <span aria-hidden className="grid size-4 shrink-0 place-items-center text-muted-foreground [&_svg]:size-4">{icon}</span>
-      {children}
-    </DropdownMenu.Item>
-  );
-}
-
-/** "In Ilse Pryor's hand ⌄": what you can do with the hand, beside the hand (the tool's writer dropdown). */
-export function HandMenu({ name, keep, onKeep, onNewHand, onReplay, canReplay }: {
+/** "In Ilse Pryor's hand ⌄": what you can do with the hand, beside the hand (the tool's writer dropdown). A page can
+ * give it its own trigger (`trigger`, a button: the Reading Room's spread shows the name alone in its record). */
+export function HandMenu({ name, keep, onKeep, onNewHand, onReplay, canReplay, trigger, align = 'center' }: {
   name: string; keep: boolean; onKeep: (v: boolean) => void; onNewHand: () => void; onReplay: () => void; canReplay: boolean;
+  trigger?: ReactElement; align?: 'start' | 'center' | 'end';
 }) {
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
+    <ActionSheet
+      title={`In ${name}’s hand`}
+      align={align}
+      width="w-[248px]"
+      trigger={trigger ?? (
         <button type="button" className="group inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[13px] text-muted-foreground transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:py-2.5">
           In {name}’s hand
           <ChevronDown aria-hidden className="size-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </button>
-      </DropdownMenu.Trigger>
-      <MenuContent side="bottom" align="center">
-        <Item icon={<Shuffle />} onSelect={onNewHand}>Another hand</Item>
-        <Item icon={<RotateCcw />} onSelect={onReplay} disabled={!canReplay}>Write it out again</Item>
-        <DropdownMenu.Separator className="mx-2 my-1 h-px bg-border" />
-        <DropdownMenu.CheckboxItem className={cn(itemCls, 'items-start')} checked={keep} onCheckedChange={(v) => onKeep(v === true)} onSelect={(e) => e.preventDefault()}>
-          <span className="mt-0.5 grid size-4 shrink-0 place-items-center"><DropdownMenu.ItemIndicator><Check aria-hidden className="size-4 text-[var(--lib-accent)]" /></DropdownMenu.ItemIndicator></span>
-          <span>
-            Keep this hand
-            <span className="block text-[12.5px] text-muted-foreground">for the next letters you open</span>
-          </span>
-        </DropdownMenu.CheckboxItem>
-      </MenuContent>
-    </DropdownMenu.Root>
+      )}
+      entries={[
+        { id: 'new', label: 'Another hand', icon: <Shuffle />, onSelect: onNewHand },
+        { id: 'replay', label: 'Write it out again', icon: <RotateCcw />, onSelect: onReplay, disabled: !canReplay },
+        { kind: 'separator', id: 'sep' },
+        { id: 'keep', label: 'Keep this hand', hint: 'for the next letters you open', checked: keep, onSelect: () => onKeep(!keep) },
+      ]}
+    />
   );
 }
 
@@ -118,18 +99,20 @@ export function LetterDock(a: DockActions) {
         )}
         <IconButton label="Another hand" onClick={a.onNewHand}><Shuffle aria-hidden /></IconButton>
         <IconButton label="Share a link to this letter" onClick={a.onShare}><Link2 aria-hidden /></IconButton>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
+        <ActionSheet
+          title="More"
+          side="top"
+          trigger={
             <Button variant="ghost" size="icon" aria-label="More" className="size-9 rounded-lg text-muted-foreground hover-device:hover:text-foreground pointer-coarse:size-10">
               <Ellipsis aria-hidden />
             </Button>
-          </DropdownMenu.Trigger>
-          <MenuContent>
-            <Item icon={<FileText />} onSelect={a.onText}>Read it as text</Item>
-            <Item icon={<Download />} onSelect={a.onImage} disabled={!a.imageReady}>Save as an image</Item>
-            <Item icon={<Shuffle />} onSelect={a.onRandom}>A letter at random</Item>
-          </MenuContent>
-        </DropdownMenu.Root>
+          }
+          entries={[
+            { id: 'text', label: 'Read it as text', icon: <FileText />, onSelect: a.onText },
+            { id: 'image', label: 'Save as an image', icon: <Download />, onSelect: a.onImage, disabled: !a.imageReady },
+            { id: 'random', label: 'A letter at random', icon: <Shuffle />, onSelect: a.onRandom },
+          ]}
+        />
         {/* no divider before the reply: a filled button separates itself */}
         <Button asChild className="ml-1 h-9 rounded-sm px-3.5 pointer-coarse:h-10">
           <a href={a.reply}><PenLine aria-hidden /> {narrow ? 'Reply' : 'Write a reply'}</a>

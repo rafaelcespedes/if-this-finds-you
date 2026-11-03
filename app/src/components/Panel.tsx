@@ -6,14 +6,13 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
 import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
 import { hasControl } from '@/controls-lab';
-import { Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
 import { Segmented, SegmentedChip, SegmentedItem } from '@/components/ui/toggle-group';
 import { Switch } from '@/components/ui/switch';
 import { SliderRow, Soon } from '@/components/ui/slider-row';
 import { Group, MoreButton } from '@/components/ui/group';
-import { ActionSheet, type SheetEntry } from '@/components/ui/sheet';
+import { ActionSheet, Sheet, type SheetEntry } from '@/components/ui/sheet';
 import { inputField } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PenSwatches, TipChoice } from '@/components/PenPicker';
@@ -118,7 +117,8 @@ export interface PanelProps {
 }
 
 /** The desktop panel: the writer and New hand, then the look, then More. */
-export function Panel(props: PanelProps) {
+/** The panel, skipped when nothing it shows changed (App passes stable props: hooks/useStableProps). */
+export const Panel = memo(function Panel(props: PanelProps) {
   return (
     <div className="flex min-h-full flex-col">
       <WriterHeader {...props} />
@@ -126,7 +126,7 @@ export function Panel(props: PanelProps) {
       <MoreControls {...props} />
     </div>
   );
-}
+});
 
 // ---------- always there: the writer, New hand, share, what's on the page ----------
 function WriterHeader(props: PanelProps) {
@@ -163,35 +163,30 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
   const letter = state.sample ? sampleById(state.sample) : undefined;
   const dt = 'text-[0.7188rem] text-muted-foreground';
   const changed = useRef(false);
+  // on the overlay system (ui/sheet.tsx): a popover from the name on desktop, a bottom sheet on phones
   return (
-    <Popover.Root>
-      <Popover.Trigger asChild>{children}</Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side="bottom"
-          align="start"
-          sideOffset={8}
-          collisionPadding={12}
-          // small phones and sideways: never taller than the room the screen has (it scrolls), and a swipe on it
-          // scrolls it rather than dragging the sheet it opened from (React events bubble through the portal)
-          onPointerDown={(e) => e.stopPropagation()}
-          onPointerMove={(e) => e.stopPropagation()}
-          onCloseAutoFocus={(e) => {
-            if (changed.current && props.resumeWriting?.()) e.preventDefault();
-            changed.current = false;
-          }}
-          className="z-50 max-h-[min(var(--radix-popover-content-available-height),calc(100dvh-24px))] w-[min(320px,calc(100vw-24px))] origin-(--radix-popover-content-transform-origin) overflow-y-auto overscroll-contain rounded-2xl border border-border bg-[var(--field)] p-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
-        >
+    <Sheet
+      title={`About ${name}’s hand`}
+      showTitle={false}
+      trigger={children as React.ReactElement}
+      align="start"
+      className="w-[min(320px,calc(100vw-24px))] bg-[var(--field)]"
+      onCloseAutoFocus={(e) => {
+        if (changed.current && props.resumeWriting?.()) e.preventDefault();
+        changed.current = false;
+      }}
+    >
+      {(close) => (
+        // a swipe or press on it never reaches the control sheet it opened from (React events bubble through the portal)
+        <div onPointerDown={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()}>
           <div style={{ color: inkColor(state.ink) }}>
             <Signature p={p} name={name} ink="currentColor" emPx={30} className="-ml-1 h-[46px] overflow-visible" />
           </div>
           <div className="mt-1 text-[0.9375rem] leading-tight font-medium">{name}</div>
           <p className="mt-0.5 text-[0.7812rem] leading-snug text-muted-foreground">{describeHand(p)}</p>
-          <Popover.Close asChild>
-            <Button variant="secondary" onClick={() => { changed.current = true; props.onChangeWriter(); }} className="mt-3 w-full">
-              <Shuffle aria-hidden /> Change writer
-            </Button>
-          </Popover.Close>
+          <Button variant="secondary" onClick={() => { changed.current = true; props.onChangeWriter(); close(); }} className="mt-3 w-full active:scale-[0.97]">
+            <Shuffle aria-hidden /> Change writer
+          </Button>
           <dl className="mt-3.5 grid gap-2.5 border-t border-border pt-3 text-[0.7812rem] leading-snug">
             <div>
               <dt className={dt}>Learned to write</dt>
@@ -227,9 +222,9 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
               <dd className="tabular">{state.seed}</dd>
             </div>
           </dl>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        </div>
+      )}
+    </Sheet>
   );
 }
 

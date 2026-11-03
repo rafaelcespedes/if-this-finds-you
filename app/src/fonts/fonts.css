@@ -248,20 +248,14 @@ button.font-tag:focus-visible {
   background: var(--lib-surface);
   box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 6px 16px -8px rgba(60, 45, 20, 0.3);
 }
-.filter-panel {
-  animation: filter-panel-in 200ms var(--ease-out) both;
-  transform-origin: bottom center;
-}
-@keyframes filter-panel-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.985);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .filter-panel {
-    animation: specimen-in 150ms var(--ease-out) both;
-  }
+/* the filters in the phone sheet: Clear and Done stay in reach at its bottom, across its width */
+.sheet-surface .filter-panel-foot {
+  position: sticky;
+  bottom: 0;
+  margin-inline: -1.25rem;
+  margin-bottom: -0.5rem;
+  padding-inline: 0.75rem;
+  background: var(--panel);
 }
 
 /* phones: the filter chips are drawn small, every tap still 44 px tall (as density.css does in the tool's sheet) */

@@ -373,3 +373,6 @@ textarea {
     animation-duration: 160ms !important;
   }
 }
+
+/* the shared header stays above the desk's side column, so its links are always clickable (hotfix 3 Nov) */
+header[data-site-header] { z-index: 40; }

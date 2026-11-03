@@ -262,6 +262,11 @@ html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site
   text-transform: none;
   color: var(--rr-ink);
 }
+/* in the phone's menu sheet the places are big, thumb-sized rows */
+html[data-look='reading-room'] .sheet-surface [data-site-menu] [data-site-link] {
+  font-size: 1.125rem;
+  letter-spacing: 0.06em;
+}
 /* the letter's number: archival red, as on its sheet */
 html[data-look='reading-room'] [data-site-number] {
   color: var(--rr-red);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
@@ -20,6 +20,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
+import { useStableProps } from '@/hooks/useStableProps';
 import { useWideScale } from '@/hooks/useWideScale';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
@@ -79,6 +80,8 @@ function writePref(key: string, v: string) {
 
 /** Every edit to the note, in order: the seed of the ink log (see lib/edits.ts). */
 const editLog = new EditLog();
+/** the Reading Room's desk, skipped when nothing it shows changed (its props are stable: useStableProps) */
+const ReadingDeskMemo = memo(ReadingDesk);
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
 const TAIL_KEY = 'seedhand:typed';
 /** in a shared letter's header: no kept letters (picking one would keep their letter as yours) */
@@ -896,8 +899,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [newHand, similarHand, posture.toggle]);
 
-  const panelProps: PanelProps = {
-    state,
+  // what the panel shows of the letter: everything but its words (it never shows them), so typing doesn't redraw it
+  const panelState = useMemo(
+    () => ({ ...state, text: state.text ? '…' : '', inkLog: state.inkLog ? '…' : null, marks: [] }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.seed, state.style, state.pen, state.penSize, state.ink, state.paper, state.size, state.offsets, state.occasion, state.amount, state.sample, state.mode, state.signed, state.replyTo, state.reader, state.neatOnly, !!state.text, !!state.inkLog],
+  );
+  const panelLive: PanelProps = {
+    state: panelState,
     natural,
     p,
     name,
@@ -976,6 +985,8 @@ export default function App() {
     } : undefined,
   };
 
+  // stable callbacks, and the same object until something the panel shows changes (Panel and the sheet are memo'd)
+  const panelProps = useStableProps(panelLive);
   onModeRef.current = panelProps.ink?.onMode;
   freshRef.current = panelProps.ink?.onFreshSheet;
   const desk = !posture.writing;
@@ -1352,7 +1363,7 @@ export default function App() {
               desk ? 'duration-[180ms]' : 'pointer-events-none translate-x-3 opacity-0 duration-[240ms] motion-reduce:translate-x-0',
             )}
           >
-            {LOOK === 'reading-room' ? <ReadingDesk {...panelProps} /> : (
+            {LOOK === 'reading-room' ? <ReadingDeskMemo {...panelProps} /> : (
             <div style={wide > 1 ? { zoom: wide } : undefined} className="panel-scroll h-full w-[21rem] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>

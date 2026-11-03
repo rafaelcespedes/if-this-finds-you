@@ -451,3 +451,39 @@ select.archive-field {
     padding: 0 0.5rem;
   }
 }
+
+/* ---------- the running head's middle (SiteHeader's centre): the letter counter, the canvas readout ---------- */
+.letter-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+/* the header lets clicks through to the page (the canvas drags under it): its controls take them back */
+.letter-counter button {
+  pointer-events: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 3px;
+  color: var(--lib-text-soft);
+  transition: color 150ms var(--ease-out);
+}
+.letter-counter button svg {
+  width: 1rem;
+  height: 1rem;
+}
+@media (hover: hover) and (pointer: fine) {
+  .letter-counter button:hover {
+    color: var(--lib-text);
+  }
+}
+.letter-counter button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.letter-counter-of,
+.canvas-readout {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

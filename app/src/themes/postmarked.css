@@ -221,6 +221,11 @@ html[data-look='postmarked'] [data-site-menu] [data-site-link] {
   text-transform: uppercase;
 }
 
+/* in the phone's menu sheet the places are big, thumb-sized rows */
+html[data-look='postmarked'] .sheet-surface [data-site-menu] [data-site-link] {
+  font-size: 0.9375rem;
+}
+
 /* ---------- the postmark and the cancellation ---------- */
 html[data-look='postmarked'] .pm-postmark {
   display: block;

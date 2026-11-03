@@ -79,8 +79,10 @@ the label role's small capitals; the letter's number is archival red. Other look
 ```
 
 - Everything goes into one **Menu** chip at the top right (drawn 32 px, a 44 px target, the same chip as Share).
-  It opens a small sheet: the four places (the current one marked), then "My letters, kept on this device" with
-  the list. With letters kept, the chip carries their count.
+  It opens the shared Sheet (`components/ui/sheet.tsx`): on a phone a bottom sheet that slides up, follows your
+  finger, and closes on a swipe or flick down, the backdrop or Escape; the four places as big 56 px rows (the
+  current one marked), then "My letters, kept on this device" with the list. On a larger screen (large text, a
+  narrow window) the same list opens as a popover from the chip. With letters kept, the chip carries their count.
 - **Why one menu and not a row of icons.** Before this, the tool's phone header had four icon chips (My letters,
   All letters, Fonts, Share). A grid icon and an "Aa" don't say "All letters" or "Fonts"; at 320 px the chips ran
   over the wordmark; and the library and Fonts pages showed words instead, a different set on each page.
@@ -117,9 +119,10 @@ stays in the panel. Keep it to one action, and only when the page has nowhere el
 - Order for keyboards and screen readers is the order on screen: wordmark, page action, My letters, the places
   (or the Menu chip). The places are a `<nav aria-label="Site">` list.
 - Every target is at least 44 px (the words carry an invisible larger hit area so the line stays compact).
-- The phone menu is a button (`aria-expanded`) that opens a small dialog. Opening it moves focus to the first
-  place; Tab stays inside; **Escape closes it** and returns focus to the chip, without also leaving a letter's page
-  (that page goes back on Escape); a tap outside closes it.
+- The Menu is a button (`aria-expanded`) that opens a dialog (the sheet, or the popover). Opening it moves focus to
+  the first place; Tab stays inside; **Escape closes it** and returns focus to the chip (on a phone once the sheet
+  has slid away), without also leaving a letter's page (that page goes back on Escape); a tap on the backdrop or
+  outside closes it, and so does a swipe down on a phone.
 - The current place says so (`aria-current`). My letters says how many are kept ("Menu, 2 letters kept").
 - While you're writing on a phone, the header steps aside and its controls leave the tab order (`inert`).
 - Focus rings use `--ring`; the chips and words keep their look in forced colours.
