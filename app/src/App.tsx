@@ -800,7 +800,7 @@ export default function App() {
             )}
           >
             {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
-            <span className="flex h-8 items-start text-foreground/85 lg:h-9"><Wordmark className="h-full" /></span>
+            <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
             <span className="flex min-w-0 items-baseline gap-2">
               {reader ? (
                 <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
