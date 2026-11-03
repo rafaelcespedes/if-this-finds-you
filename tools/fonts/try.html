@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Font download test</title>
+<!-- Builds a hand's font in the browser, exactly as the app's download does, and shows it with calt on and off.
+     Serve the repo root (python3 tools/serve.py 8765), run `npm install` in tools/fonts once, then open
+     http://127.0.0.1:8765/tools/fonts/try.html   (?bench=20 times 20 random hands) -->
+<script src="node_modules/clipper-lib/clipper.js"></script>
+<style>
+  :root { --paper: #fbf8f1; --ink: #1d2a44; --muted: #7a7466; --rule: #e6dfd0; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.45 -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+  form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, select, button { font: inherit; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 8px; background: #fff; color: var(--ink); }
+  button { background: var(--ink); color: var(--paper); border: 0; cursor: pointer; }
+  pre { background: #fff; border: 1px solid var(--rule); border-radius: 8px; padding: 10px; white-space: pre-wrap; font-size: 12.5px; }
+  .s { font-size: 44px; line-height: 1.3; margin: 10px 0; overflow-wrap: anywhere; }
+  .off { font-feature-settings: "calt" 0; }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <form id="f">
+    <input id="seed" value="quiet-heron-17" aria-label="Seed">
+    <select id="style" aria-label="Tradition"></select>
+    <input id="name" value="Ada Marsh" aria-label="Writer's name">
+    <button>Build font</button>
+    <button type="button" id="dl" disabled>Download .zip</button>
+  </form>
+  <pre id="out">…</pre>
+  <div class="label">calt on</div>
+  <div class="s" id="on">Dear Ada, if this finds you, write back. the the the the · Mississippi · letter · ÇA VA? Größe, Łódź</div>
+  <div class="label">calt off</div>
+  <div class="s off" id="off">Dear Ada, if this finds you, write back. the the the the · Mississippi · letter · ÇA VA? Größe, Łódź</div>
+</main>
+<script type="module">
+  import * as E from '../../engine/index.js';
+  import { buildFontPackage } from '../../engine/fontbuild.js';
+  const $ = (id) => document.getElementById(id);
+  for (const n of ['print', 'script', ...E.styleNames().filter((x) => x !== 'print' && x !== 'script'), 'print!', 'script!']) $('style').add(new Option(n === 'print' || n === 'script' ? `${n} (any tradition)` : n.endsWith('!') ? `${n.slice(0, -1)} (Hershey)` : n, n));
+  $('style').value = 'script';
+  let last = null, fid = 0;
+  async function build(seed, style, name) {
+    const fam = style === 'print' || style === 'script' ? style : { style: style.replace('!', '') };
+    const p = E.makeHand(seed, fam);
+    const t0 = performance.now();
+    const pkg = await buildFontPackage(p, { name, clipper: window.ClipperLib, clock: () => performance.now() });
+    return { p, pkg, ms: Math.round(performance.now() - t0) };
+  }
+  async function show(r) {
+    last = r.pkg;
+    const face = new FontFace('Built' + (++fid), r.pkg.built.otf);
+    document.fonts.add(await face.load());
+    $('on').style.fontFamily = $('off').style.fontFamily = face.family;
+    $('dl').disabled = false;
+    const i = r.pkg.info;
+    $('out').textContent = `${i.family} · ${r.p.style} · ${i.joined ? 'joined' : 'print'} · lifts ${E.styleDims(r.p).lifts.toFixed(2)}\n` +
+      `${i.glyphs} glyphs, ${i.forms} forms, ${i.alternates} versions · features ${i.features.join(' ')}\n` +
+      `OTF ${(i.sizes.otf / 1024) | 0} KB · TTF ${(i.sizes.ttf / 1024) | 0} KB · zip ${(i.zipBytes / 1024) | 0} KB\n` +
+      `built in ${r.ms} ms in this browser (fonts ${i.ms.font}: draw ${i.ms.draw}, layout ${i.ms.layout}, write ${i.ms.write}; zip ${i.ms.zip})`;
+  }
+  $('f').onsubmit = async (e) => { e.preventDefault(); $('out').textContent = 'Building…'; await new Promise((r) => setTimeout(r, 30)); show(await build($('seed').value, $('style').value, $('name').value)); };
+  $('dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([last.zip], { type: 'application/zip' })); a.download = last.filename; a.click(); };
+  const q = new URLSearchParams(location.search);
+  if (q.get('bench')) {
+    const n = +q.get('bench'), rows = [];
+    for (let k = 0; k < n; k++) {
+      const seed = 'bench-' + k, style = k % 3 ? 'script' : 'print';
+      $('out').textContent = `bench ${k + 1}/${n}…`;
+      await new Promise((r) => setTimeout(r, 0));
+      const r = await build(seed, style, 'Bench ' + k);
+      rows.push({ seed, style: r.p.style, ms: r.ms, glyphs: r.pkg.info.glyphs, lifts: +E.styleDims(r.p).lifts.toFixed(2), zipKB: (r.pkg.info.zipBytes / 1024) | 0 });
+    }
+    const ms = rows.map((x) => x.ms).sort((a, b) => a - b);
+    const pct = (f) => ms[Math.min(ms.length - 1, Math.floor(f * ms.length))];
+    window.benchResult = { median: pct(0.5), p90: pct(0.9), max: ms[ms.length - 1], min: ms[0], rows };
+    $('out').textContent = `bench: median ${pct(0.5)} ms, p90 ${pct(0.9)} ms, max ${ms[ms.length - 1]} ms\n` + rows.map((x) => JSON.stringify(x)).join('\n');
+  } else $('f').requestSubmit();
+</script>
+</body>
+</html>
