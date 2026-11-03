@@ -32,6 +32,8 @@ export function useWriting(req: Req, paused = false) {
   const cache = useRef(new Map<string, WriteResult>());
   const lastLook = useRef('');
   const [, bump] = useState(0);
+  /** the worker couldn't start (blocked, offline, an old browser): the page says so instead of staying blank */
+  const [failed, setFailed] = useState(false);
   // for debugging and QA: what's written ahead
   (window as unknown as { __seedhandCache: unknown }).__seedhandCache = cache.current;
 
@@ -71,7 +73,7 @@ export function useWriting(req: Req, paused = false) {
     };
     w.onerror = (e) => {
       console.error('[seedhand] writer worker failed to start:', e.message || e);
-      toast.error('The page couldn’t start writing', { id: 'write-error', description: 'Reload the page to try again.' });
+      setFailed(true);
     };
     return () => {
       w.terminate();
@@ -135,5 +137,5 @@ export function useWriting(req: Req, paused = false) {
   /** the writing for this request, if it's been written (kept or fetched ahead) */
   const lookup = useCallback((r: Req) => cache.current.get(JSON.stringify(r)), []);
 
-  return { writing: hit ?? result, prefetch, written, lookup };
+  return { writing: hit ?? result, prefetch, written, lookup, failed };
 }
