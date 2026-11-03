@@ -34,6 +34,11 @@ export const SMALL = [{ runs: [
 ] }];
 export const ICON = [{ runs: [{ text: 'If', hand: hand({ salt: 'icon', penWidth: 125 }) }] }];
 
+// Option #5 for comparison: Québec school print, felt marker (the hand's own pen), seed linen-thistle-82
+const hand5 = (extra = {}) => ({ seed: 'linen-thistle-82', style: 'quebec-print', ...extra });
+export const OPTION5 = [{ runs: [{ text: 'If This Finds You', hand: hand5() }] }];
+export const ICON5 = [{ runs: [{ text: 'If', hand: hand5({ salt: 'icon' }) }] }];
+
 // ---- clean-up: outlines only, no filters or ink effects, translate baked in, viewBox at 0 0, simplified ----
 function rdp(pts, eps) {
   if (pts.length < 3) return pts;
@@ -93,16 +98,25 @@ const NAME = 'If This Finds You';
 const stacked = outlines(wordmark(STACKED, { ink: 'currentColor', pad: 0 }), 0.3);
 const small = outlines(wordmark(SMALL, { ink: 'currentColor', pad: 0 }), 0.3);
 const icon = outlines(wordmark(ICON, { ink: 'currentColor', pad: 0 }), 0.3);
+const opt5 = outlines(wordmark(OPTION5, { ink: 'currentColor', pad: 0 }), 0.3);
+const icon5 = outlines(wordmark(ICON5, { ink: 'currentColor', pad: 0 }), 0.3);
 
 const files = {
   'wordmark.svg': toSVG(stacked, { label: NAME, pad: 1 }),
   'wordmark-small.svg': toSVG(small, { label: NAME, pad: 1 }),
+  'wordmark-5.svg': toSVG(opt5, { label: NAME, pad: 1 }),
 };
+files['wordmark-32.svg'] = files['wordmark.svg'];   // alias: the chosen logo under its option number
 // favicon: the "If" on paper, inset so it breathes inside the rounded square
 {
   const [x0, y0, x1, y1] = icon.box;
   const s = Math.max(x1 - x0, y1 - y0);
   files['favicon.svg'] = toSVG(icon, { label: NAME, square: true, pad: s * 0.1, bg: PAPER, fill: INK });
+}
+{
+  const [x0, y0, x1, y1] = icon5.box;
+  const s = Math.max(x1 - x0, y1 - y0);
+  files['favicon-5.svg'] = toSVG(icon5, { label: NAME, square: true, pad: s * 0.1, bg: PAPER, fill: INK });
 }
 for (const [f, s] of Object.entries(files)) fs.writeFileSync(path.join(pub, f), s);
 
@@ -136,7 +150,7 @@ fs.writeFileSync(path.join(root, 'out/wm/header-check.html'), page(1100, 760,
     const [bg, fg] = c.split('|');
     return `<div style="background:${bg};color:${fg};padding:16px;display:grid;gap:14px">` + sizes.map((px) =>
       `<div style="display:flex;gap:40px;align-items:center;font:11px system-ui"><span style="width:40px">${px}px</span>` +
-      inline(files['wordmark.svg'], `height:${px}px;width:auto`) + inline(files['wordmark-small.svg'], `height:${px}px;width:auto`) + '</div>').join('') + '</div>';
-  }).join('') + `<div style="padding:16px;display:flex;gap:16px;align-items:end">${[16, 32, 48, 64].map((px) => inline(files['favicon.svg'], `width:${px}px;height:${px}px`)).join('')}</div>`));
+      inline(files['wordmark.svg'], `height:${px}px;width:auto`) + inline(files['wordmark-small.svg'], `height:${px}px;width:auto`) + inline(files['wordmark-5.svg'], `height:${px}px;width:auto`) + '</div>').join('') + '</div>';
+  }).join('') + `<div style="padding:16px;display:flex;gap:16px;align-items:end">${['favicon.svg', 'favicon-5.svg'].map((f) => [16, 32, 48, 64].map((px) => inline(files[f], `width:${px}px;height:${px}px`)).join('')).join('<span style="width:40px"></span>')}</div>`));
 
 console.log(Object.entries(files).map(([f, s]) => `${f} ${(s.length / 1024).toFixed(1)} KB`).join(' · '));
