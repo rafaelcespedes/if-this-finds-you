@@ -81,10 +81,11 @@ function StatusSlot({ icon, status }: { icon?: ReactNode; status?: RowStatus }) 
 }
 
 /** A row in a phone sheet: 52 px, a press that answers at once. */
-function SheetRow({ entry, close }: { entry: Extract<SheetEntry, { onSelect: () => void }>; close: () => void }) {
+function SheetRow({ entry, close, checks }: { entry: Extract<SheetEntry, { onSelect: () => void }>; close: () => void; checks?: boolean }) {
   return (
     <button
       type="button"
+      aria-pressed={entry.checked ?? undefined}
       disabled={entry.disabled || entry.status === 'busy'}
       aria-busy={entry.status === 'busy' || undefined}
       onClick={() => { entry.onSelect(); close(); }}
@@ -93,8 +94,8 @@ function SheetRow({ entry, close }: { entry: Extract<SheetEntry, { onSelect: () 
         entry.quiet ? 'text-[0.875rem]' : 'text-[1rem]',
       )}
     >
-      {entry.checked != null && (
-        <span aria-hidden className="grid size-5 shrink-0 place-items-center">{entry.checked && <Check className="size-[18px] text-[var(--ink)]" />}</span>
+      {checks && (
+        <span aria-hidden className="grid size-5 shrink-0 place-items-center self-start pt-0.5">{entry.checked && <Check className="size-[18px] text-[var(--ink)]" />}</span>
       )}
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="min-w-0">{entry.label}</span>
@@ -128,6 +129,8 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
   const [open, setOpen] = useState(false);
   const set = (o: boolean) => { setOpen(o); onOpenChange?.(o); };
   const [chose, setChose] = useState(false);
+  // when some rows can be ticked, every row keeps the tick's room, so the words line up
+  const checks = entries.some((e) => (e.kind ?? 'item') === 'item' && (e as { checked?: boolean }).checked != null);
 
   if (sheets) {
     return (
@@ -136,7 +139,7 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
           {entries.map((e) =>
             e.kind === 'separator' ? <div key={e.id} role="presentation" className="mx-3 my-1.5 h-px bg-border" />
               : e.kind === 'label' ? <div key={e.id} className="px-3 pt-2 pb-1 text-[0.75rem] text-muted-foreground">{e.label}</div>
-                : <div key={e.id} role="listitem"><SheetRow entry={e} close={() => set(false)} /></div>,
+                : <div key={e.id} role="listitem"><SheetRow entry={e} checks={checks} close={() => set(false)} /></div>,
           )}
         </div>
       </PhoneSheet>
@@ -159,8 +162,9 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
             e.kind === 'separator' ? <DropdownMenu.Separator key={e.id} className="mx-2 my-1 h-px bg-border" />
               : e.kind === 'label' ? <DropdownMenu.Label key={e.id} className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">{e.label}</DropdownMenu.Label>
                 : (
-                  <DropdownMenu.Item
+                  <MenuRow
                     key={e.id}
+                    checked={e.checked}
                     disabled={e.disabled || e.status === 'busy'}
                     onSelect={() => { setChose(true); e.onSelect(); }}
                     className={cn(
@@ -169,19 +173,31 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
                       e.hint && 'py-2',
                     )}
                   >
-                    {e.checked != null && <span aria-hidden className="grid size-4 shrink-0 place-items-center">{e.checked && <Check className="size-4 text-[var(--ink)]" />}</span>}
+                    {checks && <span aria-hidden className="grid size-4 shrink-0 place-items-center self-start pt-0.5">{e.checked && <Check className="size-4 text-[var(--ink)]" />}</span>}
                     <span className="grid min-w-0 flex-1 gap-0.5">
                       <span>{e.label}</span>
                       {e.hint && <span className="text-[0.7188rem] leading-snug text-muted-foreground">{e.hint}</span>}
                     </span>
                     <StatusSlot icon={e.icon} status={e.status} />
-                  </DropdownMenu.Item>
+                  </MenuRow>
                 ),
           )}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   );
+}
+
+/** A desktop menu row: a checkbox item when it can be ticked (screen readers hear it), a plain item otherwise. */
+function MenuRow({ checked, disabled, onSelect, className, children }: { checked?: boolean; disabled?: boolean; onSelect: () => void; className: string; children: ReactNode }) {
+  if (checked != null) {
+    return (
+      <DropdownMenu.CheckboxItem checked={checked} disabled={disabled} onSelect={onSelect} className={className}>
+        {children}
+      </DropdownMenu.CheckboxItem>
+    );
+  }
+  return <DropdownMenu.Item disabled={disabled} onSelect={onSelect} className={className}>{children}</DropdownMenu.Item>;
 }
 
 // ---------- Sheet: any content ----------

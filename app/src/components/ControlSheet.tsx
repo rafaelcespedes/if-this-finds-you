@@ -5,7 +5,7 @@
 // Drag the top to move between heights (a flick goes on to the next one); below full height the content drags
 // the sheet too, at full height it scrolls. The sheet is never modal: focus and the page stay free, so a tap
 // on the letter always starts writing.
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AboutHand, LetterStatus, LookControls, MoreControls, type PanelProps } from '@/components/Panel';
@@ -68,7 +68,8 @@ function useWindowHeight() {
   return h;
 }
 
-export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onDragging, onAdjusting, ...props }: Props) {
+/** Skipped when nothing it shows changed (App passes stable props). */
+export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onDragging, onAdjusting, ...props }: Props) {
   const safe = useSafeInsets();
   const ih = useWindowHeight();
   const peekRef = useRef<HTMLDivElement>(null);
@@ -316,4 +317,4 @@ export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onD
       </div>
     </section>
   );
-}
+});

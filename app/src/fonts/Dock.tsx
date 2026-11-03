@@ -2,10 +2,11 @@
 // Joined or print, your saved hands, and a new set. The filters open in a panel just above it (a sheet on phones),
 // laid out like the tool's panel: ¶ groups with the same chips, segmented controls and switch, the finer ones under
 // "More". Every control is the tool's own component. Every change draws a new set at once.
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { ArrowLeft, Heart, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Group, MoreButton } from '@/components/ui/group';
+import { Sheet, useSheets } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Segmented, SegmentedChip, SegmentedItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -138,22 +139,21 @@ export function FilterGroups({ filters, onFilters, neatOnly, onNeatOnly, catalog
   );
 }
 
-function FilterPanel({ id, filters, onFilters, neatOnly, onNeatOnly, catalogue, onClose, narrow }: Pick<Props, 'filters' | 'onFilters' | 'neatOnly' | 'onNeatOnly' | 'catalogue' | 'narrow'> & { id: string; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { ref.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true }); }, []);
+/** The filters inside the shared Sheet: every group, then Clear filters and Done. On desktop the list scrolls
+ *  inside the popover with the foot below it; in the phone sheet the sheet scrolls and the foot sticks to its bottom. */
+function FilterPanel({ filters, onFilters, neatOnly, onNeatOnly, catalogue, onDone, sheet }: Pick<Props, 'filters' | 'onFilters' | 'neatOnly' | 'onNeatOnly' | 'catalogue'> & { onDone: () => void; sheet: boolean }) {
   const n = filterCount({ ...filters, family: [] });
   return (
-    <div ref={ref} id={id} role="dialog" aria-label="Filters"
-      onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
-      className={cn('filter-panel lib-menu pointer-events-auto flex max-h-[min(72dvh,640px)] flex-col overflow-hidden bg-panel', narrow ? 'w-[calc(100vw-24px)]' : 'w-[460px]')}>
-      <div className="panel-scroll overflow-y-auto overscroll-contain px-[var(--pad,1.25rem)]">
-        <FilterGroups filters={filters} onFilters={onFilters} neatOnly={neatOnly} onNeatOnly={onNeatOnly} catalogue={catalogue} />
+    <div className={cn('filter-panel flex flex-col', !sheet && 'max-h-[min(72dvh,640px,var(--radix-popover-content-available-height))]')}>
+      <div className={cn(!sheet && 'panel-scroll min-h-0 overflow-y-auto overscroll-contain px-[var(--pad,1.25rem)]')}>
+        {/* in the sheet the groups' rules reach its edges: 1.25rem is its padding */}
+        <FilterGroups filters={filters} onFilters={onFilters} neatOnly={neatOnly} onNeatOnly={onNeatOnly} catalogue={catalogue} pad={sheet ? '1.25rem' : undefined} />
       </div>
-      <div className="flex items-center justify-between gap-2 border-t border-border/70 px-3 py-2">
+      <div className="filter-panel-foot flex shrink-0 items-center justify-between gap-2 border-t border-border/70 px-3 py-2">
         <Button variant="ghost" size="sm" disabled={!n && neatOnly} onClick={() => onFilters({ ...NO_FILTERS, family: filters.family }, true)} className="text-muted-foreground">
           Clear filters
         </Button>
-        <Button size="sm" onClick={onClose} className="dock-primary">Done</Button>
+        <Button size="sm" onClick={onDone} className="dock-primary">Done</Button>
       </div>
     </div>
   );
@@ -161,19 +161,8 @@ function FilterPanel({ id, filters, onFilters, neatOnly, onNeatOnly, catalogue, 
 
 export function FontsDock(p: Props) {
   const [open, setOpen] = useState(false);
-  const panelId = useId();
-  const btn = useRef<HTMLButtonElement>(null);
-  const wrap = useRef<HTMLDivElement>(null);
+  const sheets = useSheets();
   const n = filterCount({ ...p.filters, family: [] }) + (p.neatOnly ? 0 : 1);
-  const close = () => { setOpen(false); btn.current?.focus({ preventScroll: true }); };
-  useEffect(() => {
-    if (!open) return;
-    const on = (e: PointerEvent) => { if (!wrap.current?.contains(e.target as Node)) setOpen(false); };
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
-    window.addEventListener('pointerdown', on);
-    window.addEventListener('keydown', key);
-    return () => { window.removeEventListener('pointerdown', on); window.removeEventListener('keydown', key); };
-  }, [open]);
   useEffect(() => { if (p.view === 'saved') setOpen(false); }, [p.view]);
 
   const summary = describeFilters({ ...p.filters, family: [] }, p.catalogue);
@@ -187,8 +176,7 @@ export function FontsDock(p: Props) {
   ) : null;
 
   return (
-    <div ref={wrap} className={cn('pointer-events-none fixed inset-x-0 bottom-[calc(14px+env(safe-area-inset-bottom,0px))] z-30 flex flex-col items-center gap-2 px-3 transition-opacity duration-150', p.hidden && 'opacity-0 [&_*]:!pointer-events-none')}>
-      {open && <FilterPanel id={panelId} {...p} onClose={close} />}
+    <div className={cn('pointer-events-none fixed inset-x-0 bottom-[calc(14px+env(safe-area-inset-bottom,0px))] z-30 flex flex-col items-center gap-2 px-3 transition-opacity duration-150', p.hidden && 'opacity-0 [&_*]:!pointer-events-none')}>
       {caption}
       <div role="toolbar" aria-label="Choose the fonts" className="archive-dock pointer-events-auto flex max-w-full items-center gap-1 rounded-2xl bg-panel p-1">
         {p.view === 'saved' ? (
@@ -201,14 +189,23 @@ export function FontsDock(p: Props) {
           </>
         ) : (
           <>
-            <Tip label={n ? `Filters, ${n} on` : 'Filters'} show={p.narrow}>
-              <Button ref={btn} variant="ghost" size={p.narrow ? 'icon' : 'default'} onClick={() => setOpen((v) => !v)} aria-pressed={open} aria-expanded={open} aria-controls={open ? panelId : undefined}
-                aria-label={p.narrow ? (n ? `Filters, ${n} on` : 'Filters') : undefined} className={cn('relative', open && 'bg-accent')}>
-                <SlidersHorizontal aria-hidden />
-                {!p.narrow && 'Filters'}
-                {n > 0 && <span aria-hidden className={cn('dock-badge tabular', p.narrow && 'absolute -top-1 -right-1')}>{n}</span>}
-              </Button>
-            </Tip>
+            <Sheet
+              title="Filters"
+              open={open}
+              onOpenChange={setOpen}
+              side="top"
+              align="start"
+              className="w-[460px] overflow-hidden p-0"
+              trigger={
+                <Button variant="ghost" size={p.narrow ? 'icon' : 'default'} aria-label={p.narrow ? (n ? `Filters, ${n} on` : 'Filters') : undefined} className={cn('relative', open && 'bg-accent')}>
+                  <SlidersHorizontal aria-hidden />
+                  {!p.narrow && 'Filters'}
+                  {n > 0 && <span aria-hidden className={cn('dock-badge tabular', p.narrow && 'absolute -top-1 -right-1')}>{n}</span>}
+                </Button>
+              }
+            >
+              {(close) => <FilterPanel {...p} onDone={close} sheet={sheets} />}
+            </Sheet>
             <Segmented type="single" aria-label="Joined or print" value={p.filters.family[0] ?? 'any'}
               onValueChange={(v) => {
                 if (!v) return;
