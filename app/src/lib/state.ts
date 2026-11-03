@@ -7,7 +7,7 @@
 // writes the same note.
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 import { getStyle } from '@engine';
-import { PAPERS, DEFAULT_PAPER, type PaperId } from './papers';
+import { DEFAULT_PAPER, resolvePaper, type PaperId } from './papers';
 import { AUTO_INK, DEFAULT_INK, INK_FAMILIES } from './inks';
 import { PEN_CHOICES } from './pens';
 import { CONTROLS, controlByCode, controlByKey, PEN_SIZES, type PenSize } from './controls';
@@ -125,8 +125,9 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
   if (tip && PEN_SIZES.some((p) => p.id === tip)) s.penSize = tip as PenSize;
   const ink = q.get('ink');
   if (ink && (ink === AUTO_INK || INK_FAMILIES.some((i) => i.id === ink))) s.ink = ink;
-  const paper = q.get('paper');
-  if (paper && PAPERS.some((p) => p.id === paper)) s.paper = paper as PaperId;
+  // older links name papers from before the stationery set: they redirect
+  const paper = resolvePaper(q.get('paper'));
+  if (paper) s.paper = paper;
   const size = parseFloat(q.get('size') || '');
   if (Number.isFinite(size)) s.size = clamp(size, SIZE_RANGE.min, SIZE_RANGE.max);
   const o = q.get('o');
@@ -166,8 +167,9 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
     s.sample = pick?.id ?? null;
   }
   const re = (q.get('re') || '').split('~');
-  s.replyTo = re.length === 4 && sampleById(re[0]) && re[1] && getStyle(re[2]) && PAPERS.some((x) => x.id === re[3])
-    ? { id: re[0], seed: re[1].slice(0, 64), style: re[2], paper: re[3] as PaperId }
+  const rePaper = resolvePaper(re[3]);
+  s.replyTo = re.length === 4 && sampleById(re[0]) && re[1] && getStyle(re[2]) && rePaper
+    ? { id: re[0], seed: re[1].slice(0, 64), style: re[2], paper: rePaper }
     : null;
   s.marks = decodeMarks(q.get('m'), s.text.length);
   s.signed = q.get('sig') === '1';

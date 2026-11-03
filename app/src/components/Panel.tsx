@@ -16,7 +16,7 @@ import { handSources } from '@/lib/credits';
 import { sampleById, sampleCredit } from '@/lib/samples';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
-import { PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
+import { getPaper, PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
 import { PENS_LIVE, PENS_SHOWN, penName } from '@/lib/pens';
 import { controlValue } from '@/lib/params';
 import type { LockKey } from '@/lib/roll';
@@ -341,8 +341,8 @@ export function PenPaperControls(props: PanelProps & { rows?: boolean }) {
         <InkPicker value={state.ink} pen={state.pen} onChange={props.onInk} />
       </div>
       <div data-row>
-        <Row label="Paper" value={PAPERS.find((x) => x.id === state.paper)?.name} lock={<LockToggle what="paper" {...props} />} />
-        <PaperPicker value={state.paper} onChange={props.onPaper} rows={rows} />
+        <Row label="Paper" value={getPaper(state.paper).name} lock={<LockToggle what="paper" {...props} />} />
+        <PaperPicker value={getPaper(state.paper).family} onChange={props.onPaper} rows={rows} />
       </div>
     </div>
   );
@@ -588,12 +588,7 @@ const SliderRow = memo(function SliderRow({
 
 // paper swatches show a magnified corner of each sheet, where its character is
 const SWATCH = { w: 40, h: 30 };
-function swatchCrop(paper: PaperSpec) {
-  if (paper.swatch) return { ...paper.swatch, ...SWATCH };
-  const x = paper.margin ? paper.margin.x - 15 : paper.grid ? paper.grid.box[0] - 2 : paper.dots ? paper.dots.box[0] - 3 : 6;
-  const y = paper.lines ? paper.lines.first - 6 : paper.grid ? paper.grid.box[1] - 2 : paper.dots ? paper.dots.box[1] - 3 : 6;
-  return { x: Math.max(0, x), y: Math.max(0, y), ...SWATCH };
-}
+const swatchCrop = (paper: PaperSpec) => ({ ...paper.swatch, ...SWATCH });
 
 /** Papers as a grid (desktop panel) or one row that scrolls sideways (phone sheet). */
 const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value: PaperId; onChange: (id: PaperId) => void; rows?: boolean }) {

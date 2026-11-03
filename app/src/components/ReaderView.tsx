@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { PenLine, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SheetView } from '@/components/SheetView';
+import { PaperGuide } from '@/components/PaperCanvas';
 import { LiveSheets } from '@/components/LiveSheets';
 import { CAN_PLAY, ReaderSheets } from '@/components/ReaderSheets';
 import type { Live } from '@/lib/live';
@@ -51,8 +52,9 @@ export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWr
     });
   }, [writing, token]);
 
+  // the guide sheet stayed in the writer's pad: the letter arrives on plain paper
   return (
-    <>
+    <PaperGuide value={false}>
       {live && CAN_PLAY ? (
         <div className="flex flex-col items-center" onClick={() => setFinish((n) => n + 1)}>
           <ReaderSheets live={live.live} extras={live.extras} inkKey={live.inkKey} ink={ink} pxPerMm={pxPerMm} gapPx={gap} token={token} finishToken={finish} />
@@ -100,6 +102,6 @@ export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWr
           </Button>
         </div>
       </div>
-    </>
+    </PaperGuide>
   );
 }

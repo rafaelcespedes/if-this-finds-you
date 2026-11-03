@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { makeHand } from '@engine';
 import { SheetView } from '@/components/SheetView';
+import { PaperGuide } from '@/components/PaperCanvas';
 import { LIVE, liveLayout, sheetSVG } from '@/lib/live';
 import { getPaper } from '@/lib/papers';
 import { sampleById, sampleCredit } from '@/lib/samples';
@@ -55,7 +56,10 @@ export function ReplyPeek({ replyTo, pxPerMm, size, lineSpacing, ink, onDismiss 
       {open && (
         <figure className="grid justify-items-center gap-2 [transform:rotate(-0.6deg)]">
           {svg ? (
-            <SheetView paper={paper} pxPerMm={pxPerMm * scale} svg={svg} ink={ink} index={0} count={1} />
+            // a letter that was sent: no guide sheet under it
+            <PaperGuide value={false}>
+              <SheetView paper={paper} pxPerMm={pxPerMm * scale} svg={svg} ink={ink} index={0} count={1} />
+            </PaperGuide>
           ) : (
             <blockquote className="max-w-[44ch] text-[14px] leading-relaxed whitespace-pre-line">{letter.text}</blockquote>
           )}

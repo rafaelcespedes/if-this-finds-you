@@ -86,8 +86,8 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     changes it (scrolling past is safe), up/down goes to the sheet, and a double tap puts it back.
   - For a moment after the sheet moves, its controls ignore touches, so the tap that opened it can't land
     on whatever slid in under the finger.
-- Occasions set the scene once when picked: Thank-you card and Love letter on laid paper, Postcard on the
-  postcard, Lecture notes on college ruled, Shopping list on squared.
+- Occasions set the scene once when picked: Thank-you card on the notecard, Love letter on laid paper, Postcard
+  on the postcard, Lecture notes on US loose-leaf, Shopping list on a legal pad page.
 
 ### Controls waiting for the engine
 
@@ -132,21 +132,30 @@ work can be seen in the product UI without merging.
 
 ## Papers
 
-| Paper | Based on |
-|---|---|
-| Letter | Plain A5 writing paper |
-| Laid | Cream laid writing paper, A5: fine laid lines about 1 mm apart, chain lines about 25 mm apart |
-| College ruled | US loose-leaf filler paper, 8 × 10½ in: 33 blue rules at 9/32 in (7.14 mm), pink-red margin 1¼ in from the left, three 5/16 in holes 4¼ in apart |
-| Seyès | French cahier 17 × 22 cm: violet writing lines and verticals every 8 mm, three light-blue interlines at 2 mm, red margin. Small letters fill one 2 mm interline, as French schools teach |
-| Feint ruled | UK exercise book, 9 × 7 in: pale blue feint rules at 8 mm, single red margin |
-| Squared | German Kästchen (DIN 16552 Lineatur 10 style): 5 mm squares on A5, plain margin on the right |
-| Dot grid | Rhodia / Leuchtturm1917 style A5: 5 mm grey dots on ivory |
-| Postcard | The message side of an A6 postcard: centre divider, four address lines, a stamp box |
+Seven papers people really write letters on (`docs/research/stationery.md`), each with variants. A paper id is the
+family or family-variant (`notebook-fr`); links with the old ids (plain, college, seyes, feint, squared, dots)
+open on their nearest new paper.
 
-Pitches, sheet sizes, line counts and hole geometry come from manufacturer and retailer listings
-(Mead/Staples filler paper, Clairefontaine, Silvine, Rhodia, Leuchtturm), Wikipedia "Ruled paper" and
-"Réglure", and DIN 16552 summaries. Colours and line weights are not published anywhere; they are
-matched by eye. On small grids (squared, dots) the writing takes every second line, like a real hand.
+| Paper | Variants | Based on |
+|---|---|---|
+| Letter pad (default) | White A5 · British blue · Binsen · German A4 | A 90 g wove sheet torn off a glued pad, with the pad's lined guide sheet slipped under it. The British pad is 137 × 178 mm in azure; binsen is Japanese cream letter paper with 15 printed rules at 9.5 mm; the German A4 pad has DIN 5008 fold and punch marks |
+| Laid paper | Cream · Blue-white · Handmade cotton | Post quarto laid letter paper: laid lines about 1 mm apart, chain lines 26 mm apart, deckled right and foot. Blue-white as 18th-century Dutch writing paper; handmade cotton rag with four deckles, flecks and a rough tooth |
+| Airmail | Pale blue · White | B5 onionskin, about 30 g/m²: thin enough for the desk to show through, softly cockled, its lined template plain underneath. Smaller writing |
+| Aerogramme | | The inside of an unfolded air letter (US size, three 90.5 mm panels): top and side flaps with gum, two creases, "first fold" and "second fold". Writing runs edge to edge, small |
+| Notebook page | US spiral · US loose-leaf · Legal pad · UK exercise book · French cahier | Torn out: a spiral's ragged fringe, three binder holes, a canary legal pad torn along its perforation, a feint-ruled exercise book page or a Seyès cahier page torn at the staples |
+| Postcard | A6 · 6 × 4 in | The message side: divided back, address lines, a stamp box. Coated card |
+| Notecard | Correspondence card · Ippitsusen | A 6⅜ × 4¼ in ecru cotton card with a navy triple border; a Japanese short-note strip with a few rules and a printed sprig |
+
+**The guide sheet** (pad, airmail) shows while you write and stays in the pad when the letter goes: the reader
+view, the found letter and the downloaded JPEG show plain paper. **Edges** that aren't cut straight (deckles,
+tears, the spiral fringe, the aerogramme's flaps) clip the sheet and cast their own shadow. **Overflow** per paper:
+`sheets` (more sheets), `card` (another card), `back` (a notecard's plain back), `cramp` (an aerogramme squeezes,
+then offers a second); see `sheetPaper()` in `lib/papers.ts`.
+
+Sizes come from makers' and retailers' listings, DIN 5008, USPS and Wikipedia; colours and line weights are matched
+by eye. Everything is painted by `lib/paper/paint.ts` from small textures made once (grain, formation, cockle)
+and stretched, so a sheet paints in a few milliseconds; shared textures and outlines are made in idle time.
+`papers.html` (dev only) shows every paper whole, as a swatch and up close: `/papers.html?view=sheets|swatches|close`.
 
 ## How it's put together
 
@@ -168,7 +177,8 @@ src/
     ui/                   shadcn-style primitives (button, slider, segmented, tooltip, toast)
   lib/
     compose.ts            hand + text + paper + size -> sheets of positioned writing (mm <-> font units)
-    papers.ts             paper specs + one painter used for the screen and the JPEG
+    papers.ts             paper specs, variants, old-id redirects, roll weights, overflow per paper
+    paper/                the painter (paint.ts), edges and outlines (outline.ts), noise, spec types
     writing.ts            engine SVG at a fixed reference scale, id scoping, rasterising for the JPEG
     write-core.ts         request -> result (runs in the worker, and on the main thread for downloads)
     caret.ts              text index <-> position on the handwriting
