@@ -45,10 +45,13 @@ export default defineConfig({
   // the writing, roll and font workers read the letters too
   worker: { format: 'es', plugins: () => [toolLetters()] },
   resolve: {
-    alias: {
-      '@engine': path.join(engineDir, 'index.js'),
-      '@': path.resolve(import.meta.dirname, 'src'),
-    },
+    alias: [
+      { find: '@engine', replacement: path.join(engineDir, 'index.js') },
+      // the Reading Room's icons: every 'lucide-react' import (exactly that name) goes through its icon file, which
+      // swaps in the icons drawn with the engine's pen in that look and passes Lucide's through otherwise
+      { find: /^lucide-react$/, replacement: path.resolve(import.meta.dirname, 'src/themes/reading-room/icons/lucide.tsx') },
+      { find: '@', replacement: path.resolve(import.meta.dirname, 'src') },
+    ],
   },
   server: {
     host: '127.0.0.1',
