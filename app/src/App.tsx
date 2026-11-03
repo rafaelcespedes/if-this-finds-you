@@ -26,7 +26,8 @@ import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
-import { isNeat, rollHand, rollLook, withSample, type LockKey } from '@/lib/roll';
+import { isNeat, rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib/roll';
+import type { RollAsk, RollReply } from '@/lib/roll-protocol';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
 import { DRAFTS_KEY, drafts, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
@@ -584,47 +585,90 @@ export default function App() {
     }), fade);
   }, [update, baseOf, lookChange]);
   const base = baseOf(state);
+  // the roll worker: the hands ahead are rolled there, off the page (lib/roll-protocol.ts); the page rolls a hand
+  // itself only when it's asked for one before the worker has it
+  const roller = useRef<Worker | null>(null);
+  const rollAsk = useRef(0);
+  useEffect(() => {
+    let w: Worker | null = null;
+    try { w = new Worker(new URL('./workers/roll.worker.ts', import.meta.url), { type: 'module' }); } catch { w = null; }
+    if (w) w.onerror = () => { if (roller.current === w) roller.current = null; };
+    roller.current = w;
+    return () => { w?.terminate(); roller.current = null; };
+  }, []);
   useEffect(() => {
     if (state.reader || editing) return;
     // in idle moments: keep a few new hands (and one sibling) rolled and written ahead of this state
     let cancelled = false;
+    const timers: number[] = [];
     const idle = (fn: () => void) => (typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(fn, { timeout: 600 }) : window.setTimeout(fn, 60));
     const chain: { base: string; look: Partial<NoteState> }[] = [];
     const reqs: ReturnType<typeof requestFor>[] = [];
     // the letters just shown, and the ones already lined up: no letter comes back within ten hands
     const avoid = new Set(recentLetters());
     let s: NoteState = state;
-    // one new roll per idle moment (the engine's sampler takes 40-60 ms a hand); hands already rolled are reused
-    const step = () => {
+    const add = (look: Partial<NoteState>) => {
+      chain.push({ base: baseOf(s), look });
+      if (look.sample) avoid.add(look.sample);
+      // each hand ahead is the one after the hand before it
+      s = { ...s, ...look };
+      reqs.push(requestFor(s));
+    };
+    // the next click's hand is written as soon as it's known; the rest follow in one list
+    const publish = () => {
+      ahead.current = chain.length === AHEAD ? chain : [...chain, ...ahead.current.filter((a) => !chain.some((c) => c.base === a.base))];
+      prefetch(withTheirs(reqs));
+    };
+    const id = ++rollAsk.current;
+    const w = roller.current;
+    // the sibling (Shift R) is asked for less: rolled once the page has stayed on this hand a while
+    const sibling = () => timers.push(window.setTimeout(() => {
       if (cancelled) return;
-      let rolled = false;
-      while (chain.length < AHEAD && !rolled) {
-        const b = baseOf(s);
-        const kept = ahead.current.find((a) => a.base === b);
-        const look = kept?.look ?? rollHand(s, { variety, locked: locks, avoid });
-        rolled = !kept;
-        if (look.sample) avoid.add(look.sample);
-        chain.push({ base: b, look });
-        // each hand ahead is the one after the hand before it
-        s = { ...s, ...look };
-        reqs.push(requestFor(s));
-      }
-      // the next click's hand is written as soon as it's known; the rest follow in one list
-      if (chain.length === 1 || chain.length === AHEAD) {
-        ahead.current = chain.length === AHEAD ? chain : [...chain, ...ahead.current.filter((a) => !chain.some((c) => c.base === a.base))];
-        prefetch(withTheirs(reqs));
-      }
-      if (chain.length < AHEAD) { idle(step); return; }
-      // the sibling (Shift R) is asked for less: rolled once the page has stayed on this hand a while
-      window.setTimeout(() => idle(() => {
-        if (cancelled) return;
-        const look = similarAhead.current?.base === base ? similarAhead.current.look : withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters());
+      const done = (look: Partial<NoteState>) => {
         similarAhead.current = { base, look };
         prefetch(withTheirs([...reqs, requestFor({ ...state, ...look })]));
-      }), 2500);
+      };
+      if (similarAhead.current?.base === base) return done(similarAhead.current.look);
+      if (w) w.postMessage({ id, kind: 'similar', visit: visitChance(), state, avoid: [...recentLetters()] } satisfies RollAsk);
+      else idle(() => { if (!cancelled) done(withSample(state, { ...pickSimilarHand({ seed: state.seed, style: state.style }), offsets: offsetsForNewHand(state.offsets) }, recentLetters())); });
+      onSimilar.current = (look) => { if (!cancelled) done(look); };
+    }, 2500));
+    const onSimilar = { current: (_: Partial<NoteState>) => {} };
+    // hands already rolled are reused, as far as they go
+    for (let kept = ahead.current.find((a) => a.base === baseOf(s)); kept && chain.length < AHEAD; kept = ahead.current.find((a) => a.base === baseOf(s))) add(kept.look);
+    if (chain.length) publish();
+    let onMessage: ((e: MessageEvent<RollReply>) => void) | null = null;
+    if (w) {
+      onMessage = (e) => {
+        const m = e.data;
+        if (cancelled || m.id !== id) return;
+        if (m.kind === 'similar') { onSimilar.current(m.look); return; }
+        add(m.look);
+        if (chain.length === 1 || chain.length === AHEAD) publish();
+        if (chain.length === AHEAD) sibling();
+      };
+      w.addEventListener('message', onMessage);
+      if (chain.length === AHEAD) sibling();
+      else timers.push(window.setTimeout(() => {
+        if (!cancelled) w.postMessage({ id, kind: 'next', visit: visitChance(), state: s, variety, locked: [...locks], avoid: [...avoid], n: AHEAD - chain.length } satisfies RollAsk);
+      }, 80));
+    } else if (chain.length === AHEAD) sibling();
+    else {
+      // no worker: one roll per idle moment on the page
+      const step = () => {
+        if (cancelled) return;
+        add(rollHand(s, { variety, locked: locks, avoid }));
+        if (chain.length === 1 || chain.length === AHEAD) publish();
+        if (chain.length < AHEAD) idle(step);
+        else sibling();
+      };
+      timers.push(window.setTimeout(() => idle(step), 80));
+    }
+    return () => {
+      cancelled = true;
+      timers.forEach((t) => window.clearTimeout(t));
+      if (w && onMessage) w.removeEventListener('message', onMessage);
     };
-    const t = window.setTimeout(() => idle(step), 80);
-    return () => { cancelled = true; window.clearTimeout(t); };
     // `base` covers everything the rolls depend on
   }, [base, editing, state.reader]);
 

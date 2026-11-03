@@ -63,12 +63,15 @@ const NEAT_BANDS: Record<string, [number, number]> = {
  * This visit's chance: each visitor's Find another takes its own path from the same first hand (links still
  * name the exact hand they show). `?repeatable` keeps the old fixed path, for QA.
  */
-const VISIT = (() => {
+let VISIT = (() => {
   try { if (new URLSearchParams(window.location.search).has('repeatable')) return ''; } catch { /* no window */ }
   const a = new Uint32Array(2);
   globalThis.crypto?.getRandomValues?.(a);
   return (a[0] || Math.floor(Math.random() * 2 ** 32)).toString(36) + a[1].toString(36);
 })();
+/** the page's chance, and the roll worker taking the same (so its hands are the ones the page would roll) */
+export const visitChance = () => VISIT;
+export const takeVisitChance = (v: string) => { VISIT = v; };
 
 /** Is this hand easy to read? (The engine's score when it has one; else its neatness and hurry.) */
 export function isNeat(p: Hand) {
