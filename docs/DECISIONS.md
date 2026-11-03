@@ -4,6 +4,18 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 
 ## 2026-11-02
 
+### Purpose (Rafael's own words, the frame for every other decision)
+- A lab experiment for Rafael's portfolio: **free, fun, no revenue, no usage expectations.** "Using AI in ways
+  that I think is clever." It does what couldn't be done before because it took too many resources, e.g.
+  hundreds of usable fonts that nobody would draw by hand.
+- **Fonts are to be downloadable and open source.**
+- Goal: bring underrepresented content, people and techniques into the spotlight, and inspire other designers.
+  Rafael plans to share it on X.
+- **Scope from this purpose:** keep "Write a reply" and "write your own letter"; **no submissions for now** (add later
+  only if it gets popular); an easy-to-browse library of all letters; **share-ready video/GIF** of a letter writing
+  itself (prototype first); **open-source fonts** (every hand downloadable, plus a curated pack); an **open-source
+  release** of the project when polished. No case study for now. The X posts get planned in a few days.
+
 ### Editor and writing experience
 - **First visit starts in Ink mode.** Edits behave like real ink: deleting crosses words out, a retyped letter
   overwrites the old one, and mid-line insertions go in with a ^. Fair copy stays one click away.
@@ -17,6 +29,8 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **Ugly is allowed.** "Some overlap and some ugliness is acceptable. A lot of handwritings are ugly. So unless
   it's a bug, don't fix it." Builders and QA fix only unintended behaviour (scaling mistakes, missing ink,
   clipping). They never beautify, normalise or tighten hands. QA guards catch only values a bug could produce.
+- **"Neat hands only" setting, on by default:** New hand skips hard-to-read writers (based on a legibility score)
+  and gently tidies extremes. Turning it off allows every hand ("ugly is allowed" still holds).
 - **New hand randomizes everything:** writer, print or joined, pen, ink, paper, size, every slider, and each
   writer's own mistakes and corrections (cross-outs, letters rewritten over others). Small locks let people keep a setting.
 - **Blend between traditions.** A writer can be schooled in one tradition and influenced by another
@@ -26,6 +40,13 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **Name: "If This Finds You"** (Rafael, 2026-11-02, "for now"). It's how a message in a bottle begins: a letter
+  that may never have arrived, and you're the one it found. Domain: ifthisfindsyou.app (Rafael is buying it
+  himself; .com is taken). Light trademark check only (no live marks found); since it's open source and
+  non-commercial, Rafael considers a lawyer's clearance optional. Runners-up on record: Stray Letters, In Another Hand, These Few Lines, Manent. "Seedhand"
+  stays only as the code placeholder. The "Lost Letters" archive working title is superseded by the product
+  name unless Rafael says otherwise. Copy in docs/brand/naming-and-copy.md (naming branch) still says
+  "Plumín" and needs a pass.
 - **Latin script only for now.** No Vietnamese stacked tones, Cyrillic or Greek until later; the letters
   collection keeps Vietnamese switched off.
 - **Sample letters:** letters only (no poems). Keep "…" for cuts, keep letters printed without greeting or
@@ -57,4 +78,4 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 ### Open
 - Two "caution" sources (Austria 1969, Vietnam 2002): proposed to leave them out of the first batch. Awaiting Rafael.
 - A legal check on share-alike sources: proposed for before any commercial launch. Awaiting Rafael.
-- Name: the naming session is running.
+- (Name decided; see below.)

@@ -14,7 +14,10 @@
 //     heritage?, basis? } is filled only where the source states it plainly; heritage maps to the groups below, and
 //     a letter written in Spanish (or Brazilian Portuguese) also counts as Hispanic / Latin American.
 //   - word count: 15–90 words (ERROR above 90 or below 8; WARN for 8–14)
-//   - line count: at most 12 written lines (WARN above)
+//   - line count: at most 12 written lines, not counting blank lines between paragraphs (WARN above)
+//   - layout: "\n\n" separates paragraphs, "\n" separates lines (greeting, dateline, closing lines). layout is "source"
+//     when the breaks follow the printed source, "inferred" when the source runs on and only the greeting and closing
+//     were set on their own lines. The summary reports how many enabled letters have paragraphs.
 //   - characters: every ENABLED item uses only GF Latin Core plus a line break. The set is imported from
 //     tools/qa/lib/charsets.mjs (the derived list the engine QA uses); if that file is missing, the same derivation runs
 //     here. Disabled items (e.g. Vietnamese, waiting for Tier-3 stacked tones) are reported, not failed.
@@ -173,10 +176,12 @@ function checkEntry(e, i, core) {
   if (n > 90) err(id, `${n} words (max 90)`);
   else if (n < 8) err(id, `${n} words (min 8)`);
   else if (n < 15) warn(id, `${n} words (a one-liner; fine if rare)`);
-  const lines = e.text.split('\n');
+  const lines = e.text.split('\n').filter((l) => l.trim());
   if (lines.length > 12) warn(id, `${lines.length} lines (aim for 12 or fewer)`);
-  if (lines.some((l) => l !== l.trim())) warn(id, 'a line has leading or trailing spaces');
-  if (/\n\s*\n/.test(e.text)) warn(id, 'empty line inside the text');
+  if (e.text.split('\n').some((l) => l !== l.trim())) warn(id, 'a line has leading or trailing spaces');
+  if (/\n[ \t]*\n[ \t]*\n/.test(e.text)) warn(id, 'more than one blank line between paragraphs');
+  if (/^\s|\s$/.test(e.text)) warn(id, 'text starts or ends with whitespace');
+  if (e.layout !== undefined && !['source', 'inferred'].includes(e.layout)) err(id, 'layout must be "source" or "inferred"');
 
   const bad = [...new Set([...e.text].filter((c) => c !== '\n' && !core.has(c)))];
   if (bad.length) {
@@ -253,6 +258,8 @@ console.log(`origins (enabled): ${fmt(count(enabled, (e) => e.origin))}`);
 console.log(`women (enabled): ${women}/${enabled.length} = ${pct(women, enabled.length)}% (minimum ${Math.round(WOMEN_MIN * 100)}%); men ${men}; not stated ${enabled.length - women - men}`);
 for (const [g, n] of Object.entries(groupCounts)) console.log(`${g} writers (enabled): ${n} (minimum ${GROUP_MIN})`);
 console.log(`kinds (enabled): ${fmt(count(enabled, (e) => e.kind))}`);
+const withParas = enabled.filter((e) => /\n\n/.test(e.text || '')).length;
+console.log(`layout (enabled): ${withParas} with paragraph breaks; ${fmt(count(enabled, (e) => e.layout || 'not recorded'))}`);
 console.log(`languages (enabled): ${fmt(count(enabled, (e) => e.lang?.split('-')[0]))}`);
 console.log(`English share (enabled): ${en}/${enabled.length} = ${pct(en, enabled.length)}%`);
 console.log(`writers (enabled): ${new Set(enabled.map((e) => e.author)).size} distinct`);
