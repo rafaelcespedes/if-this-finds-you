@@ -21,19 +21,17 @@ export interface PaintOptions {
   guide?: boolean;
   /** which sheet of the letter: varies a deckle or a tear, and how the guide sits */
   sheet?: number;
-  /** the shadow a shaped sheet casts: all of it (on screen, painted into a bleed), or only where it touches
-   *  the desk (the JPEG, swatches) */
+  /** a shaped sheet's (deckle, tear, flaps, holes) faint edge tone against the desk; 'none' leaves it out. The sheet
+   *  lies flat: no drop shadow anywhere (Rafael, 3 Nov). 'full' and 'contact' are the same edge, kept for callers. */
   shadow?: 'full' | 'contact' | 'none';
   /** printed marks (lib/paper/marks.ts): those stamped before the letter was written are printed into the paper */
   marks?: Mark[];
 }
 
-const SHADOW = 'rgba(60, 45, 20, A)';
-// [offset y, blur, alpha] in CSS px, close to --sheet-shadow
-const CONTACT: [number, number, number][] = [[0.4, 0.8, 0.16], [1, 2.2, 0.09]];
-const AMBIENT: [number, number, number][] = [[4, 10, 0.08], [11, 20, 0.08]];
-/** how far (CSS px) the full shadow reaches beyond the sheet */
-export const SHADOW_BLEED = 32;
+/** The sheet's edge against the desk: a barely-there tone, never a shadow (the same as sheetShadow's ring). */
+export const EDGE_TONE = 'rgba(60, 45, 20, 0.11)';
+/** how far (CSS px) a shaped sheet's edge tone reaches beyond the sheet */
+export const SHADOW_BLEED = 2;
 
 /** A 2D context on screen or in the paper worker. */
 export type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -64,7 +62,7 @@ export function paintPaper(ctx: Ctx2D, paper: PaperSpec, o: PaintOptions) {
     ctx.fillStyle = o.holeFill;
     ctx.fillRect(0, 0, W, H);
   }
-  if (path && (o.shadow ?? 'contact') !== 'none') castShadow(ctx, path, o.grainScale, o.shadow === 'full');
+  if (path && o.shadow !== 'none') edgeTone(ctx, path, o.grainScale);
   if (path) ctx.clip(path, 'evenodd');
 
   const t = fin.translucency ?? 0;
@@ -170,22 +168,15 @@ export function paintPaper(ctx: Ctx2D, paper: PaperSpec, o: PaintOptions) {
   if (outline) for (const rim of outline.rims) wisps(ctx, rim, paper, k, seed);
 }
 
-// ---------- the shadow on the desk ----------
-const FAR = 20000;
-function castShadow(ctx: Ctx2D, path: Path2D, dpr: number, full: boolean) {
-  const layers = full ? [...CONTACT, ...AMBIENT] : CONTACT;
-  for (const [oy, blur, a] of layers) {
-    ctx.save();
-    // the shape is drawn far away and only its shadow lands here, so nothing but the shadow is painted
-    ctx.translate(0, -FAR);
-    ctx.shadowColor = SHADOW.replace('A', String(a));
-    ctx.shadowBlur = blur * dpr;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = FAR * ctx.getTransform().d + oy * dpr;
-    ctx.fillStyle = '#000';
-    ctx.fill(path, 'evenodd');
-    ctx.restore();
-  }
+// ---------- the edge against the desk ----------
+/** A hairline along the sheet's real outline (and round its holes), half of it on the desk: no shadow. */
+function edgeTone(ctx: Ctx2D, path: Path2D, dpr: number) {
+  ctx.save();
+  ctx.strokeStyle = EDGE_TONE;
+  ctx.lineWidth = 2 * dpr; // the half outside the sheet shows: 1 CSS px
+  ctx.lineJoin = 'round';
+  ctx.stroke(path);
+  ctx.restore();
 }
 
 // ---------- the stock ----------

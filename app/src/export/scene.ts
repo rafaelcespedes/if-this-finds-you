@@ -2,13 +2,13 @@
 // video time. draw(ctx, v) paints the frame at v seconds; the recorder steps v frame by frame, the preview
 // steps it with the clock, so the file and the preview are the same pictures.
 //
-// Per frame: desk, the sheet (painted once by the app's own paper painter, with its shadow), the ink drawn by
+// Per frame: desk, the sheet (painted once by the app's own paper painter, flat on the desk), the ink drawn by
 // the engine's canvas renderer (render-canvas.js, density ink, Beer–Lambert colour) up to the pen's position
 // at that moment (animate.js frameAt), multiplied over the paper, then the signature and the credit.
 import * as E from '@engine';
 import { makeHand, withOverrides, type Hand } from '@engine';
 import { requestFor } from '@/lib/request';
-import { getPaper, paintPaper, type PaperSpec } from '@/lib/papers';
+import { EDGE_TONE, getPaper, isShaped, paintPaper, type PaperSpec } from '@/lib/papers';
 import { marksForExport, printMarks, type Mark } from '@/lib/paper/marks';
 import { liveExtras, liveLayout, sheetOfLine, type Live } from '@/lib/live';
 import { decodeInk, inkLive, inkPage } from '@/lib/ink';
@@ -280,7 +280,7 @@ export async function buildScene(state: NoteState, o: SceneOptions): Promise<Sce
     return { base: Math.round(H - Math.max(Math.min(W, H) * 0.06, fs * 2)), ground: paper.tint, left: W * 0.06, right: W * 0.94 };
   })();
 
-  // ---- the sheet, painted once at the largest scale it's shown at, with its shadow
+  // ---- the sheet, painted once at the largest scale it's shown at, with its edge
   const kSheet = Math.max(sWrite, sEnd);
   // a look's printed marks: those stamped before writing are in the paper, those stamped after go over the ink
   const marks = marksForExport(paper);
@@ -405,7 +405,7 @@ export async function buildScene(state: NoteState, o: SceneOptions): Promise<Sce
   };
 }
 
-/** The sheet with its shadow, painted at k px per mm by the app's paper painter (lib/papers.ts). */
+/** The sheet with its edge, painted at k px per mm by the app's paper painter (lib/papers.ts). */
 function paintSheet(paper: PaperSpec, k: number, marks: Mark[] | null = null) {
   const pad = Math.ceil(30 * (k / 4));
   const c = document.createElement('canvas');
@@ -413,18 +413,13 @@ function paintSheet(paper: PaperSpec, k: number, marks: Mark[] | null = null) {
   c.height = Math.round(paper.h * k) + 2 * pad;
   const ctx = c.getContext('2d')!;
   const w = Math.round(paper.w * k), h = Math.round(paper.h * k);
-  // the app's --sheet-shadow (index.css), at the app's ~4 px per mm. Each layer is a rect grown by its
-  // spread (negative: shrunk) casting the shadow; the paper painted over it hides the rect itself.
-  const f = k / 4;
-  for (const [y, blur, spread, a] of [[0.5, 0, 0, 0.08], [1, 2, 0, 0.06], [6, 14, -6, 0.12], [24, 48, -20, 0.2]] as const) {
-    const s = spread * f;
-    ctx.save();
-    ctx.shadowColor = `rgba(60,45,20,${a})`;
-    ctx.shadowBlur = blur * f;
-    ctx.shadowOffsetY = y * f;
-    ctx.fillStyle = paper.tint;
-    ctx.fillRect(pad - s, pad - s, w + 2 * s, h + 2 * s);
-    ctx.restore();
+  // the sheet lies flat on the desk (no drop shadow): a rectangle gets the screen's 1 px edge tone, at the app's
+  // ~4 px per mm; a shaped sheet's painter traces it along its real edge
+  if (!isShaped(paper)) {
+    const f = k / 4;
+    ctx.strokeStyle = EDGE_TONE;
+    ctx.lineWidth = 2 * f;
+    ctx.strokeRect(pad, pad, w, h);
   }
   ctx.save();
   ctx.translate(pad, pad);
