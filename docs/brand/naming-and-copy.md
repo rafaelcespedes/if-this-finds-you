@@ -614,6 +614,61 @@ It's how a letter in a bottle begins. These letters were meant for someone else.
 
 Fill the {fields} from each letter's own record; leave out any field the source doesn't give.
 
+### 2.11 The name in context: descriptor, Fonts pitch, X and link previews
+
+Written 3 November 2026 against the current product: three places (Write a letter, All letters, Fonts), the
+"Find another" button, the Reading Room look, logo #5.
+
+**Descriptor.** Use wherever the name appears on its own (under the logo on X, link previews, the footer):
+
+> **If This Finds You** · Real letters, written out by hand.
+
+Short form for tight spots: *Real letters, by hand.* Avoid an abbreviation ("IFTY"); use the logo mark instead.
+
+**Fonts page pitch** (the line under the "Fonts" heading, and the page's link preview):
+
+> Every hand here is a font you can keep. Free and open source.
+
+Longer, for the page intro:
+
+> Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download,
+> free and open source. Each one is named after its writer. A font can only keep a few versions of each letter,
+> so it won't vary the way the page does, but it's the same hand. **[NEED: licence name]**
+
+Row label pattern, already close to what the page shows: *Ottilie Marsh · joined · fountain pen*.
+
+**Link previews** (Open Graph title / description, 60 / 150 characters or less):
+
+| Page | Title | Description |
+|---|---|---|
+| Home (Write a letter) | If This Finds You | Write a letter and watch it written out by hand. Real letters from 1395 to 1929, each in a stranger's handwriting. Free. |
+| All letters | All letters · If This Finds You | Letters by emigrants, children, settlers and families, written out again by hand. Every one real, every source shown. |
+| One letter | {title} · If This Finds You | {place}, {year}. Written by {writer}, copied out in a stranger's hand. Read it, or write back. |
+| Shared letter (someone's own) | A letter for you · If This Finds You | Someone wrote you a letter by hand. Open it to watch it being written. |
+| Fonts | Fonts · If This Finds You | Every hand is a font you can keep. Free and open source. |
+
+Leave out any {field} the letter's record doesn't give. The shared-letter preview must never reveal the letter's text.
+
+**X posts** (for when Rafael plans the launch; each under 280 characters):
+
+1. *The launch*
+   I built If This Finds You: an archive of real letters by ordinary people, from 1395 to 1929, each written out
+   again by hand in a stranger's handwriting. Then you can write back.
+   ifthisfindsyou.app
+2. *The craft angle, for designers*
+   Every hand on If This Finds You is generated: traced from public-domain copybooks, with a simulated pen and ink,
+   and no letter ever comes out the same twice. Every hand is also a free, open-source font.
+3. *One letter* (pair with a GIF of a letter writing itself)
+   No. 0004. {place}, {year}. {one line about who wrote it and why, from the record}. Written out here by a hand
+   that never existed. ifthisfindsyou.app
+4. *The reply loop*
+   Find a letter someone wrote two hundred years ago. Write back. Send the link, and whoever opens it watches your
+   letter being written.
+
+Posts 1 and 4 use the archive's span (1395 to 1929) and the open-font claim; refresh both if the collection or
+the licence changes. Don't claim "AI-generated handwriting" (it isn't a trained model); if the AI-assisted build
+is mentioned, say so as Rafael prefers (see §2.8).
+
 ## 3. Fun facts
 
 **Live** = true of the engine on main today. **Grows** = the number goes up when an in-progress workstream lands
