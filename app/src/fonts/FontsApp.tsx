@@ -174,7 +174,8 @@ export function FontsApp() {
   // Neat hands only back on: Messy (which needs it off) steps out of Tidy to wild
   const onNeatOnly = (v: boolean) => update({ neatOnly: v, view: 'set', ...(v && route.filters.tidy.includes('messy') ? { filters: { ...route.filters, tidy: route.filters.tidy.filter((x) => x !== 'messy') } } : {}) });
   // a hand's record opens in place, one at a time, and the link keeps it
-  const onOpen = useCallback((id: string | null) => update({ hand: id ?? '' }), []);
+  // opening one is a step in the history, so Back closes it again
+  const onOpen = useCallback((id: string | null) => update({ hand: id ?? '' }, !!id), []);
 
   // Space draws a new set (when nothing that takes Space has focus)
   useEffect(() => {

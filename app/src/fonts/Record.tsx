@@ -3,13 +3,14 @@
 // credits of every letter, every character in the font, and the live hand (the engine's own writing on the hand's
 // paper) with a plain note on how the font differs from it (principle 7); then the actions, one in red. Ruled rows,
 // never boxes. Every control is a shared one.
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Download, Heart, LoaderCircle, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MoreButton } from '@/components/ui/group';
 import { cn } from '@/lib/utils';
-import type { FontEntry, HandRecord } from './protocol';
-import type { LiveImage } from './store';
+import { useElementWidth } from '@/hooks/useElementWidth';
+import { boxHeight, type FontEntry, type HandRecord, type LiveSpec } from './protocol';
+import { useRowLive } from './store';
 import { fonts } from './store';
 
 interface Props {
@@ -21,16 +22,38 @@ interface Props {
   allLoaded: boolean;
   /** "Every character" opened (its characters, to set the font with) or closed ('') */
   onShowAll: (chars: string) => void;
-  /** the live-hand fold opened or closed (the row asks for the live writing while it's open) */
-  onLive: (open: boolean) => void;
-  /** the live writing, once made (exactly the CSS size it was made for) */
-  live: (LiveImage & { alt: string }) | null;
-  liveHeight: number;
+  /** the row's live-hand spec (size, density); the record makes its own image, as wide as its column */
+  live: Omit<LiveSpec, 'text'>;
+  /** the words the row writes */
+  text: string;
+  /** close the record (Escape inside it does too) */
+  onClose: () => void;
   toolHref: string;
   saved: boolean;
   onSave: () => void;
   onDownload: () => void;
   building: boolean;
+}
+
+/** The live hand, written for the fold's own width on two lines (so it's never cut, whatever the column), on the
+ *  hand's own paper. Mounted when the fold opens. */
+function LiveHand({ entry, live, text }: { entry: FontEntry; live: Omit<LiveSpec, 'text'>; text: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
+  useEffect(() => setEl(ref.current), []);
+  const width = Math.floor(useElementWidth(ref));
+  const spec: LiveSpec = { ...live, width: Math.max(200, width), lines: 2, text };
+  const image = useRowLive(entry, spec, el, true, width > 0);
+  return (
+    <div ref={ref} className="record-live" style={{ height: boxHeight(spec.emPx, 2), background: entry.tint }}>
+      {image ? (
+        <img src={image.url} alt={`“${text}”, in ${entry.name}’s hand, live`} decoding="async" draggable={false} width={image.width} height={image.height}
+          className={cn('font-specimen-img', image.fresh && 'specimen-in')} style={{ width: image.width, height: image.height }} />
+      ) : (
+        <p className="record-wait"><LoaderCircle aria-hidden className="mr-1.5 inline size-4 animate-spin align-[-3px]" />Writing it out, a moment…</p>
+      )}
+    </div>
+  );
 }
 
 function Fold({ label, summary, children, open, onToggle }: { label: string; summary?: string; children: ReactNode; open: boolean; onToggle: () => void }) {
@@ -51,7 +74,6 @@ export function HandRecordView(p: Props) {
     const next = fold === f ? '' : f;
     setFold(next);
     p.onShowAll(next === 'chars' && record ? record.chars : '');
-    p.onLive(next === 'live');
   };
   // "Schooled in: X. Later habits: Y (19%)." → the school, where and when a traced tradition was taught, and the later habits
   const taught = (() => {
@@ -71,7 +93,8 @@ export function HandRecordView(p: Props) {
     ['Script', 'Latin, with European accents'],
   ] : [];
   return (
-    <div id={p.id} className="font-record" role="region" aria-label={`${p.entry.name}’s record`}>
+    <div id={p.id} className="font-record" role="region" aria-label={`${p.entry.name}’s record`}
+      onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented) { e.preventDefault(); p.onClose(); } }}>
       {!record ? (
         <p className="record-wait">Opening the record…</p>
       ) : (
@@ -101,14 +124,7 @@ export function HandRecordView(p: Props) {
               )}
             </Fold>
             <Fold label="The live hand" summary="on the page" open={fold === 'live'} onToggle={() => toggle('live')}>
-              <div className="record-live" style={{ height: p.liveHeight, background: p.entry.tint }}>
-                {p.live ? (
-                  <img src={p.live.url} alt={p.live.alt} decoding="async" draggable={false} width={p.live.width} height={p.live.height}
-                    className={cn('font-specimen-img', p.live.fresh && 'specimen-in')} style={{ width: p.live.width, height: p.live.height }} />
-                ) : (
-                  <p className="record-wait"><LoaderCircle aria-hidden className="mr-1.5 inline size-4 animate-spin align-[-3px]" />Writing it out, a moment…</p>
-                )}
-              </div>
+              <LiveHand entry={p.entry} live={p.live} text={p.text} />
               <p className="record-note">
                 On the page, {p.entry.name} never writes a letter the same way twice. A font can only keep a few versions of each letter and swaps between them as you type, so it repeats a little more than the live hand. The letter shapes, joins and spacing are the same hand.
               </p>

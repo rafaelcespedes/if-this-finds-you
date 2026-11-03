@@ -43,7 +43,7 @@ function FamilyGroup({ filters, onFilters, catalogue }: Pick<Props, 'filters' | 
   return (
     <Group label="Joined or print" first>
       <Segmented slide type="single" aria-label="Joined or print" value={filters.family[0] ?? 'any'} onValueChange={(v) => v && onFilters(withFamily(filters, v, catalogue))}>
-        <SegmentedItem value="any">Any</SegmentedItem>
+        <SegmentedItem value="any">All</SegmentedItem>
         <SegmentedItem value="print">Print</SegmentedItem>
         <SegmentedItem value="script">Joined</SegmentedItem>
       </Segmented>
@@ -63,7 +63,8 @@ function chosenWords(def: FilterDef, value: string[]) {
 function FilterControl({ def, value, onChange, family, familyOf }: { def: FilterDef; value: string[]; onChange: (v: string[]) => void; family: string; familyOf: (style: string) => string }) {
   const chips = (options: FilterDef['options']) => {
     const many = def.kind === 'many';
-    const common = { 'aria-label': def.label, className: 'flex flex-wrap justify-start gap-1.5 bg-transparent p-0' };
+    // named "Filter by …": a plain "Pen" would pick up the tool's own pen-picker styles (density.css)
+    const common = { 'aria-label': `Filter by ${def.label.toLowerCase()}`, className: 'flex flex-wrap justify-start gap-1.5 bg-transparent p-0' };
     const items = options.map((o) => (
       <SegmentedChip key={o.value} value={o.value} aria-label={o.note ? `${o.label}: ${o.note}` : o.label} title={o.note}>
         {o.label}
@@ -201,7 +202,7 @@ export function FontsDock(p: Props) {
               align="start"
               className="w-[460px] overflow-hidden p-0"
               trigger={
-                <Button variant="ghost" className={cn('relative px-3', open === 'filters' && 'bg-accent')} aria-label={n ? `Filters, ${n} on` : undefined}>
+                <Button variant="ghost" className={cn('relative min-w-11 px-3', open === 'filters' && 'bg-accent')} aria-label={n ? `Filters, ${n} on` : undefined}>
                   <SlidersHorizontal aria-hidden />
                   <Words>Filters</Words>
                   {n > 0 && <span aria-hidden className="dock-badge tabular">{n}</span>}
@@ -219,7 +220,7 @@ export function FontsDock(p: Props) {
                 align="start"
                 className="w-[300px] p-2"
                 trigger={
-                  <Button variant="ghost" className={cn('px-3', open === 'text' && 'bg-accent')}>
+                  <Button variant="ghost" className={cn('min-w-11 px-3', open === 'text' && 'bg-accent')}>
                     <CaseSensitive aria-hidden />
                     {/* on a phone under 400 px, once the saved hands' heart joins the dock, Text keeps only its Aa (fonts.css) */}
                     <Words className="dock-text-words">Text</Words>
@@ -230,12 +231,12 @@ export function FontsDock(p: Props) {
               </Sheet>
             )}
             {p.savedCount > 0 && (
-              <Button variant="ghost" onClick={() => p.onView('saved')} aria-label={`Saved hands (${p.savedCount})`} className="dock-saved gap-1.5 px-3">
+              <Button variant="ghost" onClick={() => p.onView('saved')} aria-label={`Saved hands (${p.savedCount})`} className="dock-saved min-w-11 gap-1.5 px-3">
                 <Heart aria-hidden className="fill-current" />
                 <span aria-hidden className="tabular">{p.savedCount}</span>
               </Button>
             )}
-            <Button onClick={p.onNewSet} className="dock-primary ml-auto px-3" title="New set (Space)">
+            <Button onClick={p.onNewSet} className="dock-primary ml-auto min-w-11 px-3" title="New set (Space)">
               <RefreshCw aria-hidden />
               {/* its words give way only with very large text on a phone (fonts.css) */}
               <span className="dock-newset-words">New set</span>

@@ -3,7 +3,7 @@
 // write with it, download the font), and a big specimen line set in the hand's real font (built for the characters it
 // shows), so what you see is what you download. The live hand, the engine's own writing on the hand's paper, is in the
 // record. The row's height is set before anything arrives, so rows never move when their writing does.
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Download, Heart, LoaderCircle, PenLine, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn, saveBlob } from '@/lib/utils';
 import { toolHref } from '@/archive/SiteHeader';
 import { penWords } from './filters';
-import { boxHeight, type FontEntry, type LiveSpec } from './protocol';
-import { fonts, useRowFont, useRowLive } from './store';
+import type { FontEntry, LiveSpec } from './protocol';
+import { fonts, useRowFont } from './store';
 import { toggleSaved } from './favourites';
 import { useNear } from './near';
 import { HandRecordView } from './Record';
@@ -43,7 +43,8 @@ interface Props {
 
 const covers = (have: string, want: string) => { for (const c of want) if (!have.includes(c)) return false; return true; };
 
-/** A row's action: the tool's ghost button (words and an icon on wide screens, the icon alone on phones). */
+/** A row's action: the tool's ghost button (words and an icon on wide rows, the icon alone on narrow ones). Its name
+ *  is the same at every width and starts with the words it shows ("Download" → "Download the font"). */
 function Action({ label, onClick, href, pressed, busy, compact, children, text }: {
   label: string; onClick?: () => void; href?: string; pressed?: boolean; busy?: boolean; compact: boolean; children: React.ReactNode; text?: string;
 }) {
@@ -53,10 +54,10 @@ function Action({ label, onClick, href, pressed, busy, compact, children, text }
   const inner = <>{children}{!iconOnly && <span>{text}</span>}</>;
   const el = href ? (
     <Button asChild variant="ghost" size={iconOnly ? 'icon' : 'sm'} className={cls}>
-      <a href={href} aria-label={iconOnly ? label : undefined}>{inner}</a>
+      <a href={href} aria-label={label}>{inner}</a>
     </Button>
   ) : (
-    <Button variant="ghost" size={iconOnly ? 'icon' : 'sm'} className={cls} onClick={onClick} aria-label={iconOnly ? label : undefined} aria-pressed={pressed} aria-busy={busy || undefined} disabled={busy}>
+    <Button variant="ghost" size={iconOnly ? 'icon' : 'sm'} className={cls} onClick={onClick} aria-label={label} aria-pressed={pressed} aria-busy={busy || undefined} disabled={busy}>
       {inner}
     </Button>
   );
@@ -79,14 +80,14 @@ export const FontRow = memo(function FontRow({ entry, index, text, live, em, lin
   // the font, grown when the words need letters it hasn't got; meanwhile the last words it could set stay. The
   // record's "Every character" asks the font for its whole glyph set; its live-hand fold asks for the live writing
   const [allChars, setAllChars] = useState('');
-  const [showLive, setShowLive] = useState(false);
-  useEffect(() => { if (!open) { setAllChars(''); setShowLive(false); } }, [open]);
+  useEffect(() => { if (!open) setAllChars(''); }, [open]);
+  // closing the record (Close, or Escape inside it) gives the focus back to the name that opened it
+  const nameRef = useRef<HTMLButtonElement>(null);
+  const close = () => { onOpen(null); requestAnimationFrame(() => nameRef.current?.focus({ preventScroll: true })); };
   const { font, failed } = useRowFont(entry, text + allChars, el, near || open);
   const lastText = useRef(text);
   const shownText = font && covers(font.chars, text) ? text : lastText.current;
   if (font && covers(font.chars, text)) lastText.current = text;
-  const spec = useMemo(() => ({ ...live, text }), [live, text]);
-  const image = useRowLive(entry, spec, el, near || open, open && showLive);
   const [building, setBuilding] = useState(false);
   const shownRef = useRef(false);
   const ready = !!font;
@@ -117,7 +118,7 @@ export const FontRow = memo(function FontRow({ entry, index, text, live, em, lin
         {entry ? (
           <>
             <h2 className="font-row-name">
-              <button type="button" className="font-row-open" aria-expanded={open} aria-controls={`record-${index}`} onClick={() => onOpen(open ? null : entry.id)}>
+              <button ref={nameRef} type="button" className="font-row-open" aria-expanded={open} aria-controls={`record-${index}`} onClick={() => onOpen(open ? null : entry.id)}>
                 {entry.name}
               </button>
             </h2>
@@ -137,7 +138,7 @@ export const FontRow = memo(function FontRow({ entry, index, text, live, em, lin
         )}
         {open && entry ? (
           <div className="font-row-actions">
-            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => onOpen(null)} aria-controls={`record-${index}`}>
+            <Button variant="ghost" size="sm" className="font-action text-muted-foreground" onClick={close} aria-controls={`record-${index}`}>
               Close <X aria-hidden />
             </Button>
           </div>
@@ -146,7 +147,7 @@ export const FontRow = memo(function FontRow({ entry, index, text, live, em, lin
           <Action label={saved ? 'Saved (remove)' : 'Save this hand'} compact pressed={saved} onClick={() => entry && toggleSaved(entry)}>
             <Heart aria-hidden className={cn('size-4', saved && 'fill-current')} />
           </Action>
-          <Action label="Write with this hand" text="Write with it" compact={compact} href={entry ? `${toolHref}#${entry.tool}` : undefined}>
+          <Action label="Write with it" text="Write with it" compact={compact} href={entry ? `${toolHref}#${entry.tool}` : undefined}>
             <PenLine aria-hidden className="size-4" />
           </Action>
           <Action label={building ? 'Making the font…' : 'Download the font'} text="Download" compact={compact} busy={building} onClick={download}>
@@ -168,9 +169,9 @@ export const FontRow = memo(function FontRow({ entry, index, text, live, em, lin
           family={font?.family ?? null}
           allLoaded={!!font && !!allChars && covers(font.chars, allChars)}
           onShowAll={setAllChars}
-          onLive={setShowLive}
-          live={image ? { ...image, alt: `“${text}”, in ${entry.name}’s hand, live` } : null}
-          liveHeight={boxHeight(em, lines)}
+          live={live}
+          text={text}
+          onClose={close}
           toolHref={`${toolHref}#${entry.tool}`}
           saved={saved}
           onSave={() => toggleSaved(entry)}

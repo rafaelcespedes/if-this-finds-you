@@ -40,7 +40,7 @@
   display: block;
 }
 .font-row {
-  /* the row lays itself out by its own width in the reader's text size (em), so 200% text gets the narrow layout */
+  /* the row lays itself out by its own width in the reader's text size (rem), so 200% text gets the narrow layout */
   container: font-row / inline-size;
   padding: var(--fonts-row-pad) 0;
   border-bottom: 1px solid var(--fonts-rule);
@@ -54,8 +54,8 @@
   column-gap: 12px;
   min-height: 32px;
 }
-/* a wide row (44em: a 704 px row at the usual text size): name, words and actions on one line */
-@container font-row (width >= 44em) {
+/* a wide row (44rem: a 704 px row at the usual text size): name, words and actions on one line */
+@container font-row (width >= 44rem) {
   .font-row-meta {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: 'name attrs actions';
@@ -66,7 +66,7 @@
   }
 }
 /* a very narrow row (large text on a phone): name, words, then the actions, each on its own line */
-@container font-row (width < 18em) {
+@container font-row (width < 18rem) {
   .font-row-meta {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: 'name' 'attrs' 'actions';
@@ -262,13 +262,14 @@
   font-weight: 600;
   line-height: 1;
 }
-/* the dock's words give way in the reader's own text size (em of the dock's width, so 200% text counts): under 21em
-   (a 360 px phone) Filters and Text keep only their icons; under 23.5em (400 px) with saved hands, Text does. If even
+/* the dock's words give way by its width in the reader's own text size (rem, so 200% text counts, whatever size the
+   look sets the dock in): under 21rem (a 360 px phone) Filters and Text keep only their icons; under 23.5rem (400 px)
+   with saved hands, Text does. If even
    that doesn't fit (very large text), the dock wraps onto a second line rather than cutting anything off. */
 .fonts-dock {
   container: fonts-dock / inline-size;
 }
-@container fonts-dock (width < 21em) {
+@container fonts-dock (width < 21rem) {
   .dock-words {
     position: absolute;
     width: 1px;
@@ -278,8 +279,8 @@
     white-space: nowrap;
   }
 }
-/* very large text on a phone (under 17em, which no phone reaches at the usual size): New set keeps only its icon */
-@container fonts-dock (width < 17em) {
+/* very large text on a phone (under 17rem, which no phone reaches at the usual size): New set keeps only its icon */
+@container fonts-dock (width < 17rem) {
   .dock-newset-words {
     position: absolute;
     width: 1px;
@@ -289,7 +290,7 @@
     white-space: nowrap;
   }
 }
-@container fonts-dock (width < 23.5em) {
+@container fonts-dock (width < 23.5rem) {
   .archive-dock:has(.dock-saved) .dock-text-words {
     position: absolute;
     width: 1px;
@@ -309,7 +310,9 @@
   background: var(--panel);
 }
 
-/* phones: the filter chips are drawn small, every tap still 44 px tall (as density.css does in the tool's sheet) */
+/* touch screens: every tap 44 px, however small it's drawn (as density.css does in the tool's sheet). The chips'
+   rows sit 44 px apart so their taps don't overlap; the row's name, its actions, the record's buttons, Clear filters
+   and the switch's info button reach 44 px too */
 @media (pointer: coarse) {
   .filter-panel [data-slot='segmented-item'] {
     position: relative;
@@ -318,6 +321,26 @@
     content: '';
     position: absolute;
     inset: min(0px, calc((100% - 44px) / 2)) 0;
+  }
+  .filter-panel [data-slot='segmented'].flex-wrap {
+    row-gap: max(0.375rem, calc(44px - var(--chip-h, 1.75rem)));
+  }
+  .filter-panel [aria-label='What this does']::after {
+    inset: -12px;
+  }
+  .font-action,
+  .filter-panel-foot [data-slot='button'],
+  .record-actions [data-slot='button'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .font-row-open {
+    position: relative;
+  }
+  .font-row-open::after {
+    content: '';
+    position: absolute;
+    inset: calc((100% - 44px) / 2) -4px;
   }
 }
 
@@ -385,6 +408,11 @@ html[data-look='reading-room'] .specimen-bar input[type='text']::placeholder {
   font-style: italic;
   color: var(--rr-faint, var(--text-faint));
 }
+/* a kept hand: the Reading Room draws its hearts in outline, so a kept one turns red (the room's one mark colour) */
+html[data-look='reading-room'] :is(.font-action[aria-pressed='true'], .record-actions [aria-pressed='true'], .dock-saved) svg {
+  color: var(--rr-red, var(--fonts-accent));
+}
+
 /* ---------- a hand's record, opened in place under its specimen (Record.tsx): ruled rows, never boxes ---------- */
 .font-row-open {
   border-radius: 3px;
