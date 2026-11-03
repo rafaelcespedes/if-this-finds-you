@@ -1038,7 +1038,7 @@ html[data-look='reading-room'] :is(.rr-transcript) {
   letter-spacing: var(--rr-reading-tracking);
 }
 /* text */
-html[data-look='reading-room'] :is(.rr-fact dd, .rr-slip-t, .rr-dock, .rr-transcript-wrap, .font-row-name, .canvas-title, .archive-card h3, [role^='menuitem'], .control-sheet button[aria-expanded] > span[data-pill]) {
+html[data-look='reading-room'] :is(.rr-fact dd, .rr-slip-t, .rr-dock, .rr-transcript-wrap, .font-row-name, .canvas-title, .archive-card h3, [role^='menuitem'], .control-sheet button[aria-expanded] > span[data-pill], .control-sheet button[aria-haspopup='menu']) {
   font-family: var(--rr-text-face);
   font-size: var(--rr-text-size);
   font-weight: var(--rr-text-weight);
