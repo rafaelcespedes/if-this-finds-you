@@ -54,6 +54,23 @@
 }
 :root[data-theme] .archive-dock {
   background-color: var(--panel);
+  border-radius: var(--dock-r) !important;
+}
+/* inside a dock the button nests in the dock's corner (dock radius minus its 4px padding) */
+:root[data-theme] .archive-dock [data-slot='button'].bg-primary {
+  border-radius: var(--dock-btn-r) !important;
+}
+:root[data-theme] .archive-dock [data-slot='button']:not(.bg-primary) {
+  border-radius: var(--dock-icon-r) !important;
+}
+/* the library's own tokens (archive.css --lib-*, letter page): its accent (datelines, footnote numbers, menu ticks)
+   follows each direction's small-label colour, and its surfaces follow the panel */
+:root[data-theme] {
+  --lib-surface: var(--panel);
+  --lib-accent: var(--eyebrow);
+  --lib-rule: var(--hairline);
+  --lib-menu-surface: var(--popover);
+  --lib-text-faint: var(--text-faint);
 }
 
 /* ======================================================================================
@@ -84,6 +101,9 @@
   --field: #fcf9f3;
   --radius: 0.375rem;
   --btn-r: 6px;
+  --dock-r: 12px;
+  --dock-btn-r: 8px;
+  --dock-icon-r: 8px;
   --cta-shadow: inset 0 1px 0 rgba(255, 240, 225, 0.07), 0 1px 2px rgba(40, 22, 30, 0.28);
   --cta-press-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
 }
@@ -136,13 +156,15 @@
   --field: #fffdf9;
   --radius: 0.1875rem;
   --btn-r: 3px;
+  --dock-r: 4px;
+  --dock-btn-r: 2px;
+  --dock-icon-r: 2px;
   --cta-shadow: none;
   --cta-press-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 :root[data-theme='2'] [data-slot='segmented'],
 :root[data-theme='2'] [data-slot='segmented-item'],
 :root[data-theme='2'] [role='radiogroup'] > button,
-:root[data-theme='2'] .archive-dock,
 :root[data-theme='2'] .panel-scroll,
 :root[data-theme='2'] .archive-field {
   border-radius: 3px !important;
@@ -191,6 +213,9 @@
   --field: #fdfaf4;
   --radius: 0.75rem;
   --btn-r: 999px;
+  --dock-r: 999px;
+  --dock-btn-r: 999px;
+  --dock-icon-r: 999px;
   --cta-shadow: inset 0 1px 0 rgba(255, 220, 200, 0.22), inset 0 -2px 0 rgba(60, 0, 0, 0.22), 0 1px 2px rgba(90, 20, 10, 0.3);
   --cta-press-shadow: inset 0 2px 5px rgba(50, 0, 0, 0.5), inset 0 0 0 1px rgba(60, 0, 0, 0.2);
 }
@@ -237,6 +262,9 @@
   --field: transparent;
   --radius: 0.125rem;
   --btn-r: 2px;
+  --dock-r: 3px;
+  --dock-btn-r: 2px;
+  --dock-icon-r: 2px;
   --cta-shadow: none;
   --cta-press-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
@@ -269,7 +297,6 @@
 :root[data-theme='4'] [data-slot='button'].bg-secondary {
   box-shadow: inset 0 0 0 1px var(--hairline);
 }
-:root[data-theme='4'] .archive-dock,
 :root[data-theme='4'] .panel-scroll {
   border-radius: 3px !important;
 }
