@@ -102,34 +102,66 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   const place = (input.place || '').trim();
   const year = input.year != null ? String(input.year) : '';
   const marks: Mark[] = [];
-  // corners and margins mostly; now and then right across the writing
+  // Mostly hugging the sheet's edges (Rafael: "keep the stamps and numbers mostly near the edges"): the corners first,
+  // then the top and bottom margins, now and then a side margin; about one mark in ten drifts in partly over the
+  // writing, at the edge of the text block, never into the middle of it. A ring may run a little off an edge.
   const T = paper.text;
-  const zones: [number, number, number, number][] = [
-    [2, 2, T.left + 8, T.first - 2], // top left
-    [T.right - 30, 2, paper.w - 2, T.first + 6], // top right
-    [2, T.last - 10, T.left + 14, paper.h - 2], // bottom left
-    [T.right - 34, T.last - 6, paper.w - 2, paper.h - 2], // bottom right
-    [2, T.first, T.left + 4, T.last], // left margin
-    [T.right - 6, T.first, paper.w - 2, T.last], // right margin
-    [T.left + 6, T.first + 6, T.right - 6, T.last - 6], // over the writing
-  ];
-  const zoneW = [1.25, 1.35, 0.9, 1.1, 0.45, 0.45, 0.9];
+  const ZONES = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'bottom', 'left', 'right', 'drift'] as const;
+  const zoneW = [1.2, 1.4, 0.9, 1.15, 1.15, 0.95, 0.4, 0.4, 0.85];
   const used = new Set<number>();
   // `keep`: the mark's half width and height (mm) when it carries words and must stay whole on the paper (a cut-off
   // cancellation reads as a bug); without it, a ring may run a little off the edge, as real ones do
   const spot = (size: number, rot: number, keep?: [number, number]) => {
-    let z = pickWeighted(r, zoneW.map((w, i) => (used.has(i) ? w * 0.08 : w)));
+    const z = pickWeighted(r, zoneW.map((w, i) => (used.has(i) ? w * 0.08 : w)));
     used.add(z);
-    const [x0, y0, x1, y1] = zones[z];
     let hx = size * 0.45, hy = size * 0.45;
     if (keep) {
       const c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot));
       hx = c * keep[0] + sn * keep[1] + 1.5;
       hy = sn * keep[0] + c * keep[1] + 1.5;
     }
-    const x = clamp(x0 + r() * Math.max(0, x1 - x0), Math.min(hx, paper.w / 2), Math.max(paper.w - hx, paper.w / 2));
-    const y = clamp(y0 + r() * Math.max(0, y1 - y0), Math.min(hy, paper.h / 2), Math.max(paper.h - hy, paper.h / 2));
-    return { x, y, over: z === 6 };
+    const W = paper.w, H = paper.h;
+    // how far in from the edge it landed: close, and not the same on every letter
+    const inX = () => hx + r() * r() * 7, inY = () => hy + r() * r() * 7;
+    const along = (lo: number, hi: number) => lo + r() * Math.max(0, hi - lo);
+    let x: number, y: number;
+    switch (ZONES[z]) {
+      case 'top-left': x = inX(); y = inY(); break;
+      case 'top-right': x = W - inX(); y = inY(); break;
+      case 'bottom-left': x = inX(); y = H - inY(); break;
+      case 'bottom-right': x = W - inX(); y = H - inY(); break;
+      case 'top': x = along(W * 0.22, W * 0.78); y = inY(); break;
+      case 'bottom': x = along(W * 0.22, W * 0.78); y = H - inY(); break;
+      case 'left': x = inX(); y = along(H * 0.25, H * 0.75); break;
+      case 'right': x = W - inX(); y = along(H * 0.25, H * 0.75); break;
+      default: {
+        // over the writing, partly: its centre sits on the text block's edge, so most of it stays in the margin
+        const side = Math.floor(r() * 4);
+        const out = (r() - 0.35) * 0.5; // a little in or out from the edge, in half-extents
+        if (side === 0) { x = along(T.left, T.right); y = T.first - 4 + out * hy * 2; }
+        else if (side === 1) { x = along(T.left, T.right); y = T.last + 4 - out * hy * 2; }
+        else if (side === 2) { x = T.left - out * hx * 2; y = along(T.first, T.last); }
+        else { x = T.right + out * hx * 2; y = along(T.first, T.last); }
+      }
+    }
+    // never the middle of the writing (on a small card the margins are thin): out to the text block's nearest edge
+    const iw = (T.right - T.left) * 0.25, ih = (T.last - T.first) * 0.25;
+    if (x > T.left + iw && x < T.right - iw && y > T.first + ih && y < T.last - ih) {
+      const d = [x - T.left, T.right - x, y - T.first, T.last - y];
+      const k = d.indexOf(Math.min(...d));
+      if (k === 0) x = T.left; else if (k === 1) x = T.right; else if (k === 2) y = T.first; else y = T.last;
+    }
+    const keepOn = () => {
+      x = clamp(x, Math.min(hx, W / 2), Math.max(W - hx, W / 2));
+      y = clamp(y, Math.min(hy, H / 2), Math.max(H - hy, H / 2));
+    };
+    keepOn();
+    // a wide stamp on a narrow text block can be pushed back in: then above or below the writing instead
+    if (x > T.left + iw && x < T.right - iw && y > T.first + ih && y < T.last - ih) {
+      y = y - T.first < T.last - y ? T.first : T.last;
+      keepOn();
+    }
+    return { x, y, over: ZONES[z] === 'drift' };
   };
   const inkFor = (pal: (keyof typeof INKS)[]) => INKS[pal[Math.floor(r() * pal.length)]];
   const common = (size: number, layerOdds: number, keep?: [number, number]) => {
