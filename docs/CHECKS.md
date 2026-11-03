@@ -9,7 +9,7 @@ commit. If either fails, the live site stays on the last good version and the fa
 | When | Check (its name on GitHub and in Vercel) | What it does | Time on GitHub |
 |---|---|---|---|
 | Every push and PR to `preview` or `main` | **Site: build and smoke test** | Installs the app, typechecks it (any TypeScript error fails), builds it with Vercel's own command (`npm run build`), checks the Lost Letters texts (`content/check-texts.mjs`), then the smoke test (below) | ~1 min |
-| Same, side by side | **Engine: quick QA** | `node tools/qa/regress.mjs --quick`, judged against the version before the update (below) | ~2 min |
+| Same, side by side | **Engine: quick QA** | `node tools/qa/regress.mjs --quick`, judged against the version before the update (below) | ~1.5–2 min |
 | Every night at 03:30 UTC, or by hand | **Engine: full QA (nightly)** | `node tools/qa/regress.mjs`, every matrix item, judged against the version from a day before. Skipped when nothing in `engine/` or `tools/qa/` changed in that day. Not a Vercel check: it's too slow to hold every update | ~35–50 min (~21 min on an M1 Max) |
 
 The workflows are `.github/workflows/checks.yml` and `.github/workflows/engine-full.yml`. A newer push to the
@@ -104,6 +104,6 @@ print as KNOWN and only fail again if they get worse.
 ## Build minutes
 
 The repo is private, so GitHub counts these runs against the account's monthly Actions minutes. Each push
-costs about 5–6 billed minutes (two jobs, each rounded up to the minute), and a nightly full run ~40 minutes
-on days the engine changed. Pushing several merged branches at once instead of one by one, and the
+costs about 4 billed minutes (two jobs of 1–2 minutes, each rounded up to the minute), and a nightly full run
+~40–50 minutes on days the engine changed. Pushing several merged branches at once instead of one by one, and the
 cancellation of superseded runs, keep this down. The account's usage is under GitHub → Settings → Billing.
