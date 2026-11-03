@@ -24,7 +24,7 @@ import { DETAIL, Editorial, HandMenu, LetterDock, TitleBlock, type DockActions }
 import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
-import { ARCHIVE_URL, headerLink, Missing, SiteHeader, toolHref } from './SiteHeader';
+import { ARCHIVE_URL, Missing, SiteHeader, toolHref } from './SiteHeader';
 // the look being compared (?look=reading-room): its own letter layout and dock (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { ReadingLetter, SlipDock } from '@/themes/reading-room/ReadingLetter';
@@ -236,9 +236,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   if (!letters || !letter || !look || !r) {
     return (
       <div className="min-h-dvh">
-        <SiteHeader>
-          <a href={backHref} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
-        </SiteHeader>
+        <SiteHeader current="letters" inside hrefs={{ letters: backHref }} />
         <main className="mx-auto max-w-[1180px] px-4 pt-28 sm:px-8 lg:px-10">
           {error ? (
             <Missing title="The letters didn’t load." action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>Check your connection, then try again.</Missing>
@@ -282,9 +280,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const editorial = <Editorial letter={letter} name={name} textOpen={textOpen} onText={setTextOpen} centred={DETAIL === '2'} />;
   return (
     <div className="min-h-dvh">
-      <SiteHeader>
-        <a href={backHref} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
-      </SiteHeader>
+      <SiteHeader current="letters" inside hrefs={{ letters: backHref }} />
       {LOOK === 'reading-room' ? (
         <ReadingLetter letter={letter} name={name} hand={look.seed} sheet={sheet} colRef={colRef} titleRef={titleRef} pxPerMm={pxPerMm} paperW={r.paper.w} keep={keep} onKeep={setKeep} onNewHand={newHand} onReplay={() => { setFinish(0); setToken((n) => n + 1); }} canReplay={!!ready} onShare={share} textOpen={textOpen} onText={setTextOpen} />
       ) : DETAIL === '1' ? (

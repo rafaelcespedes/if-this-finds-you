@@ -211,9 +211,9 @@ html[data-look='postmarked'] section[data-row][aria-labelledby] h3 > span {
   text-transform: none;
 }
 
-/* the header's words (All letters, Fonts, Write a letter): small postal capitals */
-html[data-look='postmarked'] header a.font-medium,
-html[data-look='postmarked'] header > span > button.underline {
+/* the site header's words (components/SiteHeader.tsx: the places, My letters, a page's action): small postal capitals */
+html[data-look='postmarked'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-action] button),
+html[data-look='postmarked'] [data-site-menu] [data-site-link] {
   font-family: var(--pm-mono);
   font-size: 0.71875rem;
   font-weight: 500;
