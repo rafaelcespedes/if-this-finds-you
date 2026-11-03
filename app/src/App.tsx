@@ -472,6 +472,15 @@ export default function App() {
     if (theirsForwardRef.current) setTheirsForward(false);
     if (!wroteRef.current) { wroteRef.current = true; setWrote(true); writePref('seedhand:wrote', '1'); }
     if (e.source === 'paper') posture.onTyped();
+    // invisible characters (zero-width spaces and joiners, soft hyphens, stray control codes) would be drawn as
+    // gaps or boxes: they're left out, and a tab is a space
+    if (e.ins) {
+      const clean = e.ins.replace(/[\u200B-\u200D\u2060\uFEFF\u00AD]/g, '').replace(/\t/g, ' ').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+      if (clean !== e.ins) {
+        e = { ...e, ins: clean };
+        if (!e.ins && !e.del) return;
+      }
+    }
     // the letter's length at most: what doesn't fit is left out, and said so
     {
       const s = stateNow.current;
@@ -505,9 +514,17 @@ export default function App() {
     }
     if (inkMode) {
       const s = stateNow.current;
-      // Undo lifts only wet ink (the newest event, within 3 s)
+      // Undo takes back what the pen hasn't written yet, and lifts wet ink (written in the last 3 s) back to what
+      // the undo asks for; only when there's nothing wet to lift does it say the ink is dry
       if (e.kind === 'undo') {
-        if (inkRef.current?.undo()) syncInk();
+        const ink = inkRef.current;
+        if (!ink) return;
+        if (ink.waiting) { ink.edit({ ...e, kind: e.ins ? 'replace' : 'delete' }); syncInk(); return; }
+        const now = ink.text();
+        const want = now.slice(0, e.at) + e.ins + now.slice(e.at + e.del);
+        let lifted = false;
+        while (ink.text().length > want.length && ink.undo()) lifted = true;
+        if (lifted) syncInk();
         else toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
         return;
       }
