@@ -48,7 +48,7 @@ export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, fad
 export function SheetMarks({ paper, index }: { paper: PaperSpec; index: number; count: number; pxPerMm: number }) {
   if (paper.overflow !== 'cramp' || index < 1) return null;
   return (
-    <span aria-hidden className="pointer-events-none absolute bottom-full left-0 mb-1 text-[12px] leading-4 whitespace-nowrap text-muted-foreground select-none">
+    <span aria-hidden className="pointer-events-none absolute bottom-full left-0 mb-1 text-[0.75rem] leading-4 whitespace-nowrap text-muted-foreground select-none">
       A second aerogramme
     </span>
   );

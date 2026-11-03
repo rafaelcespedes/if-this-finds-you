@@ -38,13 +38,13 @@ export function WritingMenu(p: Props) {
   // a choice made (not Escape, not a click away): the writing carries on where it was
   const chose = useRef(false);
   const pick = (fn: () => void) => () => { chose.current = true; fn(); };
-  const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[14px] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
+  const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[0.875rem] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          className="group inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[12.5px] text-muted-foreground transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:py-3"
+          className="group inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[0.7812rem] text-muted-foreground transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:py-3"
         >
           {p.inkAvailable ? LABEL[p.mode] : 'Writing'}
           <ChevronDown aria-hidden className="size-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
@@ -72,7 +72,7 @@ export function WritingMenu(p: Props) {
                     </span>
                     <span className="grid">
                       <span>{LABEL[m]}</span>
-                      <span className="text-[12px] leading-snug text-muted-foreground">{HINT[m]}</span>
+                      <span className="text-[0.75rem] leading-snug text-muted-foreground">{HINT[m]}</span>
                     </span>
                   </DropdownMenu.RadioItem>
                 ))}

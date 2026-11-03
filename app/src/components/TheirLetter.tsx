@@ -219,7 +219,7 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
       {(forward || !under) && (
       <div
         ref={captionRef}
-        className="absolute top-0 left-0 flex items-center gap-1 text-[12px] text-muted-foreground motion-reduce:transition-none"
+        className="absolute top-0 left-0 flex items-center gap-1 text-[0.75rem] text-muted-foreground motion-reduce:transition-none"
         style={{ width: forward ? sheetW : Math.max(140, aside * sheetW), transform: `translateY(${(forward ? cardH : aside * cardH) + 10}px)`, transition: move }}
       >
         <span className="flex-1" />
@@ -230,7 +230,7 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
             onClick={() => onForward(false)}
             className="shrink-0 rounded-md px-1.5 py-1 text-foreground/80 transition-colors duration-150 hover-device:hover:text-foreground"
           >
-            Back to your letter <kbd className="ml-1 font-sans text-[11px] text-faint">⌘]</kbd>
+            Back to your letter <kbd className="ml-1 font-sans text-[0.6875rem] text-faint">⌘]</kbd>
           </button>
         ) : (
           <button
@@ -358,7 +358,7 @@ export function TheirLetterPull({ found, open, onOpen, onDismiss, viewport, reac
           onPointerCancel={onUp}
           className="absolute inset-x-0 bottom-0 flex h-14 touch-none flex-col justify-center gap-1 px-4 select-none"
         >
-          <div className="flex items-center gap-1 text-[12.5px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-[0.7812rem] text-muted-foreground">
             <span className="min-w-0 flex-1 truncate">{sampleCredit(letter)}</span>
             <button type="button" onClick={onDismiss} className="shrink-0 rounded-md px-2 py-2.5 text-faint">
               Not a reply

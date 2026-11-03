@@ -398,7 +398,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       </div>
       {chip && (
         <div
-          className="selection-chip absolute z-10 flex h-8 items-center gap-0.5 rounded-md bg-panel px-1 text-[12.5px] shadow-[0_1px_2px_rgba(60,45,20,0.1),0_8px_24px_-10px_rgba(60,45,20,0.35)]"
+          className="selection-chip absolute z-10 flex h-8 items-center gap-0.5 rounded-md bg-panel px-1 text-[0.7812rem] shadow-[0_1px_2px_rgba(60,45,20,0.1),0_8px_24px_-10px_rgba(60,45,20,0.35)]"
           style={{ left: Math.max(0, chip.left - 6), top: Math.max(-36, chip.top) }}
           onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
         >
@@ -425,7 +425,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
         autoComplete="off"
         enterKeyHint="enter"
         {...{ writingsuggestions: 'false', 'data-gramm': 'false', 'data-gramm_editor': 'false', 'data-enable-grammarly': 'false' }}
-        className="pointer-events-none absolute m-0 resize-none overflow-hidden border-0 p-0 text-[16px] leading-none whitespace-pre opacity-0 outline-none"
+        className="pointer-events-none absolute m-0 resize-none overflow-hidden border-0 p-0 text-[1rem] leading-none whitespace-pre opacity-0 outline-none"
         style={{ left: caretPx.left, top: caretPx.top, width: lineW, height: lineH, caretColor: 'transparent' }}
       />
       <span id={descId} hidden>

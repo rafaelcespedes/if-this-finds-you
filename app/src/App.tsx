@@ -1052,22 +1052,27 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 overflow-x-clip px-4 pt-[calc(7.25rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
-          style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: Math.round(100 * wide) } : undefined}
+          className={cn(
+            'relative min-w-0 overflow-x-clip px-4 pb-32 sm:px-8 lg:px-10 lg:pt-[6.25rem] lg:pb-16',
+            // phones: room for the header (the letter's label row is in the page, under it, 2.75rem of the same 7.25)
+            reader ? 'pt-[calc(7.25rem+env(safe-area-inset-top,0px))]' : 'pt-[calc(4.5rem+env(safe-area-inset-top,0px))]',
+          )}
+          style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: `${(6.25 * wide).toFixed(3)}rem` } : undefined}
         >
           <header
             ref={headerRef}
             style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
             className={cn(
               // clear of a notch or camera island when the phone is sideways
-              'absolute top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:right-[max(2rem,env(safe-area-inset-right,0px))] sm:left-[max(2rem,env(safe-area-inset-left,0px))] lg:inset-x-10 lg:top-5',
+              'absolute top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] flex items-start justify-between gap-4 text-[0.7812rem] text-muted-foreground transition-opacity duration-200 ease-out sm:right-[max(2rem,env(safe-area-inset-right,0px))] sm:left-[max(2rem,env(safe-area-inset-left,0px))] lg:inset-x-10 lg:top-5',
               !desk && 'opacity-0',
               !reader && 'pointer-events-none',
             )}
           >
             {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
             <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
-            <span className={cn('flex min-w-0 gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
+            {/* large text: the links and chips wrap onto a second row rather than running off the screen */}
+            <span className={cn('flex min-w-0 flex-wrap justify-end gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
               {reader ? (
                 <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[var(--rule-link)] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                   Write your own
@@ -1084,17 +1089,17 @@ export default function App() {
                     href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                     aria-label="All letters"
                     title="All letters"
-                    className="relative grid size-8 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="relative grid size-[32px] place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    <LayoutDashboard aria-hidden className="size-4" />
+                    <LayoutDashboard aria-hidden className="size-[16px]" />
                   </a>
                   <a
                     href={withLogo(FONTS_URL)}
                     aria-label="Fonts"
                     title="Fonts"
-                    className="relative grid size-8 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                    className="relative grid size-[32px] place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    <CaseSensitive aria-hidden className="size-4" />
+                    <CaseSensitive aria-hidden className="size-[16px]" />
                   </a>
                   <ShareMenu {...panelProps} size="chip" />
                 </span>
@@ -1182,6 +1187,14 @@ export default function App() {
             )}
             {pxPerMm > 0 && !reader && !brokenLink && !(penFailed && !writing) && (
               <div ref={fitRef} className="origin-top">
+                {/* phones: the label and how you're writing share a row above the sheet, in the page: with large text the
+                    menu drops under the label and the sheet moves down, rather than anything running into the header */}
+                {!isDesktop && (
+                  <div className="relative z-20 mx-auto flex flex-wrap items-end justify-between gap-x-3" style={{ width: shownPaper.w * pxPerMm }}>
+                    <SheetLabel title={sheetTitle} hand={myHandWords} stack className="mb-2.5 min-w-[10rem] flex-1" />
+                    <div className="-mr-1.5 ml-auto shrink-0">{writingMenu}</div>
+                  </div>
+                )}
                 {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
                 {/* (with their letter picked up, its label covers this line: yours steps out of the way until it's back) */}
                 <div
@@ -1191,25 +1204,22 @@ export default function App() {
                 >
                   {isDesktop ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
-                    <div className="absolute bottom-1.5 left-0 flex max-w-full items-baseline gap-2.5">
+                    // (one row with how you're writing at its right; with large text the menu drops under it)
+                    <div className="absolute inset-x-0 bottom-0.5 flex flex-wrap items-end gap-x-2.5">
                       <AboutHand {...panelProps}>
                         <button
                           type="button"
                           aria-label={`${name}: about this hand`}
-                          className="group relative -ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] font-medium tracking-[-0.01em] text-foreground transition-colors duration-150 after:absolute after:-inset-y-1.5 after:inset-x-0 after:content-[''] hover-device:hover:bg-[var(--chip-hover)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+                          className="group relative -ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[0.8125rem] font-medium tracking-[-0.01em] text-foreground transition-colors duration-150 after:absolute after:-inset-y-1.5 after:inset-x-0 after:content-[''] hover-device:hover:bg-[var(--chip-hover)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
                         >
                           {name}
                           <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </button>
                       </AboutHand>
-                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 260)} />
+                      <SheetLabel title={sheetTitle} stack className="mb-1 min-w-[8rem] flex-1" />
+                      <div className="ml-auto shrink-0">{writingMenu}</div>
                     </div>
-                  ) : (
-                    // phones: the label on the left, how you're writing on the right, both above the sheet (under it, a
-                    // tall sheet on a small phone kept the menu below the fold, behind the controls)
-                    <SheetLabel title={sheetTitle} hand={myHandWords} width={Math.max(120, shownPaper.w * pxPerMm - 104)} stack className="absolute bottom-2.5 left-0" />
-                  )}
-                  <div className={cn('absolute right-0', isDesktop ? 'bottom-0.5' : '-right-1.5 bottom-0')}>{writingMenu}</div>
+                  ) : null}
                   {LOOK === 'reading-room' && sample && !replyDesk && <SampleMarks id={sample.id} pxPerMm={pxPerMm} />}
                   {/* look C (?look=postmarked): a found letter's postmark on the sheet's corner */}
                   {LOOK === 'postmarked' && <SheetPost sampleId={sample?.id} width={shownPaper.w * pxPerMm} />}
@@ -1219,7 +1229,7 @@ export default function App() {
                   {(hintShown || escHint) && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700 motion-reduce:slide-in-from-top-0"
+                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[0.75rem] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700 motion-reduce:slide-in-from-top-0"
                     >
                       {escHint ? 'Press Esc when you’re done' : <><Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write</>}
                     </div>
@@ -1275,7 +1285,7 @@ export default function App() {
                   )}
                 </PaperEditor>
                 <div
-                  className={cn('mx-auto mt-3 flex items-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
+                  className={cn('mx-auto mt-3 flex items-center text-[0.7812rem] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
                   style={{ width: shownPaper.w * pxPerMm }}
                 >
                   {/* the letter's credit on the left, how you're writing on the right */}
@@ -1285,14 +1295,14 @@ export default function App() {
                       type="button"
                       aria-expanded={theirsForward}
                       onClick={() => setTheirsForward(true)}
-                      className="mr-auto inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-3 text-[12px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
+                      className="mr-auto inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-3 text-[0.75rem] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
                     >
                       <span className="truncate">Read their letter</span>
                       <ChevronDown aria-hidden className="size-3.5 shrink-0" />
                     </button>
                   ) : (
                     // the letter's name is on the sheet now; a translation still says who translated it
-                    <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
+                    <span className="mr-auto min-w-0 truncate pr-3 text-[0.75rem]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
                 </div>
                 {LOOK === 'reading-room' && !isDesktop && sample && <CatalogueSlip id={sample.id} name={name} />}
@@ -1345,7 +1355,7 @@ export default function App() {
             )}
           >
             {LOOK === 'reading-room' ? <ReadingDesk {...panelProps} /> : (
-            <div style={wide > 1 ? { zoom: wide } : undefined} className="panel-scroll h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
+            <div style={wide > 1 ? { zoom: wide } : undefined} className="panel-scroll h-full w-[21rem] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>
             )}

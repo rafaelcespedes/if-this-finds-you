@@ -141,7 +141,7 @@ function WriterHeader(props: PanelProps) {
         <span className="flex items-center gap-2">
           <Shuffle aria-hidden /> Find another
         </span>
-        <kbd aria-hidden className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
+        <kbd aria-hidden className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[0.6875rem] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
       </Button>
       )}
       {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="mt-2.5 justify-center" />}
@@ -154,7 +154,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
   const { p, name, state } = props;
   const sources = handSources(p);
   const letter = state.sample ? sampleById(state.sample) : undefined;
-  const dt = 'text-[11.5px] text-muted-foreground';
+  const dt = 'text-[0.7188rem] text-muted-foreground';
   const changed = useRef(false);
   return (
     <Popover.Root>
@@ -178,14 +178,14 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           <div style={{ color: inkColor(state.ink) }}>
             <Signature p={p} name={name} ink="currentColor" emPx={30} className="-ml-1 h-[46px] overflow-visible" />
           </div>
-          <div className="mt-1 text-[15px] leading-tight font-medium">{name}</div>
-          <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{describeHand(p)}</p>
+          <div className="mt-1 text-[0.9375rem] leading-tight font-medium">{name}</div>
+          <p className="mt-0.5 text-[0.7812rem] leading-snug text-muted-foreground">{describeHand(p)}</p>
           <Popover.Close asChild>
             <Button variant="secondary" onClick={() => { changed.current = true; props.onChangeWriter(); }} className="mt-3 w-full">
               <Shuffle aria-hidden /> Change writer
             </Button>
           </Popover.Close>
-          <dl className="mt-3.5 grid gap-2.5 border-t border-border pt-3 text-[12.5px] leading-snug">
+          <dl className="mt-3.5 grid gap-2.5 border-t border-border pt-3 text-[0.7812rem] leading-snug">
             <div>
               <dt className={dt}>Learned to write</dt>
               <dd>{learnedFrom(state.style)}</dd>
@@ -241,7 +241,7 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
             'size-11',
             // the phone header's small chip: drawn 32 px, still a 44 px target
             // (a lighter fill, a hairline and a soft shadow, so it reads as a button on the warm desk)
-            size === 'chip' && "relative size-8 rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 after:absolute after:-inset-1.5 after:content-[''] pointer-coarse:size-8 [&_svg]:size-4",
+            size === 'chip' && "relative size-[32px] rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 after:absolute after:-inset-1.5 after:content-[''] pointer-coarse:size-[32px] [&_svg]:size-[16px]",
           )}
         >
           {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}
@@ -264,7 +264,7 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
             Download video
           </MenuItem>
           <DropdownMenu.Separator className="mx-2 my-1 h-px bg-border" />
-          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[11.5px] text-muted-foreground">More formats</DropdownMenu.Label>
+          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">More formats</DropdownMenu.Label>
           <MenuItem onSelect={() => onExportVideo('gif')} icon={<ImagePlay aria-hidden />} disabled={busy.video || exportable?.gif === false} quiet>
             Animated GIF
           </MenuItem>
@@ -290,14 +290,14 @@ function MenuItem({ children, icon, onSelect, disabled, quiet, hint }: { childre
       onSelect={onSelect}
       className={cn(
         'flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
-        quiet ? 'text-[13px]' : 'text-[14px]',
+        quiet ? 'text-[0.8125rem]' : 'text-[0.875rem]',
         hint && 'py-2',
       )}
     >
       {hint ? (
         <span className="grid gap-0.5">
           <span>{children}</span>
-          <span className="text-[11.5px] leading-snug text-muted-foreground">{hint}</span>
+          <span className="text-[0.7188rem] leading-snug text-muted-foreground">{hint}</span>
         </span>
       ) : children}
       {icon}
@@ -314,7 +314,7 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
   const link = 'shrink-0 rounded-md px-1 py-0.5 font-medium text-foreground underline decoration-[var(--rule-link)] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5';
   return (
     // what the letter is lives on the sheet now (its label); here, only the ways to the others
-    <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted-foreground', className)}>
+    <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.7812rem] text-muted-foreground', className)}>
       <span className="flex items-center gap-1">
         {/* this tab's own letter, never another tab's */}
         {letter.found && letter.mine && (
@@ -349,17 +349,17 @@ function KeptLetters({ kept, label, onOpen, className }: { kept: Draft[]; label:
           collisionPadding={12}
           className="z-50 w-[min(288px,calc(100vw-24px))] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,var(--popover)_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
         >
-          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[11.5px] text-muted-foreground">Kept on this device</DropdownMenu.Label>
+          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">Kept on this device</DropdownMenu.Label>
           {kept.map((d, i) => {
             const { words, when } = draftLabel(d, now);
             return (
               <DropdownMenu.Item
                 key={d.savedAt + ':' + i}
                 onSelect={() => onOpen(d.savedAt)}
-                className="flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 py-1.5 text-[14px] text-foreground outline-none select-none data-[highlighted]:bg-accent"
+                className="flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 py-1.5 text-[0.875rem] text-foreground outline-none select-none data-[highlighted]:bg-accent"
               >
                 <span className="min-w-0 truncate">{words}</span>
-                <span className="shrink-0 text-[12px] text-muted-foreground">{when}</span>
+                <span className="shrink-0 text-[0.75rem] text-muted-foreground">{when}</span>
               </DropdownMenu.Item>
             );
           })}
@@ -422,7 +422,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
             <button
               type="button"
               onClick={props.onNewHand}
-              className="justify-self-start rounded-md px-1 py-0.5 text-[12.5px] font-medium text-foreground underline decoration-[var(--rule-link)] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
+              className="justify-self-start rounded-md px-1 py-0.5 text-[0.7812rem] font-medium text-foreground underline decoration-[var(--rule-link)] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
             >
               Roll a neat one
             </button>
@@ -479,7 +479,7 @@ function Group({ label, value, aside, children, className, first }: { label: str
   return (
     <section data-row aria-labelledby={id} className={cn('grid grid-cols-[minmax(0,1fr)] gap-2 py-3.5', !first && 'border-t border-border/70', className)}>
       <div className="flex min-h-7 items-center justify-between gap-3">
-        <h3 id={id} className="flex min-w-0 items-baseline gap-2 text-[13px] font-medium">
+        <h3 id={id} className="flex min-w-0 items-baseline gap-2 text-[0.8125rem] font-medium">
           {/* the rubric: a vermilion paragraph mark, the way scribes marked where each part begins */}
           <span aria-hidden className="-mr-1.5 text-[var(--mark)]">¶</span>
           {label}
@@ -518,7 +518,7 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
         aria-controls={id}
         onClick={() => { setDrawn(true); setOpen((o) => { writeOpen(!o); return !o; }); }}
         className={cn(
-          'flex w-full items-center justify-between py-4 text-[13px] font-medium transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:py-3.5',
+          'flex w-full items-center justify-between py-4 text-[0.8125rem] font-medium transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:py-3.5',
           flush ? 'rounded-lg' : 'px-5',
         )}
       >
@@ -545,7 +545,7 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
             </div>
             {groups.map(({ g, items }) => (
               <div key={g} className="grid gap-3.5">
-                <div data-row className="text-[12.5px] text-muted-foreground">{g}</div>
+                <div data-row className="text-[0.7812rem] text-muted-foreground">{g}</div>
                 {items.map((c) => <ControlRow key={c.key} c={c} {...props} />)}
                 {g === 'Letters and variety' && (
                   <SliderRow
@@ -569,7 +569,7 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
                 <button
                   type="button"
                   onClick={props.onResetOffsets}
-                  className="justify-self-start text-[12.5px] text-muted-foreground underline-offset-4 transition-colors duration-150 hover-device:hover:text-foreground hover-device:hover:underline pointer-coarse:py-3"
+                  className="justify-self-start text-[0.7812rem] text-muted-foreground underline-offset-4 transition-colors duration-150 hover-device:hover:text-foreground hover-device:hover:underline pointer-coarse:py-3"
                 >
                   Back to {props.name.split(' ')[0]}’s natural hand
                 </button>
@@ -597,10 +597,10 @@ function Switch({ label, hint, tip, checked, onChange }: { label: string; hint?:
       <span className="grid">
         <span className="flex items-center gap-1">
           {/* the words flip it too (a bigger target than the switch alone) */}
-          <span id={id} onClick={() => onChange(!checked)} className="cursor-pointer text-[13px] font-medium select-none">{label}</span>
+          <span id={id} onClick={() => onChange(!checked)} className="cursor-pointer text-[0.8125rem] font-medium select-none">{label}</span>
           {tip && <InfoTip id={tipId} text={tip} />}
         </span>
-        {hint && <span className="text-[12px] text-muted-foreground">{hint}</span>}
+        {hint && <span className="text-[0.75rem] text-muted-foreground">{hint}</span>}
       </span>
       <button
         type="button"
@@ -653,7 +653,7 @@ function SeedField({ seed, onCommit, onFocus }: { seed: string; onCommit: (s: st
     else setV(seed);
   };
   return (
-    <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
+    <div className="flex items-center gap-2 text-[0.7812rem] text-muted-foreground">
       <label htmlFor={id} className="shrink-0">
         Seed
       </label>
@@ -673,7 +673,7 @@ function SeedField({ seed, onCommit, onFocus }: { seed: string; onCommit: (s: st
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           if (e.key === 'Escape') { setV(seed); (e.target as HTMLInputElement).blur(); }
         }}
-        className="tabular min-w-0 flex-1 rounded-md border border-border bg-[var(--field)] px-2 py-1.5 text-[13px] text-foreground transition-[border-color,background-color] duration-150 focus:border-input focus:bg-[#fffefb] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:px-2.5 pointer-coarse:py-2.5 pointer-coarse:text-[16px]"
+        className="tabular min-w-0 flex-1 rounded-md border border-border bg-[var(--field)] px-2 py-1.5 text-[0.8125rem] text-foreground transition-[border-color,background-color] duration-150 focus:border-input focus:bg-[#fffefb] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:px-2.5 pointer-coarse:py-2.5 pointer-coarse:text-[1rem]"
       />
     </div>
   );
@@ -705,16 +705,17 @@ function OccasionRow({ state, onOccasion, onAmount }: PanelProps) {
   const id = useId();
   return (
     <div className="grid gap-2">
-      <div data-row className="flex min-h-8 items-center justify-between gap-3">
-        <label htmlFor={id} className="text-[13px] font-medium">
+      {/* large text: the choice goes under its label rather than past the panel's edge */}
+      <div data-row className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <label htmlFor={id} className="text-[0.8125rem] font-medium">
           Occasion
         </label>
-        <div className="relative">
+        <div className="relative min-w-0 max-w-full">
           <select
             id={id}
             value={state.occasion ?? ''}
             onChange={(e) => onOccasion(e.target.value || null)}
-            className="h-8 cursor-pointer appearance-none rounded-md border border-border bg-[var(--field)] py-0 pr-7 pl-2.5 text-[13px] text-foreground shadow-[0_1px_1px_rgba(60,45,20,0.04)] transition-colors duration-150 hover-device:hover:bg-[#f4f1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:h-11 pointer-coarse:text-[16px]"
+            className="h-8 max-w-full cursor-pointer appearance-none truncate rounded-md border border-border bg-[var(--field)] py-0 pr-7 pl-2.5 text-[0.8125rem] text-foreground shadow-[0_1px_1px_rgba(60,45,20,0.04)] transition-colors duration-150 hover-device:hover:bg-[#f4f1ea] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:h-11 pointer-coarse:text-[1rem]"
           >
             <option value="">Everyday</option>
             {OCCASIONS.map((o) => (
@@ -746,7 +747,7 @@ function OccasionRow({ state, onOccasion, onAmount }: PanelProps) {
 // ---------- building blocks ----------
 function Soon() {
   return (
-    <span className="rounded-full bg-[#ebe6dc] px-1.5 py-px text-[11px] leading-4 text-muted-foreground" title="Wired up, waiting for the engine">
+    <span className="rounded-full bg-[#ebe6dc] px-1.5 py-px text-[0.6875rem] leading-4 text-muted-foreground" title="Wired up, waiting for the engine">
       soon
     </span>
   );
@@ -765,11 +766,11 @@ const SliderRow = memo(function SliderRow({
   return (
     <div data-row className="grid gap-1">
       <div className="flex items-baseline justify-between gap-2">
-        <span id={id} className="flex items-center gap-1.5 text-[13px] font-medium">
+        <span id={id} className="flex items-center gap-1.5 text-[0.8125rem] font-medium">
           {label}
           {soon && <Soon />}
         </span>
-        <span className="tabular text-[13px] text-muted-foreground" aria-hidden>
+        <span className="tabular text-[0.8125rem] text-muted-foreground" aria-hidden>
           {word}
         </span>
       </div>
@@ -786,12 +787,12 @@ const SliderRow = memo(function SliderRow({
         onValueChange={(v) => onChange(v[0])}
       />
       {ends && (
-        <span aria-hidden className="-mt-1 flex justify-between text-[11.5px] text-faint pointer-coarse:-mt-2">
+        <span aria-hidden className="-mt-1 flex justify-between text-[0.7188rem] text-faint pointer-coarse:-mt-2">
           <span>{ends[0]}</span>
           <span>{ends[1]}</span>
         </span>
       )}
-      {hint && <span className="-mt-0.5 text-[12px] text-muted-foreground">{hint}</span>}
+      {hint && <span className="-mt-0.5 text-[0.75rem] text-muted-foreground">{hint}</span>}
     </div>
   );
 });
@@ -817,7 +818,7 @@ function PaperVariants({ value, onChange }: { value: PaperId; onChange: (id: Pap
             <SegmentedItem
               value={v.id}
               aria-label={`${v.variant}: ${v.hint}`}
-              className="h-7 rounded-[3px] bg-secondary px-2.5 text-[12px] aria-checked:bg-[var(--tile-on)] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-11 pointer-coarse:px-3.5"
+              className="h-7 rounded-[3px] bg-secondary px-2.5 text-[0.75rem] aria-checked:bg-[var(--tile-on)] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-11 pointer-coarse:px-3.5"
             >
               {v.variant}
             </SegmentedItem>
@@ -855,7 +856,7 @@ const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value
               aria-label={`${paper.name}: ${paper.hint}`}
               className={cn(
                 // chosen: the whole tile lifts and takes the ink's ring, as the pens do (a variant keeps its family's tile chosen)
-                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] aria-checked:bg-[var(--tile-on)] aria-checked:text-foreground aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)] pointer-coarse:h-auto',
+                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[0.75rem] aria-checked:bg-[var(--tile-on)] aria-checked:text-foreground aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)] pointer-coarse:h-auto',
                 rows && 'w-[86px] shrink-0 snap-start bg-secondary',
               )}
             >

@@ -67,7 +67,7 @@ export const PenSwatches = memo(function PenSwatches({ seed, style, pen, penSize
               inkKey={inkKey}
               className="h-[30px] justify-center"
             />
-            <span className={cn('w-full truncate text-center text-[11.5px] leading-tight', on ? 'font-medium text-foreground' : 'text-muted-foreground')}>{c.name}</span>
+            <span className={cn('w-full truncate text-center text-[0.7188rem] leading-tight', on ? 'font-medium text-foreground' : 'text-muted-foreground')}>{c.name}</span>
           </button>
         );
       })}
@@ -98,7 +98,7 @@ export const TipChoice = memo(function TipChoice({ value, ink, onChange }: { val
             <svg aria-hidden viewBox="0 0 36 12" className="h-3 w-9 overflow-visible" style={{ color: ink }}>
               <path d="M3 8 C 10 2, 15 2, 19 6 S 29 10, 33 4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth={[1.1, 1.9, 3][i]} />
             </svg>
-            <span className={cn('mt-0.5 text-[10.5px] leading-none', on ? 'text-foreground' : 'text-muted-foreground')}>{s.label}</span>
+            <span className={cn('mt-0.5 text-[0.6562rem] leading-none', on ? 'text-foreground' : 'text-muted-foreground')}>{s.label}</span>
           </button>
         );
       })}
