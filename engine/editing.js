@@ -28,6 +28,12 @@ export function geometry(p, pages, opts = {}) {
   for (const pg of list) for (const ln of pg.lineInfo) lines.set(ln.n, ln);
   const byKey = new Map();
   for (const pg of list) for (const s of pg.stops) byKey.set(s.o + (s.aff || ''), s);
+  // a soft wrap has its two places (aff 'before' and 'after'); a plain stop at the same offset is left
+  // over from text written in pieces (Ink mode: a piece's end, before the next piece wrapped) and goes
+  for (const k of [...byKey.keys()]) {
+    const s = byKey.get(k);
+    if (!s.aff && byKey.has(s.o + 'before') && byKey.has(s.o + 'after')) byKey.delete(k);
+  }
   const stops = [...byKey.values()].sort((a, b) => a.o - b.o || (a.aff === 'before' ? -1 : b.aff === 'before' ? 1 : 0));
   const onLine = new Map();
   for (const s of stops) { if (!onLine.has(s.line)) onLine.set(s.line, []); onLine.get(s.line).push(s); }
@@ -70,7 +76,7 @@ export function geometry(p, pages, opts = {}) {
     let a = best;
     while (a > 0 && stops[a - 1].o === o) a--;
     const same = stops.slice(a, best + 1);
-    return same.find((s) => (s.aff || 'after') === aff) || same.find((s) => !s.aff) || same[same.length - 1];
+    return same.find((s) => s.aff === aff) || same.find((s) => !s.aff) || same[same.length - 1];
   }
 
   // a point in the line's own frame (along the baseline, up by v, leaned) -> page
@@ -151,6 +157,14 @@ export function geometry(p, pages, opts = {}) {
   }
 
   return { stops, lines, ascent, descent, baseline, slant, caretAt, hitTest, selection, lineAt, lineStops, stopNear, stopFor };
+}
+
+// A page whose caret stops are moved `by` offsets: Ink mode's thought letters (sheet.js draftPage, offsets
+// counted from draft.from) in the textarea's offsets, after the written text. Then one geometry covers the
+// whole text, with a stop at every boundary (spaces and line ends too) and both sides of every wrap:
+//   geometry(p, [page, offsetStops(draft, page.text.length - draft.from)])
+export function offsetStops(page, by) {
+  return Object.assign({}, page, { stops: page.stops.map((s) => Object.assign({}, s, { o: s.o + by })) });
 }
 
 // SVG path data for a closed ribbon (page units × scale); round its corners with stroke-linejoin: round
