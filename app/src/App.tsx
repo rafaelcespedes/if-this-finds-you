@@ -61,6 +61,7 @@ import type { NoteState } from '@/lib/state';
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
 import { LetterMarks } from '@/themes/reading-room/SheetMarks';
+import { useMaterialsOpen } from '@/themes/reading-room/materials';
 import { PlateTitle } from '@/themes/reading-room/PlateLine';
 import { PostSheetMarks, ToolArrival } from '@/themes/postmarked/tool';
 
@@ -997,6 +998,10 @@ export default function App() {
   onModeRef.current = panelProps.ink?.onMode;
   freshRef.current = panelProps.ink?.onFreshSheet;
   const desk = !posture.writing;
+  // the Reading Room's writing materials, cracked open as you start a letter of your own, keep the desk's column
+  // beside the sheet while you write (themes/reading-room/materials.ts); the header and the footer still step back
+  const materialsOpen = useMaterialsOpen();
+  const deskColumn = desk || (LOOK === 'reading-room' && isDesktop && materialsOpen);
   const reader = state.reader;
   const brokenLink = linkTrouble === 'incomplete';
 
@@ -1363,11 +1368,11 @@ export default function App() {
         {!reader && (isDesktop ? (
           // while writing, the desk steps back: faded and nudged aside, out of the way of the pointer and keys
           <aside
-            aria-hidden={!desk || undefined}
-            inert={!desk}
+            aria-hidden={!deskColumn || undefined}
+            inert={!deskColumn}
             className={cn(
               'sticky top-0 h-dvh py-3 pr-3 transition-[opacity,transform] ease-out',
-              desk ? 'duration-[180ms]' : 'pointer-events-none translate-x-3 opacity-0 duration-[240ms] motion-reduce:translate-x-0',
+              deskColumn ? 'duration-[180ms]' : 'pointer-events-none translate-x-3 opacity-0 duration-[240ms] motion-reduce:translate-x-0',
             )}
           >
             {LOOK === 'reading-room' ? <ReadingDeskMemo {...panelProps} /> : (

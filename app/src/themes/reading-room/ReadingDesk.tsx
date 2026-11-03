@@ -3,7 +3,7 @@
 // with its key first, then the letter's record (LedgerRecord), and the writing materials as a drawer pinned to the
 // column's foot. Opened, the drawer rises over the record, so the column never needs a scroll bar of its own. The
 // controls inside are the tool's own (Panel.tsx), so everything they do is unchanged.
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ChevronRight, ChevronUp } from 'lucide-react';
 import { AboutHand, LetterStatus, LookControls, MoreControls, ShareMenu, type PanelProps } from '@/components/Panel';
 import { Signature } from '@/components/Signature';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { BringAnother } from './BringAnother';
 import { LedgerRecord } from './LedgerRecord';
 import { callNo } from './catalogue';
+import { materials } from './materials';
 import { useRecord } from './useCatalogue';
 
 const DRAWER_KEY = 'seedhand:rr-slip';
@@ -51,6 +52,13 @@ export function ReadingDesk(props: PanelProps) {
   // the desk's main action, a button at the foot of the record's head (under its number and two-line title)
   const bring = <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Bring another hand'} />;
   const status = props.letter && (!props.letter.found || props.letter.drafts > 0);
+  // the found letter turning into your own (the first key typed on it) cracks the writing materials open, once a visit
+  const [crack, setCrack] = useState(0);
+  const wasFound = useRef(found);
+  useEffect(() => {
+    if (wasFound.current && !found && materials.canOpen()) setCrack((c) => c + 1);
+    wasFound.current = found;
+  }, [found]);
   const physical = physicalOf(state);
   return (
     // as wide as the tool's panel (density.css --panel-w), so the desk grows with the browser's text size as it does
@@ -91,43 +99,60 @@ export function ReadingDesk(props: PanelProps) {
           </section>
         )}
       </div>
-      <WritingDrawer {...props} />
+      <WritingDrawer {...props} crack={crack} />
     </div>
   );
 }
 
-/** The writing materials: a drawer pinned to the foot of the column (its state remembered on this device). What they
- * are is said once, in the record's physical-description line, so the drawer's handle is just its name. */
-function WritingDrawer(props: PanelProps) {
-  const [open, setOpen] = useState(readDrawer);
+/** The writing materials: a drawer pinned to the foot of the column (closed or open remembered on this device). What
+ * they are is said once, in the record's physical-description line, so the drawer's handle is just its name. As you
+ * start a letter of your own it cracks open partway (`crack`): paper, pen and ink, the rest a row away, and the column
+ * stays beside the sheet while you write (materials.ts). Focus stays on the paper. */
+function WritingDrawer(props: PanelProps & { crack: number }) {
+  const [mode, setMode] = useState<'closed' | 'peek' | 'open'>(() => (readDrawer() ? 'open' : 'closed'));
   const id = useId();
-  const toggle = () => setOpen((o) => { writeDrawer(!o); return !o; });
+  const shown = mode !== 'closed';
+  const put = (m: 'closed' | 'open') => {
+    setMode(m);
+    writeDrawer(m === 'open');
+    if (m === 'closed') materials.close();
+  };
+  useEffect(() => {
+    if (!props.crack) return;
+    setMode((m) => (m === 'closed' ? 'peek' : m));
+    materials.open();
+  }, [props.crack]);
   // Escape puts the drawer away (focus comes back to its handle)
   useEffect(() => {
-    if (!open) return;
+    if (!shown) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
       if (!t?.closest(`#${CSS.escape(id)}-b`)) return;
-      setOpen(false); writeDrawer(false);
+      put('closed');
       document.getElementById(`${id}-h`)?.querySelector('button')?.focus();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, id]);
+  }, [shown, id]);
   return (
-    <section className={cn('rr-drawer', open && 'is-open')} aria-labelledby={`${id}-h`}>
+    <section className={cn('rr-drawer', mode === 'open' && 'is-open', mode === 'peek' && 'is-peek')} aria-labelledby={`${id}-h`}>
       <h2 id={`${id}-h`} className="m-0">
-        <button type="button" aria-expanded={open} aria-controls={`${id}-b`} onClick={toggle} className="rr-drawer-head">
+        <button type="button" aria-expanded={shown} aria-controls={`${id}-b`} onClick={() => put(shown ? 'closed' : 'open')} className="rr-drawer-head">
           <span className="rr-sc">Writing materials</span>
           <ChevronUp aria-hidden className="rr-drawer-chev" />
         </button>
       </h2>
-      <div id={`${id}-b`} className="rr-drawer-body panel-scroll" inert={!open}>
+      <div id={`${id}-b`} className="rr-drawer-body panel-scroll" inert={!shown}>
         <div className="rr-slip-inner">
           <LookControls {...props} />
           <MoreControls {...props} />
         </div>
+        {mode === 'peek' && (
+          <button type="button" className="rr-drawer-all" aria-controls={`${id}-b`} onClick={() => put('open')}>
+            Handwriting and more<ChevronUp aria-hidden />
+          </button>
+        )}
       </div>
     </section>
   );
