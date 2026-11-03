@@ -107,7 +107,7 @@ export function LetterDock(a: DockActions) {
         {a.total > 1 && (
           <>
             <IconButton label={a.prev ? `Previous letter: ${a.prev.title}` : 'Previous letter'} onClick={a.onPrev}><ChevronLeft aria-hidden /></IconButton>
-            {!narrow && <span aria-hidden className="min-w-[3.25rem] px-0.5 text-center text-[12.5px] text-faint tabular">{a.at + 1}/{a.total}</span>}
+            {!narrow && <span aria-hidden className="min-w-[3.25rem] px-0.5 text-center text-[12.5px] text-[var(--lib-text-faint)] tabular">{a.at + 1}/{a.total}</span>}
             <IconButton label={a.next ? `Next letter: ${a.next.title}` : 'Next letter'} onClick={a.onNext}><ChevronRight aria-hidden /></IconButton>
             <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />
           </>

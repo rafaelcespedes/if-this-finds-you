@@ -1,10 +1,10 @@
-// The letter face: a serif beside Instrument Sans for the letters' own words (titles, the story, the record, the
-// text). Newsreader, and three others to compare in place, like the logo: ?serif=1…4 (1 Newsreader, 2 Source Serif
-// 4, 3 Literata, 4 Fraunces soft), kept for the tab, never put into share links.
-// Only the chosen face is loaded. All four are under the SIL Open Font License 1.1, self-hosted via @fontsource.
+// The letter face: a serif beside Atkinson Hyperlegible Next for the letters' own words (titles, the story, the record,
+// the text). Piazzolla (Rafael's pick, 3 Nov 2026, docs/research/type-system), and four others to compare in place:
+// ?serif=1…5 (1 Newsreader, 2 Source Serif 4, 3 Literata, 4 Fraunces soft, 5 Piazzolla), kept for the tab, never put
+// into share links. Only the chosen face is loaded. All five are under the SIL Open Font License 1.1, via @fontsource.
 
 export interface Serif {
-  id: '1' | '2' | '3' | '4';
+  id: '1' | '2' | '3' | '4' | '5';
   name: string;
   /** CSS font-family (the @fontsource face name, then fallbacks) */
   family: string;
@@ -37,10 +37,16 @@ export const SERIFS: Serif[] = [
     load: () => import('@fontsource-variable/fraunces/soft.css'),
     licence: 'SIL OFL 1.1 (Undercase Type)',
   },
+  {
+    // x-height 0.478 em against Newsreader's 0.426: 0.94 lands it where the research prototype showed it
+    id: '5', name: 'Piazzolla', family: "'Piazzolla Variable', Georgia, serif", scale: 0.94,
+    load: () => Promise.all([import('@fontsource-variable/piazzolla/opsz.css'), import('@fontsource-variable/piazzolla/opsz-italic.css')]),
+    licence: 'SIL OFL 1.1 (Huerta Tipográfica)',
+  },
 ];
 
-/** Newsreader: made for reading on screens, with optical sizes, and it sits well beside Instrument Sans. */
-const DEFAULT: Serif['id'] = '1';
+/** Piazzolla: a text face with optical sizes (8–30) and a true italic, rarer than Newsreader, and darker beside ink. */
+const DEFAULT: Serif['id'] = '5';
 
 function readSerif(): Serif {
   let id: string | null = null;
@@ -52,7 +58,7 @@ function readSerif(): Serif {
   return SERIFS.find((s) => s.id === id) ?? SERIFS.find((s) => s.id === DEFAULT)!;
 }
 
-export const SERIF: Serif = typeof location !== 'undefined' ? readSerif() : SERIFS[0];
+export const SERIF: Serif = typeof location !== 'undefined' ? readSerif() : SERIFS.find((s) => s.id === DEFAULT)!;
 
 /** Load the chosen face and point the page's letter font at it (--font-letter, --letter-scale). */
 export function applySerif() {

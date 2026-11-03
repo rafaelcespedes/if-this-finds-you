@@ -18,6 +18,8 @@ interface Props {
   gap: number;
   ink: string;
   name: string;
+  /** the letter's words, for screen readers (the handwriting is a picture) */
+  text: string;
   onWriteYourOwn: () => void;
 }
 
@@ -25,7 +27,7 @@ interface Props {
  * A shared letter (editor-ux.md §3.4, "the letter arrives being written"): no panel, the sheet centred,
  * and on open the letter is written in front of the recipient at about 3x, tap to finish.
  */
-export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWriteYourOwn }: Props) {
+export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, text, onWriteYourOwn }: Props) {
   // the writing plays as soon as it's there, and again on Replay
   const [token, setToken] = useState(1);
   const [finish, setFinish] = useState(0);
@@ -91,8 +93,12 @@ export function ReaderView({ writing, live, paper, pxPerMm, gap, ink, name, onWr
         ))}
       </div>
       )}
+      {/* the whole letter as words, read in one go (not announced stroke by stroke while it writes itself) */}
+      <article aria-label={`A letter in ${name}’s hand`} className="sr-only">
+        {text.split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)}
+      </article>
       <div className="mx-auto mt-6 flex max-w-[480px] flex-col items-center gap-3 text-center">
-        <p className="text-[13px] text-muted-foreground">A letter in {name}’s hand.</p>
+        <p aria-hidden className="text-[13px] text-muted-foreground">A letter in {name}’s hand.</p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => { setFinish(0); setToken((n) => n + 1); }}>
             <RotateCcw aria-hidden /> Replay

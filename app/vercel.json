@@ -15,5 +15,17 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/fonts",
+      "destination": "/letters",
+      "permanent": false
+    },
+    {
+      "source": "/fonts.html",
+      "destination": "/letters",
+      "permanent": false
+    }
   ]
 }

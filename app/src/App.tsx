@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, LayoutDashboard, Pointer } from 'lucide-react';
+import { CaseSensitive, ChevronDown, LayoutDashboard, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, withLogo } from '@/lib/brand';
@@ -68,11 +68,15 @@ function writePref(key: string, v: string) {
 
 /** Every edit to the note, in order: the seed of the ink log (see lib/edits.ts). */
 const editLog = new EditLog();
+/** this tab's typed-but-not-yet-inked text (sessionStorage) */
+const TAIL_KEY = 'seedhand:typed';
+/** after the last key, how long the letter still counts as in use: single-letter keys go to it, not to shortcuts */
+const WRITING_LATELY_MS = 20000;
 (window as unknown as { __seedhandEdits: EditLog }).__seedhandEdits = editLog;
 
 export default function App() {
   const [composing, setComposing] = useState(false);
-  const [state, update, markStep] = useNoteState(composing);
+  const [state, update, markStep, saveNow] = useNoteState(composing);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
   const [busy, setBusy] = useState({ download: false, font: false, video: false });
@@ -94,6 +98,9 @@ export default function App() {
   const name = useMemo(() => writerName(state.seed), [state.seed]);
   // the sample letter the page shows, while nobody has written (credited under the sheet)
   const sample = state.sample && state.text ? sampleById(state.sample) : undefined;
+  // a found letter before the first key: the editor holds nothing (the reply starts from empty), so an IME's
+  // first composition, a paste or dictation lands as typed, never mixed with their letter's words
+  const replyPending = !!state.sample && !state.inkLog && SAMPLE_FIRST_KEY === 'reply';
   // every found letter shown joins the recent ones (not shown again within ten hands)
   useEffect(() => { sawLetter(state.sample); }, [state.sample]);
 
@@ -210,6 +217,51 @@ export default function App() {
     inkRef.current.flush();
     syncInk();
   }, [editing, syncInk]);
+  // leaving the page (another tab, another app, a reload, closing it): everything typed is written down and
+  // the link saved at once, without waiting for the pen or the debounce
+  useEffect(() => {
+    const leave = () => {
+      const ink = inkRef.current;
+      if (ink && inkFor.current === inkLook && ink.waiting) {
+        ink.flush();
+        saveNow({ text: ink.text(), inkLog: encodeInk(ink.doc), sample: null, marks: [] });
+        setInkTick((n) => n + 1);
+      } else saveNow();
+    };
+    const onVis = () => { if (document.visibilityState === 'hidden') leave(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', leave);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', leave);
+    };
+  }, [inkLook, saveNow]);
+  // and while typing, what the pen hasn't reached yet is kept for this tab, so even a crash keeps it: on the
+  // next load it's written down (only when it carries on from the letter the link holds)
+  const tailTimer = useRef(0);
+  const keepTail = useCallback(() => {
+    window.clearTimeout(tailTimer.current);
+    tailTimer.current = window.setTimeout(() => {
+      const ink = inkRef.current;
+      try {
+        if (ink?.waiting) sessionStorage.setItem(TAIL_KEY, JSON.stringify({ look: [stateNow.current.seed, stateNow.current.style], text: ink.text() }));
+        else sessionStorage.removeItem(TAIL_KEY);
+      } catch { /* private mode: the leave handler still saves */ }
+    }, 300);
+  }, []);
+  useEffect(() => {
+    let kept: { look: [NoteState["seed"], NoteState["style"]]; text: string } | null = null;
+    try { kept = JSON.parse(sessionStorage.getItem(TAIL_KEY) ?? 'null'); sessionStorage.removeItem(TAIL_KEY); } catch { /* nothing kept */ }
+    const s = stateNow.current;
+    if (!kept || !inkMode || !s.inkLog || kept.look[0] !== s.seed || kept.look[1] !== s.style) return;
+    const ink = inkSession();
+    const now = ink.text();
+    if (kept.text.length <= now.length || !kept.text.startsWith(now)) return;
+    ink.edit({ at: now.length, del: 0, ins: kept.text.slice(now.length), kind: 'type', t: Date.now(), source: 'paper' });
+    ink.flush();
+    syncInk();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const live = useMemo(
     () => {
@@ -288,6 +340,14 @@ export default function App() {
     return h ? describeHand(h) : undefined;
   }, [replying, replyKey]);
   const myHandWords = useMemo(() => describeHand(p), [p]);
+  // a new hand or letter, said once for screen readers (the page changes silently otherwise)
+  const [announced, setAnnounced] = useState('');
+  const firstLook = useRef(true);
+  useEffect(() => {
+    if (firstLook.current) { firstLook.current = false; return; }
+    setAnnounced(`${name}’s hand: ${sample ? `a letter from ${foundName(sample)}` : sheetTitle}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.seed, state.style, state.sample]);
   // the "click the letter" hint, desktop: only after a while without writing, and never again once you have
   const [wrote, setWrote] = useState(() => readPref('seedhand:wrote') === '1');
   const [idleLong, setIdleLong] = useState(false);
@@ -336,8 +396,10 @@ export default function App() {
 
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
   const posture = usePosture(editing);
+  const lastEditAt = useRef(-Infinity);
   const onEdit = useCallback((e: Edit) => {
     editLog.push(e);
+    lastEditAt.current = performance.now();
     // typing is writing yours: their letter goes back down
     if (theirsForwardRef.current) setTheirsForward(false);
     if (!wroteRef.current) { wroteRef.current = true; setWrote(true); writePref('seedhand:wrote', '1'); }
@@ -358,6 +420,7 @@ export default function App() {
       ink.edit(reply ? { ...e, at: 0, del: 0 } : e);
       if (reply) { replyArrive.current = true; keepTheirs(s); update({ replyTo: replyOf(s) }); }
       syncInk();
+      keepTail();
       return;
     }
     const s0 = stateNow.current;
@@ -373,10 +436,16 @@ export default function App() {
       // the first edit makes a sample letter the writer's own text
       return { text: doc.text, marks: doc.marks, sample: null };
     });
-  }, [update, posture.onTyped, inkMode, inkSession, syncInk]);
+  }, [update, posture.onTyped, inkMode, inkSession, syncInk, keepTail]);
 
   // ---------- pen-only formatting: underline by hand, press harder, sign ----------
   const editor = useRef<PaperEditorApi>(null);
+  /** after a menu action (Sign it, Fair copy, Change writer…): back to the letter, when it was in use. true: it took the focus */
+  const resumeWriting = useCallback(() => {
+    if (!editor.current || performance.now() - lastEditAt.current > WRITING_LATELY_MS) return false;
+    editor.current.focus();
+    return true;
+  }, []);
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     if (cmd === 'ps') return;
     update((s) => ({ marks: toggleMark({ text: s.text, marks: s.marks, signed: s.signed }, cmd, from, to).marks, sample: null }));
@@ -595,14 +664,23 @@ export default function App() {
     }
   }, [p, name, state.seed, state.style, eff.overrides]);
 
-  // R for a new hand, Shift R for a similar one, when not typing; ⌘\\ shows or hides the desk while writing
+  // R for a new hand, Shift R for a similar one, when not typing; ⌘\\ shows or hides the desk while writing.
+  // While the letter is in use (focus on it after Esc, or a key within the last while, say after Sign it or a
+  // toast's button), a letter key carries on the writing instead: the editor takes the focus and the key
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === '\\' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); posture.toggle(); return; }
-      if (e.key !== 'r' && e.key !== 'R') return;
-      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+      // menus and dialogs keep their own keys (type-ahead, Escape)
+      if (t?.closest?.('[role="menu"],[role="listbox"],[role="dialog"]')) return;
+      const typed = e.key.length === 1 && e.key !== ' ';
+      if (typed && editor.current && (t?.closest?.('[data-paper]') || performance.now() - lastEditAt.current < WRITING_LATELY_MS)) {
+        editor.current.focus();
+        return;
+      }
+      if ((e.key !== 'r' && e.key !== 'R') || e.repeat) return;
       e.preventDefault();
       // from the keyboard the new hand simply appears: no fade
       if (e.shiftKey) similarHand(false);
@@ -629,6 +707,7 @@ export default function App() {
     busy,
     onNewHand: () => newHand(true),
     // the same letter, another writer: the stationery stays, the text stays (a found letter keeps its words)
+    resumeWriting,
     onChangeWriter: () => { markStep(); lookChange(() => update((s) => rollLook(s, { variety, locked: new Set<LockKey>(['pen', 'ink', 'paper']) }))); },
     onSimilarHand: () => similarHand(true),
     onSeed: (seed) => update((s) => withSample(s, { seed, offsets: offsetsForNewHand(s.offsets) }, recentLetters())),
@@ -778,6 +857,7 @@ export default function App() {
       signed={state.signed}
       onSign={toggleSigned}
       plainText={plainText}
+      onAfter={resumeWriting}
       onPlainText={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
     />
   );
@@ -786,13 +866,14 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 px-4 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
+          className="relative min-w-0 overflow-x-clip px-4 pt-[calc(7.25rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
         >
           <header
             ref={headerRef}
             className={cn(
-              'absolute inset-x-4 top-[max(1rem,env(safe-area-inset-top,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
+              // clear of a notch or camera island when the phone is sideways
+              'absolute top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:right-[max(2rem,env(safe-area-inset-right,0px))] sm:left-[max(2rem,env(safe-area-inset-left,0px))] lg:inset-x-10 lg:top-5',
               !desk && 'opacity-0',
               !reader && 'pointer-events-none',
             )}
@@ -805,8 +886,9 @@ export default function App() {
                   Write your own
                 </button>
               ) : (
-                // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state
-                <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : ''}</span>
+                // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state,
+                // and what Find another (or a link) brought
+                <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : announced}</span>
               )}
               {/* the whole library of found letters (the archive); on phones a small chip, with Share beside it */}
               {!isDesktop && !reader ? (
@@ -819,9 +901,18 @@ export default function App() {
                   >
                     <LayoutDashboard aria-hidden className="size-4" />
                   </a>
+                  <a
+                    href={withLogo(`${import.meta.env.BASE_URL}fonts.html`)}
+                    aria-label="Fonts"
+                    title="Fonts"
+                    className="relative grid size-8 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <CaseSensitive aria-hidden className="size-4" />
+                  </a>
                   <ShareMenu {...panelProps} size="chip" />
                 </span>
               ) : (
+              <>
               <a
                 href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                 className={cn(
@@ -832,6 +923,18 @@ export default function App() {
               >
                 All letters
               </a>
+              {/* every hand as an open font (the fonts page) */}
+              <a
+                href={withLogo(`${import.meta.env.BASE_URL}fonts.html`)}
+                className={cn(
+                  // a big enough target without making the line taller (the sheet's label sits just under it)
+                  "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
+                  editing && !isDesktop && 'pointer-events-none opacity-0',
+                )}
+              >
+                Fonts
+              </a>
+              </>
               )}
             </span>
           </header>
@@ -870,6 +973,7 @@ export default function App() {
                 gap={SHEET_GAP}
                 ink={ink}
                 name={name}
+                text={inkMode && state.inkLog ? (live?.page.text ?? state.text) : state.text}
                 onWriteYourOwn={() => update({ reader: false })}
               />
             )}
@@ -906,7 +1010,7 @@ export default function App() {
                   {(hintShown || escHint) && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700"
+                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700 motion-reduce:slide-in-from-top-0"
                     >
                       {escHint ? 'Press Esc when you’re done' : <><Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write</>}
                     </div>
@@ -914,7 +1018,8 @@ export default function App() {
                 </div>
                 <PaperEditor
                   ref={editor}
-                  text={inkActive ? inkRef.current!.text() : state.text}
+                  text={replyPending ? '' : inkActive ? inkRef.current!.text() : state.text}
+                  blank={replyPending}
                   hovering={inkActive && inkRef.current!.hovering}
                   onEdit={onEdit}
                   onFormat={onFormat}
@@ -984,7 +1089,7 @@ export default function App() {
                 </div>
                 {plainText && (
                   <div className="mt-3 flex justify-center">
-                    <DraftSlip value={state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
+                    <DraftSlip value={replyPending ? '' : state.text} onEdit={onEdit} onComposingChange={setComposing} width={shownPaper.w * pxPerMm + 16} />
                   </div>
                 )}
               </div>
@@ -1039,8 +1144,9 @@ export default function App() {
           onOpen={setTheirsForward}
           onDismiss={() => update({ replyTo: null })}
           viewport={viewport}
-          // above the keyboard and tray while writing; down to the control sheet otherwise
-          reach={editing ? Math.max(220, Math.round(viewport.height * 0.58)) : Math.max(260, viewport.height - (mobileSheet ? metrics.peek : 0) - 12)}
+          // while writing, a little under half of what the keyboard leaves (the line you're on stays in view below);
+          // down to the control sheet otherwise
+          reach={editing ? Math.max(200, Math.round(viewport.height * 0.45)) : Math.max(260, viewport.height - (mobileSheet ? metrics.peek : 0) - 12)}
           pxPerMm={pxPerMm}
         />
       )}

@@ -48,6 +48,9 @@ interface Props {
   onComposingChange?: (composing: boolean) => void;
   /** Ink mode: the writer is considering a fix at the pen head; the pen hovers instead of resting */
   hovering?: boolean;
+  /** the page shows a letter that isn't in the text (a found letter before the reply's first key): the text
+   *  is empty, so an IME composes into an empty field, and the caret rests at the end of what's shown */
+  blank?: boolean;
   children: ReactNode;
 }
 
@@ -61,7 +64,7 @@ interface Sel {
 const AMBER = '#f3d27a';
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, children },
+  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -76,7 +79,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   const input = useEditInput(ta, text, onEdit, 'paper', onComposition);
   const descId = useId();
   // indices in the live text <-> indices in the text the page was written from
-  const toMap = useCallback((i: number) => (geo ? across(i, text, geo.text) : i), [geo, text]);
+  const toMap = useCallback((i: number) => (geo ? (blank ? geo.text.length : across(i, text, geo.text)) : i), [geo, text, blank]);
   const fromMap = useCallback((i: number) => (geo ? across(i, geo.text, text) : i), [geo, text]);
   const u = geo ? geo.unitsPerMm : 1;
   const k = pxPerMm / u; // CSS px per font unit
@@ -213,7 +216,9 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     const el = e.currentTarget;
     setPointerSel(false);
     if (e.key === 'Escape') {
+      // writing stops, but focus stays on the letter, so Tab carries on from here (not from the page's top)
       el.blur();
+      wrap.current?.focus({ preventScroll: true });
       sync();
       return;
     }
@@ -312,9 +317,11 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   return (
     <div
       ref={wrap}
+      data-paper
       role="group"
       aria-label="Letter"
-      className="relative mx-auto cursor-text touch-manipulation"
+      tabIndex={-1}
+      className="relative mx-auto cursor-text touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-ring"
       style={{ width: sheetW * pxPerMm }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -408,7 +415,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
         style={{ left: caretPx.left, top: caretPx.top, width: lineW, height: lineH, caretColor: 'transparent' }}
       />
       <span id={descId} hidden>
-        Fair copy: the page is rewritten cleanly as you type. Command U underlines, Command B presses harder, Command Return adds a P.S.
+        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}Fair copy: the page is rewritten cleanly as you type. Command U underlines, Command B presses harder, Command Return adds a P.S.
         {geo?.summary ? ` This draft has ${geo.summary}.` : ''}
       </span>
     </div>

@@ -2,6 +2,14 @@
 
 Rafael's calls, newest first. Builders follow these. If one conflicts with a research recommendation, this log wins.
 
+## 2026-11-03
+
+### Type
+- **Interface: Atkinson Hyperlegible Next. Letters: Piazzolla.** "For now." Replaces Instrument Sans and Newsreader.
+  Both SIL OFL 1.1, so the font files can live in the public repo. Comparison of five pairings and the licence checks:
+  docs/research/type-system. Geist Serif (Vercel, Oct 2026) was considered and passed over: display only, one weight,
+  and Vercel's own brand.
+
 ## 2026-11-02
 
 ### Purpose (Rafael's own words, the frame for every other decision)

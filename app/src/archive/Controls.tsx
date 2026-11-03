@@ -94,10 +94,10 @@ export function SearchToggle({ value, onChange, search, width, placeholder }: {
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
-        className="archive-field h-9 w-full pr-8 pl-8 text-[13.5px] placeholder:text-faint pointer-coarse:h-10"
+        className="archive-field h-9 w-full pr-8 pl-8 text-[13.5px] placeholder:text-[var(--lib-text-faint)] pointer-coarse:h-10"
       />
       {value && (
-        <button type="button" aria-label="Clear the search" onMouseDown={(e) => e.preventDefault()} onClick={() => onChange('')} className="absolute right-1.5 grid size-6 place-items-center rounded-md text-faint transition-colors duration-150 hover-device:hover:text-foreground">
+        <button type="button" aria-label="Clear the search" onMouseDown={(e) => e.preventDefault()} onClick={() => onChange('')} className="absolute right-1.5 grid size-6 place-items-center rounded-md text-[var(--lib-text-faint)] transition-colors duration-150 hover-device:hover:text-foreground">
           <X aria-hidden className="size-3.5" />
         </button>
       )}
@@ -145,11 +145,12 @@ const Divider = () => <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-b
 
 // ---------- 1: in the heading ----------
 
-/** Search as an icon, at the right of the heading. */
+/** Search as an icon, at the right of the heading. Opened on a narrow screen it takes a line of its own under the
+ * heading (the row wraps), never wider than the screen. */
 export function HeadingTools(p: ControlsProps) {
   return (
-    <div className="flex items-center gap-1">
-      <SearchToggle value={p.filters.q} onChange={(q) => p.set({ q })} search={p.search} width="w-[min(260px,62vw)]" placeholder="Words, writers, places" />
+    <div className="ml-auto flex max-w-full min-w-0 items-center gap-1">
+      <SearchToggle value={p.filters.q} onChange={(q) => p.set({ q })} search={p.search} width="w-[260px] max-w-full" placeholder="Words, writers, places" />
     </div>
   );
 }
@@ -168,7 +169,7 @@ export function SentenceFilter(p: ControlsProps) {
       <span>in</span>
       <QuietSelect label="Language" value={p.filters.lang} onChange={(lang) => p.set({ lang })} any="any language" options={p.facets.langs} className="sentence-pick -mx-0.5 px-1.5 py-0.5" />
       {p.filtered && (
-        <button type="button" onClick={p.clear} className="ml-2 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] text-faint transition-colors duration-150 hover-device:hover:text-foreground">
+        <button type="button" onClick={p.clear} className="ml-2 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] text-[var(--lib-text-faint)] transition-colors duration-150 hover-device:hover:text-foreground">
           <X aria-hidden className="size-3.5" /> Clear
         </button>
       )}
@@ -252,7 +253,7 @@ export function TimelineDock(p: ControlsProps) {
   const caption = p.filtered && p.ready ? (
     <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-panel py-1 pr-1 pl-3 text-[12.5px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.3)]">
       <span>{p.filters.era ? `Letters ${ERA_CAPTION[p.filters.era] ?? ''}` : 'Letters'}{p.filters.q ? ` matching “${p.filters.q}”` : ''}</span>
-      <button type="button" onClick={p.clear} aria-label="Clear the search and filters" className="grid size-6 place-items-center rounded-full text-faint transition-colors duration-150 hover-device:hover:text-foreground">
+      <button type="button" onClick={p.clear} aria-label="Clear the search and filters" className="grid size-6 place-items-center rounded-full text-[var(--lib-text-faint)] transition-colors duration-150 hover-device:hover:text-foreground">
         <X aria-hidden className="size-3.5" />
       </button>
     </div>
