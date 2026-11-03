@@ -36,3 +36,5 @@ header's Menu takes them. The 404 page's hand-made copy of the header lists Abou
    Rueca, another project of his, and couldn't find the hand he had in mind, so he tried making one. The experiment grew from
    there: a happy accident that got a little out of hand." (From Rafael's own account; Rueca isn't linked, as the repo
    has no public address for it.)
+10. "Each visit opens on a writer and a letter picked at random." (What this is; true since 237360d: a fresh visit picks
+    one of 28 first hands and a letter that suits it, avoiding letters just read.)
