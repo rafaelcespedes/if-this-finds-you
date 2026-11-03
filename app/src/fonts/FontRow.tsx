@@ -6,6 +6,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Heart, LoaderCircle, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn, saveBlob } from '@/lib/utils';
 import { toolHref } from '@/archive/SiteHeader';
@@ -39,21 +40,24 @@ interface Props {
 
 const covers = (have: string, want: string) => { for (const c of want) if (!have.includes(c)) return false; return true; };
 
+/** A row's action: the tool's ghost button (words and an icon on wide screens, the icon alone on phones). */
 function Action({ label, onClick, href, pressed, busy, compact, children, text }: {
   label: string; onClick?: () => void; href?: string; pressed?: boolean; busy?: boolean; compact: boolean; children: React.ReactNode; text?: string;
 }) {
-  const cls = cn(
-    'font-action relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg text-[13px] font-medium after:absolute after:-inset-1 after:content-[\'\'] pointer-coarse:h-10',
-    text && !compact ? 'px-2.5' : 'w-8 justify-center pointer-coarse:w-10',
-    pressed && 'is-on',
-  );
-  const inner = <>{children}{text && !compact && <span>{text}</span>}</>;
+  const iconOnly = !text || compact;
+  // words: the tool's quiet ghost button ("Similar"); an icon alone stays square
+  const cls = cn('font-action hover-device:hover:text-foreground', iconOnly ? 'text-[var(--muted-foreground)]' : 'px-2.5 text-muted-foreground', pressed && 'is-on text-foreground');
+  const inner = <>{children}{!iconOnly && <span>{text}</span>}</>;
   const el = href ? (
-    <a href={href} className={cls} aria-label={compact || !text ? label : undefined}>{inner}</a>
+    <Button asChild variant="ghost" size={iconOnly ? 'icon' : 'sm'} className={cls}>
+      <a href={href} aria-label={iconOnly ? label : undefined}>{inner}</a>
+    </Button>
   ) : (
-    <button type="button" onClick={onClick} className={cls} aria-label={compact || !text ? label : undefined} aria-pressed={pressed} aria-busy={busy || undefined} disabled={busy}>{inner}</button>
+    <Button variant="ghost" size={iconOnly ? 'icon' : 'sm'} className={cls} onClick={onClick} aria-label={iconOnly ? label : undefined} aria-pressed={pressed} aria-busy={busy || undefined} disabled={busy}>
+      {inner}
+    </Button>
   );
-  if (text && !compact) return el;
+  if (!iconOnly) return el;
   return (
     <Tooltip>
       <TooltipTrigger asChild>{el}</TooltipTrigger>

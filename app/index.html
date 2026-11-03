@@ -21,8 +21,10 @@
         document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
       })();
     </script>
-    <title>If This Finds You</title>
-    <meta name="description" content="Real letters by ordinary people, written out by hand. Find one, and write back in a hand that never repeats itself." />
+    <!-- the name with its descriptor, and the link previews (docs/brand/naming-and-copy.md §2.11). A shared letter's
+         link carries the letter after the #, which link previews never see: it previews as this page, never its text -->
+    <title>If This Finds You · Real letters, written out by hand.</title>
+    <meta name="description" content="Write a letter and watch it written out by hand. Real letters from 1395 to 1929, each in a stranger&#8217;s handwriting. Free." />
     <!-- #5 is the logo; ?logo=32 swaps the tab icon back (Wordmark.tsx). The PNG icons and share image are #32's until #5's arrive. -->
     <link rel="icon" href="/brand/favicon-5.svg" type="image/svg+xml" />
     <link rel="icon" href="/brand/favicon-5.ico" sizes="32x32" />
@@ -31,13 +33,15 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="If This Finds You" />
     <meta property="og:title" content="If This Finds You" />
-    <meta property="og:description" content="Real letters by ordinary people, written out by hand." />
+    <meta property="og:description" content="Write a letter and watch it written out by hand. Real letters from 1395 to 1929, each in a stranger&#8217;s handwriting. Free." />
     <meta property="og:url" content="https://ifthisfindsyou.app/" />
     <meta property="og:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="If This Finds You, in handwriting" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="If This Finds You" />
+    <meta name="twitter:description" content="Write a letter and watch it written out by hand. Real letters from 1395 to 1929, each in a stranger&#8217;s handwriting. Free." />
     <meta name="twitter:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
     <!-- The first paint, before any script: the desk, the wordmark and an empty sheet, so a slow connection shows
          the page at once. React replaces it (everything inside #root) on its first render. -->
@@ -48,13 +52,15 @@
       html[data-look='postmarked'] { --boot-desk: #f1ebdc; --boot-panel: #f8f4ea; --boot-panel-r: 16px; }
       html, body { margin: 0; background: var(--boot-desk); }
       .boot { min-height: 100dvh; display: flex; }
-      .boot-main { position: relative; flex: 1; min-width: 0; padding: calc(7.25rem + env(safe-area-inset-top, 0px)) 16px 32px; }
+      .boot-main { position: relative; flex: 1; min-width: 0; padding: calc(4.5rem + env(safe-area-inset-top, 0px)) 16px 32px; }
+      /* phones: the letter comes right under the header (a letter sent to read keeps more room above) */
+      .boot-read .boot-main { padding-top: calc(7.25rem + env(safe-area-inset-top, 0px)); }
       .boot-logo { position: absolute; top: max(1rem, env(safe-area-inset-top, 0px)); left: max(1rem, env(safe-area-inset-left, 0px)); height: 32px; display: flex; align-items: center; }
       .boot-logo img { display: block; height: 21px; width: auto; opacity: 0.85; }
       .boot-sheet { margin: 0 auto; width: min(577px, 100%); aspect-ratio: 148 / 210; background: #fffdf8; border-radius: 1.5px; box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 14px 34px -20px rgba(60, 45, 20, 0.35); }
       .boot-panel { display: none; }
       @media (min-width: 1024px) {
-        .boot-main { padding: 100px 40px 64px; }
+        .boot-main, .boot-read .boot-main { padding: 100px 40px 64px; }
         .boot-logo { top: 1.25rem; left: 2.5rem; height: 36px; }
         .boot-logo img { height: 22px; }
         .boot-panel { display: block; position: sticky; top: 0; height: 100dvh; padding: 12px 12px 12px 0; box-sizing: border-box; }

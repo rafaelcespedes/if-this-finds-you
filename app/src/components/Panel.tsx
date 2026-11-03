@@ -4,13 +4,17 @@
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Info, Link, Loader2, Lock, LockOpen, Mails, Share, Shuffle, Users } from 'lucide-react';
+import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Mails, Share, Shuffle, Users } from 'lucide-react';
 import { hasControl } from '@/controls-lab';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
+import { Segmented, SegmentedChip, SegmentedItem } from '@/components/ui/toggle-group';
+import { Switch } from '@/components/ui/switch';
+import { SliderRow, Soon } from '@/components/ui/slider-row';
+import { Group, MoreButton } from '@/components/ui/group';
+import { MenuItem, menuContent } from '@/components/ui/menu';
+import { inputField } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PenSwatches, TipChoice } from '@/components/PenPicker';
 import { Signature } from '@/components/Signature';
@@ -256,7 +260,7 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
           align="end"
           sideOffset={8}
           collisionPadding={12}
-          className="z-50 w-[236px] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,#fdfcf9_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
+          className={cn(menuContent, 'w-[236px]')}
         >
           <MenuItem onSelect={onShare} icon={<Link aria-hidden />}>Copy link</MenuItem>
           <MenuItem onSelect={onDownload} icon={busy.download ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />} disabled={busy.download}>
@@ -283,28 +287,6 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
-  );
-}
-
-function MenuItem({ children, icon, onSelect, disabled, quiet, hint }: { children: React.ReactNode; icon: React.ReactNode; onSelect: () => void; disabled?: boolean; quiet?: boolean; hint?: string }) {
-  return (
-    <DropdownMenu.Item
-      disabled={disabled}
-      onSelect={onSelect}
-      className={cn(
-        'flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
-        quiet ? 'text-[0.8125rem]' : 'text-[0.875rem]',
-        hint && 'py-2',
-      )}
-    >
-      {hint ? (
-        <span className="grid gap-0.5">
-          <span>{children}</span>
-          <span className="text-[0.7188rem] leading-snug text-muted-foreground">{hint}</span>
-        </span>
-      ) : children}
-      {icon}
-    </DropdownMenu.Item>
   );
 }
 
@@ -503,31 +485,6 @@ function readerCredit(credit: string) {
   return branded(credit).replace(/\s*\([^)]*\.md[^)]*\)/g, '');
 }
 
-/** One group of controls: a plain label (and what's chosen), an optional small extra on the right. */
-function Group({ label, value, aside, children, className, first, lock }: { label: string; value?: string; aside?: React.ReactNode; children: React.ReactNode; className?: string; first?: boolean; lock?: { on: boolean; toggle: () => void } }) {
-  const id = useId();
-  const Pad = lock?.on ? Lock : LockOpen;
-  return (
-    <section data-row aria-labelledby={id} className={cn('grid grid-cols-[minmax(0,1fr)] gap-2 py-3.5', !first && 'border-t border-border/70', className)}>
-      <div className="flex min-h-7 items-center justify-between gap-3">
-        <h3 id={id} className="flex min-w-0 items-baseline gap-2 text-[0.8125rem] font-medium">
-          {/* the rubric: a vermilion paragraph mark, the way scribes marked where each part begins */}
-          <span aria-hidden className="-mr-1.5 text-[var(--mark)]">¶</span>
-          {label}
-          {value && <span className="truncate font-normal text-muted-foreground"><span className="sr-only">: </span>{value}</span>}
-          {lock && (
-            <button type="button" aria-pressed={lock.on} aria-label={`Keep this ${label.toLowerCase()} when finding another`} onClick={lock.toggle} data-lab-lock="" className="lab-lock relative -my-1 grid size-6 shrink-0 place-items-center self-center rounded-[4px] after:absolute after:-inset-2 after:content-['']">
-              <Pad aria-hidden className="size-[13px]" strokeWidth={2} />
-            </button>
-          )}
-        </h3>
-        {aside}
-      </div>
-      {children}
-    </section>
-  );
-}
-
 // ---------- More: everything else, folded away ----------
 export function MoreControls(props: PanelProps & { flush?: boolean }) {
   const { state, flush } = props;
@@ -548,22 +505,9 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
   const pad = flush ? '' : 'px-5';
   return (
     <section data-row className={cn('border-t border-border/70', !flush && 'mb-4')}>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => { setDrawn(true); setOpen((o) => { writeOpen(!o); return !o; }); }}
-        className={cn(
-          'flex w-full items-center justify-between py-4 text-[0.8125rem] font-medium transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:py-3.5',
-          flush ? 'rounded-lg' : 'px-5',
-        )}
-      >
-        <span className="flex items-baseline gap-2">
-          More
-          <span className="font-normal text-muted-foreground">Pressure, slant, occasion, seed…</span>
-        </span>
-        <ChevronDown aria-hidden className={cn('size-4 text-muted-foreground transition-transform duration-200 ease-out', open && 'rotate-180')} />
-      </button>
+      <MoreButton open={open} controls={id} flush={flush} summary="Pressure, slant, occasion, seed…" onClick={() => { setDrawn(true); setOpen((o) => { writeOpen(!o); return !o; }); }}>
+        More
+      </MoreButton>
       <div id={id} className={cn('grid transition-[grid-template-rows] duration-300 ease-[var(--ease-drawer)] motion-reduce:transition-none', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
         <div className="overflow-hidden" inert={!open}>
           {drawn && <div className={cn('grid gap-6 pt-1 pb-6', pad)}>
@@ -624,80 +568,6 @@ function writeOpen(v: boolean) {
   try { localStorage.setItem('seedhand:advanced', v ? '1' : '0'); } catch { /* fine */ }
 }
 
-/** An on/off switch with a plain label. */
-function Switch({ label, hint, tip, checked, onChange, words: say }: { label: string; hint?: string; tip?: string; checked: boolean; onChange: (v: boolean) => void; words?: [string, string] }) {
-  // controls research #4: the two states as words, one face sliding between them
-  if (say && hasControl(4)) return <WordToggle label={label} tip={tip} say={say} checked={checked} onChange={onChange} />;
-  const id = useId();
-  const tipId = useId();
-  return (
-    <div data-row className="flex items-center justify-between gap-3">
-      <span className="grid">
-        <span className="flex items-center gap-1">
-          {/* the words flip it too (a bigger target than the switch alone) */}
-          <span id={id} onClick={() => onChange(!checked)} className="cursor-pointer text-[0.8125rem] font-medium select-none">{label}</span>
-          {tip && <InfoTip id={tipId} text={tip} />}
-        </span>
-        {hint && <span className="text-[0.75rem] text-muted-foreground">{hint}</span>}
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-labelledby={id}
-        aria-describedby={tip ? tipId : undefined}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring after:absolute after:-inset-2 after:content-['']",
-          checked ? 'bg-[var(--mark)]' : 'bg-[var(--switch-off)] shadow-[inset_0_0_0_1.5px_#8a8478]',
-        )}
-      >
-        <span
-          aria-hidden
-          className={cn('absolute top-[3px] left-[3px] size-5 rounded-full bg-[#fffefb] shadow-[0_1px_2px_rgba(30,24,12,0.25)] transition-transform duration-200 ease-[var(--ease-drawer)]', checked && 'translate-x-[18px]')}
-        />
-      </button>
-    </div>
-  );
-}
-
-function WordToggle({ label, tip, say, checked, onChange }: { label: string; tip?: string; say: [string, string]; checked: boolean; onChange: (v: boolean) => void }) {
-  const tipId = useId();
-  const name = label === 'Neat hands only' ? 'Hands' : label;
-  return (
-    <div data-row className="flex items-center justify-between gap-3">
-      <span className="flex items-center gap-1 text-[13px] font-medium">
-        {name}
-        {tip && <InfoTip id={tipId} text={tip} />}
-      </span>
-      <Segmented type="single" aria-label={label} data-lab-words="" value={checked ? 'on' : 'off'} onValueChange={(v) => v && onChange(v === 'on')} className="w-[176px]">
-        <SegmentedItem value="on">{say[0]}</SegmentedItem>
-        <SegmentedItem value="off">{say[1]}</SegmentedItem>
-      </Segmented>
-    </div>
-  );
-}
-
-/** A small ⓘ beside a label: its explanation on hover or focus, and on a tap (phones). Never flips what it's next to. */
-function InfoTip({ id, text }: { id: string; text: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Tooltip open={open} onOpenChange={setOpen}>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label="What this does"
-          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
-          className="relative grid size-5 place-items-center rounded-full text-faint transition-colors duration-150 after:absolute after:-inset-2.5 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
-        >
-          <Info aria-hidden className="size-3.5" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent id={id} className="max-w-[240px]">{text}</TooltipContent>
-    </Tooltip>
-  );
-}
-
 function SeedField({ seed, onCommit, onFocus }: { seed: string; onCommit: (s: string) => void; onFocus?: () => void }) {
   const [v, setV] = useState(seed);
   const id = useId();
@@ -728,7 +598,7 @@ function SeedField({ seed, onCommit, onFocus }: { seed: string; onCommit: (s: st
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           if (e.key === 'Escape') { setV(seed); (e.target as HTMLInputElement).blur(); }
         }}
-        className="tabular min-w-0 flex-1 rounded-md border border-border bg-[var(--field)] px-2 py-1.5 text-[0.8125rem] text-foreground transition-[border-color,background-color] duration-150 focus:border-input focus:bg-[#fffefb] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:px-2.5 pointer-coarse:py-2.5 pointer-coarse:text-[1rem]"
+        className={cn(inputField, 'tabular min-w-0 flex-1')}
       />
     </div>
   );
@@ -800,58 +670,6 @@ function OccasionRow({ state, onOccasion, onAmount }: PanelProps) {
 }
 
 // ---------- building blocks ----------
-function Soon() {
-  return (
-    <span className="rounded-full bg-[#ebe6dc] px-1.5 py-px text-[0.6875rem] leading-4 text-muted-foreground" title="Wired up, waiting for the engine">
-      soon
-    </span>
-  );
-}
-
-const SliderRow = memo(function SliderRow({
-  label, value, min, max, step, describe, onChange, mark, onReset, soon, hint, ends,
-}: {
-  label: string; value: number; min: number; max: number; step: number; describe: (v: number) => string;
-  onChange: (v: number) => void; mark?: number; onReset?: () => void; soon?: boolean; hint?: string;
-  /** what each end does, in plain words ("Messy", "Neat"), under the track */
-  ends?: [string, string];
-}) {
-  const id = useId();
-  const word = describe(value);
-  return (
-    <div data-row className="grid gap-1">
-      <div className="flex items-baseline justify-between gap-2">
-        <span id={id} className="flex items-center gap-1.5 text-[0.8125rem] font-medium">
-          {label}
-          {soon && <Soon />}
-        </span>
-        <span className="tabular text-[0.8125rem] text-muted-foreground" aria-hidden>
-          {word}
-        </span>
-      </div>
-      <Slider
-        aria-labelledby={id}
-        aria-valuetext={word}
-        aria-description={hint}
-        value={[Math.min(max, Math.max(min, value))]}
-        min={min}
-        max={max}
-        step={step}
-        mark={mark}
-        onReset={onReset}
-        onValueChange={(v) => onChange(v[0])}
-      />
-      {ends && (
-        <span aria-hidden className="-mt-1 flex justify-between text-[0.7188rem] text-faint pointer-coarse:-mt-2">
-          <span>{ends[0]}</span>
-          <span>{ends[1]}</span>
-        </span>
-      )}
-      {hint && <span className="-mt-0.5 text-[0.75rem] text-muted-foreground">{hint}</span>}
-    </div>
-  );
-});
-
 // paper swatches show a magnified corner of each sheet, where its character is
 
 /** Papers as a grid (desktop panel) or one row that scrolls sideways (phone sheet). */
@@ -870,13 +688,9 @@ function PaperVariants({ value, onChange }: { value: PaperId; onChange: (id: Pap
       {variants.map((v) => (
         <Tooltip key={v.id}>
           <TooltipTrigger asChild>
-            <SegmentedItem
-              value={v.id}
-              aria-label={`${v.variant}: ${v.hint}`}
-              className="h-7 rounded-[3px] bg-secondary px-2.5 text-[0.75rem] aria-checked:bg-[var(--tile-on)] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-11 pointer-coarse:px-3.5"
-            >
+            <SegmentedChip value={v.id} aria-label={`${v.variant}: ${v.hint}`}>
               {v.variant}
-            </SegmentedItem>
+            </SegmentedChip>
           </TooltipTrigger>
           <TooltipContent side="bottom">{v.hint}</TooltipContent>
         </Tooltip>
