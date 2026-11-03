@@ -6,14 +6,14 @@
 import { memo, useEffect, useId, useRef, useState } from 'react';
 import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
 import { hasControl } from '@/controls-lab';
-import { DropdownMenu, Popover } from 'radix-ui';
+import { Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
 import { Segmented, SegmentedChip, SegmentedItem } from '@/components/ui/toggle-group';
 import { Switch } from '@/components/ui/switch';
 import { SliderRow, Soon } from '@/components/ui/slider-row';
 import { Group, MoreButton } from '@/components/ui/group';
-import { MenuItem, menuContent } from '@/components/ui/menu';
+import { ActionSheet, type SheetEntry } from '@/components/ui/sheet';
 import { inputField } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PenSwatches, TipChoice } from '@/components/PenPicker';
@@ -236,9 +236,33 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
 /** Share: copy a link, save the image; the font file is a quieter extra. One icon wherever it sits. */
 export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVideo, exportable, onShareOpen, size }: PanelProps & { size?: 'lg' | 'chip' }) {
   const working = busy.download || busy.font || busy.video;
+  // each row shows what it's doing: a spinner while it's made, a tick for a moment once it's saved
+  const done = useJustDone(busy);
+  const status = (k: keyof typeof busy) => (busy[k] ? 'busy' as const : done[k] ? 'done' as const : null);
+  const entries: SheetEntry[] = [
+    { id: 'link', label: 'Copy link', icon: <Link />, onSelect: onShare },
+    { id: 'image', label: 'Download image', icon: <Download />, status: status('download'), hint: busy.download ? 'Preparing…' : undefined, onSelect: onDownload },
+    // the letter writing itself out: made in a few seconds, saved when it's done
+    { id: 'video', label: 'Download video', icon: <Film />, status: busy.video ? 'busy' : done.video ? 'done' : null, hint: busy.video ? 'Being made…' : undefined, disabled: exportable?.video === false, onSelect: () => onExportVideo('video') },
+    { kind: 'separator', id: 's1' },
+    { kind: 'label', id: 'more', label: 'More formats' },
+    { id: 'gif', label: 'Animated GIF', icon: <ImagePlay />, quiet: true, disabled: busy.video || exportable?.gif === false, onSelect: () => onExportVideo('gif') },
+    {
+      id: 'font',
+      label: FONT_PACKAGE ? 'Download font (.zip)' : 'Font file (.otf)',
+      icon: <CaseSensitive />,
+      quiet: true,
+      status: status('font'),
+      hint: busy.font ? 'Being made…' : FONT_PACKAGE ? 'Install it on your computer. It cycles a few versions of each letter.' : undefined,
+      onSelect: onExportFont,
+    },
+  ];
   return (
-    <DropdownMenu.Root onOpenChange={(o) => o && onShareOpen()}>
-      <DropdownMenu.Trigger asChild>
+    <ActionSheet
+      title="Share this letter"
+      entries={entries}
+      onOpenChange={(o) => o && onShareOpen()}
+      trigger={
         <Button
           variant="secondary"
           size="icon"
@@ -253,41 +277,25 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
         >
           {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}
         </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          side="bottom"
-          align="end"
-          sideOffset={8}
-          collisionPadding={12}
-          className={cn(menuContent, 'w-[236px]')}
-        >
-          <MenuItem onSelect={onShare} icon={<Link aria-hidden />}>Copy link</MenuItem>
-          <MenuItem onSelect={onDownload} icon={busy.download ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />} disabled={busy.download}>
-            Download image
-          </MenuItem>
-          {/* the letter writing itself out: made in a few seconds, saved when it's done */}
-          <MenuItem onSelect={() => onExportVideo('video')} icon={busy.video ? <Loader2 className="animate-spin" aria-hidden /> : <Film aria-hidden />} disabled={busy.video || exportable?.video === false}>
-            Download video
-          </MenuItem>
-          <DropdownMenu.Separator className="mx-2 my-1 h-px bg-border" />
-          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[0.7188rem] text-muted-foreground">More formats</DropdownMenu.Label>
-          <MenuItem onSelect={() => onExportVideo('gif')} icon={<ImagePlay aria-hidden />} disabled={busy.video || exportable?.gif === false} quiet>
-            Animated GIF
-          </MenuItem>
-          <MenuItem
-            onSelect={onExportFont}
-            icon={busy.font ? <Loader2 className="animate-spin" aria-hidden /> : <CaseSensitive aria-hidden />}
-            disabled={busy.font}
-            quiet
-            hint={FONT_PACKAGE ? 'Install it on your computer. It cycles a few versions of each letter.' : undefined}
-          >
-            {FONT_PACKAGE ? 'Download font (.zip)' : 'Font file (.otf)'}
-          </MenuItem>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      }
+    />
   );
+}
+
+/** Which of the busy jobs finished in the last couple of seconds (for a tick on its row). */
+function useJustDone(busy: PanelProps['busy']) {
+  const prev = useRef(busy);
+  const [done, setDone] = useState<Partial<Record<keyof PanelProps['busy'], boolean>>>({});
+  useEffect(() => {
+    const was = prev.current;
+    prev.current = busy;
+    const finished = (Object.keys(busy) as (keyof PanelProps['busy'])[]).filter((k) => was[k] && !busy[k]);
+    if (!finished.length) return;
+    setDone((d) => ({ ...d, ...Object.fromEntries(finished.map((k) => [k, true])) }));
+    const t = window.setTimeout(() => setDone((d) => ({ ...d, ...Object.fromEntries(finished.map((k) => [k, false])) })), 2200);
+    return () => window.clearTimeout(t);
+  }, [busy]);
+  return done;
 }
 
 /**

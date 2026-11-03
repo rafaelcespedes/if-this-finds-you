@@ -11,12 +11,19 @@ export interface Source {
 
 const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&?!.,;:\'"-()';
 
+/** Kept per hand: the writer's card asks on every render (each keystroke), though only a new hand changes it. */
+const sourcesOf = new WeakMap<Hand, Source[]>();
+
 export function handSources(p: Hand): Source[] {
+  const kept = sourcesOf.get(p);
+  if (kept) return kept;
   const seen = new Map<string, Source>();
   for (const ch of CHARS) {
     const v = choose(p, ch, undefined) as { source?: Source } | undefined;
     const s = v?.source;
     if (s && !seen.has(s.name)) seen.set(s.name, s);
   }
-  return [...seen.values()];
+  const sources = [...seen.values()];
+  sourcesOf.set(p, sources);
+  return sources;
 }

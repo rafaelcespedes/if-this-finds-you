@@ -1,6 +1,8 @@
 // Rolls the hands ahead off the main thread (the engine's sampler takes 40-60 ms a hand, several times that on a
 // slow phone): the page asks for the next few hands after this one, and the sibling, and gets each as it's rolled.
 // Only the newest ask matters: a newer one stops an older one between hands.
+// It runs in a copy of the writing worker (write.worker.ts loads it with the first RollAsk), so the tool downloads
+// one worker script, not two, and the copies that only write never load the sampler.
 import { offsetsForNewHand, type NoteState } from '@/lib/state';
 import { rollHand, takeVisitChance, withSample, type LockKey } from '@/lib/roll';
 import { pickSimilarHand } from '@/lib/hands';
@@ -9,8 +11,7 @@ import type { RollAsk, RollReply } from '@/lib/roll-protocol';
 let latest = 0;
 const post = (m: RollReply) => (self as unknown as Worker).postMessage(m);
 
-self.onmessage = (e: MessageEvent<RollAsk>) => {
-  const ask = e.data;
+export function roll(ask: RollAsk) {
   latest = ask.id;
   takeVisitChance(ask.visit);
   if (ask.kind === 'similar') {
@@ -34,4 +35,4 @@ self.onmessage = (e: MessageEvent<RollAsk>) => {
     setTimeout(step, 0);
   };
   step();
-};
+}
