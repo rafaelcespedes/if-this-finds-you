@@ -34,7 +34,7 @@ the objects. There's nothing to sell.
    *Part of the letter didn't arrive. Some apps shorten long links, so ask the sender to share it again.*
 
 8. **Be honest about limits, in the same quiet tone.**
-   *A font keeps three versions of each letter, so it repeats where the page doesn't.*
+   *A font keeps four or five versions of each letter, so it repeats where the page doesn't.*
    *These hands write the Latin alphabet.*
 
 9. **Talk to the reader as "you"; the site rarely says "we".** "We" appears only where a person is speaking for
@@ -59,7 +59,7 @@ the objects. There's nothing to sell.
 | Saving a picture | *Download image*, *Image downloaded* | save as an image, export, image saved |
 | The letter's words without the hand | *Read as text*, *Hide the text* | transcript, plain text (except *Edit as plain text* in the writing menu) |
 | The downloadable hand | font, *Download the font*, *Font downloaded* | export, file |
-| The font's limit | *three versions of each letter* | a few versions, alternates, cycles |
+| The font's limit | *four or five versions of each letter* (four for joined hands, five for print; see docs/FONTS.md) | a few versions, alternates, cycles |
 | Title separator | *Fonts · If This Finds You* | – , \|, : |
 
 ## Where it applies

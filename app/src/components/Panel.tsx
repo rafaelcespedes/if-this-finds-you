@@ -246,7 +246,7 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
       icon: <CaseSensitive />,
       quiet: true,
       status: status('font'),
-      hint: busy.font ? 'Being made…' : FONT_PACKAGE ? 'Install it on your computer. It keeps three versions of each letter; the page never repeats.' : undefined,
+      hint: busy.font ? 'Being made…' : FONT_PACKAGE ? 'Install it on your computer. It keeps four or five versions of each letter; the page never repeats.' : undefined,
       onSelect: onExportFont,
     },
   ];
