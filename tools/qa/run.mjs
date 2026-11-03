@@ -5,7 +5,8 @@
 //   node tools/qa/run.mjs --update        accept the current output as the new baseline (hashes + perf)
 //   node tools/qa/run.mjs --only=determinism,geometry      run some checks
 //   node tools/qa/run.mjs --skip=sheets,variety            skip some checks
-//   node tools/qa/run.mjs --quick         fewer seeds in variety/feel (for quick iteration)
+//   node tools/qa/run.mjs --quick         fewer seeds in variety/feel/proportions and a fixed sample of the regression
+//                                         matrix (for quick iteration and CI; can't be combined with --update)
 //   node tools/qa/run.mjs --fresh-seeds   contact sheets with 12 new random seeds (printed on the sheets)
 //   node tools/qa/run.mjs --root=../wt    test the engine in another checkout (e.g. a branch worktree)
 //   node tools/qa/regress.mjs             the fast gate: determinism, regression, coverage, contracts, geometry
@@ -66,6 +67,7 @@ const LABEL = { fail: '✗ FAIL', warn: '! warn', known: '~ KNOWN' };
 export async function main(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
   if (args.help) { console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').filter((l) => l.startsWith('//')).map((l) => l.slice(3)).join('\n')); return 0; }
+  if (args.update && args.quick) { console.error('--update needs the full run: the quick sample would write a partial baseline. Drop --quick.'); return 1; }
   const root = resolveRoot(argv);
   const outDir = path.join(QA_DIR, 'out');
   fs.mkdirSync(outDir, { recursive: true });

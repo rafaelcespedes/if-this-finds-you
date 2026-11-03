@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { buildMatrix, renderSpec, layerHashes, LAYERS, QA_DIR } from '../engine.mjs';
+import { buildMatrix, quickMatrix, renderSpec, layerHashes, LAYERS, QA_DIR } from '../engine.mjs';
 import { MATRIX_SEEDS } from '../config.mjs';
 
 const snapshot = (p) => JSON.stringify(Object.keys(p).sort().filter((k) => typeof p[k] !== 'function' && typeof p[k] !== 'object').map((k) => [k, p[k]]));
@@ -41,7 +41,8 @@ export async function run(ctx) {
   const { E, root } = ctx;
   const problems = [];
   const lines = [];
-  const specs = buildMatrix(E);
+  const all = buildMatrix(E);
+  const specs = ctx.args.quick ? quickMatrix(E, all) : all;
 
   // runtime trap: count any Math.random / Date.now call made while the engine renders
   const trap = { random: 0, clock: 0, where: [] };
@@ -95,7 +96,7 @@ export async function run(ctx) {
 
   for (const h of scanSource(root)) problems.push({ level: h.level, msg: `${h.what} in ${h.where}` });
 
-  lines.unshift(`${specs.length} matrix items · rendered twice: ${specs.length - twiceDiff.length - threw.length} identical · reverse order: ${reverseDiff.length ? reverseDiff.length + ' differ' : 'same'} · Math.random calls: ${trap.random}`);
+  lines.unshift(`${specs.length} matrix items${ctx.args.quick ? ` (quick sample of ${all.length})` : ''} · rendered twice: ${specs.length - twiceDiff.length - threw.length} identical · reverse order: ${reverseDiff.length ? reverseDiff.length + ' differ' : 'same'} · Math.random calls: ${trap.random}`);
 
   // ---------- regression vs baseline ----------
   const base = (ctx.baseline && ctx.baseline.items) || {};
@@ -109,8 +110,11 @@ export async function run(ctx) {
       changed.push({ id, layers: LAYERS.filter((_, i) => a[i] !== b[i]) });
     }
   }
-  for (const id in base) if (!(id in cur)) removed.push(id);
-  ctx.baselineNext.items = cur;
+  // the quick sample compares only what it rendered, and never writes the baseline (run.mjs refuses --quick --update)
+  if (!ctx.args.quick) {
+    for (const id in base) if (!(id in cur)) removed.push(id);
+    ctx.baselineNext.items = cur;
+  }
 
   const regression = { changed, added, removed, total: Object.keys(cur).length };
   if (!Object.keys(base).length) {

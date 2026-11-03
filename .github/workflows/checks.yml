@@ -1,0 +1,114 @@
+# Checks every update must pass before it goes live (docs/CHECKS.md).
+# Vercel holds a production deployment until the two jobs below pass on its commit ("Deployment Checks" in the
+# Vercel project). Vercel matches them by their job names: rename a job and the Vercel setting must change too.
+
+name: Checks
+
+on:
+  push:
+    branches: [preview, main]
+  pull_request:
+    branches: [preview, main]
+  workflow_dispatch:
+
+# A newer push to the same branch cancels an older run still in progress: only the newest update can go live,
+# and a cancelled run never lets its deployment through.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # explicit bash runs with -eo pipefail: a failing command can't hide behind a pipe
+    shell: bash
+
+jobs:
+  site:
+    name: "Site: build and smoke test"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24 # app/package.json engines
+          cache: npm
+          cache-dependency-path: |
+            app/package-lock.json
+            tools/smoke/package-lock.json
+
+      - name: Install the app
+        working-directory: app
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck (any TypeScript error fails)
+        working-directory: app
+        run: npm run typecheck
+
+      - name: Build (what Vercel runs)
+        working-directory: app
+        run: npm run build
+
+      - name: Lost Letters texts
+        run: node content/check-texts.mjs
+
+      - name: Install the smoke test
+        working-directory: tools/smoke
+        run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Smoke test (/, /letters, a letter; desktop and phone)
+        # the runner's own Google Chrome: no browser download
+        run: node tools/smoke/smoke.mjs 2>&1 | tee smoke.txt
+        env:
+          SMOKE_CHANNEL: chrome
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f smoke.txt ]; then
+            { echo '### Smoke test'; echo '```'; cat smoke.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-screenshots
+          path: tools/smoke/out/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  engine:
+    name: "Engine: quick QA"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Engine QA, quick sample (the whole matrix runs nightly)
+        run: node tools/qa/regress.mjs --quick
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f tools/qa/out/summary.txt ]; then
+            { echo '### Engine QA (quick)'; echo '```'; cat tools/qa/out/summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Keep the report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: engine-qa-quick
+          path: |
+            tools/qa/out/summary.txt
+            tools/qa/out/results.json
+          retention-days: 14
