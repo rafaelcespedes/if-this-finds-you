@@ -32,3 +32,7 @@ header's Menu takes them. The 404 page's hand-made copy of the header lists Abou
 8. The whole "Give back" section (section 8): its intro, the five sources and the Red Cross as the one related cause,
    and the note that we aren't connected to any of them. Donation links checked on each organisation's own site on
    3 November 2026; the Library of Congress was left out because its site's bot check blocked verification.
+9. The opening of "How it was made": "It started as a search for a font. Rafael wanted a handwritten face for Rueca,
+   another project of his, and couldn't find the hand he had in mind, so he tried making one. The experiment grew from
+   there: a happy accident that got a little out of hand." (From Rafael's own account; Rueca isn't linked, as the repo
+   has no public address for it.)

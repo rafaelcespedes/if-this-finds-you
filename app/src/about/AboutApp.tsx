@@ -299,6 +299,12 @@ export function AboutApp() {
         </Section>
 
         <Section id="made">
+          {/* Rafael's own story (his words, 3 Nov 2026). Rueca has no public address in the repo, so it isn't linked */}
+          <p>
+            It started as a search for a font. Rafael wanted a handwritten face for Rueca, another project of his, and
+            couldn’t find the hand he had in mind, so he tried making one. The experiment grew from there: a happy
+            accident that got a little out of hand.
+          </p>
           <p>
             {APP_NAME} is a lab experiment by Rafael Cespedes, a designer. It’s free, and it isn’t a business.
           </p>
