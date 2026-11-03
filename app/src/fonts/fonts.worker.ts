@@ -14,13 +14,15 @@ import { layout, makeHand, styleNames, getStyle, UPM, withOverrides, type Hand }
 import { CONTROLS, naturalValue, type PenSize } from '@/lib/controls';
 import { PARAM_KEYS, MODELLED_INK } from '@/lib/engine-features';
 import { writerName } from '@/lib/hands';
+import { branded } from '@/lib/brand';
+import { handSources } from '@/lib/credits';
 import { inkColor } from '@/lib/inks';
 import { getPaper } from '@/lib/papers';
 import { SAMPLES, shortAuthor } from '@/lib/samples';
 import { DEFAULT_STATE, encodeState } from '@/lib/state';
 import { clamp } from '@/lib/utils';
-import { PEN_LABEL, STYLE_LABEL, type Catalogue, type Constraints } from './filters';
-import { BOX, boxHeight, type FontEntry, type FromWorker, type LiveSpec, type Opening, type ToWorker } from './protocol';
+import { PEN_LABEL, STYLE_LABEL, penWords, type Catalogue, type Constraints } from './filters';
+import { BOX, boxHeight, type FontEntry, type FromWorker, type HandRecord, type LiveSpec, type Opening, type ToWorker } from './protocol';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
@@ -216,6 +218,26 @@ async function fontPackage(job: number, e: FontEntry) {
   post({ type: 'package', job, zip, filename: pkg.filename }, [zip]);
 }
 
+// ---------- a hand's record ----------
+
+const a = (w: string) => (/^[aeiou]/i.test(w) ? 'an' : 'a');
+function recordOf(e: FontEntry): HandRecord {
+  const p = handFor(e);
+  const st = getStyle(e.style) as any;
+  const t = st?.tradition ?? {};
+  let taught = '';
+  try { taught = engine.describeTraditions?.(p) ?? ''; } catch { /* fine */ }
+  const paper = getPaper(e.paper).name;
+  const pen = `${PEN_LABEL[e.pen] ?? e.pen}${e.tip && e.tip !== 'medium' ? `, ${e.tip} tip` : ''}`;
+  // a reader's credit: the product's name, without the engine's notes to its own docs
+  const sources = handSources(p).map((s) => ({ name: s.name, credit: branded(s.credit).replace(/\s*\([^)]*\.md[^)]*\)/g, ''), url: s.url }));
+  const school = e.style === 'print' || e.style === 'script' ? `an everyday ${e.family === 'script' ? 'joined' : 'print'} hand` : `${a(String(t.name ?? e.tradition))} ${t.name ?? e.tradition}`;
+  const about = `Drawn by the engine from ${school}, with ${a(penWords(e.pen))} ${penWords(e.pen)}, on ${a(paper)} ${paper.toLowerCase()}. ${e.name} is a fictional writer.`;
+  const core = (engine.GF_LATIN_CORE as string[] | string | undefined) ?? [];
+  const chars = (Array.isArray(core) ? core.join('') : String(core)).replace(/\s/g, '');
+  return { taught, tradition: { name: String(t.name ?? e.tradition), region: t.region, era: t.era }, pen, paper, sources, chars, about };
+}
+
 // ---------- messages ----------
 
 self.onmessage = async (ev: MessageEvent<ToWorker>) => {
@@ -246,6 +268,7 @@ self.onmessage = async (ev: MessageEvent<ToWorker>) => {
       case 'font': await fontSpecimen(m.job, m.entry, m.chars); return;
       case 'live': await liveSpecimen(m.job, m.entry, m.spec); return;
       case 'package': await fontPackage(m.job, m.entry); return;
+      case 'record': post({ type: 'record', job: m.job, record: recordOf(m.entry) }); return;
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

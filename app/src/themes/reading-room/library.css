@@ -1,0 +1,339 @@
+/* The library in the Reading Room (All letters and the letter page), after the approved layout study
+   (https://claude.ai/artifact/NXikDzoCmM4KFa41nvzsG7, proposals 2 and 3). Written by the library session; the look's
+   tokens and type (--rr-*) are reading-room.css's. House rules: one grid, hairlines never boxes, notes beside facts. */
+
+/* ---------- All letters: the timeline as a ruled strip on the room, no box ---------- */
+html[data-look='reading-room'] .archive-dock {
+  border: 0;
+  border-top: 1px solid color-mix(in oklab, var(--rr-ink) 35%, transparent);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding-inline: 0.25rem;
+}
+/* the room fades in under the strip (and its caption), so letters pass beneath it, never through its words */
+html[data-look='reading-room'] .archive-dock-box::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -3rem 0 calc(-14px - env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--desk) calc(100% - 3rem), color-mix(in oklab, var(--desk) 0%, transparent));
+}
+html[data-look='reading-room'] .era-seg,
+html[data-look='reading-room'] .era-seg.is-on {
+  background: none;
+  border-radius: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .era-seg:hover {
+    background: none;
+    color: var(--rr-ink);
+  }
+}
+/* the chosen century: ink, underlined; the others step back (archive.css dims their marks) */
+html[data-look='reading-room'] .era-seg.is-on {
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .era-seg.is-on > span:last-child {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+/* the open search: a ruled line to write on, not a box */
+html[data-look='reading-room'] .archive-dock .archive-field {
+  border: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--rr-ink) 35%, transparent);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+html[data-look='reading-room'] .archive-dock .archive-field:focus {
+  border-bottom-color: var(--rr-ink);
+}
+/* "Letters from the 1800s ×": a line of small capitals over the strip */
+html[data-look='reading-room'] .archive-caption {
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .dock-switch {
+  border-radius: 2px;
+  color: var(--rr-ink);
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .dock-switch:hover {
+    background: none;
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+    text-decoration-thickness: 1px;
+  }
+}
+
+/* ---------- All letters: the table (Canvas.tsx, layTable and TableCard) ---------- */
+/* only the sheet and its label open the letter: the bare shelf above a small sheet is the table (a drag starts there) */
+html[data-look='reading-room'] .table-card {
+  pointer-events: none;
+}
+html[data-look='reading-room'] .table-sheet,
+html[data-look='reading-room'] .table-label {
+  pointer-events: auto;
+}
+/* each sheet at its paper's size on its row's shelf, barely askew (the label stays straight) */
+html[data-look='reading-room'] .table-sheet {
+  transform: rotate(var(--tilt, 0deg));
+}
+/* the museum label: the title, then place, year and, for a letter lost in transit, why, in small capitals */
+html[data-look='reading-room'] .table-label {
+  padding: 0.625rem 0.25rem 0 0;
+}
+html[data-look='reading-room'] .table-title {
+  font-family: var(--rr-book);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--rr-ink);
+  text-wrap: pretty;
+  /* two lines at most, so a label never reaches the next row or the heading (Canvas.tsx sizes the room for four) */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+html[data-look='reading-room'] .table-meta {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin-top: 0.25rem;
+  font-family: var(--rr-caps);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .table-status {
+  color: var(--rr-red);
+}
+@media (min-width: 640px) {
+  html[data-look='reading-room'] .table-title {
+    font-size: 0.90625rem;
+  }
+  html[data-look='reading-room'] .table-meta {
+    font-size: 0.71875rem;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .table-card:hover .table-title {
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, var(--rr-ink) 40%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+}
+
+/* ---------- All letters as a list: a finding aid (FindingList.tsx) ---------- */
+html[data-look='reading-room'] .fa {
+  margin-top: 0.5rem;
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .fa-sort {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  font-family: var(--rr-caps);
+  font-size: 0.8125rem;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .fa-sort-by {
+  padding: 0.375rem 0.125rem;
+  color: var(--rr-muted);
+  text-transform: inherit;
+  letter-spacing: inherit;
+  transition: color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .fa-sort-by.is-on {
+  color: var(--rr-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .fa-sort-by:hover {
+    color: var(--rr-ink);
+  }
+}
+html[data-look='reading-room'] .fa-sep {
+  color: var(--rr-faint);
+}
+/* a century (or a letter of the alphabet) between two hairlines */
+html[data-look='reading-room'] .fa-group {
+  margin-top: 2.25rem;
+}
+html[data-look='reading-room'] .fa-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+  font-family: var(--rr-caps);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .fa-head::before,
+html[data-look='reading-room'] .fa-head::after {
+  content: '';
+  border-top: 1px solid var(--rr-rule);
+}
+/* a row: number, title, who to whom, place, year, ruled underneath */
+html[data-look='reading-room'] .fa-row {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr) 3rem;
+  align-items: baseline;
+  column-gap: 1.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--rr-rule);
+  outline: none;
+}
+html[data-look='reading-room'] .fa-row:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+html[data-look='reading-room'] .fa-no {
+  font-family: var(--rr-caps);
+  font-size: 0.78125rem;
+  letter-spacing: 0.05em;
+  color: var(--rr-red);
+  white-space: nowrap;
+}
+html[data-look='reading-room'] .fa-title {
+  font-family: var(--rr-book);
+  font-size: 1.03125rem;
+  line-height: 1.3;
+  color: var(--rr-ink);
+  text-wrap: pretty;
+}
+html[data-look='reading-room'] .fa-writer {
+  font-family: var(--rr-book);
+  font-style: italic;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .fa-place {
+  font-family: var(--rr-caps);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .fa-status {
+  color: var(--rr-red);
+}
+html[data-look='reading-room'] .fa-year {
+  text-align: right;
+  font-family: var(--rr-book);
+  font-size: 1rem;
+  color: var(--rr-ink);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .fa-row:hover .fa-title {
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, var(--rr-ink) 40%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+}
+/* phones: number and year on one line, then the title, who to whom, and the place */
+@media (max-width: 719px) {
+  html[data-look='reading-room'] .fa-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'no year' 'title title' 'writer writer' 'place place';
+    row-gap: 0.125rem;
+  }
+  html[data-look='reading-room'] .fa-no { grid-area: no; }
+  html[data-look='reading-room'] .fa-year { grid-area: year; }
+  html[data-look='reading-room'] .fa-title { grid-area: title; margin-top: 0.125rem; }
+  html[data-look='reading-room'] .fa-writer { grid-area: writer; }
+  html[data-look='reading-room'] .fa-place { grid-area: place; margin-top: 0.125rem; }
+}
+
+/* ---------- the table: one letter lifted (under the pointer, or the keyboard's focus) ---------- */
+html[data-look='reading-room'] .table-writer {
+  display: none;
+  margin-top: 0.125rem;
+  font-family: var(--rr-book);
+  font-style: italic;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .table-card:focus-visible {
+  outline: none;
+}
+html[data-look='reading-room'] .table-card:focus-visible .table-sheet {
+  outline: 2px solid var(--ring);
+  outline-offset: 5px;
+}
+html[data-look='reading-room'] .table-item:has(.table-card:focus-visible) {
+  z-index: 2;
+}
+html[data-look='reading-room'] .table-card:focus-visible .table-writer {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+html[data-look='reading-room'] .table-card:focus-visible .table-label {
+  background: var(--desk);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .table-item:has(.table-card:hover) {
+    z-index: 2;
+  }
+  html[data-look='reading-room'] .table-card:hover .table-sheet {
+    transform: translateY(-0.25rem) rotate(var(--tilt, 0deg));
+    filter: drop-shadow(0 0.5rem 0.75rem color-mix(in oklab, var(--rr-ink) 14%, transparent));
+  }
+  html[data-look='reading-room'] .table-card:hover .table-writer {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  /* the label grows a line: the room behind it, so it reads over a letter below */
+  html[data-look='reading-room'] .table-card:hover .table-label {
+    background: var(--desk);
+  }
+  /* the others step back */
+  html[data-look='reading-room'] .letter-canvas:has(.table-card:hover) .table-item:not(:has(.table-card:hover)) {
+    opacity: 0.72;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-look='reading-room'] .table-sheet {
+    transition: transform 200ms var(--ease-out), filter 200ms var(--ease-out);
+  }
+  html[data-look='reading-room'] .table-item {
+    transition: opacity 200ms var(--ease-out);
+  }
+}

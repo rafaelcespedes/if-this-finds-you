@@ -161,7 +161,7 @@ export function paintPaper(ctx: Ctx2D, paper: PaperSpec, o: PaintOptions) {
   if (paper.folds) folds(ctx, paper, k);
   if (paper.flaps) flaps(ctx, paper, k);
   if (fin.gum) gumEdge(ctx, paper, k, seed);
-  if (o.marks?.length) printMarks(ctx, o.marks, k, 'under');
+  if (o.marks?.length) printMarks(ctx, o.marks, k, 'under', paper);
   if (outline) for (const rim of outline.rims) rimLayer(ctx, rim, k, o.holeFill);
   ctx.restore();
   // fibres poke out past a deckled or torn edge

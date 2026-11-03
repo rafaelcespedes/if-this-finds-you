@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { CaseSensitive, ChevronDown, LayoutDashboard, Pointer } from 'lucide-react';
+import { ChevronDown, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
-import { APP_NAME, NAME_WITH_DESCRIPTOR, withLogo } from '@/lib/brand';
-import { Wordmark } from '@/components/Wordmark';
+import { APP_NAME, NAME_WITH_DESCRIPTOR } from '@/lib/brand';
+import { SiteHeader, type Kept } from '@/components/SiteHeader';
 import { styleCard } from '@/lib/styles';
 import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
-import { AboutHand, MyLetters, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
+import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -52,7 +52,6 @@ import { PENS_LIVE } from '@/lib/pens';
 import { perf } from '@/lib/perf';
 import { MAX_LETTER, linkIssue, offsetsForNewHand, shareUrl } from '@/lib/state';
 import { Notice } from '@/components/Notice';
-import { FONTS_URL } from '@/fonts/links';
 import { Button } from '@/components/ui/button';
 import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
@@ -81,6 +80,21 @@ function writePref(key: string, v: string) {
 const editLog = new EditLog();
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
 const TAIL_KEY = 'seedhand:typed';
+/** in a shared letter's header: no kept letters (picking one would keep their letter as yours) */
+const NO_KEPT: Kept = { list: [], onOpen: () => {} };
+/** My letters, picked on another page (/?kept=<savedAt>): read once at load and taken off the address */
+let keptAsked: number | null = (() => {
+  try {
+    const q = new URLSearchParams(location.search);
+    if (!q.has('kept')) return null;
+    const at = Number(q.get('kept'));
+    q.delete('kept');
+    history.replaceState(history.state, '', `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`);
+    return Number.isFinite(at) && at > 0 ? at : null;
+  } catch {
+    return null;
+  }
+})();
 /** a paste (or dictation) this long is written down at once instead of at the pen's pace */
 const WRITE_AT_ONCE = 200;
 /** what the hands can write (the Latin alphabet and its marks); anything else stays in plain print */
@@ -187,6 +201,12 @@ export default function App() {
       update({ text: d.text, inkLog: d.inkLog, marks: d.marks ?? [], replyTo: d.replyTo ?? null, signed: !!d.signed, sample: null });
     },
   };
+  // a kept letter picked from My letters on another page comes back onto the desk (once, even if effects run twice)
+  useEffect(() => {
+    const at = keptAsked;
+    keptAsked = null;
+    if (at) letterActions.onBackToMine(at);
+  }, []);
 
   const request = requestFor(state, natural, eff);
   const reqKey = JSON.stringify(request);
@@ -1067,80 +1087,24 @@ export default function App() {
           )}
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: `${(6.25 * wide).toFixed(3)}rem` } : undefined}
         >
-          <header
+          {/* the site's one header (components/SiteHeader.tsx): the places, My letters, and on phones Share and the Menu */}
+          <SiteHeader
             ref={headerRef}
+            // a shared letter (the reader view) isn't one of the places: nothing marked, and the wordmark and Write a
+            // letter lead to a desk of your own (its Write your own button is under the letter)
+            current={reader ? undefined : 'write'}
+            // a shared letter is someone else's: your kept letters wait until you write your own
+            kept={reader ? NO_KEPT : { list: kept, found: letterActions.found, onOpen: letterActions.onBackToMine }}
+            // no panel here: Share comes up to the header
+            action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
+            quiet={editing && !isDesktop}
             style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
-            className={cn(
-              // clear of a notch or camera island when the phone is sideways
-              'absolute top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] flex items-start justify-between gap-4 text-[0.7812rem] text-muted-foreground transition-opacity duration-200 ease-out sm:right-[max(2rem,env(safe-area-inset-right,0px))] sm:left-[max(2rem,env(safe-area-inset-left,0px))] lg:inset-x-10 lg:top-5',
-              !desk && 'opacity-0',
-              !reader && 'pointer-events-none',
-            )}
+            className={cn('z-auto transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
           >
-            {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
-            <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
-            {/* large text: the links and chips wrap onto a second row rather than running off the screen */}
-            <span className={cn('flex min-w-0 flex-wrap justify-end gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
-              {reader ? (
-                <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[var(--rule-link)] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
-                  Write your own
-                </button>
-              ) : (
-                // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state,
-                // and what Find another (or a link) brought
-                <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : announced}</span>
-              )}
-              {/* the whole library of found letters (the archive); on phones a small chip, with Share beside it */}
-              {!isDesktop && !reader ? (
-                <span className={cn('pointer-events-auto flex items-center gap-1.5 transition-opacity duration-150', editing && 'pointer-events-none opacity-0')}>
-                  {/* your letters kept on this device: only when there's one */}
-                  <MyLetters letter={letterActions} variant="chip" />
-                  <a
-                    href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
-                    aria-label="All letters"
-                    title="All letters"
-                    className="relative grid size-[32px] place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  >
-                    <LayoutDashboard aria-hidden className="size-[16px]" />
-                  </a>
-                  <a
-                    href={withLogo(FONTS_URL)}
-                    aria-label="Fonts"
-                    title="Fonts"
-                    className="relative grid size-[32px] place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  >
-                    <CaseSensitive aria-hidden className="size-[16px]" />
-                  </a>
-                  <ShareMenu {...panelProps} size="chip" />
-                </span>
-              ) : (
-              <>
-              {!reader && <MyLetters letter={letterActions} variant="link" />}
-              <a
-                href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
-                className={cn(
-                  // a big enough target without making the line taller (the sheet's label sits just under it)
-                  "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
-                  editing && !isDesktop && 'pointer-events-none opacity-0',
-                )}
-              >
-                All letters
-              </a>
-              {/* every hand as an open font (the fonts page) */}
-              <a
-                href={withLogo(FONTS_URL)}
-                className={cn(
-                  // a big enough target without making the line taller (the sheet's label sits just under it)
-                  "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
-                  editing && !isDesktop && 'pointer-events-none opacity-0',
-                )}
-              >
-                Fonts
-              </a>
-              </>
-              )}
-            </span>
-          </header>
+            {/* no hints up here: they come as ghosts by the letter, once; screen readers still hear the state, and what
+                Find another (or a link) brought */}
+            {!reader && <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : announced}</span>}
+          </SiteHeader>
           <div ref={stageRef} className="w-full">
           <div className={cn(replyDesk && 'mx-auto flex items-start')} style={replyDesk ? { width: replyDesk.colW + replyDesk.mineW } : undefined}>
           {replyDesk && found && pxPerMm > 0 && (

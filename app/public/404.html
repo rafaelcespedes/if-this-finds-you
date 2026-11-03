@@ -36,9 +36,46 @@
         grid-template-rows: auto 1fr;
         padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
       }
-      header { padding: 4px 0 0; }
-      header a { display: inline-block; border-radius: 3px; }
-      header img { display: block; height: 21px; width: auto; }
+      /* the site's header, as every page has it (components/SiteHeader.tsx, docs/NAVIGATION.md): the wordmark, then
+         the three places in the same words and order (the room's small capitals); on phones a Menu chip opens
+         them. It can't share the app's code, so keep it in step by hand. */
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; }
+      header a { border-radius: 3px; }
+      .logo { display: flex; align-items: center; height: 32px; margin: 0 -4px; padding: 0 4px; }
+      .logo img { display: block; height: 21px; width: auto; }
+      .places { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
+      .places a {
+        position: relative; display: inline-block; padding: 2px 6px; color: var(--text); text-decoration: none;
+        font-size: 0.875rem; font-weight: 400; letter-spacing: 0.05em; text-transform: lowercase; font-variant-caps: small-caps;
+      }
+      .places a::after { content: ''; position: absolute; inset: -12px -4px; }
+      .menu { display: none; position: relative; }
+      .menu summary {
+        position: relative; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 3px; cursor: pointer;
+        list-style: none; border: 1px solid var(--hairline); background: var(--paper); color: var(--text);
+      }
+      .menu summary::-webkit-details-marker { display: none; }
+      .menu summary::after { content: ''; position: absolute; inset: -6px; }
+      .menu[open] .places {
+        position: absolute; z-index: 1; top: 40px; right: 0; display: block; width: min(18rem, calc(100vw - 24px)); padding: 6px;
+        border: 1px solid var(--hairline); border-top-color: var(--text); border-radius: 3px; background: var(--paper);
+        box-shadow: 0 14px 34px -14px rgba(30, 39, 51, 0.42);
+      }
+      .menu[open] .places a { display: flex; align-items: center; min-height: 44px; padding: 0 12px; }
+      .menu[open] .places a::after { content: none; }
+      @media (max-width: 639px) {
+        header > nav { display: none; }
+        .menu { display: block; }
+      }
+      /* the same spot as on every other page: 16 px from the edges on phones, 32 px from 640 px, 40 px from 1024 px */
+      @media (min-width: 640px) {
+        body { padding-left: max(32px, env(safe-area-inset-left)); padding-right: max(32px, env(safe-area-inset-right)); }
+      }
+      @media (min-width: 1024px) {
+        body { padding-top: max(20px, env(safe-area-inset-top)); padding-left: max(40px, env(safe-area-inset-left)); padding-right: max(40px, env(safe-area-inset-right)); }
+        header, .logo { min-height: 36px; height: 36px; }
+        .logo img { height: 22px; }
+      }
       main { display: grid; place-items: center; padding: 24px 0 12vh; }
       .sheet {
         position: relative;
@@ -70,20 +107,41 @@
       }
       .button:active { transform: translateY(0.5px); }
       .link { color: var(--text); font-size: 0.9375rem; font-weight: 400; text-decoration: underline; text-decoration-color: var(--rule-link); text-underline-offset: 3px; padding: 10px 0; }
-      a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      a:focus-visible, summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
       @media (hover: hover) and (pointer: fine) {
         .button:hover { color: #7e2f21; text-decoration-color: currentColor; }
         .link:hover { text-decoration-color: var(--text); }
+        .places a:hover, .menu summary:hover { background: #e9e2d2; }
       }
       @media (forced-colors: active) {
         .sheet { border-color: CanvasText; }
         .button { color: LinkText; }
+        .menu summary { border-color: ButtonText; }
       }
     </style>
   </head>
   <body>
     <header>
-      <a href="/" aria-label="If This Finds You, home"><img src="/brand/wordmark-5.svg" alt="If This Finds You" /></a>
+      <a class="logo" href="/" aria-label="If This Finds You: write a letter"><img src="/brand/wordmark-5.svg" alt="If This Finds You" /></a>
+      <nav aria-label="Site">
+        <ul class="places">
+          <li><a href="/">Write a letter</a></li>
+          <li><a href="/letters">All letters</a></li>
+          <li><a href="/fonts">Fonts</a></li>
+          <li><a href="/about">About</a></li>
+        </ul>
+      </nav>
+      <details class="menu">
+        <summary aria-label="Menu"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg></summary>
+        <nav aria-label="Site">
+          <ul class="places">
+            <li><a href="/">Write a letter</a></li>
+            <li><a href="/letters">All letters</a></li>
+            <li><a href="/fonts">Fonts</a></li>
+            <li><a href="/about">About</a></li>
+          </ul>
+        </nav>
+      </details>
     </header>
     <main>
       <div class="sheet">
@@ -96,5 +154,15 @@
         </div>
       </div>
     </main>
+    <script>
+      // the phone menu: Escape or a tap elsewhere closes it
+      (function () {
+        var menu = document.querySelector('.menu');
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); }
+        });
+        document.addEventListener('click', function (e) { if (menu.open && !menu.contains(e.target)) menu.open = false; });
+      })();
+    </script>
   </body>
 </html>

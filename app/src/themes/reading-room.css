@@ -245,27 +245,19 @@ html[data-look='reading-room'] .rr-icon svg {
   }
 }
 
-/* ---------- headers: the page links in small capitals ---------- */
-html[data-look='reading-room'] header a:not(:has(svg, img)),
-html[data-look='reading-room'] main > header button:not(:has(svg)) {
+/* ---------- the site header (components/SiteHeader.tsx): the places in the label role, in small capitals ---------- */
+html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-action] button),
+html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site-label]) {
   font-family: var(--rr-label-face);
   font-variant-caps: var(--rr-label-caps);
   letter-spacing: var(--rr-label-tracking);
   font-size: var(--rr-label-size);
   font-weight: var(--rr-label-weight);
+  text-transform: none;
   color: var(--rr-ink);
 }
-/* the library's and the fonts page's links wrap under the wordmark's line rather than run off a phone */
-html[data-look='reading-room'] header > div:last-child {
-  flex-shrink: 1;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  row-gap: 0;
-  column-gap: 0.625rem;
-}
-/* the phone header's chips: ruled squares, no lift */
-html[data-look='reading-room'] main > header a[aria-label],
-html[data-look='reading-room'] main > header [data-chip] {
+/* the phone header's chips (Menu, Share): ruled squares, no lift */
+html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]) {
   border-radius: 3px;
   border-color: var(--rr-edge);
   background: var(--rr-card);
@@ -1225,16 +1217,6 @@ html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag) .rr-s
 html[data-look='reading-room'] .rr-ref {
   font-family: var(--rr-number-face);
   font-weight: var(--rr-number-weight);
-}
-/* the shared header's places (data-site-* hooks, docs/NAVIGATION.md): the label role, in the face's small capitals */
-html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-action] button),
-html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site-label]) {
-  font-family: var(--rr-label-face);
-  font-size: var(--rr-label-size);
-  font-weight: var(--rr-label-weight);
-  letter-spacing: var(--rr-label-tracking);
-  font-variant-caps: var(--rr-label-caps);
-  text-transform: none;
 }
 /* control: everything you operate (the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
    tooltips, the writing tray), in the control face at one size; actions, numbers and labels inside keep their roles */

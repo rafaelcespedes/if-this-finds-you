@@ -50,12 +50,30 @@ export interface LiveSpec {
 
 export interface Opening { text: string; id: string; by: string; year?: number }
 
+/** What a hand's record says (worked out in the worker when the hand is opened). */
+export interface HandRecord {
+  /** "Schooled in: American business hand (Palmer Method). Later habits: … (19%)." */
+  taught: string;
+  tradition: { name: string; region?: string; era?: string };
+  /** "Fountain pen, medium tip" */
+  pen: string;
+  /** "Letter pad" */
+  paper: string;
+  /** every copybook, plate and drawing its letters come from, with the credit each asks for */
+  sources: { name: string; credit: string; url?: string }[];
+  /** every character the font has (its glyph set) */
+  chars: string;
+  /** one plain sentence on how the hand was made */
+  about: string;
+}
+
 export type ToWorker =
   | { type: 'hello' }
   | { type: 'set'; req: number; setSeed: string; page: number; count: number; constraints: Constraints; neatOnly: boolean }
   | { type: 'font'; job: number; entry: FontEntry; chars: string }
   | { type: 'live'; job: number; entry: FontEntry; spec: LiveSpec }
-  | { type: 'package'; job: number; entry: FontEntry };
+  | { type: 'package'; job: number; entry: FontEntry }
+  | { type: 'record'; job: number; entry: FontEntry };
 
 export type FromWorker =
   | { type: 'ready'; catalogue: Catalogue }
@@ -63,6 +81,7 @@ export type FromWorker =
   | { type: 'font'; job: number; otf: ArrayBuffer; chars: string; ms: number }
   | { type: 'live'; job: number; blob: Blob; width: number; height: number; clipped: boolean; ms: number }
   | { type: 'package'; job: number; zip: ArrayBuffer; filename: string }
+  | { type: 'record'; job: number; record: HandRecord }
   | { type: 'failed'; job?: number; req?: number; message: string };
 
 /**
