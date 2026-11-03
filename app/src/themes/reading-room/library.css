@@ -284,10 +284,10 @@ html[data-look='reading-room'] .table-card:focus-visible .table-label {
 }
 @media (prefers-reduced-motion: no-preference) {
   html[data-look='reading-room'] .table-sheet {
-    transition: transform 200ms var(--ease-out), filter 200ms var(--ease-out);
+    transition: transform var(--st-dur, 150ms) var(--ease-out), filter var(--st-dur, 150ms) var(--ease-out);
   }
   html[data-look='reading-room'] .table-item {
-    transition: opacity 200ms var(--ease-out);
+    transition: opacity var(--st-dur, 150ms) var(--ease-out);
   }
 }
 
@@ -647,4 +647,46 @@ html[data-look='reading-room'] .sp .sp-reply {
   font-weight: var(--rr-action-weight, 600);
   line-height: var(--rr-action-leading, 1.2);
   letter-spacing: var(--rr-action-tracking, 0);
+}
+
+/* ---------- states (the shared state tokens, today's values as fallbacks): a press for every control, hover for every
+   link, red words deepen and never sit on the ink wash ---------- */
+html[data-look='reading-room'] :is(.fa-sort-by, .sp-quiet button, .sp-record-open, .sp-hand, .sp-actions button, .sp-sheet-no, .era-seg):active {
+  background: var(--st-press, var(--rc-ctl-press, color-mix(in oklab, var(--rr-ink) 16%, transparent)));
+  border-radius: 3px;
+  scale: var(--st-scale, 0.97);
+  transition-duration: var(--dur-press, 100ms);
+}
+/* a row: its title underlines and the row takes the hover wash while pressed */
+html[data-look='reading-room'] :is(.fa-row, .sp-next-link):active {
+  background: var(--st-hover, var(--rc-ctl-hover, color-mix(in oklab, var(--rr-ink) 11%, transparent)));
+}
+html[data-look='reading-room'] .fa-row:active .fa-title,
+html[data-look='reading-room'] .sp-next-link:active .sp-next-title {
+  text-decoration: underline 1px currentColor;
+  text-underline-offset: 0.2em;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .sp-link:hover {
+    text-decoration-color: currentColor;
+  }
+  html[data-look='reading-room'] .sp-ref:hover {
+    background: var(--st-accent-hover, color-mix(in oklab, var(--rr-red) 10%, transparent));
+    border-radius: 2px;
+  }
+  html[data-look='reading-room'] .sp-reply:hover {
+    color: var(--rr-red-deep);
+  }
+}
+html[data-look='reading-room'] .sp-ref:active {
+  background: var(--st-accent-press, color-mix(in oklab, var(--rr-red) 16%, transparent));
+  border-radius: 2px;
+}
+/* Write a reply pressed: deeper red on the red wash (red words never go on the ink wash: 4.41:1) */
+html[data-look='reading-room'] .sp-reply:active {
+  color: var(--rr-red-deep);
+  background: var(--st-accent, color-mix(in oklab, var(--rr-red) 10%, transparent));
+  border-radius: 3px;
+  scale: var(--st-scale, 0.97);
+  transition-duration: var(--dur-press, 100ms);
 }

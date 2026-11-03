@@ -481,9 +481,12 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
     return () => window.removeEventListener('keydown', on);
   }, [active, glideTo, narrow]);
 
-  // Tab: a letter that takes the focus comes to the middle
+  // Tab: a letter that takes the focus comes to the middle. Keyboard focus only: a click focuses the link too (in
+  // Chromium), and gliding then would carry the letter out from under the pointer before the click lands
   const onFocusIn = (e: FocusEvent) => {
-    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-place]');
+    const t = e.target as HTMLElement;
+    try { if (!t.matches(':focus-visible')) return; } catch { /* an older browser: glide as before */ }
+    const el = t.closest<HTMLElement>('[data-place]');
     if (!el) return;
     const it = field.items.find((x) => x.id === el.dataset.place);
     if (!it) return;
