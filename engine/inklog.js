@@ -19,9 +19,9 @@
 //   pen    { kind, from?, to? }             'dry' (those glyphs came out faint), 'retrace' (gone over again),
 //                                            'restart' (fresh ink)
 //   move   { to: 'ps', size? }              the pen goes below the text for a P.S.
-//   sheet  { why }                          'next' (the page is full: the text continues), 'fresh' (start
+//   sheet  { why, copy? }                   'next' (the page is full: the text continues), 'fresh' (start
 //                                            over: the old sheet becomes a draft), 'fair' (a fair copy: a fresh
-//                                            sheet; the copy's own write events follow)
+//                                            sheet; the copy's own write events follow: `copy` of them)
 //   session { }                             reopened later (v2)
 //
 // Reading order (§4.3): writes append, an insert splices directly after its anchor, so continued typing
@@ -151,7 +151,7 @@ const ENC = {
   over: (e) => ['o', e.at, e.ch, e.blot ? 1 : 0],
   insert: (e) => ['i', e.after, e.text, e.over ? e.over[0] : null, e.over ? e.over[1] : null],
   mark: (e) => ['m', e.after, e.kind], underline: (e) => ['u', e.from, e.to],
-  pen: (e) => ['p', e.kind, e.from, e.to], move: (e) => ['v', e.to, e.size], sheet: (e) => ['s', e.why], session: () => ['n'],
+  pen: (e) => ['p', e.kind, e.from, e.to], move: (e) => ['v', e.to, e.size], sheet: (e) => ['s', e.why, e.copy], session: () => ['n'],
 };
 const DEC = {
   w: (a) => (a[2] ? { t: 'write', text: a[1], cont: true } : { t: 'write', text: a[1] }), b: () => ({ t: 'break' }),
@@ -160,7 +160,7 @@ const DEC = {
   i: (a) => clean({ t: 'insert', after: a[1], text: a[2], over: a[3] != null ? [a[3], a[4]] : undefined }),
   m: (a) => ({ t: 'mark', after: a[1], kind: a[2] }), u: (a) => ({ t: 'underline', from: a[1], to: a[2] }),
   p: (a) => clean({ t: 'pen', kind: a[1], from: a[2], to: a[3] }), v: (a) => clean({ t: 'move', to: a[1], size: a[2] }),
-  s: (a) => ({ t: 'sheet', why: a[1] }), n: () => ({ t: 'session' }),
+  s: (a) => clean({ t: 'sheet', why: a[1], copy: a[2] }), n: () => ({ t: 'session' }),
 };
 function clean(o) { for (const k in o) if (o[k] === undefined || o[k] === null) delete o[k]; return o; }
 const trim = (a) => { while (a.length > 1 && (a[a.length - 1] == null || a[a.length - 1] === 0 || a[a.length - 1] === '')) a.pop(); return a; };
