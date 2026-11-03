@@ -9,7 +9,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { DropdownMenu } from 'radix-ui';
 import { Download, Link2, Loader2, Share, Shuffle, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Advanced, Credits, HandControls, PenPaperControls, WritingControls, type PanelProps } from '@/components/Panel';
+import { Advanced, Credits, HandControls, LetterStatus, PenPaperControls, WritingControls, type PanelProps } from '@/components/Panel';
 import { cn } from '@/lib/utils';
 
 export type Detent = 'peek' | 'half' | 'full';
@@ -278,6 +278,7 @@ export function ControlSheet({ open, detent, onDetent, onMetrics, onDragging, on
           </Button>
           <ShareMenu {...props} />
         </div>
+        <LetterStatus {...props} compact className="-mt-1 mb-2.5 pl-1" />
         <div role="tablist" aria-label="Controls" onKeyDown={onTabKey} className="mb-3 grid grid-cols-3 gap-0.5 rounded-xl bg-secondary p-0.5">
           {TABS.map((t) => {
             const on = expanded && t.id === tab;

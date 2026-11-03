@@ -29,7 +29,9 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   historical hands (Chancery). The credit sits under the sheet ("Letter: Kamma Rahbek, 1813", with the source
   in the provenance card), and "Blank page" starts from nothing. The first edit (typing, an underline) makes the
   text yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a
-  sample.
+  sample. There's always a way back: under New hand the page says what it holds ("A found letter" or "Your
+  letter"), with "Another letter" / "Read a found letter"; your own letter is kept on this device (never in a
+  link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter doesn't come back within ten hands.
 - **Ink mode** (the default where the engine writes in ink, `lib/ink.ts`): what's written stays. Typed letters
   wait as faint thoughts and the pen writes them a few letters behind, at handwriting speed, so most slips
   are fixed before ink touches paper. Change something already written and the writer corrects it their own
@@ -187,7 +189,8 @@ src/
     engine-features.ts    what the engine supports now; preview flag; placeholder params
     edits.ts              Edit events (the seed of the ink log)
     styles.ts             Print / Joined families and the school cards' names (from getStyle)
-    samples.ts            the sample letters: order, pairing with styles, credits
+    samples.ts            the sample letters: pick by seed, pairing with styles, no repeats, credits
+    drafts.ts             your own letters, kept on this device while you read found ones
     ink.ts                Ink mode: the session (planner + pen), the ink page as a Live, marks and thoughts
     pens.ts, inks.ts, occasions.ts
     state.ts              the note config and the share-link format

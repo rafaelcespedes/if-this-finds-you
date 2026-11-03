@@ -120,16 +120,23 @@ function rollOffsets(natural: Hand, style: string, o: { scale: number; wild: boo
  * New hand, and while the note is still a sample letter, the new seed's letter too (lib/samples.ts): before
  * anyone writes, every hand comes with its own text. Once the text is yours, only the look changes.
  */
-export function rollHand(s: NoteState, opts: { variety: number; locked: Set<LockKey> }): Partial<NoteState> {
+export function rollHand(s: NoteState, opts: { variety: number; locked: Set<LockKey>; avoid?: ReadonlySet<string> }): Partial<NoteState> {
   const look = rollLook(s, opts);
   if (!s.sample) return look;
-  const next = sampleForSeed(look.seed ?? s.seed, look.style ?? s.style);
+  const next = sampleForSeed(look.seed ?? s.seed, look.style ?? s.style, withCurrent(opts.avoid, s.sample));
   return next ? { ...look, sample: next.id, text: next.text, marks: [] } : look;
 }
 
 /** A sibling (or any new seed) on an untouched sample letter brings that seed's letter. */
-export function withSample(s: NoteState, look: Partial<NoteState>): Partial<NoteState> {
+export function withSample(s: NoteState, look: Partial<NoteState>, avoid?: ReadonlySet<string>): Partial<NoteState> {
   if (!s.sample) return look;
-  const next = sampleForSeed(look.seed ?? s.seed, look.style ?? s.style);
+  const next = sampleForSeed(look.seed ?? s.seed, look.style ?? s.style, withCurrent(avoid, s.sample));
   return next ? { ...look, sample: next.id, text: next.text, marks: [] } : look;
+}
+
+/** the letters to steer clear of: the ones just shown, and the one on the page now */
+function withCurrent(avoid: ReadonlySet<string> | undefined, current: string | null) {
+  const out = new Set(avoid ?? []);
+  if (current) out.add(current);
+  return out;
 }

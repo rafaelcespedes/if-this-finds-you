@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "description": "Seedhand: the product UI for the live handwriting engine (../engine).",
   "scripts": {
     "start": "npm install --no-audit --no-fund --loglevel=error && vite",
