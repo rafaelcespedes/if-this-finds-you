@@ -72,7 +72,9 @@ function useDevicePixelRatio() {
   return dpr;
 }
 
-const INTRO = 'Every hand here is a free, open-source font. Narrow it down, try your own words, and draw another set until one feels like yours.';
+// the pitch and the longer intro: docs/brand/naming-and-copy.md §2.11 (Rafael's approved copy)
+const INTRO = 'Every hand here is a font you can keep. Free and open source.';
+const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font can only keep a few versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
 
 export function FontsApp() {
   const [route, update] = useRoute();
@@ -225,7 +227,7 @@ export function FontsApp() {
               </div>
             ) : null}
             <p className="font-list-note">
-              Each font keeps a few versions of every letter and swaps between them as you type, so it’s a little steadier than the live hand. Free to use under the SIL Open Font License.
+              {ABOUT} Free to use under the SIL Open Font License.
             </p>
           </footer>
         </main>
