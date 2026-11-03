@@ -773,6 +773,15 @@ html[data-look='reading-room'] [class*='rounded-full'][class*='bg-panel/95'] {
   background: var(--rr-slip);
   color: var(--rr-muted);
 }
+/* the plate line under the sheet (wide screens: PlateLine.tsx): who wrote to whom, in the record's italic, as a
+   museum labels an object at its foot; how you're writing sits at its right (App.tsx's footer row) */
+html[data-look='reading-room'] .rr-plate-title {
+  font-family: var(--rr-text-face);
+  font-size: var(--rr-text-size);
+  font-style: italic;
+  line-height: var(--rr-text-leading);
+  color: var(--rr-ink);
+}
 /* the catalogue slip under the sheet (phones) */
 html[data-look='reading-room'] .rr-under-sheet {
   margin-top: 20px;
