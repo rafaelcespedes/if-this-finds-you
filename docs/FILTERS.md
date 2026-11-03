@@ -18,6 +18,12 @@ const set = sampleLooks('fonts-7', 24, { family: 'script', slant: [15, null], lo
 //   params, legibility) + distance, matches, nudged { key: [natural, shown] }, misses [keys]
 // set.matched: how many met every filter as the seed is; set.note: plain words when the filters were too tight
 // draw one: withOverrides(makeHand(look.seed, { style: look.style }, { neatOnly }), look.params)
+// look.about: what a row can say without drawing: { tradition: 'Business 1915', era, region, movement (joined only),
+//   character: ['careful', 'elegant'], lean (visible °), width (n in x-heights), laterLearned: { style, schooling, label } }
+
+// the Fonts page's shape of the same call (pages of one set: offset 0, 24, 48...)
+sampleSet({ setSeed: 'fonts-7', count: 24, offset: 0, filters: { family: 'script' }, neatOnly: true })
+// -> { looks, exhausted (fewer than count met every filter), note, matched }
 ```
 
 - **Deterministic.** The same set seed, n, filters and options give the same set. A "Shuffle" button passes a new set
@@ -51,11 +57,13 @@ hand is shown (pen, ink, paper, size), not of the writer.
 |---|---|---|---|---|---|
 | `family` | Print or joined | `hand.family` | `print`, `script` (joined) | hard | Everything: every letter is built differently. Joined-only qualities follow from it. |
 | `style` | Tradition | `hand.style` | 13 traditions (below) | hard | Fixes family, era, built-in slant and letter forms. Pinning one picks from it evenly; otherwise each seed keeps its natural tradition. |
-| `historical` | Include historical hands | `isHistorical(style)` | false (default) / true | hard | Kurrent 1849 and Dutch 1618 are illegible to most visitors. They never pass Neat only (legibility 0.05–0.7). Name them in `style` to see them anyway. |
+| `historical` | Include historical hands | `isHistorical(style)` | false (default) / true | hard | Kurrent 1849 and Dutch 1618 are illegible to most visitors, so a random set leaves them out. Named in `style`, they come up, and their legibility isn't marked down for being historical, so Neat only still finds tidy ones (0.82–1.0). |
 | `era` | Taught | `tradition.era` → bucket | `early` (before 1750), `c19`, `c20a` (1900–49), `c20b` (1950–99), `now` | hard | Derived from the tradition: early = Arrighi, Dutch; c19 = Spencerian, Norwegian, Kurrent, Spanish; c20a = Palmer, Sütterlin, Polish; c20b = Hershey print and script; now = Québec 2024, French 2023. |
 | `schooling` | Schooling | `hand.schooling` | continental, american, british, french, italic, polish, latin-american, adult-print | hard | Drawn per seed and tradition. It shapes letter habits (allographs), paper and movement. The share in a random set runs from american/adult-print (about 25% each) down to polish (3%). |
 | `blend` | Mixed schooling | `hand.blend` (and `hand.traditions[1]`) | 0–1 (median 0.2; about 45% are 0) | soft | Independent of the rest. The second school is `hand.traditions[1].style` / `.schooling`. Filtering by *which* second school isn't in sampleLooks yet. |
 | `archetype` | Kind of writer | `archetypeOf(seed)` | friend, thanks, architect, field, whiteboard, margin, postcard, recipe, first, italic, signature, backhand | hard | Correlated by design with pen, paper, size, neatness, slant (backhand leans left, signature is fast). The cheapest filter: it is known from the seed alone. |
+| `character` | Character (one word) | `characterOf(hand, look)` | careful, everyday, hurried, elegant, schoolroom, childlike, technical, cramped, airy, angular | hard | A hand can carry several words. Rules below. Each word covers 4–33% of hands. |
+| `later` | Later learned | `hand.traditions[1].style` or `.schooling` (needs blend > 0) | a tradition or schooling id | hard | Only mixed hands (about 55%) have one. Rare pairs are slow to find (about 1.4 s for Palmer). |
 | `movement` | Movement | `movementOf(hand).id` (style-dims) | copperplate, business, round, schoolroom, italic, printscript, angular, scrawl, cramped, airy | hard | A cluster that sets the ten movement dimensions below together. Most meaningful for joined hands; for print only angularity, loop height, bowls and rhythm show. |
 
 Traditions (`style`): Print and Script (Hershey, 1967), Business 1915 (Palmer), German school 1917 (Sütterlin),
@@ -107,7 +115,7 @@ as −1, lifts as 1, and a join-length filter excludes print.
 | `leadIns` | Lead-ins | −1.0…0.5 | loops +0.82, capitals +0.80, lifts −0.77 |
 | `endFlicks` | End flicks | −0.64…0.6 | lifts −0.49, capitals +0.45. Fairly independent. |
 | `flourish` | Capitals (plain or swash) | −1.0…0.4 | lead-ins +0.80, loops +0.77, lifts −0.71 |
-| `lifts` | Pen lifts (connectedness) | 0…0.82 | loops, lead-ins and capitals −0.7…−0.77. The "connectedness" filter: 0 = always joined, about 0.4 = semi-joined (italic), 0.8+ = print-script. |
+| `lifts` | Pen lifts (connectedness) | 0…0.82 | loops, lead-ins and capitals −0.7…−0.77. The "connectedness" filter: 0 = always joined, about 0.4 = semi-joined (italic), 0.8+ = print-script. A lifts filter never asks for more than 0.85: near 1, the retraced ascenders of Palmer's h, l, k and b come apart. |
 | `joinLength` | Join length | −0.71…0.6 | rhythm +0.58, width +0.34 |
 | `loopHeight` | Loop height (ascenders against x-height) | −0.69…0.6 | loops +0.61, capitals +0.53 |
 
@@ -126,9 +134,30 @@ a note.
 | `inkAge`, `inkVariation` | Ink age, ink variation | `look.inkAge`, `look.inkVariation` | 0–1 | hard (clamped) | Recipe cards and iron-gall or sepia inks come up aged. |
 | `lineWander`, `fatigue` | Line wander, tires over a page | `hand.lineWander`, `hand.fatigue` | 0.6–1.25, 0.75–1.25 | soft | Only visible over several lines. A one-line specimen won't show them. |
 
+## Character words
+
+One word a visitor can pick a hand by (`CHARACTER`, `characterOf`). Rules come from the Fonts view research, with
+edges set from the measured ranges. "Lean" is visible slant; "width" is n in x-heights.
+
+| Word | A hand is it when | Print / joined share |
+|---|---|---|
+| Careful | neatness ≥ 0.72 and hurry ≤ 0.45 | 24% / 26% |
+| Everyday | kind of writer: letter to a friend, postcard, recipe card | 31% / 31% |
+| Hurried | hurry ≥ 0.68; or joined fast scrawl; or hurry ≥ 0.55 for margin notes, signature, field journal | 27% / 32% |
+| Elegant | joined copperplate or business movement; or thank-you card, italic hand | 14% / 33% |
+| Schoolroom | joined: schoolroom or round movement. Print: careful and within 6° of upright | 11% / 27% |
+| Childlike | first letters | 4% / 4% |
+| Technical | architect's notes | 10% / 10% |
+| Cramped | joined cramped movement, or n narrower than 0.80 (print) / 0.82 (joined) x-heights | 13% / 27% |
+| Airy | joined airy movement, or n wider than 1.3 (print) / 1.5 (joined) x-heights | 11% / 24% |
+| Angular | joined angular movement, or pointed turns ≥ 0.45 | 16% / 24% |
+
 ## Not filters (yet), and why
 
-- **Which second school** a mixed hand draws on (`hand.traditions[1]`): easy to add as a choice when the UI wants it.
+- **Making** a hand learn a given second school (a makeHand option): `later` filters on the second school a hand
+  already has; forcing one is engine work for later.
+- **A census** (per-option counts, "about N writers match", greying out impossible options): not built. Impossible
+  choice combinations return at once with a note, and searches that can't fill the set stop after about 300 tries.
 - **Region and language** (`tradition.region`, `.language`): today these follow the tradition one to one, so the
   tradition filter covers them. Worth adding when several traditions share a region.
 - **Letter forms people notice** (single- or double-storey a and g, crossed 7, open 4, looped f): `describeHabits(p)`

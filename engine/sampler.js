@@ -530,6 +530,45 @@ for (const k of ['loops', 'leadIns', 'endFlicks', 'flourish', 'lifts', 'joinLeng
 // look settings: always met (the look is drawn with them), so they never count as a miss
 const LOOK_RANGE = new Set(['size', 'inkAge', 'inkVariation']);
 
+// Pen lifts near 1 pull retraced ascenders apart (Palmer h, l, k, b): a lifts filter never asks for more than this
+const LIFTS_MAX = 0.85;
+
+// Character: one word a visitor picks a hand by (a hand can carry several). Rules from the Fonts view research
+// (side notes fonts-view-filters.md), edges checked against the measured ranges in docs/FILTERS.md.
+export const CHARACTER = [
+  { id: 'careful', label: 'Careful', test: (x) => x.neatness >= 0.72 && x.hurry <= 0.45 },
+  { id: 'everyday', label: 'Everyday', test: (x) => ['friend', 'postcard', 'recipe'].includes(x.archetype) },
+  { id: 'hurried', label: 'Hurried', test: (x) => x.hurry >= 0.68 || (x.joined && x.movement === 'scrawl') || (x.hurry >= 0.55 && ['margin', 'signature', 'field'].includes(x.archetype)) },
+  { id: 'elegant', label: 'Elegant', test: (x) => (x.joined && ['copperplate', 'business'].includes(x.movement)) || ['thanks', 'italic'].includes(x.archetype) },
+  { id: 'schoolroom', label: 'Schoolroom', test: (x) => (x.joined ? ['schoolroom', 'round'].includes(x.movement) : x.neatness >= 0.72 && x.hurry <= 0.45 && Math.abs(x.lean) < 6) },
+  { id: 'childlike', label: 'Childlike', test: (x) => x.archetype === 'first' },
+  { id: 'technical', label: 'Technical', test: (x) => x.archetype === 'architect' },
+  { id: 'cramped', label: 'Cramped', test: (x) => (x.joined && x.movement === 'cramped') || x.width < (x.joined ? 0.82 : 0.8) },
+  { id: 'airy', label: 'Airy', test: (x) => (x.joined && x.movement === 'airy') || x.width > (x.joined ? 1.5 : 1.3) },
+  { id: 'angular', label: 'Angular', test: (x) => (x.joined && x.movement === 'angular') || x.angularity >= 0.45 },
+];
+// what a specimen row can say about a hand without drawing it
+function traitsOf(h, look) {
+  const P = (look && look.params) || {};
+  const v = (k) => (P[k] != null ? P[k] : h[k]);
+  return { joined: h.family === 'script', archetype: h.archetype, movement: movementHook ? movementHook.fn(h).id : null,
+    neatness: v('neatness'), hurry: v('hurry'), lean: builtInSlant(h.style) + v('slant'), width: nWidth(h), angularity: v('angularity') || 0 };
+}
+export function characterOf(h, look) {
+  const x = traitsOf(h, look);
+  return CHARACTER.filter((c) => c.test(x)).map((c) => c.id);
+}
+// { tradition: 'Business 1915', era, region, movement: 'Business cursive (Palmer, Zaner-Bloser)', character: [...],
+//   lean (visible degrees), width (n in x-heights), laterLearned: style or null }
+export function aboutOf(h, look) {
+  const st = getStyle(h.style) || {}, t = st.tradition || {};
+  const x = traitsOf(h, look);
+  const second = h.blend > 0 && h.traditions && h.traditions[1];
+  return { tradition: st.label || h.style, era: eraOf(h.style), region: t.region || null,
+    movement: movementHook && h.family === 'script' ? movementHook.fn(h).label : null, character: CHARACTER.filter((c) => c.test(x)).map((c) => c.id),
+    lean: +x.lean.toFixed(1), width: +x.width.toFixed(2), laterLearned: second ? { style: second.style, schooling: second.schooling, label: second.label } : null };
+}
+
 // The filters, for UIs (labels in plain words; docs/FILTERS.md has the why). kind: 'choice' (one value or a list),
 // 'range' ([min, max], either may be null), 'toggle'. hard: never broken; soft: may be nudged when too tight.
 export const LOOK_FILTERS = [
@@ -540,6 +579,8 @@ export const LOOK_FILTERS = [
   { key: 'schooling', label: 'Schooling', kind: 'choice', hard: true, values: () => schoolingNames() },
   { key: 'archetype', label: 'Kind of writer', kind: 'choice', hard: true, values: () => ARCHETYPES.map((a) => a.id) },
   { key: 'movement', label: 'Movement', kind: 'choice', hard: true, values: () => (movementHook ? movementHook.list.map((m) => m.id) : []) },
+  { key: 'character', label: 'Character', kind: 'choice', hard: true, values: () => CHARACTER.map((c) => c.id) },
+  { key: 'later', label: 'Later learned', kind: 'choice', hard: true, values: () => [...styleNames(), ...schoolingNames()] },
   { key: 'neatOnly', label: 'Neat hands only', kind: 'toggle', hard: false, default: true },
   { key: 'legibility', label: 'Readable at a glance', kind: 'range', hard: false, range: [0, 1] },
   { key: 'neatness', label: 'Neatness', kind: 'range', hard: false, range: [0, 1] },
@@ -599,7 +640,10 @@ export function sampleLooks(setSeed, n = 24, constraints = {}, opts = {}) {
   for (const k in RANGES) if (Array.isArray(C[k]) && C[k].length === 2 && (C[k][0] != null || C[k][1] != null)) ranges[k] = [C[k][0] ?? null, C[k][1] ?? null];
   if (neat) ranges.legibility = [Math.max(NEAT_MIN, (ranges.legibility || [0])[0] ?? 0), (ranges.legibility || [])[1] ?? null];
   const choice = {};
-  for (const k of ['family', 'style', 'era', 'schooling', 'archetype', 'movement', 'pen', 'tip', 'ink', 'paper']) { const l = listOf(C[k]); if (l && l.length) choice[k] = l; }
+  for (const k of ['family', 'style', 'era', 'schooling', 'archetype', 'movement', 'later', 'character', 'pen', 'tip', 'ink', 'paper']) { const l = listOf(C[k]); if (l && l.length) choice[k] = l; }
+  if (ranges.lifts) ranges.lifts = [ranges.lifts[0], Math.min(ranges.lifts[1] ?? LIFTS_MAX, LIFTS_MAX)];
+  // a historical tradition picked by name is wanted as it is: its legibility isn't marked down for being historical
+  const legible = (h) => { const L = legibility(h); return choice.style && isHistorical(h.style) ? Math.min(1, L + 0.6 * 0.5) : L; };
   // the traditions that can come up: named ones (any, historical too), else the families' modern ones (+ historical)
   let styles = choice.style ? choice.style.filter((s) => getStyle(s)) : styleNames().filter((s) => C.historical || !isHistorical(s));
   if (choice.family) styles = styles.filter((s) => choice.family.includes(getStyle(s).family || 'print'));
@@ -639,12 +683,14 @@ export function sampleLooks(setSeed, n = 24, constraints = {}, opts = {}) {
     if (choice.schooling && !choice.schooling.includes(who.schooling)) continue;
     if (choice.movement && !(movementHook && choice.movement.includes(movementHook.fn(who).id))) continue;
     const h = makeHand(seed, { style }, { neatOnly: neat });
+    if (choice.later && !(h.blend > 0 && h.traditions && h.traditions[1] && (choice.later.includes(h.traditions[1].style) || choice.later.includes(h.traditions[1].schooling)))) continue;
     // the look, with the specimen choices locked (a list: one of them, drawn evenly)
     const locked = {};
     for (const k of ['pen', 'tip', 'ink', 'paper']) if (choice[k]) locked[k] = choice[k][Math.floor(r() * choice[k].length)];
     let look = lookFor(h, seed, locked, { neatOnly: neat, wild: opts.variety === 'wild', legibility: 1 });
     look.params = { ...look.params };
     for (const k of LOOK_RANGE) if (ranges[k]) look[k] = +clamp(look[k], ranges[k][0] ?? -Infinity, ranges[k][1] ?? Infinity).toFixed(k === 'size' ? 1 : 2);
+    if (choice.character && !characterOf(h, look).some((w) => choice.character.includes(w))) continue;
     // range filters, legibility last (it lays text out); a candidate that misses is remembered if it is close
     let miss = 0;
     const misses = [];
@@ -654,7 +700,7 @@ export function sampleLooks(setSeed, n = 24, constraints = {}, opts = {}) {
       if (o > 0) { miss += o; misses.push(k); }
     }
     if (!miss) {
-      look.legibility = +legibility(h).toFixed(2);
+      look.legibility = +legible(h).toFixed(2);
       if (ranges.legibility) { const o = outside(look.legibility, ranges.legibility, 0.3); if (o > 0) { miss += o; misses.push('legibility'); } }
     }
     const c = { seed, h, look, miss, misses };
@@ -696,7 +742,7 @@ export function sampleLooks(setSeed, n = 24, constraints = {}, opts = {}) {
       if (outside(R.get(c.look, c.h), ranges[k], R.span) === 0) c.look.nudged[k] = [+v.toFixed(3), +to.toFixed(3)];
     }
     // legibility can't be set, only measured: the nudges may have fixed it (or not)
-    c.look.legibility = +legibility(withParams(c.h, c.look.params)).toFixed(2);
+    c.look.legibility = +legible(withParams(c.h, c.look.params)).toFixed(2);
     c.look.misses = c.misses.filter((k) => !(k in c.look.nudged) && k !== 'legibility');
     if (ranges.legibility && outside(c.look.legibility, ranges.legibility, 1) > 0) c.look.misses.push('legibility');
     picked.push(c);
@@ -708,7 +754,8 @@ export function sampleLooks(setSeed, n = 24, constraints = {}, opts = {}) {
     let d = Infinity;
     for (const s of seen) d = Math.min(d, lookDistance(L, s));
     seen.push(L);
-    out.looks.push({ ...c.look, distance: +(Number.isFinite(d) ? d : 0).toFixed(3), matches: c.miss === 0, nudged: c.look.nudged || {}, misses: c.look.misses || [] });
+    out.looks.push({ ...c.look, distance: +(Number.isFinite(d) ? d : 0).toFixed(3), matches: c.miss === 0, nudged: c.look.nudged || {}, misses: c.look.misses || [],
+      about: aboutOf(withParams(c.h, c.look.params), c.look) });
   }
   out.matched = fromPool;
   const nudged = [...new Set(out.looks.flatMap((l) => Object.keys(l.nudged)))], missed = [...new Set(out.looks.flatMap((l) => l.misses))];
@@ -724,4 +771,20 @@ function withParams(h, params) {
   const p = Object.assign(Object.create(null), h);
   for (const k in params) if (params[k] != null) p[k] = params[k];
   return p;
+}
+
+// The Fonts page's shape of the same call: sampleSet({ setSeed, count, offset, filters, neatOnly, exclude })
+//   -> { looks, exhausted, note, matched }. offset (a multiple of count) gives later pages of the same set: each page
+//   keeps away from the pages before it. exhausted: fewer hands meet every filter than were asked for (the rest
+//   of looks, if any, are the closest misses, each with look.matches false).
+export function sampleSet({ setSeed = '', count = 24, offset = 0, filters = {}, neatOnly, exclude, entropy } = {}) {
+  const seed = String(setSeed || entropy || '');
+  const C = { ...filters };
+  if (neatOnly != null) C.neatOnly = neatOnly;
+  let shown = [], page = null;
+  for (let k = 0; k <= Math.floor(Math.max(0, offset) / Math.max(1, count)); k++) {
+    page = sampleLooks(k ? seed + '#' + k : seed, count, C, { shown, exclude });
+    shown = shown.concat(page.looks);
+  }
+  return { looks: page.looks, exhausted: page.matched < count, note: page.note, matched: page.matched };
 }

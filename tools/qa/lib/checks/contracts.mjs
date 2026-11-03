@@ -96,6 +96,13 @@ function fontsViewContract(E, problems) {
   if (c.looks.length || !c.note) fail('an impossible tradition filter should return no hands and a note');
   const d = E.sampleLooks('qa-set', 6, { slant: [42, 45], loops: [0.95, 1], hurry: [0, 0.05] });
   if (d.looks.length !== 6 || d.matched === 6 || !d.note || !d.looks.some((l) => Object.keys(l.nudged).length)) fail('too-tight ranges should still return n hands, nudged, with a note');
+  // Character and row info; a historical tradition named outright still fills a Neat only set
+  const f = E.sampleLooks('qa-set', 8, { character: 'careful' });
+  if (f.matched < 8 || f.looks.some((l) => !l.about || !l.about.character.includes('careful'))) fail(`{ character: 'careful' } returned hands that aren't careful (or too few: ${f.matched}/8)`);
+  const g = E.sampleLooks('qa-set', 4, { style: 'kurrent-1849' });
+  if (g.matched < 4) fail(`Kurrent named by style should still fill a Neat only set, got ${g.matched}/4`);
+  const s = E.sampleSet({ setSeed: 'qa-set', count: 16 });
+  if (JSON.stringify(s.looks) !== JSON.stringify(a.looks.map((l) => l)) || s.exhausted) fail('sampleSet({ setSeed, count }) should equal sampleLooks(setSeed, count)');
   // load more: a second set keeps away from the hands already shown
   const e = E.sampleLooks('qa-set-2', 16, {}, { shown: a.looks });
   if (e.looks.some((l) => a.looks.some((x) => x.seed === l.seed))) fail('opts.shown hands came back in the next set');
