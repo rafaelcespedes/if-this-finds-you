@@ -6,7 +6,8 @@ import type { PaperId, PaperSpec } from './paper/types';
 import { isShaped } from './paper/outline';
 
 export type { PaperId, PaperSpec } from './paper/types';
-export { paintPaper, SHADOW_BLEED, type PaintOptions } from './paper/paint';
+export { EDGE_TONE, paintPaper, SHADOW_BLEED, type PaintOptions } from './paper/paint';
+import { EDGE_TONE } from './paper/paint';
 export { isShaped } from './paper/outline';
 
 type Base = Omit<PaperSpec, 'id' | 'family'>;
@@ -314,8 +315,11 @@ export function sheetPaper(paper: PaperSpec, i: number): PaperSpec {
   return { ...paper, ...paper.back, id: `${paper.id}.back` };
 }
 
-/** The sheet's CSS shadow: none for a shaped sheet, whose own canvas paints a shadow that follows its edge. */
-export const sheetShadow = (paper: PaperSpec) => (isShaped(paper) ? 'none' : 'var(--sheet-shadow)');
+/**
+ * The sheet's edge on the desk. It lies flat, with no drop shadow (Rafael, 3 Nov): a rectangle gets a barely-there 1 px
+ * edge tone; a shaped sheet (deckle, tear, flaps) gets none here, its canvas traces the same tone along its real edge.
+ */
+export const sheetShadow = (paper: PaperSpec) => (isShaped(paper) ? 'none' : `0 0 0 1px ${EDGE_TONE}`);
 
 /** How likely New hand is to pick this paper for a letter this long (0 when it won't fit). */
 export function paperRollWeight(id: PaperId, textLength: number) {
