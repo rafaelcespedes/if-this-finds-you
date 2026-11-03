@@ -116,7 +116,7 @@ export function filterDefs(cat: Catalogue = STATIC_CATALOGUE): FilterDef[] {
     })) },
     { key: 'character', param: 'c', label: 'Character', kind: 'one', options:
       ['careful', 'everyday', 'hurried', 'elegant', 'schoolroom', 'childlike', 'technical', 'cramped', 'airy', 'angular'].map((id) => ({ value: id, label: cap(id), c: { character: id } })) },
-    { key: 'tidy', param: 'n', label: 'Tidy to wild', kind: 'run', hint: 'Messy needs Neat hands only off.', options: [
+    { key: 'tidy', param: 'n', label: 'Tidy to wild', kind: 'run', options: [
       { value: 'careful', label: 'Careful', c: { neatness: r(0.75, null) } },
       { value: 'relaxed', label: 'Relaxed', c: { neatness: r(0.6, 0.75) } },
       { value: 'loose', label: 'Loose', c: { neatness: r(0.45, 0.6) } },

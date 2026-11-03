@@ -16,6 +16,8 @@ import { ARCHIVE_URL, headerLink, SiteHeader, toolHref } from '@/archive/SiteHea
 import heading from './fonts.svg?raw';
 import { FONTS_URL } from './links';
 import { FontsDock } from './Dock';
+import { FontsRail } from './Rail';
+import { LOOK } from '@/lib/look';
 import { FontRow } from './FontRow';
 import { SpecimenBar } from './SpecimenBar';
 import { useSaved } from './favourites';
@@ -80,6 +82,8 @@ export function FontsApp() {
   const [route, update] = useRoute();
   const narrow = useMediaQuery('(max-width: 639px)');
   const wide = useMediaQuery('(min-width: 1024px)');
+  // the Reading Room on a wide screen: the filters as a rail beside the list (the layout study's Proposal 4); else the dock
+  const rail = wide && LOOK === 'reading-room';
   const catalogue = useCatalogue();
   const saved = useSaved();
   const savedIds = useMemo(() => new Set(saved.map((e) => e.id)), [saved]);
@@ -132,6 +136,8 @@ export function FontsApp() {
   };
   const newSet = () => { update({ set: newSetSeed(), view: 'set' }, true); listTop(); };
   const setFilters = (filters: Filters, neatOnly?: boolean) => update({ filters, view: 'set', ...(neatOnly != null ? { neatOnly } : {}) });
+  // Neat hands only back on: Messy (which needs it off) steps out of Tidy to wild
+  const onNeatOnly = (v: boolean) => update({ neatOnly: v, view: 'set', ...(v && route.filters.tidy.includes('messy') ? { filters: { ...route.filters, tidy: route.filters.tidy.filter((x) => x !== 'messy') } } : {}) });
   const onTag = useCallback((key: FilterKey, value: string) => {
     const family = key === 'family' ? { style: route.filters.style.filter((s) => catalogue.styles.find((x) => x.id === s)?.family === value) } : {};
     update({ filters: { ...NO_FILTERS, ...route.filters, [key]: [value], ...family }, view: 'set' });
@@ -180,6 +186,12 @@ export function FontsApp() {
               {route.view === 'saved' ? 'The hands you saved, kept in this browser. Each one downloads as a free, open-source font.' : INTRO}
             </p>
           </section>
+          <div className={cn(rail && 'font-with-rail')}>
+          {rail && (
+            <FontsRail filters={route.filters} onFilters={setFilters} neatOnly={route.neatOnly} onNeatOnly={onNeatOnly} catalogue={catalogue}
+              view={route.view} onView={(v) => { update({ view: v }, true); listTop(); }} savedCount={saved.length} onNewSet={newSet} />
+          )}
+          <div className="min-w-0">
           <div className={cn('specimen-bar-wrap z-20', !narrow && 'sticky top-0')}>
             <SpecimenBar
               line={route.line}
@@ -230,12 +242,14 @@ export function FontsApp() {
               {ABOUT} Free to use under the SIL Open Font License.
             </p>
           </footer>
+          </div>
+          </div>
         </main>
-        <FontsDock
+        {!rail && <FontsDock
           filters={route.filters}
           onFilters={setFilters}
           neatOnly={route.neatOnly}
-          onNeatOnly={(v) => update({ neatOnly: v, view: 'set', ...(v && route.filters.tidy.includes('messy') ? { filters: { ...route.filters, tidy: route.filters.tidy.filter((x) => x !== 'messy') } } : {}) })}
+          onNeatOnly={onNeatOnly}
           catalogue={catalogue}
           view={route.view}
           onView={(v) => { update({ view: v }, true); listTop(); }}
@@ -243,7 +257,7 @@ export function FontsApp() {
           onNewSet={newSet}
           narrow={narrow}
           hidden={typing && coarse}
-        />
+        />}
         <Toaster />
       </div>
     </TooltipProvider>
