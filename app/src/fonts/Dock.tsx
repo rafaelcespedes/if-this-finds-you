@@ -170,9 +170,9 @@ function FilterPanel({ filters, onFilters, neatOnly, onNeatOnly, catalogue, onDo
   );
 }
 
-/** A dock button's words: hidden on the narrowest phones (under 360 px), where the icon carries it (the words stay
- *  for screen readers). */
-const Words = ({ children, className }: { children: string; className?: string }) => <span className={cn('max-[359px]:sr-only', className)}>{children}</span>;
+/** A dock button's words: hidden on the narrowest phones (under 360 px at the usual text size; fonts.css), where the
+ *  icon carries it (the words stay for screen readers). */
+const Words = ({ children, className }: { children: string; className?: string }) => <span className={cn('dock-words', className)}>{children}</span>;
 
 export function FontsDock(p: Props) {
   const [open, setOpen] = useState<'' | 'filters' | 'text'>('');
@@ -183,7 +183,7 @@ export function FontsDock(p: Props) {
 
   return (
     <div className={cn('fonts-dock pointer-events-none fixed inset-x-0 bottom-[calc(12px+env(safe-area-inset-bottom,0px))] z-30 flex justify-center px-3 transition-opacity duration-150', p.hidden && 'opacity-0 [&_*]:!pointer-events-none')}>
-      <div role="toolbar" aria-label="Choose the fonts" className="archive-dock pointer-events-auto flex w-full max-w-[28rem] min-w-0 items-center gap-1 rounded-2xl bg-panel p-1 sm:w-auto">
+      <div role="toolbar" aria-label="Choose the fonts" className="archive-dock pointer-events-auto flex w-full max-w-[28rem] min-w-0 flex-wrap items-center gap-1 rounded-2xl bg-panel p-1 sm:w-auto">
         {p.view === 'saved' ? (
           <>
             <Button variant="ghost" onClick={() => p.onView('set')}>
@@ -221,7 +221,7 @@ export function FontsDock(p: Props) {
                 trigger={
                   <Button variant="ghost" className={cn('px-3', open === 'text' && 'bg-accent')}>
                     <CaseSensitive aria-hidden />
-                    {/* under 400 px, once the saved hands' heart joins the dock, Text keeps only its Aa (fonts.css) */}
+                    {/* on a phone under 400 px, once the saved hands' heart joins the dock, Text keeps only its Aa (fonts.css) */}
                     <Words className="dock-text-words">Text</Words>
                   </Button>
                 }
@@ -237,7 +237,8 @@ export function FontsDock(p: Props) {
             )}
             <Button onClick={p.onNewSet} className="dock-primary ml-auto px-3" title="New set (Space)">
               <RefreshCw aria-hidden />
-              New set
+              {/* its words give way only with very large text on a phone (fonts.css) */}
+              <span className="dock-newset-words">New set</span>
             </Button>
           </>
         )}

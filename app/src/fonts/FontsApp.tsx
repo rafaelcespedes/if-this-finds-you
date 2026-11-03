@@ -61,6 +61,28 @@ function useSettled<T>(value: T, ms: number) {
   return v;
 }
 
+/** px per rem: the root's font size, which the reader's text size scales (read again on resize). */
+function useRootRem() {
+  const read = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const [rem, setRem] = useState(read);
+  useEffect(() => {
+    const on = () => setRem(read());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return rem;
+}
+
+function useViewportWidth() {
+  const [w, setW] = useState(() => document.documentElement.clientWidth || innerWidth);
+  useEffect(() => {
+    const on = () => setW(document.documentElement.clientWidth || innerWidth);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return w;
+}
+
 /** The screen's pixel density (capped at 3), kept up to date when it changes (another screen, browser zoom). */
 function useDevicePixelRatio() {
   const read = () => Math.min(3, Math.max(1, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1));
@@ -81,8 +103,12 @@ const ABOUT = 'Every writer who copies out a letter here has a hand of their own
 
 export function FontsApp() {
   const [route, update] = useRoute();
-  const narrow = useMediaQuery('(max-width: 639px)');
-  const wide = useMediaQuery('(min-width: 1024px)');
+  // the layout's widths in the reader's own text size (rem), so 200% text gets the narrower layout: phones under
+  // 40rem (640 px at the usual size), wide from 64rem (1024 px)
+  const rem = useRootRem();
+  const viewport = useViewportWidth();
+  const narrow = viewport < 40 * rem;
+  const wide = viewport >= 64 * rem;
   // the Reading Room on a wide screen: the filters as a rail beside the list (the layout study's Proposal 4); else the dock
   const rail = wide && LOOK === 'reading-room';
   const catalogue = useCatalogue();
@@ -196,9 +222,10 @@ export function FontsApp() {
               <SpecimenBar {...textProps} />
             </div>
           )}
-          {route.line === 'letter' && set.opening && route.view === 'set' && (
+          {/* the letter's credit: its line is kept from the start, so the list doesn't drop when the credit arrives */}
+          {route.line === 'letter' && route.view === 'set' && (
             <p className="specimen-note">
-              The opening of a letter by {set.opening.by}{set.opening.year ? `, ${set.opening.year}` : ''}. <a className="ed-link" href={withLogo(`${ARCHIVE_URL}#/letter/${encodeURIComponent(set.opening.id)}`)}>Read it</a>
+              {set.opening && <>The opening of a letter by {set.opening.by}{set.opening.year ? `, ${set.opening.year}` : ''}. <a className="ed-link" href={withLogo(`${ARCHIVE_URL}#/letter/${encodeURIComponent(set.opening.id)}`)}>Read it</a></>}
             </p>
           )}
           {set.note && route.view === 'set' && !empty && <p className="set-note" role="status">{set.note}</p>}
@@ -206,7 +233,7 @@ export function FontsApp() {
           <ol ref={listRef} className="font-list" aria-label={route.view === 'saved' ? 'Saved hands' : 'Fonts'} aria-busy={!set.done}>
             {entries.map((e, i) => (
               <FontRow key={e?.id ?? `slot-${i}`} entry={e} index={i} text={rowText(e)} live={live} em={size} lines={lines}
-                saved={!!e && savedIds.has(e.id)} compact={narrow} wide={wide} open={!!e && e.id === route.hand} onOpen={onOpen} />
+                saved={!!e && savedIds.has(e.id)} compact={narrow || width < 44 * rem} wide={wide} open={!!e && e.id === route.hand} onOpen={onOpen} />
             ))}
           </ol>
           <footer className="font-list-end">

@@ -72,7 +72,7 @@ function LinePicker({ line, onLine }: { line: Line; onLine: (l: Line) => void })
 /** Wide screens: one ruled tester line above the list (the line's menu, then the field). */
 export function SpecimenBar(p: Props) {
   return (
-    <div className="specimen-bar flex min-w-0 items-center gap-2">
+    <div className="specimen-bar flex min-w-0 flex-wrap items-center gap-2 [&>label]:min-w-[min(100%,14rem)]">
       <LinePicker line={p.line} onLine={p.onLine} />
       <WordsField text={p.text} onText={p.onText} placeholder={p.placeholder} onFocusChange={p.onFocusChange} escapeClears />
     </div>

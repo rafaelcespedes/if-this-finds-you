@@ -40,6 +40,8 @@
   display: block;
 }
 .font-row {
+  /* the row lays itself out by its own width in the reader's text size (em), so 200% text gets the narrow layout */
+  container: font-row / inline-size;
   padding: var(--fonts-row-pad) 0;
   border-bottom: 1px solid var(--fonts-rule);
 }
@@ -52,20 +54,36 @@
   column-gap: 12px;
   min-height: 32px;
 }
-@media (min-width: 640px) {
+/* a wide row (44em: a 704 px row at the usual text size): name, words and actions on one line */
+@container font-row (width >= 44em) {
   .font-row-meta {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: 'name attrs actions';
     column-gap: 14px;
   }
+  .font-row-name {
+    white-space: nowrap;
+  }
+}
+/* a very narrow row (large text on a phone): name, words, then the actions, each on its own line */
+@container font-row (width < 18em) {
+  .font-row-meta {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'name' 'attrs' 'actions';
+  }
+  .font-row-actions {
+    justify-self: start;
+    margin-inline-start: -0.625rem;
+  }
 }
 .font-row-name {
   grid-area: name;
+  min-width: 0;
   font-size: var(--fonts-name-size);
   font-weight: 500;
   line-height: 1.3;
   color: var(--fonts-name);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .font-row-tags {
   grid-area: attrs;
@@ -197,12 +215,19 @@
   color: var(--text-muted);
 }
 .specimen-note {
+  /* room for the letter's credit before it arrives, so the list doesn't drop when it does */
+  min-height: 2lh;
   margin-top: 10px;
   max-width: 44rem;
   font-size: 0.7812rem;
   line-height: 1.5;
   color: var(--text-muted);
   text-wrap: pretty;
+}
+@media (min-width: 40rem) {
+  .specimen-note {
+    min-height: 1lh;
+  }
 }
 /* the sampler's own words when the filters were too tight ("9 of 24 hands meet every filter…") */
 .set-note {
@@ -237,8 +262,34 @@
   font-weight: 600;
   line-height: 1;
 }
-/* a full dock on a phone (filters on, hands saved): Text keeps only its Aa so New set stays inside */
-@media (max-width: 399.98px) {
+/* the dock's words give way in the reader's own text size (em of the dock's width, so 200% text counts): under 21em
+   (a 360 px phone) Filters and Text keep only their icons; under 23.5em (400 px) with saved hands, Text does. If even
+   that doesn't fit (very large text), the dock wraps onto a second line rather than cutting anything off. */
+.fonts-dock {
+  container: fonts-dock / inline-size;
+}
+@container fonts-dock (width < 21em) {
+  .dock-words {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+/* very large text on a phone (under 17em, which no phone reaches at the usual size): New set keeps only its icon */
+@container fonts-dock (width < 17em) {
+  .dock-newset-words {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@container fonts-dock (width < 23.5em) {
   .archive-dock:has(.dock-saved) .dock-text-words {
     position: absolute;
     width: 1px;
@@ -284,7 +335,9 @@
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 0.25rem 2rem 0;
+  /* 4 px of room on the left so the controls' focus rings aren't cut by the scroll box */
+  margin-left: -4px;
+  padding: 0 0.25rem 2rem 4px;
   border-top: 1px solid var(--fonts-rule);
 }
 
