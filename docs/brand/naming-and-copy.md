@@ -5,7 +5,13 @@ at 484 entries. Trademark and domain checks were run today and will go stale; re
 
 Review page (private): https://claude.ai/artifact/SXuJT5wnyZjKRXCsmSmZDR
 
-## Summary
+## Decision (2 November 2026)
+
+**Rafael chose "If This Finds You"** as the name, for now. Domain: **ifthisfindsyou.app** ($9.99 the first year,
+$15 a year after); Rafael is buying it himself. ifthisfindsyou.com is owned by someone else. The copy below still
+says "Plumín" and needs a pass to the new name. A lawyer's trademark clearance (classes 9, 42) is still advised.
+
+## Summary (round 1, superseded by the decision above)
 
 - **Recommended name: Plumín** (ploo-MEEN). In Spanish it's the nib of a fountain pen, the part that touches the
   paper. It reads as "pen" across the Romance languages, has no trademark in software in the US register or in
