@@ -306,6 +306,27 @@ html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-ch
   background: transparent;
   box-shadow: none;
 }
+/* with no box, the Menu's lines end where the running head's rule ends */
+html[data-look='reading-room'] [data-site-header] [data-site-chip] {
+  margin-right: -8px;
+}
+/* how many letters you've kept: a small red figure by the Menu, as a number is written in the margin, not a disc */
+html[data-look='reading-room'] [data-site-header] [data-site-chip] > span[aria-hidden] {
+  /* at the lines' top left, so it stays inside the rule's end */
+  top: 3px;
+  right: auto;
+  left: 1px;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--rr-red);
+  font-family: var(--rr-number-face);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1;
+}
 
 html[data-look='reading-room'] .rr-card-no {
   margin: 0;
