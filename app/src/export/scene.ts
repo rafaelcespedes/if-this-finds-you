@@ -22,7 +22,7 @@ const engine = E as unknown as Record<string, any>;
 const DESK = '#eeebe4';
 const TEXT_MUTED = '#6c685f';
 const UI_INK_SOFT = '#3b4152';
-const FONT = '"Instrument Sans Variable", "Instrument Sans", ui-sans-serif, system-ui, sans-serif';
+const FONT = '"Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif';
 const WORDMARK = 'If This Finds You';
 
 export const ASPECTS: Record<Aspect, number> = { '4:5': 4 / 5, '1:1': 1, '16:9': 16 / 9, '9:16': 9 / 16 };

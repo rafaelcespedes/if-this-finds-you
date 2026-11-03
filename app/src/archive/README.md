@@ -66,10 +66,11 @@ the worker build. The workers start (and warm up the engine) while the letters J
 
 ## The letter face (`serif.ts`)
 
-A serif beside Instrument Sans for the letters' own words: card titles, and on a letter page the title, the story,
-the record and the text. Newsreader by default, and three to compare in place, `?serif=1…4` (kept for the tab,
-never in share links), only the chosen one loaded, all SIL Open Font License 1.1 via @fontsource:
-1. Newsreader (the default), 2. Source Serif 4, 3. Literata, 4. Fraunces (soft cut, the warmest).
+A serif beside Atkinson Hyperlegible Next (the interface face) for the letters' own words: card titles, and on a
+letter page the title, the story, the record and the text. Piazzolla by default (Rafael, 3 Nov 2026; the comparison is
+in `docs/research/type-system`), and four to compare in place, `?serif=1…5` (kept for the tab, never in share links),
+only the chosen one loaded, all SIL Open Font License 1.1 via @fontsource:
+1. Newsreader, 2. Source Serif 4, 3. Literata, 4. Fraunces (soft cut, the warmest), 5. Piazzolla (the default).
 
 `window.__lostLetters.stats` has the timings (first card written and shown, per-card render times, cache hits).
 
