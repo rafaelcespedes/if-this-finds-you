@@ -10,7 +10,7 @@ import { cardSize } from './cards';
 import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
 import type { ArchiveLetter } from './model';
 import { letterHash, NO_FILTERS, randomHand, randomIndex, type Filters } from './route';
-import { headerLink, SiteHeader, TOOL_URL } from './SiteHeader';
+import { headerLink, SiteHeader, toolHref } from './SiteHeader';
 
 interface Props {
   letters: ArchiveLetter[] | null;
@@ -99,7 +99,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
   return (
     <div className="min-h-dvh">
       <SiteHeader>
-        <a href={TOOL_URL} className={headerLink}>Write a letter</a>
+        <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
       </SiteHeader>
       <main className="mx-auto w-full max-w-[1180px] px-4 pb-28 sm:px-8 lg:px-10">
         <section className="pt-[calc(4.75rem+env(safe-area-inset-top,0px))] pb-9 sm:pt-24 sm:pb-11">

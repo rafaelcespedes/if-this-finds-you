@@ -1,7 +1,9 @@
 import type { ArchiveLetter, Look } from './model';
 
-/** The fields of a letter the worker needs to pick its hand and write its opening. */
-export type CardLetter = Pick<ArchiveLetter, 'id' | 'text' | 'lang' | 'year' | 'tags' | 'traditions' | 'olderHandsOnly' | 'look' | 'origin'>;
+/** The fields of a letter the worker needs to pick its hand (look.ts reads all of these) and write its opening. */
+export type CardLetter = Pick<ArchiveLetter, 'id' | 'text' | 'lang' | 'year' | 'tags' | 'traditions' | 'olderHandsOnly' | 'look' | 'origin' | 'recipient'> & {
+  found?: Pick<NonNullable<ArchiveLetter['found']>, 'circumstance'>;
+};
 
 export interface CardRequest {
   job: number;

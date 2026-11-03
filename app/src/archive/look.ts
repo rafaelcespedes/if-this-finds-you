@@ -14,6 +14,9 @@ import { inkColor } from '@/lib/inks';
 import { MODELLED_INK, PARAM_KEYS } from '@/lib/engine-features';
 import type { ArchiveLetter, Look } from './model';
 
+/** What choosing a hand reads from a letter (the card worker gets just this). */
+type LookInput = Pick<ArchiveLetter, 'id' | 'text' | 'lang' | 'year' | 'tags' | 'traditions' | 'olderHandsOnly' | 'look' | 'recipient'> & { found?: { circumstance: string } };
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
 const sampleLook = (opts: Record<string, unknown>) => engine.sampleLook(opts);
@@ -53,7 +56,7 @@ const pick = <T,>(list: T[], key: string) => list[hash(key) % list.length];
 const OLDER_STYLES = () => (engine.styleNames() as string[]).filter(olderHand);
 
 /** The style a letter's own hand is taught in, or null for the sampler's free choice. */
-function styleFor(l: ArchiveLetter): string | null {
+function styleFor(l: LookInput): string | null {
   const suited = (l.traditions ?? []).flatMap((t) => TRADITION_STYLES[t] ?? []).filter(styleExists);
   if (l.olderHandsOnly) {
     const old = suited.filter(olderHand);
@@ -66,7 +69,7 @@ function styleFor(l: ArchiveLetter): string | null {
 }
 
 /** What the writer of this period wrote with and on (locks for the sampler). */
-function periodLocks(l: ArchiveLetter, style: string | null): Record<string, string> {
+function periodLocks(l: LookInput, style: string | null): Record<string, string> {
   const y = l.year ?? 2000;
   const locks: Record<string, string> = {};
   const r = hash('period:' + l.id) % 100;
@@ -87,7 +90,7 @@ function periodLocks(l: ArchiveLetter, style: string | null): Record<string, str
  * century (airmail for letters that crossed a sea), and a torn-out school page for children's letters to Santa
  * Claus or the Three Kings. null after 1950: the engine's sampler chooses. Only papers the tool has.
  */
-function periodPaper(l: ArchiveLetter): string | null {
+function periodPaper(l: LookInput): string | null {
   const y = l.year ?? 2000;
   const lang = l.lang.toLowerCase();
   const key = 'paper:' + l.id;
@@ -106,7 +109,7 @@ function periodPaper(l: ArchiveLetter): string | null {
 }
 
 /** A letter's own hand: fixed by its id. */
-export function letterLook(l: ArchiveLetter): Look {
+export function letterLook(l: LookInput): Look {
   if (l.look) return l.look;
   const style = styleFor(l);
   const locks = periodLocks(l, style);
@@ -119,7 +122,7 @@ export function letterLook(l: ArchiveLetter): Look {
 }
 
 /** A chosen hand ("seed~style"), for any letter (letters with the oldest spellings keep an older hand). */
-export function handLook(hand: string, l?: ArchiveLetter): Look | null {
+export function handLook(hand: string, l?: LookInput): Look | null {
   const parsed = parseHand(hand);
   if (!parsed) return null;
   // letters with the oldest spellings keep the writer but take an older hand, with that period's pen and paper
@@ -135,7 +138,7 @@ export function handLook(hand: string, l?: ArchiveLetter): Look | null {
  * The look for a letter: its own hand, a chosen hand (`seed~style`), or another letter's own hand (`of:<id>`,
  * "Keep this hand" on a letter shown in its own hand; `find` looks that letter up).
  */
-export function lookFor(l: ArchiveLetter, hand?: string | null, find?: (id: string) => ArchiveLetter | undefined): Look {
+export function lookFor(l: LookInput, hand?: string | null, find?: (id: string) => LookInput | undefined): Look {
   if (hand?.startsWith('of:')) {
     const from = find?.(hand.slice(3));
     if (!from) return letterLook(l);

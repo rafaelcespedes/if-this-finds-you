@@ -26,7 +26,7 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
   const req = e.data;
   const t0 = performance.now();
   try {
-    const look = lookFor(req.letter as never, req.hand);
+    const look = lookFor(req.letter, req.hand);
     const r = renderingOf(look);
     const sheet = r.paper;
     // a window onto the top left of the sheet, starting a little above the first line; a narrow card shows less
