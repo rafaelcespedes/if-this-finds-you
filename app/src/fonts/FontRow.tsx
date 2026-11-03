@@ -50,7 +50,7 @@ function Action({ label, onClick, href, pressed, busy, compact, children, text }
 }) {
   const iconOnly = !text || compact;
   // words: the tool's quiet ghost button ("Similar"); an icon alone stays square
-  const cls = cn('font-action hover-device:hover:text-foreground', iconOnly ? 'text-[var(--muted-foreground)]' : 'px-2.5 text-muted-foreground', pressed && 'is-on text-foreground');
+  const cls = cn('font-action hover-device:hover:text-foreground hover-device:hover:bg-[var(--st-hover,var(--rc-ctl-hover,var(--accent)))]', iconOnly ? 'text-[var(--muted-foreground)]' : 'px-2.5 text-muted-foreground', pressed && 'is-on text-foreground');
   const inner = <>{children}{!iconOnly && <span>{text}</span>}</>;
   const el = href ? (
     <Button asChild variant="ghost" size={iconOnly ? 'icon' : 'sm'} className={cls}>
