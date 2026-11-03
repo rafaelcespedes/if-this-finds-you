@@ -16,14 +16,7 @@
   /* ink on paper: a strip of the hand's own paper */
   --fonts-strip-radius: 6px;
   --fonts-strip-edge: 0 0 0 0.5px rgba(60, 45, 20, 0.1), 0 1px 2px rgba(60, 45, 20, 0.06);
-  /* controls */
-  --fonts-control: var(--text-muted);
-  --fonts-control-hover-bg: var(--chip);
-  --fonts-chip-bg: #fdfcf9;
-  --fonts-chip-border: var(--border);
-  --fonts-chip-on-bg: var(--chip);
-  --fonts-chip-on-border: color-mix(in oklab, var(--ink) 35%, var(--border));
-  --fonts-chip-on-text: var(--ink);
+  /* the count on Filters and More (the controls themselves are the tool's own components) */
   --fonts-accent: var(--ink);
   --fonts-accent-text: var(--primary-foreground);
   --fonts-bar-bg: var(--desk);
@@ -130,31 +123,6 @@ button.font-tag:focus-visible {
   border-radius: 6px;
   background: var(--chip);
 }
-.font-action {
-  color: var(--fonts-control);
-  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), transform 150ms var(--ease-out);
-}
-.font-action:active {
-  transform: scale(0.96);
-}
-.font-action.is-on {
-  color: var(--fonts-accent);
-}
-.font-action:disabled {
-  cursor: progress;
-}
-@media (hover: hover) and (pointer: fine) {
-  .font-action:hover {
-    background: var(--fonts-control-hover-bg);
-    color: var(--foreground);
-  }
-  .font-row:hover .font-action {
-    color: var(--foreground);
-  }
-  .font-row:hover .font-action.is-on {
-    color: var(--fonts-accent);
-  }
-}
 
 /* the specimen: as tall as the page reserved for it; the writing runs off the right edge on wide screens */
 .font-row-specimen {
@@ -253,21 +221,6 @@ button.font-tag:focus-visible {
   line-height: 1.5;
   color: var(--text-muted);
 }
-.outline-btn {
-  border: 1px solid var(--border);
-  background: var(--fonts-chip-bg);
-  color: var(--foreground);
-  box-shadow: 0 1px 1px rgba(60, 45, 20, 0.04);
-  transition: background-color 150ms var(--ease-out), transform 150ms var(--ease-out);
-}
-.outline-btn:active {
-  transform: scale(0.97);
-}
-@media (hover: hover) and (pointer: fine) {
-  .outline-btn:hover {
-    background: #f4f1ea;
-  }
-}
 .font-list-note {
   max-width: 36rem;
   margin-top: 10px;
@@ -278,20 +231,6 @@ button.font-tag:focus-visible {
 }
 
 /* ---------- the dock and the filter panel (Dock.tsx) ---------- */
-.dock-btn {
-  color: var(--fonts-control);
-  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
-}
-.dock-btn.is-on {
-  background: var(--fonts-control-hover-bg);
-  color: var(--foreground);
-}
-@media (hover: hover) and (pointer: fine) {
-  .dock-btn:hover {
-    background: var(--fonts-control-hover-bg);
-    color: var(--foreground);
-  }
-}
 .dock-badge {
   display: inline-grid;
   place-items: center;
@@ -304,34 +243,6 @@ button.font-tag:focus-visible {
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
-}
-.seg-btn {
-  color: var(--fonts-control);
-  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  .seg-btn:hover {
-    color: var(--foreground);
-  }
-}
-.seg-btn[aria-checked='true'] {
-  background: #fffefb;
-  color: var(--foreground);
-  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.12), 0 0 0 0.5px rgba(40, 30, 10, 0.06);
-}
-.dock-primary {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 1px 2px rgba(20, 24, 40, 0.25);
-  transition: background-color 150ms var(--ease-out), transform 150ms var(--ease-out);
-}
-.dock-primary:active {
-  transform: scale(0.97);
-}
-@media (hover: hover) and (pointer: fine) {
-  .dock-primary:hover {
-    background: var(--ink-soft);
-  }
 }
 .dock-caption {
   background: var(--lib-surface);
@@ -351,94 +262,4 @@ button.font-tag:focus-visible {
   .filter-panel {
     animation: specimen-in 150ms var(--ease-out) both;
   }
-}
-.filter-group {
-  min-width: 0;
-}
-.filter-label {
-  margin-bottom: 8px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-.filter-hint {
-  font-weight: 400;
-  color: var(--text-faint);
-}
-.filter-era + .filter-era {
-  margin-top: 10px;
-}
-.filter-era-label {
-  margin-bottom: 6px;
-  font-size: 11.5px;
-  color: var(--text-faint);
-}
-/* stops on a scale (tidy to wild, slant): one stop or a run of neighbours, chosen ones joined in ink on paper */
-.run-stop {
-  color: var(--fonts-control);
-  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  .run-stop:hover {
-    color: var(--foreground);
-  }
-}
-.run-stop.is-on {
-  background: #fffefb;
-  color: var(--fonts-chip-on-text);
-  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.12), 0 0 0 0.5px rgba(40, 30, 10, 0.06);
-}
-.run-stop.is-on + .run-stop.is-on {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-.run-stop.is-on:has(+ .run-stop.is-on) {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-.line-pick {
-  transition: color 150ms var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  .line-pick:hover {
-    color: var(--foreground);
-  }
-}
-.line-pick:has(select:focus-visible) {
-  outline: 2px solid var(--ring);
-  outline-offset: -2px;
-  border-radius: 8px;
-}
-.archive-field:has(input:focus-visible) {
-  border-color: color-mix(in oklab, var(--ink) 35%, var(--border));
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink) 12%, transparent);
-}
-.filter-chip {
-  border: 1px solid var(--fonts-chip-border);
-  background: var(--fonts-chip-bg);
-  color: var(--foreground);
-  transition: background-color 150ms var(--ease-out), border-color 150ms var(--ease-out), color 150ms var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  .filter-chip:hover {
-    border-color: var(--input);
-  }
-}
-.filter-chip.is-on {
-  border-color: var(--fonts-chip-on-border);
-  background: var(--fonts-chip-on-bg);
-  color: var(--fonts-chip-on-text);
-}
-.neat-switch {
-  background: var(--input);
-  transition: background-color 150ms var(--ease-out);
-}
-.neat-switch > span {
-  transition: transform 180ms var(--ease-out);
-}
-.neat-switch[aria-checked='true'] {
-  background: var(--fonts-accent);
-}
-.neat-switch[aria-checked='true'] > span {
-  transform: translateX(16px);
 }
