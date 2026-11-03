@@ -544,12 +544,11 @@ html[data-look='reading-room'] .rr-ledger-record {
 html[data-look='reading-room'] .rr-ledger-waiting {
   min-height: 26rem;
 }
-/* on the desk the record opens the column: its first rule on the sheet's top edge, then its number, its two-line
-   title and, as the head's last line, Bring another */
+/* on the desk the record opens the column with no rule above it (Rafael, 4 Nov): its number, its two-line title and,
+   as the head's last line, Bring another; the number keeps its place (the 1 px the rule took is padding now) */
 html[data-look='reading-room'] .rr-desk .rr-ledger-record:first-child {
   margin-top: 0;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--rr-hair);
+  padding-top: calc(0.5rem + 1px);
 }
 /* desktop: Bring another, the desk's main action, is a button (Rafael, 4 Nov): a light archival-red tint with no
    edge, the controls' height and corners, its words in the action role like the phone's peek (the book face, 17 px,
