@@ -588,7 +588,7 @@ html[data-look='reading-room'] .sp-reply {
   padding: 0.375rem 0;
   color: var(--rr-red);
 }
-html[data-look='reading-room'] .sp-reply svg { width: 1.125rem; height: 1.125rem; }
+html[data-look='reading-room'] .sp-reply svg { width: 1rem; height: 1rem; }
 html[data-look='reading-room'] :is(.sp a, .sp button):focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
