@@ -90,6 +90,20 @@ html[data-look='reading-room'] {
      head, atop a column, a drawer, a sheet, a menu, the spread). High contrast raises both (below) */
   --rr-rule: color-mix(in oklab, var(--rr-ink) 12%, transparent);
   --rr-hair: color-mix(in oklab, var(--rr-ink) 16%, transparent);
+  /* the controls (colour pass, 4 Nov, "Ruled"): drawn, not filled. A soft ink hairline around each control at rest,
+     the room showing through; a faint ink wash under the pointer, a deeper one held down; chosen, the paper-white face
+     with an ink rule. The ladder is room → surface → control → chosen; themes/rr-color.css (?rrcolor=2, 3, 0) swaps
+     these values to compare the other sets */
+  --rc-surface-1: var(--rr-card); /* where controls live on phones (the control sheet) */
+  --rc-surface-2: var(--rr-slip); /* slips: menus, popovers, fields */
+  --rc-rule: var(--rr-rule);
+  --rc-ctl: transparent; /* a control at rest */
+  --rc-ctl-edge: color-mix(in oklab, var(--rr-ink) 24%, transparent); /* its edge: a drawn line, soft */
+  --rc-ctl-hover: color-mix(in oklab, var(--rr-ink) 6%, transparent);
+  --rc-ctl-press: color-mix(in oklab, var(--rr-ink) 11%, transparent);
+  --rc-ctl-on: #fbfaf6; /* a chosen control's face */
+  --rc-track: #7d786e; /* a thin track, a switch's edge: 3.6:1 on the room, 4.0:1 on the card */
+  --rc-track-soft: #d3cfc6; /* a switch that's off */
   /* the grid (house rules, layout study): 12 columns at 1440, 40 px margins, 32 px gutters; a side column is 3 of
      them, the 20rem panel (density.css --panel-w) */
   --rr-margin: 2.5rem;
@@ -162,10 +176,10 @@ html[data-look='reading-room'] {
   --text-muted: var(--rr-muted);
   --text-faint: var(--rr-faint);
   --panel: var(--rr-card);
-  --hairline: #dcd3c0;
-  --chip: #e9e2d2;
-  --chip-hover: #e1d8c5;
-  --popover: var(--rr-slip);
+  --hairline: var(--rc-rule);
+  --chip: var(--rc-ctl);
+  --chip-hover: var(--rc-ctl-hover);
+  --popover: var(--rc-surface-2);
   --input: #c9c0ac;
   --ring: var(--rr-ink);
   --radius: 0.25rem;
@@ -173,9 +187,9 @@ html[data-look='reading-room'] {
      action only */
   --ink-press: #10161f;
   --mark: var(--rr-ink);
-  --tile-on: #fdfbf6;
-  --field: var(--rr-slip);
-  --switch-off: #d6cdb9;
+  --tile-on: var(--rc-ctl-on);
+  --field: var(--rc-surface-2);
+  --switch-off: var(--rc-track-soft);
   --rule-link: color-mix(in oklab, var(--rr-ink) 30%, transparent);
   /* the letter lies flat on the desk: no shadow under a sheet (Rafael, 3 Nov) */
   --sheet-shadow: none;
@@ -679,6 +693,69 @@ html[data-look='reading-room'] [role='switch'][data-state='checked'],
 html[data-look='reading-room'] [data-slot='switch'][data-state='checked'] {
   background: var(--rr-ink);
 }
+/* the controls' colours (the --rc-* ladder in the token block); their feel is components/ui/controls.css */
+/* the phone's control sheet and the writing tray: surface 1 */
+html[data-look='reading-room'] :is(.control-sheet, .sheet-surface) {
+  background: var(--rc-surface-1);
+}
+html[data-look='reading-room'] :is(.sheet-surface, .control-sheet) .sheet-row:active {
+  background: var(--rc-ctl-press);
+}
+/* the controls you operate: fills, edges, the held-down state */
+html[data-look='reading-room'] :is(
+    [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+    [role='radiogroup']:is([aria-label='Pen'], [aria-label='School']) > button,
+    [data-slot='button'].bg-secondary
+  ):not([aria-checked='true']) {
+  background-color: var(--rc-ctl);
+  box-shadow: inset 0 0 0 1px var(--rc-ctl-edge);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] :is(
+      [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+      [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
+      [data-slot='button'].bg-secondary
+    ):not([aria-checked='true']):hover {
+    background-color: var(--rc-ctl-hover);
+  }
+}
+html[data-look='reading-room'] :is(
+    [data-slot='segmented'] > [data-slot='segmented-item'],
+    [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
+    [data-slot='button'].bg-secondary
+  ):not([aria-checked='true']):not([data-state='on']):active {
+  background-color: var(--rc-ctl-press);
+}
+/* Print / Joined: its track is a control at rest, its chosen half the chosen face */
+html[data-look='reading-room'] [data-slot='segmented']:not(.bg-transparent):not([aria-label='Ink']):not([aria-label='Paper']):not([aria-label^='Kind of']) {
+  background-color: var(--rc-ctl);
+  box-shadow: inset 0 0 0 1px var(--rc-ctl-edge);
+}
+html[data-look='reading-room'] [data-slot='segmented'] > [data-slot='segmented-item'][data-state='on'] {
+  background-color: var(--rc-ctl-on);
+  box-shadow: 0 0 0 1px var(--rr-ink);
+}
+/* the ink-bar slider (ui/controls.css): the bar is a control at rest, with its edge; the switch at rest */
+html[data-look='reading-room'] [data-row]:not(.specimen-bar *) > [data-slot='slider'] > span:first-child {
+  background-color: var(--rc-ctl) !important;
+  box-shadow: inset 0 0 0 1px var(--rc-ctl-edge);
+}
+/* the Fonts page's size slider keeps a thin track, 3:1 or more */
+html[data-look='reading-room'] .specimen-bar [data-slot='slider'] > span:first-child {
+  background-color: var(--rc-track);
+}
+html[data-look='reading-room'] [role='switch'][aria-checked='false'] {
+  background-color: var(--rc-track-soft);
+  box-shadow: inset 0 0 0 1.5px var(--rc-track);
+}
+/* the sliding face (ui/toggle-group.tsx) in the room: the chosen face, ruled in ink like every chosen control */
+html[data-look='reading-room'] [data-slot='segmented'][data-slide] > .seg-face {
+  background: var(--rc-ctl-on);
+  box-shadow: 0 0 0 1px var(--rr-ink);
+}
+html[data-look='reading-room'] [data-slot='segmented'][data-slide][aria-label^='Kind of'] > .seg-face {
+  box-shadow: 0 0 0 1.5px var(--rr-ink);
+}
 
 /* ---------- phones: the control sheet as a slip ---------- */
 html[data-look='reading-room'] .control-sheet {
@@ -1050,7 +1127,7 @@ html[data-look='reading-room'] kbd {
 html[data-look='reading-room'] {
   --fonts-name-size: 1rem;
   --fonts-attr-size: 0.875rem;
-  --fonts-chip-bg: var(--rr-slip);
+  --fonts-chip-bg: var(--rc-ctl);
   --fonts-chip-on-border: color-mix(in oklab, var(--rr-ink) 45%, var(--rr-edge));
   --fonts-strip-radius: 2px;
   /* the badge on More is a count: a number, so archival red */
