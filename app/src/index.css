@@ -78,6 +78,22 @@
   --dur-press: 100ms;
   --dur-pop: 180ms;
   --dur-out: 130ms;
+  /* states, one set for every control (hover and press audit, 4 Nov); the Reading Room maps its own in its token
+     block (themes/reading-room.css) */
+  --st-hover: var(--chip-hover);
+  --st-press: #ddd4c5;
+  --st-accent: color-mix(in oklab, var(--mark) 8%, transparent);
+  --st-accent-hover: color-mix(in oklab, var(--mark) 12%, transparent);
+  --st-accent-press: color-mix(in oklab, var(--mark) 16%, transparent);
+  --st-line: var(--rule-link);
+  --st-line-hover: currentColor;
+  --st-on: var(--tile-on);
+  --st-on-ring: var(--ink);
+  --st-ring: var(--ring);
+  --st-disabled: 0.45;
+  --st-scale: 0.97;
+  --st-scale-row: 0.985;
+  --st-dur: 150ms;
 
   --sheet-shadow:
     0 0.5px 0 rgba(60, 45, 20, 0.08),
