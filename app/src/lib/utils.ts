@@ -19,4 +19,6 @@ export function saveBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-export const fileSafe = (s: string) => s.replace(/[^A-Za-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'note';
+/** A name that's safe as a file name everywhere: readable words and spaces kept, only the characters file systems refuse dropped. */
+export const fileSafe = (s: string) =>
+  s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80).trim() || 'letter';

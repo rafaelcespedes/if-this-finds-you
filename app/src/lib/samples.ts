@@ -27,8 +27,14 @@ const STYLE_TRADITIONS: Record<string, string[]> = {
   palmer: ['american-business'],
   spencerian: ['american-business'],
   suetterlin: ['sutterlin', 'german-kurrent'],
+  'kurrent-1849': ['german-kurrent'],
   arrighi: ['italian-chancery'],
   'quebec-print': ['modern-adult', 'french-school'],
+  'adult-fr-2023': ['french-school', 'modern-adult'],
+  'norwegian-1849': ['norwegian-roundhand'],
+  'polish-1906': ['polish-copperplate'],
+  'spanish-1776': ['spanish-letra-espanola'],
+  'dutch-1618': ['dutch-running'],
 };
 
 const suits = (s: SampleText, style: string) => {
@@ -52,16 +58,41 @@ function historical(style: string) {
   return y > 0 && y < 1700;
 }
 
-/** The letter a seed writes, in this style. The same seed and style always give the same letter. */
-export function sampleForSeed(seed: string, style: string): SampleText | undefined {
+/**
+ * The letter a seed writes, in this style: picked by the seed, so it doesn't change on its own; `avoid` (the
+ * letters just shown) moves it on to the next one in the pool, so flipping never brings the same letter back
+ * soon. Shared links name the letter, so they never depend on this.
+ */
+export function sampleForSeed(seed: string, style: string, avoid?: ReadonlySet<string>): SampleText | undefined {
   if (!SAMPLES.length) return undefined;
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
   const old = historical(style);
   const fit = SAMPLES.filter((s) => old || s.year >= 1660);
   const suited = fit.filter((s) => suits(s, style) && STYLE_TRADITIONS[style]);
-  const from = suited.length ? suited : fit.length ? fit : SAMPLES;
-  return from[(h >>> 0) % from.length];
+  // a small pool (a tradition with few letters) still tries the wider collection before repeating
+  const pools = [suited, fit, SAMPLES].filter((p) => p.length);
+  const start = h >>> 0;
+  for (const pool of pools) {
+    for (let d = 0; d < pool.length; d++) {
+      const s = pool[(start + d) % pool.length];
+      if (!avoid?.has(s.id)) return s;
+    }
+  }
+  return pools[0][start % pools[0].length];
+}
+
+// ---------- the letters just shown, so New hand and Another letter don't bring them back soon ----------
+const RECENT_KEY = 'seedhand:recent-letters';
+const RECENT = 10;
+let recent: string[] = (() => {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]').filter((x: unknown) => typeof x === 'string').slice(0, RECENT); } catch { return []; }
+})();
+export const recentLetters = (): ReadonlySet<string> => new Set(recent);
+export function sawLetter(id: string | null | undefined) {
+  if (!id || recent[0] === id) return;
+  recent = [id, ...recent.filter((x) => x !== id)].slice(0, RECENT);
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch { /* fine */ }
 }
 
 /** "Letter: Kamma Rahbek, 1813" (or "Note: …"; and the translator, when there is one). */
