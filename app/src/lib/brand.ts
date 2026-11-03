@@ -1,6 +1,9 @@
 // The product's name, as people see it. "Seedhand" stays in code and in storage keys (renaming those would
 // lose people's saved drafts and settings).
 export const APP_NAME = 'If This Finds You';
+/** The name on its own, with what it is (docs/brand/naming-and-copy.md §2.11); never an abbreviation. */
+export const DESCRIPTOR = 'Real letters, written out by hand.';
+export const NAME_WITH_DESCRIPTOR = `${APP_NAME} · ${DESCRIPTOR}`;
 
 /** Engine credits name the project by its code name; people see the product's name. */
 export const branded = (s: string) => s.replace(/\bSeedhand\b/g, APP_NAME);

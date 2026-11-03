@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { CaseSensitive, ChevronDown, LayoutDashboard, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
-import { APP_NAME, withLogo } from '@/lib/brand';
+import { APP_NAME, NAME_WITH_DESCRIPTOR, withLogo } from '@/lib/brand';
 import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
 import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
@@ -444,9 +444,10 @@ export default function App() {
     if (c && theirsForwardRef.current) setTheirsForward(false);
   }, []);
 
+  // the tab: the name and what it is; a letter someone sent says it's for you (never its words)
   useEffect(() => {
-    document.title = `${name} – ${APP_NAME}`;
-  }, [name]);
+    document.title = state.reader ? `A letter for you · ${APP_NAME}` : NAME_WITH_DESCRIPTOR;
+  }, [state.reader]);
 
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
   const posture = usePosture(editing);
