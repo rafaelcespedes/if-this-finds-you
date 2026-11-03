@@ -38,15 +38,16 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   way (the engine's planner): strikes a word through and writes it again, writes a letter over another, adds
   a word above the line with a caret; the pen hovers while they consider. Undo lifts only wet ink (3 s).
   "Make a fair copy" writes the letter out cleanly on a fresh sheet; "Fresh sheet" starts over. The first key
-  on an untouched sample letter takes a fresh sheet. Fair copy (the switch in How it's written) edits cleanly,
-  and so does a pencil until the engine has Pencil mode. The ink log travels in links as `k=`, and the worker
+  on an untouched sample letter takes a fresh sheet. The mode lives in the small menu under the sheet ("In ink ▾", `WritingMenu.tsx`):
+  In ink, In pencil, Fair copy (edits cleanly); a pencil edits cleanly too until the engine has Pencil mode. The ink log travels in links as `k=`, and the worker
   replays it, so New hand keeps the letter, corrections and all, in the new hand.
 - **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
-  about how they write.
+  about how they write. The name opens **About this hand**: how they write, where they learned, the letter's
+  source, where the letter shapes come from (with links), and the seed.
 - **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
   of several candidates), Print or Joined, pen and tip, ink, paper, size, and a fresh offset on every
-  slider, each inside a band that stays legible. Small **locks** beside Pen, Ink and Paper keep those
-  while everything else rolls (remembered per browser). The next two new hands (and a sibling) are
+  slider, each inside a band that stays legible. **Keep my paper, pen and ink** (a switch under More) keeps
+  those while everything else rolls (remembered per browser). The next two new hands (and a sibling) are
   rolled and written ahead in a second worker while you look at the current one, so a click shows the next
   hand at once. From the button, paper and writing cross-fade in place (170 ms, opacity only; a click
   mid-fade takes over from where it is); from the keyboard it simply appears. The controls never move,
@@ -59,27 +60,32 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   (Everyday, Business 1915, German school, Chancery, ...), each written in this writer's hand in that
   school, with where and when it was taught (`getStyle(name).tradition`). New styles from the engine show
   up as cards by themselves (`lib/styles.ts`). The cards scroll sideways.
-- **Controls** follow `docs/research/controls-and-feel.md`:
-  - *How it's written:* Neatness, Hurry, Pressure, Slant, and an Occasion (Thank-you card, Shopping list,
-    Love letter, Lecture notes, Postcard) with an Amount.
-  - *Pen, ink and paper:* Pen (Their own, Ballpoint, Gel, Fountain, Dip pen, Italic nib, Felt tip, Pencil;
-    each swatch is the word "ink" written with that pen), a Fine / Medium / Bold tip, ink families, Paper.
-    Size sits with *How it's written*.
-  - *More controls* (a disclosure): Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle,
-    Line spacing, Line rhythm, Baseline wobble, Margins, Letter spacing (print only), Word spacing,
-    Letter height, Letter width, Tremor, Tiredness, Variety (how far New hand jumps).
+- **Controls** follow `docs/research/controls-and-feel.md`, in three levels so a first visit isn't a wall
+  of sliders (`Panel.tsx`):
+  - *Always there:* the writer's name (opens About this hand), **New hand**, "Another letter" while a found
+    letter is on the page, and one **Share** icon. Under the sheet: the letter's credit and the writing menu
+    (In ink / In pencil / Fair copy, Make a fair copy, Fresh sheet, Blank page, Sign it, Edit as plain text).
+  - *The look,* one scrolling column, no tabs, in this order: **Paper** (a row of swatches), **Pen** (each
+    swatch is the word "ink" written with that pen; Fine / Medium / Bold beside it), **Ink**, **Handwriting**
+    (Print or Joined, the school cards, Similar), **How they write** (Neatness, Hurry, Size, each with plain
+    words at its ends: Messy / Neat, Calm / Rushed, Small / Large).
+  - *More* (folded): the other sliders (Pressure, Slant), an Occasion with an Amount, Keep my
+    paper, pen and ink, Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle, Line spacing,
+    Line rhythm, Baseline wobble, Margins, Letter spacing (print only), Word spacing, Letter height, Letter
+    width, Tremor, Tiredness, Variety (how far New hand jumps), the seed, and "Back to X's natural hand".
   - **Every slider is seed-relative.** The thumb starts at this hand's natural value (the small dot on
     the track) and moving it adds an offset; double-click a slider to go back to the dot. Similar hand
     keeps your How and With-what offsets and clears the Who ones (slant, proportions, spacing).
-- **Actions.** Share link (copies a URL that restores the exact note; the toast offers the share sheet
-  where there is one), Download note (JPEG at 3x the screen, paper and writing exactly as shown; on phones
-  it opens the share sheet, so Save Image puts it in Photos), Export font file (.otf from the engine's
-  `buildFont`, opentype.js 1.3.4, loaded only when used).
+- **Share** (one icon): Copy link (a URL that restores the exact note; the toast offers the share sheet
+  where there is one), Download image (JPEG at 3x the screen, paper and writing exactly as shown; on phones
+  it opens the share sheet, so Save Image puts it in Photos), and under More formats, Font file (.otf from
+  the engine's `buildFont`, opentype.js 1.3.4, loaded only when used).
 - **On phones** the controls live in a sheet that's always there, at three heights (`ControlSheet.tsx`):
-  - *peek:* the writer, New hand, a share button (Share link, Download note, Export font), and three tabs:
-    Hand, Writing, Pen & paper. Tap a tab to open it.
-  - *half:* that tab's controls. The letter shrinks to fit above the sheet, so every change shows.
-  - *full:* everything, scrolling. While a finger slides a control, the rest of the sheet fades away and
+  - *peek:* the writer's name (About this hand), New hand, Share, what's on the page ("A found letter" /
+    "Another letter") and "Paper, pen & ink" to open it.
+  - *half:* the look from the top (Paper, Pen, Ink). The letter shrinks to fit above the sheet, so every
+    change shows.
+  - *full:* the same column as the desktop panel, scrolling, More folded at the end. While a finger slides a control, the rest of the sheet fades away and
     the letter moves into the free space above or below that control.
   - Drag the top (or the content, below full height) to move between heights; a flick goes on to the next
     one. A tap on the letter folds the sheet down; a second tap writes. Writing hides the sheet behind the
@@ -159,8 +165,9 @@ src/
     Writing.tsx           THE writing renderer on screen (see "Renderer boundary")
     SheetView.tsx         one sheet: paper canvas + writing
     PaperEditor.tsx       typing on the paper: hidden textarea, caret, selection, line-aware keys
-    Panel.tsx             the controls, in sections the side panel and the phone sheet share
-    ControlSheet.tsx      the phone's control sheet: peek / half / full, tabs, share menu, drag
+    Panel.tsx             the controls (About this hand, Share, the look, More), shared by the side panel and the phone sheet
+    ControlSheet.tsx      the phone's control sheet: peek / half / full, drag
+    WritingMenu.tsx       the menu under the sheet: In ink / In pencil / Fair copy, and what to do with the sheet
     StylePicker.tsx       Print or Joined, then school cards with a sample in each school
     PenPicker.tsx         pen swatches (a word in each pen) and the tip
     Specimen.tsx          small handwriting samples, made in idle moments and kept

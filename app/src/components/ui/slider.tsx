@@ -17,8 +17,12 @@ function Slider({
   onReset,
   onValueChange,
   onValueCommit,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
+  'aria-valuetext': ariaValueText,
+  'aria-description': ariaDescription,
   ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root> & { mark?: number; onReset?: () => void }) {
+}: React.ComponentProps<typeof SliderPrimitive.Root> & { mark?: number; onReset?: () => void; 'aria-description'?: string }) {
   const min = props.min ?? 0;
   const max = props.max ?? 100;
   const step = props.step ?? 1;
@@ -128,6 +132,11 @@ function Slider({
       {(props.value ?? props.defaultValue ?? [0]).map((_, i) => (
         <SliderPrimitive.Thumb
           key={i}
+          // the thumb is what a screen reader lands on, so its name and value go there
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledBy}
+          aria-valuetext={ariaValueText}
+          aria-description={ariaDescription}
           className={cn(
             "relative block size-4 rounded-full border border-[color-mix(in_oklab,var(--ink)_30%,transparent)] bg-[#fffefb] shadow-[0_1px_2px_rgba(30,24,12,0.18),0_2px_6px_-2px_rgba(30,24,12,0.18)] transition-[transform,box-shadow] duration-150 ease-out after:absolute after:-inset-3 after:content-[''] hover-device:hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:size-5",
             active && 'scale-110 shadow-[0_1px_2px_rgba(30,24,12,0.2),0_4px_10px_-2px_rgba(30,24,12,0.25)]',

@@ -26,6 +26,7 @@ import { rollHand, withSample, type LockKey } from '@/lib/roll';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleCredit, sampleForSeed, sawLetter } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
 import { ReplyPeek } from '@/components/ReplyPeek';
+import { WritingMenu } from '@/components/WritingMenu';
 import { DEFAULT_INK, INK_FAMILIES } from '@/lib/inks';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
@@ -454,12 +455,11 @@ export default function App() {
     inkKey: eff.inkKey,
     variety,
     locks,
-    onToggleLock: (key) => setLocks((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
+    onKeepLook: (keep) => {
+      const next = new Set<LockKey>(keep ? ['paper', 'pen', 'ink'] : []);
       writePref('seedhand:locks', [...next].join(','));
-      return next;
-    }),
+      setLocks(next);
+    },
     busy,
     onNewHand: () => newHand(true),
     onSimilarHand: () => similarHand(true),
@@ -678,29 +678,24 @@ export default function App() {
                   )}
                 </PaperEditor>
                 <div
-                  className={cn('mx-auto mt-4 flex items-center justify-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
+                  className={cn('mx-auto mt-3 flex items-center text-[12.5px] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
                   style={{ width: shownPaper.w * pxPerMm }}
                 >
-                  {sample && (
-                    <>
-                      <span className="mr-auto truncate pr-3 text-[12px]" title={sample.title}>{sampleCredit(sample)}</span>
-                      <button
-                        type="button"
-                        onClick={() => update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) }))}
-                        className="mr-1 shrink-0 rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
-                      >
-                        Blank page
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
-                    className="shrink-0 rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
-                    aria-expanded={plainText}
-                  >
-                    {plainText ? 'Hide plain text' : 'Edit as plain text'}
-                  </button>
+                  {/* the letter's credit on the left, how you're writing on the right */}
+                  <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample ? sampleCredit(sample) : ''}</span>
+                  <WritingMenu
+                    inkAvailable={!!panelProps.ink}
+                    mode={state.pen === 'pencil' ? 'pencil' : state.mode}
+                    onMode={(m) => panelProps.ink?.onMode(m)}
+                    inkLetter={!!state.inkLog}
+                    onFairCopy={() => panelProps.ink?.onFairCopy()}
+                    onFreshSheet={() => panelProps.ink?.onFreshSheet()}
+                    onBlankPage={sample ? () => update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) })) : undefined}
+                    signed={state.signed}
+                    onSign={toggleSigned}
+                    plainText={plainText}
+                    onPlainText={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
+                  />
                 </div>
                 {state.replyTo && !sample && (
                   <ReplyPeek replyTo={state.replyTo} pxPerMm={pxPerMm} size={eff.size} lineSpacing={eff.lineSpacing} ink={ink} onDismiss={() => update({ replyTo: null })} />
@@ -729,6 +724,9 @@ export default function App() {
             onDone={() => editor.current?.blur()}
             ink={inkMode}
             onUndo={inkMode ? () => onEdit({ at: 0, del: 0, ins: '', kind: 'undo', t: Date.now(), source: 'paper' }) : undefined}
+            mode={panelProps.ink ? (state.pen === 'pencil' ? 'pencil' : state.mode) : undefined}
+            onMode={panelProps.ink?.onMode}
+            onFairCopy={inkMode && state.inkLog ? () => panelProps.ink?.onFairCopy() : undefined}
           />
         )}
         {!reader && (isDesktop ? (

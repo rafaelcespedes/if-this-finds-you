@@ -1,5 +1,11 @@
+// The controls, in the order people reach for them (the panel on desktop, the sheet on phones):
+//   always there   the writer (tap for "About this hand"), New hand, share, and what's on the page
+//   the look       Paper, Pen, Ink, Handwriting, How they write (three sliders)
+//   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
+// Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useEffect, useId, useState } from 'react';
-import { Check, ChevronDown, Download, Link2, Loader2, Lock, LockOpen, PenLine, Shuffle, Type, Users } from 'lucide-react';
+import { CaseSensitive, ChevronDown, Download, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
+import { DropdownMenu, Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -13,7 +19,8 @@ import { ADVANCED_GROUPS, CONTROLS, isLive, isShown, naturalValue, penSizeFactor
 import { ENGINE_TIPS, MODELLED_INK } from '@/lib/engine-features';
 import { describeHand, words } from '@/lib/hands';
 import { handSources } from '@/lib/credits';
-import { sampleById, sampleCredit } from '@/lib/samples';
+import { sampleById } from '@/lib/samples';
+import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
 import { PAPERS, type PaperId, type PaperSpec } from '@/lib/papers';
@@ -37,7 +44,8 @@ export interface PanelProps {
   variety: number;
   /** kept when rolling a new hand */
   locks: Set<LockKey>;
-  onToggleLock: (key: LockKey) => void;
+  /** keep the paper, pen and ink (all three) when rolling a new hand, or not */
+  onKeepLook: (keep: boolean) => void;
   busy: { download: boolean; font: boolean };
   onNewHand: () => void;
   onSimilarHand: () => void;
@@ -69,7 +77,7 @@ export interface PanelProps {
     onAnother: () => void;
     onBackToMine: () => void;
   };
-  /** Ink mode (when the engine writes in ink): the mode, and the letter's sheet commands */
+  /** Ink mode (when the engine writes in ink): used by the writing menu and the pen tray, not the panel */
   ink?: {
     on: boolean;
     /** anything written in ink yet */
@@ -80,63 +88,158 @@ export interface PanelProps {
   };
 }
 
-/** The desktop panel: every section in one column, actions pinned at the bottom. */
+/** The desktop panel: the writer and New hand, then the look, then More. */
 export function Panel(props: PanelProps) {
   return (
     <div className="flex min-h-full flex-col">
-      <WriterCard {...props} />
-      <Section label="How it’s written">
-        <WritingControls {...props} />
-      </Section>
-      <Section label="Pen, ink and paper">
-        <PenPaperControls {...props} />
-      </Section>
-      <Advanced {...props} />
-      <Credits p={props.p} sample={props.state.sample} />
-      <section
-        aria-label="Share and download"
-        className="sticky bottom-0 mt-auto border-t border-border bg-[color-mix(in_oklab,var(--panel)_94%,transparent)] px-5 pt-4 pb-5 backdrop-blur-sm"
-      >
-        <Actions {...props} />
-      </section>
+      <WriterHeader {...props} />
+      <LookControls {...props} />
+      <MoreControls {...props} />
     </div>
   );
 }
 
-// ---------- writer ----------
-const WriterCard = memo(function WriterCard(props: PanelProps) {
-  const { p, name, state, onNewHand, onSimilarHand, onSeed, onStyle, onFieldFocus } = props;
+// ---------- always there: the writer, New hand, share, what's on the page ----------
+function WriterHeader(props: PanelProps) {
+  const { onNewHand } = props;
   return (
-    <section aria-label="Writer" className="px-5 pt-5 pb-5">
-      <div key={state.seed + state.style} className="hand-in" style={{ color: inkColor(state.ink) }}>
-        <Signature p={p} name={name} ink="currentColor" emPx={36} className="-ml-1 h-[58px] overflow-visible" />
-      </div>
-      <h2 className="mt-1 text-[17px] leading-tight font-medium tracking-[-0.012em]">{name}</h2>
-      <p className="mt-0.5 text-[12.5px] text-muted-foreground">{describeHand(p)}</p>
-      <SeedField seed={state.seed} onCommit={onSeed} onFocus={onFieldFocus} />
-      <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
-        <Button size="lg" className="justify-between pr-3 pl-3.5" onClick={onNewHand}>
+    <section aria-label="Writer" className="px-5 pt-4 pb-4">
+      <AboutHand {...props}>
+        <button type="button" className="group -mx-1.5 block w-[calc(100%+12px)] rounded-lg px-1.5 pt-1 pb-1.5 text-left transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring">
+          <span key={props.state.seed + props.state.style} className="hand-in block" style={{ color: inkColor(props.state.ink) }}>
+            <Signature p={props.p} name={props.name} ink="currentColor" emPx={34} className="-ml-1 h-[54px] overflow-visible" />
+          </span>
+          <span className="mt-0.5 flex items-center gap-1 text-[16px] leading-tight font-medium tracking-[-0.012em]">
+            {props.name}
+            <ChevronDown aria-hidden className="size-3.5 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          </span>
+        </button>
+      </AboutHand>
+      <div className="mt-3 flex gap-2">
+        <Button size="lg" className="flex-1 justify-between pr-3 pl-3.5" onClick={onNewHand}>
           <span className="flex items-center gap-2">
             <Shuffle aria-hidden /> New hand
           </span>
           <kbd className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
         </Button>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="lg" variant="secondary" onClick={onSimilarHand} className="px-3.5">
-              <Users aria-hidden /> Similar
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>A sibling of this hand (Shift R)</TooltipContent>
-        </Tooltip>
+        <ShareMenu {...props} size="lg" />
       </div>
-      <LetterStatus {...props} className="mt-3" />
-      <div className="mt-4">
-        <StylePicker seed={state.seed} style={state.style} ink={inkColor(state.ink)} onStyle={onStyle} />
-      </div>
+      <LetterStatus {...props} className="mt-2.5" />
     </section>
   );
-});
+}
+
+/** The writer, in their own hand, and where everything on the page comes from. Opens from the writer's name. */
+export function AboutHand({ children, ...props }: PanelProps & { children: React.ReactNode }) {
+  const { p, name, state } = props;
+  const sources = handSources(p);
+  const letter = state.sample ? sampleById(state.sample) : undefined;
+  const dt = 'text-[11.5px] text-muted-foreground';
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>{children}</Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="start"
+          sideOffset={8}
+          collisionPadding={12}
+          className="z-50 w-[min(320px,calc(100vw-24px))] origin-(--radix-popover-content-transform-origin) rounded-2xl border border-border bg-[#fdfcf9] p-4 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
+        >
+          <div style={{ color: inkColor(state.ink) }}>
+            <Signature p={p} name={name} ink="currentColor" emPx={30} className="-ml-1 h-[46px] overflow-visible" />
+          </div>
+          <div className="mt-1 text-[15px] leading-tight font-medium">{name}</div>
+          <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{describeHand(p)}</p>
+          <dl className="mt-3.5 grid gap-2.5 border-t border-border pt-3 text-[12.5px] leading-snug">
+            <div>
+              <dt className={dt}>Learned to write</dt>
+              <dd>{learnedFrom(state.style)}</dd>
+            </div>
+            {letter && (
+              <div>
+                <dt className={dt}>This letter</dt>
+                <dd>
+                  {letter.author}, {letter.year}{letter.title ? `. ${letter.title}` : ''}
+                  {letter.translator && <>, translated by {letter.translator.name}</>}. Public domain.
+                  {letter.source?.url && (
+                    <> <a href={letter.source.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">Source</a></>
+                  )}
+                </dd>
+              </div>
+            )}
+            {sources.length > 0 && (
+              <div>
+                <dt className={dt}>Letter shapes</dt>
+                <dd className="grid gap-1">
+                  {sources.map((s) => (
+                    <span key={s.name}>
+                      {s.name}. <span className="text-muted-foreground">{readerCredit(s.credit)}</span>
+                      {s.url && <> <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">Source</a></>}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt className={dt}>Seed</dt>
+              <dd className="tabular">{state.seed}</dd>
+            </div>
+          </dl>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+
+/** Share: copy a link, save the image; the font file is a quieter extra. One icon wherever it sits. */
+export function ShareMenu({ busy, onShare, onDownload, onExportFont, size }: PanelProps & { size?: 'lg' }) {
+  const working = busy.download || busy.font;
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <Button variant="secondary" size="icon" aria-label="Share" className={cn('size-11', size === 'lg' && 'size-11')}>
+          {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          collisionPadding={12}
+          className="z-50 w-[236px] origin-(--radix-dropdown-menu-content-transform-origin) rounded-2xl border border-border bg-[color-mix(in_oklab,#fdfcf9_96%,transparent)] p-1.5 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_16px_40px_-12px_rgba(40,30,10,0.35)] backdrop-blur-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:data-[state=open]:zoom-in-100 motion-reduce:data-[state=closed]:zoom-out-100"
+        >
+          <MenuItem onSelect={onShare} icon={<Link aria-hidden />}>Copy link</MenuItem>
+          <MenuItem onSelect={onDownload} icon={busy.download ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />} disabled={busy.download}>
+            Download image
+          </MenuItem>
+          <DropdownMenu.Separator className="mx-2 my-1 h-px bg-border" />
+          <DropdownMenu.Label className="px-3 pt-1 pb-0.5 text-[11.5px] text-muted-foreground">More formats</DropdownMenu.Label>
+          <MenuItem onSelect={onExportFont} icon={busy.font ? <Loader2 className="animate-spin" aria-hidden /> : <CaseSensitive aria-hidden />} disabled={busy.font} quiet>
+            Font file (.otf)
+          </MenuItem>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+function MenuItem({ children, icon, onSelect, disabled, quiet }: { children: React.ReactNode; icon: React.ReactNode; onSelect: () => void; disabled?: boolean; quiet?: boolean }) {
+  return (
+    <DropdownMenu.Item
+      disabled={disabled}
+      onSelect={onSelect}
+      className={cn(
+        'flex h-11 cursor-default items-center justify-between gap-3 rounded-[10px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:text-muted-foreground',
+        quiet ? 'text-[13px]' : 'text-[14px]',
+      )}
+    >
+      {children}
+      {icon}
+    </DropdownMenu.Item>
+  );
+}
 
 /**
  * Which letter is on the page, and a way to the other kind: "A found letter · Another letter" (and "Back to my
@@ -164,23 +267,217 @@ export function LetterStatus({ letter, className, compact }: PanelProps & { clas
   );
 }
 
-/** The phone sheet's Hand tab: style and school, a sibling hand, the seed. */
-export function HandControls(props: PanelProps) {
-  const { p, state, onSimilarHand, onSeed, onStyle, onFieldFocus } = props;
+// ---------- the look: paper, pen, ink, handwriting, how they write ----------
+/** What people change first, in that order. Papers sit in one sideways row, like pens. */
+export function LookControls(props: PanelProps & { rows?: boolean; flush?: boolean }) {
+  const { state, flush } = props;
+  const ink = inkColor(state.ink);
+  const pad = flush ? '' : 'px-5';
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-      <div data-row>
-        <StylePicker seed={state.seed} style={state.style} ink={inkColor(state.ink)} onStyle={onStyle} />
+    <>
+      <Group label="Paper" value={PAPERS.find((x) => x.id === state.paper)?.name} className={pad} first>
+        <PaperPicker value={state.paper} onChange={props.onPaper} rows />
+      </Group>
+      {PENS_SHOWN && (
+        <Group
+          label="Pen"
+          value={penName(state.pen)}
+          className={pad}
+          aside={<TipChoice value={state.penSize} ink={ink} onChange={props.onPenSize} />}
+        >
+          {!PENS_LIVE && <Soon />}
+          <PenSwatches seed={state.seed} style={state.style} pen={state.pen} penSize={state.penSize} ink={ink} inkKey={props.inkKey} onPen={props.onPen} />
+        </Group>
+      )}
+      <Group label="Ink" value={inkName(state.ink)} className={pad}>
+        <InkPicker value={state.ink} pen={state.pen} onChange={props.onInk} />
+      </Group>
+      <Group
+        label="Handwriting"
+        className={pad}
+        aside={
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="sm" onClick={props.onSimilarHand} className="-mr-2 text-muted-foreground">
+                <Users aria-hidden /> Similar
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>A sibling of this hand (Shift R)</TooltipContent>
+          </Tooltip>
+        }
+      >
+        <StylePicker seed={state.seed} style={state.style} ink={ink} onStyle={props.onStyle} />
+      </Group>
+      <Group label="How they write" className={pad}>
+        <div className="grid gap-3.5">
+          {topSliders(props).map((c) => <ControlRow key={c.key} c={c} {...props} ends={TOP_ENDS[c.key] ?? c.ends} />)}
+          <SliderRow label="Size" value={state.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} step={SIZE_RANGE.step} describe={words.size} onChange={props.onSize} mark={1} onReset={() => props.onSize(1)} ends={['Small', 'Large']} />
+        </div>
+      </Group>
+    </>
+  );
+}
+
+/** the two sliders people understand at a glance (with Size, the three in How they write) */
+const TOP = ['neatness', 'hurry', 'slant'];
+const TOP_ENDS: Record<string, [string, string]> = { neatness: ['Messy', 'Neat'], hurry: ['Calm', 'Rushed'], slant: ['Leans back', 'Leans forward'] };
+function shownSliders(props: PanelProps) {
+  const connected = !!getStyle(props.state.style)?.connected;
+  return CONTROLS.filter((c) => c.tier === 'primary' && isShown(c, props.natural, { connected }));
+}
+function topSliders(props: PanelProps) {
+  const shown = shownSliders(props);
+  return TOP.map((k) => shown.find((c) => c.key === k)).filter((c): c is SliderControl => !!c).slice(0, 2);
+}
+
+/** Where the hand learned to write, in words: "Everyday joined, modern" or "German school (joined), Germany · 1915–1941". */
+function learnedFrom(style: string) {
+  const [fam] = styleName(style).split(':');
+  const card = styleCard(style);
+  if (card.title === 'Everyday') return `Everyday ${fam.toLowerCase()}, ${card.sub.toLowerCase()}`;
+  return `${card.title} (${fam.toLowerCase()})${card.sub ? `, ${card.sub}` : ''}`;
+}
+
+/** A source credit for readers: the engine's notes to its own docs ("(hand-traditions.md §4)") stay out. */
+function readerCredit(credit: string) {
+  return credit.replace(/\s*\([^)]*\.md[^)]*\)/g, '');
+}
+
+/** One group of controls: a plain label (and what's chosen), an optional small extra on the right. */
+function Group({ label, value, aside, children, className, first }: { label: string; value?: string; aside?: React.ReactNode; children: React.ReactNode; className?: string; first?: boolean }) {
+  const id = useId();
+  return (
+    <section data-row aria-labelledby={id} className={cn('grid grid-cols-[minmax(0,1fr)] gap-2 py-3.5', !first && 'border-t border-border/70', className)}>
+      <div className="flex min-h-7 items-center justify-between gap-3">
+        <h3 id={id} className="flex min-w-0 items-baseline gap-2 text-[13px] font-medium">
+          {label}
+          {value && <span className="truncate font-normal text-muted-foreground">{value}</span>}
+        </h3>
+        {aside}
       </div>
-      <div data-row className="flex items-center gap-2">
-        <Button variant="secondary" onClick={onSimilarHand} className="shrink-0 px-3.5">
-          <Users aria-hidden /> Similar hand
-        </Button>
-        <p className="min-w-0 text-[12.5px] leading-snug text-muted-foreground">{describeHand(p)}</p>
+      {children}
+    </section>
+  );
+}
+
+// ---------- More: everything else, folded away ----------
+export function MoreControls(props: PanelProps & { flush?: boolean }) {
+  const { state, flush } = props;
+  const connected = !!getStyle(state.style)?.connected;
+  const [open, setOpen] = useState(() => readOpen());
+  const id = useId();
+  const top = new Set(topSliders(props).map((c) => c.key));
+  const rest = shownSliders(props).filter((c) => !top.has(c.key));
+  const groups = ADVANCED_GROUPS.map((g) => ({
+    g,
+    items: CONTROLS.filter((c) => c.tier === 'advanced' && c.group === g && isShown(c, props.natural, { connected })),
+  }));
+  const changed = Object.values(state.offsets).some((v) => v) || state.penSize !== 'medium';
+  const kept = props.locks.size === 3;
+  const pad = flush ? '' : 'px-5';
+  return (
+    <section data-row className={cn('border-t border-border/70', !flush && 'mb-4')}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => { writeOpen(!o); return !o; })}
+        className={cn(
+          'flex w-full items-center justify-between py-4 text-[13px] font-medium transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:py-3.5',
+          flush ? 'rounded-lg' : 'px-5',
+        )}
+      >
+        <span className="flex items-baseline gap-2">
+          More
+          <span className="font-normal text-muted-foreground">Pressure, slant, occasion, seed…</span>
+        </span>
+        <ChevronDown aria-hidden className={cn('size-4 text-muted-foreground transition-transform duration-200 ease-out', open && 'rotate-180')} />
+      </button>
+      <div id={id} className={cn('grid transition-[grid-template-rows] duration-300 ease-[var(--ease-drawer)] motion-reduce:transition-none', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+        <div className="overflow-hidden" inert={!open}>
+          <div className={cn('grid gap-6 pt-1 pb-6', pad)}>
+            <div className="grid gap-3.5">
+              {rest.map((c) => <ControlRow key={c.key} c={c} {...props} />)}
+            </div>
+            <div className="grid gap-3">
+              <OccasionRow {...props} />
+              <Switch
+                label="Keep my paper, pen and ink"
+                hint="New hand changes only the writer"
+                checked={kept}
+                onChange={props.onKeepLook}
+              />
+            </div>
+            {groups.map(({ g, items }) => (
+              <div key={g} className="grid gap-3.5">
+                <div data-row className="text-[12.5px] text-muted-foreground">{g}</div>
+                {items.map((c) => <ControlRow key={c.key} c={c} {...props} />)}
+                {g === 'Letters and variety' && (
+                  <SliderRow
+                    label="Variety"
+                    value={props.variety}
+                    min={0}
+                    max={100}
+                    step={1}
+                    describe={(v) => (v <= 20 ? 'Siblings' : v <= 70 ? 'Strangers' : 'Wild')}
+                    onChange={props.onVariety}
+                    mark={60}
+                    onReset={() => props.onVariety(60)}
+                    hint="How far New hand jumps"
+                  />
+                )}
+              </div>
+            ))}
+            <div className="grid gap-2">
+              <SeedField seed={state.seed} onCommit={props.onSeed} onFocus={props.onFieldFocus} />
+              {changed && (
+                <button
+                  type="button"
+                  onClick={props.onResetOffsets}
+                  className="justify-self-start text-[12.5px] text-muted-foreground underline-offset-4 transition-colors duration-150 hover-device:hover:text-foreground hover-device:hover:underline pointer-coarse:py-3"
+                >
+                  Back to {props.name.split(' ')[0]}’s natural hand
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-      <div data-row>
-        <SeedField seed={state.seed} onCommit={onSeed} onFocus={onFieldFocus} />
-      </div>
+    </section>
+  );
+}
+function readOpen() {
+  try { return localStorage.getItem('seedhand:advanced') === '1'; } catch { return false; }
+}
+function writeOpen(v: boolean) {
+  try { localStorage.setItem('seedhand:advanced', v ? '1' : '0'); } catch { /* fine */ }
+}
+
+/** An on/off switch with a plain label. */
+function Switch({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+  const id = useId();
+  return (
+    <div data-row className="flex items-center justify-between gap-3">
+      <span className="grid">
+        <span id={id} className="text-[13px] font-medium">{label}</span>
+        {hint && <span className="text-[12px] text-muted-foreground">{hint}</span>}
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={id}
+        onClick={() => onChange(!checked)}
+        className={cn(
+          "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring after:absolute after:-inset-2 after:content-['']",
+          checked ? 'bg-[var(--ink)]' : 'bg-[#dcd6ca]',
+        )}
+      >
+        <span
+          aria-hidden
+          className={cn('absolute top-[3px] left-[3px] size-5 rounded-full bg-[#fffefb] shadow-[0_1px_2px_rgba(30,24,12,0.25)] transition-transform duration-200 ease-[var(--ease-drawer)]', checked && 'translate-x-[18px]')}
+        />
+      </button>
     </div>
   );
 }
@@ -195,12 +492,13 @@ function SeedField({ seed, onCommit, onFocus }: { seed: string; onCommit: (s: st
     else setV(seed);
   };
   return (
-    <div className="mt-3 flex items-center gap-2 text-[12.5px] text-muted-foreground first:mt-0">
+    <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
       <label htmlFor={id} className="shrink-0">
         Seed
       </label>
       <input
         id={id}
+        name="seed"
         value={v}
         spellCheck={false}
         autoComplete="off"
@@ -214,82 +512,13 @@ function SeedField({ seed, onCommit, onFocus }: { seed: string; onCommit: (s: st
           if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           if (e.key === 'Escape') { setV(seed); (e.target as HTMLInputElement).blur(); }
         }}
-        className="tabular min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-[13px] text-foreground transition-[border-color,background-color] duration-150 hover-device:hover:border-border focus:border-input focus:bg-[#fffefb] focus:outline-none pointer-coarse:border-border pointer-coarse:bg-[#fdfcf9] pointer-coarse:px-2.5 pointer-coarse:py-2.5 pointer-coarse:text-[16px]"
+        className="tabular min-w-0 flex-1 rounded-md border border-border bg-[#fdfcf9] px-2 py-1.5 text-[13px] text-foreground transition-[border-color,background-color] duration-150 focus:border-input focus:bg-[#fffefb] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:px-2.5 pointer-coarse:py-2.5 pointer-coarse:text-[16px]"
       />
     </div>
   );
 }
 
-// ---------- how it's written ----------
-export function WritingControls(props: PanelProps) {
-  const { state } = props;
-  const connected = !!getStyle(state.style)?.connected;
-  const primary = CONTROLS.filter((c) => c.tier === 'primary' && isShown(c, props.natural, { connected }));
-  const changed = Object.values(state.offsets).some((v) => v) || state.penSize !== 'medium';
-  return (
-    <>
-      {props.ink && <InkRow {...props} />}
-      <div className="grid gap-3.5">
-        {primary.map((c) => (
-          <ControlRow key={c.key} c={c} {...props} />
-        ))}
-        <SliderRow label="Size" value={state.size} min={SIZE_RANGE.min} max={SIZE_RANGE.max} step={SIZE_RANGE.step} describe={words.size} onChange={props.onSize} mark={1} onReset={() => props.onSize(1)} />
-      </div>
-      <OccasionRow {...props} />
-      <div data-row className="mt-3">
-        <Row label="Signature">
-          <Button variant={state.signed ? 'secondary' : 'outline'} size="sm" onClick={props.onSign} aria-pressed={state.signed}>
-            {state.signed ? <Check aria-hidden /> : <PenLine aria-hidden />}
-            {state.signed ? 'Signed' : 'Sign it'}
-          </Button>
-        </Row>
-      </div>
-      <div data-row className="mt-3 min-h-5">
-        {changed && (
-          <button
-            type="button"
-            onClick={props.onResetOffsets}
-            className="text-[12.5px] text-muted-foreground underline-offset-4 transition-colors duration-150 hover-device:hover:text-foreground hover-device:hover:underline pointer-coarse:py-3"
-          >
-            Back to {props.name.split(' ')[0]}’s natural hand
-          </button>
-        )}
-      </div>
-    </>
-  );
-}
-
-/** Ink (what's written stays; the writer corrects by hand) or Fair copy (the page redraws cleanly). */
-function InkRow({ ink, state }: PanelProps) {
-  if (!ink) return null;
-  // Pencil is the pencil pen: it rubs out, so edits redraw the page (the engine's own Pencil mode comes later)
-  const value = state.pen === 'pencil' ? 'pencil' : state.mode;
-  return (
-    <div data-row className="mb-4 grid gap-2">
-      <div className="text-[13px] font-medium">Writing in</div>
-      <Segmented type="single" aria-label="Writing in" value={value} onValueChange={(v) => v && ink.onMode(v as 'ink' | 'pencil' | 'fair')}>
-        <SegmentedItem value="ink">Ink</SegmentedItem>
-        <SegmentedItem value="pencil">Pencil</SegmentedItem>
-        <SegmentedItem value="fair">Fair copy</SegmentedItem>
-      </Segmented>
-      <p className="text-[12px] leading-snug text-muted-foreground">
-        {value === 'pencil'
-          ? 'A pencil rubs out: change anything and the page is written again.'
-          : value === 'ink'
-            ? 'What’s written stays. Change your mind and the writer crosses it out, their own way.'
-            : 'Every edit redraws the page cleanly.'}
-      </p>
-      {ink.on && ink.letter && (
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={ink.onFairCopy}>Make a fair copy</Button>
-          <Button variant="ghost" size="sm" onClick={ink.onFreshSheet}>Fresh sheet</Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ControlRow({ c, natural, state, emMm, onControl, onResetControl }: { c: SliderControl } & PanelProps) {
+function ControlRow({ c, natural, state, emMm, onControl, onResetControl, ends }: { c: SliderControl; ends?: [string, string] } & PanelProps) {
   const value = controlValue(c.key, natural, state);
   let mark = naturalValue(c, natural);
   if (c.key === 'penWidth' && !ENGINE_TIPS) mark *= penSizeFactor(state.penSize);
@@ -306,6 +535,7 @@ function ControlRow({ c, natural, state, emMm, onControl, onResetControl }: { c:
       mark={mark}
       onReset={() => onResetControl(c.key)}
       soon={!isLive(c, natural)}
+      ends={ends}
     />
   );
 }
@@ -313,7 +543,7 @@ function ControlRow({ c, natural, state, emMm, onControl, onResetControl }: { c:
 function OccasionRow({ state, onOccasion, onAmount }: PanelProps) {
   const id = useId();
   return (
-    <div className="mt-4 grid gap-2">
+    <div className="grid gap-2">
       <div data-row className="flex min-h-8 items-center justify-between gap-3">
         <label htmlFor={id} className="text-[13px] font-medium">
           Occasion
@@ -352,231 +582,7 @@ function OccasionRow({ state, onOccasion, onAmount }: PanelProps) {
   );
 }
 
-// ---------- pen, ink and paper ----------
-export function PenPaperControls(props: PanelProps & { rows?: boolean }) {
-  const { state, rows } = props;
-  const ink = inkColor(state.ink);
-  return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-      {PENS_SHOWN && (
-        <div data-row className="grid grid-cols-[minmax(0,1fr)] gap-1.5">
-          <Row label="Pen" value={penName(state.pen)} lock={<LockToggle what="pen" {...props} />}>
-            {!PENS_LIVE && <Soon />}
-          </Row>
-          <PenSwatches seed={state.seed} style={state.style} pen={state.pen} penSize={state.penSize} ink={ink} inkKey={props.inkKey} onPen={props.onPen} />
-        </div>
-      )}
-      <div data-row>
-        <Row label="Tip">
-          <TipChoice value={state.penSize} ink={ink} onChange={props.onPenSize} />
-        </Row>
-      </div>
-      <div data-row>
-        <Row label="Ink" value={inkName(state.ink)} lock={<LockToggle what="ink" {...props} />} />
-        <InkPicker value={state.ink} pen={state.pen} onChange={props.onInk} />
-      </div>
-      <div data-row>
-        <Row label="Paper" value={PAPERS.find((x) => x.id === state.paper)?.name} lock={<LockToggle what="paper" {...props} />} />
-        <PaperPicker value={state.paper} onChange={props.onPaper} rows={rows} />
-      </div>
-    </div>
-  );
-}
-
-// ---------- advanced ----------
-export function Advanced(props: PanelProps & { flush?: boolean }) {
-  const connected = !!getStyle(props.state.style)?.connected;
-  const [open, setOpen] = useState(() => readOpen());
-  const id = useId();
-  const groups = ADVANCED_GROUPS.map((g) => ({
-    g,
-    items: CONTROLS.filter((c) => c.tier === 'advanced' && c.group === g && isShown(c, props.natural, { connected })),
-  }));
-  return (
-    <section data-row className={cn(!props.flush && 'border-t border-border')}>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => setOpen((o) => { writeOpen(!o); return !o; })}
-        className={cn(
-          'flex w-full items-center justify-between py-4 text-[13px] font-medium transition-colors duration-150 hover-device:hover:bg-[#f3f0e9] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring pointer-coarse:py-3.5',
-          props.flush ? 'rounded-lg' : 'px-5',
-        )}
-      >
-        More controls
-        <ChevronDown aria-hidden className={cn('size-4 text-muted-foreground transition-transform duration-200 ease-out', open && 'rotate-180')} />
-      </button>
-      <div id={id} className={cn('grid transition-[grid-template-rows] duration-300 ease-[var(--ease-drawer)] motion-reduce:transition-none', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-        <div className="overflow-hidden" inert={!open}>
-          <div className={cn('grid gap-6 pt-1 pb-6', !props.flush && 'px-5')}>
-            {groups.map(({ g, items }) => (
-              <div key={g} className="grid gap-3.5">
-                <div data-row className="text-[12.5px] text-muted-foreground">{g}</div>
-                {items.map((c) => (
-                  <ControlRow key={c.key} c={c} {...props} />
-                ))}
-                {g === 'Letters and variety' && (
-                  <SliderRow
-                    label="Variety"
-                    value={props.variety}
-                    min={0}
-                    max={100}
-                    step={1}
-                    describe={(v) => (v <= 20 ? 'Siblings' : v <= 70 ? 'Strangers' : 'Wild')}
-                    onChange={props.onVariety}
-                    mark={60}
-                    onReset={() => props.onVariety(60)}
-                    hint="How far New hand jumps"
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-function readOpen() {
-  try { return localStorage.getItem('seedhand:advanced') === '1'; } catch { return false; }
-}
-function writeOpen(v: boolean) {
-  try { localStorage.setItem('seedhand:advanced', v ? '1' : '0'); } catch { /* fine */ }
-}
-
-// ---------- where the letters come from ----------
-export const Credits = memo(function Credits({ p, flush, sample: sampleId }: { p: Hand; flush?: boolean; sample?: string | null }) {
-  const sources = handSources(p);
-  const words = sampleById(sampleId);
-  if (!sources.length && !words) return null;
-  return (
-    <details data-row className={cn('group py-4 text-[12px] leading-snug text-muted-foreground', !flush && 'border-t border-border px-5')}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-sm marker:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:py-2 [&::-webkit-details-marker]:hidden">
-        <span>{[words && sampleCredit(words), sources.length && `Letter shapes: ${sources.map((s) => s.name).join(', ')}`].filter(Boolean).join(' · ')}</span>
-        <ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform duration-200 group-open:rotate-180" />
-      </summary>
-      <ul className="mt-2 grid gap-1.5">
-        {words && (
-          <li>
-            <span className="text-foreground/80">{words.author}, {words.year}.</span> {words.title}
-            {words.translator && <>, translated by {words.translator.name}</>}. Public domain.
-            {words.source?.url && (
-              <>
-                {' '}
-                <a href={words.source.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">
-                  Source
-                </a>
-              </>
-            )}
-          </li>
-        )}
-        {sources.map((s) => (
-          <li key={s.name}>
-            <span className="text-foreground/80">{s.name}.</span> {s.credit}
-            {s.url && (
-              <>
-                {' '}
-                <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">
-                  Source
-                </a>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-    </details>
-  );
-});
-
-// ---------- actions: share, download, font ----------
-function Actions(props: PanelProps) {
-  return (
-    <>
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" onClick={props.onShare}>
-          <Link2 /> Share link
-        </Button>
-        <Button variant="outline" onClick={props.onDownload} disabled={props.busy.download} aria-label="Download note as an image">
-          {props.busy.download ? <Loader2 className="animate-spin" /> : <Download />} Download note
-        </Button>
-      </div>
-      <div className="mt-3 px-0.5">
-        <button
-          type="button"
-          onClick={props.onExportFont}
-          disabled={props.busy.font}
-          className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground disabled:opacity-60 pointer-coarse:min-h-11"
-        >
-          <Type className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-          Export font file (.otf)
-          {props.busy.font && <Loader2 className="size-3.5 animate-spin" aria-hidden />}
-        </button>
-        <p className="mt-0.5 pl-[22px] text-[12px] leading-snug text-muted-foreground">
-          The font holds 3 versions of each letter. The page varies endlessly.
-        </p>
-      </div>
-    </>
-  );
-}
-
 // ---------- building blocks ----------
-function Section({ children, label }: { children: React.ReactNode; label: string }) {
-  const id = useId();
-  return (
-    <section aria-labelledby={id} className="border-t border-border px-5 pt-4 pb-5">
-      <h3 id={id} className="mb-3 text-[12.5px] font-normal text-muted-foreground">
-        {label}
-      </h3>
-      {children}
-    </section>
-  );
-}
-
-function Row({ label, value, children, lock }: { label: string; value?: string; children?: React.ReactNode; lock?: React.ReactNode }) {
-  return (
-    <div className={cn('flex min-h-7 items-center justify-between gap-3', lock && 'pointer-coarse:min-h-11')}>
-      <span className="flex min-w-0 items-baseline gap-2">
-        <span className="shrink-0 text-[13px] font-medium">{label}</span>
-        {value && <span className="truncate text-[13px] text-muted-foreground">{value}</span>}
-      </span>
-      <span className="flex shrink-0 items-center gap-1">
-        {children}
-        {lock}
-      </span>
-    </div>
-  );
-}
-
-/** Keep this pen / ink / paper when New hand rolls everything else. On touch it says so in a word. */
-function LockToggle({ what, locks, onToggleLock }: { what: LockKey } & PanelProps) {
-  const locked = locks.has(what);
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-pressed={locked}
-          aria-label={`Keep this ${what} for new hands`}
-          onClick={() => onToggleLock(what)}
-          className={cn(
-            'relative -mr-1.5 inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-md px-1.5 text-[12px] transition-[color,background-color] duration-150 select-none hover-device:hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
-            // touch: a labelled pill with a full 44 px target
-            "pointer-coarse:mr-0 pointer-coarse:h-8 pointer-coarse:rounded-full pointer-coarse:px-3 pointer-coarse:after:absolute pointer-coarse:after:-inset-x-1 pointer-coarse:after:-inset-y-1.5 pointer-coarse:after:content-['']",
-            locked
-              ? 'text-[var(--ink)] pointer-coarse:bg-[color-mix(in_oklab,var(--ink)_11%,transparent)]'
-              : 'text-faint hover-device:hover:text-foreground pointer-coarse:bg-secondary pointer-coarse:text-muted-foreground',
-          )}
-        >
-          {locked ? <Lock className="size-3.5" strokeWidth={2.2} aria-hidden /> : <LockOpen className="size-3.5" aria-hidden />}
-          <span className="hidden pointer-coarse:inline">{locked ? 'Kept' : 'Keep'}</span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{locked ? `New hands keep this ${what}` : `Keep this ${what} for new hands`}</TooltipContent>
-    </Tooltip>
-  );
-}
-
 function Soon() {
   return (
     <span className="rounded-full bg-[#ebe6dc] px-1.5 py-px text-[11px] leading-4 text-muted-foreground" title="Wired up, waiting for the engine">
@@ -586,10 +592,12 @@ function Soon() {
 }
 
 const SliderRow = memo(function SliderRow({
-  label, value, min, max, step, describe, onChange, mark, onReset, soon, hint,
+  label, value, min, max, step, describe, onChange, mark, onReset, soon, hint, ends,
 }: {
   label: string; value: number; min: number; max: number; step: number; describe: (v: number) => string;
   onChange: (v: number) => void; mark?: number; onReset?: () => void; soon?: boolean; hint?: string;
+  /** what each end does, in plain words ("Messy", "Neat"), under the track */
+  ends?: [string, string];
 }) {
   const id = useId();
   const word = describe(value);
@@ -616,6 +624,12 @@ const SliderRow = memo(function SliderRow({
         onReset={onReset}
         onValueChange={(v) => onChange(v[0])}
       />
+      {ends && (
+        <span aria-hidden className="-mt-1 flex justify-between text-[11.5px] text-faint pointer-coarse:-mt-2">
+          <span>{ends[0]}</span>
+          <span>{ends[1]}</span>
+        </span>
+      )}
       {hint && <span className="-mt-0.5 text-[12px] text-muted-foreground">{hint}</span>}
     </div>
   );
