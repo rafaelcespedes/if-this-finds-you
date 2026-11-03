@@ -397,6 +397,23 @@ export default function App() {
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
   const posture = usePosture(editing);
   const lastEditAt = useRef(-Infinity);
+  /** a big cut can be undone from its note: the letter as it was comes back (ink: its log, replayed) */
+  const offerBack = useCallback((snap: Pick<NoteState, 'text' | 'inkLog' | 'marks' | 'signed'>, title: string) => {
+    toast(title, {
+      id: 'bring-back',
+      duration: 12000,
+      action: {
+        label: 'Bring it back',
+        onClick: () => {
+          inkRef.current = null;
+          inkFor.current = '';
+          update({ ...snap, sample: null });
+          setInkTick((n) => n + 1);
+          window.setTimeout(() => editor.current?.focus(), 0);
+        },
+      },
+    });
+  }, [update]);
   const onEdit = useCallback((e: Edit) => {
     editLog.push(e);
     lastEditAt.current = performance.now();
@@ -404,6 +421,14 @@ export default function App() {
     if (theirsForwardRef.current) setTheirsForward(false);
     if (!wroteRef.current) { wroteRef.current = true; setWrote(true); writePref('seedhand:wrote', '1'); }
     if (e.source === 'paper') posture.onTyped();
+    // most of the letter cut at once (select all, then Delete or a key): a note to bring it back
+    const was = stateNow.current;
+    const liveInk = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+    const wasLen = liveInk ? liveInk.text().length : was.text.length;
+    if (!was.sample && e.kind !== 'undo' && e.del >= 30 && e.del >= wasLen * 0.5 && e.ins.length * 4 < e.del) {
+      liveInk?.flush();
+      offerBack({ text: liveInk ? liveInk.text() : was.text, inkLog: liveInk ? encodeInk(liveInk.doc) : was.inkLog, marks: was.marks, signed: was.signed }, e.ins.trim() ? 'Most of the letter is gone' : 'The letter is blank');
+    }
     if (inkMode) {
       const s = stateNow.current;
       // Undo lifts only wet ink (the newest event, within 3 s)
@@ -436,7 +461,7 @@ export default function App() {
       // the first edit makes a sample letter the writer's own text
       return { text: doc.text, marks: doc.marks, sample: null };
     });
-  }, [update, posture.onTyped, inkMode, inkSession, syncInk, keepTail]);
+  }, [update, posture.onTyped, inkMode, inkSession, syncInk, keepTail, inkLook, offerBack]);
 
   // ---------- pen-only formatting: underline by hand, press harder, sign ----------
   const editor = useRef<PaperEditorApi>(null);
