@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, LayoutDashboard, Pointer } from 'lucide-react';
+import { CaseSensitive, ChevronDown, LayoutDashboard, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, withLogo } from '@/lib/brand';
@@ -829,9 +829,18 @@ export default function App() {
                   >
                     <LayoutDashboard aria-hidden className="size-4" />
                   </a>
+                  <a
+                    href={withLogo(`${import.meta.env.BASE_URL}fonts.html`)}
+                    aria-label="Fonts"
+                    title="Fonts"
+                    className="relative grid size-8 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <CaseSensitive aria-hidden className="size-4" />
+                  </a>
                   <ShareMenu {...panelProps} size="chip" />
                 </span>
               ) : (
+              <>
               <a
                 href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                 className={cn(
@@ -842,6 +851,18 @@ export default function App() {
               >
                 All letters
               </a>
+              {/* every hand as an open font (the fonts page) */}
+              <a
+                href={withLogo(`${import.meta.env.BASE_URL}fonts.html`)}
+                className={cn(
+                  // a big enough target without making the line taller (the sheet's label sits just under it)
+                  "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
+                  editing && !isDesktop && 'pointer-events-none opacity-0',
+                )}
+              >
+                Fonts
+              </a>
+              </>
               )}
             </span>
           </header>
