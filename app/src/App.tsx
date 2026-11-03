@@ -29,7 +29,7 @@ import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { isNeat, rollHand, rollLook, withSample, type LockKey } from '@/lib/roll';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
-import { drafts, keepDraft, takeDraft, type Draft } from '@/lib/drafts';
+import { DRAFTS_KEY, drafts, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
@@ -124,6 +124,23 @@ export default function App() {
 
   // ---------- found letters and your own: always a way to each ----------
   const [kept, setKept] = useState<Draft[]>(() => drafts());
+  // another tab kept or took a letter: the list follows
+  useEffect(() => {
+    const on = (e: StorageEvent) => { if (e.key === DRAFTS_KEY || e.key == null) setKept(drafts()); };
+    window.addEventListener('storage', on);
+    return () => window.removeEventListener('storage', on);
+  }, []);
+  /** keep your letter as you step away from it; when the device won't, say so (it lasts while the page is open) */
+  const keepMine = (s: NoteState) => {
+    if (s.sample) return;
+    if (!keepDraft(s)) {
+      toast('Your letter can’t be kept on this device', {
+        id: 'no-storage',
+        duration: 12000,
+        description: 'Its storage is full or blocked. It’s kept while this page is open; copy its link to keep it for later.',
+      });
+    }
+  };
   const toFound = useCallback((next?: ReturnType<typeof sampleForSeed>) => {
     markStep();
     const s = stateNow.current;
@@ -137,20 +154,25 @@ export default function App() {
     own: !sample && (!!state.text.trim() || !!state.inkLog),
     drafts: kept.length,
     kept,
+    mine: mineIndex(kept) >= 0,
     /** another found letter (your own, if any, is kept) */
     onAnother: () => {
       const s = stateNow.current;
-      if (!s.sample) { keepDraft(s); setKept(drafts()); }
+      keepMine(s);
+      setKept(drafts());
       toFound();
     },
-    /** back to a letter you were writing (the newest, or the one picked from the list) */
-    onBackToMine: (index = 0) => {
+    /** back to a letter you were writing (this tab's newest, or the one picked from the list) */
+    onBackToMine: (savedAt?: number) => {
       const s = stateNow.current;
-      const d = takeDraft(index);
+      const d = takeDraft(savedAt);
       // what's on the page now is kept too, unless it's a found letter
-      if (!s.sample) keepDraft(s);
+      if (d) keepMine(s);
       setKept(drafts());
-      if (!d) return;
+      if (!d) {
+        toast('That letter isn’t here any more', { id: 'draft-gone', description: 'It was opened in another tab, or this device’s storage was cleared.' });
+        return;
+      }
       markStep();
       inkRef.current = null;
       update({ text: d.text, inkLog: d.inkLog, marks: d.marks ?? [], replyTo: d.replyTo ?? null, signed: !!d.signed, sample: null });
