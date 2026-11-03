@@ -2,7 +2,7 @@
 // the engine's timeline + playSVG, about 3x a real hand, a tap finishes it), what is known about it, and what you
 // can do with it: write a reply, turn to the next one, share it, keep it as an image.
 // Loaded on demand (its own chunk, with the engine); the index never waits for it.
-import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PaperCanvas, PaperGuide } from '@/components/PaperCanvas';
