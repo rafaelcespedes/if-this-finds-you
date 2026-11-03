@@ -144,7 +144,7 @@ export const FontRow = memo(function FontRow({ entry, index, text, live, em, lin
           </div>
         ) : (
         <div className={cn('font-row-actions', !entry && 'invisible')}>
-          <Action label={saved ? 'Saved (remove)' : 'Save this hand'} compact pressed={saved} onClick={() => entry && toggleSaved(entry)}>
+          <Action label={saved ? 'Saved. Remove it' : 'Save this hand'} compact pressed={saved} onClick={() => entry && toggleSaved(entry)}>
             <Heart aria-hidden className={cn('size-4', saved && 'fill-current')} />
           </Action>
           <Action label="Write with it" text="Write with it" compact={compact} href={entry ? `${toolHref}#${entry.tool}` : undefined}>

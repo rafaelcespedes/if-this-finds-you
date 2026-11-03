@@ -244,10 +244,10 @@ export function FontsApp() {
             {set.failed ? (
               <p>The fonts didn’t load. <Button variant="link" onClick={newSet}>Try again</Button></p>
             ) : route.view === 'saved' ? (
-              empty ? <p>Nothing saved yet. Tap the heart on a hand to keep it here.</p> : null
+              empty ? <p>Nothing saved yet. Save a hand with the heart and it stays here.</p> : null
             ) : empty ? (
               // the sampler says why in its own words (impossible pairs come back at once with a note)
-              <p>{set.note ?? 'No hands match all of these.'} <button type="button" className="ed-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
+              <p>{set.note ?? 'No hands match these filters.'} <button type="button" className="ed-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
             ) : set.done ? (
               !set.exhausted && <Button onClick={() => fonts.more()} className="dock-primary">Show {SET_COUNT} more</Button>
             ) : null}

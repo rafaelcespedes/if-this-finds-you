@@ -29,18 +29,18 @@ export function FontsRail(p: Props) {
       <Group label="Show" first>
         <Segmented slide type="single" aria-label="Joined or print" value={p.view === 'saved' ? '' : family}
           onValueChange={(v) => v && p.onFilters(withFamily(p.filters, v, p.catalogue))}>
-          <SegmentedItem value="any">All</SegmentedItem>
+          <SegmentedItem value="any">Any</SegmentedItem>
           <SegmentedItem value="print">Print</SegmentedItem>
           <SegmentedItem value="script">Joined</SegmentedItem>
         </Segmented>
         <Button variant="ghost" size="sm" aria-pressed={p.view === 'saved'} onClick={() => p.onView(p.view === 'saved' ? 'set' : 'saved')}
           className={cn('justify-start gap-2 px-2', p.view === 'saved' && 'bg-accent')}>
           <Heart aria-hidden className={cn(p.view === 'saved' && 'fill-current')} />
-          {p.view === 'saved' ? 'Kept hands (back to the set)' : `Kept hands${p.savedCount ? ` (${p.savedCount})` : ''}`}
+          {p.view === 'saved' ? 'Saved hands (back to the set)' : `Saved hands${p.savedCount ? ` (${p.savedCount})` : ''}`}
         </Button>
         <Button onClick={p.onNewSet} className="dock-primary justify-start">
           <RefreshCw aria-hidden />
-          Draw another set
+          New set
         </Button>
       </Group>
       {p.view === 'set' && (

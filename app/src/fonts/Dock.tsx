@@ -43,7 +43,7 @@ function FamilyGroup({ filters, onFilters, catalogue }: Pick<Props, 'filters' | 
   return (
     <Group label="Joined or print" first>
       <Segmented slide type="single" aria-label="Joined or print" value={filters.family[0] ?? 'any'} onValueChange={(v) => v && onFilters(withFamily(filters, v, catalogue))}>
-        <SegmentedItem value="any">All</SegmentedItem>
+        <SegmentedItem value="any">Any</SegmentedItem>
         <SegmentedItem value="print">Print</SegmentedItem>
         <SegmentedItem value="script">Joined</SegmentedItem>
       </Segmented>
