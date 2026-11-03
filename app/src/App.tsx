@@ -19,6 +19,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useNoteState } from '@/hooks/useNoteState';
+import { useWideScale } from '@/hooks/useWideScale';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
 import { FONT_PACKAGE, canShareLinks, copyText, exportFont, exportFontPackage, renderNote, saveNote, shareLink } from '@/lib/actions';
@@ -364,7 +365,10 @@ export default function App() {
 
   const deskRef = useRef<HTMLDivElement>(null);
   const deskW = useElementWidth(deskRef);
-  const pxPerMm = deskW > 0 ? Math.min(MAX_PX_PER_MM, deskW / shownPaper.w) : 0;
+  // a very wide screen draws the sheet (and the panel and header) bigger, in step with it
+  const wide = useWideScale();
+  const maxPxPerMm = MAX_PX_PER_MM * (isDesktop ? wide : 1);
+  const pxPerMm = deskW > 0 ? Math.min(maxPxPerMm, deskW / shownPaper.w) : 0;
 
   // ---------- a reply: their letter on the desk beside yours (desktop) ----------
   const stageRef = useRef<HTMLDivElement>(null);
@@ -426,7 +430,7 @@ export default function App() {
     if (r && w) theirsShown.current = { key: foundKey(r), result: w };
   };
   // the layout comes from the papers alone, so it's settled the moment a reply starts
-  const replyDesk = isDesktop && found && stageW > 0 ? deskLayout(stageW, shownPaper.w, found.paper.w, MAX_PX_PER_MM) : null;
+  const replyDesk = isDesktop && found && stageW > 0 ? deskLayout(stageW, shownPaper.w, found.paper.w, maxPxPerMm) : null;
   const [theirsForward, setTheirsForward] = useState(false);
   const theirsForwardRef = useRef(false);
   const wroteRef = useRef(false);
@@ -1046,10 +1050,11 @@ export default function App() {
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
           className="relative min-w-0 overflow-x-clip px-4 pt-[calc(7.25rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
-          style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
+          style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: Math.round(100 * wide) } : undefined}
         >
           <header
             ref={headerRef}
+            style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
             className={cn(
               // clear of a notch or camera island when the phone is sideways
               'absolute top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] left-[max(1rem,env(safe-area-inset-left,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:right-[max(2rem,env(safe-area-inset-right,0px))] sm:left-[max(2rem,env(safe-area-inset-left,0px))] lg:inset-x-10 lg:top-5',
@@ -1141,7 +1146,7 @@ export default function App() {
               replyDesk && 'relative z-10 mx-0 shrink-0 transition-opacity duration-300 ease-out',
               replyDesk && theirsForward && 'opacity-50',
             )}
-            style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : undefined}
+            style={replyDesk ? { width: replyDesk.mineW, maxWidth: 'none' } : wide > 1 && isDesktop ? { maxWidth: Math.round(820 * wide) } : undefined}
           >
             {/* a link cut short on its way: no letter to show, and the one thing to do about it */}
             {brokenLink && (
@@ -1178,7 +1183,8 @@ export default function App() {
                 {/* (with their letter picked up, its label covers this line: yours steps out of the way until it's back) */}
                 <div
                   className={cn('relative z-20 mx-auto transition-opacity duration-300 ease-out', replyDesk && theirsForward && 'pointer-events-none opacity-0')}
-                  style={{ width: shownPaper.w * pxPerMm }}
+                  // on a very wide screen the label grows with the sheet (zoomed, so its width is in its own px)
+                  style={wide > 1 && isDesktop ? { width: (shownPaper.w * pxPerMm) / wide, zoom: wide } : { width: shownPaper.w * pxPerMm }}
                 >
                   {isDesktop ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
@@ -1331,7 +1337,7 @@ export default function App() {
             )}
           >
             {LOOK === 'reading-room' ? <ReadingDesk {...panelProps} /> : (
-            <div className="panel-scroll h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
+            <div style={wide > 1 ? { zoom: wide } : undefined} className="panel-scroll h-full w-[336px] overflow-y-auto overscroll-contain rounded-2xl bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.07),0_10px_30px_-14px_rgba(60,45,20,0.22)]">
               <Panel {...panelProps} />
             </div>
             )}
