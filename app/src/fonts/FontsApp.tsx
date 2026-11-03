@@ -184,7 +184,7 @@ export function FontsApp() {
               </p>
             )}
           </div>
-          {set.note && route.view === 'set' && <p className="set-note" role="status">{set.note}</p>}
+          {set.note && route.view === 'set' && !empty && <p className="set-note" role="status">{set.note}</p>}
           <span aria-live="polite" className="sr-only">{announce}</span>
           <ol ref={listRef} className="font-list" aria-label={route.view === 'saved' ? 'Saved hands' : 'Fonts'} aria-busy={!set.done}>
             {entries.map((e, i) => (
@@ -198,7 +198,8 @@ export function FontsApp() {
             ) : route.view === 'saved' ? (
               empty ? <p>Nothing saved yet. Tap the heart on a hand to keep it here.</p> : null
             ) : empty ? (
-              <p>No hands match all of these. <button type="button" className="ed-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
+              // the sampler says why in its own words (impossible pairs come back at once with a note)
+              <p>{set.note ?? 'No hands match all of these.'} <button type="button" className="ed-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
             ) : set.done ? (
               <div className="flex flex-wrap items-center gap-2">
                 {!set.exhausted && <button type="button" onClick={() => fonts.more()} className="dock-primary inline-flex h-10 items-center rounded-lg px-4 text-[14px] font-medium">Show {SET_COUNT} more</button>}

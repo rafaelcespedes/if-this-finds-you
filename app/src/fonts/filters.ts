@@ -39,9 +39,9 @@ export interface FilterDef {
 
 export type FilterKey =
   | 'family' | 'style' | 'character' | 'tidy' | 'slant' | 'width' | 'pen'
-  | 'shape' | 'joins' | 'contrast' | 'weight' | 'xh' | 'spacing' | 'pace' | 'turns' | 'shaky' | 'mixed' | 'schooling';
+  | 'shape' | 'joins' | 'contrast' | 'weight' | 'xh' | 'spacing' | 'pace' | 'turns' | 'shaky' | 'mixed' | 'schooling' | 'later';
 export type Filters = Record<FilterKey, string[]>;
-const KEYS: FilterKey[] = ['family', 'style', 'character', 'tidy', 'slant', 'width', 'pen', 'shape', 'joins', 'contrast', 'weight', 'xh', 'spacing', 'pace', 'turns', 'shaky', 'mixed', 'schooling'];
+const KEYS: FilterKey[] = ['family', 'style', 'character', 'tidy', 'slant', 'width', 'pen', 'shape', 'joins', 'contrast', 'weight', 'xh', 'spacing', 'pace', 'turns', 'shaky', 'mixed', 'schooling', 'later'];
 export const NO_FILTERS: Filters = Object.fromEntries(KEYS.map((k) => [k, []])) as unknown as Filters;
 
 /** Traditions by their short name (the engine's own label is the fallback for new ones). */
@@ -178,6 +178,11 @@ export function filterDefs(cat: Catalogue = STATIC_CATALOGUE): FilterDef[] {
     ] },
     { key: 'schooling', param: 'sc', label: 'Schooled in', kind: 'many', more: true, list: 'schooling',
       options: cat.schoolings.map((id) => ({ value: id, label: SCHOOLING_LABEL[id] ?? cap(id) })) },
+    // a second school a mixed hand picked up later (a tradition or a schooling; only mixed hands have one)
+    { key: 'later', param: 'l', label: 'Later learned', kind: 'many', more: true, list: 'later', options: [
+      ...cat.schoolings.map((id) => ({ value: id, label: SCHOOLING_LABEL[id] ?? cap(id) })),
+      ...cat.styles.filter((s) => s.id !== 'print' && s.id !== 'script' && !HISTORICAL.has(s.id)).map((s) => ({ value: s.id, label: s.label })),
+    ] },
     { key: 'shaky', param: 'sh', label: 'A little shaky', kind: 'flag', more: true, options: [{ value: 'yes', label: 'A little shaky', c: { tremor: r(1.5, null) } }] },
   ];
 }
@@ -295,6 +300,7 @@ export function describeFilters(f: Filters, cat: Catalogue = STATIC_CATALOGUE) {
     const labels = d.options.filter((o) => f[d.key].includes(o.value)).map((o) => o.label);
     if (!labels.length) continue;
     if (d.kind === 'run') parts.push(labels.length > 1 ? `${labels[0]} to ${labels[labels.length - 1].toLowerCase()}` : labels[0]);
+    else if (d.key === 'later') parts.push(`later ${labels.length > 2 ? `${labels.length} schools` : labels.join(' or ')}`);
     else parts.push(labels.length > 2 ? `${labels.length} ${d.key === 'style' ? 'traditions' : 'schools'}` : labels.join(' or '));
   }
   return parts.join(' · ');
