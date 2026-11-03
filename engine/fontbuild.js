@@ -316,6 +316,7 @@ function drawPlan(plan, opts) {
   const ref = has(p, 'n') ? makeGlyph(p, 'n', null, { prev: 'n', next: 'n', index: 1 }).advance : 500;
   const spaceAdv = makeGlyph(p, ' ', null).advance * (p.wordSpace || 1);
   let tries = 0, misses = 0;
+  const dropped = []; // characters that lost a runaway stroke
 
   for (const e of plan.entries) {
     // representative contexts: verify each form really is in the state its name says (lifts vary by position)
@@ -362,8 +363,11 @@ function drawPlan(plan, opts) {
           const ctx = f.ctx[k] || null;
           const g = makeGlyph(p, e.ch, inst, ctx);
           noteSource(e.ch, g.variant);
-          let contours = g.contours;
-          adv = g.advance;
+          // a stroke far outside any letter's box is an engine bug, never handwriting: leave it out (and say so),
+          // so the file stays valid (font coordinates must fit in 16 bits)
+          let contours = g.contours.filter((c) => c.every((q) => Number.isFinite(q[0]) && Number.isFinite(q[1]) && q[0] > -3000 && q[0] < 5000 && q[1] > -2500 && q[1] < 3000));
+          if (contours.length < g.contours.length && !dropped.includes(e.ch)) dropped.push(e.ch);
+          adv = Number.isFinite(g.advance) ? Math.min(g.advance, 5000) : 0;
           if (e.kind === 'mark') {
             // a combining mark: no width of its own, centred over the letter before it
             const bb = bboxOf(contours);
@@ -382,7 +386,7 @@ function drawPlan(plan, opts) {
       }
     }
   }
-  plan.stats = { tries, misses };
+  plan.stats = { tries, misses, dropped };
   return { glyphs, sources: [...sources.values()] };
 }
 
@@ -1241,7 +1245,7 @@ export function buildFont(_opentype, params, opts) {
     lifts: plan.liftsOn, features: gsub.features.concat(gpos && gpos.bytes ? ['kern'] : []), kernPairs: gpos ? gpos.pairs : 0,
     merged: !!opts.clipper, bytes: otf.length, sizes: { otf: otf.length, ttf: ttf ? ttf.length : 0 },
     ascender, descender, ms: { draw: Math.round(t1 - t0), layout: Math.round(t2 - t1), write: Math.round(t3 - t2), total: Math.round(t3 - t0) },
-    contextTries: plan.stats.tries, contextMisses: plan.stats.misses,
+    contextTries: plan.stats.tries, contextMisses: plan.stats.misses, droppedStrokes: plan.stats.dropped,
   };
   return { otf, ttf, buffer: otf.buffer.slice(otf.byteOffset, otf.byteOffset + otf.byteLength), font: null, info, names, credits, meta: { description: desc, copyright, licence, creditLine } };
 }
