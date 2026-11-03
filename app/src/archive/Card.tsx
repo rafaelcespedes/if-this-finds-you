@@ -1,6 +1,6 @@
 // One letter in the library: the letter itself, a sheet of its paper with the letter written on it in its own hand
-// (an image the card worker writes when the card comes near the screen), lying a touch askew like a letter put down
-// on a table, and under it the letter's title. Who wrote it, where and when are a hover and a screen reader away
+// (an image the card worker writes when the card comes near the screen), lying flat on the page, a touch askew like
+// a letter put down on a table, and under it the letter's title. Who wrote it, where and when are a hover and a screen reader away
 // (the link's title and its hidden text), and on the letter's page.
 import { memo, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
@@ -59,7 +59,7 @@ export const Card = memo(function Card({ letter, size, aspect, onOpen }: Props) 
   // the image is a little larger than the sheet when the sheet casts its own shadow (a deckled or torn edge)
   const b = img ? img.bleed / img.width : 0;
   const imgStyle: CSSProperties = { left: `${-b * 100}%`, marginTop: `${-b * 100}%`, width: `${(1 + 2 * b) * 100}%` };
-  const shapedShown = !!img?.shaped && loaded;
+
   const special = lostInTransit(letter);
   return (
     <li className="masonry-item">
@@ -74,7 +74,9 @@ export const Card = memo(function Card({ letter, size, aspect, onOpen }: Props) 
           className="archive-sheet relative isolate"
           style={{ aspectRatio: `1 / ${aspect}`, '--tilt': `${tiltOf(letter.id).toFixed(2)}deg` } as CSSProperties}
         >
-          <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', shapedShown && 'opacity-0')} />
+          {/* while the letter is being written: a faint sheet where it will lie; gone once it's there, so nothing but
+              the paper itself (deckled and torn edges, punched holes) sits on the page */}
+          <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', loaded && 'is-gone')} />
           {img && (
             <img
               src={img.url}

@@ -1,5 +1,6 @@
 // The letter face: a serif beside Instrument Sans for the letters' own words (titles, the story, the record, the
-// text). Four candidates to compare in place, like the logo: ?serif=1…4, kept for the tab, never put into share links.
+// text). Newsreader, and three others to compare in place, like the logo: ?serif=1…4 (1 Newsreader, 2 Source Serif
+// 4, 3 Literata, 4 Fraunces soft), kept for the tab, never put into share links.
 // Only the chosen face is loaded. All four are under the SIL Open Font License 1.1, self-hosted via @fontsource.
 
 export interface Serif {
@@ -7,7 +8,7 @@ export interface Serif {
   name: string;
   /** CSS font-family (the @fontsource face name, then fallbacks) */
   family: string;
-  /** size relative to the sans at the same nominal size (Instrument Serif runs small and narrow) */
+  /** size relative to the sans at the same nominal size (each face's x-height differs a little) */
   scale: number;
   /** extra font-variation-settings (Fraunces: the soft, un-wonky cut) */
   variation?: string;
@@ -17,14 +18,14 @@ export interface Serif {
 
 export const SERIFS: Serif[] = [
   {
-    id: '1', name: 'Instrument Serif', family: "'Instrument Serif', Georgia, serif", scale: 1.16,
-    load: () => Promise.all([import('@fontsource/instrument-serif/400.css'), import('@fontsource/instrument-serif/400-italic.css')]),
-    licence: 'SIL OFL 1.1 (Instrument)',
-  },
-  {
-    id: '2', name: 'Newsreader', family: "'Newsreader Variable', Georgia, serif", scale: 1.04,
+    id: '1', name: 'Newsreader', family: "'Newsreader Variable', Georgia, serif", scale: 1.04,
     load: () => import('@fontsource-variable/newsreader/opsz.css'),
     licence: 'SIL OFL 1.1 (Production Type)',
+  },
+  {
+    id: '2', name: 'Source Serif 4', family: "'Source Serif 4 Variable', Georgia, serif", scale: 0.98,
+    load: () => import('@fontsource-variable/source-serif-4/opsz.css'),
+    licence: 'SIL OFL 1.1 (Adobe)',
   },
   {
     id: '3', name: 'Literata', family: "'Literata Variable', Georgia, serif", scale: 0.98,
@@ -38,7 +39,7 @@ export const SERIFS: Serif[] = [
   },
 ];
 
-/** Instrument Serif: the same foundry as the interface's sans, so the natural pair. */
+/** Newsreader: made for reading on screens, with optical sizes, and it sits well beside Instrument Sans. */
 const DEFAULT: Serif['id'] = '1';
 
 function readSerif(): Serif {

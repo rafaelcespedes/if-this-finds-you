@@ -1,6 +1,6 @@
 // The library: every letter as the letter itself, a sheet of its paper in its own hand with its title underneath,
 // laid out like letters spread on a table (masonry: each goes into the shortest column, in reading order, so Tab
-// and screen readers follow the same order as the eye). Quiet search, filters and Shuffle above.
+// and screen readers follow the same order as the eye). Search, filters and Shuffle above, as the tool's controls.
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import { ChevronDown, Search, Shuffle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -149,10 +149,10 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
 
         <div ref={panelRef}>
           {/* in reading order: search, filters, Shuffle (on phones Shuffle sits beside the search) */}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-1.5 pb-2 sm:flex sm:items-center sm:gap-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pb-2 sm:flex sm:items-center sm:gap-2">
             <label className="relative col-start-1 row-start-1 min-w-0 sm:max-w-[340px] sm:flex-1">
               <span className="sr-only">Search letters</span>
-              <Search aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-faint" />
+              <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
               <input
                 ref={searchRef}
                 type="search"
@@ -162,10 +162,10 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
                 placeholder={narrow ? 'Words, writers, places' : 'Search words, writers, places'}
                 autoComplete="off"
                 spellCheck={false}
-                className="archive-field archive-quiet h-9 w-full pr-3 pl-8 text-[13.5px] placeholder:text-faint pointer-coarse:h-11"
+                className="archive-field h-9 w-full pr-3 pl-9 text-[13.5px] placeholder:text-faint pointer-coarse:h-11"
               />
             </label>
-            <div className="col-span-2 grid grid-cols-[1fr_1.3fr_1fr] gap-1.5 sm:flex sm:gap-1">
+            <div className="col-span-2 grid grid-cols-[1fr_1.3fr_1fr] gap-2 sm:flex sm:gap-2">
               <Select label="Era" value={filters.era} onChange={(v) => set({ era: v })} any={narrow ? 'Era' : 'Any era'} options={facets.eras} />
               <Select label="Language" value={filters.lang} onChange={(v) => set({ lang: v })} any={narrow ? 'Language' : 'Any language'} options={facets.langs} />
               <Select
@@ -176,7 +176,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
                 options={[{ value: 'letter', label: 'Letters' }, { value: 'note', label: 'Notes' }]}
               />
             </div>
-            <Button variant="ghost" onClick={shuffle} disabled={!letters} className="col-start-2 row-start-1 h-9 text-muted-foreground pointer-coarse:h-11 sm:ml-auto">
+            <Button variant="outline" onClick={shuffle} disabled={!letters} className="col-start-2 row-start-1 h-9 pointer-coarse:h-11 sm:ml-auto">
               <Shuffle aria-hidden /> Shuffle
             </Button>
           </div>
@@ -222,7 +222,7 @@ function Select({ label, value, onChange, any, options }: { label: string; value
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={cn('archive-field archive-quiet h-9 w-full min-w-0 appearance-none truncate pr-7 pl-2.5 text-[13.5px] pointer-coarse:h-11 sm:w-auto', value ? 'text-foreground' : 'text-muted-foreground')}
+        className={cn('archive-field h-9 w-full min-w-0 appearance-none truncate pr-7 pl-2.5 text-[13.5px] pointer-coarse:h-11 sm:w-auto', value ? 'text-foreground' : 'text-muted-foreground')}
       >
         <option value="">{any}</option>
         {options.map((o) => (

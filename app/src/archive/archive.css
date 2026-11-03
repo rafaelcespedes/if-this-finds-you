@@ -14,25 +14,22 @@
   width: var(--col-w);
 }
 
-/* a card's sheet: a letter put down a touch askew; it straightens and lifts a little under the pointer */
+/* a card's sheet: a letter put down a touch askew, flat on the page (no shadow); it straightens under the pointer */
 .archive-sheet {
   transform: rotate(var(--tilt, 0deg));
   transition: transform 220ms var(--ease-out);
 }
+/* the faint sheet that holds a card's place while its letter is written; it fades as the letter arrives */
 .archive-sheet-blank {
-  box-shadow: var(--sheet-shadow);
-  transition: box-shadow 220ms var(--ease-out), opacity 120ms var(--ease-out);
+  opacity: 0.55;
+  transition: opacity 220ms var(--ease-out);
+}
+.archive-sheet-blank.is-gone {
+  opacity: 0;
 }
 @media (hover: hover) and (pointer: fine) {
   .archive-card:hover .archive-sheet {
-    transform: rotate(0deg) translateY(-3px);
-  }
-  .archive-card:hover .archive-sheet-blank {
-    box-shadow:
-      0 0.5px 0 rgba(60, 45, 20, 0.08),
-      0 2px 4px rgba(60, 45, 20, 0.07),
-      0 12px 24px -8px rgba(60, 45, 20, 0.18),
-      0 32px 60px -22px rgba(60, 45, 20, 0.28);
+    transform: rotate(0deg);
   }
   .archive-card:hover h3 {
     text-decoration: underline;
@@ -91,21 +88,6 @@
 }
 select.archive-field {
   cursor: pointer;
-}
-/* quiet fields: no box until you reach for them */
-.archive-quiet {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-}
-@media (hover: hover) and (pointer: fine) {
-  .archive-quiet:hover {
-    border-color: var(--border);
-    background: color-mix(in oklab, #fdfcf9 60%, transparent);
-  }
-}
-.archive-quiet:focus-visible {
-  background: #fdfcf9;
 }
 /* phones: 16px keeps iOS from zooming into the field */
 @media (pointer: coarse) {
