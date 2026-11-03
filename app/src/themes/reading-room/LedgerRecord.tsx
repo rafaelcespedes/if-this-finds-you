@@ -4,7 +4,7 @@
 // number, so no note ever falls below the fold. "Full record" folds away the rest (language, translator, the printed
 // source, how we know it's free, a line to cite it), and one line of physical description follows, as archives write
 // it. Used by the tool's desk and, on phones, under the sheet. The library's letter page has its own reading column.
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { callNo, type CardRecord } from './catalogue';
 
@@ -26,6 +26,34 @@ export function LedgerRecord({ record: r, hand, handName, actions, physical, cla
   const id = useId();
   const [open, setOpen] = useState<NoteKey | null>(null);
   const [full, setFull] = useState(false);
+  // on the desk the title keeps to two lines (reading-room.css). A longer one is cut here, at a word, with an
+  // ellipsis, measured on an unseen copy (so no third line is laid out to peek through); the whole of it is then in
+  // its tooltip and heads the Full record
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [cut, setCut] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    const el = titleRef.current, m = measureRef.current;
+    if (!el || !m) return;
+    const fit = () => {
+      const cs = getComputedStyle(el);
+      if (cs.getPropertyValue('-webkit-line-clamp') !== '2') return setCut(null); // only the desk keeps to two lines
+      const room = 2.5 * (parseFloat(cs.lineHeight) || 24);
+      m.style.width = `${el.clientWidth}px`;
+      const fits = (t: string) => { m.textContent = t; return m.offsetHeight <= room; };
+      if (fits(r.title)) return setCut(null);
+      const words = r.title.split(' ');
+      let lo = 1, hi = words.length - 1;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (fits(words.slice(0, mid).join(' ') + '…')) lo = mid; else hi = mid - 1; }
+      setCut(words.slice(0, lo).join(' ').replace(/[\s,;:(“‘"']+$/, '') + '…');
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    // the book face arriving rewraps the title without changing its box: measure again
+    document.fonts?.addEventListener('loadingdone', fit);
+    return () => { ro.disconnect(); document.fonts?.removeEventListener('loadingdone', fit); };
+  }, [r.title]);
   // notes numbered in the order their rows come
   const order: NoteKey[] = [...(r.story ? ['story' as const] : []), 'hand', ...(r.source ? ['source' as const] : [])];
   const noteBody: Record<NoteKey, ReactNode> = {
@@ -71,7 +99,8 @@ export function LedgerRecord({ record: r, hand, handName, actions, physical, cla
         </p>
         {actions && <div className="rr-card-actions">{actions}</div>}
       </div>
-      <h2 id={`${id}-t`} className="rr-card-title text-balance">{r.title}</h2>
+      <h2 ref={titleRef} id={`${id}-t`} title={cut ? r.title : undefined} aria-label={cut ? r.title : undefined} className="rr-card-title text-balance">{cut ?? r.title}</h2>
+      <span ref={measureRef} aria-hidden className="rr-card-title rr-title-measure text-balance" />
       <dl className="rr-facts">
         {rows.map((row) => (
           <div key={row.term} className="rr-fact">
@@ -88,6 +117,7 @@ export function LedgerRecord({ record: r, hand, handName, actions, physical, cla
         {physical && <p className="rr-physical">{physical}</p>}
         <div id={`${id}-full`} hidden={!full}>
           <dl className="rr-facts">
+            {cut && <div className="rr-fact"><dt className="rr-sc">Title</dt><dd>{r.title}</dd></div>}
             <div className="rr-fact"><dt className="rr-sc">Language</dt><dd>{r.language}</dd></div>
             {r.translator && (
               <div className="rr-fact"><dt className="rr-sc">Translated by</dt><dd>{r.translator.url ? <a href={r.translator.url} target="_blank" rel="noreferrer" className="rr-link">{r.translator.name}</a> : r.translator.name}</dd></div>

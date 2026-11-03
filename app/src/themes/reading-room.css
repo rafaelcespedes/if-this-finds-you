@@ -503,6 +503,32 @@ html[data-look='reading-room'] .rr-ledger-head {
 html[data-look='reading-room'] .rr-ledger-record .rr-card-title {
   margin: 0.5rem 0 0.875rem;
 }
+/* on the desk the title always takes two lines, so the record under it stays put as letters change or the page
+   reloads; a longer title stops at two with an ellipsis (the whole of it is in its tooltip and the Full record) */
+html[data-look='reading-room'] .rr-desk .rr-card-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(2em * var(--rr-title-leading));
+}
+/* the unseen copy LedgerRecord measures a title on */
+html[data-look='reading-room'] .rr-desk .rr-card-title.rr-title-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  min-height: 0;
+  overflow: visible;
+  -webkit-line-clamp: none;
+  line-clamp: none;
+  visibility: hidden;
+  pointer-events: none;
+}
+html[data-look='reading-room'] .rr-title-measure {
+  display: none;
+}
 /* a note's number is a button: the note opens in place, under its row */
 html[data-look='reading-room'] .rr-ref-button {
   margin-left: 2px;
