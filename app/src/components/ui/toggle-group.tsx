@@ -2,14 +2,47 @@ import * as React from 'react';
 import { ToggleGroup as ToggleGroupPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
-/** A segmented control: one choice from a few. */
-function Segmented({ className, ...props }: React.ComponentProps<typeof ToggleGroupPrimitive.Root>) {
+/**
+ * A segmented control: one choice from a few. With `slide`, the chosen face is one piece that slides to the new choice
+ * (0.22 s) instead of each item lighting up on its own (learned from DialKit; ui/controls.css). It measures the chosen
+ * item, so it follows wrapping rows and any size; with reduced motion it simply moves.
+ */
+function Segmented({ className, slide, children, ...props }: React.ComponentProps<typeof ToggleGroupPrimitive.Root> & { slide?: boolean }) {
+  const root = React.useRef<HTMLDivElement>(null);
+  const face = React.useRef<HTMLSpanElement>(null);
+  const placed = React.useRef(false);
+  const place = React.useCallback(() => {
+    const r = root.current, f = face.current;
+    if (!r || !f) return;
+    // aria-checked first: an item wrapped in a tooltip trigger has its data-state taken by the tooltip
+    const on = r.querySelector<HTMLElement>(":scope > [aria-checked='true'], :scope > [data-state='on']");
+    if (!on) { f.style.opacity = '0'; return; }
+    f.style.transition = placed.current ? '' : 'none';
+    f.style.opacity = '1';
+    f.style.transform = `translate(${on.offsetLeft}px, ${on.offsetTop}px)`;
+    f.style.width = `${on.offsetWidth}px`;
+    f.style.height = `${on.offsetHeight}px`;
+    placed.current = true;
+  }, []);
+  const value = 'value' in props ? JSON.stringify(props.value) : '';
+  React.useLayoutEffect(() => { if (slide) place(); }, [slide, place, value]);
+  React.useEffect(() => {
+    if (!slide || !root.current || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => place());
+    ro.observe(root.current);
+    return () => ro.disconnect();
+  }, [slide, place]);
   return (
     <ToggleGroupPrimitive.Root
+      ref={root}
       data-slot="segmented"
+      data-slide={slide ? '' : undefined}
       className={cn('grid auto-cols-fr grid-flow-col gap-0.5 rounded-lg bg-secondary p-0.5', className)}
       {...props}
-    />
+    >
+      {slide && <span ref={face} aria-hidden className="seg-face" />}
+      {children}
+    </ToggleGroupPrimitive.Root>
   );
 }
 
