@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
-import { APP_NAME } from '@/lib/brand';
+import { APP_NAME, withLogo } from '@/lib/brand';
+import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
 import { AboutHand, Panel, type PanelProps } from '@/components/Panel';
-import { Signature } from '@/components/Signature';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -26,7 +26,7 @@ import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
-import { isNeat, rollHand, withSample, type LockKey } from '@/lib/roll';
+import { isNeat, rollHand, rollLook, withSample, type LockKey } from '@/lib/roll';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
@@ -282,11 +282,20 @@ export default function App() {
   const [wrote, setWrote] = useState(() => readPref('seedhand:wrote') === '1');
   const [idleLong, setIdleLong] = useState(false);
   useEffect(() => {
-    if (wrote || !isDesktop || state.reader) return;
+    if (wrote || state.reader) return;
     const t = window.setTimeout(() => setIdleLong(true), 9000);
     return () => window.clearTimeout(t);
-  }, [wrote, isDesktop, state.reader]);
-  const hintShown = isDesktop && idleLong && !wrote && !editing && !state.reader && !replying;
+  }, [wrote, state.reader]);
+  const hintShown = idleLong && !wrote && !editing && !state.reader && !replying;
+  // the first time you write on a desktop: how to stop, once, for a few seconds
+  const [escHint, setEscHint] = useState(false);
+  useEffect(() => {
+    if (!editing || !isDesktop || readPref('seedhand:esc-taught') === '1') return;
+    writePref('seedhand:esc-taught', '1');
+    setEscHint(true);
+    const t = window.setTimeout(() => setEscHint(false), 4500);
+    return () => window.clearTimeout(t);
+  }, [editing, isDesktop]);
   /** beside the sheet when the desk has room for it, else on the label's line */
   const hintBeside = stageW > 0 && (stageW - shownPaper.w * pxPerMm) / 2 >= 124;
   const foundName = (l: { author: string; year?: number }) => `${shortAuthor(l.author)}${l.year ? `, ${l.year}` : ''}`;
@@ -607,6 +616,8 @@ export default function App() {
     },
     busy,
     onNewHand: () => newHand(true),
+    // the same letter, another writer: the stationery stays, the text stays (a found letter keeps its words)
+    onChangeWriter: () => lookChange(() => update((s) => rollLook(s, { variety, locked: new Set<LockKey>(['pen', 'ink', 'paper']) }))),
     onSimilarHand: () => similarHand(true),
     onSeed: (seed) => update((s) => withSample(s, { seed, offsets: offsetsForNewHand(s.offsets) }, recentLetters())),
     onStyle: (style) => lookChange(() => update({ style })),
@@ -744,38 +755,38 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 px-4 pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
+          className="relative min-w-0 px-4 pt-[calc(6.5rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[100px] lg:pb-16"
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
         >
           <header
             ref={headerRef}
             className={cn(
-              'absolute inset-x-4 top-[max(1rem,env(safe-area-inset-top,0px))] flex items-baseline justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
+              'absolute inset-x-4 top-[max(1rem,env(safe-area-inset-top,0px))] flex items-start justify-between gap-4 text-[12.5px] text-muted-foreground transition-opacity duration-200 ease-out sm:inset-x-8 lg:inset-x-10 lg:top-5',
               !desk && 'opacity-0',
               !reader && 'pointer-events-none',
             )}
           >
-            <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">{APP_NAME}</span>
+            {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
+            <span className="flex h-8 items-start text-foreground/85 lg:h-9"><Wordmark className="h-full" /></span>
             <span className="flex min-w-0 items-baseline gap-2">
               {reader ? (
                 <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                   Write your own
                 </button>
               ) : (
-                <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
-                  {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : isDesktop ? '' : coarse ? 'Tap the letter to write' : 'Click the letter to write on it'}
-                </span>
+                // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state
+                <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : ''}</span>
               )}
-              {/* the found letters, all of them (the archive) */}
+              {/* the whole library of found letters (the archive) */}
               <a
-                href={`${import.meta.env.BASE_URL}letters.html`}
+                href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                 className={cn(
                   // a big enough target without making the line taller (the sheet's label sits just under it)
                   "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
                   editing && !isDesktop && 'pointer-events-none opacity-0',
                 )}
               >
-                Letters
+                All letters
               </a>
             </span>
           </header>
@@ -819,38 +830,49 @@ export default function App() {
             )}
             {pxPerMm > 0 && !reader && (
               <div ref={fitRef} className="origin-top">
-                <div className="relative mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
+                {/* above the sheets: a deckled or torn paper paints a little past its edge and would take the label's clicks */}
+                <div className="relative z-20 mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
                   {isDesktop ? (
                     // desktop: the writer's name, in their hand, on the letter's corner; it opens what's known about the hand
-                    <div className="absolute bottom-1.5 left-0 flex max-w-full items-end gap-2.5">
+                    <div className="absolute bottom-1.5 left-0 flex max-w-full items-baseline gap-2.5">
                       <AboutHand {...panelProps}>
                         <button
                           type="button"
                           aria-label={`${name}: about this hand`}
-                          className="group -ml-1.5 flex shrink-0 items-end gap-1 rounded-lg px-1.5 pt-0.5 transition-colors duration-150 hover-device:hover:bg-[#e6e2d8] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+                          className="group -ml-1.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] font-medium tracking-[-0.01em] text-foreground transition-colors duration-150 hover-device:hover:bg-[#e6e2d8] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
                         >
-                          <span key={state.seed + state.style} className="hand-in block" style={{ color: ink }}>
-                            <Signature p={p} name={name} ink="currentColor" emPx={26} className="h-[42px] overflow-visible" />
-                          </span>
-                          <ChevronDown aria-hidden className="mb-2.5 size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                          {name}
+                          <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </button>
                       </AboutHand>
-                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 220)} className="mb-3" />
-                      {hintShown && hintBeside === false && (
-                        <span className="mb-3 animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">Click the letter to write on it</span>
+                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 160)} />
+                      {((hintShown && !hintBeside) || (escHint && !hintBeside)) && (
+                        <span key={escHint ? 'esc' : 'click'} className="animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">
+                          {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
+                        </span>
                       )}
                     </div>
                   ) : (
-                    <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} className="absolute bottom-2 left-0" />
+                    <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
                   )}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
-                  {hintShown && hintBeside && (
+                  {isDesktop && (hintShown || escHint) && hintBeside && (
                     <div
+                      key={escHint ? 'esc' : 'click'}
                       aria-hidden
                       className="pointer-events-none absolute top-36 right-full mr-3 flex w-[108px] animate-in items-center gap-1.5 rounded-xl bg-panel px-2.5 py-2 text-[12px] leading-snug text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_8px_20px_-10px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-left-1 duration-700"
                     >
-                      Click the letter to write on it
-                      <ArrowRight className="size-3.5 shrink-0" />
+                      {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
+                      {!escHint && <ArrowRight className="size-3.5 shrink-0" />}
+                    </div>
+                  )}
+                  {/* phones: a ghost in the sheet's top margin, pointing in (never over the label, never near the sheet below) */}
+                  {!isDesktop && hintShown && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[12px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700"
+                    >
+                      <Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write
                     </div>
                   )}
                 </div>

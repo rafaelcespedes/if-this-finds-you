@@ -54,6 +54,8 @@ export interface PanelProps {
   /** the share menu opened: a moment to ask the browser */
   onShareOpen: () => void;
   onNewHand: () => void;
+  /** the same letter in another writer's hand (stationery kept) */
+  onChangeWriter: () => void;
   onSimilarHand: () => void;
   onSeed: (seed: string) => void;
   onStyle: (style: string) => void;
@@ -112,19 +114,24 @@ export function Panel(props: PanelProps) {
 // ---------- always there: the writer, New hand, share, what's on the page ----------
 function WriterHeader(props: PanelProps) {
   const { onNewHand } = props;
-  // desktop: the writer's name (and what's known about the hand) sits on the letter itself; here, the ways on
+  // desktop: the writer's name in their own hand grounds the panel; the name in type, with what's known about
+  // the hand, sits on the letter's corner
   return (
-    <section aria-label="Writer" className="px-5 pt-4 pb-4">
-      <div className="flex min-h-11 items-center gap-2">
-        <LetterStatus {...props} className="min-w-0 flex-1" />
+    // a hairline under it, like the panel's other groups, instead of a wide gap
+    <section aria-label="Writer" className="border-b border-border/70 px-5 pt-4 pb-4">
+      <div className="flex items-start gap-2">
+        <span key={props.state.seed + props.state.style} aria-label={props.name} role="img" className="hand-in block min-w-0 flex-1" style={{ color: inkColor(props.state.ink) }}>
+          <Signature p={props.p} name={props.name} ink="currentColor" emPx={34} className="-ml-1 h-[54px] overflow-visible" />
+        </span>
         <ShareMenu {...props} size="lg" />
       </div>
       <Button size="lg" className="mt-2 w-full justify-between pr-3 pl-3.5" onClick={onNewHand}>
         <span className="flex items-center gap-2">
-          <Shuffle aria-hidden /> New hand
+          <Shuffle aria-hidden /> Find another
         </span>
         <kbd className="hidden rounded-[5px] border border-white/15 px-1.5 py-px font-sans text-[11px] leading-4 text-white/70 pointer-fine:inline-block">R</kbd>
       </Button>
+      {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="mt-2.5" />}
     </section>
   );
 }
@@ -151,6 +158,11 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           </div>
           <div className="mt-1 text-[15px] leading-tight font-medium">{name}</div>
           <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{describeHand(p)}</p>
+          <Popover.Close asChild>
+            <Button variant="secondary" onClick={props.onChangeWriter} className="mt-3 w-full">
+              <Shuffle aria-hidden /> Change writer
+            </Button>
+          </Popover.Close>
           <dl className="mt-3.5 grid gap-2.5 border-t border-border pt-3 text-[12.5px] leading-snug">
             <div>
               <dt className={dt}>Learned to write</dt>
@@ -261,8 +273,8 @@ function MenuItem({ children, icon, onSelect, disabled, quiet, hint }: { childre
 }
 
 /**
- * Which letter is on the page, and a way to the other kind: "A found letter · Another letter" (and "Back to my
- * letter" when one is kept), or "Your letter · Read a found letter" (yours is kept on this device).
+ * The ways to the other letters: "Back to my letter" (when one is kept) on a found letter, "Read a found letter" on
+ * your own. (Find another brings the next found letter.)
  */
 export function LetterStatus({ letter, className }: PanelProps & { className?: string; compact?: boolean }) {
   if (!letter) return null;
@@ -274,9 +286,8 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
         {letter.found && letter.drafts > 0 && (
           <button type="button" onClick={letter.onBackToMine} className={link}>Back to my letter</button>
         )}
-        <button type="button" onClick={letter.onAnother} className={link}>
-          {letter.found ? 'Another letter' : 'Read a found letter'}
-        </button>
+        {/* on a found letter, Find another brings the next one */}
+        {!letter.found && <button type="button" onClick={letter.onAnother} className={link}>Read a found letter</button>}
       </span>
     </div>
   );
@@ -326,7 +337,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
         <div className="mt-3.5 grid gap-1.5">
           <Switch
             label="Neat hands only"
-            hint="Tidies messy hands a little, and New hand skips the hard-to-read ones"
+            hint="Tidies messy hands a little, and Find another skips the hard-to-read ones"
             checked={state.neatOnly}
             onChange={props.onNeatOnly}
           />
@@ -437,7 +448,7 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
               <OccasionRow {...props} />
               <Switch
                 label="Keep my paper, pen and ink"
-                hint="New hand changes only the writer"
+                hint="Find another changes only the writer and the letter"
                 checked={kept}
                 onChange={props.onKeepLook}
               />
@@ -457,7 +468,7 @@ export function MoreControls(props: PanelProps & { flush?: boolean }) {
                     onChange={props.onVariety}
                     mark={60}
                     onReset={() => props.onVariety(60)}
-                    hint="How far New hand jumps"
+                    hint="How far Find another jumps"
                   />
                 )}
               </div>
@@ -723,11 +734,12 @@ const PaperPicker = memo(function PaperPicker({ value, onChange, rows }: { value
               value={paper.id}
               aria-label={`${paper.name}: ${paper.hint}`}
               className={cn(
-                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] aria-checked:bg-[#fffefb] pointer-coarse:h-auto',
+                // chosen: the whole tile lifts and takes the ink's ring, as the pens do (a variant keeps its family's tile chosen)
+                'group h-auto flex-col items-stretch gap-1.5 rounded-lg p-1 pb-1.5 text-[12px] aria-checked:bg-[#fffefb] aria-checked:text-foreground aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(40,30,10,0.1)] pointer-coarse:h-auto',
                 rows && 'w-[86px] shrink-0 snap-start bg-secondary',
               )}
             >
-              <span className="relative block overflow-hidden rounded-[5px] shadow-[0_0_0_0.5px_rgba(60,45,20,0.16),0_1px_2px_rgba(60,45,20,0.08)] transition-shadow duration-150 group-aria-checked:shadow-[0_0_0_1.5px_var(--ink),0_1px_2px_rgba(60,45,20,0.08)]">
+              <span className="relative block overflow-hidden rounded-[5px] shadow-[0_0_0_0.5px_rgba(60,45,20,0.16),0_1px_2px_rgba(60,45,20,0.08)] transition-shadow duration-150">
                 {/* flat: the sheet's own colour (the name under it tells near-whites apart) */}
                 <span className="block aspect-[4/3] w-full" style={{ background: paper.tint }} />
               </span>

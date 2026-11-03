@@ -31,12 +31,32 @@ for (const style of E.styleNames()) for (const ruled of [false, true]) {
   const LINE = 'Dear Ada, little kittens!';
   const o1 = E.inkPage(p, Object.assign({}, opts, { maxWidth: 40000 })); o1.write(LINE);
   const lb = E.inkPage(p, Object.assign({}, opts, { maxWidth: 40000 }));
-  for (const ch of LINE) lb.write(ch);
+  // (each letter written with what comes next: some hands shape a letter by the one after it)
+  for (let i = 0; i < LINE.length; i++) lb.write(LINE[i], { ahead: LINE.slice(i + 1) });
   const byLetter = lb.items.map(sig), wholeLine = o1.items.map(sig);
   const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
   const r = [same(whole, byWord), same(wholeLine, byLetter), draftOk, frozenOk];
   if (r.includes(false)) bad++;
   console.log(`${style.padEnd(7)} ${ruled ? 'ruled' : 'plain'}  word-by-word = one pass: ${r[0]}  letter-by-letter = one pass: ${r[1]}  draft = commit: ${r[2]}  ink never moves: ${r[3]}`);
+}
+// a whole letter (blank lines, a closing block, the name, a P.S.) written word by word, each piece with
+// what the writer is about to write (`ahead`), lands where one pass puts it; and its lines take their
+// roles in the letter
+const LETTER = 'Dear Mary,\n\nI write to you from the farm, where the wheat is nearly in and the evenings are long.\n\nThe new calf is strong. We named her after you.\n\nYour loving sister,\nAnne\n\nP.S. Do write soon.';
+for (const style of E.styleNames().slice(0, 3)) for (const ruled of [false, true]) for (const complete of [false, true]) {
+  const p = E.makeHand('quiet-heron-17', style);
+  const opts = { maxWidth: 9000, firstBaseline: 1100, ruled, lineHeight: ruled ? 1300 : undefined, salt: 'qa', complete };
+  const one = E.inkPage(p, opts); const pg = one.write(LETTER);
+  const pieces = LETTER.match(/[^ \n]+[ \n]*|\n+/g);
+  const wb = E.inkPage(p, opts);
+  let at = 0;
+  for (const w of pieces) { at += w.length; wb.write(w, { ahead: LETTER.slice(at) }); }
+  const same = one.items.map(sig).join('\n') === wb.items.map(sig).join('\n');
+  const roles = [...new Set(pg.lineInfo.map((l) => l.role))];
+  const need = ['first', 'para', 'closing', 'signature', 'ps'];
+  const ok = same && need.every((r) => roles.includes(r));
+  if (!ok) bad++;
+  console.log(`${style.padEnd(7)} ${ruled ? 'ruled' : 'plain'} letter${complete ? ' (complete)' : ''}: word by word with what's ahead = one pass: ${same}; roles ${need.filter((r) => !roles.includes(r)).length ? 'MISSING ' + need.filter((r) => !roles.includes(r)).join(', ') : 'all there'}`);
 }
 console.log(bad ? `${bad} problem(s)` : 'ink placements are frozen and identical however the text arrives');
 process.exit(bad ? 1 : 0);

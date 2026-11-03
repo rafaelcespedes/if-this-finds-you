@@ -23,7 +23,7 @@ engine/            the handwriting engine: plain ES modules, no build step, runs
                    the pen trailing the typing (penStep), fair copy, P.S.
   corrections.js   the writer's journey: a draft with this writer's slips and fixes, planned as an ink log
                    and replayed by sheet.js (writeWithJourney)
-  fontbuild.js     hand -> installable .otf (opentype.js passed in), calt cycling alternates
+  fontbuild.js     hand -> open-source font: .otf + .ttf, word forms and joins, cycling samples, kern; the zip download (docs/FONTS.md)
 lab/               engine test bench (plain HTML). Controls are generated from engine PARAMS
 app/               the product UI (React + shadcn). Imports ../engine
 tools/             serve.py (static server), node-export.mjs, check_font.py, embed-hershey.mjs

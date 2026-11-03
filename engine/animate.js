@@ -314,6 +314,12 @@ export function createPen(opts = {}) {
     let wPrev = null;
     for (const it of glyphs) { if (wPrev && wPrev !== it.wkey) closed.add(wPrev); wPrev = it.wkey; }
     if (!open && wPrev) closed.add(wPrev);
+    // a letter not yet inked may still change shape as the next one is typed (some hands shape a letter
+    // by the one after it): its waiting strokes are queued again from its new shape
+    // (compared by stroke count: marks are rebuilt on every page, letters come from a cache)
+    const shape = new Map();
+    for (const it of glyphs) shape.set(it.key, (it.glyph || it.g).strokes.length);
+    queue = queue.filter((q) => !shape.has(q.key) || q.n === shape.get(q.key) || (inked.get(q.key) || 0) > 0);
     // strokes already waiting, or on the pen right now, are not queued again
     const queued = new Set(queue.map((q) => q.key + '#' + q.si));
     if (cur) queued.add(cur.s.key + '#' + cur.s.si);
@@ -325,7 +331,7 @@ export function createPen(opts = {}) {
       g.strokes.forEach((st, si) => {
         if ((inked.get(it.key) || 0) > si || queued.has(it.key + '#' + si)) return;
         const t = timing(st.center, xh);
-        queue.push({ key: it.key, si, word: it.wkey, delayed: !!st.delayed, dur: Math.max(st.dot ? 0.05 : 0.04, t.dur) / (it.tempo || 1), tn: t.tn, sn: t.sn });
+        queue.push({ key: it.key, si, n: g.strokes.length, word: it.wkey, delayed: !!st.delayed, dur: Math.max(st.dot ? 0.05 : 0.04, t.dur) / (it.tempo || 1), tn: t.tn, sn: t.sn });
       });
     }
     // letters deleted before the pen reached them simply go (they were only a thought)

@@ -42,7 +42,7 @@ export { timeline, frameAt, strokeFraction, createPlayer, playSVG, createPen, pa
 export { renderSVG, contoursToD, renderRun, runRenderer, runTransform, runChanges } from './render-svg.js';
 export { inkSVG } from './ink-svg.js';
 export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
-export { buildFont, verify, glyphName } from './fontbuild.js';
+export { buildFont, buildFontPackage, verify, glyphName, fontNames, GF_LATIN_CORE } from './fontbuild.js';
 export { writeWithJourney, journeyAmount, fixHabits, journeyText } from './corrections.js';
 export { newInkDoc, newView, replay, apply, plan, penStep, viewText, draftPage, fairCopy, postScript, dropLast, sheetPage, INK_VERSION } from './sheet.js';
 export { logicalText, transcription, summary as inkSummary, encodeDoc, decodeDoc, encodeInkLink, decodeInkLink } from './inklog.js';
