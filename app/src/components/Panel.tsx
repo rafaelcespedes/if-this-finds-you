@@ -205,12 +205,22 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
 }
 
 /** Share: copy a link, save the image; the font file is a quieter extra. One icon wherever it sits. */
-export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVideo, exportable, onShareOpen, size }: PanelProps & { size?: 'lg' }) {
+export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVideo, exportable, onShareOpen, size }: PanelProps & { size?: 'lg' | 'chip' }) {
   const working = busy.download || busy.font || busy.video;
   return (
     <DropdownMenu.Root onOpenChange={(o) => o && onShareOpen()}>
       <DropdownMenu.Trigger asChild>
-        <Button variant="secondary" size="icon" aria-label="Share" className={cn('size-11', size === 'lg' && 'size-11')}>
+        <Button
+          variant="secondary"
+          size="icon"
+          aria-label="Share"
+          data-chip={size === 'chip' ? '' : undefined}
+          className={cn(
+            'size-11',
+            // the phone header's small chip: drawn 32 px, still a 44 px target
+            size === 'chip' && "relative size-8 rounded-[9px] after:absolute after:-inset-1.5 after:content-[''] pointer-coarse:size-8 [&_svg]:size-4",
+          )}
+        >
           {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}
         </Button>
       </DropdownMenu.Trigger>

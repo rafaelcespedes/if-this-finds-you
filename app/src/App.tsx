@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Pointer } from 'lucide-react';
+import { ChevronDown, Mails, Pointer } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, withLogo } from '@/lib/brand';
 import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
-import { AboutHand, Panel, type PanelProps } from '@/components/Panel';
+import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
 import { DraftSlip } from '@/components/DraftSlip';
@@ -799,7 +799,7 @@ export default function App() {
           >
             {/* room for the stacked wordmark ("If this finds / you", about 32-36 px tall) when it lands */}
             <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
-            <span className="flex min-w-0 items-baseline gap-2">
+            <span className={cn('flex min-w-0 gap-2', isDesktop || reader ? 'items-baseline' : 'items-center gap-1.5')}>
               {reader ? (
                 <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                   Write your own
@@ -808,7 +808,20 @@ export default function App() {
                 // no hints up here: they come as ghosts by the letter, once; screen readers still hear the state
                 <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : ''}</span>
               )}
-              {/* the whole library of found letters (the archive) */}
+              {/* the whole library of found letters (the archive); on phones a small chip, with Share beside it */}
+              {!isDesktop && !reader ? (
+                <span className={cn('pointer-events-auto flex items-center gap-1.5 transition-opacity duration-150', editing && 'pointer-events-none opacity-0')}>
+                  <a
+                    href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
+                    aria-label="All letters"
+                    title="All letters"
+                    className="relative grid size-8 place-items-center rounded-[9px] bg-secondary text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <Mails aria-hidden className="size-4" />
+                  </a>
+                  <ShareMenu {...panelProps} size="chip" />
+                </span>
+              ) : (
               <a
                 href={withLogo(`${import.meta.env.BASE_URL}letters.html`)}
                 className={cn(
@@ -819,6 +832,7 @@ export default function App() {
               >
                 All letters
               </a>
+              )}
             </span>
           </header>
           <div ref={stageRef} className="w-full">
