@@ -51,7 +51,7 @@ export function useWriting(req: Req, paused = false) {
       const data = e.data;
       if ('error' in data) {
         console.error('[seedhand] write failed:', data.error);
-        toast.error('The hand couldn’t write this', { id: 'write-error', description: 'Try a different hand or shorten the note.' });
+        toast.error('The hand couldn’t write this', { id: 'write-error', description: 'Try another hand, or shorten the letter.' });
         return;
       }
       const s = sent.current.get(data.id);

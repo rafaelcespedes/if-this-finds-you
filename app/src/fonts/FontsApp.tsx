@@ -166,7 +166,10 @@ export function FontsApp() {
   const listTop = () => {
     const el = listRef.current;
     if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - (narrow ? 16 : 96);
+    // clear of the pinned site header (the page's scroll padding) and, on wide screens, the sticky tester line
+    const head = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    const bar = document.querySelector('.specimen-bar-wrap')?.getBoundingClientRect().height ?? 0;
+    const y = el.getBoundingClientRect().top + window.scrollY - head - bar - 12;
     if (window.scrollY > y) window.scrollTo({ top: y, behavior: 'auto' });
   };
   const newSet = () => { update({ set: newSetSeed(), view: 'set', hand: '' }, true); listTop(); };
@@ -219,7 +222,7 @@ export function FontsApp() {
           <div className="min-w-0">
           {/* wide screens: what every hand writes, as one ruled tester line above the list (below 1024 px it's the dock's Text) */}
           {wide && (
-            <div className="specimen-bar-wrap sticky top-0 z-20">
+            <div className="specimen-bar-wrap sticky top-[var(--site-head,0px)] z-20">
               <SpecimenBar {...textProps} />
             </div>
           )}

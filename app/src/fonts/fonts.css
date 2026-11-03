@@ -353,9 +353,9 @@
 }
 .font-rail {
   position: sticky;
-  top: 1rem;
+  top: calc(var(--site-head-clear, 0px) + 1rem); /* under the pinned site header */
   display: grid;
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(100dvh - var(--site-head-clear, 0px) - 2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   /* 4 px of room on the left so the controls' focus rings aren't cut by the scroll box */

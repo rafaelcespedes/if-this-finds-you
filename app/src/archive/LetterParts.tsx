@@ -98,18 +98,18 @@ export function LetterDock(a: DockActions) {
           </>
         )}
         <IconButton label="Another hand" onClick={a.onNewHand}><Shuffle aria-hidden /></IconButton>
-        <IconButton label="Share a link to this letter" onClick={a.onShare}><Link2 aria-hidden /></IconButton>
+        <IconButton label="Copy a link to this letter" onClick={a.onShare}><Link2 aria-hidden /></IconButton>
         <ActionSheet
           title="More"
           side="top"
           trigger={
-            <Button variant="ghost" size="icon" aria-label="More" className="size-9 rounded-lg text-muted-foreground hover-device:hover:text-foreground pointer-coarse:size-10">
+            <Button variant="ghost" size="icon" aria-label="More" className="hit-44 size-9 rounded-lg text-muted-foreground hover-device:hover:text-foreground pointer-coarse:size-10">
               <Ellipsis aria-hidden />
             </Button>
           }
           entries={[
-            { id: 'text', label: 'Read it as text', icon: <FileText />, onSelect: a.onText },
-            { id: 'image', label: 'Save as an image', icon: <Download />, onSelect: a.onImage, disabled: !a.imageReady },
+            { id: 'text', label: 'Read as text', icon: <FileText />, onSelect: a.onText },
+            { id: 'image', label: 'Download image', icon: <Download />, onSelect: a.onImage, disabled: !a.imageReady },
             { id: 'random', label: 'A letter at random', icon: <Shuffle />, onSelect: a.onRandom },
           ]}
         />
@@ -208,7 +208,7 @@ export function Editorial({ letter, name, textOpen, onText, centred }: { letter:
               )}
             </li>
           )}
-          <li>The words are the original writer’s. The handwriting is {name}’s, a fictional writer; every hand here is drawn fresh.</li>
+          <li>The words are the original writer’s. The handwriting is {name}’s, a writer who never existed.</li>
         </ol>
       </footer>
     </div>

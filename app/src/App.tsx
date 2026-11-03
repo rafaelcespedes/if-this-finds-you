@@ -749,9 +749,9 @@ export default function App() {
     const url = shareUrl(state);
     const ok = await copyText(url);
     // on phones (and anywhere with a share sheet) the toast offers to send it straight on
-    const action = canShareLinks() ? { label: 'Share…', onClick: () => void shareLink(url, `${name}’s letter – ${APP_NAME}`) } : undefined;
-    if (ok) toast.success('Link copied', { description: 'It opens this exact note: hand, pen, paper and text.', action });
-    else if (action) void shareLink(url, `${name}’s letter – ${APP_NAME}`);
+    const action = canShareLinks() ? { label: 'Share…', onClick: () => void shareLink(url, `${name}’s letter · ${APP_NAME}`) } : undefined;
+    if (ok) toast.success('Link copied', { description: 'It opens this letter as it is: hand, pen, paper and words.', action });
+    else if (action) void shareLink(url, `${name}’s letter · ${APP_NAME}`);
     else toast.error('Couldn’t copy the link', { description: 'Copy it from the address bar instead.' });
   }, [state, name]);
 
@@ -868,10 +868,10 @@ export default function App() {
       if (FONT_PACKAGE) {
         // the open font, zipped with how to install it, its licence and credits (built in a worker)
         const res = await exportFontPackage({ seed: state.seed, style: state.style, overrides: eff.overrides, name });
-        toast.success('Font downloaded', { description: `${res.family}: ${res.glyphs} glyphs. Install it from the zip.` });
+        toast.success('Font downloaded', { description: `${res.family}, ${res.glyphs} glyphs. Open the zip to install it.` });
       } else {
         const res = await exportFont(p, `${APP_NAME} – ${name} (${styleCard(state.style).title})`);
-        toast.success('Font exported', { description: `${res.glyphs} glyphs, 3 versions of each letter` });
+        toast.success('Font downloaded', { description: `${res.glyphs} glyphs, three versions of each letter` });
       }
     } catch (e) {
       console.error(e);
@@ -1116,6 +1116,8 @@ export default function App() {
       // grid's gutter before it and its margin after, reading-room.css), less the header row's own gap (gap-x-4)
       beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + var(--rr-gutter, 0rem) + var(--rr-margin, 0.75rem) - 1rem)' : undefined}
       quiet={editing && !isDesktop}
+      // pinned within its column (narrower than the window beside Classic's panel), not to the window
+      within
       style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
       className={cn('transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
     >

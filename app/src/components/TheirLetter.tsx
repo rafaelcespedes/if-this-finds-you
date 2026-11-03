@@ -212,7 +212,7 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
         )}
       </div>
 
-      {/* tucked under your sheet, only an edge shows: its name and "Not a reply" wait until it's picked up */}
+      {/* tucked under your sheet, only an edge shows: its name and "Set it aside" wait until it's picked up */}
       {(forward || !under) && <SheetLabel title={title} hand={hand} width={forward ? sheetW : aside * sheetW} className="absolute bottom-full left-0 mb-2" />}
 
       {/* under the letter, wherever it is: the way back (or that it isn't a reply) */}
@@ -237,9 +237,9 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
             type="button"
             onClick={onDismiss}
             className="shrink-0 rounded-md px-1.5 py-1 text-faint transition-colors duration-150 hover-device:hover:text-foreground"
-            title="This isn’t a reply"
+            title="Not replying: put their letter away"
           >
-            Not a reply
+            Set it aside
           </button>
         )}
       </div>
@@ -361,7 +361,7 @@ export function TheirLetterPull({ found, open, onOpen, onDismiss, viewport, reac
           <div className="flex items-center gap-1 text-[0.7812rem] text-muted-foreground">
             <span className="min-w-0 flex-1 truncate">{sampleCredit(letter)}</span>
             <button type="button" onClick={onDismiss} className="shrink-0 rounded-md px-2 py-2.5 text-faint">
-              Not a reply
+              Set it aside
             </button>
             <button type="button" onClick={() => onOpen(false)} className="shrink-0 rounded-md px-2 py-2.5 font-medium text-foreground">
               Your letter

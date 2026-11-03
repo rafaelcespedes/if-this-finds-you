@@ -48,20 +48,24 @@ export function ReadingDesk(props: PanelProps) {
     </AboutHand>
   );
   const share = <ShareMenu {...props} size="lg" />;
+  // the desk's main action, a button at the foot of the record's head (under its number and two-line title)
+  const bring = <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Bring another hand'} />;
+  const status = props.letter && (!props.letter.found || props.letter.drafts > 0);
   const physical = physicalOf(state);
   return (
     // as wide as the tool's panel (density.css --panel-w), so the desk grows with the browser's text size as it does
     <div className="rr-desk panel-scroll h-full">
       <div className="rr-ledger">
-        {/* the main action, a ruled row with its key, then the record */}
-        <div className="rr-desk-actions">
-          <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Bring another hand'} />
-          {props.letter && (!props.letter.found || props.letter.drafts > 0) && <LetterStatus {...props} className="rr-status" />}
-        </div>
+        {status && <div className="rr-desk-actions"><LetterStatus {...props} className="rr-status" /></div>}
         {found && record ? (
-          <LedgerRecord record={record} hand={signature} handName={props.name} actions={share} physical={physical} />
+          <LedgerRecord record={record} hand={signature} handName={props.name} actions={share} headAction={bring} physical={physical} />
         ) : found ? (
-          <div className="rr-ledger-waiting" aria-hidden />
+          // the record on its way: its head's room kept, so Bring another is already where it will stay
+          <section className="rr-ledger-record rr-ledger-waiting">
+            <div aria-hidden className="rr-ledger-head" />
+            <div aria-hidden className="rr-card-title" />
+            {bring}
+          </section>
         ) : (
           <section aria-label="Your letter" className="rr-ledger-record">
             <div className="rr-ledger-head">
@@ -69,6 +73,7 @@ export function ReadingDesk(props: PanelProps) {
               <div className="rr-card-actions">{share}</div>
             </div>
             <h2 className="rr-card-title">{replyTo ? <>To {replyTo.from}</> : 'A letter of your own'}</h2>
+            {bring}
             <dl className="rr-facts">
               {replyTo?.no != null && (
                 <div className="rr-fact">
