@@ -149,6 +149,23 @@ export function whereWhen(l: ArchiveLetter) {
   return bits.join(', ');
 }
 
+/**
+ * A letter's description (naming-and-copy §2.11): "Monrovia, Liberia, 1834. Written by Martha Snetter, copied out in a
+ * stranger's hand. Read it, or write back." What the record doesn't give is left out with its comma or full stop; a
+ * writer nobody knows ("Unsigned") isn't named, and one only described reads as a description ("by a schoolboy").
+ */
+export function letterDescription(l: ArchiveLetter) {
+  const where = [l.place?.trim(), l.year != null ? String(l.year) : ''].filter(Boolean).join(', ');
+  let writer = shortAuthor(l);
+  if (/^(unsigned|unknown writer|anonymous)$/i.test(writer)) writer = '';
+  else if (/^(A|An|The) /.test(writer)) writer = writer[0].toLowerCase() + writer.slice(1);
+  return [
+    where && (where.endsWith('.') ? where : `${where}.`),
+    writer ? `Written by ${writer}, copied out in a stranger’s hand.` : 'Copied out in a stranger’s hand.',
+    'Read it, or write back.',
+  ].filter(Boolean).join(' ');
+}
+
 /** Opening words for a card and its accessible name: whole words, about `n` characters. */
 export function opening(text: string, n: number) {
   if (text.length <= n) return text;

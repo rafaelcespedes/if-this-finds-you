@@ -26,4 +26,18 @@ function SegmentedItem({ className, ...props }: React.ComponentProps<typeof Togg
   );
 }
 
-export { Segmented, SegmentedItem };
+/** A small chip in a wrapping row (the paper's kinds; the Fonts page's filter words). One choice or several:
+ * the chosen ones take the ink's ring. Sized by density.css's chip tokens (--chip-h, --chip-text, --m-chip-h). */
+function SegmentedChip({ className, ...props }: React.ComponentProps<typeof ToggleGroupPrimitive.Item>) {
+  return (
+    <SegmentedItem
+      className={cn(
+        'h-[var(--chip-h,1.75rem)] rounded-[3px] bg-secondary px-[9px] text-[length:var(--chip-text,0.75rem)] aria-checked:bg-[var(--tile-on)] aria-checked:shadow-[0_0_0_1.5px_var(--ink)] data-[state=on]:bg-[var(--tile-on)] data-[state=on]:shadow-[0_0_0_1.5px_var(--ink)] pointer-coarse:h-[var(--m-chip-h,2.75rem)] pointer-coarse:px-[11px]',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export { Segmented, SegmentedChip, SegmentedItem };
