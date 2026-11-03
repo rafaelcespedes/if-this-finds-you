@@ -127,9 +127,9 @@ function FilterPanel({ id, filters, onFilters, neatOnly, onNeatOnly, catalogue, 
     <div ref={ref} id={id} role="dialog" aria-label="Filters"
       onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
       className={cn('filter-panel lib-menu pointer-events-auto flex max-h-[min(72dvh,640px)] flex-col overflow-hidden bg-panel', narrow ? 'w-[calc(100vw-24px)]' : 'w-[460px]')}>
-      <div className="panel-scroll overflow-y-auto overscroll-contain px-5">
+      <div className="panel-scroll overflow-y-auto overscroll-contain px-[var(--pad,1.25rem)]">
         {groups(defs.filter((d) => !d.more), true)}
-        <section data-row className="-mx-5 border-t border-border/70">
+        <section data-row className="-mx-[var(--pad,1.25rem)] border-t border-border/70">
           <MoreButton open={more} controls={moreId} summary={moreCount ? `${moreCount} on` : 'Joins, weight, spacing, pace…'} onClick={() => setMore((v) => !v)}>More</MoreButton>
         </section>
         {more && <div id={moreId} className="pb-2">{groups(defs.filter((d) => d.more), true)}</div>}
@@ -165,7 +165,7 @@ export function FontsDock(p: Props) {
   const caption = !open && p.view === 'set' && (summary || !p.neatOnly) ? (
     <div className="dock-caption pointer-events-auto flex max-w-[calc(100vw-24px)] items-center gap-1 rounded-full bg-panel py-1 pr-1 pl-3 text-[0.7812rem] text-muted-foreground">
       <span className="truncate">{[summary, !p.neatOnly && 'every hand'].filter(Boolean).join(' · ')}</span>
-      <Button variant="ghost" size="icon" onClick={() => p.onFilters({ ...NO_FILTERS, family: p.filters.family }, true)} aria-label="Clear the filters" className="size-6 rounded-full text-muted-foreground pointer-coarse:size-8">
+      <Button variant="ghost" size="icon" onClick={() => p.onFilters({ ...NO_FILTERS, family: p.filters.family }, true)} aria-label="Clear the filters" className="size-6 rounded-full text-[var(--muted-foreground)] pointer-coarse:size-8">
         <X aria-hidden className="size-3.5" />
       </Button>
     </div>

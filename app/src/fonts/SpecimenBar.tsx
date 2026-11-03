@@ -80,7 +80,7 @@ export function SpecimenBar(p: Props) {
           />
           {p.text && (
             <Button variant="ghost" size="icon" aria-label="Back to the letter’s opening" onMouseDown={(e) => e.preventDefault()} onClick={() => p.onText('')}
-              className="absolute right-0.5 size-8 text-muted-foreground pointer-coarse:size-10">
+              className="absolute right-0.5 size-8 text-[var(--muted-foreground)] pointer-coarse:size-10">
               <X aria-hidden className="size-3.5" />
             </Button>
           )}
