@@ -10,13 +10,14 @@
 //
 //   cd tools/fonts && npm install && node build-pack.mjs              (about 5 minutes)
 //   node build-pack.mjs --per=3 --only=palmer,arrighi --no-specimens  (a quick partial run)
+//   node build-pack.mjs --specimens-only                              (redraw the specimens of the fonts in out/)
 // Specimens and the overview are rendered by headless Google Chrome (set CHROME=/path/to/chrome elsewhere).
 
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { createRequire } from 'module';
-import { execFileSync } from 'child_process';
+import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import * as E from '../../engine/index.js';
 import { buildFontPackage, GF_LATIN_CORE, licenceText } from '../../engine/fontbuild.js';
@@ -162,33 +163,66 @@ function overviewHTML(list) {
   <p class="lead">${list.length} fictional writers in 13 handwriting traditions (1522–2023). Free and open: SIL Open Font License 1.1. Each font cycles a few versions of every letter; the website writes every letter fresh.</p>
   <div class="grid">${cards}</div></div></body></html>` };
 }
-let profileDir = null;
-function chrome(htmlPath, png, pdf, w, h) {
-  // a throwaway profile outside the repo; a busy machine sometimes makes Chrome fail once, so try again
-  if (!profileDir) profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'itfy-chrome-'));
-  const base = ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', `--user-data-dir=${profileDir}`, '--hide-scrollbars', '--virtual-time-budget=4000', '--allow-file-access-from-files'];
-  const url = 'file://' + htmlPath;
-  const run = (extra) => {
-    for (let t = 0; t < 3; t++) {
-      try { execFileSync(CHROME, [...base, ...extra, url], { stdio: 'ignore', timeout: 60000 }); return true; } catch (e) { /* retry */ }
-    }
-    console.log(`\n  (Chrome could not render ${path.basename(path.dirname(htmlPath))}/${path.basename(htmlPath)})`);
-    return false;
+// One headless Chrome for every page, driven over the DevTools protocol (a launch per image is slow on a busy Mac).
+async function openChrome() {
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'itfy-chrome-'));
+  const port = 9300 + Math.floor(Math.random() * 600);
+  const proc = spawn(CHROME, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', `--user-data-dir=${profileDir}`,
+    '--hide-scrollbars', '--allow-file-access-from-files', `--remote-debugging-port=${port}`, 'about:blank'], { stdio: 'ignore' });
+  let targets = null;
+  for (let i = 0; i < 300 && !targets; i++) { try { targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await sleep(200); } }
+  if (!targets) throw new Error('Chrome did not start');
+  const ws = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
+  await new Promise((r, j) => { ws.addEventListener('open', r); ws.addEventListener('error', j); });
+  let id = 0; const pending = new Map();
+  ws.addEventListener('message', (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
+  const send = (method, params = {}) => new Promise((r, j) => { const i = ++id; pending.set(i, (m) => (m.error ? j(new Error(method + ': ' + m.error.message)) : r(m.result))); ws.send(JSON.stringify({ id: i, method, params })); });
+  const close = async () => {
+    try { ws.close(); } catch { /* gone */ }
+    const exited = new Promise((r) => proc.once('exit', r));
+    proc.kill();
+    await Promise.race([exited, sleep(5000)]);
+    try { fs.rmSync(profileDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* a temp folder; the OS cleans it */ }
   };
-  if (png) run([`--window-size=${w},${h}`, `--screenshot=${png}`]);
-  if (pdf) run(['--no-pdf-header-footer', `--print-to-pdf=${pdf}`]);
+  return { send, close };
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function render(cdp, htmlPath, png, pdf, w, h) {
+  const url = 'file://' + htmlPath;
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+  await cdp.send('Page.navigate', { url: encodeURI(url) });
+  // wait until this page has loaded and every font it uses is in
+  const ready = `(async () => { if (location.href !== ${JSON.stringify(encodeURI(url))} || document.readyState !== 'complete') return false;
+    document.body.offsetHeight; await document.fonts.ready; return document.fonts.status === 'loaded'; })()`;
+  for (let t = 0; t < 600; t++) {
+    const r = await cdp.send('Runtime.evaluate', { expression: ready, awaitPromise: true, returnByValue: true }).catch(() => null);
+    if (r && r.result && r.result.value) break;
+    await sleep(100);
+  }
+  if (png) {
+    const r = await cdp.send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width: w, height: h, scale: 1 }, captureBeyondViewport: true });
+    fs.writeFileSync(png, Buffer.from(r.data, 'base64'));
+  }
+  if (pdf) {
+    const r = await cdp.send('Page.printToPDF', { printBackground: true, preferCSSPageSize: true });
+    fs.writeFileSync(pdf, Buffer.from(r.data, 'base64'));
+  }
 }
 
 // ---------- build ----------
 async function main() {
   const t0 = Date.now();
-  fs.rmSync(path.join(OUT, 'fonts'), { recursive: true, force: true });
-  fs.rmSync(path.join(OUT, 'zips'), { recursive: true, force: true });
-  fs.mkdirSync(path.join(OUT, 'fonts'), { recursive: true });
-  fs.mkdirSync(path.join(OUT, 'zips'), { recursive: true });
-  const hands = pickHands();
-  console.log(`${hands.length} hands across ${new Set(hands.map((h) => h.style)).size} traditions`);
-  const manifest = [];
+  // --specimens-only: keep the fonts already in out/, just redraw the specimen sheets and the overview
+  const only = !!args['specimens-only'];
+  const manifest = only ? JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8')) : [];
+  if (!only) {
+    fs.rmSync(path.join(OUT, 'fonts'), { recursive: true, force: true });
+    fs.rmSync(path.join(OUT, 'zips'), { recursive: true, force: true });
+    fs.mkdirSync(path.join(OUT, 'fonts'), { recursive: true });
+    fs.mkdirSync(path.join(OUT, 'zips'), { recursive: true });
+  }
+  const hands = only ? [] : pickHands();
+  if (!only) console.log(`${hands.length} hands across ${new Set(hands.map((h) => h.style)).size} traditions`);
   let i = 0;
   for (const h of hands) {
     const pkg = await buildFontPackage(h.p, { name: h.name, clipper: ClipperLib, woff2: (b) => wawoff2.compress(b), clock: () => performance.now() });
@@ -209,10 +243,9 @@ async function main() {
       otfFile: `${dirName}-Regular.otf`,
       kb: { otf: Math.round(pkg.info.sizes.otf / 1024), ttf: Math.round(pkg.info.sizes.ttf / 1024), woff2: woff2 ? Math.round(woff2.data.length / 1024) : 0, zip: Math.round(pkg.zip.length / 1024) },
       ms: pkg.info.ms.total, ascender: pkg.info.ascender, descender: pkg.info.descender,
-      creditShort: [...groups['public-domain'], ...groups['cc-by-4.0']].map((s) => s.name.replace(/,.*$/, '').replace(/ \(.*$/, '')).filter((s, k, a) => a.indexOf(s) === k).slice(0, 3).join('; ') || 'Hershey fonts (1967)',
+      creditShort: [...[...groups['public-domain'], ...groups['cc-by-4.0']].map((s) => s.name.replace(/,.*$/, '').replace(/ \(.*$/, '')).filter((s, k, a) => a.indexOf(s) === k).slice(0, 3), 'the Hershey fonts'].join('; '),
     };
     manifest.push(m);
-    fs.writeFileSync(path.join(dir, 'specimen.html'), specimenHTML(m));
     console.log(`${String(m.i + 1).padStart(3)} ${m.family.padEnd(40)} ${h.style.padEnd(15)} neat ${m.neatness.toFixed(2)} lifts ${m.lifts.toFixed(2)}  ${String(m.glyphs).padStart(4)} glyphs  ${String(m.kb.otf).padStart(4)} KB otf  ${String(m.ms).padStart(5)} ms`);
   }
   // pack files
@@ -221,19 +254,22 @@ async function main() {
   const ov = overviewHTML(manifest);
   fs.writeFileSync(path.join(OUT, 'index.html'), ov.html);
   fs.writeFileSync(path.join(OUT, 'README.md'), packReadme(manifest));
+  for (const m of manifest) fs.writeFileSync(path.join(OUT, m.dir, 'specimen.html'), specimenHTML(m));
   if (!args['no-specimens']) {
     if (!fs.existsSync(CHROME)) console.log('Chrome not found: skipped the specimen images (set CHROME=...)');
     else {
-      for (const m of manifest) {
-        const dir = path.join(OUT, m.dir);
-        chrome(path.join(dir, 'specimen.html'), path.join(dir, 'specimen.png'), path.join(dir, 'specimen.pdf'), 1600, 1130);
-        process.stdout.write('.');
-      }
-      chrome(path.join(OUT, 'index.html'), path.join(OUT, 'overview.png'), path.join(OUT, 'overview.pdf'), 1800, 180 + ov.rows * 172);
+      const cdp = await openChrome();
+      try {
+        for (const m of manifest) {
+          const dir = path.join(OUT, m.dir);
+          await render(cdp, path.join(dir, 'specimen.html'), path.join(dir, 'specimen.png'), path.join(dir, 'specimen.pdf'), 1600, 1130);
+          process.stdout.write('.');
+        }
+        await render(cdp, path.join(OUT, 'index.html'), path.join(OUT, 'overview.png'), path.join(OUT, 'overview.pdf'), 1800, 180 + ov.rows * 172);
+      } finally { await cdp.close(); }
       console.log(' specimens done');
     }
   }
-  if (profileDir) fs.rmSync(profileDir, { recursive: true, force: true });
   const kb = (k) => manifest.reduce((n, m) => n + m.kb[k], 0);
   console.log(`done in ${Math.round((Date.now() - t0) / 1000)} s: ${manifest.length} fonts, OTF ${(kb('otf') / 1024).toFixed(1)} MB, TTF ${(kb('ttf') / 1024).toFixed(1)} MB, WOFF2 ${(kb('woff2') / 1024).toFixed(1)} MB, zips ${(kb('zip') / 1024).toFixed(1)} MB`);
 }

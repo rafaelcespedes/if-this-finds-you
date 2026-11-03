@@ -1329,7 +1329,7 @@ export function readmeText(built, opts = {}) {
     '',
     built.meta.description,
     '',
-    `Files: ${files.join(', ')}. You only need one of them: the .otf suits most apps, the .ttf suits older Windows apps.`,
+    `Files: ${files.join(', ')}. To install, you only need one: the .otf suits most apps, the .ttf suits older Windows apps.${opts.woff2 ? ' The .woff2 is for websites.' : ''}`,
     '',
     'How to install',
     '--------------',

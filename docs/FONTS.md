@@ -172,6 +172,26 @@ cd tools/fonts && npm install && node build-pack.mjs   # writes tools/fonts/out/
 - **In a browser:** `python3 tools/serve.py 8765`, then open `/tools/fonts/try.html`. It builds any hand the way the
   app does, shows it with calt on and off, and has a download button. `?bench=20` times 20 random hands.
 
+## Tested in real apps (2 November 2026)
+
+| Where | Result |
+|---|---|
+| **TextEdit** (macOS, CoreText) | Three pack fonts installed for the user (a print hand, a Palmer joined hand, a Sütterlin hand that lifts often). All render; repeated words show different versions and joins connect, so contextual alternates are on by default. |
+| **Keynote** (Pages isn't installed on this Mac; both use Apple's text engine) | Same: renders, cycles ("the the" differ). |
+| **Chrome** (`try.html`, specimens, overview) | Built in the page and loaded with `FontFace`: calt on cycles, calt off shows one version. The 75 specimens are Chrome screenshots. |
+| **HarfBuzz** (`check_fonts.py`) | All 75 pack fonts, OTF and TTF: no errors. Doubled letters never repeat a glyph; `the the the …` repeats a word 0 times in 29. |
+| **fontTools + OTS** | Every table decompiles and re-saves; OTS (the browsers' sanitizer) accepts every OTF, TTF and WOFF2. |
+| **The lab** (`lab/index.html`, Font view) | Its old `buildFont(opentype, …)` call still works: 975 glyphs, calt and kern, "re-parsed OK". |
+
+Not tested: Word, Windows, Linux, Adobe apps.
+
+### The pack as built
+
+75 writers: 15 print (Hershey print, Québec 2024, French 2023) and 60 joined, across all 13 traditions, neatness 0.28
+to 0.93. OTF 312–898 KB (median 630 KB), 1,555–4,043 glyph slots. Totals: OTF 45 MB, TTF 52 MB, WOFF2 24 MB, zips
+87 MB; with specimens the `out/` folder is about 260 MB. Building takes about 5 minutes on a quiet Mac (much longer
+on a busy one); specimens take about 1.5 minutes through one headless Chrome.
+
 ## Limits (say them plainly)
 
 - **A few versions, not infinite.** 4 or 5 per letter, cycled. The site's per-word lean, size, baseline drift, ink
@@ -185,6 +205,8 @@ cd tools/fonts && npm install && node build-pack.mjs   # writes tools/fonts/out/
 - **Context reaches one letter each way.** Habits that depend on more, like the shared bar of "tt", are left out.
 - **No hinting.** It's fine at screen sizes on Mac and in browsers. On Windows at very small sizes it can look soft
   (the `gasp` table asks for smoothing).
+- **Word gaps follow the engine.** A few writers who lift the pen very often write with very tight word gaps on the
+  site, and the font keeps them (Noor Thorne in the pack). Worth a look in the engine.
 - **Faithful, including the engine's quirks.** The font draws what the engine draws: crowded Spencerian joins, a hand
   that sprawls, and, at the extreme of the pen-lift range, ascenders whose retraced tops come apart. That last one is
   an engine issue, reported as a follow-up, and the pack avoids that range.
