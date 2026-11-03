@@ -46,14 +46,15 @@ const TIP_WEIGHTS: Weighted<PenSize> = [['fine', 28], ['medium', 50], ['bold', 2
 interface EngineLook {
   seed?: string; style?: string; pen?: string; ink?: string; paper?: string; size?: number; params?: Record<string, number>;
 }
-type EngineSampler = (opts: { current: { seed: string; style: string }; locked: string[]; variety: number }) => EngineLook;
+type EngineSampler = (opts: { current: { seed: string; style: string }; locked: string[]; variety: number; textLength?: number }) => EngineLook;
 const engineSampler = (E as unknown as { sampleLook?: EngineSampler }).sampleLook;
 
 export function rollLook(s: NoteState, opts: { variety: number; locked: Set<LockKey> }): Partial<NoteState> {
   const { variety, locked } = opts;
   const sibling = variety <= 20;
   const wild = variety > 70;
-  const fromEngine = engineSampler?.({ current: { seed: s.seed, style: s.style }, locked: [...locked], variety });
+  // the letter's length, so the sampler leaves out papers too small for it (postcards, cards, an aerogramme)
+  const fromEngine = engineSampler?.({ current: { seed: s.seed, style: s.style }, locked: [...locked], variety, textLength: s.text.length });
 
   // the writer
   const who = fromEngine?.seed
