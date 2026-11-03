@@ -5,6 +5,7 @@
 //
 // The page never loads the engine: its workers choose the hands and make the specimens (store.ts, fonts.worker.ts).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
@@ -71,7 +72,9 @@ function useDevicePixelRatio() {
   return dpr;
 }
 
-const INTRO = 'Every hand here is a free, open-source font. Narrow it down, try your own words, and draw another set until one feels like yours.';
+// the pitch and the longer intro: docs/brand/naming-and-copy.md §2.11 (Rafael's approved copy)
+const INTRO = 'Every hand here is a font you can keep. Free and open source.';
+const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font can only keep a few versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
 
 export function FontsApp() {
   const [route, update] = useRoute();
@@ -94,6 +97,9 @@ export function FontsApp() {
   const size = route.size || defaultSize(narrow);
   const [liveSize, setLiveSize] = useState(size);
   useEffect(() => { setLiveSize(size); }, [size]);
+  // the tool's slider row reports every step: the size is kept (and live images remade) once it rests
+  const restingSize = useSettled(liveSize, 300);
+  useEffect(() => { if (restingSize !== size) update({ size: restingSize === defaultSize(narrow) ? 0 : restingSize }); }, [restingSize]);
 
   // the list's exact width (live-hand images are made for it, pixel for pixel, once a resize has settled) and the
   // screen's own density, up to 3x (iPhones), followed when the window moves to another screen or the page zooms
@@ -170,7 +176,7 @@ export function FontsApp() {
               {/* "Fonts" in the logo's hand (#5: Québec school print, felt marker; heading.mjs) */}
               <span aria-hidden className="block h-[50px] [&_svg]:h-full [&_svg]:w-auto sm:h-[64px]" dangerouslySetInnerHTML={{ __html: heading }} />
             </h1>
-            <p className="mt-4 max-w-[36rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">
+            <p className="mt-4 max-w-[36rem] text-[0.9375rem] leading-[1.55] text-muted-foreground text-pretty sm:text-[1rem]">
               {route.view === 'saved' ? 'The hands you saved, kept in this browser. Each one downloads as a free, open-source font.' : INTRO}
             </p>
           </section>
@@ -183,7 +189,6 @@ export function FontsApp() {
               placeholder={placeholder}
               size={liveSize}
               onSize={setLiveSize}
-              onSizeCommit={(v) => update({ size: v === defaultSize(narrow) ? 0 : v })}
               mode={route.mode}
               onMode={(m: Mode) => update({ mode: m })}
               onFocusChange={setTyping}
@@ -209,7 +214,7 @@ export function FontsApp() {
           </ol>
           <footer className="font-list-end">
             {set.failed ? (
-              <p>The fonts didn’t load. <button type="button" className="ed-link" onClick={newSet}>Try again</button></p>
+              <p>The fonts didn’t load. <Button variant="link" onClick={newSet}>Try again</Button></p>
             ) : route.view === 'saved' ? (
               empty ? <p>Nothing saved yet. Tap the heart on a hand to keep it here.</p> : null
             ) : empty ? (
@@ -217,12 +222,12 @@ export function FontsApp() {
               <p>{set.note ?? 'No hands match all of these.'} <button type="button" className="ed-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
             ) : set.done ? (
               <div className="flex flex-wrap items-center gap-2">
-                {!set.exhausted && <button type="button" onClick={() => fonts.more()} className="dock-primary inline-flex h-10 items-center rounded-lg px-4 text-[14px] font-medium">Show {SET_COUNT} more</button>}
-                <button type="button" onClick={newSet} className="outline-btn inline-flex h-10 items-center rounded-lg px-4 text-[14px] font-medium">New set</button>
+                {!set.exhausted && <Button onClick={() => fonts.more()} className="dock-primary">Show {SET_COUNT} more</Button>}
+                <Button variant="outline" onClick={newSet}>New set</Button>
               </div>
             ) : null}
             <p className="font-list-note">
-              Each font keeps a few versions of every letter and swaps between them as you type, so it’s a little steadier than the live hand. Free to use under the SIL Open Font License.
+              {ABOUT} Free to use under the SIL Open Font License.
             </p>
           </footer>
         </main>

@@ -25,6 +25,8 @@ export interface SheetMetrics {
 }
 
 interface Props extends PanelProps {
+  /** how you're writing (In ink ▾): beside Paper, pen & ink (while writing, the pen tray has the same) */
+  writingMenu?: React.ReactNode;
   /** false while writing on the letter: the sheet steps away for the pen tray */
   open: boolean;
   detent: Detent;
@@ -68,7 +70,7 @@ function useWindowHeight() {
   return h;
 }
 
-export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onDragging, onAdjusting, ...props }: Props) {
+export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onDragging, onAdjusting, writingMenu, ...props }: Props) {
   const safe = useSafeInsets();
   const ih = useWindowHeight();
   const peekRef = useRef<HTMLDivElement>(null);
@@ -289,19 +291,20 @@ export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onD
           <LetterStatus {...props} compact className="min-w-0 justify-center pb-1" />
         )}
         {/* the look, as a pull-up: as wide as Find another above it, quieter; its chevron says which way it goes */}
-        <div className="pb-2">
+        <div className="flex items-center gap-2 pb-2">
           <button
             ref={pillRef}
             type="button"
             aria-expanded={expanded}
             onClick={() => onDetent(expanded ? 'peek' : 'half')}
-            className="group flex h-11 w-full items-center select-none focus-visible:outline-none"
+            className="group flex h-11 min-w-0 flex-1 items-center select-none focus-visible:outline-none"
           >
             <span data-pill className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-secondary px-3.5 text-[0.8125rem] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
               Paper, pen & ink
               <ChevronUp aria-hidden className={cn('size-3.5 text-muted-foreground transition-transform duration-300 ease-[var(--ease-drawer)]', expanded && 'rotate-180')} />
             </span>
           </button>
+          {writingMenu && <div className="-mr-1.5 shrink-0">{writingMenu}</div>}
         </div>
       </div>
 
