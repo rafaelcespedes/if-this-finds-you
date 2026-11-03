@@ -82,6 +82,22 @@ That's a different field, but it's a reminder the phrase is common, and the shor
 One name (**Stray Letters**, about $24 a year for both spellings), or a pair. If a pair, my pick is
 **Plumín + Stray Letters**. Before buying, run a lawyer's clearance as in Round 1; this is a sanity check, not legal advice.
 
+### Last pass: lost letters + typing in a human hand + exploring
+
+Rafael leans to Stray Letters and asked for one more pass. All below are $12.03 a year as `.com`, with no live
+marks in TMview.
+
+| Name | Idea | Note |
+|---|---|---|
+| **Letters Adrift** (lettersadrift.com) | Letters lost at sea and in time; handwriting that drifts off the line; you drift through the archive | Closest rival. *Ocean Letters Society* runs a letter exchange themed on letters set adrift |
+| Found Hand (foundhand.com) | You find a letter; a found hand writes it | Echoes *Found*, Davy Rothbart's magazine of found notes |
+| Ink Adrift (inkadrift.com) | The ink version of Letters Adrift | Says less about letters |
+| Letters Astray (lettersastray.com) | Stray Letters, reworded | Weaker than the original |
+| Letter Wander (letterwander.com) | Wandering through letters | Reads as "letter wonder"; a bit soft |
+
+Taken as `.com`: Wayward Letters, Letter Drift, Typed by Hand, Bottle Post, Dear Finder, Stray Hand.
+**Verdict: Stray Letters still wins.** It's the only one where both meanings are equally strong, and it's the shortest.
+
 ---
 
 ## 1. Naming
