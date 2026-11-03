@@ -99,7 +99,7 @@ export function ArchiveApp() {
   }, []);
 
   useEffect(() => {
-    if (route.page === 'index') document.title = `All letters – ${APP_NAME}`;
+    if (route.page === 'index') document.title = `All letters · ${APP_NAME}`;
   }, [route.page]);
 
   // the index under an open letter keeps the filters it had

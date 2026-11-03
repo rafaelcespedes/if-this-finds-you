@@ -19,7 +19,7 @@ import { LIVE, liveExtras, liveLayout, type Live } from '@/lib/live';
 import { sheetShadow } from '@/lib/papers';
 import { clamp } from '@/lib/utils';
 import { cards } from './cards';
-import { filterLetters } from './data';
+import { filterLetters, letterDescription } from './data';
 import { DETAIL, Editorial, HandMenu, LetterDock, TitleBlock, type DockActions } from './LetterParts';
 import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
@@ -167,9 +167,18 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => { titleRef.current?.focus({ preventScroll: true }); }, [letter?.id]);
 
+  // the tab, and the page's description while this letter is open (naming-and-copy §2.11); link previews can't
+  // follow (they read letters.html's own tags), so they show All letters
   useEffect(() => {
-    if (letter) document.title = `${letter.title ?? 'A letter'} – ${APP_NAME}`;
-    return () => { document.title = `All letters – ${APP_NAME}`; };
+    if (!letter) return;
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    const before = meta?.content;
+    document.title = `${letter.title ?? 'A letter'} · ${APP_NAME}`;
+    meta?.setAttribute('content', letterDescription(letter));
+    return () => {
+      document.title = `All letters · ${APP_NAME}`;
+      if (meta && before != null) meta.setAttribute('content', before);
+    };
   }, [letter]);
 
   // ---------- actions ----------

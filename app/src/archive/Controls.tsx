@@ -5,7 +5,7 @@
 //   3  a floating dock with search and a timeline of every letter, by century, as the era filter (the default:
 //      Rafael, "the kind of control that adds delight")
 // No count on screen and no Shuffle here (Rafael): screen readers hear the count after each change.
-import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -133,7 +133,7 @@ function Dock({ children, caption }: { children: ReactNode; caption?: ReactNode 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(14px+env(safe-area-inset-bottom,0px))] z-30 flex flex-col items-center gap-2 px-3" style={lift ? { transform: `translateY(${-lift}px)` } : undefined}>
       {caption}
-      <div role="toolbar" aria-label="Browse the letters" className="archive-dock pointer-events-auto flex max-w-full items-center gap-0.5 rounded-2xl bg-panel p-1 text-[13.5px]">
+      <div role="toolbar" aria-label="Browse the letters" className="archive-dock pointer-events-auto flex max-w-full items-center justify-center gap-0.5 rounded-2xl bg-panel p-1 text-[13.5px] has-[>[data-own-row]]:flex-wrap">
         {children}
       </div>
     </div>
@@ -211,14 +211,52 @@ const SPAN: Record<string, [number, number]> = { 'before-1600': [1380, 1600], '1
 const SHORT: Record<string, string> = { 'before-1600': 'Earlier', '1600s': '1600s', '1700s': '1700s', '1800s': '1800s', '1900s': '1900s', now: 'Now' };
 
 /**
+ * Whether the timeline needs a row of its own in the dock: true when its centuries, each at its label's width,
+ * don't fit beside the dock's other controls. The labels are set in px and the controls in rem, so this happens only
+ * with large text on a small screen. Measured, and again whenever the screen, the text or the controls change size.
+ */
+function useOwnRow(ref: RefObject<HTMLDivElement | null>, count: number) {
+  const [alone, setAlone] = useState(false);
+  useLayoutEffect(() => {
+    const group = ref.current, dock = group?.parentElement, box = dock?.parentElement;
+    if (!group || !dock || !box) return;
+    const sum = (el: Element, ...props: string[]) => {
+      const cs = getComputedStyle(el) as unknown as Record<string, string>;
+      return props.reduce((w, p) => w + (parseFloat(cs[p]) || 0), 0);
+    };
+    const check = () => {
+      const segs = [...group.children].filter((el) => el.classList.contains('era-seg'));
+      if (!segs.length) return;
+      const labels = segs.reduce((w, el) => w + (el.lastElementChild?.scrollWidth ?? 0) + sum(el, 'paddingLeft', 'paddingRight'), 0);
+      const need = labels + sum(group, 'columnGap') * (segs.length - 1) + sum(group, 'paddingLeft', 'paddingRight');
+      const others = [...dock.children].filter((el) => el !== group && getComputedStyle(el).position !== 'absolute');
+      const beside = others.reduce((w, el) => w + el.getBoundingClientRect().width, 0) + sum(dock, 'columnGap') * others.length;
+      const room = box.clientWidth - sum(box, 'paddingLeft', 'paddingRight') - sum(dock, 'paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth');
+      setAlone(beside + need > room + 0.5);
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(box);
+    ro.observe(dock);
+    for (const el of dock.children) ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref, count]);
+  return alone;
+}
+
+/**
  * Every letter as a mark on a timeline, grouped by century: you see at a glance when the letters were written
  * (most in the 1800s), and a century is a button that shows its letters.
  */
 function EraTimeline({ pool, value, onChange, narrow }: { pool: ArchiveLetter[]; value: string; onChange: (era: string) => void; narrow: boolean }) {
   const eras = ERAS.filter((e) => pool.some((l) => l.year != null && l.year >= e.from && l.year <= e.to));
   const id = useId();
+  const ref = useRef<HTMLDivElement>(null);
+  const alone = useOwnRow(ref, eras.length);
   return (
-    <div role="group" aria-labelledby={id} className="flex items-stretch gap-0.5 px-0.5">
+    // the centuries share what the dock has left (a 320 px phone fits all five), down to their labels' width; when
+    // even that doesn't fit beside search (large text on a small phone), the timeline takes a row of its own
+    <div ref={ref} role="group" aria-labelledby={id} data-own-row={alone || undefined} className={cn('flex min-w-0 items-stretch justify-center gap-0.5 px-0.5', alone && 'basis-full')}>
       <span id={id} className="sr-only">When the letters were written</span>
       {eras.map((e) => {
         const [a, b] = SPAN[e.id] ?? [e.from, e.to];
@@ -232,12 +270,13 @@ function EraTimeline({ pool, value, onChange, narrow }: { pool: ArchiveLetter[];
             aria-label={`${e.label}, ${noun(years.length)}`}
             title={`${e.label}: ${noun(years.length)}`}
             onClick={() => onChange(on ? '' : e.id)}
-            className={cn('era-seg relative h-11 shrink-0 rounded-lg pointer-coarse:h-12', narrow ? 'w-[52px]' : 'w-[76px]', on ? 'is-on' : value ? 'is-dim' : '')}
+            className={cn('era-seg relative flex h-11 min-w-0 flex-col items-center justify-center rounded-lg px-0.5 pointer-coarse:h-12', narrow ? 'w-[52px]' : 'w-[76px]', on ? 'is-on' : value ? 'is-dim' : '')}
           >
-            <span aria-hidden className="era-marks absolute inset-x-2 top-[7px] h-[17px]">
+            {/* the marks and the label stay together, centred, whatever height large text gives the button */}
+            <span aria-hidden className="era-marks relative block h-[17px] self-stretch mx-1.5">
               {years.map((x, i) => <i key={i} className="absolute bottom-0 w-[1.5px] rounded-full bg-current" style={{ left: `${(x * 100).toFixed(1)}%`, height: `${55 + ((i * 37) % 45)}%` }} />)}
             </span>
-            <span aria-hidden className="absolute inset-x-0 bottom-[5px] text-center text-[11px] leading-none font-medium tabular">{SHORT[e.id] ?? e.label}</span>
+            <span aria-hidden className="mt-1 block text-center text-[11px] leading-none font-medium whitespace-nowrap tabular">{SHORT[e.id] ?? e.label}</span>
           </button>
         );
       })}
