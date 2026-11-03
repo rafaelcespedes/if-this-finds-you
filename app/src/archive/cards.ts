@@ -8,8 +8,11 @@ import type { CardLetter, CardRequest, CardResult } from './card-protocol';
 export interface CardImage {
   url: string;
   look: Look;
+  /** the sheet in the image, px; the image is `bleed` px larger on every side (a shaped sheet's own shadow) */
   width: number;
   height: number;
+  bleed: number;
+  shaped: boolean;
   /** written this visit (fades in) or found in a cache (shows at once) */
   fresh: boolean;
 }
@@ -18,9 +21,10 @@ interface Want {
   key: string;
   letter: CardLetter;
   hand?: string;
-  /** raster and on-screen widths (cardSize) */
+  /** raster and on-screen widths (cardSize), and the sheet's height for its width */
   width: number;
   css: number;
+  aspect: number;
   el: Element;
 }
 
@@ -30,12 +34,12 @@ const CACHE_NAME = 'lost-letters-cards';
 const BUILD = workerSrc.split('/').pop()?.replace(/\W+/g, '-') ?? 'dev';
 
 /**
- * A card shown `css` px wide: its on-screen width in steps of 20 px (how much of the sheet it shows) and its raster
- * width at the screen's density (at most 2x). Steps keep cached images reusable between similar screens.
+ * A card shown `css` px wide: that width in steps of 20 px, and its raster width at the screen's density (at most
+ * 2x). Steps keep cached images reusable between similar screens.
  */
 export function cardSize(css: number) {
   const dpr = Math.min(2, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1);
-  const step = Math.max(240, Math.round(css / 20) * 20);
+  const step = Math.max(140, Math.round(css / 20) * 20);
   return { css: step, width: Math.min(960, Math.ceil((step * dpr) / 80) * 80) };
 }
 
@@ -140,7 +144,7 @@ class CardStore {
           this.pump();
           return;
         }
-        const req: CardRequest = { job, letter: w.letter, hand: w.hand, width: w.width, css: w.css };
+        const req: CardRequest = { job, letter: w.letter, hand: w.hand, width: w.width, css: w.css, aspect: w.aspect };
         slot.worker.postMessage(req);
       });
     }
@@ -153,10 +157,10 @@ class CardStore {
       const res = await c.match(this.cacheUrl(w.key));
       if (!res) return false;
       const look = JSON.parse(decodeURIComponent(res.headers.get('x-look') ?? '')) as Look;
-      const width = Number(res.headers.get('x-width')), height = Number(res.headers.get('x-height'));
+      const num = (h: string) => Number(res.headers.get(h));
       const blob = await res.blob();
       this.stats.cached++;
-      this.store(w.key, { url: URL.createObjectURL(blob), look, width, height, fresh: false });
+      this.store(w.key, { url: URL.createObjectURL(blob), look, width: num('x-width'), height: num('x-height'), bleed: num('x-bleed'), shaped: res.headers.get('x-shaped') === '1', fresh: false });
       return true;
     } catch {
       return false;
@@ -173,9 +177,12 @@ class CardStore {
       this.fail(key);
     } else {
       this.stats.rendered.push(Math.round(msg.ms));
-      this.store(key, { url: URL.createObjectURL(msg.blob), look: msg.look, width: msg.width, height: msg.height, fresh: true });
+      this.store(key, { url: URL.createObjectURL(msg.blob), look: msg.look, width: msg.width, height: msg.height, bleed: msg.bleed, shaped: msg.shaped, fresh: true });
       this.persistent().then((c) => c?.put(this.cacheUrl(key), new Response(msg.blob, {
-        headers: { 'content-type': msg.blob.type, 'x-look': encodeURIComponent(JSON.stringify(msg.look)), 'x-width': String(msg.width), 'x-height': String(msg.height) },
+        headers: {
+          'content-type': msg.blob.type, 'x-look': encodeURIComponent(JSON.stringify(msg.look)),
+          'x-width': String(msg.width), 'x-height': String(msg.height), 'x-bleed': String(msg.bleed), 'x-shaped': msg.shaped ? '1' : '0',
+        },
       })).catch(() => {}));
     }
     this.pump();
