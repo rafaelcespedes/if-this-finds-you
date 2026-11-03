@@ -29,6 +29,14 @@ type Props = {
   kept?: Kept;
   /** the page's own action, before the places (the tool without its panel: Share) */
   action?: ReactNode;
+  /** the running head's middle: what this page holds (a letter's number, place and year; the letter counter; where
+   * you are on the canvas). Centred over the page, or over the stage when `beside` is set */
+  centre?: ReactNode;
+  /** its short form for when the full one doesn't fit ("No. 0115", "‹ No. 0004 ›"); without one, the middle steps aside */
+  centreShort?: ReactNode;
+  /** a column kept at the right, beside the stage (the tool's record): the middle centres over the stage, and the
+   * places still run to the right edge. A CSS length */
+  beside?: string;
   /** writing on a phone: everything but the wordmark steps aside */
   quiet?: boolean;
   className?: string;
@@ -39,120 +47,185 @@ type Props = {
 /** The phone header's small chips (Menu here, Share in the tool): drawn 32 px, still a 44 px target. */
 export const headerChip =
   "pointer-events-auto relative grid size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-accent [&_svg]:size-[16px]";
+const CHIP = 32;
 
 // a place in the header: a big enough target without making the line taller
 const link =
   "pointer-events-auto relative inline-flex shrink-0 items-baseline gap-1 rounded-[3px] px-1.5 py-0.5 font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground";
 // the place you're in: a short rule under its words (Rubric's vermilion, one of the few marks that guide the eye)
 const mark = "relative before:pointer-events-none before:absolute before:inset-x-0 before:bottom-px before:h-[1.5px] before:bg-[var(--mark)] before:content-[''] forced-colors:before:bg-[CanvasText]";
+// a piece that isn't shown right now: still laid out (so it can be measured), out of sight and out of reach
+const away = 'invisible absolute top-0 right-0';
 
 export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
-  { current, inside, hrefs, kept, action, quiet, className, style, children },
+  { current, inside, hrefs, kept, action, centre, centreShort, beside, quiet, className, style, children },
   ref,
 ) {
   const device = useDeviceKept();
   const mine = kept ?? device;
   const onTool = current === 'write' && !inside;
-  // the words on one line beside the wordmark, or (when they don't fit) the Menu chip
-  const { headerRef, actionRef, wordsRef, compact } = useFits(ref);
+  const m = useFits(ref, `${!!beside}${!!centre}${!!centreShort}${!!action}`);
+  const { fit } = m;
+  const words = fit === 'A' || fit === 'B';
+  const middle = centre && (fit === 'A' || fit === 'B' || fit === 'C') ? 'full' : centreShort && fit === 'D' ? 'short' : 'none';
   return (
     <header
-      ref={headerRef}
+      ref={m.headerRef}
       data-site-header
-      style={style}
+      style={beside ? { ...style, ['--site-beside' as string]: beside } : style}
       className={cn(
         // over the page, clear of a notch or camera island (the phone sideways too); only its links take clicks, so
         // the canvas under it still drags
-        'pointer-events-none absolute inset-x-0 top-[max(1rem,env(safe-area-inset-top,0px))] z-10 flex items-start justify-between gap-4 pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:pl-[max(2rem,env(safe-area-inset-left,0px))] lg:top-5 lg:pr-[max(2.5rem,env(safe-area-inset-right,0px))] lg:pl-[max(2.5rem,env(safe-area-inset-left,0px))]',
+        'pointer-events-none absolute inset-x-0 top-[max(1rem,env(safe-area-inset-top,0px))] z-10 pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:pl-[max(2rem,env(safe-area-inset-left,0px))] lg:top-5 lg:pr-[max(2.5rem,env(safe-area-inset-right,0px))] lg:pl-[max(2.5rem,env(safe-area-inset-left,0px))]',
         className,
       )}
     >
-      {onTool ? (
-        <span className="flex h-8 shrink-0 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
-      ) : (
-        <a
-          href={withLogo(TOOL_URL)}
-          aria-label={`${APP_NAME}: write a letter`}
-          className="pointer-events-auto -mx-1 flex h-8 shrink-0 items-center rounded-[3px] px-1 text-foreground/85 transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring lg:h-9"
-        >
-          <Wordmark />
-        </a>
-      )}
       {children}
+      {/* the running head: the wordmark, the page's middle, the places, on one line (the looks may rule it) */}
       <div
-        inert={quiet || undefined}
-        className={cn('flex min-h-8 min-w-0 items-center justify-end gap-x-2 transition-opacity duration-150 lg:min-h-9', quiet && 'opacity-0')}
+        ref={m.rowRef}
+        data-site-row
+        className={cn(
+          'relative items-center gap-x-4',
+          fit === 'A' ? (beside ? 'grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_var(--site-beside)]' : 'grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]') : 'flex',
+        )}
       >
-        {action && <div ref={actionRef} data-site-action className="pointer-events-auto flex shrink-0 items-center">{action}</div>}
-        {/* never wrapped: when the line doesn't fit it stays measurable, out of sight and out of reach, and the Menu
-            takes over */}
-        <div
-          ref={wordsRef}
-          inert={compact || undefined}
-          className={cn('flex shrink-0 items-center gap-x-1 whitespace-nowrap', compact && 'invisible absolute top-0 right-0')}
-        >
-          {mine.list.length > 0 && (
-            <>
-              <KeptMenu kept={mine} />
-              <span aria-hidden data-site-divider className="mx-1 h-3 w-px shrink-0 bg-[var(--rule-link)]" />
-            </>
+        {beside && <span ref={m.besideRef} aria-hidden className="invisible absolute top-0 left-0 h-0" style={{ width: 'var(--site-beside)' }} />}
+        <div ref={m.logoRef} className="col-start-1 flex min-h-8 shrink-0 items-center justify-self-start lg:min-h-9">
+          {onTool ? (
+            <span className="flex h-8 items-center text-foreground/85 lg:h-9"><Wordmark /></span>
+          ) : (
+            <a
+              href={withLogo(TOOL_URL)}
+              aria-label={`${APP_NAME}: write a letter`}
+              className="pointer-events-auto -mx-1 flex h-8 items-center rounded-[3px] px-1 text-foreground/85 transition-colors duration-150 hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring lg:h-9"
+            >
+              <Wordmark />
+            </a>
           )}
-          <nav aria-label="Site">
-            <ul className="flex items-center gap-x-1">
-              {PLACES.map((p) => (
-                <li key={p.id} className="flex">
-                  <PlaceLink place={p} current={current} inside={inside} href={hrefs?.[p.id]} className={link} />
-                </li>
-              ))}
-            </ul>
-          </nav>
         </div>
-        {compact && <SiteMenu current={current} inside={inside} hrefs={hrefs} kept={mine} />}
+        {centre && (
+          <div
+            ref={m.centreRef}
+            data-site-centre
+            inert={middle !== 'full' || undefined}
+            className={cn('flex shrink-0 items-center whitespace-nowrap', middle !== 'full' ? away : fit === 'A' ? 'col-start-2 justify-self-center' : 'mx-auto')}
+          >
+            {centre}
+          </div>
+        )}
+        {centreShort && (
+          <div
+            ref={m.shortRef}
+            data-site-centre
+            data-short=""
+            inert={middle !== 'short' || undefined}
+            className={cn('flex shrink-0 items-center whitespace-nowrap', middle === 'short' ? 'ml-auto' : away)}
+          >
+            {centreShort}
+          </div>
+        )}
+        <div
+          inert={quiet || undefined}
+          className={cn(
+            'flex min-h-8 min-w-0 shrink-0 items-center justify-end gap-x-2 transition-opacity duration-150 lg:min-h-9',
+            fit === 'A' ? 'col-[3/-1] justify-self-end' : middle === 'none' && 'ml-auto',
+            quiet && 'opacity-0',
+          )}
+        >
+          {action && <div ref={m.actionRef} data-site-action className="pointer-events-auto flex shrink-0 items-center">{action}</div>}
+          {/* never wrapped: when the line doesn't fit, the Menu takes over */}
+          <div ref={m.wordsRef} inert={!words || undefined} className={cn('flex shrink-0 items-center gap-x-1 whitespace-nowrap', !words && away)}>
+            {mine.list.length > 0 && (
+              <>
+                <KeptMenu kept={mine} />
+                <span aria-hidden data-site-divider className="mx-1 h-3 w-px shrink-0 bg-[var(--rule-link)]" />
+              </>
+            )}
+            <nav aria-label="Site">
+              <ul className="flex items-center gap-x-1">
+                {PLACES.map((p) => (
+                  <li key={p.id} className="flex">
+                    <PlaceLink place={p} current={current} inside={inside} href={hrefs?.[p.id]} className={link} />
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+          {!words && <SiteMenu current={current} inside={inside} hrefs={hrefs} kept={mine} />}
+        </div>
       </div>
     </header>
   );
 });
 
 /**
- * Whether the words fit on one line beside the wordmark (and the page's action). Measured, not guessed from the
- * window: the room changes with the tool's panel, large text, a look's wider capitals and My letters' count. Starts
- * compact and is measured before the first paint, then again whenever the header or the words change size.
+ * What fits on the running head's one line, measured rather than guessed from the window: the room changes with the
+ * tool's panel, large text, a look's wider capitals, My letters' count and the page's middle. In order of preference:
+ *   A  the places in words, the middle centred over the page (or the stage)
+ *   B  the places in words, the middle between the wordmark and them
+ *   C  the Menu, the middle in full
+ *   D  the Menu, the middle's short form beside it (a phone)
+ *   E  the Menu alone
+ * Measured before the first paint, then whenever the header or any piece changes size (fonts and the wordmark's
+ * drawing arrive late).
  */
-function useFits(outer: React.ForwardedRef<HTMLElement>) {
+type Fit = 'A' | 'B' | 'C' | 'D' | 'E';
+function useFits(outer: React.ForwardedRef<HTMLElement>, pieces: string) {
   const header = useRef<HTMLElement | null>(null);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const logoRef = useRef<HTMLDivElement | null>(null);
+  const besideRef = useRef<HTMLSpanElement | null>(null);
+  const centreRef = useRef<HTMLDivElement | null>(null);
+  const shortRef = useRef<HTMLDivElement | null>(null);
   const actionRef = useRef<HTMLDivElement | null>(null);
   const wordsRef = useRef<HTMLDivElement | null>(null);
-  const [compact, setCompact] = useState(true);
+  const [fit, setFit] = useState<Fit>('E');
   const headerRef = useCallback((el: HTMLElement | null) => {
     header.current = el;
     if (typeof outer === 'function') outer(el);
     else if (outer) outer.current = el;
   }, [outer]);
   useLayoutEffect(() => {
-    const h = header.current;
-    const words = wordsRef.current;
-    if (!h || !words) return;
+    const row = rowRef.current;
+    if (!row) return;
     const measure = () => {
       const px = (v: string) => parseFloat(v) || 0;
-      const hs = getComputedStyle(h);
-      // the wordmark comes first, with its margins
-      const logo = h.firstElementChild as HTMLElement | null;
-      const ls = logo && getComputedStyle(logo);
-      const logoW = logo && ls ? logo.offsetWidth + px(ls.marginLeft) + px(ls.marginRight) : 0;
-      const room = h.clientWidth - px(hs.paddingLeft) - px(hs.paddingRight) - logoW - px(hs.columnGap);
+      const room = row.clientWidth;
+      const g = px(getComputedStyle(row).columnGap);
+      const w = (el: HTMLElement | null) => (el ? el.offsetWidth : 0);
+      // the wordmark with its link's negative margins (it reaches a little past its slot)
+      const logo = w(logoRef.current);
+      const beside = w(besideRef.current);
+      const centre = w(centreRef.current);
+      const short = w(shortRef.current);
       const action = actionRef.current;
-      const gap = action ? px(getComputedStyle(action.parentElement!).columnGap) : 0;
-      const need = words.offsetWidth + (action ? action.offsetWidth + gap : 0);
-      setCompact(need > room + 0.5);
+      const inner = action ? px(getComputedStyle(action.parentElement!).columnGap) : 0;
+      const lead = action ? action.offsetWidth + inner : 0;
+      const words = lead + w(wordsRef.current);
+      const menu = lead + CHIP;
+      const fits = (...parts: number[]) => parts.filter((x) => x > 0).reduce((a, b) => a + b, 0) + g * (parts.filter((x) => x > 0).length - 1) <= room + 0.5;
+      let next: Fit;
+      if (centre) {
+        // centred: each side of the middle has to hold its own half
+        const side = (room - centre - beside - g * (beside ? 3 : 2)) / 2;
+        if (logo <= side && words <= side + (beside ? g + beside : 0)) next = 'A';
+        else if (fits(logo, centre, words)) next = 'B';
+        else if (fits(logo, centre, menu)) next = 'C';
+        else if (short && fits(logo, short, menu)) next = 'D';
+        else next = 'E';
+      } else {
+        next = fits(logo, words) ? 'B' : short && fits(logo, short, menu) ? 'D' : 'E';
+      }
+      setFit(next);
     };
     measure();
-    // the header (window, panel), the words (fonts arriving, My letters' count), the wordmark (its drawing arrives
-    // after the first paint) and the action
     const ro = new ResizeObserver(measure);
-    for (const el of [h, words, h.firstElementChild, actionRef.current]) if (el) ro.observe(el);
+    for (const el of [row, logoRef.current, besideRef.current, centreRef.current, shortRef.current, actionRef.current, wordsRef.current]) if (el) ro.observe(el);
     return () => ro.disconnect();
-  }, []);
-  return { headerRef, actionRef, wordsRef, compact };
+    // again when a piece comes or goes (the middle arrives with the letters)
+  }, [pieces]);
+  return { fit, headerRef, rowRef, logoRef, besideRef, centreRef, shortRef, actionRef, wordsRef };
 }
 
 /** A place: the one you're in is marked and isn't a link; the one a page sits inside is marked and is the way back. */

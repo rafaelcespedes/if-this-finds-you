@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, NAME_WITH_DESCRIPTOR } from '@/lib/brand';
 import { SiteHeader, type Kept } from '@/components/SiteHeader';
+import { useFolio } from '@/components/Folio';
 import { styleCard } from '@/lib/styles';
 import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
 import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
@@ -1075,9 +1076,39 @@ export default function App() {
     />
   );
 
+  // the running head (the Reading Room layouts, house rule 2): in the Reading Room on a desktop it runs the width of
+  // the window, its places reaching the desk's right edge; elsewhere it stays over the letter's side
+  const headSpansDesk = LOOK === 'reading-room' && isDesktop && !reader;
+  const folio = useFolio(LOOK === 'reading-room' ? sample?.id : null);
+  const siteHeader = (
+    <SiteHeader
+      ref={headerRef}
+      // a shared letter (the reader view) isn't one of the places: nothing marked, and the wordmark and Write a
+      // letter lead to a desk of your own (its Write your own button is under the letter)
+      current={reader ? undefined : 'write'}
+      // a shared letter is someone else's: your kept letters wait until you write your own
+      kept={reader ? NO_KEPT : { list: kept, found: letterActions.found, onOpen: letterActions.onBackToMine }}
+      // no panel here: Share comes up to the header
+      action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
+      // the running head's middle: a found letter's number, place and year (the Reading Room's catalogue)
+      centre={folio.centre}
+      centreShort={folio.centreShort}
+      // over the whole window, the middle centred over the letter's side (the aside: the desk and its pr-3)
+      beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + 0.75rem)' : undefined}
+      quiet={editing && !isDesktop}
+      style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
+      className={cn('z-auto transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
+    >
+      {/* no hints up here: they come as ghosts by the letter, once; screen readers still hear the state, and what
+          Find another (or a link) brought */}
+      {!reader && <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : announced}</span>}
+    </SiteHeader>
+  );
+
   return (
     <TooltipProvider>
-      <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
+      <div className={cn('relative min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
+        {headSpansDesk && siteHeader}
         <main
           className={cn(
             'relative min-w-0 overflow-x-clip px-4 pb-32 sm:px-8 lg:px-10 lg:pt-[6.25rem] lg:pb-16',
@@ -1086,24 +1117,7 @@ export default function App() {
           )}
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: `${(6.25 * wide).toFixed(3)}rem` } : undefined}
         >
-          {/* the site's one header (components/SiteHeader.tsx): the places, My letters, and on phones Share and the Menu */}
-          <SiteHeader
-            ref={headerRef}
-            // a shared letter (the reader view) isn't one of the places: nothing marked, and the wordmark and Write a
-            // letter lead to a desk of your own (its Write your own button is under the letter)
-            current={reader ? undefined : 'write'}
-            // a shared letter is someone else's: your kept letters wait until you write your own
-            kept={reader ? NO_KEPT : { list: kept, found: letterActions.found, onOpen: letterActions.onBackToMine }}
-            // no panel here: Share comes up to the header
-            action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
-            quiet={editing && !isDesktop}
-            style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
-            className={cn('z-auto transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
-          >
-            {/* no hints up here: they come as ghosts by the letter, once; screen readers still hear the state, and what
-                Find another (or a link) brought */}
-            {!reader && <span aria-live="polite" className="sr-only">{editing ? 'Writing. Press Escape when you’re done.' : announced}</span>}
-          </SiteHeader>
+          {!headSpansDesk && siteHeader}
           <div ref={stageRef} className="w-full">
           <div className={cn(replyDesk && 'mx-auto flex items-start')} style={replyDesk ? { width: replyDesk.colW + replyDesk.mineW } : undefined}>
           {replyDesk && found && pxPerMm > 0 && (
