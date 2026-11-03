@@ -11,7 +11,8 @@ import { getPaper } from '@/lib/papers';
 import { cn } from '@/lib/utils';
 import { BringAnother } from './BringAnother';
 import { CatalogueCard } from './CatalogueCard';
-import { callNo, useRecord } from './catalogue';
+import { callNo } from './catalogue';
+import { useRecord } from './useCatalogue';
 
 const SLIP_KEY = 'seedhand:rr-slip';
 function readSlip() {

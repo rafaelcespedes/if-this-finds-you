@@ -9,6 +9,7 @@ import * as E from '@engine';
 import { makeHand, withOverrides, type Hand } from '@engine';
 import { requestFor } from '@/lib/request';
 import { getPaper, paintPaper, type PaperSpec } from '@/lib/papers';
+import { marksForExport, printMarks, type Mark } from '@/lib/paper/marks';
 import { liveExtras, liveLayout, sheetOfLine, type Live } from '@/lib/live';
 import { decodeInk, inkLive, inkPage } from '@/lib/ink';
 import { sampleById, sampleCredit } from '@/lib/samples';
@@ -281,7 +282,16 @@ export async function buildScene(state: NoteState, o: SceneOptions): Promise<Sce
 
   // ---- the sheet, painted once at the largest scale it's shown at, with its shadow
   const kSheet = Math.max(sWrite, sEnd);
-  const sheet = paintSheet(paper, kSheet);
+  // a look's printed marks: those stamped before writing are in the paper, those stamped after go over the ink
+  const marks = marksForExport(paper);
+  const sheet = paintSheet(paper, kSheet, marks);
+  let overMarks: HTMLCanvasElement | null = null;
+  if (marks?.some((m) => m.layer === 'over')) {
+    overMarks = document.createElement('canvas');
+    overMarks.width = Math.round(paper.w * kSheet);
+    overMarks.height = Math.round(paper.h * kSheet);
+    printMarks(overMarks.getContext('2d')!, marks, kSheet, 'over');
+  }
 
   // ---- the ink: flat colour when the engine doesn't model ink, else the swatch (or the pen's own)
   const inkOpt = req.inkKey ? (req.inkKey === 'auto' ? undefined : req.inkKey) : req.inkColor;
@@ -375,6 +385,11 @@ export async function buildScene(state: NoteState, o: SceneOptions): Promise<Sce
       ctx.globalAlpha = ea;
       ctx.drawImage(extras, ox, oy, extras.width * ks, extras.height * ks);
     }
+    if (overMarks) {
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = 1;
+      ctx.drawImage(overMarks, ox, oy, overMarks.width * ks, overMarks.height * ks);
+    }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
     // credit and wordmark
@@ -391,7 +406,7 @@ export async function buildScene(state: NoteState, o: SceneOptions): Promise<Sce
 }
 
 /** The sheet with its shadow, painted at k px per mm by the app's paper painter (lib/papers.ts). */
-function paintSheet(paper: PaperSpec, k: number) {
+function paintSheet(paper: PaperSpec, k: number, marks: Mark[] | null = null) {
   const pad = Math.ceil(30 * (k / 4));
   const c = document.createElement('canvas');
   c.width = Math.round(paper.w * k) + 2 * pad;
@@ -413,7 +428,7 @@ function paintSheet(paper: PaperSpec, k: number) {
   }
   ctx.save();
   ctx.translate(pad, pad);
-  paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / 3.5, holeFill: DESK });
+  paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / 3.5, holeFill: DESK, marks: marks ?? undefined });
   ctx.restore();
   return { canvas: c, pad };
 }

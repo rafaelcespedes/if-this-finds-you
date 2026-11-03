@@ -187,6 +187,27 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   return { marks, key: hash(key) };
 }
 
+// ---------- the letter on screen ----------
+// The sheet that prints a letter's marks says so here, so a download or a video of that letter prints the same marks
+// (planMarks is pure: same input, same marks). Nothing is registered without a look's <PaperMarks>, so a default
+// download stays as it was.
+let onScreen: { paperId: string; input: MarkInput; owner: object } | null = null;
+
+/** A sheet on screen prints these marks (owner: whatever unregisters it later). */
+export function showMarks(paperId: string, input: MarkInput, owner: object) {
+  onScreen = { paperId, input, owner };
+}
+/** That sheet has gone (only its own registration is cleared). */
+export function hideMarks(owner: object) {
+  if (onScreen?.owner === owner) onScreen = null;
+}
+/** The marks to print on an exported copy of the letter on screen on this paper, or null. */
+export function marksForExport(paper: PaperSpec): Mark[] | null {
+  if (!onScreen || onScreen.paperId !== paper.id) return null;
+  const { marks } = planMarks(paper, onScreen.input);
+  return marks.length ? marks : null;
+}
+
 // ---------- printing ----------
 type AnyCanvas = HTMLCanvasElement | OffscreenCanvas;
 function makeCanvas(w: number, h: number): AnyCanvas {

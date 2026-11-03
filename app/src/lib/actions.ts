@@ -2,6 +2,7 @@
 import * as E from '@engine';
 import { buildFont, verify, type Hand } from '@engine';
 import { getPaper, paintPaper } from './papers';
+import { marksForExport, printMarks } from './paper/marks';
 import { rasterizeWriting } from './writing';
 import { write } from './write-core';
 import { sheetSVG, type Live } from './live';
@@ -54,9 +55,13 @@ export async function renderNote(req: Omit<WriteRequest, 'id'>, ink: string, css
   for (let i = 0; i < n; i++) {
     ctx.save();
     ctx.translate(0, i * (sheetH + gap));
-    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK });
+    // a look's printed marks on the first sheet: those stamped before writing go into the paper
+    const marks = i === 0 ? marksForExport(paper) : null;
+    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined });
     const img = await rasterizeWriting(res.svgs[i], sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
+    // and those stamped after it, over the writing
+    if (marks) printMarks(ctx, marks, k, 'over');
     ctx.restore();
   }
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));
@@ -82,9 +87,13 @@ export async function renderLiveNote(live: Live, extras: string[], inkKey: strin
   for (let i = 0; i < n; i++) {
     ctx.save();
     ctx.translate(0, i * (sheetH + gap));
-    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK });
+    // a look's printed marks on the first sheet: those stamped before writing go into the paper
+    const marks = i === 0 ? marksForExport(paper) : null;
+    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined });
     const img = await rasterizeWriting(sheetSVG(live, i, inkKey ?? 'currentColor', extras[i] ?? ''), sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
+    // and those stamped after it, over the writing
+    if (marks) printMarks(ctx, marks, k, 'over');
     ctx.restore();
   }
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));

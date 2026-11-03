@@ -1,7 +1,7 @@
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ALL_PAPERS, isShaped, SHADOW_BLEED, type PaperSpec } from '@/lib/papers';
 import { paintHere, paintOff, paintsOffThread, warmPaper, type PaperBitmap, type PaperJob } from '@/lib/paper/client';
-import { planMarks, printMarks, type MarkInput } from '@/lib/paper/marks';
+import { hideMarks, planMarks, printMarks, showMarks, type MarkInput } from '@/lib/paper/marks';
 import { perf } from '@/lib/perf';
 import { cn } from '@/lib/utils';
 
@@ -90,6 +90,14 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
   const under = plan?.marks.filter((m) => m.layer === 'under') ?? [];
   const over = plan?.marks.filter((m) => m.layer === 'over') ?? [];
   const overRef = useRef<HTMLCanvasElement>(null);
+  // a download or a video of this letter prints the same marks
+  useEffect(() => {
+    if (!plan || !markInput) return;
+    const owner = {};
+    showMarks(paper.id, markInput, owner);
+    return () => hideMarks(owner);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan]);
   const region = crop ?? { x: 0, y: 0, w: paper.w, h: paper.h };
   // a shaped sheet (deckle, tear, flaps) paints its own shadow just outside itself
   const bleed = !crop && isShaped(paper) ? SHADOW_BLEED : 0;
