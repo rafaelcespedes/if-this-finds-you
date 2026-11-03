@@ -116,21 +116,29 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   ];
   const zoneW = [1.25, 1.35, 0.9, 1.1, 0.45, 0.45, 0.9];
   const used = new Set<number>();
-  const spot = (size: number) => {
+  // `keep`: the mark's half width and height (mm) when it carries words and must stay whole on the paper (a cut-off
+  // cancellation reads as a bug); without it, a ring may run a little off the edge, as real ones do
+  const spot = (size: number, rot: number, keep?: [number, number]) => {
     let z = pickWeighted(r, zoneW.map((w, i) => (used.has(i) ? w * 0.08 : w)));
     used.add(z);
     const [x0, y0, x1, y1] = zones[z];
-    const half = size * 0.45; // may run a little off the edge, never mostly
-    const x = clamp(x0 + r() * Math.max(0, x1 - x0), half, paper.w - half);
-    const y = clamp(y0 + r() * Math.max(0, y1 - y0), half, paper.h - half);
+    let hx = size * 0.45, hy = size * 0.45;
+    if (keep) {
+      const c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot));
+      hx = c * keep[0] + sn * keep[1] + 1.5;
+      hy = sn * keep[0] + c * keep[1] + 1.5;
+    }
+    const x = clamp(x0 + r() * Math.max(0, x1 - x0), Math.min(hx, paper.w / 2), Math.max(paper.w - hx, paper.w / 2));
+    const y = clamp(y0 + r() * Math.max(0, y1 - y0), Math.min(hy, paper.h / 2), Math.max(paper.h - hy, paper.h / 2));
     return { x, y, over: z === 6 };
   };
   const inkFor = (pal: (keyof typeof INKS)[]) => INKS[pal[Math.floor(r() * pal.length)]];
-  const common = (size: number, layerOdds: number) => {
-    const at = spot(size);
+  const common = (size: number, layerOdds: number, keep?: [number, number]) => {
+    const rot = ((r() * 2 - 1) * 15 * Math.PI) / 180;
+    const at = spot(size, rot, keep);
     return {
       ...at,
-      rot: ((r() * 2 - 1) * 15 * Math.PI) / 180,
+      rot,
       press: 0.72 + r() * 0.26,
       lean: r() * Math.PI * 2,
       uneven: 0.25 + r() * 0.6,
@@ -147,7 +155,11 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
     const kind = BADGES[k];
     const base = clamp(minSide * 0.19, 19, 33) * (0.88 + r() * 0.26);
     const size = kind === 'registry' ? base * 1.25 : kind === 'line' ? base * 1.1 : kind === 'pencil' ? base * 1.15 : base;
-    const c = common(kind === 'duplex' ? size * 2 : size, kind === 'pencil' ? 1 : 0.55);
+    // the half extents of the badges that carry words (rings may run off the edge)
+    const keep: Partial<Record<Kind, [number, number]>> = {
+      oval: [size * 0.62, size * 0.4], registry: [size * 0.52, size * 0.27], line: [size * 1, size * 0.32], pencil: [size * 1.1, size * 0.2],
+    };
+    const c = common(kind === 'duplex' ? size * 2 : size, kind === 'pencil' ? 1 : 0.55, keep[kind]);
     marks.push({
       kind,
       ...c,
@@ -166,7 +178,7 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
     const n = String(input.number).padStart(4, '0');
     const handInked = r() < 0.3;
     const size = clamp(minSide * 0.11, 12, 19) * (0.9 + r() * 0.2);
-    const c = common(size * 2.4, 0.7);
+    const c = common(size * 2.4, 0.7, [size * 0.9, size * 0.25]);
     marks.push({
       kind: handInked ? 'inked-number' : 'number',
       ...c,
@@ -180,7 +192,7 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   // a cancellation in red, true to the provenance
   if (input.cancel) {
     const size = clamp(minSide * 0.2, 20, 36);
-    const c = common(size, 0.85);
+    const c = common(size, 0.85, [size * 0.73, size * 0.22]);
     marks.push({ kind: 'cancel', ...c, ink: INKS.red, size, text: { label: input.cancel.toUpperCase() }, seed: seed + ':cancel' });
   }
   const key = marks.map((m) => `${m.kind}${m.x.toFixed(1)},${m.y.toFixed(1)},${m.rot.toFixed(3)},${m.layer},${m.ink},${m.text.place ?? ''}${m.text.year ?? ''}${m.text.number ?? ''}${m.text.label ?? ''}`).join(';');
