@@ -25,7 +25,7 @@ import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
-import { rollHand, withSample, type LockKey } from '@/lib/roll';
+import { isNeat, rollHand, withSample, type LockKey } from '@/lib/roll';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
@@ -368,7 +368,7 @@ export default function App() {
   const lockKey = [...locks].sort().join(',');
   const ahead = useRef<{ base: string; look: Partial<NoteState> }[]>([]);
   const similarAhead = useRef<{ base: string; look: Partial<NoteState> } | null>(null);
-  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.mode, s.inkLog, s.marks, s.signed, variety, lockKey]), [variety, lockKey]);
+  const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.mode, s.inkLog, s.marks, s.signed, s.neatOnly, variety, lockKey]), [variety, lockKey]);
   const newHand = useCallback((fade = true) => {
     // for QA (window.__seedhandPerf): click → the new hand's writing in the page
     const now = ahead.current.find((a) => a.base === baseOf(stateNow.current));
@@ -545,6 +545,9 @@ export default function App() {
     onAmount: (amount) => update({ amount }),
     onSign: toggleSigned,
     onVariety: (v) => { setVariety(v); writePref('seedhand:variety', String(Math.round(v))); },
+    // changes what New hand brings next, never the hand on the page
+    onNeatOnly: (v) => update({ neatOnly: v }),
+    neatNow: isNeat(p),
     onShare: share,
     onDownload: download,
     onExportFont: font,

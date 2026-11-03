@@ -92,7 +92,9 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
     (In ink / In pencil / Fair copy, Make a fair copy, Fresh sheet, Blank page, Sign it, Edit as plain text).
   - *The look,* one scrolling column, no tabs, in this order: **Paper** (a row of swatches), **Pen** (each
     swatch is the word "ink" written with that pen; Fine / Medium / Bold beside it), **Ink**, **Handwriting**
-    (Print or Joined, the school cards, Similar), **How they write** (Neatness, Hurry, Size, each with plain
+    (Print or Joined, the school cards, Similar, and **Neat hands only**: on by default, New hand skips the
+    hard-to-read writers; it never changes the hand on the page, and offers "Roll a neat one" when that hand
+    isn't neat; `neat=0` in links when it's off), **How they write** (Neatness, Hurry, Size, each with plain
     words at its ends: Messy / Neat, Calm / Rushed, Small / Large).
   - *More* (folded): the other sliders (Pressure, Slant), an Occasion with an Amount, Keep my
     paper, pen and ink, Tip size (in mm), Ink flow, Ink variation, Paper tooth, Nib angle, Line spacing,

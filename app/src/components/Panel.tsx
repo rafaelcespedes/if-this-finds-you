@@ -65,6 +65,10 @@ export interface PanelProps {
   /** the writer signs below the last line (or stops signing) */
   onSign: () => void;
   onVariety: (v: number) => void;
+  /** New hand skips the hard-to-read writers */
+  onNeatOnly: (v: boolean) => void;
+  /** the hand on the page is easy to read */
+  neatNow: boolean;
   onShare: () => void;
   onDownload: () => void;
   onExportFont: () => void;
@@ -304,6 +308,24 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
         }
       >
         <StylePicker seed={state.seed} style={state.style} ink={ink} onStyle={props.onStyle} />
+        <div className="mt-3.5 grid gap-1.5">
+          <Switch
+            label="Neat hands only"
+            hint="Skip the hard-to-read writers when you roll a new hand"
+            checked={state.neatOnly}
+            onChange={props.onNeatOnly}
+          />
+          {/* the hand on the page came before the switch (or from a link): one tap to a neat one */}
+          {state.neatOnly && !props.neatNow && (
+            <button
+              type="button"
+              onClick={props.onNewHand}
+              className="justify-self-start rounded-md px-1 py-0.5 text-[12.5px] font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5"
+            >
+              Roll a neat one
+            </button>
+          )}
+        </div>
       </Group>
       <Group label="How they write" className={pad}>
         <div className="grid gap-3.5">
