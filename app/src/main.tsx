@@ -7,14 +7,12 @@ import { applyLook } from './lib/look';
 import { applySansOption } from './themes/reading-room/sans-switch'; // temporary: ?rrsans comparison
 import './themes/reading-room.css';
 import './themes/postmarked.css';
-import './controls.css';
-import { applyControlsLab } from './controls-lab';
+// the controls' feel (ink-bar sliders, sliding faces, locks, pressed cards), after the looks it builds on
+import './components/ui/controls.css';
 
 // the look being compared (?look=…); today's design when none
 applyLook();
 applySansOption();
-// control patterns being tried (?controls=1…6)
-applyControlsLab();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

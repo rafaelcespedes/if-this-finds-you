@@ -1,0 +1,218 @@
+/* The controls' feel, learned from tuning panels (DialKit and friends, ideas only) and made the default on 4 Nov 2026
+   (docs/research/ownable-ui, "Six Control Patterns"). Colours come from the tokens (index.css, and each look's), so
+   classic and the Reading Room share one set of behaviours. Unlayered, like density.css, so it beats Tailwind's
+   layers; imported by each page's entry after the looks. Compact sizes stay (density.css). */
+
+/* ---------- sliders: the row is the slider (an ink bar) ---------- */
+/* name and word sit inside a 28px bar (44 on phones); the bar fills with a light wash of the accent up to the
+   value; a thin upright line marks it, darker while you drag. Tens marks show while the pointer is over it. */
+:root [data-row].grid:has(> [data-slot='slider']) {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 4px;
+}
+:root [data-row].grid:has(> [data-slot='slider']) > div:first-child {
+  grid-area: 1 / 1;
+  z-index: 1;
+  align-self: center;
+  padding-inline: 10px;
+  pointer-events: none;
+}
+:root [data-row].grid:has(> [data-slot='slider']) > [data-slot='slider'] {
+  grid-area: 1 / 1;
+  height: 28px;
+  cursor: ew-resize;
+}
+:root [data-row].grid:has(> [data-slot='slider']) > span {
+  margin-top: 0;
+}
+:root [data-slot='slider'] {
+  --track: 100%;
+}
+:root [data-slot='slider'] > span:first-child {
+  border-radius: var(--radius);
+  background-color: var(--chip) !important;
+}
+:root [data-slot='slider'] > span:first-child > span {
+  background-color: color-mix(in oklab, var(--text) 9%, var(--chip)) !important;
+}
+/* tens marks, faint, on hover or while held */
+:root [data-slot='slider'] > span:first-child::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), color-mix(in oklab, var(--text) 18%, transparent) calc(10% - 1px) 10%) center / 100% 8px no-repeat;
+  opacity: 0;
+  transition: opacity 200ms var(--ease-out);
+  pointer-events: none;
+}
+:root [data-slot='slider']:is(:hover, [data-active], :focus-within) > span:first-child::after {
+  opacity: 1;
+}
+/* the value: a thin upright line, not a knob */
+:root [data-slot='slider'] [role='slider'] {
+  width: 2px !important;
+  height: 16px !important;
+  border-radius: 1px;
+  border: 0;
+  background: color-mix(in oklab, var(--mark) 55%, transparent);
+  box-shadow: none !important;
+  scale: 1 !important;
+  transition: background-color 150ms var(--ease-out), height 150ms var(--ease-out);
+}
+:root [data-slot='slider']:is(:hover, [data-active]) [role='slider'],
+:root [data-slot='slider'] [role='slider']:active {
+  background: var(--mark);
+  height: 20px !important;
+}
+:root [data-slot='slider'] [role='slider']::after {
+  inset: -8px -10px;
+}
+/* near the name or the word the line steps back so the words stay readable (DialKit's value dodge) */
+:root [data-slot='slider'][data-edge]:not(:hover):not([data-active]) [role='slider'] {
+  background: color-mix(in oklab, var(--mark) 22%, transparent);
+}
+/* the writer's own value: a short tick in the bar */
+:root [data-slot='slider'] > span[aria-hidden] {
+  width: 1px !important;
+  height: 10px !important;
+  border-radius: 0 !important;
+  background: color-mix(in oklab, var(--text) 45%, transparent) !important;
+  box-shadow: none !important;
+  z-index: 0;
+}
+@media (pointer: coarse) {
+  :root [data-row].grid:has(> [data-slot='slider']) > [data-slot='slider'] {
+    height: 44px;
+  }
+  :root [data-slot='slider'] [role='slider'] {
+    height: 22px !important;
+  }
+}
+
+/* ---------- the writer's own value catches; a tap settles; the ends give ---------- */
+/* (the catch itself is in ui/slider.tsx) a tap glides to its value with a little overshoot; a drag follows exactly */
+:root [data-slot='slider']:not([data-dragging]) > span:first-child > span,
+:root [data-slot='slider']:not([data-dragging]) > span:has(> [role='slider']) {
+  transition: left 280ms cubic-bezier(0.3, 1.35, 0.6, 1), right 280ms cubic-bezier(0.3, 1.35, 0.6, 1);
+}
+:root [data-slot='slider'] > span:first-child,
+:root [data-slot='slider'] > span:has(> [role='slider']) {
+  translate: var(--give, 0px) 0;
+}
+:root [data-slot='slider']:not([data-dragging]) > span:first-child {
+  transition: translate 340ms cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+:root [data-slot='slider'][data-caught] > span[aria-hidden] {
+  box-shadow: 0 0 0 1.5px var(--mark) !important;
+}
+:root [data-slot='slider'][data-caught] > span[aria-hidden] {
+  box-shadow: none !important;
+  background: var(--mark) !important;
+  height: 14px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root [data-slot='slider'] * {
+    transition: none !important;
+  }
+}
+
+/* ---------- a sliding face between choices (ui/toggle-group.tsx, Segmented slide) ---------- */
+:root [data-slot='segmented'][data-slide] {
+  position: relative;
+}
+:root [data-slot='segmented'][data-slide] > .seg-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: var(--radius);
+  background: var(--tile-on, #fffefb);
+  box-shadow: 0 1px 2px rgba(40, 30, 10, 0.12), 0 0 0 0.5px rgba(40, 30, 10, 0.06);
+  transition: transform 220ms cubic-bezier(0.25, 1, 0.5, 1), width 220ms cubic-bezier(0.25, 1, 0.5, 1), height 220ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+/* chips (the paper's kinds) carry the ink's ring instead of a lift */
+:root [data-slot='segmented'][data-slide][aria-label^='Kind of'] > .seg-face {
+  box-shadow: 0 0 0 1.5px var(--ink);
+}
+:root [data-slot='segmented'][data-slide] > [data-slot='segmented-item'] {
+  position: relative;
+  z-index: 1;
+}
+:root [data-slot='segmented'][data-slide] > [data-slot='segmented-item']:is([data-state='on'], [aria-checked='true']) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root [data-slot='segmented'][data-slide] > .seg-face {
+    transition: none;
+  }
+}
+
+/* ---------- words, not switches (ui/switch.tsx with words) ---------- */
+:root [data-words] > [data-slot='segmented-item'] {
+  height: var(--seg-h, 28px);
+  font-size: var(--seg-text, 12.5px);
+  padding-inline: 8px;
+}
+@media (pointer: coarse) {
+  :root [data-words] > [data-slot='segmented-item'] {
+    height: var(--m-seg-h, 40px);
+  }
+}
+
+/* ---------- a lock on each group (ui/group.tsx) ---------- */
+:root .group-lock {
+  color: var(--text-faint);
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out), opacity 150ms var(--ease-out);
+}
+:root .group-lock[aria-pressed='true'] {
+  color: var(--mark);
+  background: color-mix(in oklab, var(--mark) 10%, transparent);
+}
+:root .group-lock:focus-visible {
+  outline: 1.5px solid var(--ring);
+  outline-offset: 1px;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root .group-lock:hover {
+    color: var(--text);
+  }
+  /* open locks wait until the pointer is over their group; a closed one always shows */
+  :root section:not(:hover):not(:focus-within) .group-lock[aria-pressed='false'] {
+    opacity: 0;
+  }
+}
+
+/* ---------- pressed and settled: pen, paper and ink ---------- */
+:root :is([role='radiogroup'][aria-label='Pen'] > button, [role='radiogroup'][aria-label='School'] > button, [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item']) {
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out), background-color 150ms var(--ease-out);
+}
+:root :is([role='radiogroup'][aria-label='Pen'] > button, [role='radiogroup'][aria-label='School'] > button, [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item']):active {
+  transform: translateY(1px) scale(0.985);
+  transition-duration: 80ms;
+}
+/* the chosen ink: its ring draws in around the dot; a held dot presses in */
+:root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item'] > span {
+  transition: scale 140ms var(--ease-out), box-shadow 150ms var(--ease-out);
+}
+:root [data-slot='segmented'][aria-label='Ink'] > [data-slot='segmented-item']:active > span {
+  scale: 0.88;
+}
+:root [data-slot='segmented'][aria-label='Ink'] > [aria-checked='true'] > span {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1), 0 0 0 2px var(--panel), 0 0 0 3.5px var(--ink);
+  animation: lab-ring-in 320ms cubic-bezier(0.3, 1.3, 0.6, 1) both;
+}
+@keyframes lab-ring-in {
+  from {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1), 0 0 0 0 var(--panel), 0 0 0 0 var(--ink);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root [data-slot='segmented'][aria-label='Ink'] > [aria-checked='true'] > span {
+    animation: none;
+  }
+  :root :is([role='radiogroup'][aria-label='Pen'] > button, [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item']):active {
+    transform: none;
+  }
+}

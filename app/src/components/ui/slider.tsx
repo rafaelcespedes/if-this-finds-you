@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Slider as SliderPrimitive } from 'radix-ui';
 import { cn } from '@/lib/utils';
-import { hasControl } from '@/controls-lab';
 
 /**
  * A slider. `mark` draws a small dot on the track (the hand's natural value, for seed-relative controls);
@@ -39,9 +38,9 @@ function Slider({
   const current = React.useRef(value);
   current.current = value;
 
-  // controls research #2: within 4% of the writer's own value the thumb catches on it (a detent)
-  const detent = hasControl(2);
-  const bars = hasControl(1);
+  // within 4% of the writer's own value the value catches on it, like a dial's detent (learned from DialKit)
+  const detent = true;
+  const bars = true;
   const caught = React.useRef(false);
   // only a pointer catches: arrow keys step by less than the catch, so they'd never get past it
   const pointing = React.useRef(false);

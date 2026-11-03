@@ -41,6 +41,7 @@ export const StylePicker = memo(function StylePicker({ seed, style, ink, onStyle
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-2.5">
       <Segmented
+        slide
         type="single"
         aria-label="Print or joined"
         value={fam}
