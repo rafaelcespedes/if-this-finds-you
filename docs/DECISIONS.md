@@ -26,6 +26,13 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **Name: "If This Finds You"** (Rafael, 2026-11-02, "for now"). It's how a message in a bottle begins: a letter
+  that may never have arrived, and you're the one it found. Domain: ifthisfindsyou.app (Rafael is buying it
+  himself; .com is taken). Light trademark check only; a lawyer's clearance (classes 9, 42) is advised
+  before launch. Runners-up on record: Stray Letters, In Another Hand, These Few Lines, Manent. "Seedhand"
+  stays only as the code placeholder. The "Lost Letters" archive working title is superseded by the product
+  name unless Rafael says otherwise. Copy in docs/brand/naming-and-copy.md (naming branch) still says
+  "Plumín" and needs a pass.
 - **Latin script only for now.** No Vietnamese stacked tones, Cyrillic or Greek until later; the letters
   collection keeps Vietnamese switched off.
 - **Sample letters:** letters only (no poems). Keep "…" for cuts, keep letters printed without greeting or
@@ -57,4 +64,4 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 ### Open
 - Two "caution" sources (Austria 1969, Vietnam 2002): proposed to leave them out of the first batch. Awaiting Rafael.
 - A legal check on share-alike sources: proposed for before any commercial launch. Awaiting Rafael.
-- Name: the naming session is running.
+- (Name decided; see below.)
