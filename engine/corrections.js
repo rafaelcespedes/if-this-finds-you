@@ -33,7 +33,7 @@
 
 import { rng, clamp } from './core.js';
 import { makeGlyph, has, isUpper, UPM, addHandTraits } from './hand.js';
-import { layout } from './layout.js';
+import { layout, pageHabits } from './layout.js';
 import { fixHabits, COVER_BY_RIGHT } from './marks.js';
 import { replay, INK_VERSION } from './sheet.js';
 import { logicalText, transcription, summary } from './inklog.js';
@@ -283,7 +283,9 @@ export function writeWithJourney(p, text, layoutOpts = {}, opts = {}) {
   const paras = intended.split('\n');
   let psAt = -1;
   for (let i = paras.length - 1; i > 0; i--) if (PS_RE.test(paras[i])) { psAt = i; break; }
-  if (psAt > 0 && !H.ps) psAt = -1;
+  // a layout that sets out a P.S. itself (its own space, size and pitch: pageHabits psSize) gets it in the
+  // main text, written knowing it's a finished letter; older layouts get the journey's own smaller P.S.
+  if (psAt > 0 && (!H.ps || pageHabits(p).psSize != null)) psAt = -1;
   let mainParas = psAt > 0 ? paras.slice(0, psAt) : paras;
   let trailingEmpty = 0;
   if (psAt > 0) while (mainParas.length > 1 && mainParas[mainParas.length - 1].trim() === '') { mainParas = mainParas.slice(0, -1); trailingEmpty++; }

@@ -1,17 +1,38 @@
 /* Lost Letters: the archive's own few styles, on top of the tool's palette (index.css). */
 
-/* a card's sheet: the tool's sheet shadow, a touch deeper under the pointer */
-.archive-paper {
+/* the letter face (serif.ts: ?serif=1…4) */
+.font-letter {
+  font-family: var(--font-letter, Georgia, serif);
+  font-variation-settings: var(--letter-variation, normal);
+}
+
+/* the masonry: cards placed by Index.tsx (each into the shortest column, in reading order) */
+.masonry > .masonry-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--col-w);
+}
+
+/* a card's sheet: a letter put down a touch askew; it straightens and lifts a little under the pointer */
+.archive-sheet {
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 220ms var(--ease-out);
+}
+.archive-sheet-blank {
   box-shadow: var(--sheet-shadow);
-  transition: box-shadow 200ms var(--ease-out);
+  transition: box-shadow 220ms var(--ease-out), opacity 120ms var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
-  .archive-card:hover .archive-paper {
+  .archive-card:hover .archive-sheet {
+    transform: rotate(0deg) translateY(-3px);
+  }
+  .archive-card:hover .archive-sheet-blank {
     box-shadow:
       0 0.5px 0 rgba(60, 45, 20, 0.08),
       0 2px 4px rgba(60, 45, 20, 0.07),
-      0 10px 22px -8px rgba(60, 45, 20, 0.16),
-      0 30px 56px -22px rgba(60, 45, 20, 0.26);
+      0 12px 24px -8px rgba(60, 45, 20, 0.18),
+      0 32px 60px -22px rgba(60, 45, 20, 0.28);
   }
   .archive-card:hover h3 {
     text-decoration: underline;
@@ -20,13 +41,20 @@
     text-underline-offset: 3px;
   }
 }
-.archive-card:focus-visible .archive-paper {
+.archive-card:focus-visible .archive-sheet {
   outline: 2px solid var(--ring);
-  outline-offset: 4px;
+  outline-offset: 5px;
 }
-.archive-card:active .archive-paper {
-  transform: scale(0.995);
-  transition: transform 120ms var(--ease-out), box-shadow 200ms var(--ease-out);
+.archive-card:active .archive-sheet {
+  transform: rotate(0deg) scale(0.99);
+  transition-duration: 120ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .archive-sheet,
+  .archive-card:hover .archive-sheet {
+    transition: none;
+    transform: rotate(var(--tilt, 0deg));
+  }
 }
 
 /* a card's writing arriving: opacity only, as a new hand arrives in the tool */
@@ -63,6 +91,21 @@
 }
 select.archive-field {
   cursor: pointer;
+}
+/* quiet fields: no box until you reach for them */
+.archive-quiet {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .archive-quiet:hover {
+    border-color: var(--border);
+    background: color-mix(in oklab, #fdfcf9 60%, transparent);
+  }
+}
+.archive-quiet:focus-visible {
+  background: #fdfcf9;
 }
 /* phones: 16px keeps iOS from zooming into the field */
 @media (pointer: coarse) {

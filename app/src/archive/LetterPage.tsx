@@ -24,7 +24,7 @@ import { circumstanceLabel, filterLetters, fromTo, opening } from './data';
 import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
-import { ARCHIVE_URL, SiteHeader, TOOL_URL } from './SiteHeader';
+import { ARCHIVE_URL, headerLink, SiteHeader, toolHref } from './SiteHeader';
 
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
@@ -53,7 +53,7 @@ export function replyHref(l: ArchiveLetter, look: Look, replier: string) {
     id: l.id, seed: look.seed, style: look.style, paper: look.paper as ReplyTo['paper'],
     pen: look.pen, ink: look.ink, tip: look.tip as ReplyTo['tip'], size: look.size, offsets: lookOffsets(look),
   };
-  return `${TOOL_URL}#${encodeState({ ...DEFAULT_STATE, seed, style, text: '', sample: null, inkLog: null, marks: [], replyTo })}`;
+  return `${toolHref}#${encodeState({ ...DEFAULT_STATE, seed, style, text: '', sample: null, inkLog: null, marks: [], replyTo })}`;
 }
 
 interface Props {
@@ -220,7 +220,9 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   if (!letters || !letter || !look || !r) {
     return (
       <div className="min-h-dvh">
-        <SiteHeader back={backHref} />
+        <SiteHeader>
+          <a href={backHref} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
+        </SiteHeader>
         <main className="mx-auto max-w-[1180px] px-4 pt-28 sm:px-8 lg:px-10">
           {error ? (
             <Missing title="The letters didn’t load." action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>Check your connection, then try again.</Missing>
@@ -237,7 +239,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const sheetH = r.paper.h * pxPerMm;
   return (
     <div className="min-h-dvh">
-      <SiteHeader back={backHref}>
+      <SiteHeader>
+        <a href={backHref} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
         {list.length > 1 && at >= 0 && (
           <div className="flex items-center gap-0.5">
             <Button variant="ghost" size="icon" onClick={() => turn(-1)} aria-label={`Previous letter: ${neighbour(-1)?.title ?? ''}`} className="size-8 text-muted-foreground pointer-coarse:size-11">
@@ -250,11 +253,11 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
           </div>
         )}
       </SiteHeader>
-      <main className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-14 px-4 pt-[calc(3.75rem+env(safe-area-inset-top,0px))] pb-28 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:grid-rows-[auto_1fr] lg:px-10 lg:pt-16">
+      <main className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-14 px-4 pt-[calc(4.5rem+env(safe-area-inset-top,0px))] pb-28 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:grid-rows-[auto_1fr] lg:px-10 lg:pt-16">
         {/* title: above the sheet on phones, beside it on wide screens */}
         <header className="pt-2 pb-5 lg:col-start-2 lg:row-start-1 lg:pt-8 lg:pb-6">
           <p className="text-[12.5px] text-[var(--ink-soft)]">{circumstanceLabel(letter)}</p>
-          <h1 ref={titleRef} tabIndex={-1} className="mt-1.5 text-[26px] leading-[1.12] font-[560] tracking-[-0.025em] text-foreground text-balance outline-none sm:text-[30px]">
+          <h1 ref={titleRef} tabIndex={-1} className="font-letter mt-1.5 text-[calc(28px*var(--letter-scale))] leading-[1.1] font-normal tracking-[-0.012em] text-foreground text-balance outline-none sm:text-[calc(33px*var(--letter-scale))]">
             {letter.title ?? opening(letter.text, 60)}
           </h1>
           <p className="mt-2 text-[14.5px] leading-[1.45] text-muted-foreground text-pretty">{fromTo(letter)}</p>
@@ -341,8 +344,8 @@ function Provenance({ letter }: { letter: ArchiveLetter }) {
   const rightsLine = rights?.us && rights?.eu ? 'Public domain in the US and the EU' : rights?.us ? 'Public domain in the US' : rights?.eu ? 'Public domain in the EU' : f?.source?.licence ?? '';
   return (
     <div className="mt-8">
-      {f?.story && <p className="text-[14.5px] leading-[1.6] text-foreground/90 text-pretty">{f.story}</p>}
-      <dl className="mt-6 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-4 gap-y-3 text-[13.5px] leading-[1.5]">
+      {f?.story && <p className="font-letter text-[calc(16px*var(--letter-scale))] leading-[1.6] text-foreground/90 text-pretty">{f.story}</p>}
+      <dl className="mt-6 grid grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-x-4 gap-y-3 text-[13.5px] leading-[1.5]">
         {letter.author && <Row term="Written by">{letter.author}{f?.heritage && <span className="block text-muted-foreground">{f.heritage}</span>}</Row>}
         {letter.recipient && <Row term="To">{letter.recipient}</Row>}
         {letter.place && <Row term="From">{letter.place}</Row>}
@@ -391,7 +394,7 @@ function Transcript({ letter }: { letter: ArchiveLetter }) {
       >
         {open ? 'Hide the text' : 'Read it as text'}
       </button>
-      <div id="transcript" lang={letter.lang} className={cn(open ? 'mt-4 grid w-full gap-3 text-[15px] leading-[1.65] whitespace-pre-line text-foreground/90' : 'sr-only')}>
+      <div id="transcript" lang={letter.lang} className={cn(open ? 'font-letter mt-4 grid w-full gap-3 text-[calc(17px*var(--letter-scale))] leading-[1.65] whitespace-pre-line text-foreground/90' : 'sr-only')}>
         {paras.map((para, i) => <p key={i}>{para}</p>)}
       </div>
     </div>
@@ -402,7 +405,7 @@ function Row({ term, children }: { term: string; children: ReactNode }) {
   return (
     <>
       <dt className="text-muted-foreground">{term}</dt>
-      <dd className="min-w-0 text-foreground/90">{children}</dd>
+      <dd className="font-letter min-w-0 text-[calc(14.5px*var(--letter-scale))] leading-[1.45] text-foreground/90">{children}</dd>
     </>
   );
 }
