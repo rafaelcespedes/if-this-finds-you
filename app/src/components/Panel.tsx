@@ -4,7 +4,8 @@
 //   More           everything else, folded away: the other sliders, occasion, signature, seed, keep-when-rolling
 // Writing modes (Ink / Pencil / Fair copy) live with the writing, under the sheet and in the pen tray.
 import { memo, useEffect, useId, useRef, useState } from 'react';
-import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Info, Link, Loader2, Share, Shuffle, Users } from 'lucide-react';
+import { CaseSensitive, ChevronDown, Download, Film, ImagePlay, Info, Link, Loader2, Lock, LockOpen, Share, Shuffle, Users } from 'lucide-react';
+import { hasControl } from '@/controls-lab';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { getStyle, UPM, type Hand } from '@engine';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,8 @@ export interface PanelProps {
   locks: Set<LockKey>;
   /** keep the paper, pen and ink (all three) when rolling a new hand, or not */
   onKeepLook: (keep: boolean) => void;
+  /** controls research #5: keep one of paper, pen or ink through Find another */
+  onLock?: (key: LockKey, on: boolean) => void;
   busy: { download: boolean; font: boolean; video: boolean };
   /** the letter writing itself out, as a video or a GIF (null until the browser's been asked what it can make) */
   onExportVideo: (kind: 'video' | 'gif') => void;
@@ -316,7 +319,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
   const pad = flush ? '' : 'px-5';
   return (
     <>
-      <Group label="Paper" value={getPaper(state.paper).name} className={pad} first>
+      <Group label="Paper" value={getPaper(state.paper).name} className={pad} first lock={lockFor(props, 'paper')}>
         <PaperPicker value={getPaper(state.paper).family} onChange={props.onPaper} rows />
         <PaperVariants value={state.paper} onChange={props.onPaper} />
       </Group>
@@ -325,13 +328,14 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
           label="Pen"
           value={penName(state.pen)}
           className={pad}
+          lock={lockFor(props, 'pen')}
           aside={<TipChoice value={state.penSize} ink={ink} onChange={props.onPenSize} />}
         >
           {!PENS_LIVE && <Soon />}
           <PenSwatches seed={state.seed} style={state.style} pen={state.pen} penSize={state.penSize} ink={ink} inkKey={props.inkKey} onPen={props.onPen} />
         </Group>
       )}
-      <Group label="Ink" value={inkName(state.ink)} className={pad}>
+      <Group label="Ink" value={inkName(state.ink)} className={pad} lock={lockFor(props, 'ink')}>
         <InkPicker value={state.ink} pen={state.pen} onChange={props.onInk} />
       </Group>
       <Group
@@ -352,6 +356,7 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
         <div className="mt-3.5 grid gap-1.5">
           <Switch
             label="Neat hands only"
+            words={['Neat only', 'Any hand']}
             tip="Tidies messy hands a little, and Find another skips the hard-to-read ones"
             checked={state.neatOnly}
             onChange={props.onNeatOnly}
@@ -376,6 +381,12 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
       </Group>
     </>
   );
+}
+
+function lockFor(props: PanelProps, key: LockKey) {
+  if (!hasControl(5) || !props.onLock) return undefined;
+  const on = props.locks.has(key);
+  return { on, toggle: () => props.onLock!(key, !on) };
 }
 
 /** the two sliders people understand at a glance (with Size, the three in How they write) */
@@ -413,14 +424,20 @@ function readerCredit(credit: string) {
 }
 
 /** One group of controls: a plain label (and what's chosen), an optional small extra on the right. */
-function Group({ label, value, aside, children, className, first }: { label: string; value?: string; aside?: React.ReactNode; children: React.ReactNode; className?: string; first?: boolean }) {
+function Group({ label, value, aside, children, className, first, lock }: { label: string; value?: string; aside?: React.ReactNode; children: React.ReactNode; className?: string; first?: boolean; lock?: { on: boolean; toggle: () => void } }) {
   const id = useId();
+  const Pad = lock?.on ? Lock : LockOpen;
   return (
     <section data-row aria-labelledby={id} className={cn('grid grid-cols-[minmax(0,1fr)] gap-2 py-3.5', !first && 'border-t border-border/70', className)}>
       <div className="flex min-h-7 items-center justify-between gap-3">
         <h3 id={id} className="flex min-w-0 items-baseline gap-2 text-[13px] font-medium">
           {label}
           {value && <span className="truncate font-normal text-muted-foreground"><span className="sr-only">: </span>{value}</span>}
+          {lock && (
+            <button type="button" aria-pressed={lock.on} aria-label={`Keep this ${label.toLowerCase()} when finding another`} onClick={lock.toggle} data-lab-lock="" className="lab-lock relative -my-1 grid size-6 shrink-0 place-items-center self-center rounded-[4px] after:absolute after:-inset-2 after:content-['']">
+              <Pad aria-hidden className="size-[13px]" strokeWidth={2} />
+            </button>
+          )}
         </h3>
         {aside}
       </div>
@@ -523,7 +540,9 @@ function writeOpen(v: boolean) {
 }
 
 /** An on/off switch with a plain label. */
-function Switch({ label, hint, tip, checked, onChange }: { label: string; hint?: string; tip?: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Switch({ label, hint, tip, checked, onChange, words: say }: { label: string; hint?: string; tip?: string; checked: boolean; onChange: (v: boolean) => void; words?: [string, string] }) {
+  // controls research #4: the two states as words, one face sliding between them
+  if (say && hasControl(4)) return <WordToggle label={label} tip={tip} say={say} checked={checked} onChange={onChange} />;
   const id = useId();
   const tipId = useId();
   return (
@@ -553,6 +572,23 @@ function Switch({ label, hint, tip, checked, onChange }: { label: string; hint?:
           className={cn('absolute top-[3px] left-[3px] size-5 rounded-full bg-[#fffefb] shadow-[0_1px_2px_rgba(30,24,12,0.25)] transition-transform duration-200 ease-[var(--ease-drawer)]', checked && 'translate-x-[18px]')}
         />
       </button>
+    </div>
+  );
+}
+
+function WordToggle({ label, tip, say, checked, onChange }: { label: string; tip?: string; say: [string, string]; checked: boolean; onChange: (v: boolean) => void }) {
+  const tipId = useId();
+  const name = label === 'Neat hands only' ? 'Hands' : label;
+  return (
+    <div data-row className="flex items-center justify-between gap-3">
+      <span className="flex items-center gap-1 text-[13px] font-medium">
+        {name}
+        {tip && <InfoTip id={tipId} text={tip} />}
+      </span>
+      <Segmented type="single" aria-label={label} data-lab-words="" value={checked ? 'on' : 'off'} onValueChange={(v) => v && onChange(v === 'on')} className="w-[176px]">
+        <SegmentedItem value="on">{say[0]}</SegmentedItem>
+        <SegmentedItem value="off">{say[1]}</SegmentedItem>
+      </Segmented>
     </div>
   );
 }

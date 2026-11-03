@@ -634,6 +634,12 @@ export default function App() {
       writePref('seedhand:locks', [...next].join(','));
       setLocks(next);
     },
+    onLock: (key, on) => {
+      const next = new Set<LockKey>(locks);
+      if (on) next.add(key); else next.delete(key);
+      writePref('seedhand:locks', [...next].join(','));
+      setLocks(next);
+    },
     busy,
     onNewHand: () => newHand(true),
     // the same letter, another writer: the stationery stays, the text stays (a found letter keeps its words)
