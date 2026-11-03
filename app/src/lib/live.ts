@@ -255,6 +255,22 @@ export function liveExtras(live: Live, x: ExtrasInput): string[] {
     add(s, cs);
   }
 
+  // a notecard that goes on to its back: "over" at the foot of each front, inside the border, in the hand
+  if (live.paper.overflow === 'back') {
+    for (let s = 0; s < live.sheets.length - 1; s += 2) {
+      const over = layout(p, 'over', { maxWidth: 1e7, firstBaseline: 0, lineHeight: UPM });
+      const items = (over.items as any[]).filter((it) => it.kind === 'glyph');
+      const minX = items.length ? Math.min(...items.map((it) => it.x)) : 0;
+      const w = items.reduce((a, it) => Math.max(a, it.x - minX + it.g.advance), 0) * 0.82;
+      const x0 = live.paper.text.right * live.unitsPerMm - w - minX * 0.82;
+      // about one x-height under the last line ("over" has no descenders, so it clears the border)
+      const y = live.sheets[s].shiftU + (live.paper.text.last + live.paper.xh) * live.unitsPerMm;
+      const cs: number[][][] = [];
+      for (const it of items) for (const c of it.g.contours as number[][][]) cs.push(c.map(([qx, qy]) => [x0 + (it.x + qx) * 0.82, -(y + (it.y - qy) * 0.82)]));
+      add(s, cs);
+    }
+  }
+
   // an empty page: the writer pencils in where the writing goes, in faint graphite
   if (!x.text && x.placeholder) {
     const ph = layout(p, x.placeholder, { maxWidth: (live.paper.text.right - live.paper.text.left) * live.unitsPerMm, firstBaseline: live.firstMm * live.unitsPerMm, lineHeight: live.lineMm * live.unitsPerMm });

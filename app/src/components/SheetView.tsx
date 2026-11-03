@@ -41,21 +41,15 @@ export const SheetView = memo(function SheetView({ paper, pxPerMm, svg, ink, fad
 });
 
 /**
- * How the stationery goes on when the letter is longer than one sheet: a postcard's or note strip's number at
- * the top of each card after the first, "over" at the foot of a notecard's front (its back is plain), the
- * second aerogramme. Quiet, in the app's type; the sheet's own label says which page it is to screen readers.
+ * How the stationery goes on past one sheet, where the hand doesn't say it: the hand numbers the cards and writes
+ * "over" on a notecard (lib/live.ts, write-core.ts); a second aerogramme gets a quiet line above it, off the paper,
+ * like the sheet's label.
  */
-export function SheetMarks({ paper, index, count, pxPerMm }: { paper: PaperSpec; index: number; count: number; pxPerMm: number }) {
-  const right = Math.max(4, paper.w - paper.text.right) * pxPerMm;
-  const mark = 'pointer-events-none absolute text-[10.5px] leading-none tracking-[0.02em] text-[color-mix(in_oklab,var(--foreground)_45%,transparent)] select-none';
-  if (paper.overflow === 'card' && index > 0) {
-    return <span aria-hidden className={mark} style={{ top: 4 * pxPerMm, right }}>{index + 1}</span>;
-  }
-  if (paper.overflow === 'back' && index % 2 === 0 && index < count - 1) {
-    return <span aria-hidden className={cn(mark, 'italic')} style={{ bottom: 3.5 * pxPerMm, right }}>over</span>;
-  }
-  if (paper.overflow === 'cramp' && index > 0) {
-    return <span aria-hidden className={mark} style={{ top: 4 * pxPerMm, right }}>A second aerogramme</span>;
-  }
-  return null;
+export function SheetMarks({ paper, index }: { paper: PaperSpec; index: number; count: number; pxPerMm: number }) {
+  if (paper.overflow !== 'cramp' || index < 1) return null;
+  return (
+    <span aria-hidden className="pointer-events-none absolute bottom-full left-0 mb-1 text-[12px] leading-4 whitespace-nowrap text-muted-foreground select-none">
+      A second aerogramme
+    </span>
+  );
 }
