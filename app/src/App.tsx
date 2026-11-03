@@ -953,7 +953,10 @@ export default function App() {
   const brokenLink = linkTrouble === 'incomplete';
 
   // ---------- phones: the control sheet, and the letter making room above it ----------
-  const mobileSheet = !reader && !isDesktop;
+  // a window too short for a sheet over the page (400% zoom, a tiny split screen): the controls go in the page,
+  // under the letter, instead of floating over it
+  const tinyWindow = useMediaQuery('(max-height: 300px)');
+  const mobileSheet = !reader && !isDesktop && !tinyWindow;
   const sheetOpen = mobileSheet && !editing;
   const [metrics, setMetrics] = useState<SheetMetrics>({ peek: 124, half: 406, top: 8 });
   const metricsRef = useRef(metrics);
@@ -1303,6 +1306,11 @@ export default function App() {
           </div>
           </div>
           </div>
+          {!reader && !isDesktop && tinyWindow && (
+            <section aria-label="Hand, paper and ink" className="mx-auto mt-10 max-w-[480px] rounded-2xl bg-panel">
+              <Panel {...panelProps} />
+            </section>
+          )}
         </main>
 
         {!reader && !isDesktop && editing && (
