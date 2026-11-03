@@ -51,6 +51,7 @@ import { PENS_LIVE } from '@/lib/pens';
 import { perf } from '@/lib/perf';
 import { MAX_LETTER, linkIssue, offsetsForNewHand, shareUrl } from '@/lib/state';
 import { Notice } from '@/components/Notice';
+import { FONTS_URL } from '@/fonts/links';
 import { Button } from '@/components/ui/button';
 import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
@@ -1063,7 +1064,7 @@ export default function App() {
                     <LayoutDashboard aria-hidden className="size-4" />
                   </a>
                   <a
-                    href={withLogo(`${import.meta.env.BASE_URL}fonts.html`)}
+                    href={withLogo(FONTS_URL)}
                     aria-label="Fonts"
                     title="Fonts"
                     className="relative grid size-8 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 transition-colors duration-150 after:absolute after:-inset-1.5 after:content-[''] active:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -1086,7 +1087,7 @@ export default function App() {
               </a>
               {/* every hand as an open font (the fonts page) */}
               <a
-                href={withLogo(`${import.meta.env.BASE_URL}fonts.html`)}
+                href={withLogo(FONTS_URL)}
                 className={cn(
                   // a big enough target without making the line taller (the sheet's label sits just under it)
                   "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
