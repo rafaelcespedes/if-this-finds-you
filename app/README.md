@@ -1,4 +1,9 @@
-# Seedhand app
+# If This Finds You (app)
+
+**If This Finds You** is the product's name: how a message in a bottle begins, a letter that may never have
+arrived, and you're the one it found. People see it in the header, the page title ("Yara Rowe – If This Finds
+You"), the share sheet and file names (`lib/brand.ts`). *Seedhand* is the code name: it stays in code and in
+storage keys, so saved drafts and settings keep working.
 
 The product UI for the live handwriting engine. One letter sheet in the middle, one quiet panel beside it.
 Type straight onto the paper; every letter is drawn fresh, in the hand of a fictional writer.
@@ -192,6 +197,7 @@ src/
     pens.ts, inks.ts, occasions.ts
     state.ts              the note config and the share-link format
     hands.ts              word seeds, writer names, plain-word descriptions, "very different" new hands
+    brand.ts              the product's name as people see it (code keeps Seedhand)
     actions.ts, perf.ts, utils.ts
   workers/write.worker.ts writes the page off the main thread (newest request wins); a second copy writes
                           hands ahead (lib/request.ts builds both from the note state)

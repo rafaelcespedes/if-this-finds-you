@@ -20,6 +20,7 @@ import { ENGINE_TIPS, MODELLED_INK } from '@/lib/engine-features';
 import { describeHand, words } from '@/lib/hands';
 import { handSources } from '@/lib/credits';
 import { sampleById } from '@/lib/samples';
+import { branded } from '@/lib/brand';
 import { styleCard, styleName } from '@/lib/styles';
 import { AUTO_INK, INK_FAMILIES, inkColor, inkName } from '@/lib/inks';
 import { OCCASIONS } from '@/lib/occasions';
@@ -174,7 +175,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
                 <dd className="grid gap-1">
                   {sources.map((s) => (
                     <span key={s.name}>
-                      {s.name}. <span className="text-muted-foreground">{readerCredit(s.credit)}</span>
+                      {branded(s.name)}. <span className="text-muted-foreground">{readerCredit(s.credit)}</span>
                       {s.url && <> <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8b9] underline-offset-2 hover-device:hover:text-foreground">Source</a></>}
                     </span>
                   ))}
@@ -338,9 +339,9 @@ function learnedFrom(style: string) {
   return `${card.title} (${fam.toLowerCase()})${card.sub ? `, ${card.sub}` : ''}`;
 }
 
-/** A source credit for readers: the engine's notes to its own docs ("(hand-traditions.md §4)") stay out. */
+/** A source credit for readers: the product's name, and the engine's notes to its own docs ("(hand-traditions.md §4)") stay out. */
 function readerCredit(credit: string) {
-  return credit.replace(/\s*\([^)]*\.md[^)]*\)/g, '');
+  return branded(credit).replace(/\s*\([^)]*\.md[^)]*\)/g, '');
 }
 
 /** One group of controls: a plain label (and what's chosen), an optional small extra on the right. */

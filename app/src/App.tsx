@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { APP_NAME } from '@/lib/brand';
+import { styleCard } from '@/lib/styles';
 import { CAP, makeHand } from '@engine';
 import { Panel, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
@@ -245,7 +247,7 @@ export default function App() {
   const pxPerMm = deskW > 0 ? Math.min(MAX_PX_PER_MM, deskW / shownPaper.w) : 0;
 
   useEffect(() => {
-    document.title = `${name} – Seedhand`;
+    document.title = `${name} – ${APP_NAME}`;
   }, [name]);
 
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
@@ -375,9 +377,9 @@ export default function App() {
     const url = shareUrl(state);
     const ok = await copyText(url);
     // on phones (and anywhere with a share sheet) the toast offers to send it straight on
-    const action = canShareLinks() ? { label: 'Share…', onClick: () => void shareLink(url, `A note in ${name}’s hand`) } : undefined;
+    const action = canShareLinks() ? { label: 'Share…', onClick: () => void shareLink(url, `${name}’s letter – ${APP_NAME}`) } : undefined;
     if (ok) toast.success('Link copied', { description: 'It opens this exact note: hand, pen, paper and text.', action });
-    else if (action) void shareLink(url, `A note in ${name}’s hand`);
+    else if (action) void shareLink(url, `${name}’s letter – ${APP_NAME}`);
     else toast.error('Couldn’t copy the link', { description: 'Copy it from the address bar instead.' });
   }, [state, name]);
 
@@ -393,7 +395,7 @@ export default function App() {
           eff.inkKey && eff.inkKey !== 'auto' ? eff.inkKey : undefined, ink, pxPerMm || MAX_PX_PER_MM,
         )
         : await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
-      const filename = `${name} note`;
+      const filename = `${APP_NAME} – ${name}`;
       const done = (r: string) => {
         if (r === 'saved') toast.success('Note downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
       };
@@ -419,7 +421,7 @@ export default function App() {
     // let the spinner paint before the (blocking) font build
     await new Promise((r) => setTimeout(r, 40));
     try {
-      const res = await exportFont(p, `Seedhand ${name} ${state.style}`);
+      const res = await exportFont(p, `${APP_NAME} – ${name} (${styleCard(state.style).title})`);
       toast.success('Font exported', { description: `${res.glyphs} glyphs, 3 versions of each letter` });
     } catch (e) {
       console.error(e);
@@ -603,7 +605,7 @@ export default function App() {
               !reader && 'pointer-events-none',
             )}
           >
-            <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">Seedhand</span>
+            <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">{APP_NAME}</span>
             {reader ? (
               <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
                 Write your own
