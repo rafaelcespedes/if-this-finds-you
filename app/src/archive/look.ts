@@ -17,7 +17,9 @@ import type { ArchiveLetter, Look } from './model';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
 const sampleLook = (opts: Record<string, unknown>) => engine.sampleLook(opts);
-const lookOf = (seed: string, style: string, locked: Record<string, string> = {}) => engine.lookOf(seed, style, locked);
+const lookOf = (seed: string, style: string, locked: Record<string, string> = {}, opts: Record<string, unknown> = {}) => engine.lookOf(seed, style, locked, opts);
+/** The sampler knows the tool's papers (newer engines): a paper lock it understands. */
+const samplerPaper = (id: string) => ((engine.LOOK_PAPERS as string[] | undefined) ?? []).includes(id);
 
 /** The engine sampler's papers, as the tool's paper ids (getPaper resolves them if the tool renames its papers). */
 const ENGINE_PAPER: Record<string, string> = { plain: 'plain', 'us-ruled': 'college', seyes: 'seyes', 'uk-feint': 'feint', grid: 'squared', dots: 'dots' };
@@ -70,7 +72,10 @@ function periodLocks(l: ArchiveLetter, style: string | null): Record<string, str
   const r = hash('period:' + l.id) % 100;
   if (y < 1880) locks.pen = style === 'arrighi' ? 'italic' : 'pointed';
   else if (y < 1950) locks.pen = r < 60 ? 'fountain' : 'pointed';
-  if (y < 1950) locks.paper = 'plain';
+  // the period's paper (periodPaper), as a lock the sampler understands, so pen and ink suit it
+  const paper = periodPaper(l);
+  if (paper && samplerPaper(paper)) locks.paper = paper;
+  else if (y < 1950 && samplerPaper('plain')) locks.paper = 'plain';
   // a library to read: no bold nibs, which turn small old hands into blots ("Neat hands only", DECISIONS.md)
   locks.tip = hash('tip:' + l.id) % 3 ? 'medium' : 'fine';
   return locks;
@@ -106,8 +111,10 @@ export function letterLook(l: ArchiveLetter): Look {
   const style = styleFor(l);
   const locks = periodLocks(l, style);
   const family = style ? (getStyle(style) as any)?.family : undefined;
-  let look = sampleLook({ entropy: 'letter:' + l.id, locked: locks, ...(family ? { family } : {}) });
-  if (style && look.style !== style) look = lookOf(look.seed, style, locks);
+  // the letter's length, so the sampler never offers a postcard for a long letter
+  const fit = { textLength: l.text.length };
+  let look = sampleLook({ entropy: 'letter:' + l.id, locked: locks, ...fit, ...(family ? { family } : {}) });
+  if (style && look.style !== style) look = lookOf(look.seed, style, locks, fit);
   return toLook(look, periodPaper(l) ?? undefined);
 }
 
@@ -119,9 +126,9 @@ export function handLook(hand: string, l?: ArchiveLetter): Look | null {
   if (l?.olderHandsOnly && !olderHand(parsed.style)) {
     const style = pick(OLDER_STYLES(), 'old:' + parsed.seed);
     const locks = periodLocks(l, style);
-    return toLook(lookOf(parsed.seed, style, locks), periodPaper(l) ?? undefined);
+    return toLook(lookOf(parsed.seed, style, locks, { textLength: l.text.length }), periodPaper(l) ?? undefined);
   }
-  return toLook(lookOf(parsed.seed, parsed.style));
+  return toLook(lookOf(parsed.seed, parsed.style, {}, l ? { textLength: l.text.length } : {}));
 }
 
 /**

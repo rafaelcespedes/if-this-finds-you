@@ -1,5 +1,6 @@
 // The collection, loaded on demand (its own chunk), turned into the archive's letter model, plus the words the
 // index shows for each letter. Everything shown comes from the curator's fields; nothing here invents a fact.
+import { shortAuthor as authorName } from '@/lib/names';
 import type { ArchiveLetter, Circumstance, Found } from './model';
 import type { Filters } from './route';
 
@@ -117,34 +118,13 @@ export function circumstanceLabel(l: ArchiveLetter) {
 /** Undelivered and intercepted letters: the reason is the story, so the index says it. */
 export const lostInTransit = (l: ArchiveLetter) => l.found?.circumstance === 'undelivered' || l.found?.circumstance === 'seized';
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const quote = (s: string) => `‘${s}’`;
-
 /**
  * The writer, short: "Rosebell Burke (Rosabella Burke)" → "Rosebell Burke"; "Unknown (signed 'Grace C.')" →
- * "‘Grace C.’"; "Unknown (a schoolboy; name not printed)" → "A schoolboy"; "M. P. (Margery Paston)" → "Margery Paston".
+ * "‘Grace C.’" (lib/names.ts, shared with the tool). A letter written here: the writer's chosen credit.
  */
 export function shortAuthor(l: ArchiveLetter) {
   if (l.origin === 'written') return l.credit?.anonymous || !l.credit?.name ? 'Anonymous' : l.credit.name;
-  const a = (l.author ?? '').trim();
-  if (!a) return 'Unknown writer';
-  const m = a.match(/^(.*?)\s*\((.*)\)\s*$/);
-  if (!m) return a;
-  const [, head, inner] = m;
-  const clauses = inner.split(/;\s*/);
-  const named = (c: string) => c.match(/^(?:signed|printed as|gives (?:her|his) name only as|headed)\s+['‘](.+?)['’]$/i)?.[1];
-  if (/^unknown$/i.test(head)) {
-    for (const c of clauses) {
-      const n = named(c);
-      if (n) return quote(n);
-    }
-    const first = clauses[0].replace(/^unsigned:?\s*/i, '');
-    if (/^unsigned/i.test(clauses[0]) && clauses[1]) return cap(clauses[1]);
-    return first && !/^['‘]/.test(first) ? cap(first) : 'Unsigned';
-  }
-  // initials only: the full name in the brackets says more
-  if (/^(\p{Lu}\.\s*)+$/u.test(head)) return clauses[0].split(',')[0];
-  return head;
+  return authorName(l.author ?? '');
 }
 
 /** To whom, short: the first clause ("Stephen F. Austin ('Sor. D. …'); 'Don Santiago' is …" → "Stephen F. Austin ('Sor. D. …')"). */
