@@ -119,6 +119,25 @@ Keepsake, Unclaimed.
 **Verdict:** Stray Letters (strayletters.com, $12.03) is still the clearest. If Rafael wants one word, **Strayhand**
 (strayhand.app, $15) is the best new option.
 
+### Design side: typography and the romance of handwritten letters
+
+Clean in TMview (no live exact marks) and buyable:
+
+| Name | Domain, per year | What it is |
+|---|---|---|
+| **Inkswell** | inkswell.app $15 | The *swell* is the thick, pressed part of a pointed-pen stroke. Ink + swell, and a wink at "inkwell" |
+| **Hairline & Swell** | hairlineandswell.com $12.03 | The two strokes of pointed-pen writing: the thin hairline up, the swelling stroke down. The most typographic name here |
+| **Redondilla** | redondilla.com $12.03 | The Spanish round hand of the 16th- and 17th-century writing masters (and a four-line Spanish verse form) |
+| **Running Hand** | runninghand.app $15 | The writing masters' term for everyday joined handwriting; "running" also suggests writing live |
+| **Valediction** | valediction.app $15 | A letter's sign-off ("Yours ever,"). Formal |
+
+Dropped for trademarks in software or stationery: Fondly, Tittle (the dot on the i), Envoi, Dearly, Billet-doux,
+Posdata, Superscription. Roundhand is Matthew Carter's 1966 typeface. Taken in every ending tried: Swash,
+Ligature, Downstroke, Upstroke, Cursive, Flourish, Penmanship, Letterform, Copperplate, Cachet.
+
+**Verdict:** on the design side, **Inkswell** (one warm word) or **Hairline & Swell** (for a type-literate
+audience). For the whole product, Stray Letters still tells the story best.
+
 ---
 
 ## 1. Naming
