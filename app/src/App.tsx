@@ -72,7 +72,7 @@ const editLog = new EditLog();
 
 export default function App() {
   const [composing, setComposing] = useState(false);
-  const [state, update] = useNoteState(composing);
+  const [state, update, markStep] = useNoteState(composing);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
   const [busy, setBusy] = useState({ download: false, font: false, video: false });
@@ -100,6 +100,7 @@ export default function App() {
   // ---------- found letters and your own: always a way to each ----------
   const [draftCount, setDraftCount] = useState(() => drafts().length);
   const toFound = useCallback((next?: ReturnType<typeof sampleForSeed>) => {
+    markStep();
     const s = stateNow.current;
     const pick = next ?? sampleForSeed(s.seed, s.style, new Set([...recentLetters(), ...(s.sample ? [s.sample] : [])]));
     if (!pick) return;
@@ -163,6 +164,8 @@ export default function App() {
   }, [p, inkLayout, coarse, inkLook]);
   /** after the session changed: the note follows it (what it says, and its log) */
   const fullNoted = useRef(false);
+  const onModeRef = useRef<((m: 'ink' | 'pencil' | 'fair') => void) | undefined>(undefined);
+  const freshRef = useRef<(() => void) | undefined>(undefined);
   const syncInk = useCallback(() => {
     const ink = inkRef.current;
     if (!ink) return;
@@ -170,7 +173,14 @@ export default function App() {
     setInkTick((n) => n + 1);
     if (ink.full && !fullNoted.current) {
       fullNoted.current = true;
-      toast('This sheet is full', { description: 'Make a fair copy, or start a fresh sheet.' });
+      // ink keeps to one sheet: go on in a fair copy (which runs onto more sheets), or start a fresh one
+      toast('This sheet is full', {
+        id: 'sheet-full',
+        description: 'Go on in a fair copy, which runs onto more sheets, or start a fresh sheet.',
+        duration: 12000,
+        action: { label: 'Fair copy', onClick: () => onModeRef.current?.('fair') },
+        cancel: { label: 'Fresh sheet', onClick: () => freshRef.current?.() },
+      });
     } else if (!ink.full) fullNoted.current = false;
   }, [update]);
   // writing in ink: the session is up from the first tap (or, on an untouched sample letter, the first key)
@@ -394,12 +404,14 @@ export default function App() {
   const similarAhead = useRef<{ base: string; look: Partial<NoteState> } | null>(null);
   const baseOf = useCallback((s: NoteState) => JSON.stringify([s.seed, s.style, s.offsets, s.pen, s.penSize, s.ink, s.size, s.paper, s.occasion, s.amount, s.text, s.sample, s.mode, s.inkLog, s.marks, s.signed, s.neatOnly, variety, lockKey]), [variety, lockKey]);
   const newHand = useCallback((fade = true) => {
+    markStep();
     // for QA (window.__seedhandPerf): click → the new hand's writing in the page
     const now = ahead.current.find((a) => a.base === baseOf(stateNow.current));
     perf.lookAsked(!!now && written(requestFor({ ...stateNow.current, ...now.look })));
     lookChange(() => update((s) => ahead.current.find((a) => a.base === baseOf(s))?.look ?? rollHand(s, { variety, locked: locks, avoid: recentLetters() })), fade);
   }, [update, baseOf, variety, locks, lookChange, written]);
   const similarHand = useCallback((fade = true) => {
+    markStep();
     lookChange(() => update((s) => {
       const pre = similarAhead.current;
       return pre && pre.base === baseOf(s) ? pre.look : withSample(s, { ...pickSimilarHand({ seed: s.seed, style: s.style }), offsets: offsetsForNewHand(s.offsets) }, recentLetters());
@@ -486,12 +498,12 @@ export default function App() {
         : await renderNote(JSON.parse(requestKey), ink, pxPerMm || MAX_PX_PER_MM);
       const filename = `${APP_NAME} – ${name}`;
       const done = (r: string) => {
-        if (r === 'saved') toast.success('Note downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
+        if (r === 'saved') toast.success('Image downloaded', { description: `JPEG, ${res.width} × ${res.height} px` });
       };
       const r = await saveNote(res.blob, filename, coarse);
       // making the image took long enough that the browser wants a fresh tap before sharing
       if (r === 'needs-tap') {
-        toast('Your note is ready', {
+        toast('Your image is ready', {
           description: `JPEG, ${res.width} × ${res.height} px`,
           action: { label: 'Save image', onClick: () => void saveNote(res.blob, filename, true).then(done) },
           duration: 10000,
@@ -543,12 +555,14 @@ export default function App() {
       const filename = `${fileSafe(`${APP_NAME} – ${name}`)}.${res.ext}`;
       const description = `${Math.round(res.seconds)} s, ${res.width} × ${res.height}, ${(res.blob.size / 1e6).toFixed(1)} MB`;
       const file = new File([res.blob], filename, { type: res.mime });
+      // a fresh toast, not the progress one (that one's Stop button would stay)
+      toast.dismiss('export');
       if (coarse && navigator.canShare?.({ files: [file] })) {
         // making it took a few seconds, so the share sheet needs a fresh tap (then Save Video puts it in Photos)
-        toast.success(`Your ${what} is ready`, { id: 'export', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
+        toast.success(`Your ${what} is ready`, { id: 'export-done', description, action: { label: 'Save', onClick: () => void navigator.share({ files: [file] }).catch(() => {}) }, duration: 15000 });
       } else {
         saveBlob(res.blob, filename);
-        toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export', description, duration: 4000 });
+        toast.success(kind === 'gif' ? 'GIF downloaded' : 'Video downloaded', { id: 'export-done', description, duration: 4000 });
       }
     } catch (e) {
       if ((e as Error)?.name === 'AbortError') toast('Stopped', { id: 'export', duration: 2000 });
@@ -617,7 +631,7 @@ export default function App() {
     busy,
     onNewHand: () => newHand(true),
     // the same letter, another writer: the stationery stays, the text stays (a found letter keeps its words)
-    onChangeWriter: () => lookChange(() => update((s) => rollLook(s, { variety, locked: new Set<LockKey>(['pen', 'ink', 'paper']) }))),
+    onChangeWriter: () => { markStep(); lookChange(() => update((s) => rollLook(s, { variety, locked: new Set<LockKey>(['pen', 'ink', 'paper']) }))); },
     onSimilarHand: () => similarHand(true),
     onSeed: (seed) => update((s) => withSample(s, { seed, offsets: offsetsForNewHand(s.offsets) }, recentLetters())),
     onStyle: (style) => lookChange(() => update({ style })),
@@ -673,6 +687,8 @@ export default function App() {
     } : undefined,
   };
 
+  onModeRef.current = panelProps.ink?.onMode;
+  freshRef.current = panelProps.ink?.onFreshSheet;
   const desk = !posture.writing;
   const reader = state.reader;
 
@@ -750,6 +766,23 @@ export default function App() {
     if (visible == null) fitLetter(sheetOpen ? visibleAt(detent) : 0, true);
     else fitLetter(visible, false);
   }, [fitLetter, sheetOpen, detent, metrics]);
+
+  // how you're writing (and what to do with the sheet): at the sheet's top right on desktop, under it on phones
+  const writingMenu = (
+    <WritingMenu
+      inkAvailable={!!panelProps.ink}
+      mode={state.pen === 'pencil' ? 'pencil' : state.mode}
+      onMode={(m) => panelProps.ink?.onMode(m)}
+      inkLetter={!!state.inkLog}
+      onFairCopy={() => panelProps.ink?.onFairCopy()}
+      onFreshSheet={() => panelProps.ink?.onFreshSheet()}
+      onBlankPage={sample ? () => { replyArrive.current = true; keepTheirs(stateNow.current); update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) })); } : undefined}
+      signed={state.signed}
+      onSign={toggleSigned}
+      plainText={plainText}
+      onPlainText={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
+    />
+  );
 
   return (
     <TooltipProvider>
@@ -845,7 +878,7 @@ export default function App() {
                           <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </button>
                       </AboutHand>
-                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 160)} />
+                      <SheetLabel title={sheetTitle} width={Math.max(120, shownPaper.w * pxPerMm - 260)} />
                       {((hintShown && !hintBeside) || (escHint && !hintBeside)) && (
                         <span key={escHint ? 'esc' : 'click'} className="animate-in fade-in-0 text-[12px] whitespace-nowrap text-muted-foreground duration-700">
                           {escHint ? 'Press Esc when you’re done' : 'Click the letter to write on it'}
@@ -855,6 +888,7 @@ export default function App() {
                   ) : (
                     <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} stack className="absolute bottom-2.5 left-0" />
                   )}
+                  {isDesktop && <div className="absolute right-0 bottom-0.5">{writingMenu}</div>}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
                   {isDesktop && (hintShown || escHint) && hintBeside && (
                     <div
@@ -944,19 +978,7 @@ export default function App() {
                     // the letter's name is on the sheet now; a translation still says who translated it
                     <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
-                  <WritingMenu
-                    inkAvailable={!!panelProps.ink}
-                    mode={state.pen === 'pencil' ? 'pencil' : state.mode}
-                    onMode={(m) => panelProps.ink?.onMode(m)}
-                    inkLetter={!!state.inkLog}
-                    onFairCopy={() => panelProps.ink?.onFairCopy()}
-                    onFreshSheet={() => panelProps.ink?.onFreshSheet()}
-                    onBlankPage={sample ? () => { replyArrive.current = true; keepTheirs(stateNow.current); update((s) => ({ text: '', marks: [], sample: null, replyTo: replyOf(s) })); } : undefined}
-                    signed={state.signed}
-                    onSign={toggleSigned}
-                    plainText={plainText}
-                    onPlainText={() => setPlainText((v) => { writePref('seedhand:plain-text', v ? '0' : '1'); return !v; })}
-                  />
+                  {!isDesktop && writingMenu}
                 </div>
                 {plainText && (
                   <div className="mt-3 flex justify-center">
