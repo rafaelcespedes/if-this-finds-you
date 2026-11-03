@@ -4,12 +4,12 @@
 // - A letter's own hand comes from its id through the engine's sampler (sampleLook), so it never changes. Its
 //   era and tradition steer the choice: letters with the oldest spellings only in hands taught before 1700 (as the
 //   tool's sample letters), a taught hand from the letter's own tradition where the engine has one, a dip pen
-//   before the fountain pen, and plain or laid writing paper before exercise-book rulings and dot grids.
+//   before the fountain pen, and the period's letter paper (periodPaper).
 // - A chosen hand (Shuffle, New hand) travels in the URL as `seed~style`, and lookOf() turns it into the very same
 //   look anywhere. "Keep this hand" on a letter in its own hand keeps that letter's look (`of:<id>`).
 import * as E from '@engine';
 import { getStyle, makeHand, withOverrides, type Hand } from '@engine';
-import { getPaper, type PaperSpec } from '@/lib/papers';
+import { getPaper, isPaperId, type PaperSpec } from '@/lib/papers';
 import { inkColor } from '@/lib/inks';
 import { MODELLED_INK, PARAM_KEYS } from '@/lib/engine-features';
 import type { ArchiveLetter, Look } from './model';
@@ -71,7 +71,33 @@ function periodLocks(l: ArchiveLetter, style: string | null): Record<string, str
   if (y < 1880) locks.pen = style === 'arrighi' ? 'italic' : 'pointed';
   else if (y < 1950) locks.pen = r < 60 ? 'fountain' : 'pointed';
   if (y < 1950) locks.paper = 'plain';
+  // a library to read: no bold nibs, which turn small old hands into blots ("Neat hands only", DECISIONS.md)
+  locks.tip = hash('tip:' + l.id) % 3 ? 'medium' : 'fine';
   return locks;
+}
+
+/**
+ * The letter paper of the letter's time and place, from the tool's stationery: handmade and laid sheets before
+ * 1800, laid and small British pads in the 1800s (pale blue laid for Dutch letters), pads and airmail in the 20th
+ * century (airmail for letters that crossed a sea), and a torn-out school page for children's letters to Santa
+ * Claus or the Three Kings. null after 1950: the engine's sampler chooses. Only papers the tool has.
+ */
+function periodPaper(l: ArchiveLetter): string | null {
+  const y = l.year ?? 2000;
+  const lang = l.lang.toLowerCase();
+  const key = 'paper:' + l.id;
+  const toKings = /santa claus|reyes magos|three kings|rois mages/i.test(l.recipient ?? '');
+  const abroad = l.found?.circumstance === 'emigrant' || l.found?.circumstance === 'seized';
+  let options: string[];
+  if (toKings && y >= 1880) options = [lang === 'en-us' ? 'notebook-loose' : lang.startsWith('fr') ? 'notebook-fr' : lang.startsWith('en') ? 'notebook-uk' : 'notebook'];
+  else if (y < 1700) options = ['laid-cotton', 'laid-cotton', 'laid'];
+  else if (y < 1800) options = ['laid', 'laid', 'laid-cotton'];
+  else if (y < 1880) options = lang.startsWith('nl') ? ['laid-blue'] : ['laid', 'laid', 'laid-blue', 'pad-uk'];
+  else if (y < 1920) options = lang.startsWith('de') ? ['pad-a4'] : ['pad-uk', 'pad', 'laid', 'laid-blue'];
+  else if (y < 1950) options = abroad ? ['airmail', 'airmail-white'] : lang.startsWith('de') ? ['pad-a4', 'airmail'] : ['pad', 'pad-uk', 'airmail'];
+  else return null;
+  const ok = options.filter((id) => isPaperId(id));
+  return ok.length ? pick(ok, key) : null;
 }
 
 /** A letter's own hand: fixed by its id. */
@@ -82,9 +108,7 @@ export function letterLook(l: ArchiveLetter): Look {
   const family = style ? (getStyle(style) as any)?.family : undefined;
   let look = sampleLook({ entropy: 'letter:' + l.id, locked: locks, ...(family ? { family } : {}) });
   if (style && look.style !== style) look = lookOf(look.seed, style, locks);
-  // before 1800 most writing paper was laid
-  const laid = locks.paper === 'plain' && (l.year ?? 2000) < 1800;
-  return toLook(look, laid ? 'laid' : undefined);
+  return toLook(look, periodPaper(l) ?? undefined);
 }
 
 /** A chosen hand ("seed~style"), for any letter (letters with the oldest spellings keep an older hand). */
@@ -95,7 +119,7 @@ export function handLook(hand: string, l?: ArchiveLetter): Look | null {
   if (l?.olderHandsOnly && !olderHand(parsed.style)) {
     const style = pick(OLDER_STYLES(), 'old:' + parsed.seed);
     const locks = periodLocks(l, style);
-    return toLook(lookOf(parsed.seed, style, locks), l.year != null && l.year < 1800 ? 'laid' : undefined);
+    return toLook(lookOf(parsed.seed, style, locks), periodPaper(l) ?? undefined);
   }
   return toLook(lookOf(parsed.seed, parsed.style));
 }

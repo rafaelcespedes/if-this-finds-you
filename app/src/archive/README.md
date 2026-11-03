@@ -24,8 +24,10 @@ Everything is in the URL hash (`route.ts`), so every view can be shared and Back
 
 A letter's own hand comes from its id through the engine's sampler (`sampleLook`, entropy `letter:<id>`), steered
 by the letter: the oldest spellings only in hands taught before 1700, a taught hand from the letter's tradition
-where the engine has one, a dip pen before 1880 and a fountain or dip pen before 1950, plain (or, before 1800,
-laid) paper before 1950. A chosen hand travels as `hand=<seed>~<style>`; "Keep this hand" on a letter's own hand
+where the engine has one, a dip pen before 1880 and a fountain or dip pen before 1950, a fine or medium nib (bold
+nibs blot small old hands), and the period's letter paper from the tool's stationery: handmade and laid sheets
+before 1800, laid and British pads in the 1800s (blue laid for Dutch letters), pads and airmail before 1950 (airmail
+for letters that crossed a sea), a torn-out school page for letters to Santa Claus or the Three Kings. A chosen hand travels as `hand=<seed>~<style>`; "Keep this hand" on a letter's own hand
 is `hand=of:<letter id>`.
 
 ## Cards (`card.worker.ts`, `cards.ts`)

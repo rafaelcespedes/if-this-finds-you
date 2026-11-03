@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, Download, Link2, PenLine, RefreshCw, RotateCcw, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PaperCanvas } from '@/components/PaperCanvas';
+import { PaperCanvas, PaperGuide } from '@/components/PaperCanvas';
 import { ReaderSheets } from '@/components/ReaderSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -17,6 +17,7 @@ import { CONTROLS, naturalValue } from '@/lib/controls';
 import { DEFAULT_STATE, encodeState, type ReplyTo } from '@/lib/state';
 import { writerName } from '@/lib/hands';
 import { LIVE, liveExtras, liveLayout, type Live } from '@/lib/live';
+import { sheetShadow } from '@/lib/papers';
 import { clamp, cn } from '@/lib/utils';
 import { cards } from './cards';
 import { circumstanceLabel, filterLetters, fromTo, opening } from './data';
@@ -268,13 +269,16 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
             role="img"
             aria-label={`The letter, written out by hand on ${r.paper.name.toLowerCase()} paper`}
           >
-            {pxPerMm > 0 && (ready ? (
-              <ReaderSheets live={ready.live} extras={ready.extras} inkKey={r.inkKey} ink={r.inkColor} pxPerMm={pxPerMm} gapPx={SHEET_GAP} token={token} finishToken={finish} />
-            ) : (
-              <div className="relative isolate shrink-0 rounded-[1.5px]" style={{ width: r.paper.w * pxPerMm, height: sheetH, boxShadow: 'var(--sheet-shadow)' }}>
-                <PaperCanvas paper={r.paper} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
-              </div>
-            ))}
+            {/* a sent letter: no guide sheet under the paper */}
+            <PaperGuide value={false}>
+              {pxPerMm > 0 && (ready ? (
+                <ReaderSheets live={ready.live} extras={ready.extras} inkKey={r.inkKey} ink={r.inkColor} pxPerMm={pxPerMm} gapPx={SHEET_GAP} token={token} finishToken={finish} />
+              ) : (
+                <div className="relative isolate shrink-0 rounded-[1.5px]" style={{ width: r.paper.w * pxPerMm, height: sheetH, boxShadow: sheetShadow(r.paper) }}>
+                  <PaperCanvas paper={r.paper} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
+                </div>
+              ))}
+            </PaperGuide>
           </div>
 
           <div className="mx-auto mt-5 flex max-w-[640px] flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[13px] text-muted-foreground">
