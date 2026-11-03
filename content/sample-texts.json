@@ -1,7 +1,8 @@
 [
   {
     "id": "santa-1908-papa",
-    "text": "Dear Santa Claus:\nPapa would like you to bring him a new cap and new rubbers. Papa did not have time to write, so I wrote for him. Please send me a doll for myself.\nMaybelle",
+    "text": "Dear Santa Claus:\nPapa would like you to bring him a new cap and new rubbers. Papa did not have time to write, so I wrote for him. Please send me a doll for myself.\nMAYBELLE.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en-US",
     "title": "Papa did not have time to write",
@@ -36,7 +37,8 @@
   },
   {
     "id": "burke-1859",
-    "text": "My Dear Madam:—William has written you quite a long letter, yet I thought I could not let this opportunity pass without writing you a few lines … My children are as fat as pigs: Granderson is nearly as broad as he is long … In the morning I get up early to milk my cow, feed my chickens, &c. The last time I churned I had to put warm water in the churn to make the butter come.\nYours humbly,\nRosebell Burke.",
+    "text": "My Dear Madam:—\nWilliam has written you quite a long letter, yet I thought I could not let this opportunity pass without writing you a few lines …\n\nMy children are as fat as pigs: Granderson is nearly as broad as he is long …\n\nIn the morning I get up early to milk my cow, feed my chickens, &c. The last time I churned I had to put warm water in the churn to make the butter come.\nYours humbly,\nRosebell Burke.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "As fat as pigs, and butter in the churn",
@@ -79,7 +81,8 @@
   },
   {
     "id": "critica-1923-pochi",
-    "text": "Diario CRITICA. Señor:\npapito dice siempre que Vd. sabe todo. Si sabe la dirección de los reyes mayor, haga el favor de llevarle esta carta. Así yo lo quiero a usted mucho, mucho.\nSeñores Reyes Magos: acuérdensen de la Pochi. Tráiganme muchas cosas, todas las que están en el diario. No se vayan a equivocar de casa. … Muchos besitos para mis queridos reyes.\n(Pochi Mari Elena)",
+    "text": "Diario CRITICA. Señor:\npapito dice siempre que Vd. sabe todo. Si sabe la dirección de los reyes mayor, haga el favor de llevarle esta carta. Así yo lo quiero a usted mucho, mucho.\n\nSeñores Reyes Magos: acuérdensen de la Pochi. Tráiganme muchas cosas, todas las que están en el diario. No se vayan a equivocar de casa. … Muchos besitos para mis queridos reyes.\n(Pochi Mari Elena)",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-AR",
     "title": "Papito says you know everything",
@@ -119,7 +122,8 @@
   },
   {
     "id": "fabregue-1798",
-    "text": "Je saisis l’occasion qui se présente pour te donner, mon cher frère, de mes nouvelles. … Je finis par t’engager à me donner plus souvent de tes nouvelles, et de te rappeler que nous sommes ici comme en exil, pour nos péchés sans doute ; mais patience ; — lorsqu’ils seront expiés, nous irons en paradis, et ce lieu pour moi n’est autre chose que ma bastide de Toulon, ma femme, mes enfans et toi que j’aimerai toujours.\nAdieu ; je t’embrasse et suis pour la vie,\nTon tendre frère,\nC. Fabregue",
+    "text": "Je saisis l’occasion qui se présente pour te donner, mon cher frère, de mes nouvelles. …\n\nJe finis par t’engager à me donner plus souvent de tes nouvelles, et de te rappeler que nous sommes ici comme en exil, pour nos péchés sans doute ; mais patience ; — lorsqu’ils seront expiés, nous irons en paradis, et ce lieu pour moi n’est autre chose que ma bastide de Toulon, ma femme, mes enfans et toi que j’aimerai toujours.\nAdieu ; je t’embrasse et suis pour la vie,\nTon tendre frère,\nC. Fabregue",
+    "layout": "source",
     "kind": "letter",
     "lang": "fr",
     "title": "Paradise is my house in Toulon",
@@ -157,7 +161,8 @@
   },
   {
     "id": "harpers-1884-angora-cat",
-    "text": "Good-morning, my dear Postmistress! I feel very well acquainted with you, though I have never had the pleasure of seeing you.\nI have a very pretty little Angora cat, as white as snow. She is very funny, and her name is Lilly. … In the morning she jumps into the bed and begins to tickle my feet … I forgot to tell you that I am a little Cuban girl, and do not know English very well yet.\nMaria Dolores C.",
+    "text": "Good-morning, my dear Postmistress!\nI feel very well acquainted with you, though I have never had the pleasure of seeing you. … I have a very pretty little Angora cat, as white as snow. She is very funny, and her name is Lilly. … In the morning she jumps into the bed and begins to tickle my feet … I forgot to tell you that I am a little Cuban girl, and do not know English very well yet.\nMaria Dolores C.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en",
     "title": "Lilly the Angora cat",
@@ -199,7 +204,8 @@
   },
   {
     "id": "snetter-1834",
-    "text": "Dear Mother:—\nI take this opportunity of writing you these few lines, hoping they may find you and all enquiring friends in as good health, as they leave me and my husband. Charles, my son, is quite well. … We have night-church as well as four times on Sabbath-day. I have to attend Sunday School, as I am one of the principal teachers. … Abram Rogers’ daughter Mary, got married to Mr. Cooper last Wednesday night. … I am your affectionate daughter till death,\nMartha Snetter.",
+    "text": "Dear Mother:—\nI take this opportunity of writing you these few lines, hoping they may find you and all enquiring friends in as good health, as they leave me and my husband. Charles, my son, is quite well. … We have night-church as well as four times on Sabbath-day. I have to attend Sunday School, as I am one of the principal teachers. …\n\nAbram Rogers’ daughter Mary, got married to Mr. Cooper last Wednesday night. …\nI am your affectionate daughter till death,\nMartha Snetter.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "News for mother from Monrovia",
@@ -241,6 +247,7 @@
   {
     "id": "thomas-1832",
     "text": "My Dear Father,\nI write these few lines to you, hoping to find you in good health, as, thank God, it leaves us at present. … I was confined, and that was on the 3rd. of June. … It is a fine boy, and goes on well. I am happy to tell you, that America is quite as good as we expected to find it. … there is one great comfort here; we have as much wood as we like to burn. … I remain your affectionate daughter,\nAnn Thomas.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "It is a fine boy",
@@ -280,7 +287,8 @@
   },
   {
     "id": "seguin-1824-hoes",
-    "text": "Mi estimado Sor.\nQuando Don Santiago estubo en esta Capital le suplique me hiciera el favor de mandarme con la primer conducta 2 asadones delos mejores que V. tenga y una hacha de la mismas circunstancias.\nreciba V espreciones de José Erasmo quien siempre que me escribe pone aV. y a Don Santiago mil espreciones, recibiendolas V. y Don Santiago delos niños y mias mande quato guste asu servidora que decea verlos y S. M. B.\nMaria Josefa Agustina Bezerri",
+    "text": "Mi estimado Sor.\n… Quando Don Santiago estubo en esta Capital le suplique me hiciera el favor de mandarme con la primer conducta 2 asadones delos mejores que V. tenga y una hacha de la mismas circunstancias. … reciba V espreciones de José Erasmo quien siempre que me escribe pone aV. y a Don Santiago mil espreciones, recibiendolas V. y Don Santiago delos niños y mias mande quato guste asu servidora que decea verlos y S. M. B.\nMaria Josefa Agustina Bezerri",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "es",
     "title": "Two good hoes and an axe",
@@ -320,7 +328,8 @@
   },
   {
     "id": "margrethe-pedersen-1892",
-    "text": "Mine kære, uforglemmelige Præstefolk!\nSaa vil jeg fortælle, at Jens Andreas Thorhave har købt et lille Hus nord i Barkær; der kan godt holdes en Ko … først i Maj blev han borgerlig viet med en ordentlig Pige; hun er 20 Aar, hendes Forældre bor i Gøttrup, de kan holde en Ko.\nKære Venner! Der er noget forkert ved mit Skriveri, men skriver jeg ikke, faar jeg jo ingen Breve, og det er en stor Opmuntring for mig paa mine gamle Dage.\nEders Margrethe.",
+    "text": "Mine kære, uforglemmelige Præstefolk!\n… Saa vil jeg fortælle, at Jens Andreas Thorhave har købt et lille Hus nord i Barkær; der kan godt holdes en Ko … først i Maj blev han borgerlig viet med en ordentlig Pige; hun er 20 Aar, hendes Forældre bor i Gøttrup, de kan holde en Ko. …\n\nKære Venner! Der er noget forkert ved mit Skriveri, men skriver jeg ikke, faar jeg jo ingen Breve, og det er en stor Opmuntring for mig paa mine gamle Dage.\nEders Margrethe.",
+    "layout": "source",
     "kind": "letter",
     "lang": "da",
     "title": "Village news, measured in cows",
@@ -361,6 +370,7 @@
   {
     "id": "stewart-1850",
     "text": "My Dear Josephine,\nI wish you a Merry Christmas, and christmas Gift. … I have had some kisses to day from the ladies, as christman Gifts. but I have not had one from you … Miss Elina Syfacx has gott married to A Mr. Reves of Virginia I arrived her to late for the wedding, but I have some of the wedding cake—and I send you a piece of it—so when you see this cake, think of me, and your wedding day …\nYour Most Devoted Lover &c\nC. A. Stewart",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "A piece of the wedding cake",
@@ -402,7 +412,8 @@
   },
   {
     "id": "dickinson-1861",
-    "text": "Dear Peacock,\nI received your feather with profound emotion. … We have at present one cat, and twenty-four hens, who do nothing so vulgar as lay an egg, which checks the ice-cream tendency. … The hills take off their purple frocks, and dress in long white nightgowns.\nWrite, dear, when you feel like it.\nLovingly,\nEmily.",
+    "text": "Dear Peacock,\nI received your feather with profound emotion. …\n\nWe have at present one cat, and twenty-four hens, who do nothing so vulgar as lay an egg, which checks the ice-cream tendency.\n\n… The hills take off their purple frocks, and dress in long white nightgowns.\n\n… Write, dear, when you feel like it.\nLovingly,\nEmily.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "To her cousin Louise Norcross",
@@ -439,7 +450,8 @@
   },
   {
     "id": "mazzei-1395",
-    "text": "Monna Margherita.\nIo mando per lo vino della botte grande. Se vi fosse avanzato uno popone di stamane, prestatemelo. Sabato viene il mio vino di Valdinievole …\nIo vi mando questo libro, che è de’ buoni. … Rimandatemelo a Firenze mercoledì, o giovidì, se potete … Salutate Francesco.\nSer Lapo, in villa.",
+    "text": "Monna Margherita.\nIo mando per lo vino della botte grande. Se vi fosse avanzato uno popone di stamane, prestatemelo. Sabato viene il mio vino di Valdinievole …\n\nIo vi mando questo libro, che è de’ buoni. … Rimandatemelo a Firenze mercoledì, o giovidì, se potete … Salutate Francesco. …\nSer Lapo, in villa.",
+    "layout": "source",
     "kind": "note",
     "lang": "it",
     "title": "Lend me a melon",
@@ -480,7 +492,8 @@
   },
   {
     "id": "stewart-1909-three-seasons",
-    "text": "Dear Mrs. Coney,\nAre you thinking I am lost, like the Babes in the Wood? Well, I am not … We have the finest flock of Plymouth Rocks and get so many nice eggs. … They have just three seasons here, winter and July and August.\nI think this letter is about to reach thirty-secondly, so I will send you my sincerest love and quit tiring you.\nSincerely yours,\nElinore Rupert.",
+    "text": "Dear Mrs. Coney,\nAre you thinking I am lost, like the Babes in the Wood? Well, I am not …\n\nWe have the finest flock of Plymouth Rocks and get so many nice eggs. …\n\nThey have just three seasons here, winter and July and August. …\n\nI think this letter is about to reach thirty-secondly, so I will send you my sincerest love and quit tiring you. …\nSincerely yours,\nElinore Rupert.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Three seasons in Wyoming",
@@ -522,7 +535,8 @@
   },
   {
     "id": "macinghi-strozzi-1450",
-    "text": "Al nome di Dio. A dì 11 di dicembre 1450.\nPel Favilla vetturale, che viene costà con some di Ghezzo della Casa, ti mando dodici marzolini de’ più begli s’è trovato qui in Firenze; e credo saranno buoni, secondo il saggio n’abbiàn fatto … Ancora ti mando pel detto Favilla quattro camice e sei fazzoletti e uno isciugatoio. Guarda se le camice e l’altre cose ti piacciono … Nè altro per questa. Iddio di male ti guardi.\nPer la tua Alessandra, in Firenze.",
+    "text": "Al nome di Dio. A dì 11 di dicembre 1450.\nPel Favilla vetturale, che viene costà con some di Ghezzo della Casa, ti mando dodici marzolini de’ più begli s’è trovato qui in Firenze; e credo saranno buoni, secondo il saggio n’abbiàn fatto …\n\nAncora ti mando pel detto Favilla quattro camice e sei fazzoletti e uno isciugatoio. Guarda se le camice e l’altre cose ti piacciono …\n\nNè altro per questa. Iddio di male ti guardi.\nPer la tua Alessandra, in Firenze.",
+    "layout": "source",
     "kind": "letter",
     "lang": "it",
     "title": "To her son in Naples, with cheeses and shirts",
@@ -560,7 +574,8 @@
   },
   {
     "id": "fenemur-1849",
-    "text": "Dear Sir\nThis comes to inquire wither Mr. Henry J. Roberts of Liberia Monrovia West Africa, have Sent, to your care, for, me a Box containing one or more Gaires of Preserves, … If he has not Sent anything to your care for me, you will please to answer this, and If He has, Dear Sir, you will confer, a lasting favour on me to forward It Immediately, and Oblige yours,\nMariah Fenemur",
+    "text": "Dear Sir\nThis comes to inquire wither Mr. Henry J. Roberts of Liberia Monrovia West Africa, have Sent, to your care, for, me a Box containing one or more Gaires of Preserves, … If he has not Sent anything to your care for me, you will please to answer this, and If He has, Dear Sir, you will confer, a lasting favour on me to forward It Immediately, and Oblige yours, …\nMariah Fenemur",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Has my box of preserves come?",
@@ -601,6 +616,7 @@
   {
     "id": "goya-1786",
     "text": "Martin mio,\nya soy Pintor del Rey con quince mil reales, aunque no tengo tiempo te insinuaré como el Rey enbio orden a Bayeu y Maella que buscasen dos pintores lo mejor que se encontrase … Bayeu puso a su hermano y Maella a mi. Subio esta consulta al Rey y estubo echa la gracia y yo sin saber nada, que me cogio sin saber lo que me sucedia … y a Dios que ya te escribire.\nTuyo y retuyo.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "es-ES",
     "title": "To Martín Zapater: “I’m Painter to the King!”",
@@ -640,6 +656,7 @@
   {
     "id": "post-office-widow-question",
     "text": "À Monsieur le\nDirecteur de la Poste de Londres.\nJ’ai cinquante trois ans. Veuillez être assez bon de me faire réponse pour me donner des résultats sur l’existence de Madame ——? Si parfois elle était toujours veuve je voudrais lui faire la proposition de lui demander sa main d’après que j’en aurais des nouvelles. En attendant, Monsieur, votre réponse.",
+    "layout": "source",
     "kind": "letter",
     "lang": "fr",
     "title": "Is Madame —— still a widow?",
@@ -676,7 +693,8 @@
   },
   {
     "id": "post-office-pen-friend",
-    "text": "To the person in whose hands this message may fall,\nI would like a correspondent in your city which I think would be of interest to each of us in the way of information. … my age is 18. … It is snowing to-day; it is the first day of winter we have had. The thermometer is ten above zero. … Please state what day you receive this, as I would like to know how long a letter is on the road …",
+    "text": "To the person in whose hands this message may fall,\nI would like a correspondent in your city which I think would be of interest to each of us in the way of information.\n\n… my age is 18. … It is snowing to-day; it is the first day of winter we have had. The thermometer is ten above zero. … Please state what day you receive this, as I would like to know how long a letter is on the road …",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "To the person in whose hands this message may fall",
@@ -713,7 +731,8 @@
   },
   {
     "id": "hatter-1832",
-    "text": "I never was better satisfied in my life, if I had only my dear relations and friends with me. … I have coffee in my lot, a good many other trees, and the guava, which makes nice sweetmeats.\nIf I only had you and your family, mother and her family, and if my dear husband was returned, I should be as happy as the day is long.",
+    "text": "I never was better satisfied in my life, if I had only my dear relations and friends with me. … I have coffee in my lot, a good many other trees, and the guava, which makes nice sweetmeats. If I only had you and your family, mother and her family, and if my dear husband was returned, I should be as happy as the day is long.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "As happy as the day is long",
@@ -755,7 +774,8 @@
   },
   {
     "id": "dezirad-1798",
-    "text": "Ma chère amie,\nJe profite de la commodité du citoyen Veyssiere, chef d’escadron de notre régiment qui part aujourd’hui pour la France, pour te donner de mes nouvelles, et en même tems pour te renouveller de nouveau le serment que je t’ai si souvent fait de t’aimer jusqu’à la mort. … Hélas! quand arrivera-t-il l’heureux moment d’une réunion si désirée ? … Je finis, ma douce amie, en t’embrassant mille fois, et crois-moi pour la vie.\nTon fidel ami,\nDezirad",
+    "text": "Ma chère amie,\nJe profite de la commodité du citoyen Veyssiere, chef d’escadron de notre régiment qui part aujourd’hui pour la France, pour te donner de mes nouvelles, et en même tems pour te renouveller de nouveau le serment que je t’ai si souvent fait de t’aimer jusqu’à la mort. … Hélas! quand arrivera-t-il l’heureux moment d’une réunion si désirée ? …\n\nJe finis, ma douce amie, en t’embrassant mille fois, et crois-moi pour la vie.\nTon fidel ami,\nDezirad",
+    "layout": "source",
     "kind": "letter",
     "lang": "fr",
     "title": "To Adeline in Marseille",
@@ -793,7 +813,8 @@
   },
   {
     "id": "santa-1908-drum",
-    "text": "Lafayette, Ind.\nDear Santa Claus,\nI am a little boy living with my grandma. I want you to bring me a drum, a wheelbarrow and a gun. If you will bring me all these I will be a real good little boy to my grandma. Thanking you for all\nI am yours——",
+    "text": "Lafayette, Ind.\nDear Santa Claus,\nI am a little boy living with my grandma. I want you to bring me a drum, a wheelbarrow and a gun. If you will bring me all these I will be a real good little boy to my grandma.\nThanking you for all\nI am yours——.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en-US",
     "title": "A drum, a wheelbarrow and a gun",
@@ -832,7 +853,8 @@
   },
   {
     "id": "morris-1739",
-    "text": "Anwyl Frawd,\nDoe brydnhawn derbyniais ddau llythyr, un oddiwrth y brawd William … ag arall oddiwrthych chwithe, a diau mae odiaeth oedd clywed eich geiriau’ch deuwedd, ag megys mêl ir gwefusau ydynt imi yn y fangre aniddan honn, y man nad oes gennyf na chyfaill na châr a eill gymorth im ddifyrru y tywydd rhewlyd anwydog yma. … Ni feddaf y tro yma iw chwanegu ond deisyf ar Dduw roddi llwyddiant ag iechyd i chwi, a blwyddyn newydd dda.\nEich caredigawl frawd,\nIoan Amhorys.",
+    "text": "Anwyl Frawd,\nDoe brydnhawn derbyniais ddau llythyr, un oddiwrth y brawd William … ag arall oddiwrthych chwithe, a diau mae odiaeth oedd clywed eich geiriau’ch deuwedd, ag megys mêl ir gwefusau ydynt imi yn y fangre aniddan honn, y man nad oes gennyf na chyfaill na châr a eill gymorth im ddifyrru y tywydd rhewlyd anwydog yma. …\n\nNi feddaf y tro yma iw chwanegu ond deisyf ar Dduw roddi llwyddiant ag iechyd i chwi, a blwyddyn newydd dda.\nEich caredigawl frawd,\nIoan Amhorys.",
+    "layout": "source",
     "kind": "letter",
     "lang": "cy",
     "title": "From Liverpool, to his brother Richard",
@@ -870,6 +892,7 @@
   {
     "id": "sancho-1775",
     "text": "Dear Madam,\nI am happy in hearing that the bathing and drinking has been of real service to you.—I imagine you rise out of the waves another Venus—and could wish myself Neptune, to have the honor of escorting you to land.—Mr. P—— has sent me a pretty turtle, and in very good condition. … it will attend you at Privy Gardens, where (had turtles a sense of ambition) it would think itself happy in its destination.\nI am, dear Madam,\nYour much obliged,\nhumble servant,\nIgn. Sancho.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-GB",
     "title": "To Mrs. C——, with a turtle",
@@ -909,7 +932,8 @@
   },
   {
     "id": "brews-1477",
-    "text": "Ryght reverent and wurschypfull, and my ryght welebeloved Voluntyne, I recomande me unto yowe … And yf it please yowe to here of my welefar, I am not in good heele of body, nor of herte, nor schall be tyll I her ffrom yowe …\nBut yf that ye loffe me, as I tryste verely that ye do, ye will not leffe me therefor …\nAnd thys letter was indyte at Topcroft, with full hevy herte, &c.\nBy your own,\nMargery Brews",
+    "text": "Ryght reverent and wurschypfull, and my ryght welebeloved Voluntyne, I recomande me unto yowe … And yf it please yowe to here of my welefar, I am not in good heele of body, nor of herte, nor schall be tyll I her ffrom yowe …\n\nBut yf that ye loffe me, as I tryste verely that ye do, ye will not leffe me therefor …\n\nAnd thys letter was indyte at Topcroft, with full hevy herte, &c.\nBy your own,\nMargery Brews",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "To my right well-beloved Valentine",
@@ -949,7 +973,8 @@
   },
   {
     "id": "beukma-1837",
-    "text": "M. M. V. V.!\nReeds bijna elf maanden zijn er voorbij gegaan, zonder iets van u of betrekkelijk u of ons verlaten vaderland te vernemen … Gaarne zou ik met u, mijne vrienden! nog verder voortkouten … Inderdaad maakt het sluiten van mijn’ brief bijna denzelfden indruk op mij, als of ik voorheen in eenen vriendenkring mijne pijp moest nederleggen, om mij gereed te maken het gezelschap te verlaten.\nLeeft wel!\nK. Jz. Beukma.",
+    "text": "M. M. V. V.!\nReeds bijna elf maanden zijn er voorbij gegaan, zonder iets van u of betrekkelijk u of ons verlaten vaderland te vernemen …\n\nGaarne zou ik met u, mijne vrienden! nog verder voortkouten … Inderdaad maakt het sluiten van mijn’ brief bijna denzelfden indruk op mij, als of ik voorheen in eenen vriendenkring mijne pijp moest nederleggen, om mij gereed te maken het gezelschap te verlaten.\nLeeft wel!\nK. Jz. Beukma.",
+    "layout": "source",
     "kind": "letter",
     "lang": "nl",
     "title": "Like laying down my pipe",
@@ -989,6 +1014,7 @@
   {
     "id": "post-office-bullfinch",
     "text": "Not having received the live bullfinch mentioned by you as having arrived at the Returned-letter office two days ago, having been posted as a letter contrary to the regulations of the postal system, I now write to ask you to have the bird fed and forwarded at once to —— … I shall write to the Postmaster-General, who is a very intimate friend of my father’s … This is not an idle threat, so you will oblige by following the above instructions.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-GB",
     "title": "The live bullfinch",
@@ -1026,7 +1052,8 @@
   },
   {
     "id": "villahermosa-1813",
-    "text": "Amado hijo de mi alma y de mi corazón:\nHe visto que tienes maestro de música y de baile … dime si tocaste algún instrumento en esa grande orquesta … y dime si hablas corriente el francés con las madamas. ¡Cuánto diera por verte detrás de una cortina en esas concurrencias y oirte!\nDios quiera … que tenga el gusto de volverte á ver tu madre, que te ama como á su vida y cuanto puede.\nJ. María Manuela",
+    "text": "Amado hijo de mi alma y de mi corazón:\n… He visto que tienes maestro de música y de baile … dime si tocaste algún instrumento en esa grande orquesta … y dime si hablas corriente el francés con las madamas. ¡Cuánto diera por verte detrás de una cortina en esas concurrencias y oirte! …\n\nDios quiera … que tenga el gusto de volverte á ver tu madre, que te ama como á su vida y cuanto puede.\nJ. María Manuela",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-ES",
     "title": "To hide behind a curtain and hear you",
@@ -1065,7 +1092,8 @@
   },
   {
     "id": "miller-1833",
-    "text": "My Dear Wife\nI have took the first opportunity that I had to write these few lines to you … I hope you will take great care of yourself do not climb over yonder fence to often do not roam through yonder woods to often do not walk over yonder feilds to often but take care of yourself and remember what I told you before you left home, and in the mean time I remain yours and you mine as long as life remains\nYour affectionate husband\nJohn Miller Jr",
+    "text": "My Dear Wife\nI have took the first opportunity that I had to write these few lines to you … I hope you will take great care of yourself do not climb over yonder fence to often do not roam through yonder woods to often do not walk over yonder feilds to often but take care of yourself and remember what I told you before you left home. and in the mean time I remain yours and you mine as long as life remains\nYour affectionate husband\nJohn Miller Jr",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Do not climb over yonder fence",
@@ -1105,7 +1133,8 @@
   },
   {
     "id": "hoen-1814",
-    "text": "Hiærtelskede kiære Kone og Søn.\nJeg maa herved lade Eder vide hvor ledes ieg lever … ieg og Lensmanden er Senge kammerrater, Her er meget Snille Folk, vi faar kaffe om Morgenen i qvarteret … — tiiden er ude vi skal møde hils alle venner …\nC. Hoen\nTil kiære Kone og Børn — — i Hast",
+    "text": "Hiærtelskede kiære Kone og Søn.\nJeg maa herved lade Eder vide hvor ledes ieg lever … ieg og Lensmanden er Senge kammerrater, Her er meget Snille Folk, vi faar kaffe om Morgenen i qvarteret …\n\n— tiiden er ude vi skal møde hils alle venner …\nC. Hoen\nTil kiære Kone og Børn — — i Hast",
+    "layout": "source",
     "kind": "letter",
     "lang": "no",
     "title": "A farmer at the 1814 Constitutional Assembly writes home",
@@ -1143,7 +1172,8 @@
   },
   {
     "id": "stedman-1832",
-    "text": "Dear Father and Mother and little John.\nThank God that I am in a state of health at present, and as happy as any person in the world; and I hope you are all the same. … I was glad to step my foot on land again. I had 1lb. of beef steak and 2 quarts of cider … Tell little John, that he must grow as fast as he can, and come to me …\nJohn Stedman.",
+    "text": "Dear Father and Mother and little John.\n… Thank God that I am in a state of health at present, and as happy as any person in the world; and I hope you are all the same. … I was glad to step my foot on land again. I had 1lb. of beef steak and 2 quarts of cider …\n\nTell little John, that he must grow as fast as he can, and come to me …\nJohn Stedman.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Tell little John to grow",
@@ -1183,7 +1213,8 @@
   },
   {
     "id": "critica-1924-julia",
-    "text": "Para entregarle a los Reyes Magos lo más pronto posible.\nDespués de desearles que vengan buenos y contentos, les pido que me traigan una linda y preciosa muñeca con cabellos negros como los míos y que cierre los ojitos y a mi querida hermanita una maquinita para que me cosa los vestiditos … esa preciosa muñequita y esa querida maquinita que la vamos a guardar hasta cuando tengamos 20 años.\nReyes Magos benditos, acordate de mí. Me llamo Julia …\nReyes no te olvides de nosotras; sé bueno.",
+    "text": "Para entregarle a los Reyes Magos lo más pronto posible.\n\nDespués de desearles que vengan buenos y contentos, les pido que me traigan una linda y preciosa muñeca con cabellos negros como los míos y que cierre los ojitos y a mi querida hermanita una maquinita para que me cosa los vestiditos … esa preciosa muñequita y esa querida maquinita que la vamos a guardar hasta cuando tengamos 20 años. …\n\nReyes Magos benditos, acordate de mí. Me llamo Julia …\n\nReyes no te olvides de nosotras; sé bueno.",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-AR",
     "title": "We’ll keep them till we’re twenty",
@@ -1223,6 +1254,7 @@
   {
     "id": "katerina-l-1643",
     "text": "Má nejmilejší paní, paní Sylvičko!\nSvými službami se ti poroučím a ruku líbám. … S tím sem tvá jako svá, buď zatím veselá a když jsi smutná zpomeň na mne, nebo vím, že jsi víceji veselá nežli smutná. S tím se ti poroučím se všemi svými i s Paclem. Pacel měl na miliony blech když z Prahy přijel. Přála bych sobě na tejden mezi vámi býti.\nTvá dědičná poddaná a služebnice\nKateřina L.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "cs",
     "title": "To her friend Sylvie: be cheerful",
@@ -1236,7 +1268,7 @@
     "story": "An undated note to her friend Sylvie Černínová (strawberries went to the count, none to her), printed in 1869 in František Dvorský’s collection of old letters by Czech women.",
     "source": {
       "name": "Dvorský, Staré písemné památky žen a dcer českých (1869), e-book of the Prague City Library (MKP), checked against the 1869 page scan at the Internet Archive (pp. 293–294)",
-      "url": "https://archive.org/details/starpsemnpamtky01dvorgoog/page/n306/mode/1up",
+      "url": "https://archive.org/details/starpsemnpamtky01dvorgoog/page/n305/mode/1up",
       "licence": "Public domain (1869 printing); the MKP e-book states 'Text díla … není vázán autorskými právy'",
       "licenceUrl": "http://web2.mlp.cz/koweb/00/03/91/13/90/stare_pisemne_pamatky.html"
     },
@@ -1262,6 +1294,7 @@
   {
     "id": "verney-1687",
     "text": "Sir\nMy ffather is under the Rasor: Therefore He has commanded me to present his humble duty to you, and to Let you Know that he will waite on you at dinner and so will also,\nYour most Dutyfull Grandson and humble Servant\nEdmund Verney",
+    "layout": "inferred",
     "kind": "note",
     "lang": "en",
     "title": "My father is under the razor",
@@ -1302,7 +1335,8 @@
   },
   {
     "id": "pomeranian-1838-st-louis",
-    "text": "Theuerste Eltern Geschwistern und Freunde!\nUm noch einmahl an die Heimath zurück zu denken, kann ich nicht unterlassen an Euch zu schreiben … Liebe Eltern und Geschwister ich sehne mich doch einmahl zurück … ich bin jetzt bei einem Gärtner und bekomme das Monat 25 Thlr. und das Essen. Das Klima ist sehr warm im Sommer, man kann im August nicht in Betten schlafen, dann schläft man draußen, der Amerikaner hat keine Federbetten sondern lauter wollene Decken. … ich verbleibe Euer getreuer Sohn und Bruder bis in den Tod.\nM. L. H.",
+    "text": "Theuerste Eltern Geschwistern und Freunde!\nUm noch einmahl an die Heimath zurück zu denken, kann ich nicht unterlassen an Euch zu schreiben … Liebe Eltern und Geschwister ich sehne mich doch einmahl zurück … ich bin jetzt bei einem Gärtner und bekomme das Monat 25 Thlr. und das Essen. Das Klima ist sehr warm im Sommer, man kann im August nicht in Betten schlafen, dann schläft man draußen, der Amerikaner hat keine Federbetten sondern lauter wollene Decken. … ich verbleibe Euer getreuer Sohn und Bruder bis in den Tod. …\nM. L. H.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "de",
     "title": "No feather beds in America",
@@ -1345,6 +1379,7 @@
   {
     "id": "santa-1908-sister",
     "text": "Dear Santa Claus:\nWill you please bring me a few presents? I want a Teddy bear, a piano, a box of paints, a box of tools, a sister, a chair, a pair of mittens.\nMerry Christmas to you from\nC. B.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en-US",
     "title": "A Teddy bear, a piano … a sister",
@@ -1379,7 +1414,8 @@
   },
   {
     "id": "thompson-1834",
-    "text": "Honored Sir:\nThree years have elapsed since I first promised to you faithfully, that I would write to you of my health and situation … I have quite a flourishing school of about seventy children … I have some native girls that learn very fast. All of them are spelling—three of them are writing—and one of them is quite fond of composing letters. … I hope I shall soon hear from you and the family, as I often think of the little girls.\nYour most obedient servant,\nElizabeth Thompson",
+    "text": "Honored Sir:\nThree years have elapsed since I first promised to you faithfully, that I would write to you of my health and situation … I have quite a flourishing school of about seventy children … I have some native girls that learn very fast. All of them are spelling—three of them are writing—and one of them is quite fond of composing letters. …\n\nI hope I shall soon hear from you and the family, as I often think of the little girls. …\nYour most obedient servant,\nElizabeth Thompson",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "One of them is fond of composing letters",
@@ -1420,7 +1456,8 @@
   },
   {
     "id": "trmalova-1613",
-    "text": "Můj nejmilejší pane bratříčku!\nPřeji vám na pánu Bohu všecko nejlepší dobré nic jinače než jako sama sobě. Tu vám dvanácte facalítův posílám, pán Bůh rač dáti, abyste je v dobrém zdraví spotřebovali; chtěla jsem je vám dáti po všech čtyřech stranách šiti, ale bojím se, žeby jich ani do roku neušili … až sobě koupíte nizozemského plátna, dám je vám pěkněji ušiti.\nMarie Anna Trmalová z Chyš a z Egrbergu.",
+    "text": "Můj nejmilejší pane bratříčku!\nPřeji vám na pánu Bohu všecko nejlepší dobré nic jinače než jako sama sobě. Tu vám dvanácte facalítův posílám, pán Bůh rač dáti, abyste je v dobrém zdraví spotřebovali; chtěla jsem je vám dáti po všech čtyřech stranách šiti, ale bojím se, žeby jich ani do roku neušili … až sobě koupíte nizozemského plátna, dám je vám pěkněji ušiti. …\nMarie Anna Trmalová z Chyš a z Egrbergu.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "cs",
     "title": "To her brother, with twelve handkerchiefs",
@@ -1457,7 +1494,8 @@
   },
   {
     "id": "critica-1924-mary-nelly",
-    "text": "Excelentísimos monarcas:\nNuestras hermanitas … esperan de Ss. Ms. los siguientes regalos que vosotros ofrecéis en este mágico día:\nLa Ignacia, como es un poco pernilarga y tiene unas manos especiales para tocar el piano, pide un pianito para poder ensayar un shimmy (música de moda).\nNuestras hermanitas esperan ansiosas vuestros regalos … para que lleguéis pronto a nuestra casa con vuestros mágicos camiones y camellos cargados de juguetes …\nMary y Nelly",
+    "text": "Excelentísimos monarcas:\nNuestras hermanitas … esperan de Ss. Ms. los siguientes regalos que vosotros ofrecéis en este mágico día:\n\n… La Ignacia, como es un poco pernilarga y tiene unas manos especiales para tocar el piano, pide un pianito para poder ensayar un shimmy (música de moda).\n\n… Nuestras hermanitas esperan ansiosas vuestros regalos … para que lleguéis pronto a nuestra casa con vuestros mágicos camiones y camellos cargados de juguetes …\nMary y Nelly",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-AR",
     "title": "A pianito for the shimmy",
@@ -1497,7 +1535,8 @@
   },
   {
     "id": "holden-1832",
-    "text": "Dear Friends,\nThis comes with our kind love to you all … We have got a cow. Father gave 30 dollars for her. … Father says he would not come back to England again for no respects. … I hope you will excuse my bad writing. If any comes, which I hope you will, please to bring some dried yeast, for there is none here: we wet our flour, and bake it on the ashes. … So God bless you all.",
+    "text": "Dear Friends,\nThis comes with our kind love to you all … We have got a cow. Father gave 30 dollars for her. … Father says he would not come back to England again for no respects. …\n\nI hope you will excuse my bad writing. If any comes, which I hope you will, please to bring some dried yeast, for there is none here: we wet our flour, and bake it on the ashes. … So God bless you all.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Please bring some dried yeast",
@@ -1537,7 +1576,8 @@
   },
   {
     "id": "mazzei-1398",
-    "text": "Monna Margherita.\nIo sono venuto in villa a vedere uno lavorio che fa monna Bartola.\nIo sono alla lucente e lieta aria iscalzo: e fammi venire sonno il suono de’ coregiati, e l’aie nette e pulite m’invitano a saltare e fare tomi ischiavoneschi in sulle montagne de’ grassi grani … Qui non à cicale nè mosconi o tarantole … Sono solo …\nIl secondo fattore iscrisse questa.",
+    "text": "Monna Margherita.\nIo sono venuto in villa a vedere uno lavorio che fa monna Bartola. …\n\nIo sono alla lucente e lieta aria iscalzo: e fammi venire sonno il suono de’ coregiati, e l’aie nette e pulite m’invitano a saltare e fare tomi ischiavoneschi in sulle montagne de’ grassi grani … Qui non à cicale nè mosconi o tarantole … Sono solo …\nIl secondo fattore iscrisse questa.",
+    "layout": "source",
     "kind": "letter",
     "lang": "it",
     "title": "Barefoot at the threshing",
@@ -1579,6 +1619,7 @@
   {
     "id": "peter-1744",
     "text": "Therefore, my dear sister, let me entreat you to mind your learning with cheerfulness, your music with spirit, and your dancing with grace and by which, with good behaviour, you may agreeably tell where you were brought up.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "To his sister at the convent",
@@ -1615,7 +1656,8 @@
   },
   {
     "id": "sor-juana-1691",
-    "text": "Muy ilustre Señora, mi Señora:\nPues ¿qué os pudiera contar, Señora, de los secretos naturales que he descubierto estando guisando? Veo que un huevo se une y fríe en la manteca o aceite y, por contrario, se despedaza en el almíbar … pero, señora, ¿qué podemos saber las mujeres sino filosofías de cocina? … Y yo suelo decir viendo estas cosillas: Si Aristóteles hubiera guisado, mucho más hubiera escrito.\nB. V. M. vuestra más favorecida\nJuana Inés de la Cruz",
+    "text": "Muy ilustre Señora, mi Señora:\n… Pues ¿qué os pudiera contar, Señora, de los secretos naturales que he descubierto estando guisando? Veo que un huevo se une y fríe en la manteca o aceite y, por contrario, se despedaza en el almíbar … pero, señora, ¿qué podemos saber las mujeres sino filosofías de cocina? … Y yo suelo decir viendo estas cosillas: Si Aristóteles hubiera guisado, mucho más hubiera escrito. …\nB. V. M. vuestra más favorecida\nJuana Inés de la Cruz",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "es-MX",
     "title": "To “Sor Filotea” (the Bishop of Puebla), on kitchen philosophy",
@@ -1657,7 +1699,8 @@
   },
   {
     "id": "mathea-1887",
-    "text": "Kjære forældre og søskende!\nJeg skriver nu til eder fra en stor by, som hedder Minneapolis … Kjøkkenet mit er rart, kan dere tro, og stort er det ikke, men jeg kan ikke sige andet end at det er ubegribelig letvint at stelle i, nu da jeg er vant til det. … Fruen sa, at jeg maa ta bad engang om ugen, og det var rart i det første, men nu synes jeg det er noksaa godt. … Men nu faar jeg slutte dette mit brev med flittig hilsen til — — — — — — —\nMathea . . .",
+    "text": "Kjære forældre og søskende!\nJeg skriver nu til eder fra en stor by, som hedder Minneapolis …\n\nKjøkkenet mit er rart, kan dere tro, og stort er det ikke, men jeg kan ikke sige andet end at det er ubegribelig letvint at stelle i, nu da jeg er vant til det. …\n\nFruen sa, at jeg maa ta bad engang om ugen, og det var rart i det første, men nu synes jeg det er noksaa godt. …\n\nMen nu faar jeg slutte dette mit brev med flittig hilsen til — — — — — — —\nMathea . . .",
+    "layout": "source",
     "kind": "letter",
     "lang": "no",
     "title": "A bath once a week",
@@ -1697,7 +1740,8 @@
   },
   {
     "id": "margery-paston-1484",
-    "text": "Ryght worschipful husbond, I recomaund me onto you … I pray you that ye woll come as sone as ye may. I shall thynke myself halfe a wedow, because ye shal not be at home, &c. God have you in Hys kepyng.\nWretyn on Crestemes Evyn.\nBy yor,\nM. P.",
+    "text": "Ryght worschipful husbond, I recomaund me onto you …\n\nI pray you that ye woll come as sone as ye may. I shall thynke myself halfe a wedow, because ye shal not be at home, &c. God have you in Hys kepyng.\n\nWretyn on Crestemes Evyn.\nBy yor,\nM. P.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Half a widow at Christmas",
@@ -1738,7 +1782,8 @@
   },
   {
     "id": "saunders-1854",
-    "text": "Mr. Still:—Dear Sir— …\nI arrived in New Bedford Thursday morning safely and what little I have seen of the city I like it very much my friends were very glad to see me. I found my sister very well. … It might been supposed, out of sight out of mind, but it is not so. I never forget my friends. … Kiss your dear little children for me.\nI still remain your friend,\nEllen Saunders.",
+    "text": "Mr. Still:—Dear Sir— …\nI arrived in New Bedford Thursday morning safely and what little I have seen of the city I like it very much my friends were very glad to see me. I found my sister very well. … It might been supposed, out of sight out of mind, but it is not so. I never forget my friends. … Kiss your dear little children for me. …\nI still remain your friend,\nEllen Saunders.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en",
     "title": "I never forget my friends",
@@ -1779,7 +1824,8 @@
   },
   {
     "id": "liselotte-1659",
-    "text": "hertz libster papa.\nI M die königin ist mir gar gnedich, hatt mir auch schon ein huntgen geschenket; morgen werde ich einen sprachmeister bekommen, der dantzmeister ist schon 2 mall bei mir gewesen; matante sacht, wen imant hir ist, der woll singen kan, soll ich auch singen lernen; werde ich also gar geschickt werden …\nmeines allerlibsten papas gantz gehorsamst untterdenichste dochter undt dinerine\nElisebett Charlott.",
+    "text": "hertz libster papa.\n… I M die königin ist mir gar gnedich, hatt mir auch schon ein huntgen geschenket; morgen werde ich einen sprachmeister bekommen, der dantzmeister ist schon 2 mall bei mir gewesen; matante sacht, wen imant hir ist, der woll singen kan, soll ich auch singen lernen; werde ich also gar geschickt werden …\nmeines allerlibsten papas gantz gehorsamst untterdenichste dochter undt dinerine\nElisebett Charlott.",
+    "layout": "source",
     "kind": "letter",
     "lang": "de",
     "title": "To her father, aged seven",
@@ -1819,7 +1865,8 @@
   },
   {
     "id": "stewart-1914-hash",
-    "text": "Dear Mrs. Coney,\nYour letter of the 4th just to hand. How glad your letters make me; how glad I am to have you to tell little things to. … All my happiness lacked was your presence. … All I can do is to kind of hash it over for you. I hope you like hash.\nWith much love to you,\nElinore.",
+    "text": "Dear Mrs. Coney,\nYour letter of the 4th just to hand. How glad your letters make me; how glad I am to have you to tell little things to.\n\n… All my happiness lacked was your presence. … All I can do is to kind of hash it over for you. I hope you like hash.\nWith much love to you,\nElinore.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "I hope you like hash",
@@ -1859,7 +1906,8 @@
   },
   {
     "id": "critica-1923-lectorcito",
-    "text": "Apreciable director del popular diario CRITICA.\nDespués de desearle muchas felicidades en año Nuevo, le diré que yo soy un lectorcito de los chistes de CRITICA y apenas tengo 8 años.\nDesearía que como su diario es tan popular, mi mayor desea sería que usted se dignara hacer llegar mis ruegos a los señores Reyes Magos que estoy ansiando el día 6 de enero … un manomóvil para mí, una muñeca para mi hermanita y una para Mingo, Julio y Lucía.",
+    "text": "Apreciable director del popular diario CRITICA.\nDespués de desearle muchas felicidades en año Nuevo, le diré que yo soy un lectorcito de los chistes de CRITICA y apenas tengo 8 años.\n\nDesearía que como su diario es tan popular, mi mayor desea sería que usted se dignara hacer llegar mis ruegos a los señores Reyes Magos que estoy ansiando el día 6 de enero … un manomóvil para mí, una muñeca para mi hermanita y una para Mingo, Julio y Lucía.",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-AR",
     "title": "A little reader of the jokes",
@@ -1898,7 +1946,8 @@
   },
   {
     "id": "christiane-goethe-1799",
-    "text": "Lieber, was ich mich und das Kind freuen auf das gute Väterchen, kannst Du Dir nicht vorstellen, und wir streiten uns des Morgens im Bette, wer Dich zuerst grüßen will.\nHeute gehe in die “Zauberflöte” zum 30. Mal. Mit meinen Gärten geht es auch ziemlich vorwärts; der Garten am Hause ist ganz in Ordnung.\nLeb wohl, bis ich Dich wiedersehe, ich erwarte Dich mit großer Liebe und Sehnsucht.\nC.",
+    "text": "Lieber, was ich mich und das Kind freuen auf das gute Väterchen, kannst Du Dir nicht vorstellen, und wir streiten uns des Morgens im Bette, wer Dich zuerst grüßen will. … Heute gehe in die “Zauberflöte” zum 30. Mal. Mit meinen Gärten geht es auch ziemlich vorwärts; der Garten am Hause ist ganz in Ordnung. … Leb wohl, bis ich Dich wiedersehe, ich erwarte Dich mit großer Liebe und Sehnsucht.\nC.",
+    "layout": "source",
     "kind": "letter",
     "lang": "de",
     "title": "To Goethe, waiting for him to come home",
@@ -1936,7 +1985,8 @@
   },
   {
     "id": "carlyle-1850-from-nero",
-    "text": "Dear Master,\nI take the liberty to write to you myself … that you may know Columbine and I are quite well, and play about as usual. … This morning I have seen a note from you, which says you will come to-morrow. Columbine and I are extremely happy to hear it; for then there will be some dinner to come and go on. Being to see you so soon, no more at present from your\nObedient little dog,\nNero.",
+    "text": "Dear Master,\nI take the liberty to write to you myself … that you may know Columbine and I are quite well, and play about as usual. …\n\nThis morning I have seen a note from you, which says you will come to-morrow. Columbine and I are extremely happy to hear it; for then there will be some dinner to come and go on. Being to see you so soon, no more at present from your\nObedient little dog,\nNero.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-GB",
     "title": "From her dog Nero to “Master”",
@@ -1974,6 +2024,7 @@
   {
     "id": "eunice-moore-1838",
     "text": "I have a goodly number of pupils … I have some very interesting little girls, who have endeared themselves to me by a thousand tender ties. I have watched them from the alphabet to more interesting things. I have seen them trying to point out the different countries on the map … My dear sister, you cannot imagine what my feelings are sometimes, when seated in my little piazza, listening to their little pious talk.\nI remain yours, in the bonds of christian love, forever,\nEunice Moore.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Listening from my little piazza",
@@ -2015,6 +2066,7 @@
   {
     "id": "lydia-hilton-1836",
     "text": "Dear Brother, and Mother, and Sisters,\nI have returned this sheet of paper, which you have got part of. We arrived 23rd. June at Toronto. … Dear Henry, bring a good ham of bacon; some pickled onions; bake some seed cakes hard, they will keep better … Bring your wooden bottles full of cider. Bring your home-made wine; a few apples … Bring your tea kettle. … So no more at present from your dutiful son and daughter,\nGeorge & Lydia Hilton.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Bring your tea kettle",
@@ -2054,7 +2106,8 @@
   },
   {
     "id": "swedish-commission-1907",
-    "text": "Jag hade fritt hvarje kväll från kl. 6 samt hvarje torsdagseftermiddag till att gå ut eller arbeta för mig själf. Och hvilket arbete! Jag skämdes första tiden att ta betaldt för det lilla jag gjorde. … Det var så stor skillnad i mina ögon, jag fick tid att rasta och tid att se efter mina kläder. Jag tjänte här i fyra år, och sedan gifte jag mig. … vi ha 3 kor och 1 häst samt mindre husdjur.",
+    "text": "… Jag hade fritt hvarje kväll från kl. 6 samt hvarje torsdagseftermiddag till att gå ut eller arbeta för mig själf. Och hvilket arbete! Jag skämdes första tiden att ta betaldt för det lilla jag gjorde. … Det var så stor skillnad i mina ögon, jag fick tid att rasta och tid att se efter mina kläder. Jag tjänte här i fyra år, och sedan gifte jag mig. … vi ha 3 kor och 1 häst samt mindre husdjur.",
+    "layout": "source",
     "kind": "letter",
     "lang": "sv",
     "title": "Time to rest, and time to mend",
@@ -2093,7 +2146,8 @@
   },
   {
     "id": "reyes-1917-alfonsito",
-    "text": "Señores Reyes:\nVais á ver lo que quiero.\nUn velocipedo. Un tobogán y una carretilla.\nQue no se os olvide nada, que pondré las botas en el balcón.\nAlfonsito.",
+    "text": "Señores Reyes:\nVais á ver lo que quiero.\n\nUn velocipedo. Un tobogán y una carretilla.\n\nQue no se os olvide nada, que pondré las botas en el balcón.\nAlfonsito.",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-ES",
     "title": "I’ll put my boots on the balcony",
@@ -2132,7 +2186,8 @@
   },
   {
     "id": "petofi-1847",
-    "text": "Oh barátom, még nem volt ilyen hosszú napom, mint a mai, mióta a Meghasonlott kedély-t olvastam. Irtóztató unalmas ez a Debrecen és Nagy-Károly közötti út. Homok és homok. Se hegy, se róna; se ló, se szamár, hanem valóságos öszvér-vidék, ami legkomiszabb. … Szeretnék neked, barátom, sokat, hosszan beszélni szerelmemről, de minthogy e leveleket ki fogom adni, hallgatok róla.\nIsten veled!",
+    "text": "Oh barátom, még nem volt ilyen hosszú napom, mint a mai, mióta a Meghasonlott kedély-t olvastam. Irtóztató unalmas ez a Debrecen és Nagy-Károly közötti út. Homok és homok. Se hegy, se róna; se ló, se szamár, hanem valóságos öszvér-vidék, ami legkomiszabb. …\n\nSzeretnék neked, barátom, sokat, hosszan beszélni szerelmemről, de minthogy e leveleket ki fogom adni, hallgatok róla. …\nIsten veled!",
+    "layout": "source",
     "kind": "letter",
     "lang": "hu",
     "title": "Travel letter from Nagykároly",
@@ -2169,7 +2224,8 @@
   },
   {
     "id": "loguen-1862",
-    "text": "My Dear Lewis:\nPardon my negligence in allowing so many weeks to pass away without writing and accept this tardy letter.\nSpring has brought with it as usual, the ever dreaded, yearly school examinations … Monday I thought of nothing but Chloride of Sodium, Nitrate of Silver detection of arsenic, uses of Zinc etc etc; Tuesday, Parlez-vous français? … yesterday oh! terrible thought Plane Trigonometry; do you wonder then that last night I dreamed of being in France?\nYours truly\nH. Amelia Loguen.",
+    "text": "My Dear Lewis:\nPardon my negligence in allowing so many weeks to pass away without writing and accept this tardy letter. …\n\nSpring has brought with it as usual, the ever dreaded, yearly school examinations … Monday I thought of nothing but Chloride of Sodium, Nitrate of Silver detection of arsenic, uses of Zinc etc etc; Tuesday, Parlez-vous français? … yesterday oh! terrible thought Plane Trigonometry; do you wonder then that last night I dreamed of being in France? …\nYours truly\nH. Amelia Loguen.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Exams, and a dream of France",
@@ -2210,7 +2266,8 @@
   },
   {
     "id": "stewart-1914-home",
-    "text": "Dear, dear Friend,\nCan you guess how happy I am? Be it ever so humble there is no place like home.\nIt is so good to sit in my creaky old rocker, to hold Junior, to feel his dear weight … Some young calves have come while we were gone; a whole squirming nest full of little pigs. My chickens have outgrown my knowledge.\nI will write you again soon.\nYour happy friend,\nE. R. S.",
+    "text": "Dear, dear Friend,\nCan you guess how happy I am? Be it ever so humble there is no place like home.\n\nIt is so good to sit in my creaky old rocker, to hold Junior, to feel his dear weight … Some young calves have come while we were gone; a whole squirming nest full of little pigs. My chickens have outgrown my knowledge. …\n\nI will write you again soon.\nYour happy friend,\nE. R. S.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Home from the elk hunt",
@@ -2250,7 +2307,8 @@
   },
   {
     "id": "julie-ampere-1802",
-    "text": "Mon bon ami,\nJe suis bien aise que tu aimes tes cravates. Tu les appelles des cadeaux! Je ne t’en ai jamais fait qu’un, que j’apprécie beaucoup, qui est bien à toi et qui est aussi à moi …\nJe te trouve bien pastoral d’aller lire mes lettres dans les prés; j’ai peur que tu ne les sèmes en chemin … Si je te connaissais plus soigneux, combien je te confierais de jolies choses! Tu saurais que je t’aime bien, que j’ai grande envie de te revoir …\nJulie.",
+    "text": "Mon bon ami,\nJe suis bien aise que tu aimes tes cravates. Tu les appelles des cadeaux! Je ne t’en ai jamais fait qu’un, que j’apprécie beaucoup, qui est bien à toi et qui est aussi à moi …\n\nJe te trouve bien pastoral d’aller lire mes lettres dans les prés; j’ai peur que tu ne les sèmes en chemin … Si je te connaissais plus soigneux, combien je te confierais de jolies choses! Tu saurais que je t’aime bien, que j’ai grande envie de te revoir …\nJulie.",
+    "layout": "source",
     "kind": "letter",
     "lang": "fr",
     "title": "To her husband, who reads her letters in the meadows",
@@ -2289,7 +2347,8 @@
   },
   {
     "id": "millsburg-1839",
-    "text": "This is a delightful place indeed. There is no doubt that any one who is disposed to work at all, can get a living in Millsburg. There is as much land as you choose to take up, and you may plant what you choose. … We are very well satisfied with the place.\nAny kind of seed you plant will grow; and as for corn, and such things, I have never seen a better place for raising them.",
+    "text": "This is a delightful place indeed. There is no doubt that any one who is disposed to work at all, can get a living in Millsburg. There is as much land as you choose to take up, and you may plant what you choose. … We are very well satisfied with the place. …\n\nAny kind of seed you plant will grow; and as for corn, and such things, I have never seen a better place for raising them.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Any kind of seed you plant will grow",
@@ -2332,6 +2391,7 @@
   {
     "id": "alexander-hilton-1836",
     "text": "Dear Uncle and Aunt,\nI take this opportunity of writing to you … I am doing very well; working at the carpenter and joiner’s trade, this two years … Jane and Harriet are grown fine girls; and I expect the family will be grown out of knowledge, except me, and I am the same little runt as ever. I forgot to tell you, that mother had a young baby, about four months old. … So no more at present, from your ever affectionate nephew, and grandson,\nAlexander Hilton.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "The same little runt as ever",
@@ -2371,7 +2431,8 @@
   },
   {
     "id": "teresa-1577",
-    "text": "Jesus\nSea con vuestra merced. Da tan poco lugar Serna, que no querria alargarme, y no sé acabar, cuando comienzo á escribir á vuestra merced … La esterilidad de este pueblo en cosas de pescado, que es lástima á estas hermanas; y ansí me he holgado con estos besugos. … Terrible lugar es este para no comer carne, que an un huevo fresco jamas hay. … Es hoy segundo dia del año.\nIndina sierva de vuestra merced. — Teresa de Jesus.",
+    "text": "Jesus\nSea con vuestra merced. Da tan poco lugar Serna, que no querria alargarme, y no sé acabar, cuando comienzo á escribir á vuestra merced …\n\nLa esterilidad de este pueblo en cosas de pescado, que es lástima á estas hermanas; y ansí me he holgado con estos besugos. … Terrible lugar es este para no comer carne, que an un huevo fresco jamas hay. … Es hoy segundo dia del año.\nIndina sierva de vuestra merced. — Teresa de Jesus.",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-ES",
     "title": "To her brother Lorenzo, thanking him for the sea bream",
@@ -2413,6 +2474,7 @@
   {
     "id": "pochet-1706",
     "text": "Mademoiselle\nie vous prie da voire la bonté de faire tenir ma lestre en diligence a mademoiselle de noysi.",
+    "layout": "inferred",
     "kind": "note",
     "lang": "fr",
     "title": "Please forward my letter quickly",
@@ -2446,7 +2508,8 @@
   },
   {
     "id": "tagore-1914",
-    "text": "When are you coming to stay with me in the Hills? I am afraid you are passing through a great deal of worry, and you are in need of a good rest. I won’t let you work during this vacation. We must have no particular plans for our holidays. Let us agree to waste them utterly, until laziness proves to be a burden to us. Just for a month or so we can afford to be no longer useful members of society.",
+    "text": "When are you coming to stay with me in the Hills? I am afraid you are passing through a great deal of worry, and you are in need of a good rest. I won’t let you work during this vacation. We must have no particular plans for our holidays. Let us agree to waste them utterly, until laziness proves to be a burden to us. Just for a month or so we can afford to be no longer useful members of society. …",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-IN",
     "title": "To C. F. Andrews: come and waste the holidays",
@@ -2485,7 +2548,8 @@
   },
   {
     "id": "walker-1850",
-    "text": "Dear John\nWith pen in hand I seate myself to write you … Dear John I have one more thing to say Before I close and it is this of all the pretty Spanish girls you have seen I do hope you will not Come Clare Back home to pick up nothing let your old song Be true get you a wife from old Virginia old Virginia Shore … old fredericksburg is in the same place.\nYours untell Death\nWilliam J. Walker",
+    "text": "Dear John\nWith pen in hand I seate myself to write you … Dear John I have one more thing to say Before I close and it is this of all the pretty Spanish girls you have seen I do hope you will not Come Clare Back home to pick up nothing let your old song Be true get you a wife from old Virginia old Virginia Shore … old fredericksburg is in the same place. …\nYours untell Death\nWilliam J. Walker",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Get you a wife from old Virginia",
@@ -2527,6 +2591,7 @@
   {
     "id": "constance-huygens-1622",
     "text": "Mon frere,\nick weet geen excusen te doen, die je voor goet sout willen aennemen … Dessen brief moet je vermake overmits het blinkende sant, want me dunckt, dat daer alle dingen onder schuylle kan, as leelik schryven, qualick spellen en sulke dingen meer. Geertruyd en ick leggen hier morssen met het sant, dat de tafel blinckt, dat m’er geen oog op houwe kan …\nAdieu, lint, lint, lint, messe, messe, mitsgaders Constance.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "nl",
     "title": "To her brother: blame the glitter sand",
@@ -2566,7 +2631,8 @@
   },
   {
     "id": "watson-1823",
-    "text": "Dear Mother,—I would have wrote before this, but could not write you pleasant news, as Stephen has been so unhappy in a strange country, but is now contented and doing well … I never was so happy in my life as I am now. I never wish to go back to England. … We have a good house. I have a good oven, and all things convenient. … I must conclude with my love to all.\nElizabeth Watson.",
+    "text": "Dear Mother,—I would have wrote before this, but could not write you pleasant news, as Stephen has been so unhappy in a strange country, but is now contented and doing well … I never was so happy in my life as I am now. I never wish to go back to England. …\n\nWe have a good house. I have a good oven, and all things convenient. … I must conclude with my love to all.\nElizabeth Watson.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "I have a good oven",
@@ -2606,7 +2672,8 @@
   },
   {
     "id": "ghica-1881",
-    "text": "Iubite amice,\nÎți aduci aminte de întîia noastră întîlnire, sunt acum vreo 45 de ani, la Paris, cam pe la anul 1835? … Într-o duminecă, micele noastre cîrduri se întîlniră pe Quai Voltaire … Nu știu cum, nici în ce fel, dar ne-am pomenit deodată amestecați și braț la braț un muntean c-un moldovean; vorbeam fiecare limbagiul provinciei noastre și ne înțelegeam, parc-am fi vorbit aceeași limbă. Ce revelațiune!\nIon Ghica",
+    "text": "Iubite amice,\nÎți aduci aminte de întîia noastră întîlnire, sunt acum vreo 45 de ani, la Paris, cam pe la anul 1835? …\n\nÎntr-o duminecă, micele noastre cîrduri se întîlniră pe Quai Voltaire … Nu știu cum, nici în ce fel, dar ne-am pomenit deodată amestecați și braț la braț un muntean c-un moldovean; vorbeam fiecare limbagiul provinciei noastre și ne înțelegeam, parc-am fi vorbit aceeași limbă. Ce revelațiune! …\nIon Ghica",
+    "layout": "source",
     "kind": "letter",
     "lang": "ro",
     "title": "To Alecsandri: how we met in Paris",
@@ -2642,7 +2709,8 @@
   },
   {
     "id": "william-paston-1478",
-    "text": "Ryght reverent and worchepful brodyr, I recomaunde me on to yow, desyrynge to here of yowre welfare and prosperite …\nAlso I beseche yow to sende me a hose clothe, one for the halydays of sum colore, and a nothyr for the workyng days, how corse so ever it be it makyth no matyr; and a stomechere, and ij. schyrtes, and a peyer of sclyppers …\nWretyn the Saturday next aftyr All Halown Day, with the hand of your brodyr,\nWylliam Paston",
+    "text": "Ryght reverent and worchepful brodyr, I recomaunde me on to yow, desyrynge to here of yowre welfare and prosperite …\n\nAlso I beseche yow to sende me a hose clothe, one for the halydays of sum colore, and a nothyr for the workyng days, how corse so ever it be it makyth no matyr; and a stomechere, and ij. schyrtes, and a peyer of sclyppers …\n\nWretyn the Saturday next aftyr All Halown Day, with the hand of your brodyr,\nWylliam Paston",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Slippers for a schoolboy",
@@ -2683,7 +2751,8 @@
   },
   {
     "id": "dunbar-1898",
-    "text": "Dear Doctor:\nI am almost afraid to write you, but out it must come. I am married!\nI would have consulted you, but the matter was very quickly done. … I hope you will not think I have been too rash.\nSincerely yours,\nPaul L. Dunbar.",
+    "text": "Dear Doctor:\nI am almost afraid to write you, but out it must come. I am married!\n\nI would have consulted you, but the matter was very quickly done.\n\n… I hope you will not think I have been too rash.\nSincerely yours,\nPaul L. Dunbar.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "To his friend Dr. Tobey: I am married!",
@@ -2722,6 +2791,7 @@
   {
     "id": "st-nicholas-1886-paper-dolls",
     "text": "Dear St. Nicholas: I believe the little girls that take the St. Nicholas will like to hear about my numerous paper dolls. I have a whole town of them, and they all have their names written on their backs. … Well, my big brain telegraphs to my hand, that if it writes any more, the letter will be too long to print. So good-bye. I am\nOne of your many friends,\nGrace C.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "A whole town of paper dolls",
@@ -2757,7 +2827,8 @@
   },
   {
     "id": "seguin-1824-husband",
-    "text": "Mi estimado Sor.\nMi esposo y amigo de V me ha escrito de Mexico se halla sin novedad, me ancarga mucho qe salude a V de su parte que pronto se beran, … no pierdo las esperanzas de hirlos haber luego que benga José Erasmo de Mexico.\nToda la familia saludan aV. con el cariño de siempre, ofreciendoce ala dispocicion.\nDeceo a. V. la mejor salud qe. apetese su afma. Servidora\nQ. S. M. B.\nMaria Josefa A. Bezerra de Seguin",
+    "text": "Mi estimado Sor.\n… Mi esposo y amigo de V me ha escrito de Mexico se halla sin novedad, me ancarga mucho qe salude a V de su parte que pronto se beran, … no pierdo las esperanzas de hirlos haber luego que benga José Erasmo de Mexico.\n\n… Toda la familia saludan aV. con el cariño de siempre, ofreciendoce ala dispocicion.\n\nDeceo a. V. la mejor salud qe. apetese su afma. Servidora Q. S. M. B.\nMaria Josefa A. Bezerra de Seguin",
+    "layout": "source",
     "kind": "letter",
     "lang": "es",
     "title": "My husband writes from Mexico",
@@ -2796,7 +2867,8 @@
   },
   {
     "id": "watson-1825",
-    "text": "My dear Grandparents,\nWe are all well in health, and we hope you are enjoying the same blessing. … I have got good clothes, and I can dress as well as any lady in Sedlescomb. … We want uncle William to come over to America very much; and if he comes, to bring some ferrets with him, for they have none here. … Please to excuse this writing, as I am a new beginner.\nYour very affectionate granddaughter,\nMary Jane Watson.",
+    "text": "My dear Grandparents,\n… We are all well in health, and we hope you are enjoying the same blessing. … I have got good clothes, and I can dress as well as any lady in Sedlescomb. … We want uncle William to come over to America very much; and if he comes, to bring some ferrets with him, for they have none here. … Please to excuse this writing, as I am a new beginner. …\nYour very affectionate granddaughter,\nMary Jane Watson.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en",
     "title": "Bring some ferrets",
@@ -2836,7 +2908,8 @@
   },
   {
     "id": "migrant-1917-mary-b",
-    "text": "Dear Mary:—I just got in from B. Y. P. U. eat a little bite and got my writing together. Now May dear you mus pardon me for not answering promp … May you dont no how I mis you I hate to pass your house … Now may I hope we will meet again so we can talk face to face just lik I once have.\nNow we no that we or to pray for each other by by.\nFrom\nMary B——",
+    "text": "Dear Mary:—\nI just got in from B. Y. P. U. eat a little bite and got my writing together. Now May dear you mus pardon me for not answering promp … May you dont no how I mis you I hate to pass your house … Now may I hope we will meet again so we can talk face to face just lik I once have. …\n\nNow we no that we or to pray for each other by by.\nFrom\nMary B——",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "I hate to pass your house",
@@ -2876,7 +2949,8 @@
   },
   {
     "id": "st-nicholas-1886-mexico",
-    "text": "Dear St. Nicholas: I am a little girl seven years old, and live alone with my father, who is a Baptist missionary. I have a mother, and little brother, and two sisters, living in the States.\nI have learned to spell the names of three places that I can see from our roof. They are Chapultepec, and Popocatepetl, and Ixiaccihuatl.\nThere are lots of strange things here. We never slide downhill here, because there is no snow. I like St. Nicholas, especially the “Brownies.”\nEdwina S.",
+    "text": "Dear St. Nicholas: I am a little girl seven years old, and live alone with my father, who is a Baptist missionary. I have a mother, and little brother, and two sisters, living in the States.\n\nI have learned to spell the names of three places that I can see from our roof. They are Chapultepec, and Popocatepetl, and Ixiaccihuatl.\n\nThere are lots of strange things here. We never slide downhill here, because there is no snow. I like St. Nicholas, especially the “Brownies.”\nEdwina S.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Three names from our roof",
@@ -2916,7 +2990,8 @@
   },
   {
     "id": "beukma-1835",
-    "text": "Waarde Broeder, enz.!\nIk zoude mijne belofte aan Mevrouw Cole haast vergeten hebben, om namelijk de dienstmeiden in Groningerland te doen weten, dat het zaak voor haar is, zich naar hier te begeven; uit hoofde de meiden vooral hier schaars zijn, en tot 200 gulden in het jaar verdienen. … Groet ook uwe waarde kinderen.\nT. T.\nK. Jz. Beukma.",
+    "text": "Waarde Broeder, enz.!\n… Ik zoude mijne belofte aan Mevrouw Cole haast vergeten hebben, om namelijk de dienstmeiden in Groningerland te doen weten, dat het zaak voor haar is, zich naar hier te begeven; uit hoofde de meiden vooral hier schaars zijn, en tot 200 gulden in het jaar verdienen. …\n\nGroet ook uwe waarde kinderen.\nT. T.\nK. Jz. Beukma.",
+    "layout": "source",
     "kind": "letter",
     "lang": "nl",
     "title": "A promise to Mrs Cole",
@@ -2956,7 +3031,8 @@
   },
   {
     "id": "avellaneda-1845",
-    "text": "Querido Cepeda:\nperdona el innoble papel en que te escribo: se va el correo, estoy de mudada y no encuentro otro papel á mano.\nEn fin, si tu te casas con una buena chica, que tenga talento, que sea bonita para que no sea celosa, que te quiera mucho y merezca ser correspondida, suspenderé mi curso vagabundo para ir á donde quiera que esteis á cantaros un lindo epitalamio y á pasar ocho días con vosotros. ¿Aceptas?\nAdios; … hoy me repito tu amiguísima — Tula.",
+    "text": "Querido Cepeda:\nperdona el innoble papel en que te escribo: se va el correo, estoy de mudada y no encuentro otro papel á mano. …\n\nEn fin, si tu te casas con una buena chica, que tenga talento, que sea bonita para que no sea celosa, que te quiera mucho y merezca ser correspondida, suspenderé mi curso vagabundo para ir á donde quiera que esteis á cantaros un lindo epitalamio y á pasar ocho días con vosotros. ¿Aceptas?\n\nAdios; … hoy me repito tu amiguísima — Tula.",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-CU",
     "title": "To Ignacio de Cepeda, on moving house and his marriage plans",
@@ -2995,7 +3071,8 @@
   },
   {
     "id": "santa-1908-iceland-money",
-    "text": "Dear Santa Claus, North Pole:\nPlease bring me a new silk dress and a lace waist and a pair of pajamas and a nice back comb … and some money before Christmas so that I can buy some Christmas presents. I am dead broke. Send this last as soon as possible; be sure and make it United States money and not Iceland money.\nYours very, very, very, very truly,\nHelen.\nP. S.—A pair of long tan gloves, a pair of dancing slippers.",
+    "text": "Dear Santa Claus, North Pole:\nPlease bring me a new silk dress and a lace waist and a pair of pajamas and a nice back comb … and some money before Christmas so that I can buy some Christmas presents. I am dead broke. Send this last as soon as possible; be sure and make it United States money and not Iceland money.\nYours very, very, very, very truly,\nHelen.\n\nP. S.—A pair of long tan gloves, a pair of dancing slippers.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en-US",
     "title": "Not Iceland money",
@@ -3030,7 +3107,8 @@
   },
   {
     "id": "migrant-1917-chicago-sister",
-    "text": "My dear Sister:\nI was agreeably surprised to hear from you and to hear from home. … The weather and everything else was a surprise to me when I came. I got here in time to attend one of the greatest revivals in the history of my life—over 500 people joined the church. We had a Holy Ghost shower. You know I like to have run wild. … I work in Swifts packing Co. in the sausage department.\nWell goodbye from your sister in Christ",
+    "text": "My dear Sister:\nI was agreeably surprised to hear from you and to hear from home. … The weather and everything else was a surprise to me when I came. I got here in time to attend one of the greatest revivals in the history of my life—over 500 people joined the church. We had a Holy Ghost shower. You know I like to have run wild. … I work in Swifts packing Co. in the sausage department. …\nWell goodbye from your sister in Christ",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "A revival, snow and sausages",
@@ -3073,6 +3151,7 @@
   {
     "id": "rahbek-1813",
     "text": "Kjæreste Ludvig!\nJeg vilde gjerne have anstrængt mig med dette Brev, for om muligt at overbyde Dig, og havde til den Ende taget et Stykke Papir frem, der er prydet med den store Napoleons Billede; men da jeg erindrede, at jeg ikke havde uden de allerelendigste Kragefiær at skrive med, nænnede jeg dog ikke at overmale hans keiserlige Majestæt med Kragetæer, som jo vilde have været en Majestæts-Forbrydelse. Derfor tog jeg et fiendtligt Stykke Papir …\nDin oprigtig hengivne\nK. M. Rahbek.",
+    "layout": "source",
     "kind": "letter",
     "lang": "da",
     "title": "To young J. L. Heiberg, about her terrible pens",
@@ -3109,7 +3188,8 @@
   },
   {
     "id": "dutt-1870",
-    "text": "My dear Cousin,\nI did not yawn while reading your letter as you predicted; on the contrary, like Dr. Johnson after reading Robinson Crusoe, I wished it were longer. … We too made some snow-balls. … We threw our snow-balls at Mamma’s conservatory, or at the chimney — not having anything better to throw them at! … My dear cousin, I think I must stop here, for I have had my lunch just now …\nYours very affectionately,\nToru Dutt.",
+    "text": "My dear Cousin,\nI did not yawn while reading your letter as you predicted; on the contrary, like Dr. Johnson after reading Robinson Crusoe, I wished it were longer.\n\n… We too made some snow-balls. … We threw our snow-balls at Mamma’s conservatory, or at the chimney — not having anything better to throw them at!\n\n… My dear cousin, I think I must stop here, for I have had my lunch just now …\nYours very affectionately,\nToru Dutt.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-IN",
     "title": "To her cousin, from a snowy London",
@@ -3150,7 +3230,8 @@
   },
   {
     "id": "machado-1907",
-    "text": "Meu caro dr. Alfredo Pujol.\nO nosso Euclydes da Cunha trouxe-me a sua carta com o seu benevolo pedido. Não tendo nenhum retrato moderno, e não valendo dois ou tres antigos e moços que me restam, mandei fazer esse, que lhe envio pelo correio. Deste modo satisfaço com muito gosto um desejo que me honra e commove.\nReleve a demora, e acceite os agradecimentos de um admirador velho,\nMachado de Assis.",
+    "text": "Meu caro dr. Alfredo Pujol.\nO nosso Euclydes da Cunha trouxe-me a sua carta com o seu benevolo pedido. Não tendo nenhum retrato moderno, e não valendo dois ou tres antigos e moços que me restam, mandei fazer esse, que lhe envio pelo correio. Deste modo satisfaço com muito gosto um desejo que me honra e commove. …\n\nReleve a demora, e acceite os agradecimentos de um admirador velho,\nMachado de Assis.",
+    "layout": "source",
     "kind": "letter",
     "lang": "pt-BR",
     "title": "To Alfredo Pujol, sending a new photograph",
@@ -3189,7 +3270,8 @@
   },
   {
     "id": "morris-1741",
-    "text": "Anwyl Frawd,\nDerbyniais eich llythyr or 11eg, a da ydoedd clywed eich bod yn iach … Ond ple mae’r gwraidd ar hadau a addawyd immi o Wanstead a Llundain? Rwy’n ofni fod y llys yn eich llygru oll ffordd yna; mae hynny yn beth rhyfeddawl iawn! Dyma’r adeg i blannu gwraidd blodau yn myn’d heibiaw … Na siomwch monof, da mrawd. … Ni chwanegaf yr awron namyn fy mod fal arferawl.\nEich caredigawl frawd,\nGwilym Morris.",
+    "text": "Anwyl Frawd,\nDerbyniais eich llythyr or 11eg, a da ydoedd clywed eich bod yn iach … Ond ple mae’r gwraidd ar hadau a addawyd immi o Wanstead a Llundain? Rwy’n ofni fod y llys yn eich llygru oll ffordd yna; mae hynny yn beth rhyfeddawl iawn! Dyma’r adeg i blannu gwraidd blodau yn myn’d heibiaw … Na siomwch monof, da mrawd. …\n\nNi chwanegaf yr awron namyn fy mod fal arferawl.\nEich caredigawl frawd,\nGwilym Morris.",
+    "layout": "source",
     "kind": "letter",
     "lang": "cy",
     "title": "From Holyhead: where are my seeds?",
@@ -3228,6 +3310,7 @@
   {
     "id": "caroline-dearling-1836",
     "text": "Dear Father and Mother,\nThis comes with our kind love and best respects to you both … Dear mother, little Caroline was pleased with her socks. Now I will tell you, our little Canadian, she ran alone a few days over ten months … I am hobbing my calf, it is a heifer calf, I give her new milk, and make about three pounds of butter a week … We have 5 hogs. I have 21 Chickens. … We remain your loving son and daughter,\nJohn & Caroline Dearling.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-GB",
     "title": "Our little Canadian",
@@ -3265,7 +3348,8 @@
   },
   {
     "id": "harpers-1882-oranges",
-    "text": "I am a little girl ten years old, and I have never been away from my country, but I am learning English with my governess, and I hope papa will take me to New York this summer.\nWe have several kinds of oranges; the best is called China. The trees have white flowers, which are called azahar, and make a very good essence and oil.\nMary de A.",
+    "text": "I am a little girl ten years old, and I have never been away from my country, but I am learning English with my governess, and I hope papa will take me to New York this summer. … We have several kinds of oranges; the best is called China. The trees have white flowers, which are called azahar, and make a very good essence and oil.\nMary de A.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Oranges and azahar",
@@ -3307,7 +3391,8 @@
   },
   {
     "id": "maria-celeste-1623",
-    "text": "Gli rimando il resto delle sue camicie che abbiamo cucite e anco il grembiale, quale ho accomodato meglio che è stato possibile. … gli ricordo ch’è obbligato a mantener la promessa fattaci, cioè di venire per star una sera da noi, e potrà star a cena in parlatorio, perchè la scomunica è mandata alla tovaglia e non alle vivande. … La ringrazio del pesce, e la saluto affettuosamente insieme con Suor Arcangela. Nostro Signore gli conceda intera felicità.\nDi S. Matteo, li 20 d’ottobre, 1623.",
+    "text": "Gli rimando il resto delle sue camicie che abbiamo cucite e anco il grembiale, quale ho accomodato meglio che è stato possibile.\n\n… gli ricordo ch’è obbligato a mantener la promessa fattaci, cioè di venire per star una sera da noi, e potrà star a cena in parlatorio, perchè la scomunica è mandata alla tovaglia e non alle vivande.\n\n… La ringrazio del pesce, e la saluto affettuosamente insieme con Suor Arcangela. Nostro Signore gli conceda intera felicità.\nDi S. Matteo, li 20 d’ottobre, 1623.",
+    "layout": "source",
     "kind": "letter",
     "lang": "it",
     "title": "To her father Galileo, with his mended shirts",
@@ -3346,7 +3431,8 @@
   },
   {
     "id": "betson-1476",
-    "text": "My nowne hartely belovid Cossen Kateryn, I recomande me unto yow withe all the inwardnesse of myn hart …\nI pray you grete well my horsse, and praye hym to gyffe yow iiij off his yeres to helpe you with all: and I will at my comynge home gyff hym iiij off my yeres and iiij horsse lofes till amendes. Tell hym þat I prayed hym so …\nBe your … Cossen and loffer Thomas Betson.\nI sent you this rynge ffor a token.",
+    "text": "My nowne hartely belovid Cossen Kateryn, I recomande me unto yow withe all the inwardnesse of myn hart … I pray you grete well my horsse, and praye hym to gyffe yow iiij off his yeres to helpe you with all: and I will at my comynge home gyff hym iiij off my yeres and iiij horsse lofes till amendes. Tell hym þat I prayed hym so …\nBe your … Cossen and loffer Thomas Betson.\n\nI sent you this rynge ffor a token.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Greet my horse for me",
@@ -3387,7 +3473,8 @@
   },
   {
     "id": "migrant-1917-white-sox",
-    "text": "Dear Partner:\nHow is the old burg and all of the boys. … I wish you could have been here to have been here to those games. I saw them and beleve me they was worth the money I pay to see them. T. S. and I went out to see Sunday game witch was 7 to 2 White Sox and I saw Satday game 2 to 1 White Sox. … Guess I will come to you Boy Xmas.\nYour life long friend.",
+    "text": "Dear Partner:\n… How is the old burg and all of the boys. … I wish you could have been here to have been here to those games. I saw them and beleve me they was worth the money I pay to see them. T. S. and I went out to see Sunday game witch was 7 to 2 White Sox and I saw Satday game 2 to 1 White Sox. … Guess I will come to you Boy Xmas. …\nYour life long friend.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "White Sox, 7 to 2",
@@ -3427,7 +3514,8 @@
   },
   {
     "id": "st-nicholas-1886-oysters",
-    "text": "Dear St. Nicholas: I do not see many letters from Indiana in your Letter-box. I would not do without you for ten dollars a year.\nLast year I wanted you so badly that Papa said I must earn the money myself. I had enough, lacking fifty cents. We had an oyster supper here, and papa gave me fifty cents to spend; so I did without oysters and took you. I am thirteen years old.\nYours sincerely,\nArt. R.",
+    "text": "Dear St. Nicholas: I do not see many letters from Indiana in your Letter-box. I would not do without you for ten dollars a year.\n\n… Last year I wanted you so badly that Papa said I must earn the money myself. I had enough, lacking fifty cents. We had an oyster supper here, and papa gave me fifty cents to spend; so I did without oysters and took you. I am thirteen years old.\nYours sincerely,\nArt. R.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "I did without oysters",
@@ -3464,7 +3552,8 @@
   },
   {
     "id": "velemyska-1611",
-    "text": "Můj přenejmilejší, milý pane bratříčku!\nZ pstruhů vám na stokráte děkuji; mnoho pěkných paní ty pstruhy jedlo. Pravou polovici jsem jich paní Marjánce poslala podle vašeho poručení. Na krále jsme se dívaly, stál na koni blízko u okna, asi čtvrt hodiny, drobet míně, tak vesele, převelím pěkně ho provázeli; pěkný čas byl.\nMandalena Velemyšská, sestra vaše upřímná.",
+    "text": "Můj přenejmilejší, milý pane bratříčku!\n… Z pstruhů vám na stokráte děkuji; mnoho pěkných paní ty pstruhy jedlo. Pravou polovici jsem jich paní Marjánce poslala podle vašeho poručení. Na krále jsme se dívaly, stál na koni blízko u okna, asi čtvrt hodiny, drobet míně, tak vesele, převelím pěkně ho provázeli; pěkný čas byl. …\nMandalena Velemyšská, sestra vaše upřímná.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "cs",
     "title": "To her brother: thanks for the trout",
@@ -3503,7 +3592,8 @@
   },
   {
     "id": "harpers-1882-goldfish",
-    "text": "We live at a country seat very near the city of Havana. … There are nineteen gold-fish, and in the centre of the pond is a cave for them to play with their little ones. In the other pond lives a beautiful white lily all alone. It is the size of a tea-plate, and as white as my paper.\nI am a Cuban boy eight years old.\nDomingo T. de L.",
+    "text": "We live at a country seat very near the city of Havana. … There are nineteen gold-fish, and in the centre of the pond is a cave for them to play with their little ones. In the other pond lives a beautiful white lily all alone. It is the size of a tea-plate, and as white as my paper. …\n\nI am a Cuban boy eight years old. …\nDomingo T. de L.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Nineteen gold-fish and one lily",
@@ -3545,7 +3635,8 @@
   },
   {
     "id": "stonor-1476",
-    "text": "Right interly and best belovyd husbond, I recomaund me unto you in my most herty wyse …\nSir, I pray you send me no more ryngis with stonys: ffore the ryng that you sent me be Hery Blakhall, the stone is ffallyn owght be the way and loste: wherffore I ame sory. Good sire, let it not be long or I may se you: for truly me thynke ryght long syth I se you …\nBe your ovne to my powre Elysabeth Stonore.",
+    "text": "Right interly and best belovyd husbond, I recomaund me unto you in my most herty wyse … Sir, I pray you send me no more ryngis with stonys: ffore the ryng that you sent me be Hery Blakhall, the stone is ffallyn owght be the way and loste: wherffore I ame sory. Good sire, let it not be long or I may se you: for truly me thynke ryght long syth I se you …\nBe your ovne to my powre Elysabeth Stonore.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "No more rings with stones",
@@ -3586,7 +3677,8 @@
   },
   {
     "id": "august-goethe-1797",
-    "text": "Lieber Vater,\nThun Sie mir den Gefallen und reisen Sie nicht in die Schweiz, sagen Sie der lieben Großmama viele Grüße, und ich hätte sie recht lieb.\nLeben Sie wohl und sein Sie mein gutes Väterchen.\nIhr August.",
+    "text": "Lieber Vater,\nThun Sie mir den Gefallen und reisen Sie nicht in die Schweiz, sagen Sie der lieben Großmama viele Grüße, und ich hätte sie recht lieb.\n\nLeben Sie wohl und sein Sie mein gutes Väterchen.\nIhr August.",
+    "layout": "source",
     "kind": "note",
     "lang": "de",
     "title": "A seven-year-old’s note to his father",
@@ -3623,6 +3715,7 @@
   {
     "id": "plummer-1860",
     "text": "my Deare husband\ni recived you bind leter and was very much oblige to you for what you sent me the fridy night after i rote to you i was confined with too babys one was a boy and the other a girl every body that se them says they are the fines chrilden thay every sar when mother came and scene them she was delited … the chrilden ar all well and join me in love to you from your wife\nEmly Plumer",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Two babies, a boy and a girl",
@@ -3663,6 +3756,7 @@
   {
     "id": "santa-1908-miss-myra",
     "text": "Dear Miss Santa Claus:\nI saw in Harper’s Bazar your name i thought i would like to write to you i am a little girl 8 years old i have a Brother 10. a little Baby sister 4 months old. my Brother is going to write to you … i dont know of much to write so i will close hoping to hear from you soon dear Miss Claus\nfrom little Miss myra.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en-US",
     "title": "From little Miss myra",
@@ -3701,7 +3795,8 @@
   },
   {
     "id": "sevigne-1671",
-    "text": "Aux Rochers, 22e juillet 1671.\nSavez-vous ce que c’est que faner ? Il faut que je vous l’explique : faner est la plus jolie chose du monde, c’est retourner du foin en batifolant dans une prairie ; dès qu’on en sait tant, on sait faner. Tous mes gens y allèrent gaiement ; le seul Picard me vint dire qu’il n’iroit pas, … que ce n’étoit pas son métier, et qu’il aimoit mieux s’en aller à Paris.\nVoilà l’histoire en peu de mots.",
+    "text": "Aux Rochers, 22e juillet 1671.\n… Savez-vous ce que c’est que faner ? Il faut que je vous l’explique : faner est la plus jolie chose du monde, c’est retourner du foin en batifolant dans une prairie ; dès qu’on en sait tant, on sait faner. Tous mes gens y allèrent gaiement ; le seul Picard me vint dire qu’il n’iroit pas, … que ce n’étoit pas son métier, et qu’il aimoit mieux s’en aller à Paris. …\n\nVoilà l’histoire en peu de mots.",
+    "layout": "source",
     "kind": "letter",
     "lang": "fr",
     "title": "To her cousin, on haymaking",
@@ -3741,6 +3836,7 @@
   {
     "id": "harpers-1883-ships",
     "text": "My papa took Young People for my sister, but now as I am seven years of age, and I like reading, papa takes it for me. I am a little Cuban boy … Here where we live it is very pretty, and quite near the sea. We have hills here, and we can see the ocean and the vessels that come from Mexico. The next time I will tell you about my pets and about Cuba.\nAntonio G.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Ships from Mexico",
@@ -3781,7 +3877,8 @@
   },
   {
     "id": "thair-1833",
-    "text": "Dear Father and Mother,\n… we were glad to see them all looking so well: met the children about a mile from home, without any shoes or stockings, they all go so here. … John Dearling went out one day, and met with a bear, but as soon as the bear saw him, he turned and run away … Here is strawberries and hurts by the bushel, that grow in the woods. … So no more at present, from your affectionate son and daughter,\nGod bless you all.\nRhoda & George Thair.",
+    "text": "Dear Father and Mother,\n… we were glad to see them all looking so well: met the children about a mile from home, without any shoes or stockings, they all go so here. … John Dearling went out one day, and met with a bear, but as soon as the bear saw him, he turned and run away … Here is strawberries and hurts by the bushel, that grow in the woods.\n\n… So no more at present, from your affectionate son and daughter,\nGod bless you all.\nRhoda & George Thair.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-GB",
     "title": "The bear that ran away",
@@ -3819,7 +3916,8 @@
   },
   {
     "id": "winder-1833",
-    "text": "Dear Sir:\nI am glad to have it in my power to inform you that Mother, Brother, and Me is quite well at present … I thank God that we all arrived safe … it is much better than we did expect to find it. … Please remember us to … Joseph Carr, and tell him not to stay behind for old age, as the old stand as well as the young.\nNo more at present, but remain your sister in Christ,\nElizabeth Winder.",
+    "text": "Dear Sir:\nI am glad to have it in my power to inform you that Mother, Brother, and Me is quite well at present … I thank God that we all arrived safe … it is much better than we did expect to find it.\n\n… Please remember us to … Joseph Carr, and tell him not to stay behind for old age, as the old stand as well as the young.\nNo more at present, but remain your sister in Christ,\nElizabeth Winder.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "Tell him not to stay behind for old age",
@@ -3860,7 +3958,8 @@
   },
   {
     "id": "cely-1482",
-    "text": "Ruight interly whelbelovyd brothe I recomende me harttely unto yow …\nand the same mane sayd to me hefe I whowllde tary May day I schulde hawhe a syte of the zeunge gentyllwhoman … and the person plesetheyde me whell as be the fyrste comenycacyon sche ys zewnge lytyll and whery whellfavyrd and whytty and the contre spekys myche gode by hyr …\nNo mor. Wrhyt at London the xiij day of May.\nper Rychard Cely.",
+    "text": "Ruight interly whelbelovyd brothe I recomende me harttely unto yow … and the same mane sayd to me hefe I whowllde tary May day I schulde hawhe a syte of the zeunge gentyllwhoman … and the person plesetheyde me whell as be the fyrste comenycacyon sche ys zewnge lytyll and whery whellfavyrd and whytty and the contre spekys myche gode by hyr … No mor. Wrhyt at London the xiij day of May.\nper Rychard Cely.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Young, little, well-favoured and witty",
@@ -3901,7 +4000,8 @@
   },
   {
     "id": "gorriti-1880",
-    "text": "Primo mio y querido amigo:\nPor mi hijo Julio he sabido con pena que Vd. no recibió la carta en que le daba un millón de gracias y felicitaciones …\nEspero que á estas horas, estará V. escribiendo otro libro como este, que es como una golosina: una vez gustado, se anhela otro semejante.\nSaludamos á V., Julio y yo, y le estrechamos cordialmente la mano.\nDe Vd. prima y afectísima amiga.\nJuana M. Gorriti.",
+    "text": "Primo mio y querido amigo:\nPor mi hijo Julio he sabido con pena que Vd. no recibió la carta en que le daba un millón de gracias y felicitaciones …\n\nEspero que á estas horas, estará V. escribiendo otro libro como este, que es como una golosina: una vez gustado, se anhela otro semejante.\n\nSaludamos á V., Julio y yo, y le estrechamos cordialmente la mano.\nDe Vd. prima y afectísima amiga.\nJuana M. Gorriti.",
+    "layout": "source",
     "kind": "letter",
     "lang": "es-AR",
     "title": "To José Hernández, thanking him for Martín Fierro",
@@ -3941,7 +4041,8 @@
   },
   {
     "id": "antoinette-carron-1799",
-    "text": "Monsieur,\nLorsque mes enfants étaient petits et malades, pour les engager à garder la chambre, je leur promettais des joujoux et des bonbons; mais pour le grand M. Ampère, il lui faut un talisman, si l’on ne veut pas le voir franchir toutes les montagnes du Mont-d’Or. … Mes talismans sont broyés avec une infusion de patience, quelques grains de calme, un peu de plaisir et beaucoup de modération …\nJe suis, avec considération,\nAntoinette Boyron, veuve Carron.",
+    "text": "Monsieur,\nLorsque mes enfants étaient petits et malades, pour les engager à garder la chambre, je leur promettais des joujoux et des bonbons; mais pour le grand M. Ampère, il lui faut un talisman, si l’on ne veut pas le voir franchir toutes les montagnes du Mont-d’Or.\n\n… Mes talismans sont broyés avec une infusion de patience, quelques grains de calme, un peu de plaisir et beaucoup de modération …\nJe suis, avec considération,\nAntoinette Boyron, veuve Carron.",
+    "layout": "source",
     "kind": "letter",
     "lang": "fr",
     "title": "A mother’s recipe for a talisman",
@@ -3978,7 +4079,8 @@
   },
   {
     "id": "jackson-1844",
-    "text": "We have our fields planted with potatoes, cassada, &c. Very few have planted any coffee plants as yet, although it grows finely. … Aunt Philis is quite well … Sister Rebecca, Matilda, Jack, George and wife, and aunt Polly, all beg to be remembered to you. … My husband unites me in love to you, and all friends. I have much more to say, but my sheet of paper is full, so I end by subscribing myself\nYour very grateful servant,\nMary Jackson.",
+    "text": "We have our fields planted with potatoes, cassada, &c. Very few have planted any coffee plants as yet, although it grows finely. … Aunt Philis is quite well … Sister Rebecca, Matilda, Jack, George and wife, and aunt Polly, all beg to be remembered to you. …\n\nMy husband unites me in love to you, and all friends. I have much more to say, but my sheet of paper is full, so I end by subscribing myself\nYour very grateful servant,\nMary Jackson.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "My sheet of paper is full",
@@ -4020,7 +4122,8 @@
   },
   {
     "id": "plumpton-1505",
-    "text": "Ryght worshipfull father, in the most humble manner that I can I recommend me to you …\nI besech you to send a servant of yours to my lady and to me, and shew now by your fatherly kyndnesse that I am your child; for I have sent you dyverse messuages and wryttings, and I had never answere againe …\nAlso I besech you to send me a fine hatt and some good cloth to make me some kevercheffes …\nBy your loving daughter,\nDorythe Plompton.",
+    "text": "Ryght worshipfull father, in the most humble manner that I can I recommend me to you … I besech you to send a servant of yours to my lady and to me, and shew now by your fatherly kyndnesse that I am your child; for I have sent you dyverse messuages and wryttings, and I had never answere againe … Also I besech you to send me a fine hatt and some good cloth to make me some kevercheffes …\nBy your loving daughter,\nDorythe Plompton.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Send for me to come home",
@@ -4061,6 +4164,7 @@
   {
     "id": "geertruyd-huygens-1622",
     "text": "Nou ist soo lang gelede, dat je van hier vertrocken bent, en ick noch Constancike en hebbe niet eens geschreve … ick en begeer van jou niet dan je goe graci en, as ick die heb, dan heb ick al vry wat veel, ten waer datter en schamel paer hantschoene of twee by waere, die en sou en arm mens noch niet versmaen. … Nou heb ick geen plaets om me naam te sette, dan ick selt hier bovenan flansse.\nAdieu, men soete broer.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "nl",
     "title": "To her brother: no presents wanted (except gloves)",
@@ -4101,7 +4205,8 @@
   },
   {
     "id": "wentworth-1705",
-    "text": "My dearest dear childe,\nCosin Hanburer sent for Betty and I yesterday to meet Bell and her spous, whear we was all very merry and dranck your health in very good wyne; we playd at cards, I am groan a great gaimster …\nThe post I fear will be gon if I ad any more then to asure you never mother loved her only child, more then I doe you, that are the best of children to\nYour moste infenitt affectionat Mother\nI. W.",
+    "text": "My dearest dear childe,\n… Cosin Hanburer sent for Betty and I yesterday to meet Bell and her spous, whear we was all very merry and dranck your health in very good wyne; we playd at cards, I am groan a great gaimster … The post I fear will be gon if I ad any more then to asure you never mother loved her only child, more then I doe you, that are the best of children to\nYour moste infenitt\naffectionat Mother\nI. W.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en",
     "title": "I am grown a great gamester",
@@ -4139,7 +4244,8 @@
   },
   {
     "id": "wheatley-1779",
-    "text": "Dr. Obour,—By this opportunity I have the pleasure to inform you that I am well and hope you are so; tho’ I have been silent, I have not been unmindful of you … But in time to come I hope our correspondence will revive—and revive in better times—pray write me soon, for I long to hear from you—you may depend on constant replies—I wish you much happiness, and am\nDr. Obour, your friend & sister\nPhillis Peters.",
+    "text": "Dr. Obour,—\nBy this opportunity I have the pleasure to inform you that I am well and hope you are so; tho’ I have been silent, I have not been unmindful of you … But in time to come I hope our correspondence will revive—and revive in better times—pray write me soon, for I long to hear from you—you may depend on constant replies—I wish you much happiness, and am\nDr. Obour, your friend & sister\nPhillis Peters.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "To Obour Tanner: pray write me soon",
@@ -4180,6 +4286,7 @@
   {
     "id": "voice-1835",
     "text": "Dear Brother and Sister,\nThis comes with our love to you, hoping it will find you all well … Your sister is making 20 pounds of butter a week. … I staid at home to write to you. All four boys are gone to play a game of cricket: they play 11 on a side, 10s. to 5s., the trade against the gentlemen. I cannot tell you which beat, they are not come home. So I must conclude with all our loves to you, and all your family.\nCornelius & Elizabeth Voice.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-GB",
     "title": "The boys are out at cricket",
@@ -4219,7 +4326,8 @@
   },
   {
     "id": "pram-1794",
-    "text": "Stakkels gode Olufsen, hvilken bedrøvelig Juul De har oplevet, ingen Julekage, ingen Juleleege! Havde De været hos os i denne Tid, skulde De dog have faaet lidt af begge Deele. … Noget Nyt som kunde interessere Dem har jeg ikke at melde Dem, uden det skulde være dette, at jeg til Nyeaarsgave af Lotte og Kierulf har faaet en deilig Steen-Pyramide, som, kunstig besaaet med Karsefrø, staaer grøn og blomstrende paa Deres lille brune Bord i Dagligstuen.\nDeres taknemmelige\nMarie Pram.",
+    "text": "… Stakkels gode Olufsen, hvilken bedrøvelig Juul De har oplevet, ingen Julekage, ingen Juleleege! Havde De været hos os i denne Tid, skulde De dog have faaet lidt af begge Deele. …\n\nNoget Nyt som kunde interessere Dem har jeg ikke at melde Dem, uden det skulde være dette, at jeg til Nyeaarsgave af Lotte og Kierulf har faaet en deilig Steen-Pyramide, som, kunstig besaaet med Karsefrø, staaer grøn og blomstrende paa Deres lille brune Bord i Dagligstuen. …\nDeres taknemmelige\nMarie Pram.",
+    "layout": "source",
     "kind": "letter",
     "lang": "da",
     "title": "No Christmas cake: a cress pyramid instead",
@@ -4259,7 +4367,8 @@
   },
   {
     "id": "burney-1789",
-    "text": "My dearest friends,\nI have her majesty’s commands to inquire—whether you have any of a certain breed of poultry?\nN.B. What breed I do not remember.\nAnd to say she has just received a small group of the same herself.\nN.B. The quantity I have forgotten.\nAnd to add, she is assured they are something very rare and scarce, and extraordinary and curious.\nN.B. By whom she was assured I have not heard.\nSo now—pray write a very fair answer fairly, in fair hand, and to her fair purpose.",
+    "text": "My dearest friends,\nI have her majesty’s commands to inquire—whether you have any of a certain breed of poultry?\n\nN.B. What breed I do not remember.\n\nAnd to say she has just received a small group of the same herself.\n\nN.B. The quantity I have forgotten.\n\nAnd to add, she is assured they are something very rare and scarce, and extraordinary and curious.\n\nN.B. By whom she was assured I have not heard.\n\n… So now—pray write a very fair answer fairly, in fair hand, and to her fair purpose.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-GB",
     "title": "To the Lockes: a royal question about poultry",
@@ -4295,7 +4404,8 @@
   },
   {
     "id": "julien-francois-1798",
-    "text": "Douce amie, je t’ai écrit au commencement du mois. Je m’impatientais de ne pas recevoir de tes précieuses lettres; aujourd’hui j’en connais la cause. Les Anglais ont intercepté nos premiers avisos partis de Toulon ; … Puisse cette lettre te parvenir, douce amie, avec les baisers que je mets sur ces lignes pour toi et mes enfans!\nAmour pour la vie.\nB. Julien François",
+    "text": "Douce amie, je t’ai écrit au commencement du mois. Je m’impatientais de ne pas recevoir de tes précieuses lettres; aujourd’hui j’en connais la cause. Les Anglais ont intercepté nos premiers avisos partis de Toulon ; …\n\nPuisse cette lettre te parvenir, douce amie, avec les baisers que je mets sur ces lignes pour toi et mes enfans!\nAmour pour la vie.\nB. Julien François",
+    "layout": "source",
     "kind": "letter",
     "lang": "fr",
     "title": "The kisses I put on these lines",
@@ -4309,7 +4419,7 @@
     "origin": "seized",
     "story": "Written at Alexandria on 30 July 1798, grumbling that the British had captured the boats bringing her letters from Toulon, it was itself intercepted by Nelson’s fleet and printed in London in 1799.",
     "source": {
-      "name": "Correspondance intime de l'armée d'Égypte interceptée par la croisière anglaise, ed. Lorédan Larchey (Paris: R. Pincebourde, 1866), pp. 87-97 (letter begins p. 87)",
+      "name": "Correspondance intime de l'armée d'Égypte interceptée par la croisière anglaise, ed. Lorédan Larchey (Paris: R. Pincebourde, 1866), pp. 87–95",
       "url": "https://archive.org/details/correspondancein00larc",
       "licence": "Public domain (printed 1799 and 1866)",
       "licenceUrl": "https://archive.org/details/correspondancein00larc"
@@ -4335,6 +4445,7 @@
   {
     "id": "harpers-1886-chiquitita",
     "text": "I am a little Spanish girl ten years old. We are now living in Germantown, six miles from Philadelphia. I have two brothers and three sisters. My sister and myself take this charming paper. I think “Jo’s Opportunity” was a splendid story. Does “Into Unknown Seas” come bound? If so, I should like to know how much it is.\nChiquitita",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Does it come bound?",
@@ -4375,7 +4486,8 @@
   },
   {
     "id": "nicholas-1664",
-    "text": "Deare Parant, this titell coms not to you unmerited for I know of no one that has more wright to it then yourselfe …\nGod Almighty reward you for your peas-making betwen fathar & child for next under God you ware the means of it …\nI shall beg your pardon & ever remain Your dutyfull child & best girlle still,\nAnne Nicholas",
+    "text": "Deare Parant, this titell coms not to you unmerited for I know of no one that has more wright to it then yourselfe … God Almighty reward you for your peas-making betwen fathar & child for next under God you ware the means of it … I shall beg your pardon & ever remain Your dutyfull child & best girlle still,\nAnne Nicholas",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Your best girl still",
@@ -4416,6 +4528,7 @@
   {
     "id": "talackova-1617",
     "text": "Má nejmilejší paní strejničko!\nNemohla jsem toho pominouti … abych tě neměla tímto ač hrubě kratičkým psaním svým navštíviti … Nemajíce jiného na dokázání lásky upřímné poslati, žlíčku ti posílám a věřím, že s ní každý den, dokuď se nezláme, jídati budeš, nebo já ti ji pro tu velikou lásku posílám. … Datum spěšně, spěšně.\nKateřina Talačková ze Žlunic, všecka tvá.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "cs",
     "title": "A New Year’s spoon",
@@ -4457,6 +4570,7 @@
   {
     "id": "verney-1691",
     "text": "… for they are at Cards about my ears being my birthday, that I can scarc tell what I writ …\nYr most dutyfull and obedient Granfather to command,\nMary Verney",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en",
     "title": "They are at cards about my ears",
@@ -4497,6 +4611,7 @@
   {
     "id": "stockdell-1838",
     "text": "I take this opportunity of writing to you a few lines, informing you that I arrived safe on the shores of Africa. … I expect you are very anxious to know how I like this new country. I can only say that I am very well satisfied with the place … I find that I can lie under as much cover here of nights, as I could in America. … The children join with me in love to you and all inquiring friends.\nBarbary Stockdell.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "As much cover here of nights",
@@ -4537,7 +4652,8 @@
   },
   {
     "id": "paumgartner-1588-quinces",
-    "text": "Erberer, freindlicher, herzlieber Paumgarttner.\nDeine 2 schreiben sein mir vergangene wogen wol zukumen … Dieweil du aug am raufzihen dorg Wierzporg ziehest, herzlieber Paumgartner, so wolst nit vergesen und mir … kiten kaufen, dan ich hie keine weis zu bekumen. … Verhof, du werst des scharlachs nit vergesen haben, wo migilich, und des zuckerhutts.\nUnd sey du, herzalerliebster schaz, von mir aug gar fleisig und zu 1000 mal freindlich gegriest und dem lieben Gott befoln.\nMadelena Balthaser Paumgartnerin.",
+    "text": "Erberer, freindlicher, herzlieber Paumgarttner.\nDeine 2 schreiben sein mir vergangene wogen wol zukumen … Dieweil du aug am raufzihen dorg Wierzporg ziehest, herzlieber Paumgartner, so wolst nit vergesen und mir … kiten kaufen, dan ich hie keine weis zu bekumen. … Verhof, du werst des scharlachs nit vergesen haben, wo migilich, und des zuckerhutts. …\nUnd sey du, herzalerliebster schaz, von mir aug gar fleisig und zu 1000 mal freindlich gegriest und dem lieben Gott befoln. …\nMadelena Balthaser Paumgartnerin.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "de",
     "title": "To her husband at the fair: bring quinces",
@@ -4579,7 +4695,8 @@
   },
   {
     "id": "christmas-card-mother",
-    "text": "My dear Child,\nAccept this little gift as a token of true friendship, from\nYour mother.",
+    "text": "My dear Child,—\nAccept this little gift as a token of true friendship, from\nYour mother.",
+    "layout": "inferred",
     "kind": "note",
     "lang": "en-GB",
     "title": "On the back of a Christmas card",
@@ -4618,7 +4735,8 @@
   },
   {
     "id": "st-nicholas-1892-burros",
-    "text": "Dear St. Nicholas: We are two Mexican girls, eight and nine years old, and are staying in Milwaukee.\nAs we saw no burros, and saw some very fine American ladies and gentlemen, we asked them where the burros were, and they laughed and asked us where we came from.\nOur neighbors cannot get used to our noise, but we don’t mind it.\nYour loving readers,\nElsie and Anna F——.",
+    "text": "Dear St. Nicholas:\nWe are two Mexican girls, eight and nine years old, and are staying in Milwaukee. …\n\n… As we saw no burros, and saw some very fine American ladies and gentlemen, we asked them where the burros were, and they laughed and asked us where we came from. … Our neighbors cannot get used to our noise, but we don’t mind it. …\nYour loving readers,\nElsie and Anna F——.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "Where are the burros?",
@@ -4661,6 +4779,7 @@
   {
     "id": "susanna-huygens-1622",
     "text": "Breur,\nVader geeft my desen brief om te sluyten, soo moet ick er noch wat by setten … Maer hoe maeckt ghy t met u lynwaet; wil dat al wel soo lang duren, als men t u daer lang maeckt? Ick maeck hier al ander gereet tege u comste, maer hebt ghy t van doen, ick sal t u senden; ick hoop, dat ge nu al in den somerschen dos syt …\nAdieu, breur, adieu, weest van ons allen wel seer gegroet en Godt bevolen.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "nl",
     "title": "To her son abroad: how is your linen?",
@@ -4700,7 +4819,8 @@
   },
   {
     "id": "banneker-1797",
-    "text": "Dear Female Friend.—I have thought of you every day since I saw you last, and of my promise in respect of composing some verses for your amusement … you gave me good advice, and edifying language, in that piece of poetry which you was pleased to present unto me; and I can but love and thank you for the same …\nYour sincere friend and well wisher,\nBenjamin Banneker.\nN. B.—The above is mean writing done with trembling hands.",
+    "text": "Dear Female Friend.—\nI have thought of you every day since I saw you last, and of my promise in respect of composing some verses for your amusement … you gave me good advice, and edifying language, in that piece of poetry which you was pleased to present unto me; and I can but love and thank you for the same …\nYour sincere friend and well wisher,\nBenjamin Banneker.\n\n… N. B.—The above is mean writing done with trembling hands.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "To Susannah Mason, with thanks for a poem",
@@ -4740,7 +4860,8 @@
   },
   {
     "id": "stewart-1909-landowner",
-    "text": "Dear, dear Mrs. Coney,\nWell, I have filed on my land and am now a bloated landowner. … In Denver I was afraid my baby would grow up devoid of imagination. … She has a block of wood she found in the blacksmith shop which she calls her “dear baby.” A spoke out of a wagon wheel is “little Margaret,” and a barrel-stave is “bad little Johnny.”\nWell, I must quit writing before you vote me a nuisance. With lots of love to you,\nYour sincere friend,\nElinore Rupert.",
+    "text": "Dear, dear Mrs. Coney,\nWell, I have filed on my land and am now a bloated landowner. …\n\nIn Denver I was afraid my baby would grow up devoid of imagination. … She has a block of wood she found in the blacksmith shop which she calls her “dear baby.” A spoke out of a wagon wheel is “little Margaret,” and a barrel-stave is “bad little Johnny.”\n\nWell, I must quit writing before you vote me a nuisance. With lots of love to you,\nYour sincere friend,\nElinore Rupert.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "A bloated landowner",
@@ -4780,7 +4901,8 @@
   },
   {
     "id": "cernin-1650",
-    "text": "Mé přenejmilejší dítě!\nTvé psaní 6. Augusti datirované jsem dostala a velice se potěšila, že jsi chvála pánu Bohu zdráv … Mé nejmilejší, roztomilé dítě! hrubě na spěch to psaníčko píši, nebo po napsání jeho ihned na vůz bohdá sednu a pojedu ke dvorům mezi žence. Již chvála pánu Bohu zde sežato máme … Fauska bude v neděli veselí míti za toho truhláře.\nPsáno hrubě spěšně v 9. Českých hodin, 13. Augusti 1650.\nTvá upřímná máteř do mé smrti\nZ. Č.",
+    "text": "Mé přenejmilejší dítě! —\nTvé psaní 6. Augusti datirované jsem dostala a velice se potěšila, že jsi chvála pánu Bohu zdráv … Mé nejmilejší, roztomilé dítě! hrubě na spěch to psaníčko píši, nebo po napsání jeho ihned na vůz bohdá sednu a pojedu ke dvorům mezi žence. Již chvála pánu Bohu zde sežato máme … Fauska bude v neděli veselí míti za toho truhláře. …\n\nPsáno hrubě spěšně v 9. Českých hodin, 13. Augusti 1650.\nTvá upřímná máteř do mé smrti\nZ. Č.",
+    "layout": "source",
     "kind": "letter",
     "lang": "cs",
     "title": "To her son, off to the harvest",
@@ -4820,7 +4942,8 @@
   },
   {
     "id": "shackleton-1776",
-    "text": "As my dear M. bespoke me to write to her, I think to send her a little scrawl …\nSo, my dear, I have unexpectedly written thee a long letter, instead of a short scrawl. I was writing to thy dear mother, and whatever was the meaning of it, I could not enlarge as usual to her; so I turned to thee, and found greater facility and fluency …\nThy truly affectionate father,\nR. S.",
+    "text": "As my dear M. bespoke me to write to her, I think to send her a little scrawl …\n\nSo, my dear, I have unexpectedly written thee a long letter, instead of a short scrawl. I was writing to thy dear mother, and whatever was the meaning of it, I could not enlarge as usual to her; so I turned to thee, and found greater facility and fluency …\nThy truly affectionate father,\nR. S.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "A little scrawl that grew long",
@@ -4859,7 +4982,8 @@
   },
   {
     "id": "aibonito-1929",
-    "text": "If you wander across the valleys, walk up the mountain paths of my beloved island; if you stop for a moment at the top of a hill, you will see in the distance a little hut, the beloved place of the Porto Rican poor people.\nWhen you depart, you will hear the polite and happy ‘good-bye’ from the dwellers in the hut; you will smell the perfume of the wild flowers surrounding it; and you will feel in your heart the kind hospitality of these Porto Rican people.",
+    "text": "If you wander across the valleys, walk up the mountain paths of my beloved island; if you stop for a moment at the top of a hill, you will see in the distance a little hut, the beloved place of the Porto Rican poor people. …\n\nWhen you depart, you will hear the polite and happy ‘good-bye’ from the dwellers in the hut; you will smell the perfume of the wild flowers surrounding it; and you will feel in your heart the kind hospitality of these Porto Rican people.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en",
     "title": "A hut on the hill",
@@ -4900,7 +5024,8 @@
   },
   {
     "id": "polk-1833",
-    "text": "Dear Miss: I brace the opportunity to inform you that I am well, and hope that these few lines may find you in the same state. … I am much pleased with the country … We are parted by the wide water but I hope not in love.\nIt would give me a great deal of pleasure to see you here … I wish you to let my Grand-Mother know that we are well and in good heart …\nI remain your friend,\nWill T. Polk.",
+    "text": "Dear Miss:\nI brace the opportunity to inform you that I am well, and hope that these few lines may find you in the same state.\n\n… I am much pleased with the country … We are parted by the wide water but I hope not in love.\n\nIt would give me a great deal of pleasure to see you here …\n\nI wish you to let my Grand-Mother know that we are well and in good heart …\nI remain your friend,\nWill T. Polk.",
+    "layout": "source",
     "kind": "letter",
     "lang": "en-US",
     "title": "Parted by the wide water",
@@ -4942,6 +5067,7 @@
   {
     "id": "paumgartner-1588-hat",
     "text": "Erberer, freindlicher, herzlieber Paumgartner.\nIch hab nit underlasen kinen, dir ein priefla zu schreiben. … Wolst uns aug ein par kes kaufen und des Walthaslas hutlein nit vergesen. Er sagt ale tag davon.\nWeis dir sunst vir dises mal ein merers nit zu schreiben, herzliebster schaz …\nMadelena Balthaser Paumgartnerin.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "de",
     "title": "Don’t forget the little one’s hat",
@@ -4982,7 +5108,8 @@
   },
   {
     "id": "fleming-1811",
-    "text": "My dear Mother,\nYou will think that I entirely forget you but I assure you that you are greatly mistaken I think of you always and often sigh to think of the distance between us two loving creatures of nature … This is an exact description. I must take a hasty farewell to her whom I love, reverence and doat on and who I hope thinks the same of\nMarjory Fleming.\nP. S. An old pack of cards would be very exeptible.",
+    "text": "My dear Mother,\nYou will think that I entirely forget you but I assure you that you are greatly mistaken I think of you always and often sigh to think of the distance between us two loving creatures of nature … This is an exact description. I must take a hasty farewell to her whom I love, reverence and doat on and who I hope thinks the same of\nMarjory Fleming.\n\nP. S. An old pack of cards would be very exeptible.",
+    "layout": "inferred",
     "kind": "letter",
     "lang": "en",
     "title": "An exact description of my day",
