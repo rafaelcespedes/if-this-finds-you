@@ -50,7 +50,7 @@ export function IconButton({ label, onClick, disabled, children, className }: { 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={label} onClick={onClick} disabled={disabled} className={cn('size-9 rounded-lg text-muted-foreground hover-device:hover:text-foreground pointer-coarse:size-10', className)}>
+        <Button variant="ghost" size="icon" aria-label={label} onClick={onClick} disabled={disabled} className={cn('hit-44 size-9 rounded-lg text-muted-foreground hover-device:hover:text-foreground pointer-coarse:size-10', className)}>
           {children}
         </Button>
       </TooltipTrigger>
@@ -249,14 +249,19 @@ function useOwnRow(ref: RefObject<HTMLDivElement | null>, count: number) {
  * (most in the 1800s), and a century is a button that shows its letters.
  */
 function EraTimeline({ pool, value, onChange, narrow }: { pool: ArchiveLetter[]; value: string; onChange: (era: string) => void; narrow: boolean }) {
-  const eras = ERAS.filter((e) => pool.some((l) => l.year != null && l.year >= e.from && l.year <= e.to));
+  // the centuries with letters in them; before the letters arrive, the collection's own five, so the strip is its full
+  // size from the first frame and nothing moves when they land (their marks come with the letters)
+  const found = ERAS.filter((e) => pool.some((l) => l.year != null && l.year >= e.from && l.year <= e.to));
+  const eras = found.length ? found : ERAS.filter((e) => e.id !== 'now');
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
   const alone = useOwnRow(ref, eras.length);
   return (
     // the centuries share what the dock has left (a 320 px phone fits all five), down to their labels' width; when
     // even that doesn't fit beside search (large text on a small phone), the timeline takes a row of its own
-    <div ref={ref} role="group" aria-labelledby={id} data-own-row={alone || undefined} className={cn('flex min-w-0 items-stretch justify-center gap-0.5 px-0.5', alone && 'basis-full')}>
+    // (on a row of its own it goes under search and List, nearest the thumb; still too wide there, 200% text on a phone,
+    // it scrolls sideways; the padding keeps focus rings in)
+    <div ref={ref} role="group" aria-labelledby={id} data-own-row={alone || undefined} className={cn('-my-1 flex min-w-0 items-stretch justify-center gap-0.5 overflow-x-auto overscroll-x-contain px-0.5 py-1 [scrollbar-width:none]', alone && 'order-last basis-full justify-start')}>
       <span id={id} className="sr-only">When the letters were written</span>
       {eras.map((e) => {
         const [a, b] = SPAN[e.id] ?? [e.from, e.to];
@@ -270,7 +275,8 @@ function EraTimeline({ pool, value, onChange, narrow }: { pool: ArchiveLetter[];
             aria-label={`${e.label}, ${noun(years.length)}`}
             title={`${e.label}: ${noun(years.length)}`}
             onClick={() => onChange(on ? '' : e.id)}
-            className={cn('era-seg relative flex h-11 flex-col items-center justify-center rounded-lg px-0.5 pointer-coarse:h-12', narrow ? 'w-[52px]' : 'w-[76px]', on ? 'is-on' : value ? 'is-dim' : '')}
+            disabled={!found.length}
+            className={cn('era-seg relative flex h-11 min-w-fit flex-col items-center justify-center rounded-lg px-0.5 pointer-coarse:h-12', narrow ? 'w-[3.25rem]' : 'w-[4.75rem]', on ? 'is-on' : value ? 'is-dim' : '')}
           >
             {/* the marks and the label stay together, centred, whatever height large text gives the button */}
             <span aria-hidden className="era-marks relative block h-[17px] self-stretch mx-1.5">
@@ -318,7 +324,7 @@ export function TimelineDock(p: ControlsProps & { viewSwitch?: ViewSwitch }) {
         <>
           {!narrow && <span aria-hidden className="w-1 shrink-0" />}
           {/* phones: the icon alone (its name still spoken), so the strip stays one row */}
-          <button type="button" onClick={p.viewSwitch.onClick} className="dock-switch" aria-label={narrow ? p.viewSwitch.label : undefined} title={narrow ? p.viewSwitch.label : undefined}>
+          <button type="button" onClick={p.viewSwitch.onClick} className="dock-switch hit-44" aria-label={narrow ? p.viewSwitch.label : undefined} title={narrow ? p.viewSwitch.label : undefined}>
             {p.viewSwitch.icon}
             {!narrow && p.viewSwitch.label}
           </button>
