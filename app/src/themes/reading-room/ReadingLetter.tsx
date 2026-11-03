@@ -12,7 +12,8 @@ import type { DockActions } from '@/archive/LetterParts';
 import { circumstanceLabel, lostInTransit, shortAuthor, shortRecipient } from '@/archive/data';
 import type { ArchiveLetter } from '@/archive/model';
 import { CatalogueCard } from './CatalogueCard';
-import { callNo, useRecord, type CardRecord } from './catalogue';
+import { callNo, type CardRecord } from './catalogue';
+import { useMarks } from './useCatalogue';
 import { SheetMarks } from './SheetMarks';
 
 const languages = (() => {
@@ -68,8 +69,8 @@ interface Props {
 
 export function ReadingLetter(p: Props) {
   const { letter } = p;
-  const no = useRecord(letter.id)?.no;
-  const record = recordOf(letter, no);
+  const marks = useMarks(letter.id);
+  const record = recordOf(letter, marks?.no);
   const wide = useMediaQuery('(min-width: 1024px)');
   const textId = useId();
   const paras = letter.text.split(/\n{2,}/);
@@ -96,7 +97,7 @@ export function ReadingLetter(p: Props) {
         <div ref={p.colRef} className="min-w-0">
           <div className="relative mx-auto" style={{ width: p.paperW * p.pxPerMm || undefined }}>
             {p.sheet}
-            <SheetMarks key={letter.id} no={no} place={letter.place} year={letter.year} pxPerMm={p.pxPerMm} />
+            <SheetMarks key={letter.id} marks={marks} pxPerMm={p.pxPerMm} />
           </div>
         </div>
         {!wide && <div className="mt-8">{card}</div>}
@@ -175,7 +176,7 @@ function useKeyboardLift() {
 export function SlipDock(a: DockActions & { id?: string }) {
   const narrow = useMediaQuery('(max-width: 520px)');
   const lift = useKeyboardLift();
-  const no = useRecord(a.id)?.no;
+  const no = useMarks(a.id)?.no;
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(12px+env(safe-area-inset-bottom,0px))] z-30 flex justify-center px-3" style={lift ? { transform: `translateY(${-lift}px)` } : undefined}>
       <div role="toolbar" aria-label="The letter" className="rr-dock pointer-events-auto">

@@ -1,12 +1,15 @@
-// The Reading Room's marks on a sheet: the letter's catalogue number stamped in archival red on its top-left corner
-// (the look's signature), and one postal detail borrowed from Postmarked, a postmark with the letter's place and year
-// landing on the top-right corner. Both are decoration (aria-hidden): the card beside the letter says the same in words.
+// The Reading Room's marks on a sheet: the letter's catalogue number stamped in archival red (the look's signature),
+// beside one postal detail borrowed from Postmarked, a postmark with the letter's place and year, both in the top-left
+// margin. Both are decoration (aria-hidden): the card beside the letter says the same in words. Their data comes from
+// catalogue.ts (marksOf), the one source anything that prints them should read.
 // They never take a click, so a tap on the sheet still writes (the tool) or finishes the writing (the library).
 import { useId } from 'react';
-import { callNo, postmarkPlace, useRecord } from './catalogue';
+import { callNo, type LetterMarks } from './catalogue';
+import { useMarks } from './useCatalogue';
 
-export function SheetMarks({ no, place, year, pxPerMm }: { no?: number; place?: string; year?: number; pxPerMm: number }) {
-  if (!pxPerMm) return null;
+export function SheetMarks({ marks, pxPerMm }: { marks: LetterMarks | undefined; pxPerMm: number }) {
+  if (!pxPerMm || !marks) return null;
+  const { no, place, year } = marks;
   // sized in millimetres of paper, so the marks keep their size on the sheet as it scales (a little larger on a phone,
   // so the place stays legible); both sit in the top margin, left, clear of the first line and of the tool's hints
   const mark = Math.round(Math.min(80, Math.max(54, 18.5 * pxPerMm)));
@@ -15,7 +18,7 @@ export function SheetMarks({ no, place, year, pxPerMm }: { no?: number; place?: 
   const hasMark = !!place || year != null;
   return (
     <div aria-hidden className="rr-marks pointer-events-none absolute inset-x-0 top-0">
-      {hasMark && <Postmark place={postmarkPlace(place)} year={year} size={mark} style={{ left: edge - mark * 0.06, top: 2.5 * pxPerMm }} />}
+      {hasMark && <Postmark place={place} year={year} size={mark} style={{ left: edge - mark * 0.06, top: 2.5 * pxPerMm }} />}
       {no != null && (
         <span className="rr-stamp" style={{ fontSize: stamp, left: hasMark ? edge + mark * 0.92 : edge + pxPerMm, top: 2.5 * pxPerMm + mark * 0.3 }}>
           No. <span className="rr-stamp-n">{callNo(no)}</span>
@@ -62,7 +65,7 @@ export function Postmark({ place, year, size, style }: { place: string; year?: n
 
 /** The number on a library card's sheet: the same stamp, small. */
 export function CardStamp({ id }: { id: string }) {
-  const no = useRecord(id)?.no;
+  const no = useMarks(id)?.no;
   if (no == null) return null;
   return (
     <span aria-hidden className="rr-stamp rr-stamp--card">
@@ -73,7 +76,5 @@ export function CardStamp({ id }: { id: string }) {
 
 /** The tool's found letter: its marks, from its catalogue card. */
 export function SampleMarks({ id, pxPerMm }: { id: string; pxPerMm: number }) {
-  const r = useRecord(id);
-  if (!r) return null;
-  return <SheetMarks key={id} no={r.no} place={r.where} year={r.year} pxPerMm={pxPerMm} />;
+  return <SheetMarks key={id} marks={useMarks(id)} pxPerMm={pxPerMm} />;
 }
