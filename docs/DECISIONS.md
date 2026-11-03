@@ -5,6 +5,9 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 ## 2026-11-02
 
 ### Purpose (Rafael's own words, the frame for every other decision)
+- **How it started (Rafael, 2026-11-03):** a happy accident. Rafael was looking for the perfect handwritten font for
+  his other project, Rueca, couldn't find the exact hand he wanted, and decided to try making one. The experiment
+  grew from there into If This Finds You.
 - A lab experiment for Rafael's portfolio: **free, fun, no revenue, no usage expectations.** "Using AI in ways
   that I think is clever." It does what couldn't be done before because it took too many resources, e.g.
   hundreds of usable fonts that nobody would draw by hand.
