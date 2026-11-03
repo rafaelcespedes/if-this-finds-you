@@ -62,7 +62,7 @@ export function ReadingDesk(props: PanelProps) {
               {replyTo && (
                 <div className="rr-fact">
                   <dt className="rr-sc">In reply to</dt>
-                  <dd><span className="rr-red rr-figures">No. {callNo(replyTo.no ?? 0)}</span>, {replyTo.title}</dd>
+                  <dd><span className="rr-red">No. {callNo(replyTo.no ?? 0)}</span>, {replyTo.title}</dd>
                 </div>
               )}
               <div className="rr-fact">
