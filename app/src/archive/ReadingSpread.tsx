@@ -5,12 +5,11 @@
 // start, closing as a printed letter does (the signature set right, the place and date under it), the notes, how to
 // cite it, the next letter named, and what you can do with it. Small red numbers open their note in place; every note
 // is listed again at the end. On phones: the title first, then the sheet edge to edge, then the record (the slip dock
-// stays in the thumb zone). On desktop there is no dock: "‹ No. 0004 · 4 of 127 ›" sits in the running head's place.
+// stays in the thumb zone). On desktop there is no dock: "‹ No. 0004 · 4 of 127 ›" is the running head's middle.
 // House rules: one grid, hairlines never boxes, notes beside facts.
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { copyText } from '@/lib/actions';
 import { APP_NAME } from '@/lib/brand';
 import { cn } from '@/lib/utils';
@@ -45,7 +44,7 @@ export function closingOf(text: string): { paras: string[]; signature: string | 
 /** When, as the record gives it: the curator's date ("August 1798") or the year. */
 const whenOf = (l: ArchiveLetter) => l.found?.dateNote ?? (l.year != null ? String(l.year) : '');
 
-interface Turn {
+export interface Turn {
   at: number;
   total: number;
   prev: ArchiveLetter | null;
@@ -86,7 +85,6 @@ interface Props {
 
 export function ReadingSpread(p: Props) {
   const { letter: l } = p;
-  const wide = useMediaQuery(SPREAD_QUERY);
   const no = useMarks(l.id)?.no;
   const nextNo = useMarks(p.turn.next?.id)?.no;
   const id = useId();
@@ -157,7 +155,6 @@ export function ReadingSpread(p: Props) {
 
   return (
     <main className="sp">
-      {wide && <Counter no={no} turn={p.turn} />}
       {head}
       <Plate {...p} />
       <div className="sp-body">
@@ -257,18 +254,23 @@ function Row({ term, children }: { term: string; children: ReactNode }) {
   );
 }
 
-/** "‹ No. 0004 · 4 of 127 ›": the number is the navigation (in the running head's place, centred on its line). */
-function Counter({ no, turn: t }: { no: number | undefined; turn: Turn }) {
+/**
+ * "‹ No. 0004 · 4 of 127 ›": the number is the navigation. For the running head's middle (SiteHeader's `centre`;
+ * `short` is its "‹ No. 0004 ›" for when the full one doesn't fit). The header styles the words; the number takes the
+ * look's colour through data-site-number.
+ */
+export function LetterCounter({ id, turn: t, short }: { id: string; turn: Turn; short?: boolean }) {
+  const no = useMarks(id)?.no;
   if (t.total < 2) return null;
   return (
-    <nav aria-label="Letters in this list" className="sp-counter">
+    <span className="letter-counter">
       <button type="button" onClick={t.onPrev} aria-label={t.prev ? `Previous letter: ${t.prev.title ?? 'a letter'}` : 'Previous letter'}><ChevronLeft aria-hidden /></button>
       <span>
-        {no != null && <span className="sp-no">No. {callNo(no)}</span>}
-        <span className="sp-of"><span aria-hidden> · </span>{t.at + 1} of {t.total}</span>
+        {no != null && <span data-site-number>No. {callNo(no)}</span>}
+        {!short && <span className="letter-counter-of"><span aria-hidden> · </span><span className="sr-only">, </span>{t.at + 1} of {t.total}</span>}
       </span>
       <button type="button" onClick={t.onNext} aria-label={t.next ? `Next letter: ${t.next.title ?? 'a letter'}` : 'Next letter'}><ChevronRight aria-hidden /></button>
-    </nav>
+    </span>
   );
 }
 

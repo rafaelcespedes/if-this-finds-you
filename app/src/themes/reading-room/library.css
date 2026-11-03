@@ -335,8 +335,8 @@ html[data-look='reading-room'] .archive-dock .dock-switch {
 
 /* =====================================================================================================================
    The letter page as a spread (ReadingSpread.tsx, the layout study's proposal 3). Phones: the title, the sheet edge to
-   edge, the record. Desktop: the plate on the left staying put, the page on the right; the counter in the running
-   head's place. Roles as above; hairlines, never boxes.
+   edge, the record. Desktop: the plate on the left staying put, the page on the right; the counter is the running
+   head's middle (archive.css). Roles as above; hairlines, never boxes.
    ===================================================================================================================== */
 html[data-look='reading-room'] .sp {
   --sp-rule: var(--rr-rule);
@@ -377,38 +377,6 @@ html[data-look='reading-room'] .sp-body { grid-area: body; margin-top: 1.5rem; }
     margin: 0;
   }
   html[data-look='reading-room'] .sp-body { margin-top: 0; padding-bottom: 4.5rem; }
-}
-
-/* the counter, in the running head's place: "‹ No. 0004 · 4 of 127 ›" */
-html[data-look='reading-room'] .sp-counter {
-  position: absolute;
-  top: 1.25rem;
-  left: 50%;
-  z-index: 11;
-  display: flex;
-  align-items: center;
-  gap: 0.125rem;
-  height: 2.25rem;
-  translate: -50% 0;
-  color: var(--rr-ink);
-}
-html[data-look='reading-room'] .sp-counter button {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 2px;
-  color: var(--rr-muted);
-  transition: color 150ms var(--ease-out);
-}
-html[data-look='reading-room'] .sp-counter button svg { width: 1rem; height: 1rem; }
-@media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .sp-counter button:hover { color: var(--rr-ink); }
-}
-html[data-look='reading-room'] .sp-of {
-  font-family: var(--rr-control-face, inherit);
-  font-size: var(--rr-control-size, 0.8125rem);
-  color: var(--rr-muted);
 }
 
 /* the plate: one sheet at a time on desktop (a letter of several sheets scrolls inside it) */
@@ -620,7 +588,7 @@ html[data-look='reading-room'] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-captio
   font-variant-caps: var(--rr-label-caps, normal);
   text-transform: lowercase;
 }
-html[data-look='reading-room'] :is(.sp .sp-counter .sp-no, .sp .sp-next .sp-no) {
+html[data-look='reading-room'] .sp .sp-next .sp-no {
   font-family: var(--rr-number-face, var(--rr-caps));
   font-size: var(--rr-number-size, 0.9375rem);
   font-weight: var(--rr-number-weight, 400);
