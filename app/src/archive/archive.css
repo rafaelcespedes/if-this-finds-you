@@ -20,7 +20,9 @@
   --lib-note-size: 13px;
   --lib-text: var(--foreground);
   --lib-text-soft: var(--text-muted);
-  --lib-text-faint: var(--text-faint);
+  /* the quietest text that still reads: 4.5:1 on the page, 5:1 on the dock (the tool's --text-faint is 2.9:1, for
+     decoration only) */
+  --lib-text-faint: #6f6a62;
   --lib-accent: var(--ink);
   --lib-rule: var(--hairline);
   --lib-measure: 36rem;
@@ -227,8 +229,8 @@ select.archive-field {
 .era-seg.is-on .era-marks {
   opacity: 1;
 }
-.era-seg.is-dim {
-  opacity: 0.45;
+.era-seg.is-dim .era-marks {
+  opacity: 0.3;
 }
 .era-seg:focus-visible {
   outline: 2px solid var(--ring);
