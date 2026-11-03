@@ -8,8 +8,9 @@ Review page (private): https://claude.ai/artifact/SXuJT5wnyZjKRXCsmSmZDR
 ## Decision (2 November 2026)
 
 **Rafael chose "If This Finds You"** as the name, for now. Domain: **ifthisfindsyou.app** ($9.99 the first year,
-$15 a year after); Rafael is buying it himself. ifthisfindsyou.com is owned by someone else. The copy below still
-says "Plumín" and needs a pass to the new name. A lawyer's trademark clearance (classes 9, 42) is still advised.
+$15 a year after); Rafael is buying it himself. ifthisfindsyou.com is owned by someone else. Section 2 (copy) has been
+rewritten for the new name. Trademark: no live marks found; since the project is free and open source, a
+lawyer's clearance is optional (see §2 notes and the summary in the conversation).
 
 ## Summary (round 1, superseded by the decision above)
 
@@ -450,173 +451,168 @@ handles (`plumin`). Pen enthusiasts may think of Pilot's Plumix pens. If any of 
 
 ---
 
-## 2. Copy
+## 2. Copy: If This Finds You
 
-Written with **Plumín** and with **Ottilie Marsh**, a writer name the app can generate. Swap the name if you
-choose another. Lines marked **[after traced hands]** only become true when the copybook traditions ship.
-**[NEED: …]** marks a decision that isn't made yet.
+Rewritten 2 November 2026 for the chosen name and the letters concept: an archive of real letters by ordinary
+people, each written out in a fictional writer's hand, with room to write back. Free and open source, a lab piece.
+Counts come from `content/SAMPLE-TEXTS.md` on main (127 letters switched on) and will move; the copy avoids exact
+numbers except where marked **[count]**. **[NEED: …]** marks an open decision.
+
+**One rule for every line:** the letters are real and their origins are never invented, but the handwriting is not
+the original writer's. A fictional hand writes each letter out. The copy must never imply otherwise.
 
 ### 2.1 Taglines
 
-1. **Type it. Someone writes it out.**
-   It says the whole product in six words, and "someone" makes the hand a person.
-2. **Every letter, written once.**
-   The core fact, and it's measured: no letter repeats on the page.
-3. **A new hand whenever you ask.**
-   "Hand" means both a writer and their handwriting, and it points at the New hand button.
-4. **Handwriting with its sources showing.**
-   For readers who care where things come from. It sets up the reference library.
-5. **Five centuries of handwriting at your keyboard.** [after traced hands]
-   The sources run from 1522 to 2024. Use it only once the traced hands are live.
+1. **If this finds you, write back.**
+   The name finishes its own sentence and asks for the one thing the product wants you to do.
+2. **Real letters, written out by hand.**
+   The plainest description. Works under the name anywhere.
+3. **Somebody wrote this long ago. It found you.**
+   For the archive's first screen, when a letter is already being written.
+4. **Every letter, written once.**
+   Still true and measured: the handwriting never repeats a letter.
+5. **Letters that waited for a reader.**
+   For sharing: quiet, and it hints at the undelivered ones.
 
 ### 2.2 One line
 
-Plumín turns your typing into handwriting, written by a fictional person with their own habits, and every letter
-comes out a little different, the way it does on paper.
+If This Finds You is an archive of real letters by ordinary people, each written out by hand in a stranger's
+handwriting, with room for you to write back.
 
 ### 2.3 Fifty words
 
-Plumín turns your typing into handwriting. Each hand belongs to a fictional writer with their own slant, pressure
-and habits, built from historical copybooks and ordinary people's handwriting. Every letter is drawn fresh, so no
-two match. Keep a hand you like, share it by link, or download the page.
+People wrote these letters to someone they loved, missed or worried about. Some never arrived. Here each one is
+written out again, stroke by stroke, by a fictional writer with a hand of their own. Read a letter, shuffle to
+another one, or start typing and write back in ink.
 
 ### 2.4 A hundred and fifty words
 
-Plumín writes what you type in a human hand. Press New hand and you meet a fictional writer, say Ottilie Marsh,
-with their own slant, letter sizes, pen pressure and small habits, like where the i-dots land. Type, and Ottilie
-writes it out on plain, ruled, grid or dotted paper.
+People wrote these letters to someone they loved, missed or worried about. A child asking the Three Kings for a
+doll. A settler in Liberia writing home. A family moving north in 1917. Some letters never reached anyone at all.
+Each comes with its true origin: who wrote it, to whom, when, and where it survives. We never invent the story.
 
-Every letter is drawn fresh from the pen's path, so the two e's in "letter" never match. Lines drift a little, ink
-gathers where strokes cross, and a hurried hand gets looser, as real ones do.
+Open one and a fictional writer copies it out for you on letter paper, stroke by stroke, in a hand of their own,
+with the slant, pressure and small mistakes of a real person. No two letters come out the same.
 
-The hands are built from public-domain copybooks and writing masters across Europe and beyond, and from ordinary
-people's writing shared under open licences. Every source is credited in an open library.
+Then write back. Start typing and your reply goes down in ink. Deleting crosses words out, as it would on paper.
+Share the link and whoever opens it watches your letter being written by hand.
 
-Share a link that opens the same hand, download the page as an image, or export a font file. The file can only
-cycle three versions of each letter. The page never repeats.
-
-_Today's version of the third paragraph, until the traced hands ship:_ The first two hands are built from
-Dr. A. V. Hershey's 1967 stroke drawings. Hands traced from historical copybooks and ordinary people's writing are
-being added now, and every source is credited in an open library.
+It's free, and the handwriting is yours to download as an open font.
 
 ### 2.5 How it works
 
-1. **Meet a hand.** Each hand is a fictional writer, made from a short code called a seed. The same seed always
-   brings back the same writer. Press New hand to meet someone else.
-2. **Type.** They write as you type. Each letter is built from a traced skeleton, then shaped by the writer's habits
-   and drawn by a simulated pen, so no two come out alike.
-3. **Adjust.** Neatness, slant, pen, pressure and ink colour. Small moves, like the difference between your Sunday
-   letter and your shopping list.
-4. **Keep it.** Copy a link that reopens this exact hand and these settings, download the page as an image, or export
-   a font file for other apps.
+1. **Open a letter.** Every letter here was written by a real person, mostly ordinary people from 1395 to 1929
+   **[count]**. Shuffle to find another.
+2. **Watch it written.** A fictional writer copies it out on letter paper, stroke by stroke. Each writer has their own
+   hand, pen and habits. Press New hand to meet someone else.
+3. **Write back.** Start typing. Your reply goes down in ink on a fresh sheet, with the found letter tucked
+   underneath. Deleting crosses a word out; a retyped letter writes over the old one.
+4. **Send it on.** Share a link and the recipient watches your letter being written. Or download the page, or the
+   handwriting as a font.
 
-### 2.6 What you can do with it
+### 2.6 Where the letters come from
 
-- **Thank-you notes, cards and letters** that look written, for when you can't write them all by hand.
-- **Props for film, theatre and games:** a diary, a ledger, a letter left on a table. A link brings back the same
-  writer for every scene, so the character's hand stays consistent.
-- **Labels, menus, place cards and packaging** with a hand that stays the same across the whole set.
-- **Journals and templates** set in a hand that feels like a person's.
-- **Brand work:** a house hand you can return to by its seed, with a source you can name.
-- **Teaching handwriting history:** put an English roundhand next to a German Kurrent and an Italian chancery hand,
-  and see how schooling shaped a letter. [after traced hands]
-- **Type and design study:** watch what changes when one writer gets neater, faster or switches pens.
+Most letters that survive were written by the famous. These weren't. They're letters by emigrants, children, sailors'
+sweethearts, settlers, farmers and mothers, kept by families, seized in wartime, or never delivered, and later
+printed or archived. Most of them are by women **[count: 59%]**.
 
-### 2.7 Where the hands come from [after traced hands]
+Among them: Argentine children writing to the Three Kings, Liberian settlers writing home, families on the move
+during the Great Migration of 1917, a Tejana in Béxar in 1824, and letters in fourteen languages **[count]**. A few
+famous voices are here too, like Phillis Wheatley and Ignatius Sancho.
 
-Handwriting is learned. How you make a g depends on where and when you went to school, so every hand here starts
-from the model someone was taught, then picks up the habits of a real person.
+Every letter is in the public domain, and every one carries its source. If a source doesn't say something, neither
+do we.
 
-The models come from writing masters whose copybooks are now in the public domain: Ludovico degli Arrighi's
-chancery italic (Rome, 1522), Maria Strick's Dutch running hand (1618), George Bickham's *The Universal Penman*
-(London, 1733–41), Servidori's Spanish plates (Madrid, 1789), Steensballe's Norwegian roundhand (1849),
-Prószyński's Polish school hand (1906) and the Palmer Method (1915), among others.
+### 2.7 Where the hands come from
 
-The habits come from ordinary people who wrote for themselves: wills written by 146 French soldiers in the First
-World War, and pages copied out by 267 volunteers for Québec's national library in 2022–24. Both collections are
-shared under an open licence. We take the shapes of their letters and leave their words alone.
+Handwriting is learned. How you make a g depends on where and when you went to school, so each fictional writer
+starts from a model someone was taught, then picks up the habits of a real person.
 
-Where a source isn't free to use, we leave it out. Every skeleton carries its source, and all of them are listed in
-the open reference library: [link].
+The models come from public-domain copybooks: Ludovico degli Arrighi's chancery italic (Rome, 1522), Maria Strick's
+Dutch running hand (1618), George Bickham's *The Universal Penman* (London, 1733–41), Servidori's Spanish plates
+(Madrid, 1789) and the Palmer Method (1915), among others. The habits come from ordinary people who shared their
+writing under open licences, from French soldiers' wills of the First World War to volunteers in Québec in 2022–24.
+We take the shapes of their letters and leave their words alone. Every source is listed in the open reference
+library.
 
-_Today's version:_ The two hands live today are built from Dr. A. V. Hershey's stroke drawings, made at the US
-National Bureau of Standards in 1967 and free for any use. Hands traced from five centuries of copybooks and from
-ordinary people's writing are being added now. Everything we use or decided against is listed in the open reference
-library: [link].
+_Use this until the traced hands ship:_ The hands live today are built from Dr. A. V. Hershey's 1967 stroke drawings.
+Hands traced from five centuries of copybooks are being added now.
 
-### 2.8 What it isn't
+### 2.8 What it is, plainly
 
-**There's no AI model inside.** Nearly every handwriting dataset is licensed for research only, and we won't train
-on handwriting people never agreed to share. Plumín builds each letter with a procedural engine: a skeleton traced
-from a credited source, a writer's habits, and a simulated pen and ink. If we ever train a model, it will be on
-handwriting people chose to contribute.
+**A lab piece.** It's free, it isn't a business, and it's an experiment in what can be built now that couldn't be
+before: hundreds of believable hands nobody would have drawn one by one.
 
-**The font file has limits.** A font can carry only a few versions of each letter. Ours carries three and rotates
-them, and some apps, Word among them, switch that rotation off unless you turn it on. So the file repeats in a way
-the page never does. When it matters, use the page.
+**How the handwriting is made.** A procedural engine builds every letter from a traced skeleton, a writer's habits
+and a simulated pen and ink. It isn't a model trained on people's handwriting, and it uses no scraped handwriting.
+AI helped build the engine and research the sources. **[NEED: Rafael, confirm you want the AI-assisted build
+mentioned here; it matches "using AI in ways I think is clever".]**
 
-**It can't write like you yet,** and it isn't for signatures. A signature should come from your own hand.
+**What the fonts can't do.** A font file can only carry a few versions of each letter. Ours carries three and
+rotates them, and some apps switch that rotation off. So a downloaded font repeats in a way the page never does.
+
+**Whose hand it is.** The handwriting is never the original writer's. A fictional hand writes each letter out.
 
 ### 2.9 FAQ
 
+**Are these real letters?**
+Yes. Each was written by a real person and survives in a published book or an archive. Its origin is shown with it.
+
+**Is this their handwriting?**
+No. A fictional writer copies each letter out in a hand of their own. The words are the original writer's; the
+handwriting isn't.
+
+**Who were these people?**
+Mostly ordinary people: emigrants, children, settlers, families, many of them women. A few are famous. Each letter
+says who wrote it, to whom, and when, as far as the source tells us.
+
 **Is this AI?**
-No. Each letter is built from a traced letter skeleton, shaped by the writer's traits and drawn by a simulated pen.
-The rules are written by hand and every source is credited.
+The handwriting comes from a procedural engine: traced letter skeletons, a writer's habits, a simulated pen. It isn't
+an AI model trained on people's writing. AI did help build the engine. **[NEED: same confirmation as 2.8]**
 
-**Where does the handwriting come from?**
-Today, from Dr. A. V. Hershey's 1967 stroke drawings. Next, from public-domain copybooks dating back to 1522 and from
-ordinary people's writing shared under open licences. The reference library lists every source and what we decided
-about it.
+**Can I send my reply?**
+Share the link. Whoever opens it watches your letter being written, then can write back.
 
-**Will I see the same letter twice?**
-Not on the page. Every letter is drawn fresh, so even a page of 1,500 letters has no exact repeats. The font file is
-different: it cycles three versions of each letter.
+**Can I add a letter to the archive?**
+Not yet. Submissions are planned: you'll choose whether to be credited, and each letter is read before it goes in.
 
-**How do I keep a hand I like?**
-Copy the link. It holds the seed and your settings, and it brings back the same writer every time.
-
-**Can I use it in other apps?**
-Download the page as an image, or export a font file. In Word, turn on contextual alternates (Font, then Advanced) to
-see all three versions of each letter.
-
-**Can I use it for commercial work?**
-[NEED: licence terms for images and exported fonts]
+**Can I download the handwriting?**
+Yes, as a free, open-source font. A font can only rotate three versions of each letter, so it won't vary the way the
+page does. **[NEED: licence name, e.g. SIL Open Font License]**
 
 **Which languages can it write?**
-Today, English and 116 characters, including curly quotes, dashes and € £ ¥. Accented letters for European languages
-come next. Until a hand learns a character, it shows as a pencil sketch, so you'll always see what's missing.
+The archive holds letters in fourteen languages **[count]**, all in Latin script. The hands write English and common
+symbols today; accents for European languages are on their way. Until a hand learns a character, it shows as a pencil
+sketch.
 
-**Can it write in my handwriting?**
-Not yet. We'd like to build that from handwriting people choose to contribute, with their consent.
+**Why "If This Finds You"?**
+It's how a letter in a bottle begins. These letters were meant for someone else. Now they've found you.
 
 ### 2.10 Microcopy
 
 | Moment | Copy |
 |---|---|
-| Empty sheet, on the paper | Start typing. Ottilie will write it out. |
-| Empty sheet, small print | Every letter is drawn fresh. |
-| New hand, button | New hand |
-| New hand, tooltip | Meet another writer |
-| New hand, after | Meet Bastien Moreau: a relaxed script with a slight lean. |
-| Similar hand, after | Ottilie's sibling: same family, a different person holding the pen. |
-| Share, button | Share |
-| Share, after | Link copied. It opens Ottilie's hand with these settings. [NEED: say "and your letter" if the link carries the text] |
-| Download, button | Download image |
-| Download, after | Saved. Ottilie's page, as an image. |
-| Export font, button | Export font |
-| Export font, before | A font file holds three versions of each letter, so it repeats in a way this page never will. It's for using Ottilie's hand in other apps. |
-| Export font, after | Font saved as "Plumín Ottilie Marsh". In Word, turn on contextual alternates to see all three versions. |
-| Missing character, on hover | This hand hasn't learned ‹ç› yet. |
-| Missing characters, status line | 3 characters are sketched in pencil. This hand hasn't learned them yet. |
-| Ink mode, switch | Ink |
-| Ink mode, first time | Ink stays put. Deleting crosses words out, retyping writes over a letter, and new words go above the line with a ^. |
-| Cross-out, on hover | Crossed out, Ottilie's way. |
-| Deleted before the pen reached it | Not written yet, so it's gone clean. |
-| Make a fair copy, button | Make a fair copy |
-| Fair copy, after | Ottilie copied it out clean on a fresh sheet. |
-| Pencil mode, switch | Pencil: you can erase. |
+| First load, while the letter writes | Somebody wrote this long ago. It found you. |
+| Under the letter | Written by {writer}, {place}, {year}, to {recipient}. Copied out by {fictional writer}, a fictional hand. |
+| Origin link | Where this letter comes from |
+| Shuffle | Another letter |
+| New hand · button / tooltip | **New hand** · Have someone else write it |
+| New hand · after | Bastien Moreau will write it now. A relaxed script with a slight lean. |
+| Write back · button | Write back |
+| Write back · first keystroke | A fresh sheet. Their letter is tucked underneath. |
+| Write back · placeholder on the sheet | Dear … |
+| Ink mode · first time | This is ink. Deleting crosses words out, retyping writes over a letter, and new words go above the line with a ^. |
+| Deleted before the pen got there | Not written yet, so it's gone clean. |
+| Make a fair copy | **Make a fair copy** · Ottilie copied it out clean on a fresh sheet. |
+| Pencil | Pencil: you can erase. |
+| Share · button / after | **Share** · Link copied. Whoever opens it will watch this being written. |
+| Download | **Download image** · Saved. |
+| Download font · before | A font holds three versions of each letter, so it repeats in a way this page never will. It's free to use. |
+| Missing character | This hand hasn't learned ‹ç› yet. |
+| Empty archive search | No letter like that yet. Try another word, or shuffle. |
+| Footer | Real letters, public domain, sources for every one. Handwriting by fictional writers. Free and open source. |
 
----
+Fill the {fields} from each letter's own record; leave out any field the source doesn't give.
 
 ## 3. Fun facts
 
@@ -649,17 +645,16 @@ Lead with 1, 3, 9 and 6 on a landing page, once 1 and 9 are true in the way read
 
 ## Decisions for Rafael
 
-1. **The name.** Plumín, or Seedhand, Penfolk or Everyhand.
-2. **Native-speaker check.** Ask two or three people per language (Spanish varieties, French, Italian, Portuguese,
-   German, Polish) how the name sounds to them.
-3. **Domains.** Register `plumin.ink` (free today) and ask about the parked `plumin.com`. Prices weren't checked.
-4. **Trademark.** A lawyer's clearance in classes 9 and 42 before launch.
-5. **When to make the big claims.** Hold "five centuries of handwriting" and "billions of different hands" until
-   traced hands and letter variety ship. Use the "today" versions until then.
-6. **Licence terms** for images and exported fonts, so the commercial-use FAQ can be answered.
-7. **Ink mode's tone.** The microcopy here is gently playful ("Ottilie's way"). Say if you want it plainer.
+Done: the name (If This Finds You) and the domain (ifthisfindsyou.app, Rafael buying).
 
----
+Still open:
+1. **Mention the AI-assisted build?** The copy says the handwriting isn't an AI model, and notes AI helped build the
+   engine (§2.8, FAQ). Keep, reword or drop.
+2. **Font licence name** for the open-source fonts (FAQ), e.g. the SIL Open Font License.
+3. **Timing of two claims:** "five centuries of copybooks" (§2.7) waits for the traced hands; "billions of hands"
+   in the facts waits for letter variety.
+4. **Ink mode's tone** in the microcopy (gently playful today).
+5. **Trademark:** no live marks found. For a free, open-source lab piece, a lawyer's clearance is optional.
 
 ## Appendix A: Working for each fact
 
