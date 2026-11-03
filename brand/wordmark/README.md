@@ -24,7 +24,7 @@ slant −10.2°, ink `#1c2233` on paper `#fffdf8`. Exact settings live in `produ
 | `wordmark-32.svg` | Same file as `wordmark.svg`, under its option number | |
 | `wordmark-small.svg` | One line "If this finds you", one colour | Same writer, `penWidth` 88 (hand's own ≈ 70), "you" at 1.45×, gap 0.2 em |
 | `favicon.svg` | "If" in ink on a paper rounded square | Same writer, salt `icon`, `penWidth` 125 (heavy, so it holds at 16 px) |
-| `favicon.ico` | 32 and 16 px | Rasterized from `favicon.svg` |
+| `favicon.ico` | 32 and 16 px, transparent corners | Rasterized from `favicon.svg` |
 | `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` | "If" on paper, square (the OS rounds it) | Glyph fills 72% of the side |
 | `og-image.png` | 1200×630 share image | Stacked wordmark, "Real letters by ordinary people, written out by hand.", ifthisfindsyou.app, Instrument Sans |
 
@@ -34,6 +34,11 @@ slant −10.2°, ink `#1c2233` on paper `#fffdf8`. Exact settings live in `produ
 |---|---|---|
 | `wordmark-5.svg` | One line "If This Finds You", one colour (`currentColor`) | Option #5 exactly: seed `linen-thistle-82`, style `quebec-print`, the hand's own pen (felt), slant 6.5° |
 | `favicon-5.svg` | "IF" in ink on a paper rounded square | Same writer, salt `icon` |
+| `favicon-5.ico` | 32 and 16 px | Rasterized from `favicon-5.svg` |
+| `apple-touch-icon-5.png`, `icon-5-192.png`, `icon-5-512.png` | "IF" on paper, square | Glyph fills 72% of the side, so maskable crops keep it |
+| `og-image-5.png` | 1200×630 share image | Same layout as `og-image.png`, the one-line mark 900 px wide |
+
+Rafael made #5 the default logo on 2 Nov 2026 (the app shows `wordmark-5.svg` and `favicon-5.svg`).
 
 #5 is a single line in a heavy marker, so one file works at every size from about 24 px tall up.
 

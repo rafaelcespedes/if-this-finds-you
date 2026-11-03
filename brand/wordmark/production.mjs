@@ -124,24 +124,29 @@ for (const [f, s] of Object.entries(files)) fs.writeFileSync(path.join(pub, f), 
 const page = (w, h, body, extra = '') => `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;width:${w}px;height:${h}px;overflow:hidden}${extra}</style>${body}`;
 const inline = (svg, css) => svg.replace('<svg ', `<svg style="${css}" `);
 // app icons: paper ground, ink "If", no rounding (the OS masks them)
-const iconFrame = (px, inset) => page(px, px,
+const iconFrame = (glyph, px, inset) => page(px, px,
   `<div style="width:${px}px;height:${px}px;background:${PAPER};display:flex;align-items:center;justify-content:center">` +
-  inline(toSVG(icon, { label: NAME, square: true, fill: INK }), `width:${Math.round(px * (1 - 2 * inset))}px;height:auto`) + '</div>');
-fs.writeFileSync(path.join(frames, 'apple-touch-icon.html'), iconFrame(180, 0.14));
-fs.writeFileSync(path.join(frames, 'icon-192.html'), iconFrame(192, 0.14));
-fs.writeFileSync(path.join(frames, 'icon-512.html'), iconFrame(512, 0.14));
-// favicon rasters: the favicon.svg itself
-for (const px of [16, 32, 48]) fs.writeFileSync(path.join(frames, `favicon-${px}.html`), page(px, px, inline(files['favicon.svg'], `width:${px}px;height:${px}px;display:block`)));
+  inline(toSVG(glyph, { label: NAME, square: true, fill: INK }), `width:${Math.round(px * (1 - 2 * inset))}px;height:auto`) + '</div>');
+// glyph square = 72% of the side (inset 0.14), so maskable crops keep it
+for (const [sfx, glyph, fav] of [['', icon, 'favicon.svg'], ['-5', icon5, 'favicon-5.svg']]) {
+  fs.writeFileSync(path.join(frames, `apple-touch-icon${sfx}.html`), iconFrame(glyph, 180, 0.14));
+  fs.writeFileSync(path.join(frames, `icon${sfx}-192.html`), iconFrame(glyph, 192, 0.14));
+  fs.writeFileSync(path.join(frames, `icon${sfx}-512.html`), iconFrame(glyph, 512, 0.14));
+  // favicon rasters: the favicon SVG itself
+  for (const px of [16, 32, 48]) fs.writeFileSync(path.join(frames, `favicon${sfx}-${px}.html`), page(px, px, inline(files[fav], `width:${px}px;height:${px}px;display:block`)));
+}
 // share image
 const LINE = 'Real letters by ordinary people, written out by hand.';
-fs.writeFileSync(path.join(frames, 'og-image.html'), page(1200, 630,
-  `<div class="og">${inline(toSVG(stacked, { label: NAME, fill: INK }), 'width:640px;height:auto;display:block')}` +
+const ogFrame = (mark, width) => page(1200, 630,
+  `<div class="og">${inline(toSVG(mark, { label: NAME, fill: INK }), `width:${width}px;height:auto;display:block`)}` +
   `<p class="line">${LINE}</p><p class="url">ifthisfindsyou.app</p></div>`,
   `@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&display=block');
    body{background:${PAPER};font-family:'Instrument Sans',system-ui,sans-serif;color:${INK}}
    .og{position:absolute;inset:0;padding:96px 104px;display:flex;flex-direction:column;justify-content:center;gap:0}
    .line{margin:56px 0 0;font-size:34px;line-height:1.3;letter-spacing:-0.005em;color:#2c3550;max-width:22em}
-   .url{margin:14px 0 0;font-size:22px;color:#8f8a80;letter-spacing:.01em}`));
+   .url{margin:14px 0 0;font-size:22px;color:#8f8a80;letter-spacing:.01em}`);
+fs.writeFileSync(path.join(frames, 'og-image.html'), ogFrame(stacked, 640));
+fs.writeFileSync(path.join(frames, 'og-image-5.html'), ogFrame(opt5, 900));   // one line, so wider
 
 // header-size comparison sheet (for checking, not shipped)
 const sizes = [24, 28, 32, 36, 48];
