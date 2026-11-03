@@ -143,7 +143,7 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
           <ChevronUp aria-hidden className="rr-drawer-chev" />
         </button>
       </h2>
-      <div id={`${id}-b`} className="rr-drawer-body panel-scroll" inert={!shown}>
+      <div id={`${id}-b`} className="rr-drawer-body panel-scroll" inert={!shown} onPointerDown={keepWriting} onMouseDown={keepWriting}>
         <div className="rr-slip-inner">
           <LookControls {...props} />
           <MoreControls {...props} />
@@ -156,6 +156,21 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
       </div>
     </section>
   );
+}
+
+// While you write, a material picked with the pointer keeps the caret in the letter, as an editor's toolbar does: the
+// press doesn't take focus, and the click still applies the choice, so typing carries on. Only for plain choices
+// (tiles, swatches, segments, switches, locks); sliders, fields, and the rows that open more of the drawer take
+// focus as usual. Keyboard users Tab in and out as always.
+const TAKES_FOCUS = "input, textarea, select, [contenteditable], [role='slider'], [data-slot='slider'], [aria-controls], .rr-drawer-all";
+function keepWriting(e: React.PointerEvent | React.MouseEvent) {
+  const active = document.activeElement;
+  // writing: the letter's own field has focus (the only textarea outside the drawer)
+  if (!(active instanceof HTMLTextAreaElement) || e.currentTarget.contains(active)) return;
+  const t = e.target as Element;
+  const control = t.closest("button, [role='radio'], [role='switch'], [role='checkbox'], [data-slot='segmented-item']");
+  if (!control || !e.currentTarget.contains(control) || t.closest(TAKES_FOCUS)) return;
+  e.preventDefault();
 }
 
 /** Phones: the same record as ruled rows under the sheet (found letters only). Its Hand row is the clear way into
