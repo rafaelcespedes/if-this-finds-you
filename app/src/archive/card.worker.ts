@@ -1,5 +1,5 @@
 // Writes the index cards off the main thread. A card is the letter itself: a whole sheet of its paper (the tool's
-// painter, with its real edges and the shadow it casts), as wide as the paper and as tall as the page asked
+// painter, with its real edges, no shadow, transparent around it), letter-sized and as tall as the page asked
 // (CardRequest.aspect, from the letter's length, so the grid never moves when cards arrive), with the letter written
 // on it in its own hand by the engine, whole lines only. One small image (WebP) per card; the page decides the
 // order (visible cards first) and keeps the results.
@@ -7,7 +7,7 @@ import './worker-shim';
 import * as E from '@engine';
 import { layout, makeHand } from '@engine';
 import { liveLayout } from '@/lib/live';
-import { isShaped, paintPaper, SHADOW_BLEED } from '@/lib/papers';
+import { isShaped, paintPaper } from '@/lib/papers';
 import { lookFor, renderingOf } from './look';
 import type { CardRequest, CardResult, CardWarm } from './card-protocol';
 
@@ -44,10 +44,10 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
     const W = Math.round(req.width);
     const k = W / wMm;
     const H = Math.round(hMm * k);
-    // room for the shadow a shaped sheet (deckled, torn) casts; rectangular sheets get theirs from CSS
+    // no shadow: the sheet lies flat on the page, with only its own edge (deckled, torn) and the page around it
     const shaped = isShaped(full);
     const scale = W / Math.max(1, req.css);
-    const B = shaped ? Math.round(SHADOW_BLEED * scale) : 0;
+    const B = 0;
 
     // the letter on this sheet: whole lines that fit above the bottom margin (the first sheet of the layout)
     const live = liveLayout(r.p, req.letter.text, paper as typeof full, r.size, r.lineSpacing, false);
@@ -57,7 +57,7 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
     const canvas = new OffscreenCanvas(W + 2 * B, H + 2 * B);
     const ctx = canvas.getContext('2d')!;
     ctx.translate(B, B);
-    paintPaper(ctx as unknown as CanvasRenderingContext2D, paper as typeof full, { pxPerMm: k, grainScale: scale, holeFill: 'clear', shadow: shaped ? 'full' : 'none' });
+    paintPaper(ctx as unknown as CanvasRenderingContext2D, paper as typeof full, { pxPerMm: k, grainScale: scale, holeFill: 'clear', shadow: 'none' });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // ink, multiplied onto the paper (the engine's canvas renderer: ink as density, colour from the ink model)
     const u = live.unitsPerMm;

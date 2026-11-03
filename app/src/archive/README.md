@@ -11,10 +11,12 @@ Run it with the app (`cd app && npm run dev`) and open **/letters.html**.
 
 - **Index** (`Index.tsx`, `Card.tsx`): "All letters" written in the logo's hand (#5, `all-letters.svg`, drawn by
   `heading.mjs` with brand/wordmark/wordmark.mjs), then every letter as the letter itself: a sheet of its paper
-  with the letter written on it in its own hand, a touch askew, and its title underneath (in the letter face).
+  with the letter written on it in its own hand, flat on the page (no shadow, nothing behind it), a touch askew, and
+  its title underneath (in the letter face).
   Who wrote it, where and when are in the link's hover title and its screen-reader text. Masonry: three columns
   on wide screens, two from a phone up; each card goes into the shortest column, in reading order, so Tab follows
-  the eye. Quiet search, filters (era, language, letters or notes) and Shuffle above. `/` searches.
+  the eye. Search, filters (era, language, letters or notes) and Shuffle above, bordered like the tool's controls.
+  `/` searches.
 - **Letter** (`LetterPage.tsx`, loaded on demand with the engine): the whole letter written out in front of you
   (the tool's reader: `ReaderSheets`, engine `timeline` + `playSVG`, about 3x, a tap or key finishes it), the
   provenance (story, writer, recipient, place, date, source, rights, translator), Read it as text, and Write a
@@ -38,8 +40,8 @@ is `hand=of:<letter id>`.
 Cards are images written in workers (two on machines with 6+ cores). A card is a sheet of the letter's stationery
 at letter size (wide notebook and A4 pages are cut to A5 width, so every hand shows at the same scale), as tall as
 `cardAspect(text)` says: worked out from the letter's length alone, so the masonry is laid out before any card is
-written and never moves. The worker paints the paper with the tool's painter (its real edges; deckled and torn
-sheets cast their own shadow into a bleed) and writes the letter with the tool's live layout and the engine's
+written and never moves. The worker paints the paper with the tool's painter (its real edges, no shadow, and
+transparent around it, so deckled and torn edges and punched holes show the page) and writes the letter with the tool's live layout and the engine's
 canvas renderer, whole lines only, as WebP. Visible cards go first (top to bottom), cards scrolled away before
 their turn are skipped, and results are kept for the visit and, in production builds, in Cache Storage keyed by
 the worker build. The workers start (and warm up the engine) while the letters JSON loads.
@@ -47,9 +49,9 @@ the worker build. The workers start (and warm up the engine) while the letters J
 ## The letter face (`serif.ts`)
 
 A serif beside Instrument Sans for the letters' own words: card titles, and on a letter page the title, the story,
-the record and the text. Four to compare in place, `?serif=1…4` (kept for the tab, never in share links), only
-the chosen one loaded, all SIL Open Font License 1.1 via @fontsource:
-1. Instrument Serif (the default; same foundry as the sans), 2. Newsreader, 3. Literata, 4. Fraunces (soft cut).
+the record and the text. Newsreader by default, and three to compare in place, `?serif=1…4` (kept for the tab,
+never in share links), only the chosen one loaded, all SIL Open Font License 1.1 via @fontsource:
+1. Newsreader (the default), 2. Source Serif 4, 3. Literata, 4. Fraunces (soft cut, the warmest).
 
 `window.__lostLetters.stats` has the timings (first card written and shown, per-card render times, cache hits).
 
