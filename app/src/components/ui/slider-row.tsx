@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 
 export function Soon() {
   return (
-    <span className="rounded-full bg-[#ebe6dc] px-1.5 py-px text-[0.6875rem] leading-4 text-muted-foreground" title="Wired up, waiting for the engine">
+    <span className="rounded-full bg-[#ebe6dc] px-1.5 py-px text-[0.6875rem] leading-4 text-muted-foreground" title="Not working yet">
       soon
     </span>
   );

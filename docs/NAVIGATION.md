@@ -3,7 +3,8 @@
 _Set up 2026-11-03._ How people move around the site, in the same words and the same places on every page. Every
 page draws its header with one component, `app/src/components/SiteHeader.tsx`; the names, order and addresses come
 from `app/src/lib/places.ts`. Change them there, never in a page. The 404 page can't run app code, so it carries a
-hand-made copy (`app/public/404.html`); keep it in step.
+hand-made copy (`app/public/404.html`, the Reading Room by default and the earlier design under `?look=classic`); keep
+it in step: the label small caps (0.8125rem, 0.05em), the wordmark in ink at 85% sized in rem, the boxless Menu chip.
 
 ## The places
 
@@ -65,6 +66,18 @@ the label role's small capitals; the letter's number is archival red. Other look
 - Its layer is 30: above the page and the desk's side column, below the docks' menus, the phone's control sheet
   (40) and every menu, sheet, tooltip and toast (50). It stays `pointer-events-none` with its controls `auto`, so
   the band never blocks a drag on the canvas.
+
+## Pinned at the top
+
+- The header stays at the top while the page scrolls (Rafael: "keep the nav sticky"), on every page, in plain CSS:
+  fixed to the window on the library, a letter, Fonts and About; on the desk it sticks within its column
+  (`within`), because beside Classic's panel it's narrower than the window. The 404's copy is sticky too.
+- Only on a screen at least 32rem tall. A phone on its side, or a phone with very large browser text (the rem grows,
+  so the screen counts as shorter), lets the header scroll away rather than give it the screen. Print is unchanged.
+- It still floats over the page (nothing moves on first paint; pages keep their own top space). Its height is
+  `--site-head` and, with its fade, `--site-head-clear` (index.css; 0 when it isn't pinned). `html` has
+  `scroll-padding-top: var(--site-head-clear)`, so a jump to an anchor stops below it, and anything else that sticks
+  to the top uses `top: var(--site-head-clear)` (the Fonts bar and rail, About's section titles).
 
 ## When the words fit (desktops, tablets)
 

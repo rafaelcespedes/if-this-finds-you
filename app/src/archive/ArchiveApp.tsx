@@ -32,7 +32,7 @@ class LetterFailed extends Component<{ id: string; back: string; children: React
         <SiteHeader current="letters" inside hrefs={{ letters: this.props.back }} />
         <main className="mx-auto max-w-[1180px] px-4 pt-28 sm:px-8 lg:px-10">
           <Missing
-            title="This letter couldn’t open."
+            title="This letter couldn’t open"
             action={
               offline ? (
                 <Button variant="outline" asChild><a href={this.props.back}>See all letters</a></Button>
@@ -42,7 +42,7 @@ class LetterFailed extends Component<{ id: string; back: string; children: React
             }
           >
             {offline
-              ? 'You’re offline. Letters open without a connection once you’ve opened one online.'
+              ? 'You’re offline. After you’ve opened a letter online once, letters open without a connection.'
               : 'Reload the page, then try again.'}
           </Missing>
         </main>

@@ -119,6 +119,22 @@ ICONS.Pointer = [
 ICONS.LayoutList = [dot(190, 720), line(330, 720, 850, 720), dot(190, 500), line(330, 500, 850, 500), dot(190, 280), line(330, 280, 850, 280)];
 ICONS.Menu = [line(170, 740, 830, 740), line(170, 500, 830, 500), line(170, 260, 830, 260)];
 
+// ---------- one live area for all (design QA, 3 Nov) ----------
+// Each icon's centre lines are centred on (500, 500) and scaled so its ink's longer side is 780 units (chevrons 560),
+// so icons of one size carry the same weight and sit on the same centre. Scaling the centre lines, not the ink, keeps
+// the pen's width the same on every icon. Play keeps a 40-unit shift right: a triangle's optical centre.
+const LIVE = 780, LIVE_CHEVRON = 560, NUDGE = { Play: [40, 0] };
+for (const [name, strokes] of Object.entries(ICONS)) {
+  const pts = strokes.flat();
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const live = name.startsWith('Chevron') ? LIVE_CHEVRON : LIVE;
+  const k = (live - W) / Math.max(x1 - x0, y1 - y0, 1);
+  const [dx, dy] = NUDGE[name] ?? [0, 0];
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  ICONS[name] = strokes.map((st) => st.map(([x, y, ...rest]) => [500 + dx + (x - cx) * k, 500 + dy + (y - cy) * k, ...rest]));
+}
+
 // ---------- ink them ----------
 const num = (v) => Math.round(v);
 const toD = (c) => 'M' + c.map(([x, y]) => num(x) + ' ' + num(1000 - y)).join('L') + 'Z';
