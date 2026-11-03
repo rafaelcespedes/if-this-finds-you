@@ -1,34 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-look="reading-room">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#eeeae2" />
+    <meta name="theme-color" content="#e6e4de" />
     <meta name="robots" content="noindex" />
     <title>Not found – If This Finds You</title>
     <link rel="icon" href="/brand/favicon-5.svg" type="image/svg+xml" />
     <link rel="icon" href="/brand/favicon-5.ico" sizes="32x32" />
-    <!-- An address that isn't here: the site's own page (desk, paper, the wordmark), and the two ways on.
-         Self-contained on purpose: no app code, so it shows even when the rest of the site can't load. -->
-    <script>
-      // the look being compared (?look=reading-room), kept for the tab as the app keeps it (src/lib/look.ts)
-      try {
-        var asked = new URLSearchParams(location.search).get('look');
-        var look = (asked || sessionStorage.getItem('seedhand:look') || '').toLowerCase();
-        if (look === 'reading-room' || look === 'reading' || look === 'a') document.documentElement.dataset.look = 'reading-room';
-      } catch (e) { /* storage off: today's look */ }
-    </script>
+    <!-- An address that isn't here: the site's own page, in the Reading Room (the room, an index card, ledger ink),
+         and the two ways on. Self-contained on purpose: no app code, so it shows even when the rest of the site
+         can't load. -->
     <style>
       :root {
-        --desk: #eeeae2;
-        --paper: #fffdf8;
-        --text: #1e1a16;
-        --muted: #675e54;
-        --hairline: #dcd3c4;
-        --ink: #1e1a16;
-        --ink-soft: #3a322b;
-        --mark: #b0341c;
-        --rule-link: #cbc1b1;
+        --desk: #e6e4de; /* the room */
+        --paper: #f3eee1; /* an index card */
+        --text: #1e2733; /* ledger ink */
+        --muted: #575146;
+        --hairline: #d6ccb7;
+        --ink: #1e2733;
+        --ink-soft: #33405a;
+        --mark: #9b3b2a; /* archival red: numbers and the main action */
+        --rule-link: color-mix(in oklab, #1e2733 30%, transparent);
+        --book: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; }
@@ -36,34 +30,37 @@
         min-height: 100dvh;
         background: var(--desk);
         color: var(--text);
-        font: 15px/1.55 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font: 1.0625rem/1.55 var(--book);
         display: grid;
         grid-template-rows: auto 1fr;
         padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
       }
       /* the site's header, as every page has it (components/SiteHeader.tsx, docs/NAVIGATION.md): the wordmark, then
-         the three places in the same words and order; on phones a Menu chip opens them. Keep it in step by hand. */
-      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; font-size: 12.5px; }
+         the three places in the same words and order (the room's small capitals); on phones a Menu chip opens
+         them. It can't share the app's code, so keep it in step by hand. */
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 32px; }
       header a { border-radius: 3px; }
       .logo { display: flex; align-items: center; height: 32px; margin: 0 -4px; padding: 0 4px; }
       .logo img { display: block; height: 21px; width: auto; }
       .places { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
-      .places a { position: relative; display: inline-block; padding: 2px 6px; color: color-mix(in oklab, var(--text) 80%, transparent); font-weight: 500; text-decoration: none; }
+      .places a {
+        position: relative; display: inline-block; padding: 2px 6px; color: var(--text); text-decoration: none;
+        font-size: 0.875rem; font-weight: 400; letter-spacing: 0.05em; text-transform: lowercase; font-variant-caps: small-caps;
+      }
       .places a::after { content: ''; position: absolute; inset: -12px -4px; }
       .menu { display: none; position: relative; }
       .menu summary {
-        position: relative; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; cursor: pointer; list-style: none;
-        border: 1px solid color-mix(in oklab, var(--text) 14%, transparent); background: var(--paper); color: var(--text);
-        box-shadow: 0 1px 2px rgba(60, 45, 20, 0.1);
+        position: relative; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 3px; cursor: pointer;
+        list-style: none; border: 1px solid var(--hairline); background: var(--paper); color: var(--text);
       }
       .menu summary::-webkit-details-marker { display: none; }
       .menu summary::after { content: ''; position: absolute; inset: -6px; }
       .menu[open] .places {
         position: absolute; z-index: 1; top: 40px; right: 0; display: block; width: min(18rem, calc(100vw - 24px)); padding: 6px;
-        border: 1px solid var(--hairline); border-radius: 16px; background: var(--paper);
-        box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 16px 40px -12px rgba(40, 30, 10, 0.35);
+        border: 1px solid var(--hairline); border-top-color: var(--text); border-radius: 3px; background: var(--paper);
+        box-shadow: 0 14px 34px -14px rgba(30, 39, 51, 0.42);
       }
-      .menu[open] .places a { display: flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 15px; color: var(--text); }
+      .menu[open] .places a { display: flex; align-items: center; min-height: 44px; padding: 0 12px; }
       .menu[open] .places a::after { content: none; }
       @media (max-width: 639px) {
         header > nav { display: none; }
@@ -75,8 +72,7 @@
       }
       @media (min-width: 1024px) {
         body { padding-top: max(20px, env(safe-area-inset-top)); padding-left: max(40px, env(safe-area-inset-left)); padding-right: max(40px, env(safe-area-inset-right)); }
-        header { min-height: 36px; }
-        .logo { height: 36px; }
+        header, .logo { min-height: 36px; height: 36px; }
         .logo img { height: 22px; }
       }
       main { display: grid; place-items: center; padding: 24px 0 12vh; }
@@ -84,53 +80,34 @@
         width: min(420px, 100%);
         background: var(--paper);
         border: 1px solid var(--hairline);
-        box-shadow: 0 1px 2px rgba(60, 45, 20, 0.06), 0 18px 40px -22px rgba(60, 45, 20, 0.35);
+        border-radius: 2px;
+        box-shadow: 0 0.5px 0 rgba(30, 39, 51, 0.1), 0 1px 2px rgba(30, 39, 51, 0.08), 0 26px 44px -24px rgba(30, 39, 51, 0.28);
+        /* a catalogue card's ruled lines */
+        background-image: repeating-linear-gradient(to bottom, transparent 0 calc(1.55em - 1px), color-mix(in oklab, #1e2733 7%, transparent) calc(1.55em - 1px) 1.55em);
+        background-position: 0 4.2rem;
         padding: 36px 32px 32px;
       }
-      .mark { color: var(--mark); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 10px; }
-      h1 { font-size: 22px; line-height: 1.25; font-weight: 600; margin: 0; text-wrap: balance; }
+      .mark { color: var(--mark); font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 10px; font-variant-numeric: lining-nums; }
+      h1 { font-size: 1.625rem; line-height: 1.2; font-weight: 500; margin: 0; text-wrap: balance; }
       p { margin: 10px 0 0; color: var(--muted); max-width: 34ch; }
       .ways { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
       .button {
-        display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 3px;
-        background: var(--ink); color: #faf7f1; text-decoration: none; font-weight: 500;
+        display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 2px;
+        background: var(--ink); color: #f3eee1; text-decoration: none; font-weight: 500; letter-spacing: 0.01em;
         transition: background-color 150ms ease-out;
       }
-      .button:active { background: #0d0b09; }
+      .button:active { background: #10161f; }
       .link { color: var(--text); font-weight: 500; text-decoration: underline; text-decoration-color: var(--rule-link); text-underline-offset: 3px; padding: 10px 0; }
       a:focus-visible, summary:focus-visible { outline: 2px solid var(--mark); outline-offset: 3px; }
       @media (hover: hover) and (pointer: fine) {
         .button:hover { background: var(--ink-soft); }
         .link:hover { text-decoration-color: var(--text); }
-        .places a:hover { color: var(--text); }
-      }
-      /* the Reading Room: the missing page as a catalogue card that isn't in the drawer */
-      html[data-look='reading-room'] {
-        --desk: #e6e4de;
-        --paper: #f3eee1;
-        --text: #1e2733;
-        --muted: #575146;
-        --hairline: #d6ccb7;
-        --mark: #9b3b2a;
-      }
-      html[data-look='reading-room'] body { font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif; font-size: 16px; }
-      html[data-look='reading-room'] .sheet { position: relative; border-radius: 2px; padding: 22px 26px 40px; box-shadow: 0 10px 22px -16px rgba(30, 39, 51, 0.35); }
-      html[data-look='reading-room'] .sheet::after {
-        content: ''; position: absolute; left: 50%; bottom: 11px; width: 9px; height: 9px; margin-left: -4.5px;
-        border-radius: 50%; background: var(--desk); box-shadow: inset 0 1px 1.5px rgba(30, 39, 51, 0.35);
-      }
-      html[data-look='reading-room'] .mark { font-size: 13px; letter-spacing: 0.1em; padding-bottom: 8px; margin-bottom: 14px; border-bottom: 1px solid rgba(155, 59, 42, 0.55); }
-      html[data-look='reading-room'] h1 { font-size: 24px; font-weight: 500; }
-      html[data-look='reading-room'] .button { min-height: 44px; padding: 0; background: none; color: var(--mark); font-weight: 600; font-size: 17px; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; }
-      html[data-look='reading-room'] .button:active { background: none; }
-      html[data-look='reading-room'] :is(a, summary):focus-visible { outline-color: var(--text); }
-      html[data-look='reading-room'] .places a { font-size: 15px; font-weight: 400; letter-spacing: 0.06em; text-transform: lowercase; font-variant-caps: small-caps; color: var(--text); }
-      @media (hover: hover) and (pointer: fine) {
-        html[data-look='reading-room'] .button:hover { background: none; color: #7e2f21; text-decoration-color: currentColor; }
+        .places a:hover, .menu summary:hover { background: #e9e2d2; }
       }
       @media (forced-colors: active) {
         .sheet { border-color: CanvasText; }
         .button { border: 1px solid ButtonText; }
+        .menu summary { border-color: ButtonText; }
       }
     </style>
   </head>
@@ -157,7 +134,7 @@
     </header>
     <main>
       <div class="sheet">
-        <p class="mark">Not found</p>
+        <p class="mark">No. 404 · Not found</p>
         <h1>This page isn’t here</h1>
         <p>The address may be mistyped, or the page has moved. The letters are all still here.</p>
         <div class="ways">

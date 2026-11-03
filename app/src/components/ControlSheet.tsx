@@ -9,7 +9,6 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { ChevronDown, ChevronUp, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AboutHand, LetterStatus, LookControls, MoreControls, type PanelProps } from '@/components/Panel';
-import { styleName } from '@/lib/styles';
 import { cn } from '@/lib/utils';
 // the look being compared (?look=reading-room): "Bring another" in words (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
@@ -276,7 +275,6 @@ export function ControlSheet({ open, detent, onDetent: setDetent, onMetrics, onD
                 <span className="truncate">{props.name}</span>
                 <ChevronDown aria-hidden className="size-3.5 shrink-0 text-faint transition-transform duration-200 group-data-[state=open]:rotate-180" />
               </span>
-              <span className="block truncate text-[0.75rem] leading-snug text-muted-foreground">{styleName(props.state.style)}</span>
             </button>
           </AboutHand>
           {/* look C (?look=postmarked): Find another is a round stamp; look A: Bring another, in words */}

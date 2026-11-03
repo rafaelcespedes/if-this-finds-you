@@ -214,8 +214,8 @@ html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-si
 html[data-look='reading-room'] [data-site-menu] [data-site-link] {
   font-family: var(--rr-caps);
   text-transform: lowercase;
-  letter-spacing: 0.06em;
-  font-size: 0.9375rem;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
   font-weight: 400;
   color: var(--rr-ink);
 }
@@ -317,6 +317,14 @@ html[data-look='reading-room'] .rr-card-title {
 }
 html[data-look='reading-room'] .rr-facts {
   margin: 0;
+  container: rr-facts / inline-size;
+}
+/* narrow for its text (a small phone, or a large text size): each label sits over its value */
+@container rr-facts (max-width: 18rem) {
+  html[data-look='reading-room'] .rr-facts .rr-fact {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
 }
 html[data-look='reading-room'] .rr-fact {
   display: grid;
@@ -638,9 +646,43 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-
   background: transparent;
   font-family: var(--rr-caps);
   text-transform: lowercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   font-size: 0.9062rem;
   font-weight: 400;
+  white-space: nowrap;
+}
+/* the phone's writing tray (PenTray.tsx), its pen menu, and their letter pulled down over yours (TheirLetter.tsx):
+   slips ruled in ink, not pills; Done, the action of the moment, in red words */
+html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'],
+html[data-look='reading-room'] div.fixed.z-40 [class*='w-64'][class*='rounded-2xl'] {
+  border: 1px solid var(--rr-edge);
+  border-top-color: var(--rr-ink);
+  border-radius: 3px;
+  background: var(--rr-card);
+  backdrop-filter: none;
+  box-shadow: 0 10px 24px -14px rgba(30, 39, 51, 0.42);
+}
+html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'] [class*='rounded-full'] {
+  border-radius: 3px;
+}
+html[data-look='reading-room'] div.fixed.z-40 > div[class*='rounded-[22px]'] [data-slot='button'] {
+  border-radius: 3px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--rr-red);
+  font-size: 1rem;
+  font-weight: 600;
+}
+html[data-look='reading-room'] [class*='rounded-b-[22px]'] {
+  border-radius: 0 0 3px 3px;
+  border-bottom: 1px solid var(--rr-ink);
+}
+/* the quiet pointer on the sheet ("Click the letter to write", "Press Esc when you're done"): a slip too */
+html[data-look='reading-room'] [class*='rounded-full'][class*='bg-panel/95'] {
+  border-radius: 2px;
+  border: 1px solid var(--rr-edge);
+  background: var(--rr-slip);
+  color: var(--rr-muted);
 }
 /* the catalogue slip under the sheet (phones) */
 html[data-look='reading-room'] .rr-under-sheet {
@@ -691,10 +733,11 @@ html[data-look='reading-room'] .rr-aid {
   padding-top: 10px;
   border-top: 1px solid color-mix(in oklab, var(--rr-ink) 60%, transparent);
   font-family: var(--rr-caps);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   letter-spacing: 0.05em;
   text-transform: lowercase;
   color: var(--rr-muted);
+  text-wrap: balance;
 }
 html[data-look='reading-room'] .rr-aid .rr-figures {
   font-family: var(--rr-book);
@@ -843,6 +886,10 @@ html[data-look='reading-room'] .rr-dock-reply svg {
     min-height: 44px;
   }
 }
+html[data-look='reading-room'] .rr-dock {
+  flex-wrap: wrap;
+  justify-content: center;
+}
 /* a phone: the same line, packed (taps stay 44 px tall, 40 wide) */
 @media (max-width: 520px) {
   html[data-look='reading-room'] .rr-dock {
@@ -864,6 +911,21 @@ html[data-look='reading-room'] .rr-dock-reply svg {
     padding-inline: 7px;
   }
   html[data-look='reading-room'] .rr-dock-reply svg {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  html[data-look='reading-room'] .rr-dock .rr-icon {
+    width: 34px;
+  }
+  html[data-look='reading-room'] .rr-dock-rule {
+    margin: 0;
+  }
+  html[data-look='reading-room'] .rr-dock-word,
+  html[data-look='reading-room'] .rr-dock-reply {
+    padding-inline: 5px;
+  }
+  html[data-look='reading-room'] .rr-dock-no .rr-sc {
     display: none;
   }
 }
@@ -930,10 +992,14 @@ html[data-look='reading-room'] {
   --fonts-accent-text: var(--rr-slip);
 }
 /* each hand's description (print or joined, the hand it learned from, its pen, its paper) as catalogue small caps */
+html[data-look='reading-room'] .font-row-name {
+  min-width: 0;
+  white-space: normal;
+}
 html[data-look='reading-room'] .font-tag {
   font-family: var(--rr-caps);
   font-size: 0.875rem;
-  letter-spacing: 0.045em;
+  letter-spacing: 0.03em;
   text-transform: lowercase;
 }
 /* the main actions (New set, Show more, Done) in words and archival red, like Bring another letter */
@@ -959,6 +1025,12 @@ html[data-look='reading-room'] .dock-primary {
 }
 html[data-look='reading-room'] .dock-primary:active {
   transform: translateY(0.5px);
+}
+@media (max-width: 380px) {
+  html[data-look='reading-room'] .dock-primary {
+    font-size: 0.875rem;
+    padding-inline: 6px;
+  }
 }
 html[data-look='reading-room'] .seg-btn[aria-checked='true'] {
   background: var(--rr-slip);

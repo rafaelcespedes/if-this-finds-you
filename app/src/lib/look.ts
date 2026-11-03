@@ -24,7 +24,14 @@ function readLook(): LookId {
   return DEFAULT_LOOK;
 }
 export const LOOK: LookId = typeof location !== 'undefined' ? readLook() : DEFAULT_LOOK;
-/** Call once in each page's entry, before render. */
+/** Each look's desk: the browser's bar takes it too (the pages' static HTML starts in the Reading Room's). */
+const DESK: Record<LookId, string> = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' };
+
+/** Call once in each page's entry, before render. Classic clears a look the page's HTML started in. */
 export function applyLook() {
-  if (typeof document !== 'undefined' && LOOK !== 'classic') document.documentElement.dataset.look = LOOK;
+  if (typeof document === 'undefined') return;
+  const html = document.documentElement;
+  if (LOOK === 'classic') delete html.dataset.look;
+  else html.dataset.look = LOOK;
+  for (const m of document.querySelectorAll('meta[name="theme-color"]')) m.setAttribute('content', DESK[LOOK]);
 }
