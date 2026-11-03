@@ -2,8 +2,12 @@
 // as the picker's swatch, with the time each took to paint. ?guide=0 shows them as sent; ?k=4 changes the scale.
 import { StrictMode, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
-import { PaperCanvas, PaperGuide } from '@/components/PaperCanvas';
-import { ALL_PAPERS, paintPaper, sheetShadow, type PaperSpec } from '@/lib/papers';
+import { makeHand } from '@engine';
+import { PaperCanvas, PaperGuide, PaperMarks } from '@/components/PaperCanvas';
+import { liveLayout, sheetSVG } from '@/lib/live';
+import { SAMPLES } from '@/lib/samples';
+import type { MarkLook } from '@/lib/paper/marks';
+import { ALL_PAPERS, getPaper, paintPaper, sheetShadow, type PaperSpec } from '@/lib/papers';
 import '../index.css';
 
 const q = new URLSearchParams(location.search);
@@ -38,6 +42,28 @@ function Sheet({ p }: { p: PaperSpec }) {
 }
 
 const VIEW = q.get('view') || 'sheets';
+
+// view=marks: every badge (1-6) on a few papers, over real handwriting. ?papers=pad,laid,… &look=postmarked
+const BADGE_NAMES = ['Double-ring datestamp', 'Ring and bars', 'Receipt oval', 'Registry box', 'Straight-line mark', 'Pencilled note'];
+const HANDS: [string, string][] = [['quiet-heron-17', 'script'], ['maple-river-42', 'print'], ['amber-wren-9', 'spencerian'], ['salt-cedar-31', 'quebec-print']];
+function Lettered({ paperId, badge, i, look }: { paperId: string; badge: number; i: number; look: MarkLook }) {
+  const paper = getPaper(paperId);
+  const letter = SAMPLES[(i * 7 + badge * 3) % SAMPLES.length];
+  const [seed, style] = HANDS[(i + badge) % HANDS.length];
+  const svg = useMemo(() => {
+    const live = liveLayout(makeHand(seed, style), letter.text.slice(0, 520), paper, 1, 1, false);
+    return sheetSVG(live, 0, 'currentColor', '');
+  }, [letter, paper, seed, style]);
+  const raw = letter as unknown as { place?: string; year?: number };
+  return (
+    <PaperMarks value={{ id: letter.id, hand: seed, place: raw.place ?? 'Lisbon', year: raw.year ?? 1838, number: 4 + i * 31 + badge, look, badge }}>
+      <div className="relative isolate shrink-0 rounded-[1.5px]" style={{ width: paper.w * K, height: paper.h * K, boxShadow: sheetShadow(paper) }}>
+        <PaperCanvas paper={paper} pxPerMm={K} className="absolute inset-0 rounded-[1.5px]" />
+        <div className="writing writing-fill pointer-events-none absolute inset-0 overflow-hidden" style={{ color: '#1f2a44' }} dangerouslySetInnerHTML={{ __html: svg }} />
+      </div>
+    </PaperMarks>
+  );
+}
 const Z = parseFloat(q.get('z') || '6');
 
 function Gallery() {
@@ -58,6 +84,20 @@ function Gallery() {
                 <Sheet p={p} />
                 {label(p)}
               </div>
+            ))}
+          </div>
+        )}
+        {VIEW === 'marks' && (
+          <div className="grid gap-10">
+            {[1, 2, 3, 4, 5, 6].filter((b) => !q.get('badges') || q.get('badges')!.split(',').includes(String(b))).map((badge) => (
+              <section key={badge} className="grid gap-3">
+                <h2 className="text-[14px] font-medium">{badge}. {BADGE_NAMES[badge - 1]}</h2>
+                <div className="flex flex-wrap items-start gap-8">
+                  {(q.get('papers') || 'pad,laid,airmail,notebook,postcard').split(',').map((id, i) => (
+                    <Lettered key={id} paperId={id} badge={badge} i={i} look={(q.get('look') as MarkLook) || 'reading-room'} />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}

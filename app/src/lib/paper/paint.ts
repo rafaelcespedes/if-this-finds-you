@@ -7,6 +7,7 @@ import { rng } from './rng';
 import type { PaperSpec, Rule } from './types';
 import { fbm2 } from './noise';
 import { outlineOf, outlinePath, type Rim } from './outline';
+import { printMarks, type Mark } from './marks';
 
 export interface PaintOptions {
   /** device pixels per mm */
@@ -23,6 +24,8 @@ export interface PaintOptions {
   /** the shadow a shaped sheet casts: all of it (on screen, painted into a bleed), or only where it touches
    *  the desk (the JPEG, swatches) */
   shadow?: 'full' | 'contact' | 'none';
+  /** printed marks (lib/paper/marks.ts): those stamped before the letter was written are printed into the paper */
+  marks?: Mark[];
 }
 
 const SHADOW = 'rgba(60, 45, 20, A)';
@@ -160,6 +163,7 @@ export function paintPaper(ctx: Ctx2D, paper: PaperSpec, o: PaintOptions) {
   if (paper.folds) folds(ctx, paper, k);
   if (paper.flaps) flaps(ctx, paper, k);
   if (fin.gum) gumEdge(ctx, paper, k, seed);
+  if (o.marks?.length) printMarks(ctx, o.marks, k, 'under');
   if (outline) for (const rim of outline.rims) rimLayer(ctx, rim, k, o.holeFill);
   ctx.restore();
   // fibres poke out past a deckled or torn edge

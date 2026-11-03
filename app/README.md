@@ -204,6 +204,13 @@ tears, the spiral fringe, the aerogramme's flaps) clip the sheet and cast their 
 `sheets` (more sheets), `card` (another card), `back` (a notecard's plain back), `cramp` (an aerogramme squeezes,
 then offers a second); see `sheetPaper()` in `lib/papers.ts`.
 
+**Printed marks** (`lib/paper/marks.ts`): a look wraps a letter's sheets in `<PaperMarks value={{ id, hand, place, year,
+number, cancel, look }}>` (from `components/PaperCanvas.tsx`) and the first sheet is stamped: one of six invented location
+badges (double-ring datestamp, ring and bars, receipt oval, registry box, straight-line mark, pencilled note; `?badge=1…6`
+forces one), the letter's number, and a cancellation where given. Placement, rotation (±15°), ink and whether a mark sits
+under or over the handwriting are seeded by the letter and the hand. Nothing is printed without a look asking.
+`/papers.html?view=marks` shows every badge on several papers.
+
 Sizes come from makers' and retailers' listings, DIN 5008, USPS and Wikipedia; colours and line weights are matched
 by eye. Everything is painted by `lib/paper/paint.ts` from small textures made once (grain, formation, cockle)
 and stretched, so a sheet paints in a few milliseconds; shared textures and outlines are made in idle time.
