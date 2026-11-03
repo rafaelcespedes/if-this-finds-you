@@ -23,3 +23,6 @@ Rules every workstream follows. Most come straight from Rafael.
 8. **Open provenance.** Every skeleton carries its source, and the reference library lists everything
    we used and how it shaped a decision.
 9. **Minimal, warm, polished UI.** The letter is the hero; controls stay few and are written in plain words.
+10. **Archival look, 2026 interaction.** Typography and surfaces may feel like a museum or library; controls, panels,
+    sheets and motion must feel modern: snappy, smooth, interruptible, thumb-friendly, one shared overlay system.
+    (Rafael, 2026-11-03)
