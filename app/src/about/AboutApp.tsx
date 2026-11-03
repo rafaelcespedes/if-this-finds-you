@@ -352,9 +352,12 @@ export function AboutApp() {
 
         <Section id="contact">
           <p>
-            {APP_NAME} is made by Rafael Cespedes: <Out href="https://rafaelcespedes.com">rafaelcespedes.com</Out>. If
-            you spot a mistake in a letter or its story, he’d like to know.
+            {APP_NAME} is made by Rafael Cespedes. If you spot a mistake in a letter or its story, he’d like to know.
           </p>
+          <dl className="about-contact">
+            <div><dt>Site</dt><dd><Out href="https://rafaelcespedes.com">rafaelcespedes.com</Out></dd></div>
+            <div><dt>X</dt><dd><Out href="https://x.com/rafcespedes">@rafcespedes</Out></dd></div>
+          </dl>
         </Section>
 
         <footer className="about-colophon">

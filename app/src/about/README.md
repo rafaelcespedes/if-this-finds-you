@@ -29,4 +29,3 @@ header, the phone menu or a footer). No other page links to About yet.
 5. "The fonts are open source now; the rest of the project, code and all, will follow once it's polished."
 6. "Every source the project used, 484 so far, … is listed … in a reference library, to be published with the code."
 7. "If you spot a mistake in a letter or its story, he'd like to know." (Contact)
-8. The X handle is left out: it isn't anywhere in the repo.
