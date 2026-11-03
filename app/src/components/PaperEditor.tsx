@@ -22,6 +22,8 @@ export interface PaperEditorApi {
   /** the current selection (or the caret) in the live text */
   selection: () => [number, number];
   setSelection: (from: number, to?: number) => void;
+  /** start writing at a point on the page (client px): the nearest line and letter, the end when outside the lines */
+  placeAt: (clientX: number, clientY: number) => void;
 }
 
 interface Props {
@@ -148,7 +150,9 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     blur: () => { ta.current?.blur(); sync(); },
     selection: () => (ta.current ? [ta.current.selectionStart, ta.current.selectionEnd] : [text.length, text.length]),
     setSelection: (from, to) => focusAt(to ?? from, to != null, from),
+    placeAt: (x, y) => placeAt.current(x, y),
   }), [focusAt, sync, text.length]);
+  const placeAt = useRef<(x: number, y: number) => void>(() => {});
 
   // ---------- pointer ----------
   const pointToIndex = (clientX: number, clientY: number) => {
@@ -263,6 +267,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     setTouchSel(false);
     focusAt(pointToIndex(e.clientX, e.clientY));
   };
+
+  placeAt.current = (x, y) => { onIntent?.(); goalX.current = null; setPointerSel(false); setTouchSel(false); focusAt(pointToIndex(x, y)); };
 
   // the handles at a touch selection's ends: drag either one; the text line is just above the finger
   const handleDrag = useRef<{ id: number; other: number } | null>(null);
