@@ -56,7 +56,10 @@ function slidingFaces() {
     face.dataset.placed = '1';
   };
   const sweep = () => document.querySelectorAll<HTMLElement>(SEL).forEach(place);
-  new MutationObserver(() => requestAnimationFrame(sweep)).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state', 'aria-checked'] });
-  window.addEventListener('resize', sweep);
-  requestAnimationFrame(sweep);
+  // one sweep per burst of changes; a timer, not a frame callback, so it also runs in a tab that isn't showing yet
+  let queued = 0;
+  const soon = () => { if (!queued) queued = window.setTimeout(() => { queued = 0; sweep(); }, 0); };
+  new MutationObserver(soon).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state', 'aria-checked'] });
+  window.addEventListener('resize', soon);
+  soon();
 }

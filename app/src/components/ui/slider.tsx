@@ -41,9 +41,12 @@ function Slider({
 
   // controls research #2: within 4% of the writer's own value the thumb catches on it (a detent)
   const detent = hasControl(2);
+  const bars = hasControl(1);
   const caught = React.useRef(false);
+  // only a pointer catches: arrow keys step by less than the catch, so they'd never get past it
+  const pointing = React.useRef(false);
   const catchMark = (v: number) => {
-    if (!detent || mark == null) return v;
+    if (!detent || mark == null || !pointing.current) return v;
     const near = Math.abs(v - mark) <= (max - min) * 0.04;
     if (near && !caught.current && typeof navigator.vibrate === 'function') navigator.vibrate(4);
     caught.current = near;
@@ -56,7 +59,7 @@ function Slider({
     const el = rootRef.current;
     if (!detent || !el) return;
     let start: { x: number; rect: DOMRect } | null = null;
-    const down = (e: PointerEvent) => { if (e.button === 0) start = { x: e.clientX, rect: el.getBoundingClientRect() }; };
+    const down = (e: PointerEvent) => { if (e.button === 0) { pointing.current = true; start = { x: e.clientX, rect: el.getBoundingClientRect() }; } };
     const move = (e: PointerEvent) => {
       if (!start) return;
       if (Math.abs(e.clientX - start.x) > 3) el.dataset.dragging = '';
@@ -64,7 +67,7 @@ function Slider({
       const give = Math.sign(past) * 6 * Math.sqrt(Math.min(Math.max(0, Math.abs(past) - 12) / 160, 1));
       el.style.setProperty('--give', `${give.toFixed(2)}px`);
     };
-    const up = () => { start = null; delete el.dataset.dragging; el.style.setProperty('--give', '0px'); };
+    const up = () => { start = null; pointing.current = false; caught.current = false; el.removeAttribute('data-caught'); delete el.dataset.dragging; el.style.setProperty('--give', '0px'); };
     el.addEventListener('pointerdown', down);
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -145,7 +148,7 @@ function Slider({
       data-slot="slider"
       data-active={active ? '' : undefined}
       // controls research #1: where the value line would run into the name (left) or the word (right)
-      data-edge={valuePct < 24 || valuePct > 70 ? '' : undefined}
+      data-edge={bars && (valuePct < 24 || valuePct > 70) ? '' : undefined}
       className={cn('relative flex h-5 w-full touch-none select-none items-center pointer-coarse:h-11 data-[disabled]:opacity-45', className)}
       onDoubleClick={onReset}
       ref={rootRef}
