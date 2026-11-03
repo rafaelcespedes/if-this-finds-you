@@ -1,7 +1,7 @@
 import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ALL_PAPERS, isShaped, SHADOW_BLEED, type PaperSpec } from '@/lib/papers';
 import { paintHere, paintOff, paintsOffThread, warmPaper, type PaperBitmap, type PaperJob } from '@/lib/paper/client';
-import { hideMarks, planMarks, printMarks, showMarks, type MarkInput } from '@/lib/paper/marks';
+import { hideMarks, markBox, planMarks, printMarks, showMarks, type MarkInput } from '@/lib/paper/marks';
 import { perf } from '@/lib/perf';
 import { cn } from '@/lib/utils';
 
@@ -90,6 +90,15 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
   const under = plan?.marks.filter((m) => m.layer === 'under') ?? [];
   const over = plan?.marks.filter((m) => m.layer === 'over') ?? [];
   const overRef = useRef<HTMLCanvasElement>(null);
+  // the layer over the writing covers only its marks (a few mm round them), not the whole sheet
+  const overBox = useMemo(() => {
+    if (!over.length) return null;
+    const bs = over.map(markBox);
+    const x0 = Math.max(0, Math.min(...bs.map((b) => b[0])) - 3), y0 = Math.max(0, Math.min(...bs.map((b) => b[1])) - 3);
+    const x1 = Math.min(paper.w, Math.max(...bs.map((b) => b[2])) + 3), y1 = Math.min(paper.h, Math.max(...bs.map((b) => b[3])) + 3);
+    return { x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan, paper.w, paper.h]);
   // a download or a video of this letter prints the same marks
   useEffect(() => {
     if (!plan || !markInput) return;
@@ -188,20 +197,22 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
   // marks stamped after the letter was written: a layer over the writing, multiplied into it
   useLayoutEffect(() => {
     const c = overRef.current;
-    if (!c || !over.length || cssW <= 0) return;
+    if (!c || !over.length || !overBox || cssW <= 0) return;
     const dpr = Math.min(3, window.devicePixelRatio || 1);
     const k = pxPerMm * dpr;
-    const w = Math.round(paper.w * k), h = Math.round(paper.h * k);
-    const key = `${plan!.key}|${w}x${h}`;
+    const w = Math.round(overBox.w * k), h = Math.round(overBox.h * k);
+    // a size that moved by less than a pixel keeps what's painted
+    const key = `${plan!.key}|${Math.round(w / 2)}x${Math.round(h / 2)}`;
     if (c.dataset.key === key) return;
     c.width = w;
     c.height = h;
     const ctx = c.getContext('2d');
     if (!ctx) return;
+    ctx.translate(-overBox.x * k, -overBox.y * k);
     perf.time('paper marks paint', () => printMarks(ctx, over, k, 'over'));
     c.dataset.key = key;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plan, pxPerMm, paper.w, paper.h, cssW]);
+  }, [plan, pxPerMm, overBox, cssW]);
 
   // the size follows the painted paper (set in show); before any paper arrives, the canvas holds the sheet's place
   return (
@@ -211,8 +222,8 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
         <canvas
           ref={overRef}
           aria-hidden
-          className="pointer-events-none absolute inset-0 block"
-          style={{ width: cssW, height: cssH, zIndex: 1, mixBlendMode: 'multiply' }}
+          className="pointer-events-none absolute block"
+          style={{ left: overBox!.x * pxPerMm, top: overBox!.y * pxPerMm, width: overBox!.w * pxPerMm, height: overBox!.h * pxPerMm, zIndex: 1, mixBlendMode: 'multiply' }}
         />
       )}
     </>

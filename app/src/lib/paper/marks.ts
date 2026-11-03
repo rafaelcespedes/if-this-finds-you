@@ -71,12 +71,63 @@ const INKS = {
   pencil: '#55555b',
 };
 
-/** Badge weights per look: the reading room leans to the archive's own stamps, postmarked to the post's. */
+/**
+ * Badge weights per look, [datestamp, ring and bars, oval, registry, line, pencil]. The reading room leans to the
+ * archive's own stamps and never uses the ring with bars (its bars read as crossed-out writing); postmarked leans to
+ * the post's. The pencilled note stays rare until it's written in the engine's own hand.
+ */
 const WEIGHTS: Record<MarkLook, number[]> = {
-  'reading-room': [1.2, 0.8, 1.6, 1.4, 1, 1.3],
-  postmarked: [2.4, 2, 0.6, 0.7, 1, 0.3],
-  default: [1, 1, 1, 1, 1, 1],
+  'reading-room': [1.2, 0, 1.8, 1.4, 1.0, 0.4],
+  postmarked: [2.4, 1.2, 0.4, 0.3, 1.4, 0],
+  default: [1.2, 0, 1.8, 1.4, 1.0, 0.4],
 };
+
+/** Each mark's ink box around its centre, in units of its size: [left, right, top, bottom]. */
+const BOX: Record<Kind, [number, number, number, number]> = {
+  datestamp: [-0.5, 0.5, -0.5, 0.5],
+  duplex: [-0.975, 1.2, -0.5, 0.5],
+  oval: [-0.6, 0.6, -0.38, 0.38],
+  registry: [-0.5, 0.5, -0.25, 0.25],
+  line: [-0.95, 0.95, -0.34, 0.34],
+  pencil: [-1.05, 1.05, -0.22, 0.22],
+  number: [-0.9, 0.9, -0.25, 0.25],
+  cancel: [-0.73, 0.73, -0.22, 0.22],
+};
+/** the duplex's bars, which must never cross the writing */
+const BARS: [number, number, number, number] = [0.3, 1.2, -0.42, 0.42];
+/** how far each kind tilts, degrees */
+const TILT: Record<Kind, number> = { datestamp: 15, duplex: 15, oval: 15, registry: 8, line: 8, pencil: 3, number: 8, cancel: 8 };
+const RINGS = new Set<Kind>(['datestamp', 'duplex']);
+
+type Box = [number, number, number, number];
+/** A local box rotated and moved to (x, y): the axis-aligned box it covers, [x0, y0, x1, y1] in mm. */
+function boxAt(local: Box, size: number, rot: number, x: number, y: number): Box {
+  const c = Math.cos(rot), s = Math.sin(rot);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [u, v] of [[local[0], local[2]], [local[1], local[2]], [local[1], local[3]], [local[0], local[3]]]) {
+    const px = x + (u * c - v * s) * size, py = y + (u * s + v * c) * size;
+    x0 = Math.min(x0, px); y0 = Math.min(y0, py); x1 = Math.max(x1, px); y1 = Math.max(y1, py);
+  }
+  return [x0, y0, x1, y1];
+}
+const overlapArea = (a: Box, b: Box) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+const area = (a: Box) => (a[2] - a[0]) * (a[3] - a[1]);
+
+/** The ink box of a placed mark (mm), for layers sized to their marks. */
+export const markBox = (m: Pick<Mark, 'kind' | 'x' | 'y' | 'size' | 'rot'>) => boxAt(BOX[m.kind], m.size, m.rot, m.x, m.y);
+
+/** A place as a stamp prints it: tidy spacing, no "Township of", never cut inside a word. */
+export function stampPlace(raw: string | null | undefined, max = 16) {
+  let p = (raw || '').replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim();
+  p = p.replace(/\b(Township|County|Parish|Convent)( of)?\b\s*/gi, '').replace(/\s+,/g, ',').replace(/^[\s,]+|[\s,]+$/g, '').trim();
+  if (p.length <= max) return p;
+  const head = p.split(',')[0].trim();
+  if (head.length <= max) return head;
+  const words = head.split(' ');
+  let out = words[0];
+  for (const w of words.slice(1)) { if ((out + ' ' + w).length > max) break; out += ' ' + w; }
+  return out;
+}
 
 function forcedBadge(input: MarkInput): number | null {
   if (input.badge) return input.badge;
@@ -99,108 +150,126 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   const seed = `${input.id}|${input.hand}|${paper.family}`;
   const r = rng('marks:' + seed);
   const minSide = Math.min(paper.w, paper.h);
-  const place = (input.place || '').trim();
+  const W = paper.w, H = paper.h;
+  const fullPlace = stampPlace(input.place, 40);
+  const shortPlace = stampPlace(input.place);
   const year = input.year != null ? String(input.year) : '';
   const marks: Mark[] = [];
-  // Mostly hugging the sheet's edges (Rafael: "keep the stamps and numbers mostly near the edges"): the corners first,
-  // then the top and bottom margins, now and then a side margin; about one mark in ten drifts in partly over the
-  // writing, at the edge of the text block, never into the middle of it. A ring may run a little off an edge.
   const T = paper.text;
+  // the writing's block, with room for ascenders above the first line and descenders below the last
+  const block: Box = [T.left, T.first - 5, T.right, T.last + 3];
+  const iw = (T.right - T.left) * 0.25, ih = (T.last - T.first) * 0.25;
+  const inMiddle = (x: number, y: number) => x > T.left + iw && x < T.right - iw && y > T.first + ih && y < T.last - ih;
+
+  // Mostly hugging the sheet's edges (Rafael: "keep the stamps and numbers mostly near the edges"): the corners first,
+  // then the top and bottom margins, now and then a side margin; now and then a mark drifts in partly over the
+  // writing, at the edge of its block, never into the middle. Each mark gets up to ten seeded tries; a try fails when
+  // it covers more than a quarter of the writing, lands in the middle of it, touches another mark, or (worded marks)
+  // leaves the paper. Top and bottom marks shrink a little to fit their margin rather than reach the first line.
   const ZONES = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'bottom', 'left', 'right', 'drift'] as const;
-  const zoneW = [1.2, 1.4, 0.9, 1.15, 1.15, 0.95, 0.4, 0.4, 0.85];
+  const zoneW = [1.2, 1.4, 0.9, 1.15, 1.15, 0.95, 0.4, 0.4, 0.3];
   const used = new Set<number>();
-  // `keep`: the mark's half width and height (mm) when it carries words and must stay whole on the paper (a cut-off
-  // cancellation reads as a bug); without it, a ring may run a little off the edge, as real ones do
-  const spot = (size: number, rot: number, keep?: [number, number]) => {
-    const z = pickWeighted(r, zoneW.map((w, i) => (used.has(i) ? w * 0.08 : w)));
-    used.add(z);
-    let hx = size * 0.45, hy = size * 0.45;
-    if (keep) {
-      const c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot));
-      hx = c * keep[0] + sn * keep[1] + 1.5;
-      hy = sn * keep[0] + c * keep[1] + 1.5;
-    }
-    const W = paper.w, H = paper.h;
-    // how far in from the edge it landed: close, and not the same on every letter
-    const inX = () => hx + r() * r() * 7, inY = () => hy + r() * r() * 7;
-    const along = (lo: number, hi: number) => lo + r() * Math.max(0, hi - lo);
-    let x: number, y: number;
-    switch (ZONES[z]) {
-      case 'top-left': x = inX(); y = inY(); break;
-      case 'top-right': x = W - inX(); y = inY(); break;
-      case 'bottom-left': x = inX(); y = H - inY(); break;
-      case 'bottom-right': x = W - inX(); y = H - inY(); break;
-      case 'top': x = along(W * 0.22, W * 0.78); y = inY(); break;
-      case 'bottom': x = along(W * 0.22, W * 0.78); y = H - inY(); break;
-      case 'left': x = inX(); y = along(H * 0.25, H * 0.75); break;
-      case 'right': x = W - inX(); y = along(H * 0.25, H * 0.75); break;
-      default: {
-        // over the writing, partly: its centre sits on the text block's edge, so most of it stays in the margin
-        const side = Math.floor(r() * 4);
-        const out = (r() - 0.35) * 0.5; // a little in or out from the edge, in half-extents
-        if (side === 0) { x = along(T.left, T.right); y = T.first - 4 + out * hy * 2; }
-        else if (side === 1) { x = along(T.left, T.right); y = T.last + 4 - out * hy * 2; }
-        else if (side === 2) { x = T.left - out * hx * 2; y = along(T.first, T.last); }
-        else { x = T.right + out * hx * 2; y = along(T.first, T.last); }
+  const placed: Box[] = [];
+  const place = (kind: Kind, size0: number) => {
+    let best: { x: number; y: number; rot: number; size: number; z: number; cost: number } | null = null;
+    for (let tries = 0; tries < 10; tries++) {
+      // a pencilled note goes in the top or bottom margin, nowhere else
+      const z = pickWeighted(r, zoneW.map((w, i) => (kind === 'pencil' && i > 5 ? 0 : used.has(i) ? w * 0.1 : w)));
+      const zone = ZONES[z];
+      const rot = ((r() * 2 - 1) * TILT[kind] * Math.PI) / 180;
+      // a ring may run a hair off an edge, about one time in five
+      const over = RINGS.has(kind) && r() < 0.2 ? size0 * 0.05 : 0;
+      const j = r() * r() * 6;
+      const t = r();
+      let size = size0;
+      const ext = (sz: number) => boxAt(BOX[kind], sz, rot, 0, 0);
+      // top and bottom: shrink to fit the margin (never below 80%)
+      if (zone.startsWith('top') || zone.startsWith('bottom')) {
+        const e = ext(1);
+        const room = zone.startsWith('top') ? block[1] - 1.5 : H - block[3] - 1.5;
+        const fit = (room + over) / (e[3] - e[1]);
+        if (fit < size) size = Math.max(size * 0.8, fit);
       }
+      const e = ext(size);
+      // the duplex's bars may run off the right edge: only its ring has to stay on
+      const right = kind === 'duplex' ? boxAt([BOX.duplex[0], 0.05, -0.5, 0.5], size, rot, 0, 0)[2] : e[2];
+      const L = -e[0] - over, R = right - over, U = -e[1] - over, D = e[3] - over;
+      const along = (lo: number, hi: number) => lo + t * Math.max(0, hi - lo);
+      let x: number, y: number;
+      switch (zone) {
+        case 'top-left': x = L + j; y = U + j * 0.6; break;
+        case 'top-right': x = W - R - j; y = U + j * 0.6; break;
+        case 'bottom-left': x = L + j; y = H - D - j * 0.6; break;
+        case 'bottom-right': x = W - R - j; y = H - D - j * 0.6; break;
+        case 'top': x = along(W * 0.25, W * 0.75); y = U + j * 0.6; break;
+        case 'bottom': x = along(W * 0.25, W * 0.75); y = H - D - j * 0.6; break;
+        case 'left': x = L + j; y = along(H * 0.3, H * 0.7); break;
+        case 'right': x = W - R - j; y = along(H * 0.3, H * 0.7); break;
+        default: {
+          // partly over the writing: centred on the block's top or bottom edge, so most of it stays in the margin
+          x = along(T.left + iw * 0.5, T.right - iw * 0.5);
+          y = t < 0.5 ? block[1] : block[3];
+        }
+      }
+      x = clamp(x, Math.min(L, W / 2), Math.max(W - R, W / 2));
+      y = clamp(y, Math.min(U, H / 2), Math.max(H - D, H / 2));
+      const b = boxAt(BOX[kind], size, rot, x, y);
+      const share = overlapArea(b, block) / area(b);
+      let cost = Math.max(0, share - (zone === 'drift' ? 0.45 : 0.25)) * 4;
+      if (inMiddle(x, y)) cost += 5;
+      if (kind === 'duplex' && overlapArea(boxAt(BARS, size, rot, x, y), block) > 0) cost += 3;
+      const pad: Box = [b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3];
+      for (const p of placed) if (overlapArea(pad, p) > 0) cost += 3;
+      if (!best || cost < best.cost) best = { x, y, rot, size, z, cost };
+      if (cost === 0) break;
     }
-    // never the middle of the writing (on a small card the margins are thin): out to the text block's nearest edge
-    const iw = (T.right - T.left) * 0.25, ih = (T.last - T.first) * 0.25;
-    if (x > T.left + iw && x < T.right - iw && y > T.first + ih && y < T.last - ih) {
-      const d = [x - T.left, T.right - x, y - T.first, T.last - y];
-      const k = d.indexOf(Math.min(...d));
-      if (k === 0) x = T.left; else if (k === 1) x = T.right; else if (k === 2) y = T.first; else y = T.last;
-    }
-    const keepOn = () => {
-      x = clamp(x, Math.min(hx, W / 2), Math.max(W - hx, W / 2));
-      y = clamp(y, Math.min(hy, H / 2), Math.max(H - hy, H / 2));
-    };
-    keepOn();
-    // a wide stamp on a narrow text block can be pushed back in: then above or below the writing instead
-    if (x > T.left + iw && x < T.right - iw && y > T.first + ih && y < T.last - ih) {
-      y = y - T.first < T.last - y ? T.first : T.last;
-      keepOn();
-    }
-    return { x, y, over: ZONES[z] === 'drift' };
+    used.add(best!.z);
+    placed.push(boxAt(BOX[kind], best!.size, best!.rot, best!.x, best!.y));
+    return best!;
   };
   const inkFor = (pal: (keyof typeof INKS)[]) => INKS[pal[Math.floor(r() * pal.length)]];
-  const common = (size: number, layerOdds: number, keep?: [number, number]) => {
-    const rot = ((r() * 2 - 1) * 15 * Math.PI) / 180;
-    const at = spot(size, rot, keep);
-    return {
-      ...at,
-      rot,
-      press: 0.72 + r() * 0.26,
-      lean: r() * Math.PI * 2,
-      uneven: 0.25 + r() * 0.6,
-      bounce: r() < 0.16 ? ([(r() - 0.5) * 1.2, (r() - 0.5) * 1.2] as [number, number]) : null,
-      // stamped before the letter was written (under the ink) or afterwards (over it)
-      layer: (r() < layerOdds ? 'over' : 'under') as Mark['layer'],
-    };
-  };
+  const strike = (layerOdds: number) => ({
+    press: 0.72 + r() * 0.26,
+    lean: r() * Math.PI * 2,
+    uneven: 0.25 + r() * 0.6,
+    // a second, faint strike where the stamp bounced
+    bounce: r() < 0.16 ? (() => { const a = r() * Math.PI * 2, d = 0.9 + r() * 0.5; return [Math.cos(a) * d, Math.sin(a) * d] as [number, number]; })() : null,
+    // stamped before the letter was written (under the ink) or afterwards (over it)
+    layer: (r() < layerOdds ? 'over' : 'under') as Mark['layer'],
+  });
 
   // the location badge
-  if (place || year) {
+  if (shortPlace || year) {
+    const w = [...WEIGHTS[input.look]];
+    // no place: nothing that is only a place; long places: not in the small oval or box
+    if (!shortPlace) { w[4] = 0; w[5] = 0; }
+    if (shortPlace.length > 12) { w[2] *= 0.3; w[3] *= 0.3; w[4] *= 1.5; }
+    // the post's marks of the letter's day: no duplex before the 1840s, straight-line marks were older
+    if (input.look === 'postmarked' && input.year != null) {
+      if (input.year < 1840) { w[1] = 0; w[0] *= 0.4; w[4] *= 2.5; }
+      else if (input.year < 1880) w[0] *= 0.8;
+    }
+    const picked = pickWeighted(r, w); // always drawn, so forcing a badge for review moves nothing else
     const forced = forcedBadge(input);
-    const k = forced ? forced - 1 : pickWeighted(r, WEIGHTS[input.look]);
-    const kind = BADGES[k];
+    const kind = BADGES[forced ? forced - 1 : picked];
     const base = clamp(minSide * 0.19, 19, 33) * (0.88 + r() * 0.26);
-    const size = kind === 'registry' ? base * 1.25 : kind === 'line' ? base * 1.1 : kind === 'pencil' ? base * 1.15 : base;
-    // the half extents of the badges that carry words (rings may run off the edge)
-    const keep: Partial<Record<Kind, [number, number]>> = {
-      oval: [size * 0.62, size * 0.4], registry: [size * 0.52, size * 0.27], line: [size * 1, size * 0.32], pencil: [size * 1.1, size * 0.2],
-    };
-    const c = common(kind === 'duplex' ? size * 2 : size, kind === 'pencil' ? 1 : 0.55, keep[kind]);
+    const size0 = kind === 'registry' ? base * 1.25 : kind === 'line' ? base * 1.1 : kind === 'pencil' ? base * 1.15 : base;
+    const postal = kind === 'datestamp' || kind === 'duplex' || kind === 'line';
+    const at = place(kind, size0);
+    const st = strike(kind === 'pencil' ? 1 : postal ? 0.9 : 0.75);
     marks.push({
       kind,
-      ...c,
+      x: at.x, y: at.y, rot: at.rot, size: at.size,
+      ...st,
       // dark inks take less well on a worn pad
-      press: c.press * (input.look === 'postmarked' ? 0.9 : 1),
-      // a pencil note sits nearly level, in the margin, in grey
-      rot: kind === 'pencil' ? c.rot * 0.25 : c.rot,
+      press: st.press * (input.look === 'postmarked' ? 0.9 : 1),
       ink: kind === 'pencil' ? INKS.pencil : inkFor(input.look === 'postmarked' ? ['violet', 'violet', 'blue', 'red'] : ['red', 'violet', 'blue']),
-      size,
-      text: { place: kind === 'pencil' ? place : place.toUpperCase(), year, label: kind === 'oval' ? 'RECEIVED' : kind === 'registry' ? 'ENTERED' : undefined },
+      text: {
+        // the oval and the box hold a short form (up to 12 letters, cut at a word); rings an arc's worth; the line all
+        place: kind === 'pencil' ? fullPlace : (kind === 'line' ? fullPlace : kind === 'oval' || kind === 'registry' ? stampPlace(input.place, 12) : shortPlace).toUpperCase(),
+        year,
+        label: kind === 'oval' ? 'RECEIVED' : kind === 'registry' ? 'ENTERED' : undefined,
+      },
       seed: seed + ':badge',
     });
   }
@@ -209,26 +278,25 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
   if (input.number != null) {
     const n = String(input.number).padStart(4, '0');
     const unevenStrike = r() < 0.3;
-    const size = clamp(minSide * 0.11, 12, 19) * (0.9 + r() * 0.2);
-    const c = common(size * 2.4, 0.7, [size * 0.9, size * 0.25]);
+    const size0 = clamp(minSide * 0.11, 12, 19) * (0.9 + r() * 0.2);
+    const at = place('number', size0);
+    const st = strike(0.7);
     marks.push({
       kind: 'number',
-      ...c,
-      rot: c.rot * 0.6,
-      uneven: unevenStrike ? Math.min(0.95, c.uneven + 0.3) : c.uneven,
+      x: at.x, y: at.y, rot: at.rot, size: at.size,
+      ...st,
+      uneven: unevenStrike ? Math.min(0.95, st.uneven + 0.3) : st.uneven,
       ink: inkFor(['red', 'red', 'violet', 'blue']),
-      size,
       text: { number: n },
       seed: seed + ':no',
     });
   }
   // a cancellation in red, true to the provenance
   if (input.cancel) {
-    const size = clamp(minSide * 0.2, 20, 36);
-    const c = common(size, 0.85, [size * 0.73, size * 0.22]);
-    marks.push({ kind: 'cancel', ...c, ink: INKS.red, size, text: { label: input.cancel.toUpperCase() }, seed: seed + ':cancel' });
+    const at = place('cancel', clamp(minSide * 0.2, 20, 36));
+    marks.push({ kind: 'cancel', x: at.x, y: at.y, rot: at.rot, size: at.size, ...strike(0.9), ink: INKS.red, text: { label: input.cancel.toUpperCase() }, seed: seed + ':cancel' });
   }
-  const key = marks.map((m) => `${m.kind}${m.x.toFixed(1)},${m.y.toFixed(1)},${m.rot.toFixed(3)},${m.layer},${m.ink},${m.text.place ?? ''}${m.text.year ?? ''}${m.text.number ?? ''}${m.text.label ?? ''}`).join(';');
+  const key = marks.map((m) => `${m.kind}${m.x.toFixed(1)},${m.y.toFixed(1)},${m.rot.toFixed(3)},${m.size.toFixed(2)},${m.layer},${m.ink},${m.text.place ?? ''}${m.text.year ?? ''}${m.text.number ?? ''}${m.text.label ?? ''}`).join(';');
   return { marks, key: hash(key) };
 }
 
@@ -305,7 +373,7 @@ export function printMarks(ctx: Ctx2D, marks: Mark[], k: number, layer: 'under' 
 function printMark(ctx: Ctx2D, m: Mark, k: number) {
   const r = rng(m.seed);
   // the mark's own canvas, room for its widest form
-  const span = m.kind === 'duplex' ? m.size * 2.3 : m.kind === 'line' || m.kind === 'pencil' || m.kind === 'number' ? m.size * 2.6 : m.kind === 'cancel' ? m.size * 1.6 : m.size * 1.4;
+  const span = m.kind === 'duplex' ? m.size * 2.5 : m.kind === 'line' || m.kind === 'pencil' || m.kind === 'number' ? m.size * 2.6 : m.kind === 'cancel' ? m.size * 1.6 : m.size * 1.4;
   const W = Math.ceil(span * k), H = Math.ceil(m.size * 1.4 * k);
   const c = makeCanvas(W, H);
   const g = c.getContext('2d') as Ctx2D;
@@ -364,7 +432,7 @@ function printMark(ctx: Ctx2D, m: Mark, k: number) {
   ctx.drawImage(c, -W / 2, -H / 2);
   ctx.shadowBlur = 0;
   if (m.bounce && !pencil) {
-    ctx.globalAlpha = m.press * 0.22;
+    ctx.globalAlpha = m.press * 0.3;
     ctx.drawImage(c, -W / 2 + m.bounce[0] * k, -H / 2 + m.bounce[1] * k);
   }
   ctx.restore();
@@ -383,14 +451,15 @@ function arcText(g: Ctx2D, text: string, rad: number, at: number, px: number, fa
   const total = widths.reduce((a, b) => a + b, 0);
   let a = top ? at - total / rad / 2 : at + total / rad / 2;
   g.textAlign = 'center';
-  g.textBaseline = 'middle';
+  // capitals centred on the arc (a 'middle' baseline centres the em box, which sits capitals high)
+  g.textBaseline = 'alphabetic';
   chars.forEach((ch, i) => {
     const step = widths[i] / rad;
     const mid = top ? a + step / 2 : a - step / 2;
     g.save();
     g.translate(Math.cos(mid) * rad, Math.sin(mid) * rad);
     g.rotate(top ? mid + Math.PI / 2 : mid - Math.PI / 2);
-    g.fillText(ch, 0, 0);
+    g.fillText(ch, 0, CAP_MID * px);
     g.restore();
     a = top ? a + step : a - step;
   });
@@ -403,9 +472,16 @@ function fitPx(g: Ctx2D, text: string, face: string, width: number, max: number,
   return Math.min(max, (max * width) / Math.max(1e-3, w));
 }
 
+/** where a capital's middle sits above the baseline, in ems */
+const CAP_MID = 0.355;
+/** the smallest capitals a stamp prints (mm of em: about 1.8 mm caps), so a town stays legible on a phone */
+const MIN_EM = 2.5;
+
+/** A line of letter-spaced text, its capitals centred on (x, y). */
 function spaced(g: Ctx2D, text: string, x: number, y: number, px: number, face: string, spacing = 0.12, weight = 600) {
   g.font = font(px, face, weight);
-  g.textBaseline = 'middle';
+  g.textBaseline = 'alphabetic';
+  y += CAP_MID * px;
   g.textAlign = 'left';
   const chars = [...text];
   const ws = chars.map((ch) => g.measureText(ch).width);
@@ -414,7 +490,13 @@ function spaced(g: Ctx2D, text: string, x: number, y: number, px: number, face: 
   chars.forEach((ch, i) => { g.fillText(ch, cx, y); cx += ws[i] + spacing * px; });
 }
 
-const ringText = (place: string) => (place.length > 22 ? place.slice(0, 21) + '.' : place);
+/** The em that sets a word around an arc of `deg` degrees at radius `rad` (measured, so it never wraps further). */
+function arcPx(g: Ctx2D, text: string, rad: number, deg: number, max: number, spacing: number) {
+  g.font = font(10, SANS);
+  const w = [...text].reduce((a, ch) => a + g.measureText(ch).width + spacing * 10, 0);
+  return Math.max(MIN_EM, Math.min(max, (10 * ((deg * Math.PI) / 180) * rad) / Math.max(1e-3, w)));
+}
+const track = (text: string) => (text.length <= 6 ? 0.16 : Math.max(0.08, 0.12));
 
 const SHAPES: Record<Kind, Shape> = {
   // 1. a double-ring datestamp: the town around the top, two small stars at the foot, the year across the middle
@@ -424,12 +506,12 @@ const SHAPES: Record<Kind, Shape> = {
     g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.stroke();
     g.lineWidth = 0.32;
     g.beginPath(); g.arc(0, 0, R * 0.6, 0, Math.PI * 2); g.stroke();
-    const band = R * 0.8;
-    const place = ringText(m.text.place || '');
-    const px = Math.min(R * 0.27, (Math.PI * band * 0.92) / Math.max(4, place.length * 0.78));
-    if (place) arcText(g, place, band, -Math.PI / 2, px, SANS, true);
+    const band = R * 0.783;
+    const place = m.text.place || '';
+    const sp = track(place);
+    if (place) arcText(g, place, band, -Math.PI / 2, arcPx(g, place, band, 150, R * 0.27, sp), SANS, true, sp);
     for (const a of [Math.PI / 2 - 0.32, Math.PI / 2 + 0.32]) star(g, Math.cos(a) * band, Math.sin(a) * band, R * 0.07);
-    if (m.text.year) spaced(g, m.text.year, 0, 0, R * 0.32, SANS, 0.06, 700);
+    if (m.text.year) spaced(g, m.text.year, 0, R * 0.027, R * 0.32, SANS, 0.06, 700);
     g.lineWidth = 0.25;
     for (const y of [-R * 0.3, R * 0.3]) { g.beginPath(); g.moveTo(-R * 0.36, y); g.lineTo(R * 0.36, y); g.stroke(); }
   },
@@ -441,13 +523,14 @@ const SHAPES: Record<Kind, Shape> = {
     g.translate(cx, 0);
     g.lineWidth = 0.5;
     g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.stroke();
-    const place = ringText(m.text.place || '');
-    const px = Math.min(R * 0.27, (Math.PI * R * 0.78 * 0.9) / Math.max(4, place.length * 0.78));
-    if (place) arcText(g, place, R * 0.76, -Math.PI / 2, px, SANS, true);
-    if (m.text.year) spaced(g, m.text.year, 0, R * 0.12, R * 0.34, SANS, 0.05, 700);
+    const place = m.text.place || '';
+    const sp = track(place);
+    if (place) arcText(g, place, R * 0.76, -Math.PI / 2, arcPx(g, place, R * 0.76, 150, R * 0.27, sp), SANS, true, sp);
+    if (m.text.year) spaced(g, m.text.year, 0, R * 0.2, R * 0.34, SANS, 0.05, 700);
+    for (const a of [Math.PI / 2 - 0.3, Math.PI / 2 + 0.3]) star(g, Math.cos(a) * R * 0.72, Math.sin(a) * R * 0.72, R * 0.07);
     g.restore();
     // the bars: thick, slightly wavy, not quite even
-    const x0 = cx + R * 1.12, x1 = cx + R * 3.25;
+    const x0 = cx + R * 1.25, x1 = cx + R * 3.35;
     const n = 6;
     for (let i = 0; i < n; i++) {
       const y = (-0.78 + (1.56 * i) / (n - 1)) * R;
@@ -466,10 +549,10 @@ const SHAPES: Record<Kind, Shape> = {
     g.lineWidth = 0.25;
     g.beginPath(); g.ellipse(0, 0, rx * 0.9, ry * 0.84, 0, 0, Math.PI * 2); g.stroke();
     spaced(g, m.text.label || 'RECEIVED', 0, -ry * 0.44, ry * 0.26, SANS, 0.16);
-    if (m.text.year) spaced(g, m.text.year, 0, ry * 0.03, ry * 0.46, SERIF, 0.04, 700);
+    if (m.text.year) spaced(g, m.text.year, 0, ry * 0.03, ry * 0.42, SANS, 0.04, 700);
     const place = m.text.place || '';
-    if (place) spaced(g, place, 0, ry * 0.48, fitPx(g, place, SANS, rx * 1.3, ry * 0.24, 0.14), SANS, 0.14);
-    for (const x of [-rx * 0.55, rx * 0.55]) { g.beginPath(); g.arc(x, -ry * 0.44, 0.35, 0, Math.PI * 2); g.fill(); }
+    if (place) spaced(g, place, 0, ry * 0.48, Math.max(MIN_EM, fitPx(g, place, SANS, rx * 1.0, ry * 0.24, 0.14)), SANS, 0.14);
+    for (const x of [-rx * 0.62, rx * 0.62]) { g.beginPath(); g.arc(x, -ry * 0.44, 0.35, 0, Math.PI * 2); g.fill(); }
   },
   // 4. a registry box: ENTERED above, then the place and the year in two cells
   registry(g, m) {
@@ -477,24 +560,28 @@ const SHAPES: Record<Kind, Shape> = {
     g.lineWidth = 0.5;
     g.strokeRect(-w / 2, -h / 2, w, h);
     g.lineWidth = 0.22;
-    g.strokeRect(-w / 2 + 0.9, -h / 2 + 0.9, w - 1.8, h - 1.8);
+    const inset = w * 0.025;
+    g.strokeRect(-w / 2 + inset, -h / 2 + inset, w - 2 * inset, h - 2 * inset);
     const top = -h / 2 + h * 0.33;
-    g.beginPath(); g.moveTo(-w / 2 + 0.9, top); g.lineTo(w / 2 - 0.9, top); g.stroke();
-    const split = w * 0.18;
-    g.beginPath(); g.moveTo(split, top); g.lineTo(split, h / 2 - 0.9); g.stroke();
-    spaced(g, m.text.label || 'ENTERED', 0, (-h / 2 + top) / 2 + 0.45, h * 0.17, SANS, 0.3);
+    g.beginPath(); g.moveTo(-w / 2 + inset, top); g.lineTo(w / 2 - inset, top); g.stroke();
+    // the place takes the wider cell, the year its own (wide enough for four figures)
+    const split = w * 0.08;
+    g.beginPath(); g.moveTo(split, top); g.lineTo(split, h / 2 - inset); g.stroke();
+    spaced(g, m.text.label || 'ENTERED', 0, (-h / 2 + top) / 2 + 0.2, h * 0.17, SANS, 0.3);
     const place = m.text.place || '';
-    const cellY = (top + h / 2) / 2;
-    if (place) spaced(g, place, (-w / 2 + split) / 2, cellY, fitPx(g, place, SANS, (split + w / 2) * 0.86, h * 0.27, 0.08), SANS, 0.08);
-    if (m.text.year) spaced(g, m.text.year, (split + w / 2) / 2, cellY, h * 0.3, SANS, 0.05, 700);
+    const cellY = (top + h / 2 - inset) / 2;
+    const placeW = split - (-w / 2 + inset);
+    if (place) spaced(g, place, (-w / 2 + inset + split) / 2, cellY, Math.max(MIN_EM, Math.max(h * 0.15, fitPx(g, place, SANS, placeW - 2.4, h * 0.22, 0.08))), SANS, 0.08);
+    const yearW = w / 2 - inset - split;
+    if (m.text.year) spaced(g, m.text.year, split + yearW / 2, cellY, Math.min(h * 0.3, fitPx(g, m.text.year, SANS, yearW - 2.4, h * 0.3, 0.05)), SANS, 0.05, 700);
   },
   // 5. a straight-line town mark: the name in one line of capitals, the year under it
   line(g, m) {
     const place = m.text.place || '';
-    const px = place ? fitPx(g, place, SERIF, m.size * 1.9, m.size * 0.22, 0.12) : m.size * 0.2;
+    const px = place ? Math.max(MIN_EM, fitPx(g, place, SERIF, m.size * 1.9, m.size * 0.22, 0.12)) : m.size * 0.2;
     if (place) spaced(g, place, 0, -px * 0.5, px, SERIF, 0.12, 700);
-    if (m.text.year) spaced(g, m.text.year, 0, px * 0.75, px * 0.72, SERIF, 0.1, 600);
-    g.lineWidth = 0.3;
+    if (m.text.year) spaced(g, m.text.year, 0, px * 0.8, Math.max(px * 0.72, m.size * 0.13), SANS, 0.1, 700);
+    g.lineWidth = 0.45;
     const half = Math.min(m.size * 0.95, px * Math.max(4, place.length) * 0.45);
     g.beginPath(); g.moveTo(-half, -px * 1.2); g.lineTo(half, -px * 1.2); g.stroke();
   },
@@ -518,18 +605,21 @@ const SHAPES: Record<Kind, Shape> = {
     const n = m.text.number || '';
     g.font = font(px, MONO, 700);
     const nw = g.measureText(n).width;
-    g.font = font(px * 0.7, MONO, 700);
-    const lw = g.measureText('No').width;
-    const total = lw + px * 0.35 + nw;
+    g.font = font(px * 0.85, MONO, 700);
+    const NW = g.measureText('N').width;
+    g.font = font(px * 0.5, MONO, 700);
+    const oW = g.measureText('o').width;
+    const total = NW + oW + px * 0.18 + nw;
     let x = -total / 2;
     g.textBaseline = 'alphabetic';
     g.textAlign = 'left';
+    g.font = font(px * 0.85, MONO, 700);
     g.fillText('N', x, px * 0.35);
-    const nW = g.measureText('N').width;
+    // the º: raised to the N's cap line and underlined
     g.font = font(px * 0.5, MONO, 700);
-    g.fillText('o', x + nW, px * 0.05);
-    g.fillRect(x + nW, px * 0.14, g.measureText('o').width, px * 0.06);
-    x += lw + px * 0.35;
+    g.fillText('o', x + NW, px * 0.12);
+    g.fillRect(x + NW, px * 0.2, oW, px * 0.06);
+    x += NW + oW + px * 0.18;
     g.font = font(px, MONO, 700);
     g.fillText(n, x, px * 0.35);
   },
@@ -540,7 +630,7 @@ const SHAPES: Record<Kind, Shape> = {
     g.lineWidth = 0.55;
     const w = m.size * 1.42, h = px * 2.1;
     g.strokeRect(-w / 2, -h / 2, w, h);
-    spaced(g, label, 0, 0, px, SANS, 0.14, 800);
+    spaced(g, label, 0, 0.25, px, SANS, 0.14, 800);
   },
 };
 
