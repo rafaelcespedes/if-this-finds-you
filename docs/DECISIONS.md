@@ -10,6 +10,13 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
   docs/research/type-system. Geist Serif (Vercel, Oct 2026) was considered and passed over: display only, one weight,
   and Vercel's own brand.
 
+### Colour
+- **Rubric is the palette.** "I'm also fine with its suggestion for the color. Which was rubric." Warm black for the
+  words and the main button (it replaces the navy CTA), vermilion only for the few marks that guide the eye: each
+  group's ¶, focus, switches, slider fill, small labels. Square-cut corners, hairline rules, a vellum-white panel.
+  Swatches stay flat. WCAG AA or better. The four directions and the audit: artifact "Ink, Wax and Cloth"
+  (https://claude.ai/artifact/WcPjkier8G9jkSn5DGGHEU).
+
 ## 2026-11-02
 
 ### Purpose (Rafael's own words, the frame for every other decision)

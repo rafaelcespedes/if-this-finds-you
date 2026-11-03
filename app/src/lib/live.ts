@@ -146,7 +146,10 @@ export function engineGeometry(live: Live): Geometry {
       const stops = c ? geo.lineStops(c.line) : [];
       if (!stops.length) return { start: o, end: o };
       const os = stops.map((s: { o: number }) => s.o);
-      return { start: Math.min(...os), end: Math.max(...os) };
+      // the last written line runs to the letter's last letter: an ink page has no stop after its final glyph
+      const last = c!.line === lineNums[lineNums.length - 1];
+      const end = Math.max(...os);
+      return { start: Math.min(...os), end: last ? Math.max(end, String(page.text).replace(/\s+$/, '').length) : end };
     },
     ribbons: (from, to): Ribbon[] =>
       geo.selection(from, to).map((r: { line: number; points: [number, number][] }) => {

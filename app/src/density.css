@@ -5,12 +5,12 @@
    Unlayered, so it beats Tailwind's layers; fold these into the components when convenient. */
 :root {
   /* −1 step: every control one Tailwind step (4px) shorter, a touch less air */
-  --panel-w: 320px; --pad: 18px; --radius: 0.5rem;
+  --panel-w: 320px; --pad: 18px; --radius: 0.1875rem; /* Rubric: square-cut */
   --sig-h: 48px;
   --cta-h: 40px; --cta-text: 13.5px; --icon: 40px; --ghost-h: 28px;
   --head-h: 24px; --label: 13px; --body: 13.5px;
   --seg-h: 28px; --seg-text: 12.5px; --chip-h: 24px; --chip-text: 11.5px;
-  --paper-w: 78px; --tile-text: 11.5px; --pen-w: 72px; --pen-spec: 27px; --school-w: 116px; --school-spec: 30px; --card-r: 10px;
+  --paper-w: 78px; --tile-text: 11.5px; --pen-w: 72px; --pen-spec: 27px; --school-w: 116px; --school-spec: 30px; --card-r: 3px;
   --tip-h: 32px; --tip-w: 50px; --ink-hit: 28px; --ink-dot: 20px;
   --sw-w: 36px; --sw-h: 20px; --sw-thumb: 16px;
   --thumb: 14px; 

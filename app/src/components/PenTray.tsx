@@ -61,7 +61,7 @@ export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, 
                   onPointerDown={keep}
                   onMouseDown={keep}
                   onClick={() => onMode(m)}
-                  className={cn('h-10 rounded-[10px] text-[13px] font-medium transition-colors duration-150', mode === m ? 'bg-[#fffefb] text-foreground shadow-[0_1px_2px_rgba(40,30,10,0.12)]' : 'text-muted-foreground')}
+                  className={cn('h-10 rounded-[3px] text-[13px] font-medium transition-colors duration-150', mode === m ? 'bg-[#fffefb] text-foreground shadow-[0_1px_2px_rgba(40,30,10,0.12)]' : 'text-muted-foreground')}
                 >
                   {m === 'ink' ? 'Ink' : m === 'pencil' ? 'Pencil' : 'Fair copy'}
                 </button>
