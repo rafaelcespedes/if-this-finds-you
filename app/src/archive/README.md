@@ -16,9 +16,10 @@ Run it with the app (`cd app && npm run dev`) and open **/letters.html**.
   link's hover title and its screen-reader text. Masonry: three columns on wide screens, two from a phone up; each
   card goes into the shortest column, in reading order, so Tab follows the eye.
   Browsing controls stay small (research and reasoning in `CONTROLS.md`), three arrangements to compare with
-  `?toolbar=1…3`: 1 search and Shuffle icons in the heading plus a one-sentence filter ("127 letters from any time
-  in any language"); 2 a floating dock like the tool's right panel (the default); 3 the dock with a timeline of
-  every letter by century as the era filter. Search starts folded to an icon; `/` opens it; Esc clears, then closes.
+  `?toolbar=1…3`: 1 a search icon in the heading plus a one-sentence filter ("Letters from any time in any
+  language"); 2 a floating dock like the tool's right panel with Era and Language menus (the default); 3 the dock
+  with a timeline of every letter by century as the era filter. No Shuffle and no count on screen; screen readers
+  hear the count after each change. Search starts folded to an icon; `/` opens it; Esc clears, then closes.
 - **Letter** (`LetterPage.tsx`, `LetterParts.tsx`, loaded on demand with the engine): a quiet reading page. The
   letter written out in front of you is the hero (the tool's reader: `ReaderSheets`, engine `timeline` +
   `playSVG`, about 3x, a tap or key finishes it). The words around it are editorial, in the letter face: title,

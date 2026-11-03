@@ -205,18 +205,30 @@ select.archive-field {
   }
 }
 
-/* the timeline (#3): a century darkens under the pointer; the chosen one in ink, on a soft chip */
+/* the timeline (#3): marks in the text colour, a century darkens under the pointer, the chosen one in ink on a
+   soft chip while the others step back */
 .era-seg {
-  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
+  color: var(--lib-text-soft);
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out), opacity 150ms var(--ease-out);
+}
+.era-seg .era-marks {
+  opacity: 0.75;
 }
 @media (hover: hover) and (pointer: fine) {
   .era-seg:hover {
-    color: var(--text-muted);
-    background: color-mix(in oklab, var(--chip) 60%, transparent);
+    color: var(--lib-text);
+    background: color-mix(in oklab, var(--chip) 70%, transparent);
   }
 }
 .era-seg.is-on {
+  color: var(--lib-accent);
   background: var(--chip);
+}
+.era-seg.is-on .era-marks {
+  opacity: 1;
+}
+.era-seg.is-dim {
+  opacity: 0.45;
 }
 .era-seg:focus-visible {
   outline: 2px solid var(--ring);

@@ -12,7 +12,7 @@ import { cardAspect } from './card-protocol';
 import { cardSize } from './cards';
 import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
 import type { ArchiveLetter } from './model';
-import { letterHash, NO_FILTERS, randomHand, randomIndex, type Filters } from './route';
+import { NO_FILTERS, type Filters } from './route';
 import { headerLink, SiteHeader, toolHref } from './SiteHeader';
 
 interface Props {
@@ -102,20 +102,12 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
     return () => f.removeEventListener('loadingdone', lay);
   }, [lay]);
 
-  // Shuffle: a random letter (from what's shown, when filtered) in a random hand
-  const shuffle = () => {
-    const from = shown.length ? shown : pool;
-    if (!from.length) return;
-    onOpen();
-    window.location.hash = letterHash(from[randomIndex(from.length)].id, randomHand());
-  };
-
   // search starts folded to an icon; "/" opens it
   const searchRef = useRef<HTMLInputElement>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const search = useMemo(() => ({ open: searchOpen, setOpen: setSearchOpen, inputRef: searchRef }), [searchOpen]);
   useSlashToSearch(active, search);
-  const controls: ControlsProps = { pool, shown: shown.length, filters, set, clear, filtered, facets, shuffle, search, ready: !!letters };
+  const controls: ControlsProps = { pool, shown: shown.length, filters, set, clear, filtered, facets, search, ready: !!letters };
   const dock = TOOLBAR !== '1';
 
   return (

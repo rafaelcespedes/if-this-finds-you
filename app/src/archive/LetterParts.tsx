@@ -126,8 +126,8 @@ export function LetterDock(a: DockActions) {
             <Item icon={<Shuffle />} onSelect={a.onRandom}>A letter at random</Item>
           </MenuContent>
         </DropdownMenu.Root>
-        <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />
-        <Button asChild className="h-9 rounded-xl px-3.5 pointer-coarse:h-10">
+        {/* no divider before the reply: a filled button separates itself */}
+        <Button asChild className="ml-1 h-9 rounded-xl px-3.5 pointer-coarse:h-10">
           <a href={a.reply}><PenLine aria-hidden /> {narrow ? 'Reply' : 'Write a reply'}</a>
         </Button>
       </div>

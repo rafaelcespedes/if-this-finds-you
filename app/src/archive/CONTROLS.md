@@ -29,15 +29,16 @@ menu or a search; icon buttons carry tooltips; counts appear only when they help
   ("Spanish", "French").
 - **Era: lighter.** Plain words with a small chevron (a native menu underneath, so phones get their own picker),
   or, in #3, the timeline itself.
-- **Shuffle: an icon button** with a tooltip ("Shuffle: a random letter in a random hand").
+- **No Shuffle and no count on screen** (Rafael, after the first round). Screen readers still hear the count after
+  each search or filter change. A letter at random stays on the letter page (its "More" menu).
 - **Search: collapsed** to an icon until opened (`/` opens it; Esc clears, then closes).
-- **Counts:** quiet, and in words where filtering makes them useful; always announced to screen readers.
 
 ## The options (`?toolbar=1…3`, kept for the tab, never in share links)
 
-1. **In the heading.** Search and Shuffle as icons at the right of "All letters"; under the intro, one sentence
-   that is also the filter: "127 letters from *any time* in *any language*".
+1. **In the heading.** A search icon at the right of "All letters"; under the intro, one sentence that is also
+   the filter: "Letters from *any time* in *any language*".
 2. **Floating dock** (the default). A small floating bar at the bottom, the same surface as the tool's right
-   panel: search (opens in place), era, language, the count, Shuffle. Rises above the phone keyboard.
-3. **Timeline dock.** The same floating bar, with the era as a little timeline of every letter (a mark per
-   letter, by century); tap a century to see its letters. Search and Shuffle at the ends; language through search.
+   panel: search (opens in place), and Era and Language menus. Rises above the phone keyboard.
+3. **Timeline dock.** The same floating bar with search and a timeline instead of menus: every letter is a bar,
+   grouped by century (Earlier, 1600s, 1700s, 1800s, 1900s), so you see when they were written; tap a century to
+   see its letters ("Letters from the 1800s ×"). Language through search.
