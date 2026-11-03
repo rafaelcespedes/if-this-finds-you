@@ -9,6 +9,10 @@
 //   - ids are unique, lowercase kebab-case; texts are not duplicated
 //   - origin (undelivered | seized | family | emigrant | everyday | notable) and story (one true sentence) on every item
 //   - ORDINARY PEOPLE: at least 70% of enabled items must be by ordinary, non-famous people (origin other than "notable")
+//   - INCLUSION (Rafael, 2026-11-02): among enabled items, writer.gender "f" on at least 55%; at least 15 letters by
+//     African or African American writers; at least 15 by Hispanic or Latin American writers. writer = { gender?,
+//     heritage?, basis? } is filled only where the source states it plainly; heritage maps to the groups below, and
+//     a letter written in Spanish (or Brazilian Portuguese) also counts as Hispanic / Latin American.
 //   - word count: 15–90 words (ERROR above 90 or below 8; WARN for 8–14)
 //   - line count: at most 12 written lines (WARN above)
 //   - characters: every ENABLED item uses only GF Latin Core plus a line break. The set is imported from
@@ -59,6 +63,13 @@ async function loadCore() {
 const KINDS = new Set(['letter', 'postcard', 'note']);
 const ORIGINS = new Set(['undelivered', 'seized', 'family', 'emigrant', 'everyday', 'notable']);
 const ORDINARY_MIN = 0.7;
+const WOMEN_MIN = 0.55;
+const GROUP_MIN = 15;
+// writer.heritage → inclusion groups (plain descriptors recorded from the sources)
+const GROUPS = {
+  'African or African American': /\bAfric|\bAfro-|Liberian|Sierra Leon|Ghanaian|Gold Coast|Nigerian|Yoruba|Black\b|\bNegro\b|of colou?r/i,
+  'Hispanic or Latin American': /Hispanic|Latin[oa]?\b|Latin American|Spanish|Spaniard|Mexican|New Spain|Californio|Tejan[oa]|Nuevomexican|Cuban|Puerto Ric|Dominican|Argentine|Chilean|Peruvian|Colombian|Venezuelan|Uruguayan|Paraguayan|Bolivian|Ecuadorian|Guatemalan|Honduran|Salvadoran|Nicaraguan|Costa Rican|Panamanian|Brazilian|Galician|Asturian|Canarian|Andalusian|Basque|Catalan/i,
+};
 // Provisional style ids for the 13 v1 traditions in docs/research/hand-traditions.md §8.
 const TRADITIONS = new Set([
   'english-roundhand', 'american-business', 'german-kurrent', 'sutterlin', 'austrian-1969', 'french-school',
@@ -125,6 +136,14 @@ function checkEntry(e, i, core) {
   if (!isYear(e.year)) err(id, 'year must be an integer');
   if (!e.source || !isStr(e.source.name) || !isStr(e.source.url) || !/^https?:\/\//.test(e.source.url)) {
     err(id, 'source needs { name, url } with an http(s) url');
+  }
+  if (e.writer !== undefined) {
+    const w = e.writer;
+    if (typeof w !== 'object' || w === null) err(id, 'writer must be an object { gender?, heritage?, basis? }');
+    else {
+      if (w.gender !== undefined && !['f', 'm'].includes(w.gender)) err(id, 'writer.gender must be "f" or "m" (leave it out if the source does not say)');
+      if (w.heritage !== undefined && !isStr(w.heritage)) err(id, 'writer.heritage must be a non-empty string when present');
+    }
   }
   if (!ORIGINS.has(e.origin)) err(id, `origin must be one of ${[...ORIGINS].join(', ')}`);
   if (!isStr(e.story)) err(id, 'missing story (one true sentence about where the letter came from)');
@@ -207,6 +226,19 @@ if (share < ORDINARY_MIN) {
   errors.push(`collection: only ${ordinary}/${enabled.length} enabled items (${Math.round(share * 100)}%) are by ordinary people; need at least ${ORDINARY_MIN * 100}%`);
 }
 
+// inclusion targets
+const women = enabled.filter((e) => e.writer?.gender === 'f').length;
+const men = enabled.filter((e) => e.writer?.gender === 'm').length;
+if (enabled.length && women / enabled.length < WOMEN_MIN) {
+  errors.push(`collection: ${women}/${enabled.length} enabled items (${Math.round((100 * women) / enabled.length)}%) are by women; need at least ${Math.round(WOMEN_MIN * 100)}%`);
+}
+// A letter written in Spanish (or Brazilian Portuguese) is by a Hispanic / Latin American writer by definition, so the
+// language counts too; heritage is only recorded where the source states it.
+const inGroup = (g, e) => GROUPS[g].test(e.writer?.heritage || '')
+  || (g === 'Hispanic or Latin American' && (/^es(-|$)/.test(e.lang || '') || e.lang === 'pt-BR'));
+const groupCounts = Object.fromEntries(Object.keys(GROUPS).map((g) => [g, enabled.filter((e) => inGroup(g, e)).length]));
+for (const [g, n] of Object.entries(groupCounts)) if (n < GROUP_MIN) errors.push(`collection: ${n} enabled items by ${g} writers; need at least ${GROUP_MIN}`);
+
 // ---------- summary ----------
 const count = (arr, f) => arr.reduce((m, e) => ((m[f(e)] = (m[f(e)] || 0) + 1), m), {});
 const fmt = (m) => Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ');
@@ -218,6 +250,8 @@ console.log(`sample-texts.json: ${data.length} items, ${enabled.length} enabled,
 console.log(`character set: ${source}, ${core.size} characters`);
 console.log(`ordinary people (enabled): ${ordinary}/${enabled.length} = ${pct(ordinary, enabled.length)}% (minimum ${ORDINARY_MIN * 100}%)`);
 console.log(`origins (enabled): ${fmt(count(enabled, (e) => e.origin))}`);
+console.log(`women (enabled): ${women}/${enabled.length} = ${pct(women, enabled.length)}% (minimum ${Math.round(WOMEN_MIN * 100)}%); men ${men}; not stated ${enabled.length - women - men}`);
+for (const [g, n] of Object.entries(groupCounts)) console.log(`${g} writers (enabled): ${n} (minimum ${GROUP_MIN})`);
 console.log(`kinds (enabled): ${fmt(count(enabled, (e) => e.kind))}`);
 console.log(`languages (enabled): ${fmt(count(enabled, (e) => e.lang?.split('-')[0]))}`);
 console.log(`English share (enabled): ${en}/${enabled.length} = ${pct(en, enabled.length)}%`);
