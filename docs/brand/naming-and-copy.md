@@ -176,6 +176,29 @@ Yours Ever (marks in several countries), Fondly, Warmly, Cordially, Yours Truly,
 **Verdict:** **These Few Lines** is the best fit for an archive of ordinary people's letters, and the `.com` is
 $12.03. **Write Soon** is the warmest invitation to write back.
 
+### Poetic pass: single words, domain allowed to bend
+
+Rafael: earlier rounds felt like words glued together; he wants a name with a poetic, abstract angle that
+romanticises letter writing, and accepts a prefixed domain (use…, try…) as long as the name is right.
+
+Clean in TMview (no live exact marks in classes 9, 16, 41, 42) unless noted. Per year (renewal).
+
+| Name | Domain | What it carries |
+|---|---|---|
+| **Manent** | usemanent.com $12.03; manent.ink $28.75 | Latin, "they remain", from *verba volant, scripta manent*: spoken words fly away, written ones remain. The letters survived; the ink stays put; your reply remains. Echoes "permanent" |
+| **Foxing** | usefoxing.com $12.03; foxing.ink $28.75 | The collector's word for the brown spots time leaves on old paper. Artistic and exact; says "old letters" without saying it. "Foxed" is also British slang for baffled |
+| **Litterae** | litterae.app $15; uselitterae.com $12.03 | Latin: *littera* is a written character, *litterae* a letter you send. One word holds both halves of the product. Caution: live marks in Brazil (classes 41, 42) and Greece (41) |
+| Remembrancer | useremembrancer.com $12.03 | An old office whose holder remembers on others' behalf (still a post in the City of London). Grave, long |
+| Erstwhile | erstwhile.app $15 | "Of an earlier time". Literary, but an adjective |
+| Carissima | carissima.app $15 | Italian "dearest", how a letter to a woman opens. Lovely sound; gendered |
+
+Tried and blocked by marks in software or stationery: Ephemera, Tidings, Palimpsest, Querida, Recuerdo (US class 41),
+Revenant, Thine, Ever Thine, Myosotis (forget-me-not), Nomeolvides, Epistolary, Epistula, Scripsi, Scripta Manent,
+Dovecote, Lontananza. Taken outright: Marginalia, Lamplight, Forget-me-not, Vale.
+
+**Verdict:** **Manent** is the strongest poetic name: short, timeless, and it carries the whole idea (letters that
+outlived their writers, ink that can't be unwritten). **Litterae** is the most exact if Rafael accepts the Brazil caution.
+
 ---
 
 ## 1. Naming
