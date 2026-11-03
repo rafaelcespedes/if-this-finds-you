@@ -43,6 +43,8 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 - **No hard rule that isn't a hard rule in real life** (see PRINCIPLES.md).
 
 ### Product
+- **Focus: the Reading Room look** (Rafael, 2026-11-03). Postmarked is paused as is at `?look=postmarked`; today's look
+  stays the default for now while the Reading Room is refined (layout, type, icons research under way).
 - **All letters: the infinite canvas** is the default (Rafael, 2026-11-03); the grid stays at `?view=grid`.
 - **Printed marks:** a letter's place/year mark and its number (No. 0004) are printed into the paper (ink-stamp feel, mostly
   random position and size, may overlap the writing), never animated in. Several badge variants, QA'd.
