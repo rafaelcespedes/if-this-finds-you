@@ -264,6 +264,15 @@ html[data-look='reading-room'] .rr-icon svg {
   }
 }
 
+/* ---------- icons beside words (design QA) ----------
+   Centred in a row, an icon centres on the line box; Junicode's capitals sit 0.123 em above that centre (its ascent
+   and descent are uneven), so beside Junicode words an icon lifts by that much. Beside the controls' face or
+   Junicode's small capitals the centres already agree. Each icon reads what its words are set in and marks itself
+   [data-beside-text='book' | 'ui'] (icons/lucide.tsx). */
+html[data-look='reading-room'] .rr-pen-icon[data-beside-text='book'] {
+  translate: 0 -0.123em;
+}
+
 /* ---------- the site header (components/SiteHeader.tsx) as a running head (layouts, house rule 2): the wordmark,
    the page's middle and the places on one baseline over one hairline, in the label role's small capitals ---------- */
 html[data-look='reading-room'] [data-site-row] {
