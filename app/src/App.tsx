@@ -26,7 +26,7 @@ import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { pickSimilarHand, writerName } from '@/lib/hands';
 import { rollHand, withSample, type LockKey } from '@/lib/roll';
-import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleCredit, sampleForSeed, sawLetter } from '@/lib/samples';
+import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleCredit, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundKey, foundLetter, theirRequest } from '@/lib/found';
@@ -654,15 +654,27 @@ export default function App() {
             )}
           >
             <span className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">{APP_NAME}</span>
-            {reader ? (
-              <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
-                Write your own
-              </button>
-            ) : (
-              <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
-                {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write on it' : 'Click the letter to write on it'}
-              </span>
-            )}
+            <span className="flex min-w-0 items-baseline gap-2">
+              {reader ? (
+                <button type="button" onClick={() => update({ reader: false })} className="rounded-md px-1.5 py-1 underline decoration-[#cfc8b9] underline-offset-[3px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3">
+                  Write your own
+                </button>
+              ) : (
+                <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
+                  {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write on it' : 'Click the letter to write on it'}
+                </span>
+              )}
+              {/* the found letters, all of them (the archive) */}
+              <a
+                href={`${import.meta.env.BASE_URL}letters.html`}
+                className={cn(
+                  'pointer-events-auto shrink-0 rounded-md px-1.5 py-1 font-medium text-foreground/80 transition-[color,opacity] duration-150 hover-device:hover:text-foreground pointer-coarse:py-3',
+                  editing && !isDesktop && 'pointer-events-none opacity-0',
+                )}
+              >
+                Letters
+              </a>
+            </span>
           </header>
           <div ref={stageRef} className="w-full">
           <div className={cn(replyDesk && 'mx-auto flex items-start')} style={replyDesk ? { width: replyDesk.colW + replyDesk.mineW } : undefined}>
@@ -763,7 +775,7 @@ export default function App() {
                       onClick={() => setTheirsForward(true)}
                       className="mr-auto inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-3 text-[12px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
                     >
-                      <span className="truncate">In reply to {found.letter.author}{found.letter.year ? `, ${found.letter.year}` : ''}</span>
+                      <span className="truncate">In reply to {shortAuthor(found.letter.author)}{found.letter.year ? `, ${found.letter.year}` : ''}</span>
                       <ChevronDown aria-hidden className="size-3.5 shrink-0" />
                     </button>
                   ) : (

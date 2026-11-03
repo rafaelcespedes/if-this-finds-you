@@ -150,6 +150,22 @@ export function encodeState(s: NoteState): string {
 /** Parse a hash/query string. Anything missing or invalid falls back to the defaults. */
 export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): NoteState {
   const q = new URLSearchParams(hash.replace(/^#/, ''));
+  // from the archive's "Write a reply": a fresh sheet in Ink, in your hand (as the tool would show it), answering
+  // the letter in the hand and paper it was read in (`in`; else the current hand). The hash is then rewritten.
+  const replyId = q.get('reply');
+  if (replyId && sampleById(replyId)) {
+    const [seed, style, paper] = (q.get('in') || '').split('~');
+    return {
+      ...base,
+      text: '', sample: null, inkLog: null, marks: [], signed: false, reader: false, mode: INK ? 'ink' : 'fair',
+      replyTo: {
+        id: replyId,
+        seed: seed?.trim() ? seed.trim().slice(0, 64) : base.seed,
+        style: style && getStyle(style) ? style : base.style,
+        paper: resolvePaper(paper) ?? base.paper,
+      },
+    };
+  }
   const s: NoteState = { ...base, offsets: {}, occasion: null, amount: 1, marks: [], signed: false, reader: false };
   const seed = q.get('seed');
   if (seed && seed.trim()) s.seed = seed.trim().slice(0, 64);

@@ -13,8 +13,7 @@ import { PaperGuide } from '@/components/PaperCanvas';
 import { SheetView } from '@/components/SheetView';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { FoundLetter } from '@/lib/found';
-import type { SampleText } from '@/lib/samples';
-import { sampleCredit } from '@/lib/samples';
+import { sampleCredit, shortAuthor, type SampleText } from '@/lib/samples';
 import { cn } from '@/lib/utils';
 
 export const SHEET_GAP_THEIRS = 16;
@@ -22,10 +21,13 @@ const MOVE = 'transform 300ms var(--ease-drawer)';
 /** Reduced motion: the letter changes places without travelling (a short fade does the work). */
 const useMove = () => (useMediaQuery('(prefers-reduced-motion: reduce)') ? 'none' : MOVE);
 
-/** "Kamma Rahbek’s letter, 1813"; an unsigned or initialled one is just the letter. */
+/** "Kamma Rahbek’s letter, 1813"; "The letter signed ‘Your mother’, 1889"; an unsigned one is just the letter. */
 export function whoseLetter(l: SampleText) {
   const year = l.year ? `, ${l.year}` : '';
-  return /^unknown/i.test(l.author) ? `The found letter${year}` : `${l.author}’s letter${year}`;
+  const who = shortAuthor(l.author);
+  if (who.startsWith('‘')) return `The letter signed ${who}${year}`;
+  if (/^(unsigned|unknown writer)$/i.test(who) || /^unknown/i.test(l.author)) return `The found letter${year}`;
+  return `${who}’s letter${year}`;
 }
 
 export interface DeskLayout {
