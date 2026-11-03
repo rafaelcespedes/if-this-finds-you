@@ -57,6 +57,15 @@ the label role's small capitals; the letter's number is archival red. Other look
 - When the line gets tight on a larger screen, the header gives way in this order: the middle moves off-centre, then
   the places go into the Menu, then the middle steps aside (`useFits` in SiteHeader.tsx).
 
+## The band and its layer
+
+- The header is a solid band of the page's own ground (`--background`: the Reading Room's room, Classic's desk) from
+  the top of the window to just under the line, fading out over 12 px below it, so nothing scrolling under it (the
+  desk's side column, the canvas) shows through. In the Reading Room on a desktop it spans the side column too.
+- Its layer is 30: above the page and the desk's side column, below the docks' menus, the phone's control sheet
+  (40) and every menu, sheet, tooltip and toast (50). It stays `pointer-events-none` with its controls `auto`, so
+  the band never blocks a drag on the canvas.
+
 ## When the words fit (desktops, tablets)
 
 ```

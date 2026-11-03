@@ -1117,7 +1117,7 @@ export default function App() {
       beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + 0.75rem)' : undefined}
       quiet={editing && !isDesktop}
       style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
-      className={cn('z-auto transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
+      className={cn('transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
     >
       {/* no hints up here: they come as ghosts by the letter, once; screen readers still hear the state, and what
           Find another (or a link) brought */}
