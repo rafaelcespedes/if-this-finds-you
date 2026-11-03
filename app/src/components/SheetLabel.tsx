@@ -12,21 +12,27 @@ interface Props {
   hand?: string;
   /** the sheet's width (px): the line never runs past it */
   width: number;
+  /** two lines, the name over how the hand writes (phones) */
+  stack?: boolean;
   className?: string;
 }
 
 /** About how wide a line of this type is (px), to decide whether the hand fits beside the title. */
 const textWidth = (s: string) => s.length * 6.3;
 
-export function SheetLabel({ title, hand, width, className }: Props) {
-  const both = !!hand && textWidth(title) + 14 + textWidth(hand) <= width;
+export function SheetLabel({ title, hand, width, stack, className }: Props) {
+  const both = !!hand && (stack || textWidth(title) + 14 + textWidth(hand) <= width);
   return (
     <div
-      className={cn('pointer-events-none flex min-w-0 items-baseline gap-3.5 text-[12px] leading-4 whitespace-nowrap select-none', className)}
+      className={cn(
+        'pointer-events-none flex min-w-0 text-[12px] leading-4 whitespace-nowrap select-none',
+        stack ? 'flex-col items-start gap-0.5' : 'items-baseline gap-3.5',
+        className,
+      )}
       style={{ width }}
     >
       <Morph text={title} className="shrink-0 font-medium text-foreground/75" />
-      {both && <Morph text={hand!} className="min-w-0 truncate text-muted-foreground" />}
+      {both && <Morph text={hand!} className={cn('min-w-0 truncate text-muted-foreground', stack && 'max-w-full')} />}
     </div>
   );
 }

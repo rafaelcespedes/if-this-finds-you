@@ -33,9 +33,17 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   school: German, Chancery: Italian, Québec print: French); the oldest spellings (before 1660) only come with
   historical hands (Chancery). "Blank page" starts from nothing. The first edit (typing, an underline) makes the
   text yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a
-  sample. There's always a way back: under New hand, "Another letter" / "Read a found letter"; your own letter
+  sample. There's always a way back: Find another brings the next found letter, and "Read a found letter" leads back from yours; your own letter
   is kept on this device (never in a link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter
   doesn't come back within ten hands.
+- **Desktop: the writer on the letter.** The writer's name, in their own hand, sits on the sheet's top-left corner
+  and opens About this hand (how they write, where they learned, the letter's source); the letter's name
+  follows it. The panel starts with the ways to other letters and Share (top right), then New hand across its
+  width. "Click the letter to write on it" isn't in the top line: after 9 s on the page without writing, a
+  small pointer beside the sheet says it (on the label's line when there's no room), and once you've
+  written it never comes back (`seedhand:wrote`). Phones keep the name in the control sheet.
+- **Swatches are flat colours**: each paper its sheet's colour (the name under it tells near-whites apart),
+  each ink its colour; the pen's own ink is split in two of its usual colours.
 - **The sheet's label** (`components/SheetLabel.tsx`), like an artboard's name: one quiet line above the first
   sheet's top-left corner, in the app's type. Which letter it is ("Kamma Rahbek, 1813", the credit; the source
   is in About this hand) and how the hand writes ("A meticulous joined hand, upright"). On your first key it
@@ -69,7 +77,9 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
 - **The writer.** Their name in their own hand (similar hands share a family name), and one plain line
   about how they write. The name opens **About this hand**: how they write, where they learned, the letter's
   source, where the letter shapes come from (with links), and the seed.
-- **New hand** (or **R** when not typing) rolls the whole look: a new writer (word seed, the most unlike
+- **Find another** (or **R** when not typing; it used to be New hand) rolls the whole look, and on a found
+  letter brings another letter with it. **Change writer**, in the writer's dropdown, is the same letter in a
+  new hand (paper, pen and ink kept). Either way it rolls: a new writer (word seed, the most unlike
   of several candidates), Print or Joined, pen and tip, ink, paper, size, and a fresh offset on every
   slider, each inside a band that stays legible. **Keep my paper, pen and ink** (a switch under More) keeps
   those while everything else rolls (remembered per browser). The next two new hands (and a sibling) are
