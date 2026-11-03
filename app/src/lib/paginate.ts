@@ -3,7 +3,8 @@
 // a rule before a paragraph, so "n lines per sheet" drifts off the bottom of the paper. Here each line is
 // checked against the sheet: its baseline must sit on or above the last baseline, and its deepest ink must
 // stay above the bottom margin. A line that doesn't fit starts the next sheet, whole, on the first baseline
-// (on ruled paper, on the first rule, with its own float kept).
+// (on ruled paper, on the first rule, with its own float kept). An empty line between paragraphs never starts a
+// sheet, and a name never starts one without its closing ("Yours," goes over with it).
 import { UPM, type Page } from '@engine';
 
 export interface Pagination {
@@ -29,6 +30,10 @@ interface LineInfo {
   n: number;
   y: number;
   rule?: number | null;
+  /** what the line is in the letter (engines with letter shape): 'closing', 'signature', 'name', 'ps', … */
+  role?: string;
+  /** an empty line between paragraphs */
+  blank?: boolean;
 }
 
 /** The sheet frame for a paper: baselines from the paper's text box, ink above the bottom edge. */
@@ -62,13 +67,22 @@ export function paginate(page: Page, f: PageFrame): Pagination {
   const breaks = [0];
   const shifts = [0];
   let shift = 0;
-  for (const ln of info) {
-    if (ln.n <= breaks[breaks.length - 1]) continue;
-    const base = f.ruled && ln.rule != null ? ln.rule : ln.y;
+  const baseOf = (ln: LineInfo) => (f.ruled && ln.rule != null ? ln.rule : ln.y);
+  for (let i = 0; i < info.length; i++) {
+    const ln = info[i];
+    if (ln.n <= breaks[breaks.length - 1] || ln.blank) continue;
+    const base = baseOf(ln);
     const ink = deep.get(ln.n) ?? ln.y + 0.3 * UPM;
     if (base - shift > f.lastU + tol || ink - shift > f.inkU) {
-      shift = base - f.firstU;
-      breaks.push(ln.n);
+      // the name goes over with its closing, when the closing is on this sheet
+      let at = ln;
+      if (ln.role === 'signature' || ln.role === 'name') {
+        for (let j = i - 1; j >= 0 && info[j].n > breaks[breaks.length - 1]; j--) {
+          if (info[j].role === 'closing') { at = info[j]; break; }
+        }
+      }
+      shift = baseOf(at) - f.firstU;
+      breaks.push(at.n);
       shifts.push(shift);
     }
   }
