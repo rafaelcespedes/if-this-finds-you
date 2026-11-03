@@ -57,11 +57,12 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
     // the sheet as the page sized it: a letter-sized sheet of this stationery (wide notebook and A4 pages are cut to
     // A5 width, so every hand shows at the same scale and the letter fills the card as the page expected), the asked
     // height (never taller than the paper), and its writing area keeping the paper's own margins from the new edges
-    const wMm = Math.min(full.w, CARD_SHEET_MM);
-    const hMm = Math.min(full.h, wMm * req.aspect);
+    // (or, asked for the whole sheet, the paper as it is: the table shows each letter at its own paper's size)
+    const wMm = req.full ? full.w : Math.min(full.w, CARD_SHEET_MM);
+    const hMm = req.full ? full.h : Math.min(full.h, wMm * req.aspect);
     const right = Math.min(20, Math.max(10, full.w - full.text.right));
     const bottom = Math.max(10, full.h - full.text.last);
-    const paper = { ...full, w: wMm, h: hMm, text: { ...full.text, right: Math.min(full.text.right, wMm - right), last: Math.min(full.text.last, hMm - bottom) } };
+    const paper = req.full ? full : { ...full, w: wMm, h: hMm, text: { ...full.text, right: Math.min(full.text.right, wMm - right), last: Math.min(full.text.last, hMm - bottom) } };
     const W = Math.round(req.width);
     const k = W / wMm;
     const H = Math.round(hMm * k);

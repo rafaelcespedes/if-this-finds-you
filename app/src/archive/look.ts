@@ -9,7 +9,8 @@
 //   look anywhere. "Keep this hand" on a letter in its own hand keeps that letter's look (`of:<id>`).
 import * as E from '@engine';
 import { getStyle, makeHand, withOverrides, type Hand } from '@engine';
-import { getPaper, isPaperId, type PaperSpec } from '@/lib/papers';
+import { getPaper, type PaperSpec } from '@/lib/papers';
+import { periodPaper } from './paper-of';
 import { inkColor } from '@/lib/inks';
 import { MODELLED_INK, PARAM_KEYS } from '@/lib/engine-features';
 import type { ArchiveLetter, Look } from './model';
@@ -82,30 +83,6 @@ function periodLocks(l: LookInput, style: string | null): Record<string, string>
   // a library to read: no bold nibs, which turn small old hands into blots ("Neat hands only", DECISIONS.md)
   locks.tip = hash('tip:' + l.id) % 3 ? 'medium' : 'fine';
   return locks;
-}
-
-/**
- * The letter paper of the letter's time and place, from the tool's stationery: handmade and laid sheets before
- * 1800, laid and small British pads in the 1800s (pale blue laid for Dutch letters), pads and airmail in the 20th
- * century (airmail for letters that crossed a sea), and a torn-out school page for children's letters to Santa
- * Claus or the Three Kings. null after 1950: the engine's sampler chooses. Only papers the tool has.
- */
-function periodPaper(l: LookInput): string | null {
-  const y = l.year ?? 2000;
-  const lang = l.lang.toLowerCase();
-  const key = 'paper:' + l.id;
-  const toKings = /santa claus|reyes magos|three kings|rois mages/i.test(l.recipient ?? '');
-  const abroad = l.found?.circumstance === 'emigrant' || l.found?.circumstance === 'seized';
-  let options: string[];
-  if (toKings && y >= 1880) options = [lang === 'en-us' ? 'notebook-loose' : lang.startsWith('fr') ? 'notebook-fr' : lang.startsWith('en') ? 'notebook-uk' : 'notebook'];
-  else if (y < 1700) options = ['laid-cotton', 'laid-cotton', 'laid'];
-  else if (y < 1800) options = ['laid', 'laid', 'laid-cotton'];
-  else if (y < 1880) options = lang.startsWith('nl') ? ['laid-blue'] : ['laid', 'laid', 'laid-blue', 'pad-uk'];
-  else if (y < 1920) options = lang.startsWith('de') ? ['pad-a4'] : ['pad-uk', 'pad', 'laid', 'laid-blue'];
-  else if (y < 1950) options = abroad ? ['airmail', 'airmail-white'] : lang.startsWith('de') ? ['pad-a4', 'airmail'] : ['pad', 'pad-uk', 'airmail'];
-  else return null;
-  const ok = options.filter((id) => isPaperId(id));
-  return ok.length ? pick(ok, key) : null;
 }
 
 /** A letter's own hand: fixed by its id. */

@@ -16,6 +16,9 @@ export interface CardRequest {
   css: number;
   /** the sheet's height for its width (the page lays the grid out with it before the image exists) */
   aspect: number;
+  /** the whole first sheet at its paper's own size (the Reading Room's table): `width` spans the paper's width and
+   * `aspect` is the paper's */
+  full?: boolean;
 }
 
 /** Sent once when a worker starts: get the engine's renderer ready before the first card is asked for. */
