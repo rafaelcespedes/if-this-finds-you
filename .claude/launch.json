@@ -12,6 +12,12 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd app && npm run build && npx vite preview --port 4174 --strictPort"],
       "port": 4174
+    },
+    {
+      "name": "palette-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd app && npx vite --port 5197 --strictPort"],
+      "port": 5197
     }
   ]
 }

@@ -5,9 +5,13 @@ import { cards } from './cards';
 import { applySerif } from './serif';
 import '../index.css';
 import './archive.css';
+import '../themes.css';
+import { applyThemeLab } from '../theme-lab';
 
 // the letter face (?serif=1…4), loaded beside the page
 applySerif();
+// the colour direction being compared (?theme=1…4)
+applyThemeLab();
 // the card workers load the engine while the page loads the letters
 if (!location.hash.startsWith('#/letter/')) cards.warm();
 
