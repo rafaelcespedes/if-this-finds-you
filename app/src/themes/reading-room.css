@@ -1,1 +1,940 @@
 /* Concept A, "The Reading Room" (?look=reading-room). Everything here is scoped to html[data-look="reading-room"]. */
+/*
+   A letter is brought to your desk, with its catalogue card. The interface steps back into a book serif with real
+   small capitals and old-style figures, on a paper-grey room with one archival ink colour; archival red is kept for
+   numbers and the main action. The new pieces (card, stamps, postmark, request slips) live in themes/reading-room/.
+
+   Type: Alegreya and Alegreya SC (Huerta Tipográfica, the foundry behind Piazzolla; SIL OFL 1.1, @fontsource). The
+   Garamonds the brief suggested lose their small capitals in the web files (Google's subsets drop smcp and onum);
+   Alegreya SC is a true small-caps family, and Alegreya's figures are old-style by default, with tabular ones.
+   The faces are declared under their own names, so the default look never downloads them.
+   Text sizes are in rem, so the room follows the browser's text size as the tool does; the stamps on a sheet are
+   sized in the paper's millimetres instead (SheetMarks.tsx).
+*/
+
+/* ---------- type ---------- */
+@font-face {
+  font-family: 'RR Book';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 112%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RR Book';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 112%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RR Book';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 112%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RR Book';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 112%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RR Caps';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 112%;
+  src: url('@fontsource/alegreya-sc/files/alegreya-sc-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RR Caps';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 112%;
+  src: url('@fontsource/alegreya-sc/files/alegreya-sc-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RR Caps';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500 900;
+  size-adjust: 112%;
+  src: url('@fontsource/alegreya-sc/files/alegreya-sc-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RR Caps';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500 900;
+  size-adjust: 112%;
+  src: url('@fontsource/alegreya-sc/files/alegreya-sc-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- the room: tokens (every text colour is AA on the room and on the card) ---------- */
+html[data-look='reading-room'] {
+  --rr-room: #e6e4de; /* room grey */
+  --rr-card: #f3eee1; /* card buff */
+  --rr-slip: #f8f5ec; /* a request slip, thinner paper */
+  --rr-ink: #1e2733; /* ledger ink: 11.9:1 on the room, 13:1 on the card */
+  --rr-red: #9b3b2a; /* archival red, numbers and the main action only: 5.4:1 on the room, 5.9:1 on the card */
+  --rr-red-deep: #7e2f21;
+  --rr-muted: #575146; /* 6.2:1 on the room */
+  --rr-faint: #666052; /* 4.9:1 on the room */
+  --rr-edge: #d6ccb7; /* a card's cut edge */
+  --rr-rule: color-mix(in oklab, var(--rr-ink) 15%, transparent); /* an index card's ruled lines */
+  --rr-postmark: #2b3443;
+  --rr-book: 'RR Book', 'Iowan Old Style', Georgia, serif;
+  --rr-caps: 'RR Caps', 'RR Book', Georgia, serif;
+
+  --desk: var(--rr-room);
+  --ink: var(--rr-ink);
+  --ink-soft: #33405a;
+  --text: var(--rr-ink);
+  --text-muted: var(--rr-muted);
+  --text-faint: var(--rr-faint);
+  --panel: var(--rr-card);
+  --hairline: #dcd3c0;
+  --chip: #e9e2d2;
+  --chip-hover: #e1d8c5;
+  --popover: var(--rr-slip);
+  --input: #c9c0ac;
+  --ring: var(--rr-ink);
+  --radius: 0.25rem;
+  /* Rubric's tokens (index.css): its vermilion marks become ledger ink here, so red stays for numbers and the main
+     action only */
+  --ink-press: #10161f;
+  --mark: var(--rr-ink);
+  --tile-on: #fdfbf6;
+  --field: var(--rr-slip);
+  --switch-off: #d6cdb9;
+  --rule-link: color-mix(in oklab, var(--rr-ink) 30%, transparent);
+  --sheet-shadow:
+    0 0.5px 0 rgba(30, 39, 51, 0.1),
+    0 1px 2px rgba(30, 39, 51, 0.08),
+    0 8px 16px -8px rgba(30, 39, 51, 0.16),
+    0 26px 44px -24px rgba(30, 39, 51, 0.28);
+
+  /* the library's tokens (archive.css) */
+  --lib-surface: var(--rr-card);
+  --lib-surface-shadow: 0 0 0 1px var(--rr-edge), 0 10px 24px -14px rgba(30, 39, 51, 0.38);
+  --lib-menu-surface: var(--rr-slip);
+  --lib-menu-border: var(--rr-edge);
+  --lib-menu-shadow: 0 1px 2px rgba(30, 39, 51, 0.08), 0 14px 34px -14px rgba(30, 39, 51, 0.4);
+  --lib-text-faint: var(--rr-faint);
+  --lib-accent: var(--rr-ink);
+  --lib-rule: var(--rr-edge);
+}
+/* the letter face too: one book face for the whole room (serif.ts sets --font-letter on <html>; this wins below it) */
+html[data-look='reading-room'] body {
+  --font-letter: var(--rr-book);
+  --letter-scale: 1;
+  --letter-variation: normal;
+  font-family: var(--rr-book);
+  font-size: 0.9375rem;
+  font-variant-numeric: oldstyle-nums proportional-nums;
+  font-feature-settings: normal;
+}
+html[data-look='reading-room'] .tabular {
+  font-variant-numeric: oldstyle-nums tabular-nums;
+}
+
+/* ---------- small pieces ---------- */
+html[data-look='reading-room'] .rr-sc {
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.055em;
+  font-weight: 400;
+}
+html[data-look='reading-room'] .rr-figures {
+  font-variant-numeric: oldstyle-nums tabular-nums;
+}
+html[data-look='reading-room'] .rr-red {
+  color: var(--rr-red);
+}
+html[data-look='reading-room'] .rr-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-link--quiet {
+  color: var(--rr-muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-link:hover {
+    text-decoration-color: currentColor;
+  }
+}
+html[data-look='reading-room'] .rr-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 3px;
+  color: var(--rr-muted);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-icon svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-icon:hover {
+    background: var(--chip);
+    color: var(--rr-ink);
+  }
+}
+@media (pointer: coarse) {
+  html[data-look='reading-room'] .rr-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ---------- headers: the page links in small capitals ---------- */
+html[data-look='reading-room'] header a:not(:has(svg, img)),
+html[data-look='reading-room'] main > header button {
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.06em;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: var(--rr-ink);
+}
+/* the phone header's chips: ruled squares, no lift */
+html[data-look='reading-room'] main > header a[aria-label],
+html[data-look='reading-room'] main > header [data-chip] {
+  border-radius: 3px;
+  border-color: var(--rr-edge);
+  background: var(--rr-card);
+  box-shadow: none;
+}
+
+/* ---------- the catalogue card ---------- */
+html[data-look='reading-room'] .rr-card {
+  position: relative;
+  background: var(--rr-card);
+  border: 1px solid var(--rr-edge);
+  border-radius: 2px;
+  padding: 14px 18px 30px;
+  color: var(--rr-ink);
+  box-shadow: 0 1px 0 rgba(30, 39, 51, 0.04), 0 10px 22px -16px rgba(30, 39, 51, 0.35);
+}
+/* the rod hole every catalogue card has at its foot */
+html[data-look='reading-room'] .rr-card::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  border-radius: 50%;
+  background: var(--rr-room);
+  box-shadow: inset 0 1px 1.5px rgba(30, 39, 51, 0.35);
+}
+html[data-look='reading-room'] .rr-card--waiting {
+  min-height: 420px;
+}
+html[data-look='reading-room'] .rr-card--slip {
+  padding-bottom: 16px;
+  box-shadow: none;
+}
+html[data-look='reading-room'] .rr-card--slip::after {
+  display: none;
+}
+/* the card's head: its number in red, over the one red rule an index card carries */
+html[data-look='reading-room'] .rr-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid color-mix(in oklab, var(--rr-red) 55%, transparent);
+}
+html[data-look='reading-room'] .rr-card-no {
+  margin: 0;
+  color: var(--rr-red);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+html[data-look='reading-room'] .rr-card-actions {
+  display: flex;
+  align-items: center;
+  margin-right: -8px;
+}
+html[data-look='reading-room'] .rr-card-actions [data-slot='button'] {
+  width: 36px;
+  height: 36px;
+  border-radius: 3px;
+  color: var(--rr-muted);
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+}
+html[data-look='reading-room'] .rr-card-actions [data-slot='button'] svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-card-actions [data-slot='button']:hover {
+    background: var(--chip);
+    color: var(--rr-ink);
+  }
+}
+html[data-look='reading-room'] .rr-card-title {
+  margin: 12px 0 12px;
+  font-family: var(--rr-book);
+  font-size: 1.4375rem;
+  line-height: 1.12;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .rr-facts {
+  margin: 0;
+}
+html[data-look='reading-room'] .rr-fact {
+  display: grid;
+  grid-template-columns: 5.375rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 0 6px;
+  border-top: 1px solid var(--rr-rule);
+}
+html[data-look='reading-room'] .rr-fact:has(.rr-sig) {
+  align-items: center;
+}
+html[data-look='reading-room'] .rr-fact dt {
+  font-size: 0.875rem;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-fact dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.9375rem;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+}
+html[data-look='reading-room'] .rr-sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.8438rem;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-ref {
+  margin-left: 1.5px;
+  color: var(--rr-red);
+  font-size: 0.7em;
+  font-weight: 600;
+  line-height: 0;
+  vertical-align: 0.55em;
+  font-variant-numeric: lining-nums;
+}
+html[data-look='reading-room'] .rr-notes ol {
+  list-style: decimal;
+  margin: 12px 0 0;
+  padding: 10px 0 0 1.2em;
+  border-top: 1px solid var(--rr-rule);
+  font-size: 0.8438rem;
+  line-height: 1.42;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-notes li + li {
+  margin-top: 5px;
+}
+html[data-look='reading-room'] .rr-notes li::marker {
+  color: var(--rr-red);
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
+}
+html[data-look='reading-room'] .rr-card-foot {
+  margin: 10px 0 0;
+  font-size: 0.8438rem;
+  color: var(--rr-muted);
+}
+/* the writer's name in their own hand, on the card (it opens what's known about the hand) */
+html[data-look='reading-room'] .rr-sig {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  margin: -4px -6px -6px;
+  padding: 0 6px;
+  border-radius: 3px;
+  transition: background-color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-sig .writing {
+  max-width: 11.875rem;
+}
+html[data-look='reading-room'] .rr-sig .writing svg {
+  height: 100%;
+  width: auto;
+}
+html[data-look='reading-room'] .rr-sig-chev,
+html[data-look='reading-room'] .rr-hand-chev {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--rr-muted);
+  transition: transform 200ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-sig[data-state='open'] .rr-sig-chev,
+html[data-look='reading-room'] .rr-hand[data-state='open'] .rr-hand-chev {
+  transform: rotate(180deg);
+}
+html[data-look='reading-room'] .rr-hand {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: -2px -5px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  text-align: left;
+  transition: background-color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-sig:hover,
+  html[data-look='reading-room'] .rr-hand:hover {
+    background: var(--chip);
+  }
+}
+@media (pointer: coarse) {
+  html[data-look='reading-room'] .rr-hand {
+    padding-block: 10px;
+    margin-block: -10px;
+  }
+}
+
+/* ---------- the tool's desk (ReadingDesk.tsx) ---------- */
+html[data-look='reading-room'] .rr-desk-inner {
+  padding: 84px 6px 48px 4px;
+}
+html[data-look='reading-room'] .rr-desk-inner > .rr-card {
+  margin-top: 18px;
+}
+html[data-look='reading-room'] .rr-desk-actions {
+  display: grid;
+  gap: 2px;
+}
+html[data-look='reading-room'] .rr-status {
+  justify-content: center;
+}
+/* the main action, in words: archival red, a shuffle mark, and its key as a call number */
+html[data-look='reading-room'] .rr-bring {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 6px 8px 4px;
+  border-top: 1px solid var(--rr-ink);
+  border-bottom: 1px solid var(--rr-rule);
+  color: var(--rr-red);
+  font-family: var(--rr-book);
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-align: left;
+  transition: color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-bring-icon {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  flex: none;
+}
+html[data-look='reading-room'] .rr-bring-label {
+  flex: 1;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-bring:hover {
+    color: var(--rr-red-deep);
+  }
+  html[data-look='reading-room'] .rr-bring:hover .rr-bring-label {
+    text-decoration-color: currentColor;
+  }
+}
+html[data-look='reading-room'] .rr-bring:active .rr-bring-label {
+  transform: translateY(0.5px);
+}
+/* a spine label: "call" over the key */
+html[data-look='reading-room'] .rr-callno {
+  display: inline-grid;
+  justify-items: center;
+  min-width: 30px;
+  padding: 2px 6px 3px;
+  border: 1px solid color-mix(in oklab, var(--rr-red) 55%, transparent);
+  border-radius: 3px;
+  background: var(--rr-slip);
+  color: var(--rr-red);
+  line-height: 1;
+}
+html[data-look='reading-room'] .rr-callno-k {
+  font-family: var(--rr-caps);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  font-weight: 400;
+}
+html[data-look='reading-room'] .rr-callno-v {
+  margin-top: 1px;
+  font-family: var(--rr-book);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+@media (pointer: coarse) {
+  html[data-look='reading-room'] .rr-callno {
+    display: none;
+  }
+}
+
+/* the request slip: the writing materials, folded away until asked for */
+html[data-look='reading-room'] .rr-slip {
+  margin-top: 12px;
+  background: var(--rr-slip);
+  border: 1px solid var(--rr-edge);
+  border-top: 1.5px dashed color-mix(in oklab, var(--rr-ink) 38%, transparent); /* torn along its perforation */
+  border-radius: 0 0 2px 2px;
+}
+html[data-look='reading-room'] .rr-slip-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  width: 100%;
+  padding: 12px 14px 13px 16px;
+  text-align: left;
+  border-radius: 0 0 2px 2px;
+  transition: background-color 150ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-slip-head:hover {
+    background: color-mix(in oklab, var(--chip) 55%, transparent);
+  }
+}
+html[data-look='reading-room'] .rr-slip-k {
+  grid-column: 1;
+  font-size: 0.8438rem;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-slip-t {
+  grid-column: 1;
+  margin-top: 2px;
+  font-size: 1.0625rem;
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .rr-slip-v {
+  grid-column: 1;
+  margin-top: 2px;
+  font-size: 0.875rem;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-slip-chev {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  color: var(--rr-muted);
+  transition: transform 260ms var(--ease-drawer);
+}
+html[data-look='reading-room'] .rr-slip.is-open .rr-slip-chev {
+  transform: rotate(180deg);
+}
+html[data-look='reading-room'] .rr-slip-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms var(--ease-drawer);
+}
+html[data-look='reading-room'] .rr-slip.is-open .rr-slip-body {
+  grid-template-rows: 1fr;
+}
+html[data-look='reading-room'] .rr-slip-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+html[data-look='reading-room'] .rr-slip.is-open .rr-slip-inner {
+  border-top: 1px solid var(--rr-rule);
+}
+/* the panel's groups inside the slip: a label in small capitals per group, on ruled lines */
+html[data-look='reading-room'] .rr-slip-inner section[data-row] h3,
+html[data-look='reading-room'] .control-sheet section[data-row] h3 {
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.055em;
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+html[data-look='reading-room'] .rr-slip-inner section[data-row] h3 > span,
+html[data-look='reading-room'] .control-sheet section[data-row] h3 > span {
+  font-family: var(--rr-book);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.875rem;
+}
+html[data-look='reading-room'] .rr-slip-inner section[data-row] {
+  border-color: var(--rr-rule);
+}
+
+/* the tool's controls, in the room: hairline tiles, square corners, ink for what's chosen */
+html[data-look='reading-room'] [data-slot='button'] {
+  box-shadow: none;
+}
+html[data-look='reading-room'] [role='switch'][data-state='checked'],
+html[data-look='reading-room'] [data-slot='switch'][data-state='checked'] {
+  background: var(--rr-ink);
+}
+
+/* ---------- phones: the control sheet as a slip ---------- */
+html[data-look='reading-room'] .control-sheet {
+  border-radius: 4px 4px 0 0;
+  border-top: 1px solid var(--rr-ink);
+  background: var(--rr-card);
+  box-shadow: 0 -10px 30px -16px rgba(30, 39, 51, 0.4);
+}
+html[data-look='reading-room'] .control-sheet > div:first-child > div:first-child > span {
+  background: color-mix(in oklab, var(--rr-ink) 22%, transparent);
+  border-radius: 2px;
+}
+html[data-look='reading-room'] .control-sheet .rr-bring {
+  width: auto;
+  min-height: 44px;
+  padding: 6px 4px 6px 10px;
+  border: 0;
+  font-size: 1.0625rem;
+}
+html[data-look='reading-room'] .control-sheet button[aria-expanded] > span.rounded-full {
+  border-radius: 2px;
+  border: 1px dashed color-mix(in oklab, var(--rr-ink) 35%, transparent);
+  background: transparent;
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.06em;
+  font-size: 0.9062rem;
+  font-weight: 400;
+}
+/* the catalogue slip under the sheet (phones) */
+html[data-look='reading-room'] .rr-under-sheet {
+  margin-top: 20px;
+  text-align: left;
+  color: var(--rr-ink);
+}
+
+/* ---------- the stamps on a sheet: the number (signature) and the postmark (from Postmarked) ---------- */
+html[data-look='reading-room'] .rr-marks {
+  z-index: 2;
+}
+html[data-look='reading-room'] .rr-stamp {
+  position: absolute;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  padding: 0.16em 0.5em 0.2em;
+  border: 1.5px solid currentColor;
+  outline: 0.75px solid currentColor;
+  outline-offset: 1.5px;
+  border-radius: 2px;
+  color: var(--rr-red);
+  font-family: var(--rr-caps);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  white-space: nowrap;
+  opacity: 0.86;
+  transform: rotate(-2.5deg);
+  transform-origin: left top;
+  animation: rr-stamp 260ms var(--ease-out) 380ms both;
+}
+html[data-look='reading-room'] .rr-stamp-n {
+  font-family: var(--rr-book);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  font-variant-numeric: oldstyle-nums tabular-nums;
+}
+/* on a library card the number is a small tag pinned to the sheet's top edge, clear of the writing */
+html[data-look='reading-room'] .rr-stamp--card {
+  top: 0;
+  left: 9%;
+  z-index: 1;
+  font-size: 0.6562rem;
+  padding: 0.14em 0.5em 0.18em;
+  border: 1px solid var(--rr-edge);
+  outline: 0;
+  background: var(--rr-slip);
+  box-shadow: 0 1px 2px rgba(30, 39, 51, 0.12);
+  opacity: 1;
+  transform: translateY(-62%) rotate(-1.5deg);
+  animation: rr-fade 200ms var(--ease-out) 120ms both;
+}
+html[data-look='reading-room'] .rr-postmark {
+  position: absolute;
+  color: var(--rr-postmark);
+  opacity: 0.68;
+  transform: rotate(-11deg);
+  overflow: visible;
+  animation: rr-postmark 300ms var(--ease-out) 620ms both;
+}
+html[data-look='reading-room'] .rr-postmark-text {
+  font-family: var(--rr-caps);
+  font-weight: 500;
+}
+html[data-look='reading-room'] .rr-postmark-year {
+  font-family: var(--rr-book);
+  font-weight: 700;
+  font-variant-numeric: lining-nums;
+  letter-spacing: 0.04em;
+}
+@keyframes rr-stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-2.5deg) scale(1.14);
+  }
+}
+@keyframes rr-postmark {
+  from {
+    opacity: 0;
+    transform: rotate(-11deg) scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] .rr-stamp,
+  html[data-look='reading-room'] .rr-postmark {
+    animation-name: rr-fade;
+    animation-duration: 160ms;
+  }
+  html[data-look='reading-room'] .rr-slip-body,
+  html[data-look='reading-room'] .rr-slip-chev {
+    transition: none;
+  }
+}
+@keyframes rr-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- All letters ---------- */
+/* the heading's finding-aid line */
+html[data-look='reading-room'] .rr-aid {
+  margin: 14px auto 0;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in oklab, var(--rr-ink) 60%, transparent);
+  font-family: var(--rr-caps);
+  font-size: 0.9375rem;
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-aid .rr-figures {
+  font-family: var(--rr-book);
+  letter-spacing: 0.02em;
+}
+/* the timeline dock and the letter dock: a hairline-ruled slip, not a pill */
+html[data-look='reading-room'] .archive-dock {
+  border-radius: 2px;
+  border-top: 1px solid var(--rr-ink);
+}
+html[data-look='reading-room'] .archive-dock [data-slot='button'] {
+  border-radius: 3px;
+}
+html[data-look='reading-room'] .era-seg {
+  border-radius: 2px;
+}
+html[data-look='reading-room'] .era-seg span:not(.era-marks):not(:has(*)) {
+  font-family: var(--rr-caps);
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+}
+html[data-look='reading-room'] .archive-field {
+  border-radius: 2px;
+  background: var(--rr-slip);
+  border-color: var(--rr-edge);
+}
+html[data-look='reading-room'] .lib-menu {
+  border-radius: 3px;
+}
+html[data-look='reading-room'] .canvas-title,
+html[data-look='reading-room'] .archive-card h3 {
+  color: var(--rr-ink);
+}
+
+/* ---------- the letter page (ReadingLetter.tsx) ---------- */
+html[data-look='reading-room'] .rr-letter-card {
+  position: sticky;
+  top: 84px;
+  align-self: start;
+  max-height: calc(100dvh - 84px - 88px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rr-edge) transparent;
+  padding: 0 4px 12px;
+  margin: 0 -4px;
+}
+html[data-look='reading-room'] .rr-letter-kicker {
+  margin: 0 auto 16px;
+  max-width: 30rem;
+  text-align: center;
+  font-size: 1.375rem;
+  line-height: 1.18;
+  font-weight: 500;
+  color: var(--rr-ink);
+  text-wrap: balance;
+}
+html[data-look='reading-room'] .rr-transcript-wrap {
+  max-width: 36rem;
+  margin: 28px auto 0;
+  text-align: center;
+  font-size: 1rem;
+}
+html[data-look='reading-room'] .rr-transcript {
+  display: grid;
+  gap: 0.8em;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rr-rule);
+  text-align: left;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  white-space: pre-line;
+  color: var(--rr-ink);
+}
+
+/* the request slip along the bottom: "‹ No. 0004 · 4 of 127 › · Bring another · ⋯ · Write a reply" */
+html[data-look='reading-room'] .rr-dock {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 4px 6px;
+  background: var(--rr-card);
+  border: 1px solid var(--rr-edge);
+  border-top: 1px solid var(--rr-ink);
+  border-radius: 2px;
+  box-shadow: 0 12px 28px -16px rgba(30, 39, 51, 0.45);
+  font-size: 1rem;
+  animation: dock-in 320ms var(--ease-out) both;
+}
+html[data-look='reading-room'] .rr-dock-no {
+  padding: 0 4px;
+  white-space: nowrap;
+  color: var(--rr-red);
+  letter-spacing: 0.03em;
+}
+html[data-look='reading-room'] .rr-dock-of {
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .rr-dock-rule {
+  width: 1px;
+  height: 22px;
+  margin: 0 5px;
+  flex: none;
+  background: var(--rr-rule);
+}
+html[data-look='reading-room'] .rr-dock-word,
+html[data-look='reading-room'] .rr-dock-reply {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 9px;
+  border-radius: 3px;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+html[data-look='reading-room'] .rr-dock-word {
+  color: var(--rr-ink);
+}
+html[data-look='reading-room'] .rr-dock-reply {
+  color: var(--rr-red);
+  font-weight: 600;
+}
+html[data-look='reading-room'] .rr-dock-reply svg {
+  width: 1rem;
+  height: 1rem;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .rr-dock-word:hover,
+  html[data-look='reading-room'] .rr-dock-reply:hover {
+    text-decoration-color: currentColor;
+  }
+  html[data-look='reading-room'] .rr-dock-reply:hover {
+    color: var(--rr-red-deep);
+  }
+}
+@media (pointer: coarse) {
+  html[data-look='reading-room'] .rr-dock-word,
+  html[data-look='reading-room'] .rr-dock-reply {
+    min-height: 44px;
+  }
+}
+/* a phone: the same line, packed (taps stay 44 px tall, 40 wide) */
+@media (max-width: 520px) {
+  html[data-look='reading-room'] .rr-dock {
+    gap: 0;
+    padding-inline: 2px;
+    font-size: 0.9688rem;
+  }
+  html[data-look='reading-room'] .rr-dock .rr-icon {
+    width: 40px;
+  }
+  html[data-look='reading-room'] .rr-dock-no {
+    padding: 0 1px;
+  }
+  html[data-look='reading-room'] .rr-dock-rule {
+    margin: 0 2px;
+  }
+  html[data-look='reading-room'] .rr-dock-word,
+  html[data-look='reading-room'] .rr-dock-reply {
+    padding-inline: 7px;
+  }
+  html[data-look='reading-room'] .rr-dock-reply svg {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] .rr-dock {
+    animation: rr-fade 200ms var(--ease-out) both;
+  }
+}
+
+/* Windows contrast themes: the stamps and rules keep to the system's colours */
+@media (forced-colors: active) {
+  html[data-look='reading-room'] .rr-stamp,
+  html[data-look='reading-room'] .rr-postmark {
+    forced-color-adjust: auto;
+  }
+  html[data-look='reading-room'] .rr-card,
+  html[data-look='reading-room'] .rr-dock,
+  html[data-look='reading-room'] .rr-slip {
+    border: 1px solid CanvasText;
+  }
+}

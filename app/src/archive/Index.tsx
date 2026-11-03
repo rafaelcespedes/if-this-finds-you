@@ -14,7 +14,12 @@ import { cardSize } from './cards';
 import { baseLang, eraOf, ERAS, filterLetters, languageName } from './data';
 import type { ArchiveLetter } from './model';
 import { NO_FILTERS, type Filters } from './route';
+import { withLogo } from '@/lib/brand';
+import { FONTS_URL } from '@/fonts/links';
 import { headerLink, SiteHeader, toolHref } from './SiteHeader';
+// the look being compared (?look=reading-room): the heading as a finding aid (src/themes/reading-room/)
+import { LOOK } from '@/lib/look';
+import { FindingAid } from '@/themes/reading-room/FindingAid';
 
 interface Props {
   letters: ArchiveLetter[] | null;
@@ -132,6 +137,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             <div className="flex h-full flex-col items-center justify-center px-2 text-center">
               <span aria-hidden className="block h-[52px] text-foreground [&_svg]:h-full [&_svg]:w-auto sm:h-[68px]" dangerouslySetInnerHTML={{ __html: allLetters }} />
               <p className="mt-4 max-w-[28rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">{intro}</p>
+              {LOOK === 'reading-room' && <FindingAid letters={pool} />}
             </div>
           }
           empty={
@@ -150,6 +156,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
         <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[5] h-28 bg-gradient-to-b from-[var(--desk)] via-[color-mix(in_oklab,var(--desk)_70%,transparent)] to-transparent" />
         <SiteHeader>
           <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
+          <a href={withLogo(FONTS_URL)} className={`${headerLink} font-medium text-foreground/80`}>Fonts</a>
         </SiteHeader>
         {TOOLBAR === '2' ? <SelectDock {...controls} /> : <TimelineDock {...controls} />}
       </div>
@@ -160,6 +167,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
     <div className="min-h-dvh">
       <SiteHeader>
         <a href={toolHref} className={`${headerLink} font-medium text-foreground/80`}>Write a letter</a>
+        <a href={withLogo(FONTS_URL)} className={`${headerLink} font-medium text-foreground/80`}>Fonts</a>
       </SiteHeader>
       <main className={cn('mx-auto w-full max-w-[1180px] px-4 sm:px-8 lg:px-10', dock ? 'pb-36' : 'pb-28')}>
         <section className={cn('pt-[calc(5.25rem+env(safe-area-inset-top,0px))] sm:pt-28', dock ? 'pb-10 sm:pb-12' : 'pb-6 sm:pb-8')}>
@@ -172,6 +180,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
             {TOOLBAR === '1' && <HeadingTools {...controls} />}
           </div>
           <p className="mt-4 max-w-[34rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">{intro}</p>
+          {LOOK === 'reading-room' && <FindingAid letters={pool} />}
           {TOOLBAR === '1' && <div className="mt-5"><SentenceFilter {...controls} /></div>}
         </section>
         {/* the dock floats at the bottom, but comes first in reading order, before the letters */}

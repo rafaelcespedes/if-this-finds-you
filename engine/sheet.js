@@ -176,7 +176,8 @@ function applyOne(st, e, ev) {
   R.apply(e);
   switch (e.t) {
     case 'write': case 'break':
-      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev, st.ahead && st.ahead.has(ev) ? { ahead: st.ahead.get(ev), complete: true } : undefined);
+      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev,
+        st.ahead && st.ahead.has(ev) ? { ahead: st.ahead.get(ev), complete: true } : e.rest ? { ahead: e.rest } : undefined);
       break;
     case 'strike': {
       const struck = placedRun(s, e.from, e.to);
@@ -516,6 +517,14 @@ export function plan(st, view, edit, opts = {}) {
     if (!v.mid.text) v.mid = null;
     return { events, view: v };
   }
+  // 2r. a whole word replaced (a phone's autocorrect, after the pen had written it): the writer fixes
+  // the whole word, never a slice of it
+  if (edit.kind === 'replace' && (del > 0 || ins)) { // (autocorrect may only add letters: "dont" -> "don't")
+    if (v.mid) flushMid(R, v, emit);
+    if (v.pending) resolvePending(st, R, v, emit);
+    if (replaceWord(R, v, emit, roll, viewMap(R, v), edit, st.H)) return { events, view: v };
+    m = viewMap(R, v);
+  }
   // 2. ink is involved. Settle what's in flight elsewhere first: an insertion being typed, a pending fix
   const units = m.units;
   const inkAfter = units.slice(at + del).some((u) => u.k === 'ink' || u.k === 'mid');
@@ -566,6 +575,59 @@ export function plan(st, view, edit, opts = {}) {
     v.mid = { after, text: ins };
   }
   return { events, view: v };
+}
+
+// A replacement edit arrives as the smallest change ("teh" -> "the" is "eh" -> "he"), so widen it to the
+// whole word (or words) it falls in, then do what a person does with a word already in ink:
+//   one or two letters changed, same length: write the new letters over the old ones
+//   the last word written: strike the whole word (in this writer's style) and write the new one after it
+//   a word further back: strike it where it stands and write the new one above it (ink never moves)
+// Returns false when the word isn't ink yet (the plain path edits the unwritten text).
+function replaceWord(R, v, emit, roll, m, edit, H) {
+  const V = m.text, U = m.units;
+  const isW = (c) => /[\p{L}\p{N}'’]/u.test(c || '');
+  let wa = edit.at, wb = edit.at + edit.del;
+  while (wa > 0 && isW(V[wa - 1])) wa--;
+  while (wb < V.length && isW(V[wb])) wb++;
+  const word = U.slice(wa, wb);
+  if (!word.some((u) => u.k === 'ink') || word.some((u) => u.k === 'mid')) return false;
+  const newW = V.slice(wa, edit.at) + (edit.ins || '') + V.slice(edit.at + edit.del, wb);
+  const inkIds = word.filter((u) => u.k === 'ink' && !u.half).map((u) => u.id);
+  const tailPart = word.filter((u) => u.k === 'tail');
+  const a = Array.from(V.slice(wa, wb)), b = Array.from(newW);
+  if (!tailPart.length && a.length === b.length && b.length === inkIds.length && !/\s/.test(newW)) {
+    const diff = [];
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) diff.push(i);
+    if (diff.length && diff.length <= 2 && diff.every((i) => isW(b[i]))) {
+      for (const i of diff) emit({ t: 'over', at: inkIds[i], ch: b[i] });
+      return true;
+    }
+  }
+  const how = roll() < H.scribbleWords * 0.5 ? 'scribble' : H.strike;
+  const strike = (ids) => { for (const [x, y] of idRuns(ids)) emit({ t: 'strike', from: x, to: y, how, why: 'replaced' }); };
+  // anything written after the word (other than spaces)?
+  let k = wb;
+  const spaces = [];
+  while (k < U.length && U[k].k === 'ink' && /\s/.test(V[k]) && V[k] !== '\n') { if (!U[k].half) spaces.push(U[k].id); k++; }
+  const inkAfter = U.slice(k).some((u) => u.k === 'ink' || u.k === 'mid');
+  if (inkAfter) {
+    strike(inkIds);
+    v.mid = { after: inkIds[inkIds.length - 1], text: newW, over: [Math.min(...inkIds), Math.max(...inkIds)] };
+    return true;
+  }
+  // at the pen head. With spaces already written after it, they go with the word and come back after the
+  // new one; without, a space is written first, so the new word starts clear of the struck one
+  const restTail = v.tail.slice(tailPart.length ? tailPart[tailPart.length - 1].j + 1 : 0);
+  if (spaces.length) {
+    strike([...inkIds, ...spaces]);
+    v.tail = newW + V.slice(wb, k) + restTail;
+  } else {
+    const sep = R.nextId;
+    emit({ t: 'write', text: ' ' });
+    strike([...inkIds, sep]);
+    v.tail = newW + restTail;
+  }
+  return true;
 }
 
 function flushMid(R, v, emit) {
@@ -674,7 +736,15 @@ export function penStep(st, view, opts = {}) {
   if (v.tail && !v.mid) {
     const chunk = ready(v.tail);
     if (chunk) {
-      chunk.split('\n').forEach((part, i) => { if (i) emit({ t: 'break' }); if (part) emit({ t: 'write', text: part }); });
+      // a piece that stops inside a word carries the rest of that word (what's typed of it so far), so
+      // layout decides the line end on the whole word, where the thought letters showed it. It's kept in
+      // the event, so a replay passes the same
+      const restWord = /[^\s]$/.test(chunk) ? (v.tail.slice(chunk.length).match(/^[^\s]+/) || [''])[0] : '';
+      const parts = chunk.split('\n');
+      parts.forEach((part, i) => {
+        if (i) emit({ t: 'break' });
+        if (part) emit(i === parts.length - 1 && restWord ? { t: 'write', text: part, rest: restWord } : { t: 'write', text: part });
+      });
       v.tail = v.tail.slice(chunk.length);
       if (opts.dt != null && !final) v.budget -= cps(chunk);
     }

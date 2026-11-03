@@ -14,18 +14,15 @@
           "value": "noindex, nofollow"
         }
       ]
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/fonts",
-      "destination": "/letters",
-      "permanent": false
     },
     {
-      "source": "/fonts.html",
-      "destination": "/letters",
-      "permanent": false
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }

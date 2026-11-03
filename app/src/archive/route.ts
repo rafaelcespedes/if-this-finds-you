@@ -17,12 +17,21 @@ export type Route =
   | { page: 'index'; filters: Filters }
   | { page: 'letter'; id: string; hand: string | null; keep: boolean };
 
+/** A link cut mid-escape (`#/letter/%E0%A4%A`) is no letter: its id stays as typed, and the page says it isn't here. */
+function decodeId(s: string) {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
 export function parseRoute(hash: string): Route {
   const raw = hash.replace(/^#\/?/, '');
   const [path, query = ''] = raw.split('?');
   const q = new URLSearchParams(query);
   const m = path.match(/^letter\/([^/]+)$/);
-  if (m) return { page: 'letter', id: decodeURIComponent(m[1]), hand: q.get('hand'), keep: q.get('keep') === '1' };
+  if (m) return { page: 'letter', id: decodeId(m[1]), hand: q.get('hand'), keep: q.get('keep') === '1' };
   const kind = q.get('kind');
   return {
     page: 'index',

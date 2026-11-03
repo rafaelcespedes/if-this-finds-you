@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -11,8 +12,38 @@ const engineDir = process.env.SEEDHAND_ENGINE
   ? path.resolve(process.env.SEEDHAND_ENGINE)
   : path.resolve(import.meta.dirname, '../engine');
 
+// The tool's found letters: content/sample-texts.json without what only the library shows (sources' full
+// citations, rights, stories, tags) and without letters switched off. About a third of the file, so the tool's
+// first load carries 38 kB of letters instead of 113 kB (gzip). The library reads the whole file itself.
+const LETTERS_FILE = path.resolve(import.meta.dirname, '../content/sample-texts.json');
+const TOOL_FIELDS = ['id', 'text', 'kind', 'lang', 'title', 'author', 'year', 'translator', 'traditions', 'recipient', 'origin', 'place', 'writer', 'olderHandsOnly'];
+function toolLetters(): Plugin {
+  const id = 'virtual:tool-letters';
+  return {
+    name: 'tool-letters',
+    resolveId: (s) => (s === id ? '\0' + id : undefined),
+    load(s) {
+      if (s !== '\0' + id) return;
+      this.addWatchFile(LETTERS_FILE);
+      const all = JSON.parse(fs.readFileSync(LETTERS_FILE, 'utf8')) as Record<string, unknown>[];
+      const kept = all
+        .filter((l) => l.enabled !== false && l.text)
+        .map((l) => {
+          const o: Record<string, unknown> = {};
+          for (const k of TOOL_FIELDS) if (l[k] != null) o[k] = l[k];
+          const src = l.source as { url?: string } | undefined;
+          if (src?.url) o.source = { url: src.url };
+          return o;
+        });
+      return `export default ${JSON.stringify(kept)};`;
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), toolLetters()],
+  // the writing, roll and font workers read the letters too
+  worker: { format: 'es', plugins: () => [toolLetters()] },
   resolve: {
     alias: {
       '@engine': path.join(engineDir, 'index.js'),
@@ -29,11 +60,13 @@ export default defineConfig({
   // the main chunk is React + the engine's letter data; opentype.js and the writer worker load separately
   build: {
     chunkSizeWarningLimit: 800,
-    // two pages: the tool (index.html) and the Letters library (letters.html, src/archive/), split apart
+    // three pages: the tool (index.html), the Letters library (letters.html, src/archive/) and Fonts (fonts.html,
+    // src/fonts/), split apart
     rollupOptions: {
       input: {
         main: path.resolve(import.meta.dirname, 'index.html'),
         letters: path.resolve(import.meta.dirname, 'letters.html'),
+        fonts: path.resolve(import.meta.dirname, 'fonts.html'),
       },
     },
   },

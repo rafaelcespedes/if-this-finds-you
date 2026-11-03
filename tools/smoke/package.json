@@ -1,0 +1,12 @@
+{
+  "name": "seedhand-smoke",
+  "private": true,
+  "type": "module",
+  "description": "Smoke test: loads the built site in a real browser (docs/CHECKS.md). Kept apart from app/ so Vercel never installs it.",
+  "scripts": {
+    "smoke": "node smoke.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.64.1"
+  }
+}

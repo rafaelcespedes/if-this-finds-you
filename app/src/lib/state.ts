@@ -98,6 +98,16 @@ export const AMOUNT_RANGE = { min: 0, max: 1.5, step: 0.01 };
 
 const round = (v: number, d: number) => +v.toFixed(d);
 
+/** A letter's length at most (characters): long letters get slow and heavy on a phone, and links get long. */
+export const MAX_LETTER = 6000;
+
+/** A short check of a link's letter, so one cut short on its way is noticed (FNV-1a, base 36). */
+function check(s: string) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36);
+}
+
 /** Slider offsets as a short code: `pw-4.297_iv0.184` (each control's two-letter code and its offset). */
 function encodeOffsets(offsets: Record<string, number>) {
   return Object.entries(offsets)
@@ -118,6 +128,8 @@ function decodeOffsets(o: string | null) {
 
 export function encodeState(s: NoteState): string {
   const q = new URLSearchParams();
+  // first: a link cut short on its way (some apps shorten long ones) still opens as a letter to read
+  if (s.reader) q.set('read', '1');
   q.set('seed', s.seed);
   q.set('style', s.style);
   if (s.pen !== 'auto') q.set('pen', s.pen);
@@ -133,9 +145,6 @@ export function encodeState(s: NoteState): string {
   }
   const sample = sampleById(s.sample);
   if (INK && s.mode === 'fair') q.set('mode', 'fair');
-  if (s.inkLog) q.set('k', compressToEncodedURIComponent(s.inkLog));
-  else if (sample && sample.text === s.text) q.set('s', sample.id);
-  else if (s.text !== DEFAULT_TEXT) q.set('t', compressToEncodedURIComponent(s.text));
   if (s.replyTo) {
     // id~seed~style~paper, then the look when it isn't the writer's natural one: pen~ink~tip~size~offsets
     const r = s.replyTo;
@@ -146,8 +155,16 @@ export function encodeState(s: NoteState): string {
   }
   if (s.marks.length) q.set('m', encodeMarks(s.marks));
   if (s.signed) q.set('sig', '1');
-  if (s.reader) q.set('read', '1');
   if (!s.neatOnly) q.set('neat', '0');
+  // last, the letter itself (the long part, so a cut lands here), with its check just before it
+  if (s.inkLog) {
+    q.set('c', check(s.inkLog));
+    q.set('k', compressToEncodedURIComponent(s.inkLog));
+  } else if (sample && sample.text === s.text) q.set('s', sample.id);
+  else if (s.text !== DEFAULT_TEXT) {
+    q.set('c', check(s.text));
+    q.set('t', compressToEncodedURIComponent(s.text));
+  }
   return q.toString();
 }
 
@@ -198,14 +215,23 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
   s.mode = q.get('mode') === 'fair' || !INK ? 'fair' : 'ink';
   s.inkLog = null;
   const k = q.get('k');
-  const inkDoc = k ? decodeInk(decompressFromEncodedURIComponent(k)) : null;
-  if (k && inkDoc) {
-    s.inkLog = decompressFromEncodedURIComponent(k);
-    s.text = inkText(inkDoc);
+  const c = q.get('c');
+  const log = k ? decompressFromEncodedURIComponent(k) : null;
+  const inkDoc = log && (!c || check(log) === c) ? decodeInk(log) : null;
+  if (k != null && !inkDoc) {
+    // cut short or garbled: nothing to show (the app says so, see linkIssue)
+    s.text = '';
     s.sample = null;
+  } else if (k && inkDoc) {
+    const full = inkText(inkDoc);
+    s.sample = null;
+    if (full.length <= MAX_LETTER) { s.inkLog = log; s.text = full; }
+    // too long to write in ink here: its words, as a fair copy, up to the most a letter holds
+    else { s.text = full.slice(0, MAX_LETTER); s.mode = 'fair'; }
   } else if (t != null) {
     const text = decompressFromEncodedURIComponent(t);
-    if (text != null) { s.text = text.slice(0, 20000); s.sample = null; }
+    s.text = text && (!c || check(text) === c) ? text.slice(0, MAX_LETTER) : '';
+    s.sample = null;
   } else if (named) {
     s.text = named.text;
     s.sample = named.id;
@@ -232,6 +258,28 @@ export function decodeState(hash: string, base: NoteState = DEFAULT_STATE): Note
   s.reader = q.get('read') === '1';
   s.neatOnly = q.get('neat') !== '0';
   return s;
+}
+
+export type LinkIssue = 'incomplete' | 'too-long' | 'unknown-letter' | null;
+
+/** What's wrong with a link, if anything, to say so once (decodeState has already fallen back safely). */
+export function linkIssue(hash: string): LinkIssue {
+  const q = new URLSearchParams(hash.replace(/^#/, ''));
+  const reply = q.get('reply');
+  if (reply != null) return sampleById(reply) ? null : 'unknown-letter';
+  const k = q.get('k'), t = q.get('t'), c = q.get('c');
+  if (k != null || t != null) {
+    const raw = decompressFromEncodedURIComponent((k ?? t)!);
+    if (!raw || (c && check(raw) !== c)) return 'incomplete';
+    const doc = k != null ? decodeInk(raw) : null;
+    if (k != null && !doc) return 'incomplete';
+    return (doc ? inkText(doc) : raw).length > MAX_LETTER ? 'too-long' : null;
+  }
+  const named = q.get('s');
+  if (named != null && !sampleById(named)) return 'unknown-letter';
+  const re = q.get('re');
+  if (re != null && !sampleById(re.split('~')[0])) return 'unknown-letter';
+  return null;
 }
 
 /** The link a recipient opens: the exact note, in the reader view, where it writes itself. */

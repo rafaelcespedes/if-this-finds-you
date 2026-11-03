@@ -17,14 +17,19 @@ import { DEFAULT_STATE, encodeState, type ReplyTo } from '@/lib/state';
 import { writerName } from '@/lib/hands';
 import { LIVE, liveExtras, liveLayout, type Live } from '@/lib/live';
 import { sheetShadow } from '@/lib/papers';
-import { clamp, cn } from '@/lib/utils';
+import { clamp } from '@/lib/utils';
 import { cards } from './cards';
 import { filterLetters } from './data';
-import { DETAIL, Editorial, HandMenu, LetterDock, TitleBlock } from './LetterParts';
+import { DETAIL, Editorial, HandMenu, LetterDock, TitleBlock, type DockActions } from './LetterParts';
 import type { ArchiveLetter, Look } from './model';
 import { lookFor, renderingOf } from './look';
 import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './route';
-import { ARCHIVE_URL, headerLink, SiteHeader, toolHref } from './SiteHeader';
+import { ARCHIVE_URL, headerLink, Missing, SiteHeader, toolHref } from './SiteHeader';
+// the look being compared (?look=reading-room): its own letter layout and dock (src/themes/reading-room/)
+import { LOOK } from '@/lib/look';
+import { ReadingLetter, SlipDock } from '@/themes/reading-room/ReadingLetter';
+const Dock: (a: DockActions & { id?: string }) => ReactNode = LOOK === 'reading-room' ? SlipDock : LetterDock;
+import { LetterArrival } from '@/themes/postmarked/letter';
 
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
@@ -271,7 +276,9 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
       <SiteHeader>
         <a href={backHref} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
       </SiteHeader>
-      {DETAIL === '1' ? (
+      {LOOK === 'reading-room' ? (
+        <ReadingLetter letter={letter} name={name} sheet={sheet} colRef={colRef} titleRef={titleRef} pxPerMm={pxPerMm} paperW={r.paper.w} keep={keep} onKeep={setKeep} onNewHand={newHand} onReplay={() => { setFinish(0); setToken((n) => n + 1); }} canReplay={!!ready} onShare={share} textOpen={textOpen} onText={setTextOpen} />
+      ) : DETAIL === '1' ? (
         // 1 side by side: the letter on the left, the reading on the right (above it on phones)
         <main className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-16 px-4 pt-[calc(5rem+env(safe-area-inset-top,0px))] pb-36 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:grid-rows-[auto_1fr] lg:px-10 lg:pt-24">
           <div className="pb-7 lg:col-start-2 lg:row-start-1 lg:pb-8">
@@ -294,7 +301,10 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
           <div className="mt-12 sm:mt-14">{editorial}</div>
         </main>
       )}
-      <LetterDock
+      {/* look C (?look=postmarked): the letter arrives in its envelope */}
+      {LOOK === 'postmarked' && <LetterArrival letter={letter} />}
+      <Dock
+        id={id}
         reply={replyHref(letter, look, replier)}
         prev={neighbour(-1) ? { title: neighbour(-1)!.title ?? 'A letter' } : null}
         next={neighbour(1) ? { title: neighbour(1)!.title ?? 'A letter' } : null}
@@ -316,12 +326,3 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   );
 }
 
-function Missing({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
-  return (
-    <div className={cn('flex max-w-[30rem] flex-col items-start gap-3 py-10')}>
-      <h1 className="text-[22px] font-medium tracking-[-0.015em] text-foreground">{title}</h1>
-      <p className="text-[14px] leading-[1.55] text-muted-foreground">{children}</p>
-      {action}
-    </div>
-  );
-}

@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArchiveApp } from './ArchiveApp';
 import { cards } from './cards';
+import { keepForOffline } from './offline';
 import { applySerif } from './serif';
 import '../index.css';
 import './archive.css';
@@ -16,6 +17,9 @@ if (!location.hash.startsWith('#/letter/')) cards.warm();
 
 // the look being compared (?look=…); today's design when none
 applyLook();
+
+// opened once online, the library opens again offline (public/letters-sw.js)
+keepForOffline();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

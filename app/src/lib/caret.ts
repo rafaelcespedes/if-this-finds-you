@@ -175,13 +175,16 @@ export function lineEdges(m: TextMap, line: number) {
  * Translate a text index from one version of the text to another (the page may still show the
  * previous version for a few milliseconds while the worker writes the new one).
  */
-export function translateIndex(index: number, from: string, to: string) {
+export function translateIndex(index: number, from: string, to: string, bias: 'left' | 'right' = 'left') {
   if (from === to) return index;
   let p = 0;
   const max = Math.min(from.length, to.length);
   while (p < max && from.charCodeAt(p) === to.charCodeAt(p)) p++;
   let s = 0;
   while (s < max - p && from.charCodeAt(from.length - 1 - s) === to.charCodeAt(to.length - 1 - s)) s++;
+  // right: an offset at the edge of what changed goes past the new text (a line's end, while the page catches up
+  // with the last keys)
+  if (bias === 'right' && index >= p && index <= from.length - s) return to.length - s;
   if (index <= p) return index;
   if (index >= from.length - s) return index - from.length + to.length;
   return Math.min(p + (index - p), to.length - s);

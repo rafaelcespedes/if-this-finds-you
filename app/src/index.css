@@ -124,7 +124,7 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1.45;
     font-feature-settings: 'ss01' 0;
     overscroll-behavior-y: none;
@@ -275,7 +275,9 @@ textarea {
 }
 
 /* sheet writing is drawn at a reference scale and stretched to the sheet */
-.writing-fill svg {
+.writing-fill svg,
+.writing-fill img {
+  display: block;
   width: 100%;
   height: 100%;
 }

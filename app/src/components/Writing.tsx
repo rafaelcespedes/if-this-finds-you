@@ -33,46 +33,93 @@ interface Props {
 }
 
 const FADE_MS = 170;
+
+/**
+ * A still letter is shown as an image of its SVG: the browser draws it once, instead of building thousands of
+ * paths (and their ink-edge filter) into the page; a paper change or a new hand then costs a fraction of the time.
+ * The reader's write-out animates each stroke, and print for letters a hand can't write uses the page's styles:
+ * those stay SVG in the page.
+ */
+const asImage = (svg: string, playing: boolean) => !playing && typeof URL.createObjectURL === 'function' && !svg.includes('class="miss"');
+
+/** Let go of a layer's image (its blob URL). */
+function release(layer: HTMLElement) {
+  const url = layer.dataset.url;
+  if (url) { URL.revokeObjectURL(url); delete layer.dataset.url; }
+}
 const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 
 export const Writing = memo(function Writing({ svg, ink, className, fade, play, finishToken }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   // ---------- the layers: one current, at most one fading out ----------
+  // What the current layer shows (kept here, not in the DOM: a letter's SVG is hundreds of kB), and the newest
+  // request, so a slower image decode never lands over a newer one.
+  const shown = useRef<{ svg: string; ink: string } | null>(null);
+  const asked = useRef(0);
   useLayoutEffect(() => {
     const host = ref.current;
     if (!host) return;
     const current = host.querySelector<HTMLDivElement>(':scope > [data-layer="current"]');
-    if (current && current.dataset.svg === svg && current.style.color === ink) return;
+    if (current && shown.current?.svg === svg && shown.current.ink === ink) return;
+    const token = ++asked.current;
+    const image = asImage(svg, !!play);
+    // fill a layer with the writing, then go on (at once for SVG in the page; once decoded for an image)
+    const fill = (layer: HTMLDivElement, then: () => void) => {
+      if (!image) {
+        release(layer);
+        layer.innerHTML = svg;
+        layer.style.color = ink;
+        then();
+        return;
+      }
+      const url = URL.createObjectURL(new Blob([svg.replace(/currentColor/g, ink)], { type: 'image/svg+xml' }));
+      const img = new Image();
+      img.alt = '';
+      img.decoding = 'async';
+      img.draggable = false;
+      img.src = url;
+      const done = () => {
+        if (token !== asked.current) { URL.revokeObjectURL(url); return; }
+        release(layer);
+        layer.dataset.url = url;
+        layer.replaceChildren(img);
+        then();
+      };
+      img.decode().then(done, done);
+    };
     if (current && !fade) {
       // in place: typing, a slider, the same look again
-      if (current.dataset.svg !== svg) { current.innerHTML = svg; perf.lookShown(); }
-      current.dataset.svg = svg;
-      current.style.color = ink;
+      fill(current, () => { shown.current = { svg, ink }; perf.lookShown(); });
       return;
     }
-    perf.lookShown();
-    for (const g of host.querySelectorAll(':scope > [data-layer="ghost"]')) g.remove();
     const layer = document.createElement('div');
-    layer.dataset.layer = 'current';
+    layer.dataset.layer = 'next';
     layer.className = 'writing-fill absolute inset-0';
-    layer.style.color = ink;
-    layer.innerHTML = svg;
-    layer.dataset.svg = svg;
-    host.appendChild(layer);
-    if (!current) return;
-    // fade out from wherever the old layer is now (it may itself be fading in)
-    const from = Number(getComputedStyle(current).opacity) || 1;
-    for (const a of current.getAnimations()) a.cancel();
-    current.dataset.layer = 'ghost';
-    current.style.opacity = String(from);
-    // the old writing keeps its own size while it fades (the sheet may have changed size under it)
-    const r = current.getBoundingClientRect();
-    if (r.width && r.height) Object.assign(current.style, { inset: 'auto', left: '0', top: '0', width: `${r.width}px`, height: `${r.height}px` });
-    current.animate([{ opacity: from }, { opacity: 0 }], { duration: FADE_MS * from, easing: EASE_OUT, fill: 'forwards' }).onfinish = () => current.remove();
-    layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, easing: EASE_OUT, fill: 'backwards' });
-  }, [svg, ink, fade]);
-  useLayoutEffect(() => () => { ref.current?.replaceChildren(); }, []);
+    fill(layer, () => {
+      perf.lookShown();
+      shown.current = { svg, ink };
+      for (const g of host.querySelectorAll<HTMLDivElement>(':scope > [data-layer="ghost"]')) { release(g); g.remove(); }
+      const old = host.querySelector<HTMLDivElement>(':scope > [data-layer="current"]');
+      layer.dataset.layer = 'current';
+      host.appendChild(layer);
+      if (!old) return;
+      // fade out from wherever the old layer is now (it may itself be fading in)
+      const from = Number(getComputedStyle(old).opacity) || 1;
+      for (const a of old.getAnimations()) a.cancel();
+      old.dataset.layer = 'ghost';
+      old.style.opacity = String(from);
+      // the old writing keeps its own size while it fades (the sheet may have changed size under it)
+      const r = old.getBoundingClientRect();
+      if (r.width && r.height) Object.assign(old.style, { inset: 'auto', left: '0', top: '0', width: `${r.width}px`, height: `${r.height}px` });
+      old.animate([{ opacity: from }, { opacity: 0 }], { duration: FADE_MS * from, easing: EASE_OUT, fill: 'forwards' }).onfinish = () => { release(old); old.remove(); };
+      layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, easing: EASE_OUT, fill: 'backwards' });
+    });
+  }, [svg, ink, fade, play]);
+  useLayoutEffect(() => () => {
+    for (const l of ref.current?.children ?? []) release(l as HTMLElement);
+    ref.current?.replaceChildren();
+  }, []);
 
   // ---------- the reader's write-out ----------
   useLayoutEffect(() => {

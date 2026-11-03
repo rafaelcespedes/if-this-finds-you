@@ -71,6 +71,9 @@ declare module '@engine' {
 
   export const UPM: number;
   export const CAP: number;
+  /** the characters the hands write: Google Fonts' Latin Core, and the extras on top of it */
+  export const GF_LATIN_CORE: string[];
+  export const EXTRAS: string[];
   export const PARAMS: ParamDef[];
 
   export function rng(seed: string): Rng;

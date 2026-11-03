@@ -14,7 +14,12 @@ import { cardKey, cards, cardSize } from './cards';
 import { cardLetter } from './Card';
 import { circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
 import type { ArchiveLetter } from './model';
+// the look being compared (?look=reading-room): the letter's number stamped on its sheet (src/themes/reading-room/)
+import { LOOK } from '@/lib/look';
+import { CardStamp } from '@/themes/reading-room/SheetMarks';
 import { letterHash } from './route';
+// look C (?look=postmarked): each letter in its addressed envelope (src/themes/postmarked/)
+import { EnvelopeCard } from '@/themes/postmarked/EnvelopeCard';
 
 export type ViewId = 'canvas' | 'grid';
 function readView(): ViewId {
@@ -353,7 +358,9 @@ export function LetterCanvas({ shown, heading, empty, onOpen, active, onList }: 
               </li>
             );
           }
-          return <CanvasCard key={id} letter={it.letter!} aspect={it.aspect} size={size} style={style} itemRef={ref} onOpen={onOpen} />;
+          // look C (?look=postmarked): each letter in its addressed envelope
+          const Card = LOOK === 'postmarked' ? EnvelopeCard : CanvasCard;
+          return <Card key={id} letter={it.letter!} aspect={it.aspect} size={size} style={style} itemRef={ref} onOpen={onOpen} />;
         })}
       </ul>
     </div>
@@ -387,6 +394,7 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
       >
         <div ref={paperRef} className="relative isolate" style={{ aspectRatio: `1 / ${aspect}` }}>
           <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', loaded && 'is-gone')} />
+          {LOOK === 'reading-room' && <CardStamp id={letter.id} />}
           {img && (
             <img
               src={img.url}

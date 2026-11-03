@@ -792,6 +792,8 @@ export function layout(p, text, opts = {}) {
         const sh2 = Object.assign({}, sh, { glyphs: sh.glyphs.map((g) => Object.assign({}, g, { dx: g.dx + o.dx })), ink: sh.ink + o.dx, wx: sh.wx + o.dx });
         const r = place(w, sh2, pen.x, tokStart, { frame: o.frame, mayBreak: true, mustBreak: true, onLine: o.onLine, prevIt: o.prevIt, prevEndX: o.prevEndX, inkIndex });
         o.last = chars[chars.length - 1][0]; o.count += chars.length; o.frame = r.frame; o.prevIt = r.prevIt; o.prevEndX = r.prevEndX; o.onLine = r.onLine; o.dx += sh.wx;
+        // caret stop after the piece (a later piece's first letter replaces it, as in one pass)
+        stop(tokStart + tok.length, line(), r.endX, 'glyph');
         pen.x = r.endX; pen.endO = tokStart + tok.length; pen.endX = pen.x; pen.prevEnd += tok; pen.textEnd = pen.x;
         if (known) { L.chars += tok.length; L.end = tok[tok.length - 1]; }
         continue;
@@ -826,7 +828,17 @@ export function layout(p, text, opts = {}) {
       const lineBefore = line(), endXBefore = pen.endX, endOBefore = pen.endO;
       if (line().count) {
         const pad = padFor(line(), w.tilt);
-        const x = pen.x, end = x + gap + sh.wx, inkEnd = x + gap + sh.ink;
+        // Ink mode: a word whose first piece is written now, and whose end is known (`ahead`), fits or
+        // wraps as a whole word, as in one pass (and as its thought letters showed it)
+        let fit = sh;
+        if (ink) {
+          const i = tokStart + tok.length - from;
+          if (i === text.length) {
+            const m = /^\S+/.exec(knownText.slice(i, i + 48));
+            if (m) fit = shapeWord(graphemes(tok + m[0], 0), w, seedOf, { prev: null, index: 0, closed: false, next: nextAfter(tokStart + tok.length + m[0].length) });
+          }
+        }
+        const x = pen.x, end = x + gap + fit.wx, inkEnd = x + gap + fit.ink;
         if (end > line().edge || inkEnd > maxU - pad) {
           let fits = inkEnd <= maxU - pad && w.u1 < H.overpack;
           if (!fits && !ink) {

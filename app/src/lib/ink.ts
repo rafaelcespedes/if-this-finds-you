@@ -15,7 +15,7 @@ import * as E from '@engine';
 import { UPM, type Hand } from '@engine';
 import type { Edit } from './edits';
 import type { Geometry } from './geometry';
-import { LIVE, liveExtras, pageSetup, type Live } from './live';
+import { LIVE, engineGeometry, liveExtras, pageSetup, type Live } from './live';
 import { frameFor } from './paginate';
 import type { PaperSpec } from './papers';
 import { REF_PX_PER_MM } from './writing';
@@ -202,24 +202,12 @@ export function inkPage(p: Hand, doc: InkDoc, paper: PaperSpec, size: number, li
 }
 
 /**
- * The caret over an ink sheet: the written letter uses the engine's geometry (offsets of the letter as it
- * reads); offsets past it are in the thought letters the pen hasn't reached, laid out by draftPage.
+ * The caret over an ink sheet: the written letter and the thought letters the pen hasn't reached (draftPage) as one
+ * geometry, so every offset of what's typed has a caret, both sides of every wrap, and Home, End, selection and
+ * hit-testing work across both alike.
  */
-export function inkGeometry(base: Geometry, live: Live, draft: any, viewText: string): Geometry {
+export function inkGeometry(live: Live, p: Hand, draft: any, viewText: string): Geometry {
   const written = String(live.page.text ?? '').length;
-  const caret = (o: number) => {
-    if (o <= written || !draft) return base.caret(Math.min(o, written));
-    const j = o - written;
-    const glyphs = (draft.items as any[]).filter((it) => it.kind === 'glyph');
-    const at = glyphs.find((it) => it.charIndex - (draft.from ?? 0) >= j);
-    // (page units, sheets stacked a paper's height apart: the caret's sheet, and its y on that sheet)
-    const sheetU = live.paper.h * live.unitsPerMm;
-    const onSheet = (y: number) => Math.min(live.sheets.length - 1, Math.max(0, Math.floor(y / sheetU)));
-    const place = (x: number, y: number, line: number) => { const s = onSheet(y); return { sheet: s, x, y: y - live.sheets[s].shiftU, line }; };
-    if (at) return place(at.x, at.y, at.line);
-    const last = glyphs[glyphs.length - 1];
-    if (!last) return base.caret(written);
-    return place(last.x + (last.g?.advance ?? 0), last.y, last.line);
-  };
-  return { ...base, text: viewText, caret };
+  const geo = draft ? engine.geometry(p, [live.page, engine.offsetStops(draft, written - (draft.from || 0))]) : live.geo;
+  return engineGeometry(live, { geo, text: viewText });
 }
