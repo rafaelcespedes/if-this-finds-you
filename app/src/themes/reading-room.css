@@ -267,11 +267,11 @@ html[data-look='reading-room'] [data-site-number] {
   color: var(--rr-red);
   font-variant-numeric: tabular-nums;
 }
-/* the phone header's chips (Menu, Share): ruled squares, no lift */
+/* the phone header's chips (Menu, Share): only their drawn icons, no box (the paper is the only thing with an edge);
+   their size is the shared header's own */
 html[data-look='reading-room'] [data-site-header] :is([data-site-chip], [data-chip]) {
-  border-radius: 3px;
-  border-color: var(--rr-edge);
-  background: var(--rr-card);
+  border-color: transparent;
+  background: transparent;
   box-shadow: none;
 }
 
@@ -473,7 +473,7 @@ html[data-look='reading-room'] {
   --rr-margin: 2.5rem; /* the grid's outer margin */
   --rr-gutter: 2rem;
   --rr-hair: color-mix(in oklab, var(--rr-ink) 30%, transparent); /* a stronger rule, above a column or a drawer */
-  --rr-desk-top: 100px; /* the record's first rule sits on the sheet's top edge */
+  --rr-desk-top: 6.25rem; /* the record's first rule sits on the sheet's top edge (rem: the header above both grows with the text) */
 }
 /* the record column: on the grid's right margin, flush with the page, no inner box */
 html[data-look='reading-room'] aside:has(> .rr-desk) {
@@ -739,9 +739,12 @@ html[data-look='reading-room'] .control-sheet .rr-bring {
   padding: 6px 4px 6px 10px;
   border: 0;
 }
+/* "Paper, pen & ink": a ruled row like the desk's "Writing materials", its name left and its chevron right, no box */
 html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-pill] {
-  border-radius: 2px;
-  border: 1px dashed color-mix(in oklab, var(--rr-ink) 35%, transparent);
+  justify-content: space-between;
+  padding-inline: 0;
+  border-radius: 0;
+  border-top: 1px solid var(--rr-hair);
   background: transparent;
   white-space: nowrap;
 }
@@ -769,10 +772,12 @@ html[data-look='reading-room'] [class*='rounded-b-[22px]'] {
   border-radius: 0 0 3px 3px;
   border-bottom: 1px solid var(--rr-ink);
 }
-/* the quiet pointer on the sheet ("Click the letter to write", "Press Esc when you're done"): a slip too */
+/* the quiet pointer on the sheet ("Click the letter to write", "Press Esc when you're done"): a patch of the room's
+   paper over the writing, with no edge of its own */
 html[data-look='reading-room'] [class*='rounded-full'][class*='bg-panel/95'] {
   border-radius: 2px;
-  border: 1px solid var(--rr-edge);
+  border-color: transparent;
+  box-shadow: none;
   background: var(--rr-slip);
   color: var(--rr-muted);
 }
@@ -1087,16 +1092,6 @@ html[data-look='reading-room'] .dock-primary:active {
   html[data-look='reading-room'] .dock-primary {
     padding-inline: 6px;
   }
-}
-html[data-look='reading-room'] .seg-btn[aria-checked='true'] {
-  background: var(--rr-slip);
-  box-shadow: 0 0 0 1px var(--rr-edge);
-}
-html[data-look='reading-room'] .outline-btn {
-  border-color: var(--rr-edge);
-  border-radius: 2px;
-  background: var(--rr-slip);
-  box-shadow: none;
 }
 html[data-look='reading-room'] .dock-caption {
   border-radius: 2px;

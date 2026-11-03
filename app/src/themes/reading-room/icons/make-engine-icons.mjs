@@ -103,6 +103,22 @@ function aa() {
 }
 ICONS.CaseSensitive = aa();
 
+// added after the first set, so every earlier drawing keeps its seeds (each stroke draws the next seed in order):
+// the export lab's Play, Pause and Sparkles, the hand Pointer, and the header's List and Menu
+ICONS.Play = [poly([[330, 800], [330, 200], [810, 500], [330, 800]])];
+ICONS.Pause = [line(380, 790, 380, 210), line(620, 790, 620, 210)];
+ICONS.Sparkles = [
+  join(bez([430, 860], [450, 560], [500, 500], [790, 470]), bez([790, 470], [500, 440], [450, 380], [430, 80]), bez([430, 80], [410, 380], [360, 440], [70, 470]), bez([70, 470], [360, 500], [410, 560], [430, 860])),
+  line(800, 920, 800, 700), line(690, 810, 910, 810),
+];
+ICONS.Pointer = [
+  join(line(400, 470, 400, 830), arc(455, 830, 55, 180, 0), line(510, 830, 510, 560)),
+  join(line(510, 620, 510, 640), arc(565, 640, 55, 180, 0), line(620, 640, 620, 560)),
+  join(line(620, 600, 620, 610), arc(675, 610, 55, 180, 0), bez([730, 610], [740, 420], [720, 250], [640, 160]), bez([640, 160], [560, 110], [430, 110], [360, 170]), bez([360, 170], [300, 230], [230, 360], [200, 470]), bez([200, 470], [250, 520], [330, 520], [400, 470])),
+];
+ICONS.LayoutList = [dot(190, 720), line(330, 720, 850, 720), dot(190, 500), line(330, 500, 850, 500), dot(190, 280), line(330, 280, 850, 280)];
+ICONS.Menu = [line(170, 740, 830, 740), line(170, 500, 830, 500), line(170, 260, 830, 260)];
+
 // ---------- ink them ----------
 const num = (v) => Math.round(v);
 const toD = (c) => 'M' + c.map(([x, y]) => num(x) + ' ' + num(1000 - y)).join('L') + 'Z';

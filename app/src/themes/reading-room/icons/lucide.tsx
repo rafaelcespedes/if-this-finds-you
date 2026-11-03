@@ -1,8 +1,8 @@
 // The app's icons, through the Reading Room: vite.config.ts sends every `import { … } from 'lucide-react'` here, so no
 // component changes. In the Reading Room an icon drawn with the engine's own fountain pen (engine-icons.ts, Rafael's
-// pick from the type and icons study) takes the place of Lucide's; in the classic look, and for the few icons not
-// drawn yet (Pause, Play, Pointer, Sparkles), Lucide's own. The look is read once at load, so the classic look gets
-// Lucide's components as they are, with nothing wrapped.
+// pick from the type and icons study) takes the place of Lucide's; in the classic look, Lucide's own. An icon the app
+// starts using later falls through to Lucide's until it's drawn here. The look is read once at load, so the classic
+// look gets Lucide's components as they are, with nothing wrapped.
 import { forwardRef, type ComponentType, type SVGProps } from 'react';
 import {
   ArrowLeft as LArrowLeft,
@@ -20,21 +20,28 @@ import {
   ImagePlay as LImagePlay,
   Info as LInfo,
   LayoutDashboard as LLayoutDashboard,
+  LayoutGrid as LLayoutGrid,
   Link as LLink,
   Link2 as LLink2,
+  List as LList,
   Loader2 as LLoader2,
   LoaderCircle as LLoaderCircle,
   Lock as LLock,
   LockOpen as LLockOpen,
   MailOpen as LMailOpen,
   Mails as LMails,
+  Menu as LMenu,
+  Pause as LPause,
   PenLine as LPenLine,
+  Play as LPlay,
+  Pointer as LPointer,
   RefreshCw as LRefreshCw,
   RotateCcw as LRotateCcw,
   Search as LSearch,
   Share as LShare,
   Shuffle as LShuffle,
   SlidersHorizontal as LSlidersHorizontal,
+  Sparkles as LSparkles,
   Undo2 as LUndo2,
   Users as LUsers,
   X as LX,
@@ -76,21 +83,28 @@ export const Heart = icon(LHeart as ComponentType<P>, 'Heart');
 export const ImagePlay = icon(LImagePlay as ComponentType<P>, 'ImagePlay');
 export const Info = icon(LInfo as ComponentType<P>, 'Info');
 export const LayoutDashboard = icon(LLayoutDashboard as ComponentType<P>, 'LayoutDashboard');
+export const LayoutGrid = icon(LLayoutGrid as ComponentType<P>, 'LayoutGrid', 'LayoutDashboard');
 export const Link = icon(LLink as ComponentType<P>, 'Link');
 export const Link2 = icon(LLink2 as ComponentType<P>, 'Link2', 'Link');
+export const List = icon(LList as ComponentType<P>, 'List', 'LayoutList');
 export const Loader2 = icon(LLoader2 as ComponentType<P>, 'Loader2', 'Loader');
 export const LoaderCircle = icon(LLoaderCircle as ComponentType<P>, 'LoaderCircle', 'Loader');
 export const Lock = icon(LLock as ComponentType<P>, 'Lock');
 export const LockOpen = icon(LLockOpen as ComponentType<P>, 'LockOpen');
 export const MailOpen = icon(LMailOpen as ComponentType<P>, 'MailOpen');
 export const Mails = icon(LMails as ComponentType<P>, 'Mails');
+export const Menu = icon(LMenu as ComponentType<P>, 'Menu');
+export const Pause = icon(LPause as ComponentType<P>, 'Pause');
 export const PenLine = icon(LPenLine as ComponentType<P>, 'PenLine');
+export const Play = icon(LPlay as ComponentType<P>, 'Play');
+export const Pointer = icon(LPointer as ComponentType<P>, 'Pointer');
 export const RefreshCw = icon(LRefreshCw as ComponentType<P>, 'RefreshCw', 'RotateCcw');
 export const RotateCcw = icon(LRotateCcw as ComponentType<P>, 'RotateCcw');
 export const Search = icon(LSearch as ComponentType<P>, 'Search');
 export const Share = icon(LShare as ComponentType<P>, 'Share');
 export const Shuffle = icon(LShuffle as ComponentType<P>, 'Shuffle');
 export const SlidersHorizontal = icon(LSlidersHorizontal as ComponentType<P>, 'SlidersHorizontal');
+export const Sparkles = icon(LSparkles as ComponentType<P>, 'Sparkles');
 export const Undo2 = icon(LUndo2 as ComponentType<P>, 'Undo2', 'RotateCcw');
 export const Users = icon(LUsers as ComponentType<P>, 'Users');
 export const X = icon(LX as ComponentType<P>, 'X');

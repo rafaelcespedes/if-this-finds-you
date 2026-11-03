@@ -27,7 +27,8 @@ import { indexHash, letterHash, randomHand, randomIndex, type Filters } from './
 import { ARCHIVE_URL, Missing, SiteHeader, toolHref } from './SiteHeader';
 // the look being compared (?look=reading-room): its own letter layout and dock (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
-import { ReadingLetter, SlipDock } from '@/themes/reading-room/ReadingLetter';
+import { SlipDock } from '@/themes/reading-room/ReadingLetter';
+import { ReadingSpread, SPREAD_QUERY } from './ReadingSpread';
 const Dock: (a: DockActions & { id?: string }) => ReactNode = LOOK === 'reading-room' ? SlipDock : LetterDock;
 import { LetterArrival } from '@/themes/postmarked/letter';
 
@@ -72,6 +73,17 @@ interface Props {
   backFilters: Filters;
 }
 
+/** The window's height, kept current. */
+function useWindowHeight() {
+  const [h, setH] = useState(() => window.innerHeight);
+  useEffect(() => {
+    const on = () => setH(window.innerHeight);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return h;
+}
+
 export default function LetterPage({ letters, error, onRetry, id, hand, keep, backFilters }: Props) {
   const letter = letters?.find((l) => l.id === id) ?? null;
   const look = useMemo(
@@ -88,10 +100,15 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   }, [id, look]);
   const coarse = useMediaQuery('(pointer: coarse)');
 
-  // the sheet fills its column, up to about real size on a laptop
+  // the sheet fills its column, up to about real size on a laptop. The Reading Room's spread (desktop, a window at
+  // least 760 px tall) fits the whole sheet to the window's height too, so it stays put beside the page
   const colRef = useRef<HTMLDivElement>(null);
   const colW = useElementWidth(colRef);
-  const pxPerMm = r && colW ? Math.min(MAX_PX_PER_MM, colW / r.paper.w) : 0;
+  const spread = useMediaQuery(SPREAD_QUERY) && LOOK === 'reading-room';
+  const vh = useWindowHeight();
+  const rem = typeof document !== 'undefined' ? parseFloat(getComputedStyle(document.documentElement).fontSize) || 16 : 16;
+  const fitH = spread && vh >= 760 ? vh - 10.25 * rem : 0;
+  const pxPerMm = r && colW ? Math.min(MAX_PX_PER_MM, colW / r.paper.w, fitH ? fitH / r.paper.h : Infinity) : 0;
 
   // the writing is laid out once the paper is on screen (the first layout of a hand takes a moment)
   const lookKey = look ? JSON.stringify(look) : '';
@@ -282,7 +299,14 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     <div className="min-h-dvh">
       <SiteHeader current="letters" inside hrefs={{ letters: backHref }} />
       {LOOK === 'reading-room' ? (
-        <ReadingLetter letter={letter} name={name} hand={look.seed} sheet={sheet} colRef={colRef} titleRef={titleRef} pxPerMm={pxPerMm} paperW={r.paper.w} keep={keep} onKeep={setKeep} onNewHand={newHand} onReplay={() => { setFinish(0); setToken((n) => n + 1); }} canReplay={!!ready} onShare={share} textOpen={textOpen} onText={setTextOpen} />
+        // the Reading Room: the letter as a spread (ReadingSpread.tsx, the layout study's proposal 3)
+        <ReadingSpread
+          letter={letter} name={name} hand={look.seed} sheet={sheet} colRef={colRef} titleRef={titleRef} pxPerMm={pxPerMm}
+          paper={r.paper} sheets={ready?.live.sheets.length ?? 1} frameH={fitH ? r.paper.h * pxPerMm : null} gap={SHEET_GAP}
+          keep={keep} onKeep={setKeep} onNewHand={newHand} onReplay={() => { setFinish(0); setToken((n) => n + 1); }} canReplay={!!ready}
+          onShare={share} onImage={download} imageReady={!!ready && !saving} onRandom={another} reply={replyHref(letter, look, replier)}
+          turn={{ at, total: at >= 0 ? list.length : 0, prev: neighbour(-1), next: neighbour(1), onPrev: () => turn(-1), onNext: () => turn(1) }}
+        />
       ) : DETAIL === '1' ? (
         // 1 side by side: the letter on the left, the reading on the right (above it on phones)
         <main className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-16 px-4 pt-[calc(5rem+env(safe-area-inset-top,0px))] pb-36 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:grid-rows-[auto_1fr] lg:px-10 lg:pt-24">
@@ -308,7 +332,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
       )}
       {/* look C (?look=postmarked): the letter arrives in its envelope */}
       {LOOK === 'postmarked' && <LetterArrival letter={letter} />}
-      <Dock
+      {/* the Reading Room's spread has no dock on desktop: its counter and actions are on the page */}
+      {!spread && <Dock
         id={id}
         reply={replyHref(letter, look, replier)}
         prev={neighbour(-1) ? { title: neighbour(-1)!.title ?? 'A letter' } : null}
@@ -324,9 +349,9 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
         onRandom={another}
         onText={() => {
           setTextOpen(true);
-          requestAnimationFrame(() => document.querySelector('.ed-transcript')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
+          requestAnimationFrame(() => document.querySelector('.ed-transcript, .sp-text')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
         }}
-      />
+      />}
     </div>
   );
 }
