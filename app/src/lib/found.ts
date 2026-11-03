@@ -1,6 +1,8 @@
 // The found letter a reply answers, in the hand, pen, ink and paper it was found in. Written by the page's
 // writer (off the main thread), from the same request the page made while it was being read, so a reply
 // started here shows exactly the letter that was on the page; a link writes it again from its look.
+import { makeHand, type Hand } from '@engine';
+import { effective, effectiveHand } from './params';
 import { getPaper, type PaperSpec } from './papers';
 import { inkColor } from './inks';
 import { requestFor, type Req } from './request';
@@ -29,6 +31,14 @@ export function foundState(r: ReplyTo): NoteState | null {
     pen: r.pen ?? 'auto', ink: r.ink ?? DEFAULT_STATE.ink, penSize: r.tip ?? 'medium', size: r.size ?? 1, offsets: r.offsets ?? {},
     text: letter.text, sample: letter.id, inkLog: null, marks: [], signed: false, replyTo: null, occasion: null, reader: false,
   };
+}
+
+/** Their hand, as it wrote the letter (for its description). */
+export function foundHand(r: ReplyTo): Hand | null {
+  const s = foundState(r);
+  if (!s) return null;
+  const natural = makeHand(s.seed, s.style);
+  return effectiveHand(natural, effective(natural, s));
 }
 
 export function theirRequest(r: ReplyTo): Req | null {

@@ -31,12 +31,18 @@ Other scripts: `npm run dev` (server only), `npm run build` (typecheck + product
   (public domain, rights-checked). The seed picks it (a hash over the enabled letters, so a seed always writes
   the same one), preferring letters that suit the style (Business and Spencerian: American letters, German
   school: German, Chancery: Italian, Québec print: French); the oldest spellings (before 1660) only come with
-  historical hands (Chancery). The credit sits under the sheet ("Letter: Kamma Rahbek, 1813", with the source
-  in the provenance card), and "Blank page" starts from nothing. The first edit (typing, an underline) makes the
+  historical hands (Chancery). "Blank page" starts from nothing. The first edit (typing, an underline) makes the
   text yours: from then on New hand changes only the look. Links carry `s=<letter id>` while the text is a
-  sample. There's always a way back: under New hand the page says what it holds ("A found letter" or "Your
-  letter"), with "Another letter" / "Read a found letter"; your own letter is kept on this device (never in a
-  link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter doesn't come back within ten hands.
+  sample. There's always a way back: under New hand, "Another letter" / "Read a found letter"; your own letter
+  is kept on this device (never in a link, `lib/drafts.ts`) and "Back to my letter" brings it back. A letter
+  doesn't come back within ten hands.
+- **The sheet's label** (`components/SheetLabel.tsx`), like an artboard's name: one quiet line above the first
+  sheet's top-left corner, in the app's type. Which letter it is ("Kamma Rahbek, 1813", the credit; the source
+  is in About this hand) and how the hand writes ("A meticulous joined hand, upright"). On your first key it
+  becomes yours ("Your reply to Kamma Rahbek", or "A letter from you"), a 200 ms cross-fade in place; going
+  back to a found letter brings its name back. On the reply desk each sheet has its own. Where the sheet is too
+  narrow for both (phones), only the name shows. A translated letter still credits its translator under the
+  sheet.
 - **Replying** (`components/TheirLetter.tsx`, `lib/found.ts`). The first key on a found letter starts your reply
   on a fresh sheet, and their letter stays on the desk in its own hand, pen, ink and paper (exactly as it was
   read; a link's `re=` carries its look, so it comes back the same). **Your letter never moves**: theirs comes

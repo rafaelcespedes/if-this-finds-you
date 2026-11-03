@@ -246,17 +246,13 @@ function MenuItem({ children, icon, onSelect, disabled, quiet }: { children: Rea
  * Which letter is on the page, and a way to the other kind: "A found letter · Another letter" (and "Back to my
  * letter" when one is kept), or "Your letter · Read a found letter" (yours is kept on this device).
  */
-export function LetterStatus({ letter, className, compact }: PanelProps & { className?: string; compact?: boolean }) {
+export function LetterStatus({ letter, className }: PanelProps & { className?: string; compact?: boolean }) {
   if (!letter) return null;
   const link = 'shrink-0 rounded-md px-1 py-0.5 font-medium text-foreground underline decoration-[#cfc8b9] underline-offset-[3px] transition-[text-decoration-color] duration-150 hover-device:hover:decoration-foreground pointer-coarse:py-2.5';
   return (
+    // what the letter is lives on the sheet now (its label); here, only the ways to the others
     <div className={cn('flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted-foreground', className)}>
-      <span className="inline-flex items-center gap-1.5">
-        <span aria-hidden className={cn('size-1.5 rounded-full', letter.found ? 'bg-[#b89a62]' : 'bg-[var(--ink)]')} />
-        {letter.found ? 'A found letter' : letter.own ? 'Your letter' : 'A blank page'}
-      </span>
-      {!compact && letter.own && <span className="text-faint">kept as you change hands</span>}
-      <span className="ml-auto flex items-center gap-1">
+      <span className="-ml-1 flex items-center gap-1">
         {letter.found && letter.drafts > 0 && (
           <button type="button" onClick={letter.onBackToMine} className={link}>Back to my letter</button>
         )}

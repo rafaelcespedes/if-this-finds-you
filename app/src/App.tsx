@@ -24,12 +24,13 @@ import { canShareLinks, copyText, exportFont, renderNote, saveNote, shareLink } 
 import { emForPaper } from '@/lib/compose';
 import { EditLog, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
-import { pickSimilarHand, writerName } from '@/lib/hands';
+import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { rollHand, withSample, type LockKey } from '@/lib/roll';
-import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleCredit, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
+import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
 import { drafts, keepDraft, takeDraft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
-import { foundKey, foundLetter, theirRequest } from '@/lib/found';
+import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
+import { SheetLabel } from '@/components/SheetLabel';
 import type { WriteResult } from '@/lib/write-protocol';
 import { WritingMenu } from '@/components/WritingMenu';
 import { DEFAULT_INK, INK_FAMILIES } from '@/lib/inks';
@@ -269,6 +270,14 @@ export default function App() {
     () => (replying && state.replyTo ? foundLetter(state.replyTo, theirWriting) : null),
     [replying, replyKey, theirWriting],
   );
+  // each sheet's name, like an artboard's: which letter it is, and how the hand writes
+  const theirHandWords = useMemo(() => {
+    const h = replying && state.replyTo ? foundHand(state.replyTo) : null;
+    return h ? describeHand(h) : undefined;
+  }, [replying, replyKey]);
+  const myHandWords = useMemo(() => describeHand(p), [p]);
+  const foundName = (l: { author: string; year?: number }) => `${shortAuthor(l.author)}${l.year ? `, ${l.year}` : ''}`;
+  const sheetTitle = sample ? foundName(sample) : found ? `Your reply to ${shortAuthor(found.letter.author)}` : 'A letter from you';
   /** At a reply's first moment: keep the found letter's writing, as read. */
   const keepTheirs = (s: NoteState) => {
     const r = replyOf(s);
@@ -642,7 +651,7 @@ export default function App() {
     <TooltipProvider>
       <div className={cn('min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
         <main
-          className="relative min-w-0 px-4 pt-[calc(3rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-14 lg:pb-16"
+          className="relative min-w-0 px-4 pt-[calc(4rem+env(safe-area-inset-top,0px))] pb-32 sm:px-8 lg:px-10 lg:pt-[72px] lg:pb-16"
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : undefined}
         >
           <header
@@ -661,14 +670,15 @@ export default function App() {
                 </button>
               ) : (
                 <span aria-live="polite" className={cn('truncate transition-opacity duration-200', editing && !isDesktop && 'opacity-0')}>
-                  {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write on it' : 'Click the letter to write on it'}
+                  {editing ? (isDesktop ? 'Writing. Press Esc when you’re done.' : '') : coarse ? 'Tap the letter to write' : 'Click the letter to write on it'}
                 </span>
               )}
               {/* the found letters, all of them (the archive) */}
               <a
                 href={`${import.meta.env.BASE_URL}letters.html`}
                 className={cn(
-                  'pointer-events-auto shrink-0 rounded-md px-1.5 py-1 font-medium text-foreground/80 transition-[color,opacity] duration-150 hover-device:hover:text-foreground pointer-coarse:py-3',
+                  // a big enough target without making the line taller (the sheet's label sits just under it)
+                  "pointer-events-auto relative shrink-0 rounded-md px-1.5 py-0.5 font-medium text-foreground/80 transition-[color,opacity] duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground",
                   editing && !isDesktop && 'pointer-events-none opacity-0',
                 )}
               >
@@ -687,6 +697,8 @@ export default function App() {
               onForward={setTheirsForward}
               onDismiss={() => update({ replyTo: null })}
               arriving={replyArrive.current}
+              title={foundName(found.letter)}
+              hand={theirHandWords}
             />
           )}
           <div
@@ -714,6 +726,9 @@ export default function App() {
             )}
             {pxPerMm > 0 && !reader && (
               <div ref={fitRef} className="origin-top">
+                <div className="relative mx-auto" style={{ width: shownPaper.w * pxPerMm }}>
+                  <SheetLabel title={sheetTitle} hand={myHandWords} width={shownPaper.w * pxPerMm} className="absolute bottom-2 left-0" />
+                </div>
                 <PaperEditor
                   ref={editor}
                   text={inkActive ? inkRef.current!.text() : state.text}
@@ -775,11 +790,12 @@ export default function App() {
                       onClick={() => setTheirsForward(true)}
                       className="mr-auto inline-flex min-w-0 items-center gap-1 rounded-md py-1 pr-3 text-[12px] transition-colors duration-150 hover-device:hover:text-foreground pointer-coarse:py-3"
                     >
-                      <span className="truncate">In reply to {shortAuthor(found.letter.author)}{found.letter.year ? `, ${found.letter.year}` : ''}</span>
+                      <span className="truncate">Read their letter</span>
                       <ChevronDown aria-hidden className="size-3.5 shrink-0" />
                     </button>
                   ) : (
-                    <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample ? sampleCredit(sample) : ''}</span>
+                    // the letter's name is on the sheet now; a translation still says who translated it
+                    <span className="mr-auto min-w-0 truncate pr-3 text-[12px]" title={sample?.title}>{sample?.translator ? `Translated by ${sample.translator.name}` : ''}</span>
                   )}
                   <WritingMenu
                     inkAvailable={!!panelProps.ink}
