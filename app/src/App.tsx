@@ -56,10 +56,10 @@ import { FONTS_URL } from '@/fonts/links';
 import { Button } from '@/components/ui/button';
 import { placeholderFor, requestFor, type Req } from '@/lib/request';
 import type { NoteState } from '@/lib/state';
-// the look being compared (?look=reading-room): its desk, card and sheet marks (src/themes/reading-room/)
+// the look being compared (?look=reading-room): its desk, card and printed sheet marks (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
-import { SampleMarks } from '@/themes/reading-room/SheetMarks';
+import { LetterMarks } from '@/themes/reading-room/SheetMarks';
 import { SheetPost, ToolArrival } from '@/themes/postmarked/tool';
 
 /** New hands kept written ahead, so quick flipping always finds the next one ready. */
@@ -1229,7 +1229,6 @@ export default function App() {
                       <div className="ml-auto shrink-0">{writingMenu}</div>
                     </div>
                   ) : null}
-                  {LOOK === 'reading-room' && sample && !replyDesk && <SampleMarks id={sample.id} pxPerMm={pxPerMm} />}
                   {/* look C (?look=postmarked): a found letter's postmark on the sheet's corner */}
                   {LOOK === 'postmarked' && <SheetPost sampleId={sample?.id} width={shownPaper.w * pxPerMm} />}
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
@@ -1244,6 +1243,8 @@ export default function App() {
                     </div>
                   )}
                 </div>
+                {/* the Reading Room prints its marks (number, location badge) into a found letter's first sheet */}
+                <LetterMarks id={sample && !replyDesk ? sample.id : null} hand={state.seed}>
                 <PaperEditor
                   ref={editor}
                   text={replyPending ? '' : inkActive ? inkRef.current!.text() : state.text}
@@ -1293,6 +1294,7 @@ export default function App() {
                     </div>
                   )}
                 </PaperEditor>
+                </LetterMarks>
                 <div
                   className={cn('mx-auto mt-3 flex items-center text-[0.7812rem] text-muted-foreground transition-opacity duration-200', !desk && 'pointer-events-none opacity-0')}
                   style={{ width: shownPaper.w * pxPerMm }}

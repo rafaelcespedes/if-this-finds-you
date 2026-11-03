@@ -277,7 +277,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
         <a href={backHref} className={`${headerLink} font-medium text-foreground/80`}>All letters</a>
       </SiteHeader>
       {LOOK === 'reading-room' ? (
-        <ReadingLetter letter={letter} name={name} sheet={sheet} colRef={colRef} titleRef={titleRef} pxPerMm={pxPerMm} paperW={r.paper.w} keep={keep} onKeep={setKeep} onNewHand={newHand} onReplay={() => { setFinish(0); setToken((n) => n + 1); }} canReplay={!!ready} onShare={share} textOpen={textOpen} onText={setTextOpen} />
+        <ReadingLetter letter={letter} name={name} hand={look.seed} sheet={sheet} colRef={colRef} titleRef={titleRef} pxPerMm={pxPerMm} paperW={r.paper.w} keep={keep} onKeep={setKeep} onNewHand={newHand} onReplay={() => { setFinish(0); setToken((n) => n + 1); }} canReplay={!!ready} onShare={share} textOpen={textOpen} onText={setTextOpen} />
       ) : DETAIL === '1' ? (
         // 1 side by side: the letter on the left, the reading on the right (above it on phones)
         <main className="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-x-16 px-4 pt-[calc(5rem+env(safe-area-inset-top,0px))] pb-36 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:grid-rows-[auto_1fr] lg:px-10 lg:pt-24">
