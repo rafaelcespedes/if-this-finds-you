@@ -5,7 +5,7 @@ import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, withLogo } from '@/lib/brand';
 import { Wordmark } from '@/components/Wordmark';
 import { styleCard } from '@/lib/styles';
-import { CAP, makeHand } from '@engine';
+import { CAP, EXTRAS, GF_LATIN_CORE, makeHand } from '@engine';
 import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
@@ -70,6 +70,13 @@ function writePref(key: string, v: string) {
 const editLog = new EditLog();
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
 const TAIL_KEY = 'seedhand:typed';
+/** a letter's length at most: long letters get slow and heavy (memory grows with every sheet) */
+const MAX_LETTER = 10000;
+/** a paste (or dictation) this long is written down at once instead of at the pen's pace */
+const WRITE_AT_ONCE = 200;
+/** what the hands can write (the Latin alphabet and its marks); anything else stays in plain print */
+const WRITABLE = new Set<string>([...GF_LATIN_CORE, ...EXTRAS, '\n', '\t', '\r']);
+const RIGHT_TO_LEFT = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
 /** after the last key, how long the letter still counts as in use: single-letter keys go to it, not to shortcuts */
 const WRITING_LATELY_MS = 20000;
 (window as unknown as { __seedhandEdits: EditLog }).__seedhandEdits = editLog;
@@ -399,6 +406,7 @@ export default function App() {
   // ---------- edits: every change arrives as one Edit (paper or plain text) ----------
   const posture = usePosture(editing);
   const lastEditAt = useRef(-Infinity);
+  const scriptNoted = useRef(false);
   /** a big cut can be undone from its note: the letter as it was comes back (ink: its log, replayed) */
   const offerBack = useCallback((snap: Pick<NoteState, 'text' | 'inkLog' | 'marks' | 'signed'>, title: string) => {
     toast(title, {
@@ -423,6 +431,29 @@ export default function App() {
     if (theirsForwardRef.current) setTheirsForward(false);
     if (!wroteRef.current) { wroteRef.current = true; setWrote(true); writePref('seedhand:wrote', '1'); }
     if (e.source === 'paper') posture.onTyped();
+    // the letter's length at most: what doesn't fit is left out, and said so
+    {
+      const s = stateNow.current;
+      const li = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+      const base = s.sample && SAMPLE_FIRST_KEY === 'reply' ? 0 : li ? li.text().length : s.text.length;
+      const room = MAX_LETTER - (base - e.del);
+      if (e.ins.length > room) {
+        toast('That’s as long as a letter gets', { id: 'too-long', description: `Letters stop at ${MAX_LETTER.toLocaleString()} characters, so the rest was left out.` });
+        e = { ...e, ins: e.ins.slice(0, Math.max(0, room)) };
+        if (!e.ins && !e.del) return;
+      }
+      // letters the hand can't write: kept, but in print; said once
+      if (!scriptNoted.current && [...e.ins].some((c) => !WRITABLE.has(c))) {
+        scriptNoted.current = true;
+        toast('These hands write the Latin alphabet', {
+          id: 'script',
+          duration: 9000,
+          description: RIGHT_TO_LEFT.test(e.ins)
+            ? 'Other letters and emoji stay in the letter, drawn in plain print, and right-to-left writing runs the wrong way.'
+            : 'Other letters and emoji stay in the letter, drawn in plain print.',
+        });
+      }
+    }
     // most of the letter cut at once (select all, then Delete or a key): a note to bring it back
     const was = stateNow.current;
     const liveInk = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
@@ -445,6 +476,8 @@ export default function App() {
       const reply = onSample && SAMPLE_FIRST_KEY === 'reply';
       const ink = !onSample ? inkSession() : inkSession(reply ? newInkDoc(s.seed, s.style) : inkFromText(s.seed, s.style, s.text));
       ink.edit(reply ? { ...e, at: 0, del: 0 } : e);
+      // a long paste or dictation: written down now (minutes at the pen's pace, and the page busy all the while)
+      if (e.ins.length >= WRITE_AT_ONCE) ink.flush();
       if (reply) { replyArrive.current = true; keepTheirs(s); update({ replyTo: replyOf(s) }); }
       syncInk();
       keepTail();
