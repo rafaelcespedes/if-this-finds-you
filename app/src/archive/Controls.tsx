@@ -131,7 +131,7 @@ function useKeyboardLift() {
 function Dock({ children, caption }: { children: ReactNode; caption?: ReactNode }) {
   const lift = useKeyboardLift();
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(14px+env(safe-area-inset-bottom,0px))] z-30 flex flex-col items-center gap-2 px-3" style={lift ? { transform: `translateY(${-lift}px)` } : undefined}>
+    <div className="archive-dock-box pointer-events-none fixed inset-x-0 bottom-[calc(14px+env(safe-area-inset-bottom,0px))] z-30 flex flex-col items-center gap-2 px-3" style={lift ? { transform: `translateY(${-lift}px)` } : undefined}>
       {caption}
       <div role="toolbar" aria-label="Browse the letters" className="archive-dock pointer-events-auto flex max-w-full items-center justify-center gap-0.5 rounded-2xl bg-panel p-1 text-[13.5px] has-[>[data-own-row]]:flex-wrap">
         {children}
@@ -270,7 +270,7 @@ function EraTimeline({ pool, value, onChange, narrow }: { pool: ArchiveLetter[];
             aria-label={`${e.label}, ${noun(years.length)}`}
             title={`${e.label}: ${noun(years.length)}`}
             onClick={() => onChange(on ? '' : e.id)}
-            className={cn('era-seg relative flex h-11 min-w-0 flex-col items-center justify-center rounded-lg px-0.5 pointer-coarse:h-12', narrow ? 'w-[52px]' : 'w-[76px]', on ? 'is-on' : value ? 'is-dim' : '')}
+            className={cn('era-seg relative flex h-11 flex-col items-center justify-center rounded-lg px-0.5 pointer-coarse:h-12', narrow ? 'w-[52px]' : 'w-[76px]', on ? 'is-on' : value ? 'is-dim' : '')}
           >
             {/* the marks and the label stay together, centred, whatever height large text gives the button */}
             <span aria-hidden className="era-marks relative block h-[17px] self-stretch mx-1.5">
@@ -286,11 +286,18 @@ function EraTimeline({ pool, value, onChange, narrow }: { pool: ArchiveLetter[];
 
 const ERA_CAPTION: Record<string, string> = { 'before-1600': 'before 1600', '1600s': 'from the 1600s', '1700s': 'from the 1700s', '1800s': 'from the 1800s', '1900s': 'from the 1900s', now: 'since 2000' };
 
-export function TimelineDock(p: ControlsProps) {
+/** The other way to see the letters, at the dock's end: "List" on the table, "Table" on the list. */
+export interface ViewSwitch {
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+}
+
+export function TimelineDock(p: ControlsProps & { viewSwitch?: ViewSwitch }) {
   const narrow = useMediaQuery('(max-width: 520px)');
   const searching = p.search.open || !!p.filters.q;
   const caption = p.filtered && p.ready ? (
-    <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-panel py-1 pr-1 pl-3 text-[12.5px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.3)]">
+    <div className="archive-caption pointer-events-auto flex items-center gap-1 rounded-full bg-panel py-1 pr-1 pl-3 text-[12.5px] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.3)]">
       <span>{p.filters.era ? `Letters ${ERA_CAPTION[p.filters.era] ?? ''}` : 'Letters'}{p.filters.q ? ` matching “${p.filters.q}”` : ''}</span>
       <button type="button" onClick={p.clear} aria-label="Clear the search and filters" className="grid size-6 place-items-center rounded-full text-[var(--lib-text-faint)] transition-colors duration-150 hover-device:hover:text-foreground">
         <X aria-hidden className="size-3.5" />
@@ -302,9 +309,19 @@ export function TimelineDock(p: ControlsProps) {
       <SearchToggle value={p.filters.q} onChange={(q) => p.set({ q })} search={p.search} width={narrow ? 'w-[min(230px,60vw)]' : 'w-[240px]'} placeholder="Words, writers, places, languages" />
       {!(narrow && searching) && (
         <>
-          {/* no hairline: the timeline's own shape (and a chosen century's chip) sets it apart */}
-          <span aria-hidden className="w-1 shrink-0" />
+          {/* no hairline: the timeline's own shape (and a chosen century's chip) sets it apart; phones need the room */}
+          {!narrow && <span aria-hidden className="w-1 shrink-0" />}
           <EraTimeline pool={p.pool} value={p.filters.era} onChange={(era) => p.set({ era })} narrow={narrow} />
+        </>
+      )}
+      {p.viewSwitch && (
+        <>
+          {!narrow && <span aria-hidden className="w-1 shrink-0" />}
+          {/* phones: the icon alone (its name still spoken), so the strip stays one row */}
+          <button type="button" onClick={p.viewSwitch.onClick} className="dock-switch" aria-label={narrow ? p.viewSwitch.label : undefined} title={narrow ? p.viewSwitch.label : undefined}>
+            {p.viewSwitch.icon}
+            {!narrow && p.viewSwitch.label}
+          </button>
         </>
       )}
       <LiveCount {...p} />
