@@ -1,6 +1,7 @@
-import { createContext, memo, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createContext, memo, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ALL_PAPERS, isShaped, SHADOW_BLEED, type PaperSpec } from '@/lib/papers';
 import { paintHere, paintOff, paintsOffThread, warmPaper, type PaperBitmap, type PaperJob } from '@/lib/paper/client';
+import { planMarks, printMarks, type MarkInput } from '@/lib/paper/marks';
 import { perf } from '@/lib/perf';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +10,14 @@ import { cn } from '@/lib/utils';
  * when the letter is sent, so the reader view and the found letter set this to false (and the JPEG has none).
  */
 export const PaperGuide = createContext(true);
+
+/**
+ * Printed marks for the letter on these sheets (a look's datestamp, number, cancellation; lib/paper/marks.ts). Wrap a
+ * letter's sheets in <PaperMarks value={{ id, hand, place, year, number, look }}>: the marks are printed into the first
+ * sheet's paper (those stamped before the letter was written) or onto a layer over its writing (those stamped after).
+ * Nothing is printed without it.
+ */
+export const PaperMarks = createContext<MarkInput | null>(null);
 
 interface Props {
   paper: PaperSpec;
@@ -71,6 +80,16 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     return () => io.disconnect();
   }, [crop]);
   const guide = useContext(PaperGuide);
+  const markInput = useContext(PaperMarks);
+  const plan = useMemo(
+    () => (markInput && !crop && sheet === 0 ? planMarks(paper, markInput) : null),
+    // the input object may be new each render: plan from what it says
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [paper, crop, sheet, markInput?.id, markInput?.hand, markInput?.place, markInput?.year, markInput?.number, markInput?.cancel, markInput?.look, markInput?.badge],
+  );
+  const under = plan?.marks.filter((m) => m.layer === 'under') ?? [];
+  const over = plan?.marks.filter((m) => m.layer === 'over') ?? [];
+  const overRef = useRef<HTMLCanvasElement>(null);
   const region = crop ?? { x: 0, y: 0, w: paper.w, h: paper.h };
   // a shaped sheet (deckle, tear, flaps) paints its own shadow just outside itself
   const bleed = !crop && isShaped(paper) ? SHADOW_BLEED : 0;
@@ -91,7 +110,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     const b = Math.round(bleed * dpr);
     const w = Math.round(region.w * k) + 2 * b;
     const h = Math.round(region.h * k) + 2 * b;
-    const key = `${paper.id}|${guide ? 'g' : ''}|${sheet}|${region.x}|${region.y}|${w}x${h}`;
+    const key = `${paper.id}|${guide ? 'g' : ''}|${sheet}|${region.x}|${region.y}|${w}x${h}${under.length ? '|m' + plan!.key : ''}`;
     if (shown.current === key) return;
     wanted.current = key;
     const asked = performance.now();
@@ -131,6 +150,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
         guide,
         sheet,
         shadow: bleed ? 'full' : 'contact',
+        marks: under.length ? under : undefined,
       },
     };
     const max = crop ? KEEP_SWATCHES : KEEP;
@@ -155,10 +175,40 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
       show(src);
       perf.samples.push({ name: crop ? 'paper swatch ready' : 'paper sheet ready', ms: performance.now() - asked });
     });
-  }, [paper, pxPerMm, region.x, region.y, region.w, region.h, cssW, cssH, fade, crop, guide, sheet, bleed, near]);
+  }, [paper, pxPerMm, region.x, region.y, region.w, region.h, cssW, cssH, fade, crop, guide, sheet, bleed, near, plan]);
+
+  // marks stamped after the letter was written: a layer over the writing, multiplied into it
+  useLayoutEffect(() => {
+    const c = overRef.current;
+    if (!c || !over.length || cssW <= 0) return;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const k = pxPerMm * dpr;
+    const w = Math.round(paper.w * k), h = Math.round(paper.h * k);
+    const key = `${plan!.key}|${w}x${h}`;
+    if (c.dataset.key === key) return;
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
+    perf.time('paper marks paint', () => printMarks(ctx, over, k, 'over'));
+    c.dataset.key = key;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan, pxPerMm, paper.w, paper.h, cssW]);
 
   // the size follows the painted paper (set in show); before any paper arrives, the canvas holds the sheet's place
-  return <canvas ref={ref} aria-hidden className={cn('block', className)} style={{ maxWidth: 'none' }} />;
+  return (
+    <>
+      <canvas ref={ref} aria-hidden className={cn('block', className)} style={{ maxWidth: 'none' }} />
+      {over.length > 0 && (
+        <canvas
+          ref={overRef}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 block"
+          style={{ width: cssW, height: cssH, zIndex: 1, mixBlendMode: 'multiply' }}
+        />
+      )}
+    </>
+  );
 });
 
 /** A copy of the canvas as it is now, laid over it and fading away, clipped to the new sheet. */
