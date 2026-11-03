@@ -563,6 +563,8 @@ function labelPlace(place: string | undefined) {
  * A letter on the Reading Room's table: its sheet at its paper's size standing on the shelf (bottom-aligned in a
  * shelf as tall as the tallest paper), a little askew; under the shelf a museum label, the title, then place, year
  * and, for a letter lost in transit, why (in red), in small capitals. The label starts at the sheet's left edge.
+ * Under the pointer or the keyboard's focus the letter lifts, its label adds who wrote to whom, and the rest of the
+ * table steps back a little (library.css).
  */
 const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, style, itemRef, onOpen }: {
   letter: ArchiveLetter; sheet: { w: number; h: number; tilt: number }; shelfH: number; cellInner: number;
@@ -612,6 +614,8 @@ const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, st
         </div>
         <div className="table-label" style={{ marginLeft: inset }}>
           <h3 className="table-title">{letter.title ?? opening(letter.text, 48)}</h3>
+          {/* under the pointer or the keyboard's focus: who wrote to whom (library.css shows it) */}
+          <p aria-hidden className="table-writer">{fromTo(letter)}</p>
           <p className="table-meta">
             {[place, letter.year != null ? String(letter.year) : ''].filter(Boolean).join(' · ')}
             {special && <>{place || letter.year != null ? ' · ' : ''}<span className="table-status">{circumstanceLabel(letter)}</span></>}

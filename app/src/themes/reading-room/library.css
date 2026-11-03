@@ -78,6 +78,14 @@ html[data-look='reading-room'] .dock-switch {
 }
 
 /* ---------- All letters: the table (Canvas.tsx, layTable and TableCard) ---------- */
+/* only the sheet and its label open the letter: the bare shelf above a small sheet is the table (a drag starts there) */
+html[data-look='reading-room'] .table-card {
+  pointer-events: none;
+}
+html[data-look='reading-room'] .table-sheet,
+html[data-look='reading-room'] .table-label {
+  pointer-events: auto;
+}
 /* each sheet at its paper's size on its row's shelf, barely askew (the label stays straight) */
 html[data-look='reading-room'] .table-sheet {
   transform: rotate(var(--tilt, 0deg));
@@ -265,4 +273,67 @@ html[data-look='reading-room'] .fa-year {
   html[data-look='reading-room'] .fa-title { grid-area: title; margin-top: 0.125rem; }
   html[data-look='reading-room'] .fa-writer { grid-area: writer; }
   html[data-look='reading-room'] .fa-place { grid-area: place; margin-top: 0.125rem; }
+}
+
+/* ---------- the table: one letter lifted (under the pointer, or the keyboard's focus) ---------- */
+html[data-look='reading-room'] .table-writer {
+  display: none;
+  margin-top: 0.125rem;
+  font-family: var(--rr-book);
+  font-style: italic;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--rr-muted);
+}
+html[data-look='reading-room'] .table-card:focus-visible {
+  outline: none;
+}
+html[data-look='reading-room'] .table-card:focus-visible .table-sheet {
+  outline: 2px solid var(--ring);
+  outline-offset: 5px;
+}
+html[data-look='reading-room'] .table-item:has(.table-card:focus-visible) {
+  z-index: 2;
+}
+html[data-look='reading-room'] .table-card:focus-visible .table-writer {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+html[data-look='reading-room'] .table-card:focus-visible .table-label {
+  background: var(--desk);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .table-item:has(.table-card:hover) {
+    z-index: 2;
+  }
+  html[data-look='reading-room'] .table-card:hover .table-sheet {
+    transform: translateY(-0.25rem) rotate(var(--tilt, 0deg));
+    filter: drop-shadow(0 0.5rem 0.75rem color-mix(in oklab, var(--rr-ink) 14%, transparent));
+  }
+  html[data-look='reading-room'] .table-card:hover .table-writer {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  /* the label grows a line: the room behind it, so it reads over a letter below */
+  html[data-look='reading-room'] .table-card:hover .table-label {
+    background: var(--desk);
+  }
+  /* the others step back */
+  html[data-look='reading-room'] .letter-canvas:has(.table-card:hover) .table-item:not(:has(.table-card:hover)) {
+    opacity: 0.72;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-look='reading-room'] .table-sheet {
+    transition: transform 200ms var(--ease-out), filter 200ms var(--ease-out);
+  }
+  html[data-look='reading-room'] .table-item {
+    transition: opacity 200ms var(--ease-out);
+  }
 }
