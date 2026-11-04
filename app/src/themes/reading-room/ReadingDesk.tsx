@@ -4,7 +4,7 @@
 // column's foot. Opened, the drawer rises over the record, so the column never needs a scroll bar of its own. The
 // controls inside are the tool's own (Panel.tsx), so everything they do is unchanged.
 import { useEffect, useId, useRef, useState } from 'react';
-import { ChevronRight, ChevronUp } from 'lucide-react';
+import { ChevronUp } from 'lucide-react';
 import { AboutHand, LetterStatus, LookControls, MoreControls, ShareMenu, type PanelProps } from '@/components/Panel';
 import { Signature } from '@/components/Signature';
 import { inkColor, inkName } from '@/lib/inks';
@@ -202,20 +202,16 @@ function showAboveSheet(e: React.FocusEvent) {
   if (t.getBoundingClientRect().bottom > sheet.getBoundingClientRect().top) t.scrollIntoView({ block: 'center' });
 }
 
-/** Phones: the same record as ruled rows under the sheet (found letters only). Its Hand row is the clear way into
- * what's known about the writer: "About this hand ›" under their name. */
-export function CatalogueSlip({ id, name, panel }: { id: string | null | undefined; name: string; panel?: PanelProps }) {
+/** Phones: the same record as ruled rows under the sheet (found letters only). The way into what's known about the
+ * writer is the sheet's own "About this hand ›", beside their name in its Writer block, so the record's Hand row is
+ * just the name (`panel` is kept for callers). */
+export function CatalogueSlip({ id, name }: { id: string | null | undefined; name: string; panel?: PanelProps }) {
   const record = useRecord(id);
   if (!record) return null;
-  const about = panel && (
-    <AboutHand {...panel}>
-      <button type="button" className="rr-hand-link">About this hand<ChevronRight aria-hidden /></button>
-    </AboutHand>
-  );
   return (
     // a piece of the record reached with the keyboard that the resting sheet covers scrolls up into sight
     <div style={{ display: 'contents' }} onFocusCapture={showAboveSheet}>
-      <LedgerRecord record={record} hand={name} handAction={about} handName={name} titleAs="h1" className="rr-under-sheet" />
+      <LedgerRecord record={record} hand={name} handName={name} titleAs="h1" className="rr-under-sheet" />
     </div>
   );
 }

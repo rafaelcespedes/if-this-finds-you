@@ -11,7 +11,7 @@ import { Segmented, SegmentedChip, SegmentedItem } from '@/components/ui/toggle-
 import { Switch } from '@/components/ui/switch';
 import { SliderRow, Soon } from '@/components/ui/slider-row';
 import { Group, MoreButton } from '@/components/ui/group';
-import { ActionSheet, Sheet, type SheetEntry } from '@/components/ui/sheet';
+import { ActionSheet, Sheet, useSheets, type SheetEntry } from '@/components/ui/sheet';
 import { inputField } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PenSwatches, TipChoice } from '@/components/PenPicker';
@@ -20,7 +20,7 @@ import { StylePicker } from '@/components/StylePicker';
 import { ADVANCED_GROUPS, CONTROLS, isLive, isShown, naturalValue, penSizeFactor, type SliderControl } from '@/lib/controls';
 import { ENGINE_TIPS, MODELLED_INK } from '@/lib/engine-features';
 import { describeHand, words } from '@/lib/hands';
-import { handSources } from '@/lib/credits';
+import { handSources, type Source } from '@/lib/credits';
 import { sampleById } from '@/lib/samples';
 import type { Draft } from '@/lib/drafts';
 import { branded } from '@/lib/brand';
@@ -157,8 +157,12 @@ function WriterHeader(props: PanelProps) {
 /** The writer, in their own hand, and where everything on the page comes from. Opens from the writer's name. */
 export function AboutHand({ children, ...props }: PanelProps & { children: React.ReactNode }) {
   const { p, name, state } = props;
+  // phones keep it to what the sheet behind it doesn't already say (Rafael, launch: "very little redundancy… like a
+  // breeze to get through"): no typed name under the drawn one, no "This letter" (the record says it), no seed, and a
+  // collection of traced pages credited once
+  const phone = useSheets();
   const sources = handSources(p);
-  const letter = state.sample ? sampleById(state.sample) : undefined;
+  const letter = state.sample && !phone ? sampleById(state.sample) : undefined;
   const dt = 'text-[0.7188rem] text-muted-foreground';
   const changed = useRef(false);
   // on the overlay system (ui/sheet.tsx): a popover from the name on desktop, a bottom sheet on phones
@@ -180,7 +184,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
           <div style={{ color: inkColor(state.ink) }}>
             <Signature p={p} name={name} ink="currentColor" emPx={30} className="-ml-1 h-[46px] overflow-visible" />
           </div>
-          <div className="mt-1 text-[0.9375rem] leading-tight font-medium">{name}</div>
+          <div className={cn('mt-1 text-[0.9375rem] leading-tight font-medium', phone && 'sr-only')}>{name}</div>
           <p className="mt-0.5 text-[0.7812rem] leading-snug text-muted-foreground">{describeHand(p)}</p>
           <Button variant="secondary" onClick={() => { changed.current = true; props.onChangeWriter(); close(); }} className="mt-3 w-full active:scale-[0.97]">
             <Shuffle aria-hidden /> Change writer
@@ -194,8 +198,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
               <div>
                 <dt className={dt}>This letter</dt>
                 <dd>
-                  {letter.author}, {letter.year}{letter.title ? `. ${letter.title}` : ''}
-                  {letter.translator && <>, translated by {letter.translator.name}</>}. Public domain.
+                  {stop(`${letter.author}, ${letter.year}${letter.title ? `. ${letter.title}` : ''}${letter.translator ? `, translated by ${letter.translator.name}` : ''}`)} Public domain.
                   {letter.source?.url && (
                     <> <a href={letter.source.url} target="_blank" rel="noreferrer" className="underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:decoration-current active:decoration-current">Source</a></>
                   )}
@@ -206,19 +209,35 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
               <div>
                 <dt className={dt}>Letter shapes</dt>
                 <dd className="grid gap-1">
-                  {sources.map((s) => (
-                    <span key={s.name}>
-                      {sourceLine(s.name, readerCredit(s.credit))}
-                      {s.url && <> <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:decoration-current active:decoration-current">Source</a></>}
+                  {(phone ? byCollection(sources) : sources.map((s) => ({ one: s }))).map((x) => 'one' in x ? (
+                    <span key={x.one.name}>
+                      {sourceLine(x.one.name, readerCredit(x.one.credit))}
+                      {x.one.url && <> <a href={x.one.url} target="_blank" rel="noreferrer" className={SOURCE_LINK}>Source</a></>}
+                    </span>
+                  ) : (
+                    <span key={x.collection}>
+                      <span className="text-muted-foreground">{stop(readerCredit(x.collection))} {x.licence}</span>
+                      {x.url && <> <a href={x.url} target="_blank" rel="noreferrer" className={SOURCE_LINK}>Source</a></>}
+                      <span className="block text-muted-foreground">
+                        Pages{' '}
+                        {x.pages.map((pg, i) => (
+                          <span key={pg.page}>
+                            {i > 0 && ', '}
+                            {pg.url ? <a href={pg.url} target="_blank" rel="noreferrer" className={SOURCE_LINK}>{pg.page}</a> : pg.page}
+                          </span>
+                        ))}
+                      </span>
                     </span>
                   ))}
                 </dd>
               </div>
             )}
-            <div>
-              <dt className={dt}>Seed</dt>
-              <dd className="tabular">{state.seed}</dd>
-            </div>
+            {!phone && (
+              <div>
+                <dt className={dt}>Seed</dt>
+                <dd className="tabular">{state.seed}</dd>
+              </div>
+            )}
           </dl>
         </div>
       )}
@@ -229,6 +248,7 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
 /** Share: copy a link, save the image; the font file is a quieter extra. One icon wherever it sits. */
 export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVideo, exportable, onShareOpen, size }: PanelProps & { size?: 'lg' | 'chip' }) {
   const working = busy.download || busy.font || busy.video || busy.gif;
+  const phone = useSheets();
   // one letter is written out at a time: while one format is being made, the other's row waits (disabled below)
   // each row shows what it's doing: a spinner while it's made, a tick for a moment once it's saved
   const done = useJustDone(busy);
@@ -247,7 +267,8 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
       icon: <CaseSensitive />,
       quiet: true,
       status: status('font'),
-      hint: busy.font ? 'Being made…' : FONT_PACKAGE ? 'Install it on your computer. It keeps four or five versions of each letter; the page never repeats.' : undefined,
+      // phones: the row's name says it (and a phone can't install a font)
+      hint: busy.font ? 'Being made…' : FONT_PACKAGE && !phone ? 'Install it on your computer. It keeps four or five versions of each letter; the page never repeats.' : undefined,
       onSelect: onExportFont,
     },
   ];
@@ -426,6 +447,39 @@ function sourceLine(name: string, credit: string) {
   const core = title.includes(', ') ? title.slice(title.indexOf(', ') + 2) : title;
   if (core.length > 8 && credit.includes(core)) return <span className="text-muted-foreground">{credit}</span>;
   return <>{branded(name)}. <span className="text-muted-foreground">{credit}</span></>;
+}
+
+const SOURCE_LINK = 'underline decoration-[var(--rule-link)] underline-offset-2 hover-device:hover:decoration-current active:decoration-current';
+
+/** A sentence's full stop, unless it already ends in one ("…still a widow?" takes none). */
+const stop = (t: string) => (/[.?!…]['"’”)]?$/.test(t) ? t : `${t}.`);
+
+/** Traced pages from one collection ("…, 2022–23: a volunteer's handwritten copy, page batch6-022. CC BY 4.0"), and
+ * the collection's own entry if the hand draws on it, credited once with each page linked; any other source as it is. */
+type Credited = { one: Source } | { collection: string; licence: string; url?: string; pages: { page: string; url?: string }[] };
+const PAGE = /^(.*?): [^:]*?\bpage (\S+?)\.\s*(.*)$/;
+function byCollection(sources: Source[]): Credited[] {
+  const out: Credited[] = [];
+  const groups = new Map<string, Extract<Credited, { pages: unknown }>>();
+  for (const s of sources) {
+    const m = s.credit.match(PAGE);
+    if (!m) continue;
+    const key = `${m[1]}|${m[3]}`;
+    let g = groups.get(key);
+    if (!g) { g = { collection: m[1], licence: m[3], pages: [] }; groups.set(key, g); }
+    g.pages.push({ page: m[2], url: s.url });
+  }
+  const placed = new Set<string>();
+  for (const s of sources) {
+    const m = s.credit.match(PAGE);
+    // the collection's own entry ("CREMMA-Wikipedia …, 2022–23; CC BY 4.0") becomes its Source link
+    const home = !m ? [...groups.values()].find((g) => g.pages.length > 1 && s.credit.startsWith(g.collection)) : undefined;
+    if (home) { home.url ??= s.url; continue; }
+    const g = m && groups.get(`${m[1]}|${m[3]}`);
+    if (!g || g.pages.length < 2) { out.push({ one: s }); continue; }
+    if (!placed.has(g.collection + g.licence)) { placed.add(g.collection + g.licence); out.push(g); }
+  }
+  return out;
 }
 
 /** A source credit for readers: the product's name, and the engine's notes to its own docs ("(hand-traditions.md §4)") stay out. */
