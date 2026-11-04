@@ -42,7 +42,7 @@ const metricsCache = new Map<string, CounterMetrics>();
 /** the label as the pairing sets it: small capitals ("hand no." drawn as caps) or sentence case */
 const labelText = () => { const r = role('label'); return r.upper ? 'HAND NO.' : r.caps ? 'hand no.' : 'Hand no.'; };
 /** The label's size: "HAND NO." as wide as four figures at NUM (its period included). Then the number's size: a
- *  little smaller, so its four figures end under the O, not under the period (which hardly shows). Digits sit at a
+ *  little smaller, so its four figures end between the O and the period (which hardly shows). Digits sit at a
  *  fixed pitch (the widest figure), so the number never changes width. */
 function counterMetrics(ctx: CanvasRenderingContext2D, k: number): CounterMetrics {
   const key = `${pairing()}@${k}`;
@@ -76,7 +76,9 @@ function counterMetrics(ctx: CanvasRenderingContext2D, k: number): CounterMetric
   const labelW = inkW(full, label).w;
   // the label's ink without its period: where the O ends
   const toO = inkW(full.replace(/\.$/, ''), label).w;
-  const num = (NUM * k * toO) / ref.numW;
+  // halfway between the two (Rafael, 4 Nov: ending under the O felt a touch small): the figures end between the O
+  // and the period
+  const num = (NUM * k * (1 + toO / ref.numW)) / 2;
   const f = figures(num);
   const labelH = inkW(full, label).h;
   ctx.restore();
