@@ -227,11 +227,10 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     const ok = await copyText(url);
     const title = `${letter?.title ?? 'A letter'} – ${APP_NAME}`;
     if (coarse && canShareLinks()) { await shareLink(url, title); return; }
-    toast(ok ? 'Link copied' : 'Couldn’t copy the link', {
-      id: 'share',
-      description: ok ? 'It opens this letter in this hand.' : url,
-      action: canShareLinks() ? { label: 'Share…', onClick: () => shareLink(url, title) } : undefined,
-    });
+    // the desk's toasts (App.tsx): a success with its icon, an error with its own
+    const action = canShareLinks() ? { label: 'Share…', onClick: () => shareLink(url, title) } : undefined;
+    if (ok) toast.success('Link copied', { id: 'share', description: 'It opens this letter in this hand.', action });
+    else toast.error('Couldn’t copy the link', { id: 'share', description: url, action });
   };
   const [saving, setSaving] = useState(false);
   // the letter as text, open or folded (the dock's "Read as text" opens it)
@@ -240,13 +239,23 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     if (!ready || !r || !letter) return;
     setSaving(true);
     try {
-      const { blob } = await renderLiveNote(ready.live, ready.extras, r.inkKey ?? 'currentColor', r.inkColor, pxPerMm || 2);
+      const { blob, width, height } = await renderLiveNote(ready.live, ready.extras, r.inkKey ?? 'currentColor', r.inkColor, pxPerMm || 2);
       const file = `${APP_NAME} – ${letter.title ?? letter.id}`;
+      // the desk's words and toasts (App.tsx): "Image downloaded" with its icon, or a fresh tap to save it
+      const description = `JPEG, ${width} × ${height} px`;
+      const done = (res: string) => { if (res === 'saved') toast.success('Image downloaded', { id: 'download', description }); };
       const result = await saveNote(blob, file, coarse);
-      if (result === 'saved') toast('Image downloaded', { id: 'download', description: 'A JPEG of the letter as you see it.' });
-      else if (result === 'needs-tap') toast('The image is ready', { id: 'download', action: { label: 'Save', onClick: () => saveNote(blob, file, true) } });
+      if (result === 'needs-tap') {
+        toast('Your image is ready', {
+          id: 'download',
+          description,
+          action: { label: 'Save image', onClick: () => void saveNote(blob, file, true).then(done) },
+          duration: 10000,
+        });
+      } else done(result);
     } catch (e) {
-      toast('The image couldn’t be made', { id: 'download', description: e instanceof Error ? e.message : 'Try again.' });
+      console.error(e);
+      toast.error('Couldn’t make the image', { id: 'download', description: 'Something went wrong while it was being made. Try again in a moment.' });
     } finally {
       setSaving(false);
     }
@@ -258,9 +267,9 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
         <SiteHeader current="letters" inside hrefs={{ letters: backHref }} />
         <main className="mx-auto max-w-[1180px] px-4 pt-28 sm:px-8 lg:px-10">
           {error ? (
-            <Missing title="The letters didn’t load" action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>Check your connection, then try again.</Missing>
+            <Missing title="The letters didn’t load" action={<Button variant="secondary" onClick={onRetry}>Try again</Button>}>Check your connection, then try again.</Missing>
           ) : letters ? (
-            <Missing title="This letter isn’t in the collection" action={<Button variant="outline" asChild><a href={backHref}>See all letters</a></Button>}>
+            <Missing title="This letter isn’t in the collection" action={<Button variant="secondary" asChild><a href={backHref}>See all letters</a></Button>}>
               The link may be mistyped, or the letter may have been taken out of the collection.
             </Missing>
           ) : null}

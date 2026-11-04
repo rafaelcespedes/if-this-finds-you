@@ -334,6 +334,11 @@ html:root[data-layout='ruler'] .sp :is(.sp-notes, .sp-cite) {
 html:root[data-layout='ruler'] .sp :is(.sp-notes li, .sp-cite p) {
   color: var(--rr-faint);
 }
+/* a note's mark: the desk's size and weight (the record's marks, 11.25 px, 500), wherever it sits */
+html:root[data-layout='ruler'] .sp .sp-ref {
+  font-size: 0.703125rem;
+  font-weight: 500;
+}
 html:root[data-layout='ruler'] .sp :is(.sp-no, .sp-note-no) {
   font-family: var(--ed-figure-face);
   font-variant-numeric: var(--ed-figure-numeric);
@@ -527,11 +532,18 @@ html:root[data-layout='ruler'] .lib-main .rr-aid {
   border: 0;
   color: var(--rr-muted);
 }
-/* the sort chosen: the room's selected state (light red), not an underline; 44 px targets */
+/* the sort chosen: the running head's place pill (index.css [data-site-link][aria-current]): a 22 px light-red fill
+   around the words, a 44 px target beyond it that nobody sees */
 html:root[data-layout='ruler'] .fa .fa-sort-by {
-  min-height: 44px;
-  padding: 0 0.5rem;
+  position: relative;
+  min-height: 0;
+  padding: 0.1875rem 0.375rem;
   border-radius: 3px;
+}
+html:root[data-layout='ruler'] .fa .fa-sort-by::after {
+  content: '';
+  position: absolute;
+  inset: -0.6875rem -0.25rem;
 }
 html:root[data-layout='ruler'] .fa .fa-sort-by.is-on {
   text-decoration: none;
