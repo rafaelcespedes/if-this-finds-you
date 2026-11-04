@@ -116,6 +116,12 @@ export default function App() {
   // what was wrong with the link this page opened from, said once (the state has already fallen back safely);
   // a link cut short stays as it came (never rewritten or saved over) until the writer starts a letter of their own
   const [linkTrouble, setLinkTrouble] = useState(() => linkIssue(window.location.hash));
+  // a link opened in this tab (hash only, no reload) is judged afresh
+  useEffect(() => {
+    const on = () => setLinkTrouble(linkIssue(window.location.hash));
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
   const holdLink = linkTrouble === 'incomplete';
   const holdLinkRef = useRef(holdLink);
   holdLinkRef.current = holdLink;
