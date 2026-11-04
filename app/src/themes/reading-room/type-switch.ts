@@ -1,12 +1,12 @@
 // TEMPORARY comparison (Rafael, 4 Nov: "let's add some tension on the modern side"): which serif + sans pairing
-// replaces Junicode 2 + Source Sans 3 in the Reading Room. ?type=1…6 picks a pairing, ?type=0 is today's; the choice
+// replaces Junicode 2 + Source Sans 3 in the Reading Room. ?type=1…7 picks a pairing, ?type=0 is today's; the choice
 // is kept for the tab like ?look. Each pairing only overrides the type roles' face and size variables
 // (type-options.css), so removing this file and its one import line per page removes the comparison.
 // Importing this module applies the choice (it sets html[data-rrtype] before the page renders).
 import './type-options.css';
 
 const KEY = 'seedhand:rrtype';
-const VALID = /^[0-6]$/;
+const VALID = /^[0-7]$/;
 
 function read(): number {
   try {
