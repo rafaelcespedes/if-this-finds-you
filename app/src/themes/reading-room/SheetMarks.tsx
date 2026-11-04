@@ -3,7 +3,7 @@
 // never laid over it or animated in. Where they land, their ink and whether they sit under or over the writing are
 // seeded by the letter and the hand, so a letter looks the same on every visit. Decoration only: the catalogue card
 // beside the letter says the same in words. The number and place come from catalogue.ts (marksOf), the one source.
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { PaperMarks } from '@/components/PaperCanvas';
 import { LOOK } from '@/lib/look';
 import { callNo } from './catalogue';
@@ -12,9 +12,11 @@ import { useMarks } from './useCatalogue';
 /** Wrap a letter's sheets: its first sheet is stamped (only in the Reading Room, and only for a letter in the collection). */
 export function LetterMarks({ id, hand, children }: { id: string | null | undefined; hand: string; children: ReactNode }) {
   const marks = useMarks(LOOK === 'reading-room' ? id : null);
-  if (!marks) return <>{children}</>;
+  const outer = useContext(PaperMarks);
+  // always the same wrapper, marks or none: swapping it for a bare fragment when a found letter becomes a reply
+  // rebuilt everything inside, the letter's field too, and the first keys typed fast were lost (launch QA)
   return (
-    <PaperMarks value={{ id: marks.id, hand, place: marks.place || null, year: marks.year ?? null, number: marks.no, look: 'reading-room' }}>
+    <PaperMarks value={marks ? { id: marks.id, hand, place: marks.place || null, year: marks.year ?? null, number: marks.no, look: 'reading-room' } : outer}>
       {children}
     </PaperMarks>
   );
