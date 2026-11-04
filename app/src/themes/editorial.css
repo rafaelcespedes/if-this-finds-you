@@ -7,7 +7,7 @@
    are; this file never names a face, only the --rr-* roles.
 
    A measured, asymmetric page: one rule divides a margin rail (the record, the groups' names, the sections' numbers)
-   from the page; the twelve columns' edges show faintly behind it; titles are big and hang across the grid; numbers
+   from the page; a faint line in each gutter between the twelve columns shows behind it; titles are big and hang across the grid; numbers
    in the sans, tabular. Rafael: "the ruler idea is kind of overdone", then "kill the tickers and the numbers on every
    page and just leave the grid": no ticks and no column numbers anywhere, the grid kept, quiet (About's quieter
    still, and one line drops it: --ed-grid-line), rules only where they divide.
@@ -76,7 +76,7 @@ html:root[data-layout] {
 }
 
 /* =====================================================================================================================
-   THE GRID: the twelve columns' edges, faint, full height, behind the page (no ticks and no numbers anywhere: Rafael,
+   THE GRID: one faint line in the middle of each gutter between the twelve columns, full height, behind the page (no ticks and no numbers anywhere: Rafael,
    "kill the tickers and the numbers on every page and just leave the grid"). Words sit on the room's ground, so the
    lines show only in the margins, the gutters and the empty columns.
    ===================================================================================================================== */
@@ -104,9 +104,20 @@ html:root[data-layout='ruler'] .ed-grid {
   contain: strict;
 }
 html:root[data-layout='ruler'] .ed-grid > i {
+  position: relative;
   display: block;
   min-width: 0;
-  box-shadow: inset 1px 0 var(--ed-grid-line), inset -1px 0 var(--ed-grid-line);
+}
+/* one line per gutter, in its middle (Rafael: "make the grid lines single, one per gutter"): 11 at 12 columns, 7 at
+   8, 3 at 4; none at the outer margins */
+html:root[data-layout='ruler'] .ed-grid > i + i::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--ed-gutter) / -2);
+  width: 1px;
+  background: var(--ed-grid-line);
 }
 @media (max-width: 39.99rem) {
   html:root[data-layout='ruler'] .ed-grid > i:nth-child(n + 5) { display: none; }
