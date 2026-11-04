@@ -53,8 +53,8 @@ the objects. There's nothing to sell.
 | The person who copies a letter out | writer, *a fictional writer*, *a writer who never existed* | AI, model, generator |
 | Their handwriting | hand (*in Ilse Pryor's hand*) | font (except on Fonts), style |
 | New letter and new hand | *Find another* (tool), *Bring another* (Reading Room) | shuffle, roll, randomise |
-| Same letter, new hand | *Change writer* (tool), *Another hand* (letter page) | reroll, regenerate |
-| Paper, pen, ink as a group | *Paper, pen and ink*; *Writing materials* (Reading Room) | settings, options, & |
+| Same letter, new hand | *Change writer*, everywhere (Rafael, 4 Nov) | another hand, bring another hand, reroll, regenerate |
+| Paper, pen, ink as a group | *Writing materials*, everywhere, phones included (Rafael, 4 Nov) | paper, pen and ink; hand, paper and ink; settings, options, & |
 | Sharing | *Share* (the button), *Copy link* (the action), *Link copied* | share a link, send |
 | Saving a picture | *Download image*, *Image downloaded* | save as an image, export, image saved |
 | The letter's words without the hand | *Read as text*, *Hide the text* | transcript, plain text (except *Edit as plain text* in the writing menu) |

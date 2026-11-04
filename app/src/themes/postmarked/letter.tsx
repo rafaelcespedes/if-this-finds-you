@@ -170,7 +170,7 @@ export function PostDock(a: DockActions) {
             <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />
           </>
         )}
-        {!narrow && <IconButton label="Another hand" onClick={a.onNewHand}><Shuffle aria-hidden /></IconButton>}
+        {!narrow && <IconButton label="Change writer" onClick={a.onNewHand}><Shuffle aria-hidden /></IconButton>}
         <IconButton label="Share a link to this letter" onClick={a.onShare}><Link2 aria-hidden /></IconButton>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
@@ -182,7 +182,7 @@ export function PostDock(a: DockActions) {
             <DropdownMenu.Content side="top" align="end" sideOffset={8} collisionPadding={12} className="lib-menu z-50 w-[248px] origin-(--radix-dropdown-menu-content-transform-origin) p-1.5 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
               <Item icon={<FileText />} onSelect={a.onText}>Read it as text</Item>
               <Item icon={<Download />} onSelect={a.onImage} disabled={!a.imageReady}>Save as an image</Item>
-              {narrow && <Item icon={<Shuffle />} onSelect={a.onNewHand}>Another hand</Item>}
+              {narrow && <Item icon={<Shuffle />} onSelect={a.onNewHand}>Change writer</Item>}
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>

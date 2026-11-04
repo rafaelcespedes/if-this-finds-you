@@ -136,7 +136,7 @@ export function ReadingSpread(p: Props) {
     <HandMenu
       name={p.name} keep={p.keep} onKeep={p.onKeep} onNewHand={p.onNewHand} onReplay={p.onReplay} canReplay={p.canReplay} align="start"
       trigger={
-        <button type="button" className="sp-hand group" aria-label={`In ${p.name}’s hand: change the hand`}>
+        <button type="button" className="sp-hand group" aria-label={`In ${p.name}’s hand: change writer`}>
           {p.name}
           <ChevronDown aria-hidden className="sp-hand-chev" />
         </button>
@@ -231,7 +231,7 @@ export function ReadingSpread(p: Props) {
         <div className="sp-actions" role="group" aria-label="What you can do with this letter">
           <a href={p.reply} className="sp-reply"><PenLine aria-hidden /> Write a reply</a>
           <button type="button" onClick={p.onRandom}>Bring another</button>
-          <button type="button" onClick={p.onNewHand}>Another hand</button>
+          <button type="button" onClick={p.onNewHand}>Change writer</button>
           <button type="button" onClick={p.onShare}>Share</button>
         </div>
       </div>

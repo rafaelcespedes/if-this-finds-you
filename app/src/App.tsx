@@ -1387,7 +1387,7 @@ export default function App() {
           </div>
           </div>
           {!reader && !isDesktop && tinyWindow && (
-            <section aria-label="Hand, paper and ink" className="mx-auto mt-10 max-w-[480px] rounded-2xl bg-panel">
+            <section aria-label="Writing materials" className="mx-auto mt-10 max-w-[480px] rounded-2xl bg-panel">
               <Panel {...panelProps} />
             </section>
           )}

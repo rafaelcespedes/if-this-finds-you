@@ -241,7 +241,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
   return (
     <section
       ref={contentRef}
-      aria-label="Hand, paper and ink"
+      aria-label="Writing materials"
       data-detent={detent}
       inert={!open}
       onPointerDown={onPointerDown}
@@ -284,7 +284,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
             </button>
           </AboutHand>
           {/* look C (?look=postmarked): Find another is a round stamp; look A: Bring another, in words */}
-          {LOOK === 'postmarked' ? <PhoneStamp {...props} /> : LOOK === 'reading-room' ? <BringAnother onClick={props.onNewHand} label={props.letter?.found ? 'Bring another' : 'Another hand'} shortcut="" /> : (
+          {LOOK === 'postmarked' ? <PhoneStamp {...props} /> : LOOK === 'reading-room' ? <BringAnother onClick={props.onNewHand} label={props.letter?.found ? 'Bring another' : 'Change writer'} shortcut="" /> : (
           <Button onClick={props.onNewHand} className="h-11 px-3.5">
             <Shuffle aria-hidden /> Find another
           </Button>
@@ -304,7 +304,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
             className="group flex h-11 w-full items-center select-none focus-visible:outline-none"
           >
             <span data-pill className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-secondary px-3.5 text-[0.8125rem] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
-              Paper, pen and ink
+              Writing materials
               <ChevronUp aria-hidden className={cn('size-3.5 text-muted-foreground transition-transform duration-300 ease-[var(--ease-drawer)]', expanded && 'rotate-180')} />
             </span>
           </button>

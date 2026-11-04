@@ -33,8 +33,8 @@ Run it with the app (`cd app && npm run dev`) and open **/letters.html**.
   an italic dateline (who to whom), where and when, the story, the record (written by, to, from, when, language,
   translator), the letter as text, and numbered notes for the source, the rights and the fictional hand.
   Everything you can do sits in one floating dock (the library's and the tool's right panel's family):
-  Previous / Next (also ← →, and a sideways swipe on phones), Another hand, Share, More (read it as text, save as
-  an image, a letter at random) and Write a reply. "In Ilse Pryor's hand ⌄" under the sheet holds Another hand,
+  Previous / Next (also ← →, and a sideways swipe on phones), Change writer, Share, More (read it as text, save as
+  an image, a letter at random) and Write a reply. "In Ilse Pryor's hand ⌄" under the sheet holds Change writer,
   Write it out again and Keep this hand (the tool's writer-dropdown pattern). Two layouts to compare with
   `?detail=1|2`: 1 side by side (the letter left, the reading right), 2 letter first, one column (the default).
   Esc goes back to all letters.
