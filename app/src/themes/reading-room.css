@@ -4,13 +4,13 @@
    small capitals and old-style figures, on a paper-grey room with one archival ink colour; archival red is kept for
    numbers and the main action. The new pieces (card, request slips, the desk) live in themes/reading-room/.
 
-   Type (Rafael, 3 Nov, from the type study): Junicode 2 (Peter S. Baker) for reading, titles, the record, small
-   capitals and figures, and Ysabeau Office (Christian Thalmann) for everything you operate. Both SIL OFL 1.1 with no
-   Reserved Font Name. Junicode is self-hosted from fontTools subsets of the upstream release (reading-room/fonts/,
-   OFL.txt there): Fontsource has no Junicode, and its subsets drop small capitals and old-style figures from every
-   face. Ysabeau Office comes from @fontsource-variable (controls need neither). Both are enlarged 115% (size-adjust):
-   Junicode's x-height is small (0.415 em) and the roles' sizes were set for a larger one; Ysabeau Office, a wider
-   face, is enlarged only 105% so the compact controls keep their widths.
+   Type: two faces, both only ever named in the tokens (--rr-book, --rr-ui), so a pairing swaps by token values.
+   Junicode 2 (Peter S. Baker; Rafael, 3 Nov) for everything archival: reading, titles, the record's values, the
+   catalogue numbers in its small capitals and old-style figures. Self-hosted from fontTools subsets of the upstream
+   release (reading-room/fonts/, OFL.txt there): Fontsource has no Junicode, and its subsets drop small capitals and
+   old-style figures. Enlarged 115% (size-adjust): its x-height is small (0.415 em) for the roles' sizes.
+   Source Sans 3 (Paul D. Hunt; Rafael, 4 Nov: "Let's give Source Sans 3 a chance") for everything you operate and
+   every label, in sentence case: the small-capital labels are retired. Self-hosted too (OFL-SourceSans3.txt).
    The faces are declared under their own names, so the classic look never downloads them.
    Text sizes are in rem, so the room follows the browser's text size as the tool does.
 */
@@ -56,22 +56,25 @@
   src: url('./reading-room/fonts/junicode-latin-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* the sans for everything you operate and every label: Source Sans 3 (Paul D. Hunt, Adobe; SIL OFL 1.1, OFL-SourceSans3.txt
+   beside it), self-hosted from Fontsource's variable subsets (one file a script carries every weight), sized so its
+   x-height matches the control size the roles were tuned for */
 @font-face {
-  font-family: 'RR Ysabeau Office';
+  font-family: 'RR Source Sans';
   font-style: normal;
   font-display: swap;
-  font-weight: 1 1000;
-  size-adjust: 105%;
-  src: url('@fontsource-variable/ysabeau-office/files/ysabeau-office-latin-ext-wght-normal.woff2') format('woff2-variations');
+  font-weight: 200 900;
+  size-adjust: 95%;
+  src: url('./reading-room/fonts/source-sans-3-latin-ext.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Ysabeau Office';
+  font-family: 'RR Source Sans';
   font-style: normal;
   font-display: swap;
-  font-weight: 1 1000;
-  size-adjust: 105%;
-  src: url('@fontsource-variable/ysabeau-office/files/ysabeau-office-latin-wght-normal.woff2') format('woff2-variations');
+  font-weight: 200 900;
+  size-adjust: 95%;
+  src: url('./reading-room/fonts/source-sans-3-latin.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -127,7 +130,7 @@ html[data-look='reading-room'] {
   --rr-book: 'RR Junicode', 'Iowan Old Style', Georgia, serif;
   /* small capitals are the book face's own (Junicode keeps smcp and c2sc), switched on by the roles that use them */
   --rr-caps: var(--rr-book);
-  --rr-ui: 'RR Ysabeau Office', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --rr-ui: 'RR Source Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
 
   /* the type roles (TYPE, at the end of this file): each a face, a size, a weight, a leading and a tracking. A font
      pairing swaps one face variable per role; the sizes are the scale 13 · 15 · 17 · 22 px, in rem */
@@ -152,12 +155,13 @@ html[data-look='reading-room'] {
   --rr-small-weight: 400;
   --rr-small-leading: 1.45;
   --rr-small-tracking: 0;
-  --rr-label-face: var(--rr-caps);
-  --rr-label-size: 0.8125rem;
-  --rr-label-weight: 400;
+  /* labels: the sans in sentence case, a step under the controls, a touch heavier so they hold at that size */
+  --rr-label-face: var(--rr-ui);
+  --rr-label-size: 0.75rem;
+  --rr-label-weight: 500;
   --rr-label-leading: 1.3;
-  --rr-label-tracking: 0.05em;
-  --rr-label-caps: all-small-caps;
+  --rr-label-tracking: 0.01em;
+  --rr-label-caps: normal;
   --rr-number-face: var(--rr-caps);
   --rr-number-size: 0.9375rem;
   --rr-number-weight: 400;
@@ -296,7 +300,7 @@ html[data-look='reading-room'] [data-site-row] {
   padding-bottom: 0.5rem;
 }
 /* the rule and its space, for the header's height (index.css --site-head); the place you're in shows in archival
-   red (index.css --site-here, ?navsel) */
+   red, on its light-red fill (index.css --site-here, --st-accent) */
 html[data-look='reading-room'] { --site-head-rule: calc(0.5rem + 1px); --site-here: var(--rr-red); }
 html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button),
 html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site-label]) {
@@ -314,17 +318,16 @@ html[data-look='reading-room'] .sheet-surface [data-site-menu] [data-site-link] 
   font-size: 1.125rem;
   letter-spacing: 0.06em;
 }
-/* a place you can go, under the pointer: a faint underline (the place you're in keeps its own mark) */
-@media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] [data-site-header] a[data-site-link]:not([aria-current]):hover [data-site-words] {
-    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
-    text-underline-offset: 3px;
-  }
-}
-/* the letter's number: archival red, as on its sheet */
+/* the letter's number: archival, as on its sheet and its record: the number role (the serif's small capitals and
+   figures) in red, among the header's sans words */
 html[data-look='reading-room'] [data-site-number] {
   color: var(--rr-red);
-  font-variant-numeric: tabular-nums;
+  font-family: var(--rr-number-face);
+  font-size: var(--rr-control-size); /* the header's words are smaller than a record's: the number keeps step */
+  font-weight: var(--rr-number-weight);
+  letter-spacing: var(--rr-number-tracking);
+  font-variant-caps: var(--rr-number-caps);
+  font-variant-numeric: oldstyle-nums tabular-nums;
 }
 /* the phone header's chips (Menu, Share): only their drawn icons, no box (the paper is the only thing with an edge);
    their size is the shared header's own */
@@ -532,18 +535,10 @@ html[data-look='reading-room'] .rr-bring {
 }
 html[data-look='reading-room'] .rr-bring-label {
   flex: 1;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-  transition: text-decoration-color 150ms var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-bring:hover {
     color: var(--rr-red-deep);
-  }
-  html[data-look='reading-room'] .rr-bring:hover .rr-bring-label {
-    text-decoration-color: currentColor;
   }
 }
 /* its key: a quiet keycap, a tint with no edge, only where there's a keyboard to press it on */
@@ -599,8 +594,10 @@ html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring {
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-bring-label {
   text-decoration: none;
-  /* Junicode's capitals sit above its line box's centre (see "icons beside words"): down onto the button's centre */
-  translate: 0 0.16em;
+  /* Junicode's capitals sit above its line box's centre (see "icons beside words"): down onto the button's centre, so
+     the space above the capitals matches the space below the baseline. Measured in the ink in real Chrome and
+     WebKit windows at 1×, 2× and 4× (headless Chromium sets text a little higher and misleads) */
+  translate: 0 0.105em;
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-key {
   background: color-mix(in oklab, var(--rr-red) 10%, transparent);
@@ -671,7 +668,6 @@ html[data-look='reading-room'] .rr-ref-button {
   font-variant-numeric: lining-nums;
   line-height: 1;
   vertical-align: 0.5em;
-  cursor: pointer;
 }
 html[data-look='reading-room'] .rr-ref-button[aria-expanded='true'] {
   background: color-mix(in oklab, var(--rr-red) 12%, transparent);
@@ -876,7 +872,7 @@ html[data-look='reading-room'] :is(.sheet-surface, .control-sheet) .sheet-row:ac
 }
 /* the controls you operate: fills, edges, the held-down state */
 html[data-look='reading-room'] :is(
-    [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+    [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item'],
     [data-slot='segmented-item'][data-chip],
     [role='radiogroup']:is([aria-label='Pen'], [aria-label='School']) > button,
     [data-slot='button'].bg-secondary
@@ -886,7 +882,7 @@ html[data-look='reading-room'] :is(
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] :is(
-      [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+      [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item'],
       [data-slot='segmented-item'][data-chip],
       [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
       [data-slot='button'].bg-secondary
@@ -1169,11 +1165,7 @@ html[data-look='reading-room'] .rr-dock-reply {
   padding: 6px 9px;
   border-radius: 3px;
   white-space: nowrap;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-  transition: text-decoration-color 150ms var(--ease-out), color 150ms var(--ease-out);
+  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out);
 }
 html[data-look='reading-room'] .rr-dock-word {
   color: var(--rr-ink);
@@ -1185,12 +1177,14 @@ html[data-look='reading-room'] .rr-dock-reply svg {
   width: 1rem;
   height: 1rem;
 }
+/* under the pointer a faint wash behind the words, never an underline (Rafael, 4 Nov): ink for a plain word, red for
+   the red one */
 @media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .rr-dock-word:hover,
-  html[data-look='reading-room'] .rr-dock-reply:hover {
-    text-decoration-color: currentColor;
+  html[data-look='reading-room'] .rr-dock-word:hover {
+    background: var(--st-hover);
   }
   html[data-look='reading-room'] .rr-dock-reply:hover {
+    background: var(--st-accent-hover);
     color: var(--rr-red-deep);
   }
 }
@@ -1316,17 +1310,12 @@ html[data-look='reading-room'] .dock-primary {
   background: transparent;
   box-shadow: none;
   color: var(--rr-red);
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-  transition: color 150ms var(--ease-out), text-decoration-color 150ms var(--ease-out);
+  transition: color var(--st-dur) var(--ease-out), background-color var(--st-dur) var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .dock-primary:hover {
-    background: transparent;
+    background: var(--st-accent-hover);
     color: var(--rr-red-deep);
-    text-decoration-color: currentColor;
   }
 }
 @media (max-width: 380px) {
@@ -1347,18 +1336,19 @@ html[data-look='reading-room'] .dock-caption {
      reading  text read at length: the transcript, a page's opening paragraph (Junicode, 17 px)
      text     the record's values and the room's own words: card values, a slip's title, names (Junicode, 15 px)
      small    what comes second in the record: notes, sub-lines, footnotes (Junicode, 13 px)
-     label    the keys of the record, group names, places and counts, in the face's own small capitals (13 px)
+     label    the keys of the record, group names, places and counts: the sans in sentence case (Source Sans 3,
+              12 px, 500)
      number   catalogue numbers: capitals and small capitals, old-style tabular figures, archival red (15 px)
      action   the one thing to do next, in archival red words: Bring another letter, Write a reply, New set, Done
               (Junicode, 17 px, 600)
      control  everything you operate: the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
-              tooltips (Ysabeau Office, 13 px, 400)
+              tooltips (Source Sans 3, 13 px, 400)
    and one size outside the scale, for a reason:
      micro    words inside fixed-size controls, under an icon or a bar: the pen tips (Fine, Medium, Bold) and the
               timeline's centuries (11 px). Plain for a choice, small capitals for a group.
    The scale: 13 · 15 · 17 · 22 px.
-   The same sizes on every screen; rem, so they follow the browser's text size. Small capitals only for keys and
-   numbers, where they help a reader scan a record. Tabular figures only for numbers that line up or tick.
+   The same sizes on every screen; rem, so they follow the browser's text size. Small capitals only for catalogue
+   numbers. Tabular figures only for numbers that line up or tick.
    Controls keep their own line boxes: their heights come from the compact density (density.css).
    ===================================================================================================================== */
 
@@ -1408,7 +1398,7 @@ html[data-look='reading-room'] :is(.rr-sub, .rr-card-foot, .specimen-note, .set-
   line-height: var(--rr-small-leading);
   letter-spacing: var(--rr-small-tracking);
 }
-/* label: small capitals */
+/* label: the sans, sentence case */
 html[data-look='reading-room'] :is(.rr-sc, .rr-aid, .font-tag, [role='menu'] > div:not([role]), .rr-slip-inner section[data-row] h3, .control-sheet section[data-row] h3) {
   font-family: var(--rr-label-face);
   font-size: var(--rr-label-size);
@@ -1446,8 +1436,10 @@ html[data-look='reading-room'] .rr-dock-of {
   letter-spacing: var(--rr-control-tracking);
   font-variant-caps: normal;
 }
-/* inside a number, "No." keeps the number's size (not the label's) */
+/* inside a number, "No." is the number's: its face, size and small capitals (not the label's) */
 html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag) .rr-sc {
+  font-family: inherit;
+  font-weight: inherit;
   font-size: inherit;
   letter-spacing: inherit;
   line-height: inherit;
@@ -1497,17 +1489,16 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
     --rr-hair: color-mix(in oklab, var(--rr-ink) 60%, transparent);
   }
 }
-/* the ruled rows that open things (Full record, Writing materials, Handwriting and more): under the pointer their
-   name underlines faintly, pressed the row takes the press wash. TEMPORARY, the same as ui/controls.css's shared
-   .ruled-row from the components owner: delete this once that lands */
+/* the ruled rows that open things (Full record, the drawer's rows, More): under the pointer a faint wash behind the
+   name instead of ui/controls.css's underline (Rafael, 4 Nov: no underlines on hover); its spread pads it without
+   moving a thing */
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .ruled-row:hover > :first-child {
-    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
-    text-underline-offset: 3px;
+    text-decoration: none;
+    border-radius: 2px;
+    background: var(--st-hover);
+    box-shadow: 0 0 0 0.25em var(--st-hover);
   }
-}
-html[data-look='reading-room'] .ruled-row:active {
-  background: var(--st-press);
 }
 /* pressed, every control answers, phones included (the tap highlight is off everywhere): icons and quiet words on the
    ink press wash, red words on their red one in the deeper red (red on the ink wash would be 4.4:1) */

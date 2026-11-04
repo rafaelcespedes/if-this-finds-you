@@ -3,28 +3,15 @@
    colours, rules and states come from --rr-* and --st-*; this file only sets the page's type scale, its layout and
    its night colours (?theme=dark). docs/research/fonts-redesign.md has the reasoning.
 
-   Type: two faces, two jobs.
+   Type: two faces, two jobs (the room's --rr-book and --rr-ui).
      Junicode 2 (the archive's words): the page title, the writers' names, the intro and the letter's credit
      Source Sans 3 (everything you operate or scan): controls, labels, the few words about each hand, in sentence case
    The handwriting is the third voice and always the biggest: the hero at poster size, the rows at the tester's size. */
 
 /* ---------- tokens ---------- */
 html[data-fonts='new'] {
-  /* Source Sans 3 for the controls and every label, sentence case, no small capitals (Rafael, 3 Nov). The Reading
-     Room is making it the sitewide sans; until that lands these say the same here, and are no-ops after */
-  --rr-ui: 'RRS Source Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
-  --rr-control-size: 0.875rem;
-  --rr-label-face: var(--rr-ui);
-  --rr-label-size: 0.8125rem;
-  --rr-label-weight: 600;
-  --rr-label-caps: normal;
-  --rr-label-tracking: 0;
-  --rr-number-face: var(--rr-ui);
-  --rr-number-caps: normal;
-  --rr-number-tracking: 0;
-  --rr-number-size: 0.8125rem;
-  --rr-micro-face: var(--rr-ui);
-
+  /* Source Sans 3 for the controls and every label, sentence case, no small capitals: the room's own --rr-ui and
+     label tokens (reading-room.css, since 3588909); this page only names them */
   --fx-ui: var(--rr-ui, system-ui, sans-serif);
   --fx-book: var(--rr-book, Georgia, serif);
   --fx-ink: var(--rr-ink, var(--ink));

@@ -166,6 +166,10 @@ export function letterDescription(l: ArchiveLetter) {
   ].filter(Boolean).join(' ');
 }
 
+/** A label's first word capitalized (labels are sentence case; a few places are recorded mid-sentence: "his country
+ * house", "at sea off the American coast"). */
+export const capFirst = (s: string) => s.charAt(0).toLocaleUpperCase('en') + s.slice(1);
+
 /** Opening words for a card and its accessible name: whole words, about `n` characters. */
 export function opening(text: string, n: number) {
   if (text.length <= n) return text;

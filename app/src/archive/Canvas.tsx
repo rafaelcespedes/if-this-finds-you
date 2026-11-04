@@ -17,11 +17,10 @@ import { cn } from '@/lib/utils';
 import { cardAspect } from './card-protocol';
 import { cardKey, cards, cardSize } from './cards';
 import { cardLetter } from './Card';
-import { circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
+import { capFirst, circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
 import type { ArchiveLetter } from './model';
-// the look being compared (?look=reading-room): the letter's number stamped on its sheet (src/themes/reading-room/)
+// the look in use: the Reading Room lays the letters on a table (no numbers on the sheets: the list has them)
 import { LOOK } from '@/lib/look';
-import { CardStamp } from '@/themes/reading-room/SheetMarks';
 import { letterHash } from './route';
 import { paperSize } from './paper-of';
 // look C (?look=postmarked): each letter in its addressed envelope (src/themes/postmarked/)
@@ -222,7 +221,7 @@ interface Props {
 const MARGIN = 280;
 
 // ---------- where you are on the table: the running head's middle (SiteHeader's `centre`) ----------
-// The decade of the letter nearest the middle of the screen and a few of that decade's places near it ("the 1790s ·
+// The decade of the letter nearest the middle of the screen and a few of that decade's places near it ("The 1790s ·
 // Cairo, Madrid, Westminster"); nothing while the heading is nearest. Kept in a tiny store so only the readout
 // re-renders as you drag, and only when the words change.
 let readoutNow = '';
@@ -247,7 +246,7 @@ function readoutOf(near: { it: Placed; d: number }[]) {
     if (place && !places.includes(place)) places.push(place);
     if (places.length === 3) break;
   }
-  return `the ${decade}s${places.length ? ` · ${places.join(', ')}` : ''}`;
+  return `The ${decade}s${places.length ? ` · ${places.join(', ')}` : ''}`;
 }
 
 /** The Reading Room lays the letters on a table (layTable); the other looks scatter them (layField). */
@@ -568,7 +567,6 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
       >
         <div ref={paperRef} className="relative isolate" style={{ aspectRatio: `1 / ${aspect}` }}>
           <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', loaded && 'is-gone')} />
-          {LOOK === 'reading-room' && <CardStamp id={letter.id} />}
           {img && (
             <img
               src={img.url}
@@ -597,15 +595,16 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
  * ("Mount Rest, Clay-Ashland, Liberia" → "Mount Rest, Liberia"; "Béxar (San Antonio), Mexican Texas" → "Béxar, Mexican Texas"). */
 function labelPlace(place: string | undefined) {
   const parts = (place ?? '').replace(/\s*\([^)]*\)/g, '').split(/,\s*/).filter(Boolean);
-  return parts.length > 2 ? `${parts[0]}, ${parts[parts.length - 1]}` : parts.join(', ');
+  return capFirst(parts.length > 2 ? `${parts[0]}, ${parts[parts.length - 1]}` : parts.join(', '));
 }
 
 /**
  * A letter on the Reading Room's table: its sheet at its paper's size standing on the shelf (bottom-aligned in a
  * shelf as tall as the tallest paper), a little askew; under the shelf a museum label, the title, then place, year
  * and, for a letter lost in transit, why (in red), in small capitals. The label starts at the sheet's left edge.
- * Under the pointer or the keyboard's focus the letter lifts, its label adds who wrote to whom, and the rest of the
- * table steps back a little (library.css).
+ * Under the pointer or the keyboard's focus the letter lifts and the rest of the table steps back a little
+ * (library.css); no number on the sheet and nothing added to the label, so the table stays clean (the list keeps the
+ * numbers).
  */
 const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, style, itemRef, onOpen }: {
   letter: ArchiveLetter; sheet: { w: number; h: number; tilt: number }; shelfH: number; cellInner: number;
@@ -638,7 +637,6 @@ const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, st
         <div className="flex items-end justify-center" style={{ height: shelfH }}>
           <div ref={paperRef} className="table-sheet relative isolate shrink-0" style={{ width: sheet.w, height: sheet.h, '--tilt': `${sheet.tilt.toFixed(2)}deg` } as CSSProperties}>
             <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', loaded && 'is-gone')} />
-            <CardStamp id={letter.id} />
             {img && (
               <img
                 src={img.url}
@@ -655,8 +653,6 @@ const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, st
         </div>
         <div className="table-label" style={{ marginLeft: inset }}>
           <h3 className="table-title">{letter.title ?? opening(letter.text, 48)}</h3>
-          {/* under the pointer or the keyboard's focus: who wrote to whom (library.css shows it) */}
-          <p aria-hidden className="table-writer">{fromTo(letter)}</p>
           <p className="table-meta">
             {[place, letter.year != null ? String(letter.year) : ''].filter(Boolean).join(' · ')}
             {special && <>{place || letter.year != null ? ' · ' : ''}<span className="table-status">{circumstanceLabel(letter)}</span></>}
