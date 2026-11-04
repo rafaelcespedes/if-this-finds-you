@@ -4,6 +4,7 @@
 import type { Edge, PaperSpec, Side } from './types';
 import { fbm1, noise1 } from './noise';
 import { rng } from './rng';
+import { cornerInset, wearLevel, wornCorners, wornProfile } from './wear';
 
 export interface Rim {
   kind: Edge['kind'];
@@ -21,17 +22,18 @@ export interface Outline {
 }
 
 /** The outline isn't a rectangle: its shadow must follow the edge (the sheet's box-shadow can't). */
-export function isShaped(p: Pick<PaperSpec, 'edges' | 'flaps'>) {
-  return !!p.flaps || Object.values(p.edges ?? {}).some((e) => e && e.kind !== 'perforated');
+export function isShaped(p: Pick<PaperSpec, 'edges' | 'flaps' | 'wear'>) {
+  // a worn sheet's edges are never quite straight (and when the page wears its sheets, every sheet is)
+  return !!p.flaps || !!p.wear || wearLevel() > 0 || Object.values(p.edges ?? {}).some((e) => e && e.kind !== 'perforated');
 }
 
 const made = new Map<string, Outline | null>();
 
 /** The outline of one sheet (`sheet` varies a deckle or tear from sheet to sheet), or null for a plain rectangle. */
 export function outlineOf(p: PaperSpec, sheet = 0): Outline | null {
-  const key = `${p.id}|${p.w}x${p.h}|${sheet}`;
+  const key = `${p.id}|${p.w}x${p.h}|${sheet}${p.wear ? `|${p.wear.seed}|${p.wear.amount}` : ''}`;
   if (made.has(key)) return made.get(key)!;
-  const o = p.flaps ? flapOutline(p) : p.edges || p.holes ? edgeOutline(p, `${p.id}:${sheet}`) : null;
+  const o = p.flaps ? flapOutline(p) : p.edges || p.holes || p.wear ? edgeOutline(p, `${p.id}:${sheet}`) : null;
   if (o && p.holes) for (const y of p.holes.ys) o.holes.push({ x: p.holes.x, y, r: p.holes.d / 2 });
   made.set(key, o);
   return o;
@@ -141,10 +143,20 @@ function edgeOutline(p: PaperSpec, seed: string): Outline {
   const sides: Side[] = ['top', 'right', 'bottom', 'left'];
   const len = { top: w, right: h, bottom: w, left: h };
   const raw: Partial<Record<Side, (t: number) => number>> = {};
+  const wear = p.wear;
   for (const s of sides) {
     const e = p.edges?.[s];
     if (e) raw[s] = profile(e, `${seed}:${s}`);
+    // age: a straight cut (or a perforation) wears soft and a little nibbled; a deckle, tear or fringe already is
+    if (wear && (!e || e.kind === 'perforated')) {
+      const worn = wornProfile(wear, `${seed}:${s}`, len[s]);
+      const own = raw[s];
+      raw[s] = own ? (t) => own(t) + worn(t) : worn;
+    }
   }
+  // and its corners rub round (the same radius on both sides of a corner)
+  const corners = wear ? wornCorners(wear, seed) : null;
+  const ends: Record<Side, [number, number]> = { top: [0, 1], right: [1, 2], bottom: [2, 3], left: [3, 0] };
   // where two rough sides meet, the corner wears round
   const rough = (s: Side) => !!p.edges?.[s] && p.edges[s]!.kind !== 'perforated';
   const prev: Record<Side, Side> = { top: 'left', right: 'top', bottom: 'right', left: 'bottom' };
@@ -162,10 +174,28 @@ function edgeOutline(p: PaperSpec, seed: string): Outline {
       if (rough(next[s]) && L - t < R) c += e.depth * 0.7 * (1 - (L - t) / R) ** 2;
       return c;
     };
-    inset[s] = f ? (t) => f(t) + round(t) : () => 0;
+    const rub = corners ? (t: number) => cornerInset(t, corners[ends[s][0]]) + cornerInset(L - t, corners[ends[s][1]]) : null;
+    inset[s] = f ? (rub ? (t) => f(t) + round(t) + rub(t) : (t) => f(t) + round(t)) : rub ?? (() => 0);
+  }
+  // a worn sheet's sides are read many times over (walking, and keeping corners inside each other): look them up
+  // in a table instead of working each one out again
+  if (wear) {
+    for (const s of sides) {
+      // as finely as the side is walked: a deckle, tear or fringe keeps its own detail
+      const e = p.edges?.[s];
+      const f = inset[s], L = len[s], st = e && e.kind !== 'perforated' ? (e.kind === 'fringe' ? 0.08 : 0.12) : 0.5;
+      const n = Math.ceil(L / st);
+      const tab = new Float32Array(n + 2);
+      for (let j = 0; j <= n + 1; j++) tab[j] = f(Math.min(L, j * st));
+      inset[s] = (t) => {
+        const u = Math.max(0, Math.min(n, t / st));
+        const j = Math.floor(u);
+        return tab[j] + (tab[j + 1] - tab[j]) * (u - j);
+      };
+    }
   }
   // walk the sides clockwise (top left→right, right top→bottom, bottom right→left, left bottom→top)
-  const step = (s: Side) => (p.edges?.[s] ? (p.edges[s]!.kind === 'fringe' ? 0.08 : 0.12) : 0);
+  const step = (s: Side) => (p.edges?.[s] ? (p.edges[s]!.kind === 'fringe' ? 0.08 : 0.12) : wear ? 0.5 : 0);
   const walk = (s: Side) => {
     const out: number[] = [];
     const L = len[s];
@@ -198,7 +228,8 @@ function edgeOutline(p: PaperSpec, seed: string): Outline {
     }
     pts.push(...clamped);
     const e = p.edges?.[s];
-    if (e) rims.push({ kind: e.kind, side: s, pts: clamped });
+    if (e && !(wear && e.kind === 'perforated')) rims.push({ kind: e.kind, side: s, pts: clamped });
+    else if (wear) rims.push({ kind: 'worn', side: s, pts: clamped });
   }
   return { pts, holes: [], rims };
 }

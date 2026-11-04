@@ -4,6 +4,7 @@
 import workerSrc from './card.worker.ts?worker&url';
 import type { Look } from './model';
 import type { CardLetter, CardRequest, CardResult } from './card-protocol';
+import { wearLevel } from '@/lib/paper/wear';
 
 export interface CardImage {
   url: string;
@@ -45,7 +46,7 @@ export function cardSize(css: number) {
   return { css: step, width: Math.min(960, Math.ceil((step * dpr) / 80) * 80) };
 }
 
-export const cardKey = (id: string, hand: string | undefined, size: { css: number; width: number }) => `${id}|${hand ?? ''}|${size.css}@${size.width}`;
+export const cardKey = (id: string, hand: string | undefined, size: { css: number; width: number }) => `${id}|${hand ?? ''}|${size.css}@${size.width}${wearLevel() ? `|w${wearLevel()}` : ''}`;
 
 class CardStore {
   private done = new Map<string, CardImage>();
@@ -146,7 +147,7 @@ class CardStore {
           this.pump();
           return;
         }
-        const req: CardRequest = { job, letter: w.letter, hand: w.hand, width: w.width, css: w.css, aspect: w.aspect, full: w.full };
+        const req: CardRequest = { job, letter: w.letter, hand: w.hand, width: w.width, css: w.css, aspect: w.aspect, full: w.full, wear: wearLevel() };
         slot.worker.postMessage(req);
       });
     }

@@ -19,6 +19,8 @@ export interface CardRequest {
   /** the whole first sheet at its paper's own size (the Reading Room's table): `width` spans the paper's width and
    * `aspect` is the paper's */
   full?: boolean;
+  /** how worn the page's sheets are (lib/paper/wear.ts: 0 new, 1 gentle, 2 well worn) */
+  wear?: 0 | 1 | 2;
 }
 
 /** Sent once when a worker starts: get the engine's renderer ready before the first card is asked for. */

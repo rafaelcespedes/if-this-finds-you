@@ -3,6 +3,7 @@ import { ALL_PAPERS, isShaped, SHADOW_BLEED, type PaperSpec } from '@/lib/papers
 import { paintHere, paintOff, paintsOffThread, warmPaper, type PaperBitmap, type PaperJob } from '@/lib/paper/client';
 import { hideMarks, markBox, planMarks, printMarks, setNoteWriter, showMarks, type MarkInput } from '@/lib/paper/marks';
 import { writeNote } from '@/lib/paper/pencil-note';
+import { hideWear, showWear, wearLevel, wornPaper, type WearLevel } from '@/lib/paper/wear';
 import { perf } from '@/lib/perf';
 import { sampleById } from '@/lib/samples';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,8 @@ interface Props {
   fade?: boolean;
   /** which sheet of the letter (a deckle, a tear and the guide sit a little differently on each) */
   sheet?: number;
+  /** how worn (lib/paper/wear.ts), for side-by-side comparison; else the page's ?wear= */
+  wear?: WearLevel;
   className?: string;
 }
 
@@ -71,7 +74,7 @@ let warmed = false;
  * sheets far from the screen give their bitmaps back (each is several megabytes) and are painted again as they come
  * near.
  */
-export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fade, sheet = 0, className }: Props) {
+export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fade, sheet = 0, wear, className }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const shown = useRef<string | null>(null);
   const wanted = useRef<string | null>(null);
@@ -117,9 +120,19 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     return () => hideMarks(owner);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
+  // this letter's sheet of the paper, aged as its letter is (lib/paper/wear.ts); a swatch shows the paper new
+  const sheetOf = useMemo(() => (crop ? paper : wornPaper(paper, markInput?.id ?? '', markInput?.year, wear ?? wearLevel())), [paper, crop, markInput?.id, markInput?.year, wear]);
+  // a download or a video of this letter is printed on the same worn sheet
+  useEffect(() => {
+    if (crop || sheet !== 0 || !sheetOf.wear) return;
+    const owner = {};
+    showWear(paper.id, sheetOf.wear.seed, markInput?.year, owner);
+    return () => hideWear(owner);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheetOf]);
   const region = crop ?? { x: 0, y: 0, w: paper.w, h: paper.h };
   // a shaped sheet (deckle, tear, flaps) paints its own shadow just outside itself
-  const bleed = !crop && isShaped(paper) ? SHADOW_BLEED : 0;
+  const bleed = !crop && isShaped(sheetOf) ? SHADOW_BLEED : 0;
   const cssW = region.w * pxPerMm;
   const cssH = region.h * pxPerMm;
 
@@ -137,7 +150,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     const b = Math.round(bleed * dpr);
     const w = Math.round(region.w * k) + 2 * b;
     const h = Math.round(region.h * k) + 2 * b;
-    const key = `${paper.id}|${guide ? 'g' : ''}|${sheet}|${region.x}|${region.y}|${w}x${h}${under.length ? '|m' + plan!.key : ''}`;
+    const key = `${paper.id}|${guide ? 'g' : ''}|${sheet}|${region.x}|${region.y}|${w}x${h}${under.length ? '|m' + plan!.key : ''}${sheetOf.wear ? `|w${sheetOf.wear.seed}:${sheetOf.wear.amount}` : ''}`;
     if (shown.current === key) return;
     wanted.current = key;
     const asked = performance.now();
@@ -162,7 +175,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     const have = store.get(key);
     if (have) { show(have); return; }
     const job: Omit<PaperJob, 'id'> = {
-      paper,
+      paper: sheetOf,
       w,
       h,
       tx: b - region.x * k,
@@ -202,7 +215,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
       show(src);
       perf.samples.push({ name: crop ? 'paper swatch ready' : 'paper sheet ready', ms: performance.now() - asked });
     });
-  }, [paper, pxPerMm, region.x, region.y, region.w, region.h, cssW, cssH, fade, crop, guide, sheet, bleed, near, plan]);
+  }, [sheetOf, pxPerMm, region.x, region.y, region.w, region.h, cssW, cssH, fade, crop, guide, sheet, bleed, near, plan]);
 
   // marks stamped after the letter was written: a layer over the writing, multiplied into it
   useLayoutEffect(() => {
@@ -219,7 +232,7 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     const ctx = c.getContext('2d');
     if (!ctx) return;
     ctx.translate(-overBox.x * k, -overBox.y * k);
-    perf.time('paper marks paint', () => printMarks(ctx, over, k, 'over', paper));
+    perf.time('paper marks paint', () => printMarks(ctx, over, k, 'over', sheetOf));
     c.dataset.key = key;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, pxPerMm, overBox, cssW]);
