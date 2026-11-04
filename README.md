@@ -30,7 +30,7 @@ You need [Node.js](https://nodejs.org) 24.
 cd app && npm install && npm run dev
 ```
 
-Then open http://127.0.0.1:5173. `npm run build` makes the production site in `app/dist/`.
+Then open `http://127.0.0.1:5173` in your browser. `npm run build` makes the production site in `app/dist/`.
 
 The engine also has a plain test bench with every control:
 
@@ -38,7 +38,7 @@ The engine also has a plain test bench with every control:
 python3 tools/serve.py 8765
 ```
 
-Then open http://127.0.0.1:8765/lab/index.html.
+Then open `http://127.0.0.1:8765/lab/index.html` in your browser.
 
 ## How it works
 

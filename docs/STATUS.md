@@ -10,7 +10,7 @@ call, 2026-11-02).
 
 ## What's built
 `spike/` holds a working prototype. To run it: `python3 spike/tools/serve.py`, then open
-http://127.0.0.1:8765/index.html
+`http://127.0.0.1:8765/index.html`
 - Seed → a consistent hand (print or script). Same seed, same hand.
 - Live view: every letter is drawn fresh, with an ink texture and pointed-pen shading in script.
 - 116 characters (Google Fonts "Latin Kernel"). Unknown characters show a pencil placeholder.

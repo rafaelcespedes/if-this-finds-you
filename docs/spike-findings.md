@@ -8,7 +8,7 @@ export an installable `.otf` that carries three samples of every letter and swap
 
 The page loads its scripts from this folder and opentype.js from cdnjs, so it needs an internet connection.
 
-- **Easiest:** `python3 tools/serve.py` and open <http://127.0.0.1:8765/index.html>. The server sends no-cache
+- **Easiest:** `python3 tools/serve.py` and open `http://127.0.0.1:8765/index.html`. The server sends no-cache
   headers, so edits show up on reload.
 - **Or:** open `index.html` straight from Finder (file://). It uses no `fetch`, so this works in Chrome and Safari.
 - **URL options:** `#seed=…&style=print|script` sets the hand and is shareable. `?size=120` renders the preview
