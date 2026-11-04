@@ -61,8 +61,8 @@ const LETTER_SOURCES: { href: string; text: ReactNode }[] = [
  * content/sample-texts.json (letters whose source links there) and engine/sources/*.js (copybooks).
  */
 const GIVE: { name: string; href: string; kept: ReactNode }[] = [
-  { name: 'Internet Archive', href: 'https://archive.org/donate/', kept: <>Scans of 77 of the letters and four of the copybooks.</> },
-  { name: 'Project Gutenberg', href: 'https://www.gutenberg.org/donate/', kept: <>Volunteer transcriptions of 22 of the letters.</> },
+  { name: 'Internet Archive', href: 'https://archive.org/donate/', kept: <>Scans of 76 of the letters and four of the copybooks.</> },
+  { name: 'Project Gutenberg', href: 'https://www.gutenberg.org/donate/', kept: <>Volunteer transcriptions of 21 of the letters.</> },
   { name: 'Wikimedia Foundation', href: 'https://donate.wikimedia.org/', kept: <>Six letters on Wikisource, and the Sütterlin alphabet on Commons.</> },
   { name: 'Fondation de BAnQ', href: 'https://www.jedonneenligne.org/fondationdebanq/', kept: <>Supports Québec’s national library, whose volunteers gave us the hand our logo is written in.</> },
   { name: 'Project Runeberg', href: 'https://runeberg.org/admin/sponsors.html', kept: <>A volunteer library of Nordic texts, and the source of two of the letters.</> },
