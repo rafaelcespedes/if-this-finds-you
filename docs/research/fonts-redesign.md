@@ -155,5 +155,5 @@ style, size and reset.
 - **Filter chips set in handwriting** (Google's idea): a "Joined" chip written joined. It needs a tiny font per chip.
 - **Range on hover** (Grilli): a row could show the hand's alphabet or joins under the pointer.
 - **Compare pinned hands** (Commercial's "Test pinned"): saved hands side by side with your words.
-- Some hands write very heavily at large sizes (an italic-nib Sütterlin reads as black blots). That comes from the
-  engine and the font build, not the page.
+- Some hands write as black blots at large sizes (Sütterlin with an italic nib, e.g. set k7f2q, row 2). The live hand
+  draws the same, so it comes from the engine, not the page or the font; it's with the pens and ink session.
