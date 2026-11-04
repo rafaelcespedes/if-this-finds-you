@@ -4,9 +4,7 @@ Real letters by ordinary people, written out by hand by writers who never existe
 
 **[ifthisfindsyou.app](https://ifthisfindsyou.app)**
 
-<!-- Picture: add the share image once it's on this branch:
-![A pile of letters from the collection, each in a different hand](app/public/brand/share.jpg)
--->
+![A pile of letters from the collection, each written out in a different hand](app/public/brand/share.jpg)
 
 ## What it is
 
