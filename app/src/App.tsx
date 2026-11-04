@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, NAME_WITH_DESCRIPTOR } from '@/lib/brand';
 import { SiteHeader, type Kept } from '@/components/SiteHeader';
-import { useFolio } from '@/components/Folio';
 import { styleCard } from '@/lib/styles';
 import { CAP, EXTRAS, GF_LATIN_CORE } from '@engine';
 import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
@@ -1218,10 +1217,9 @@ export default function App() {
     />
   );
 
-  // the running head (the Reading Room layouts, house rule 2) runs the width of the window on every page; with the
-  // Reading Room's desk column beside the letter, its middle centres over the letter's side (`beside`)
-  const headSpansDesk = LOOK === 'reading-room' && isDesktop && !reader;
-  const folio = useFolio(LOOK === 'reading-room' ? sample?.id : null);
+  // the running head runs the width of the window on every page: the wordmark and the places, nothing in the middle
+  // (the found letter's number, place and year are the record's, beside the letter: Rafael, launch day, "I don't
+  // think we need it. And I think it's just weirdly centered")
   const siteHeader = (
     <SiteHeader
       ref={headerRef}
@@ -1232,11 +1230,6 @@ export default function App() {
       kept={reader ? NO_KEPT : { list: kept, found: letterActions.found, onOpen: letterActions.onBackToMine }}
       // no panel here: Share comes up to the header
       action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
-      // the running head's middle: a found letter's number, place and year (the Reading Room's catalogue)
-      centre={folio.centre}
-      // over the whole window, the middle centred over the letter's side: the aside (the Reading Room's desk, with the
-      // grid's gutter before it and its margin after, reading-room.css), less the header row's own gap (gap-x-4)
-      beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + var(--rr-gutter, 0rem) + var(--rr-margin, 0.75rem) - 1rem)' : undefined}
       quiet={editing && !isDesktop}
       // never zoomed with a wide desk: the same size and margins as on every other page
       className={cn('transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
