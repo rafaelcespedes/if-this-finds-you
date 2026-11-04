@@ -1,8 +1,7 @@
 // ---------- the layout: the Ruler, an editorial frame around the Reading Room (Rafael picked it, 4 Nov 2026) ----------
 // The Reading Room's pages sit on a measured, asymmetric grid: one rule divides a margin rail (the record, the groups'
-// names, the sections' numbers) from the page, the running head's rule carries a tick at each column, a few light
-// ticks measure the baseline down the left margin, and titles are big. The grid is meant to be felt more than shown
-// (Rafael: "I don't think we need to emphasize the ruler so much"); his detailed edits are to come.
+// names, the sections' numbers) from the page, the twelve columns' edges show faintly behind it, and titles are big.
+// No ticks and no column numbers (Rafael: "kill the tickers and the numbers on every page and just leave the grid").
 //   no ?layout          the Ruler (the default)
 //   ?layout=off         the Reading Room without it (0, none, reading-room), an escape hatch for now
 //   ?layout=register    Register, the earlier study of the Fonts page's balance (editorial-2), kept to compare
@@ -52,8 +51,8 @@ export type LayoutPage = 'desk' | 'letters' | 'about' | 'fonts';
 
 /**
  * Call once in each page's entry, after applyLook(). Only on top of the Reading Room. Sets html[data-layout] and
- * html[data-layout-page] (desk | letters | about | fonts), and for the Ruler lays its two quiet layers over the page:
- * the baseline's ticks behind it, the column ticks in the running head's band (themes/editorial.css draws them).
+ * html[data-layout-page] (desk | letters | about | fonts), and for the Ruler lays its grid behind the page (twelve
+ * columns' edges; themes/editorial.css draws them, and leaves them off on the Fonts page and the table).
  */
 export function applyLayout(page: LayoutPage) {
   if (typeof document === 'undefined') return;
@@ -66,13 +65,10 @@ export function applyLayout(page: LayoutPage) {
   html.dataset.layout = LAYOUT;
   html.dataset.layoutPage = page;
   if (!CRISP || document.querySelector('.ed-grid')) return;
-  // two layers with the same twelve columns (four on a phone, eight on a tablet): the baseline behind the page, the
-  // column ticks in the running head's band
-  for (const name of ['ed-grid', 'ed-ruler']) {
-    const layer = document.createElement('div');
-    layer.className = name;
-    layer.setAttribute('aria-hidden', 'true');
-    for (let i = 0; i < 12; i++) layer.append(document.createElement('i'));
-    document.body.prepend(layer);
-  }
+  // the grid: twelve columns (four on a phone, eight on a tablet) behind the page
+  const grid = document.createElement('div');
+  grid.className = 'ed-grid';
+  grid.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 12; i++) grid.append(document.createElement('i'));
+  document.body.prepend(grid);
 }

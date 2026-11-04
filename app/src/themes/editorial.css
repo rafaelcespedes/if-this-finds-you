@@ -7,17 +7,16 @@
    are; this file never names a face, only the --rr-* roles.
 
    A measured, asymmetric page: one rule divides a margin rail (the record, the groups' names, the sections' numbers)
-   from the page; the running head's rule carries a short tick at each column's start; a few light ticks measure the
-   baseline down the left margin; titles are big and hang across the grid; numbers in the sans, tabular.
-   First restraint pass (Rafael: "the ruler idea is kind of overdone… we don't need to emphasize the ruler so much"):
-   no column numbers, no full-height column lines, sparser and lighter ticks, rules only where they divide. The grid
-   is meant to be felt more than shown, nearer the Fonts page's balance; his detailed edits are to come.
+   from the page; the twelve columns' edges show faintly behind it; titles are big and hang across the grid; numbers
+   in the sans, tabular. Rafael: "the ruler idea is kind of overdone", then "kill the tickers and the numbers on every
+   page and just leave the grid": no ticks and no column numbers anywhere, the grid kept, quiet (About's quieter
+   still, and one line drops it: --ed-grid-line), rules only where they divide.
 
    The grid: 12 columns, 40 px margins, 32 px gutters from 64 rem (the Reading Room's own --rr-margin and --rr-gutter);
    8 columns, 32 px margins, 24 px gutters from 40 rem; 4 columns, 16 px margins and gutters on a phone. It runs the
-   window's width on every page (as the Fonts page does; no 1440 cap, up to 120 rem). Rules are crisp (the hand-drawn
-   ones stay off under the Ruler: lib/rules.ts). Its two quiet layers are built by lib/layout.ts: .ed-grid behind the
-   page (the baseline's ticks) and .ed-ruler in the running head's band (the column ticks).
+   window's width on every page (as the Fonts page does; no 1440 cap, up to 120 rem), inside the running head's own
+   margins. Rules are crisp (the hand-drawn ones stay off under the Ruler: lib/rules.ts). The grid is one fixed layer
+   behind the page (.ed-grid), built by lib/layout.ts.
 
    At the end: REGISTER (?layout=register), the earlier study of the Fonts page's balance, kept to compare.
    ===================================================================================================================== */
@@ -26,13 +25,15 @@
 html:root[data-layout] {
   /* the grid */
   --ed-cols: 4;
-  --ed-margin: 1rem;
+  /* the margins are the running head's own (index.css --site-margin, which includes the safe-area insets), so the
+     grid's edges and the header's line up on every page */
+  --ed-margin: var(--site-margin, 1rem);
   --ed-gutter: 1rem;
   --ed-max: 120rem;
   /* one column's width, for placing things on it: (the grid's width less its margins and gutters) / columns */
   --ed-w: min(100vw, var(--ed-max));
   --ed-col: calc((var(--ed-w) - 2 * var(--ed-margin) - (var(--ed-cols) - 1) * var(--ed-gutter)) / var(--ed-cols));
-  /* rules: crisp. A faint tick, a rule between rows, a rule that divides, ink */
+  /* rules: crisp. A grid line, a rule between rows, a rule that divides, ink */
   --ed-ink: var(--rr-ink);
   --ed-line: color-mix(in oklab, var(--rr-ink) 12%, transparent);
   --ed-rule: color-mix(in oklab, var(--rr-ink) 20%, transparent);
@@ -63,33 +64,37 @@ html:root[data-layout] {
 @media (min-width: 40rem) {
   html:root[data-layout] {
     --ed-cols: 8;
-    --ed-margin: 2rem;
+    --ed-margin: var(--site-margin, 2rem);
     --ed-gutter: 1.5rem;
   }
 }
 @media (min-width: 64rem) {
   html:root[data-layout] {
     --ed-cols: 12;
-    --ed-margin: var(--rr-margin, 2.5rem);
+    --ed-margin: var(--site-margin, var(--rr-margin, 2.5rem));
     --ed-gutter: var(--rr-gutter, 2rem);
   }
 }
 
 /* =====================================================================================================================
-   THE GRID, felt: the column ticks under the running head's rule, the baseline's ticks in the left margin
+   THE GRID: the twelve columns' edges, faint, full height, behind the page (no ticks and no numbers anywhere: Rafael,
+   "kill the tickers and the numbers on every page and just leave the grid"). Words sit on the room's ground, so the
+   lines show only in the margins, the gutters and the empty columns.
    ===================================================================================================================== */
-.ed-grid,
-.ed-ruler {
+.ed-grid {
   display: none;
 }
 html:root[data-layout='ruler'] {
-  /* the ticks' band, under the running head's rule; the header grows by it (index.css --site-head) */
-  --ed-ruler-h: 0.5rem;
-  --site-head-rule: calc(0.5rem + 1px + var(--ed-ruler-h));
+  /* the grid's line; About's is quieter. To drop a page's grid, set this to transparent there (one line) */
+  --ed-grid-line: var(--ed-line);
 }
-html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) {
+html:root[data-layout='ruler'][data-layout-page='about'] {
+  --ed-grid-line: color-mix(in oklab, var(--rr-ink) 7%, transparent);
+}
+html:root[data-layout='ruler'] .ed-grid {
   position: fixed;
   inset: 0;
+  z-index: -1;
   display: grid;
   grid-template-columns: repeat(var(--ed-cols), minmax(0, 1fr));
   column-gap: var(--ed-gutter);
@@ -99,71 +104,32 @@ html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) {
   pointer-events: none;
   contain: strict;
 }
-html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) > i {
+html:root[data-layout='ruler'] .ed-grid > i {
   display: block;
   min-width: 0;
+  box-shadow: inset 1px 0 var(--ed-grid-line), inset -1px 0 var(--ed-grid-line);
 }
 @media (max-width: 39.99rem) {
-  html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) > i:nth-child(n + 5) { display: none; }
+  html:root[data-layout='ruler'] .ed-grid > i:nth-child(n + 5) { display: none; }
 }
 @media (max-width: 63.99rem) {
-  html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) > i:nth-child(n + 9) { display: none; }
+  html:root[data-layout='ruler'] .ed-grid > i:nth-child(n + 9) { display: none; }
 }
-/* the column ticks: a short line at each column's start, hanging from the running head's rule */
-html:root[data-layout='ruler'] .ed-ruler {
-  z-index: 31;
-  bottom: auto;
-  top: calc(var(--site-head) - var(--ed-ruler-h));
-  height: var(--ed-ruler-h);
+/* the Fonts page keeps only the running head (its content is its own), and All letters' table moves under a still
+   frame, so neither shows the grid */
+html:root[data-layout='ruler'][data-layout-page='fonts'] .ed-grid,
+html:root[data-layout='ruler']:has(.letter-canvas) .ed-grid {
+  display: none;
 }
-html:root[data-layout='ruler'] .ed-ruler > i {
-  height: 4px;
-  border-left: 1px solid var(--ed-rule);
-}
-html:root[data-layout='ruler'] .ed-ruler > i:last-child,
-html:root[data-layout='ruler'] .ed-ruler > i:nth-child(8):nth-last-child(n + 5) {
-  /* the last column closes the run: a tick at its end too (on 8 columns, the 8th is the last shown) */
-  border-right: 1px solid var(--ed-rule);
-}
-@media (max-width: 63.99rem) {
-  html:root[data-layout='ruler'] .ed-ruler > i:last-child { border-right: 0; }
-  html:root[data-layout='ruler'] .ed-ruler > i:nth-child(8) { border-right: 1px solid var(--ed-rule); }
-}
-@media (max-width: 39.99rem) {
-  html:root[data-layout='ruler'] .ed-ruler > i:nth-child(8) { border-right: 0; }
-  html:root[data-layout='ruler'] .ed-ruler > i:nth-child(4) { border-right: 1px solid var(--ed-rule); }
-}
-/* the baseline, measured in the left margin: a light tick every 24 px, a longer one every 120 px (five lines) */
-html:root[data-layout='ruler'] .ed-grid {
-  z-index: -1;
-}
-html:root[data-layout='ruler'] .ed-grid::before {
-  content: '';
-  position: absolute;
-  top: calc(var(--site-head) + 0.5rem);
-  bottom: 0;
-  left: calc(var(--ed-margin) / 2 - 3px);
-  width: 7px;
-  background:
-    repeating-linear-gradient(to bottom, var(--ed-line) 0 1px, transparent 1px 24px) 0 0 / 3px 100% no-repeat,
-    repeating-linear-gradient(to bottom, var(--ed-rule) 0 1px, transparent 1px 120px) 0 0 / 7px 100% no-repeat;
-}
-@media (max-width: 39.99rem) {
-  /* a phone: the margin is 16 px, so the ticks are shorter and only the long ones stay */
-  html:root[data-layout='ruler'] .ed-grid::before {
-    left: 4px;
-    width: 4px;
-    background: repeating-linear-gradient(to bottom, var(--ed-rule) 0 1px, transparent 1px 120px) 0 0 / 4px 100% no-repeat;
-  }
-}
-@media (max-height: 32rem) {
-  /* the running head scrolls away on a short screen: the ticks go with it */
-  html:root[data-layout='ruler'] .ed-ruler { display: none; }
-}
-/* the page's ground is the root's (the same room colour), so the baseline's ticks behind the page show */
+/* the page's ground is the root's (the same room colour), so the grid behind the page shows */
 html:root[data-layout='ruler'] body,
 html:root[data-layout='ruler'] .about {
   background-color: transparent;
+}
+/* words keep the lines out from under them: each block of them takes the room's ground */
+html:root[data-layout='ruler'] :is(.rr-desk, .sp-head, .sp-body, .lib-main > section, .fa, .about-main > *) {
+  position: relative;
+  background: var(--rr-room);
 }
 
 /* =====================================================================================================================
@@ -171,7 +137,6 @@ html:root[data-layout='ruler'] .about {
    ===================================================================================================================== */
 html:root[data-layout='ruler'] [data-site-row] {
   border-bottom: 1px solid var(--ed-rule-strong);
-  margin-bottom: var(--ed-ruler-h);
 }
 html:root[data-layout='ruler'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button) {
   font-family: var(--ed-head-face);
@@ -474,6 +439,12 @@ html:root[data-layout='ruler'] .fa .fa-sort-by.is-on {
 html:root[data-layout='ruler'] .fa .fa-rows > li {
   border-bottom-color: var(--ed-rule);
 }
+/* no sliver of grid between the heading and the list (a short gap shows the lines as ticks): the list's own ground
+   reaches up to the heading's */
+html:root[data-layout='ruler'] .fa {
+  margin-top: 0;
+  padding-top: 0.5rem;
+}
 html:root[data-layout='ruler'] .fa :is(.fa-no, .fa-year) {
   font-family: var(--ed-figure-face);
   font-variant-numeric: var(--ed-figure-numeric);
@@ -649,8 +620,7 @@ html:root[data-layout='ruler'] .about-section-no {
 }
 
 /* =====================================================================================================================
-   ROOM UNDER THE RUNNING HEAD: the head is a little taller (the ticks' band), so the pages start from the head's own
-   height (index.css --site-head-clear) instead of a fixed offset
+   ROOM UNDER THE RUNNING HEAD: the pages start from the head's own height (index.css --site-head-clear)
    ===================================================================================================================== */
 @media (max-width: 63.99rem) {
   /* the desk on a phone or tablet: the letter starts 3 px under the head's fade, as the Reading Room's does */
