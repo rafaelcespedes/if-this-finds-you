@@ -33,7 +33,7 @@ export interface Geometry {
 // deepest letters to the name). Measured at 1080 px, scaled to the frame.
 const STACK = {
   top: 52, // plate's top edge, from the top edge
-  plate: 98, // plate's height
+  plate: 99, // plate's height
   bottom: 52, // descriptor's baseline, from the bottom edge (the same margin as the plate's at the top)
   xh: 0.104, // reference x-height, share of the frame
   lines: 2.45, // baseline to baseline, x-heights

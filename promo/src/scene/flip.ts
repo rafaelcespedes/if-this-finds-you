@@ -35,6 +35,7 @@ export function styleOf(look: Look, o: { ownInk: boolean; ownPaper: boolean }): 
 
 const NUM = 47; // the number's size at 1080 px
 const PAD_X = 18;
+const PAD_LEFT_EXTRA = 3;
 
 interface CounterMetrics { pitch: number; numW: number; zeroL: number; num: number; label: number; labelW: number; labelH: number; numH: number }
 const metricsCache = new Map<string, CounterMetrics>();
@@ -103,8 +104,11 @@ export function drawCounter(ctx: CanvasRenderingContext2D, S: number, count: num
   if (alpha <= 0) return;
   const k = S / 1080, g = geometry(S);
   const M = counterMetrics(ctx, k);
-  drawPlate(ctx, S, M.labelW + 2 * PAD_X * k, alpha);
-  const x0 = S / 2 - M.labelW / 2;
+  // 3 px more room on the left than on the right: the period at the label's end hardly shows, so even padding
+  // read as more space on the right. The plate stays centred on the frame; its text sits a pixel right of centre.
+  const w = M.labelW + (2 * PAD_X + PAD_LEFT_EXTRA) * k;
+  drawPlate(ctx, S, w, alpha);
+  const x0 = S / 2 - w / 2 + (PAD_X + PAD_LEFT_EXTRA) * k;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.fillStyle = RR.red;
@@ -114,11 +118,11 @@ export function drawCounter(ctx: CanvasRenderingContext2D, S: number, count: num
   (ctx as any).fontVariantCaps = L.caps ? 'all-small-caps' : 'normal';
   (ctx as any).letterSpacing = `${L.tracking * M.label}px`;
   const lm = ctx.measureText(labelText());
-  // the label over the number, a little more room under the number than over the label (the figures' round
-  // bottoms read closer to the edge than the capitals' flat tops)
-  const gap = 10 * k, extra = 4 * k;
-  const pad = (g.plate.h - (M.labelH + gap + M.numH) - extra) / 2;
-  const labelBase = g.plate.y + pad + M.labelH, numBase = labelBase + gap + M.numH;
+  // the label over the number, a pixel more room over the label and four more under the number (the figures'
+  // round bottoms read closer to the edge than the capitals' flat tops)
+  const gap = 10 * k, top = 1 * k, bottom = 4 * k;
+  const pad = (g.plate.h - (M.labelH + gap + M.numH) - top - bottom) / 2;
+  const labelBase = g.plate.y + pad + top + M.labelH, numBase = labelBase + gap + M.numH;
   ctx.fillText(labelText(), x0 + lm.actualBoundingBoxLeft, labelBase);
   // the number: each digit centred in a fixed cell
   ctx.font = fontOf('number', M.num);
