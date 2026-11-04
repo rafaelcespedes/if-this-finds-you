@@ -314,13 +314,6 @@ html[data-look='reading-room'] .sheet-surface [data-site-menu] [data-site-link] 
   font-size: 1.125rem;
   letter-spacing: 0.06em;
 }
-/* a place you can go, under the pointer: a faint underline (the place you're in keeps its own mark) */
-@media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] [data-site-header] a[data-site-link]:not([aria-current]):hover [data-site-words] {
-    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
-    text-underline-offset: 3px;
-  }
-}
 /* the letter's number: archival red, as on its sheet */
 html[data-look='reading-room'] [data-site-number] {
   color: var(--rr-red);
@@ -532,18 +525,10 @@ html[data-look='reading-room'] .rr-bring {
 }
 html[data-look='reading-room'] .rr-bring-label {
   flex: 1;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-  transition: text-decoration-color 150ms var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .rr-bring:hover {
     color: var(--rr-red-deep);
-  }
-  html[data-look='reading-room'] .rr-bring:hover .rr-bring-label {
-    text-decoration-color: currentColor;
   }
 }
 /* its key: a quiet keycap, a tint with no edge, only where there's a keyboard to press it on */
@@ -1169,11 +1154,7 @@ html[data-look='reading-room'] .rr-dock-reply {
   padding: 6px 9px;
   border-radius: 3px;
   white-space: nowrap;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-  transition: text-decoration-color 150ms var(--ease-out), color 150ms var(--ease-out);
+  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out);
 }
 html[data-look='reading-room'] .rr-dock-word {
   color: var(--rr-ink);
@@ -1185,12 +1166,14 @@ html[data-look='reading-room'] .rr-dock-reply svg {
   width: 1rem;
   height: 1rem;
 }
+/* under the pointer a faint wash behind the words, never an underline (Rafael, 4 Nov): ink for a plain word, red for
+   the red one */
 @media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .rr-dock-word:hover,
-  html[data-look='reading-room'] .rr-dock-reply:hover {
-    text-decoration-color: currentColor;
+  html[data-look='reading-room'] .rr-dock-word:hover {
+    background: var(--st-hover);
   }
   html[data-look='reading-room'] .rr-dock-reply:hover {
+    background: var(--st-accent-hover);
     color: var(--rr-red-deep);
   }
 }
@@ -1316,17 +1299,12 @@ html[data-look='reading-room'] .dock-primary {
   background: transparent;
   box-shadow: none;
   color: var(--rr-red);
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-  transition: color 150ms var(--ease-out), text-decoration-color 150ms var(--ease-out);
+  transition: color var(--st-dur) var(--ease-out), background-color var(--st-dur) var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] .dock-primary:hover {
-    background: transparent;
+    background: var(--st-accent-hover);
     color: var(--rr-red-deep);
-    text-decoration-color: currentColor;
   }
 }
 @media (max-width: 380px) {
@@ -1495,6 +1473,17 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
   html[data-look='reading-room'] {
     --rr-rule: color-mix(in oklab, var(--rr-ink) 45%, transparent);
     --rr-hair: color-mix(in oklab, var(--rr-ink) 60%, transparent);
+  }
+}
+/* the ruled rows that open things (Full record, the drawer's rows, More): under the pointer a faint wash behind the
+   name instead of ui/controls.css's underline (Rafael, 4 Nov: no underlines on hover); its spread pads it without
+   moving a thing */
+@media (hover: hover) and (pointer: fine) {
+  html[data-look='reading-room'] .ruled-row:hover > :first-child {
+    text-decoration: none;
+    border-radius: 2px;
+    background: var(--st-hover);
+    box-shadow: 0 0 0 0.25em var(--st-hover);
   }
 }
 /* pressed, every control answers, phones included (the tap highlight is off everywhere): icons and quiet words on the
