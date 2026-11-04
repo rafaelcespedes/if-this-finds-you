@@ -158,6 +158,14 @@
     user-select: none;
     touch-action: manipulation;
   }
+  /* everything you can click shows the hand (Rafael, 4 Nov; hover and press audit N2); a menu's rows keep the arrow,
+     as menus do */
+  :is(button, [role='button'], [role='radio'], [role='switch'], [role='tab'], summary, select):not(:disabled, [aria-disabled='true']) {
+    cursor: pointer;
+  }
+  [role^='menuitem'] {
+    cursor: default;
+  }
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
