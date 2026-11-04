@@ -1,6 +1,6 @@
 // ---------- the layout: the Ruler, an editorial frame around the Reading Room (Rafael picked it, 4 Nov 2026) ----------
 // The Reading Room's pages sit on a measured, asymmetric grid: one rule divides a margin rail (the record, the groups'
-// names, the sections' numbers) from the page, the twelve columns' edges show faintly behind it, and titles are big.
+// names, the sections' numbers) from the page, a faint line in each gutter between the twelve columns shows behind it, and titles are big.
 // No ticks and no column numbers (Rafael: "kill the tickers and the numbers on every page and just leave the grid").
 //   no ?layout          the Ruler (the default)
 //   ?layout=off         the Reading Room without it (0, none, reading-room), an escape hatch for now
@@ -51,7 +51,7 @@ export type LayoutPage = 'desk' | 'letters' | 'about' | 'fonts';
 /**
  * Call once in each page's entry, after applyLook(). Only on top of the Reading Room. Sets html[data-layout] and
  * html[data-layout-page] (desk | letters | about | fonts), and for the Ruler lays its grid behind the page (twelve
- * columns' edges; themes/editorial.css draws them, and leaves them off on the Fonts page and the table).
+ * columns, a line in each gutter; themes/editorial.css draws them, and leaves them off on the Fonts page and the table).
  */
 export function applyLayout(page: LayoutPage) {
   if (typeof document === 'undefined') return;
