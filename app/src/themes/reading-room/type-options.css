@@ -1,7 +1,9 @@
-/* TEMPORARY comparison (type-switch.ts, ?type=1…6): the serif + sans that replace Junicode 2 + Source Sans 3 in the
+/* TEMPORARY comparison (type-switch.ts, ?type=1…7): the serif + sans that replace Junicode 2 + Source Sans 3 in the
    Reading Room. Rafael, 4 Nov: "Every time I look at it, it just feels too old… let's add some tension on the modern
-   side… a hybrid that's not old or new". The paper, the stamps and the handwriting stay old; the type pulls toward
-   now. The six run from closest to today (1, only the serif changes) to furthest (6, no serif at all).
+   side… a hybrid that's not old or new". Then: "I don't really want to spend money on fonts right now. So let's stick
+   to free fonts." Every face here is free under the SIL Open Font License, so the files can live in the public repo.
+   The paper, the stamps and the handwriting stay old; the type pulls toward now. The seven run from closest to today
+   (1, only the serif changes) to furthest (7, no serif at all).
 
    Each pairing only overrides the room's type tokens (reading-room.css: --rr-book, --rr-ui and the --rr-<role>-face,
    -size, -weight, -stretch, -tracking variables) and lining figures (the old-style figures are part of the "old").
@@ -15,28 +17,22 @@
    sized (size-adjust) so its x-height matches today's roles: the serif to Junicode at 115% (0.477 em), the sans to
    Source Sans 3 at 95% (0.454 em). The scale (13 · 15 · 17 · 22 px, 42 px letter titles) is unchanged.
 
-   Premium faces (3 and 4) are referenced with local() only: they draw from fonts installed on this Mac (Rafael's
-   trial and desktop copies) and are never in the repo or served. On any other machine those two pairings fall back
-   to the free faces named after them. A web licence would swap the local() names for WOFF2 files kept out of the
-   public repo and fetched at build (see the review page).
-
-   1 Literata + Source Sans 3 (free, OFL). Modern serif + humanist sans. A contemporary book face (TypeTogether,
-     2015-19) with sharp wedge serifs and optical sizes; beside it the sans Rafael just chose. Only the serif changes.
-   2 Newsreader + Schibsted Grotesk (free, OFL). The best free pair: a screen serif with optical sizes (Production
-     Type) and a grotesk built for a Norwegian newspaper group (Bakken & Bæck). Both born in news; both rare.
-   3 GT Alpina + GT America (Grilli Type, premium), catalogue numbers in GT America Mono. A serif drawn to sit
-     between the classical and the contemporary, and "the bridge between American Gothics and European Grotesks".
-     (A grotesk mono, not a typewriter: the sites that feel current set their data that way; a typewriter doubles
-     the archive's nostalgia.)
-   4 ABC Arizona + ABC Diatype (Dinamo, premium). Arizona is one family that runs from sans through Flare and Mix to
-     Serif; Mix (shown) sits exactly between. Diatype is a plain grotesk named after a 1920s typesetting machine.
-   5 Geist Serif + Geist + Geist Mono (Vercel, free, OFL; Geist Serif is new this autumn). Sans-led: the record, the
-     letter text and every control in Geist, the serif only for titles, catalogue numbers in Geist Mono.
-   6 Mona Sans alone (GitHub, free, OFL). The wildcard: no serif. A grotesk after the industrial-era grotesques with
-     a width axis; titles set wide, everything else at normal width. The handwriting is the only old voice.
-   7 Alegreya + IBM Plex Mono (free, OFL), after timecapsule.co.in (Rafael's reference, 4 Nov): a warm humanist book
-     serif for titles and reading against a digital mono for labels, numbers, dates and the actions; Source Sans 3
-     stays for the controls. The tension comes from the mono, not from the serif.
+   1 Literata + Source Sans 3. Modern serif + humanist sans: a contemporary book face (TypeTogether, 2015-19) with
+     sharp wedge serifs and optical sizes, beside the sans Rafael just chose. Only the serif changes.
+   2 Newsreader + Schibsted Grotesk. A screen serif with optical sizes (Production Type) and a grotesk built for a
+     Norwegian newspaper group (Bakken & Bæck). Both born in news; both rare.
+   3 Piazzolla + Public Sans. The free stand-in for GT Alpina + GT America: a sturdy contemporary serif with an angular,
+     wedge cut (Huerta Tipográfica, 2020) and a neo-grotesk on Franklin Gothic's American bones (USWDS, after Libre
+     Franklin).
+   4 Commissioner (flared) + Hanken Grotesk. The free stand-in for ABC Arizona + ABC Diatype: Commissioner (Kostas
+     Bartsokas) has a flare axis that turns its sans strokes into flared, glyphic ones, set full for titles, the letter
+     text and the record, so it sits between a serif and a sans; Hanken Grotesk is a plain Swiss-style grotesk.
+   5 Alegreya + IBM Plex Mono, after timecapsule.co.in (Rafael's reference): a warm humanist book serif against a digital
+     mono for labels, numbers, dates and the actions; Source Sans 3 stays for the controls.
+   6 Geist Serif + Geist + Geist Mono (Vercel; Geist Serif is new this autumn). Sans-led: the record, the letter text
+     and every control in Geist, the serif only for titles, catalogue numbers in Geist Mono.
+   7 Mona Sans alone (GitHub). The wildcard: no serif. A grotesk after the industrial-era grotesques with a width axis;
+     titles set wide, everything else at normal width. The handwriting is the only old voice.
 */
 
 /* ---------- 1 Literata (opsz 7-72, wght 200-900) ---------- */
@@ -151,39 +147,211 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* ---------- 3 GT Alpina + GT America + GT America Mono (local only: trial or licensed copies on this Mac) ---------- */
-@font-face { font-family: 'TT GT Alpina'; font-style: normal; font-weight: 300; size-adjust: 100%; src: local('GTAlpina-Light'), local('GTAlpinaTrial-Light'); }
-@font-face { font-family: 'TT GT Alpina'; font-style: normal; font-weight: 400; size-adjust: 100%; src: local('GTAlpina-Regular'), local('GTAlpinaTrial-Regular'); }
-@font-face { font-family: 'TT GT Alpina'; font-style: normal; font-weight: 500 600; size-adjust: 100%; src: local('GTAlpina-Medium'), local('GTAlpinaTrial-Medium'); }
-@font-face { font-family: 'TT GT Alpina'; font-style: normal; font-weight: 700; size-adjust: 100%; src: local('GTAlpina-Bold'), local('GTAlpinaTrial-Bold'); }
-@font-face { font-family: 'TT GT Alpina'; font-style: italic; font-weight: 300; size-adjust: 100%; src: local('GTAlpina-LightItalic'), local('GTAlpinaTrial-LightItalic'); }
-@font-face { font-family: 'TT GT Alpina'; font-style: italic; font-weight: 400; size-adjust: 100%; src: local('GTAlpina-RegularItalic'), local('GTAlpinaTrial-RegularItalic'); }
-@font-face { font-family: 'TT GT Alpina'; font-style: italic; font-weight: 500 600; size-adjust: 100%; src: local('GTAlpina-MediumItalic'), local('GTAlpinaTrial-MediumItalic'); }
-@font-face { font-family: 'TT GT America'; font-style: normal; font-weight: 400; size-adjust: 91%; src: local('GTAmerica-Rg'), local('GTAmericaTrial-Rg'); }
-@font-face { font-family: 'TT GT America'; font-style: normal; font-weight: 500 600; size-adjust: 91%; src: local('GTAmerica-Md'), local('GTAmericaTrial-Md'); }
-@font-face { font-family: 'TT GT America'; font-style: normal; font-weight: 700; size-adjust: 91%; src: local('GTAmerica-Bd'), local('GTAmericaTrial-Bd'); }
-@font-face { font-family: 'TT GT America'; font-style: italic; font-weight: 400; size-adjust: 91%; src: local('GTAmerica-RgIt'), local('GTAmericaTrial-RgIt'); }
-@font-face { font-family: 'TT GT America Mono'; font-style: normal; font-weight: 400; size-adjust: 91%; src: local('GTAmericaMono-Rg'), local('GTAmericaMonoTrial-Rg'); }
-@font-face { font-family: 'TT GT America Mono'; font-style: normal; font-weight: 500 600; size-adjust: 91%; src: local('GTAmericaMono-Md'), local('GTAmericaMonoTrial-Md'); }
+/* ---------- 3 Piazzolla (opsz 8-30, wght 100-900) + Public Sans (wght 100-900) ---------- */
+@font-face {
+  font-family: 'TT Piazzolla';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 100%;
+  src: url('@fontsource-variable/piazzolla/files/piazzolla-latin-ext-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Piazzolla';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 100%;
+  src: url('@fontsource-variable/piazzolla/files/piazzolla-latin-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Piazzolla';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 100%;
+  src: url('@fontsource-variable/piazzolla/files/piazzolla-latin-ext-opsz-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Piazzolla';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 100%;
+  src: url('@fontsource-variable/piazzolla/files/piazzolla-latin-opsz-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Public Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 88%;
+  src: url('@fontsource-variable/public-sans/files/public-sans-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Public Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 88%;
+  src: url('@fontsource-variable/public-sans/files/public-sans-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Public Sans';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 88%;
+  src: url('@fontsource-variable/public-sans/files/public-sans-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Public Sans';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 88%;
+  src: url('@fontsource-variable/public-sans/files/public-sans-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
-/* ---------- 4 ABC Arizona Mix and Flare + ABC Diatype (local only: Dinamo trial copies on this Mac) ----------
-   The regular weight (titles, the letter text, the record) is Arizona Mix: Flare's flared strokes with a few real
-   serifs kept (O, n, d, m), the halfway point of the family. Only Mix's regular is installed, so the other weights
-   are Flare. A licence would add Arizona Text for long reading. */
-@font-face { font-family: 'TT Arizona'; font-style: normal; font-weight: 300; size-adjust: 100%; src: local('ABCArizonaFlare-Light'), local('ABCArizonaFlareTrial-Light'); }
-@font-face { font-family: 'TT Arizona'; font-style: normal; font-weight: 400; size-adjust: 100%; src: local('ABCArizonaMix-Regular'), local('ABCArizonaMixTrial-Regular'); }
-@font-face { font-family: 'TT Arizona'; font-style: normal; font-weight: 500 600; size-adjust: 100%; src: local('ABCArizonaFlare-Medium'), local('ABCArizonaFlareTrial-Medium'); }
-@font-face { font-family: 'TT Arizona'; font-style: normal; font-weight: 700; size-adjust: 100%; src: local('ABCArizonaFlare-Bold'), local('ABCArizonaFlareTrial-Bold'); }
-@font-face { font-family: 'TT Arizona'; font-style: italic; font-weight: 300; size-adjust: 100%; src: local('ABCArizonaFlare-LightItalic'), local('ABCArizonaFlareTrial-LightItalic'); }
-@font-face { font-family: 'TT Arizona'; font-style: italic; font-weight: 400; size-adjust: 100%; src: local('ABCArizonaMix-RegularItalic'), local('ABCArizonaMixTrial-RegularItalic'); }
-@font-face { font-family: 'TT Arizona'; font-style: italic; font-weight: 500 600; size-adjust: 100%; src: local('ABCArizonaFlare-MediumItalic'), local('ABCArizonaFlareTrial-MediumItalic'); }
-@font-face { font-family: 'TT Diatype'; font-style: normal; font-weight: 300; size-adjust: 94%; src: local('ABCDiatype-Light'), local('ABCDiatypeUnlicensedTrial-Light'); }
-@font-face { font-family: 'TT Diatype'; font-style: normal; font-weight: 400; size-adjust: 94%; src: local('ABCDiatype-Regular'), local('ABCDiatypeUnlicensedTrial-Regular'); }
-@font-face { font-family: 'TT Diatype'; font-style: normal; font-weight: 500 600; size-adjust: 94%; src: local('ABCDiatype-Medium'), local('ABCDiatypeUnlicensedTrial-Medium'); }
-@font-face { font-family: 'TT Diatype'; font-style: normal; font-weight: 700; size-adjust: 94%; src: local('ABCDiatype-Bold'), local('ABCDiatypeUnlicensedTrial-Bold'); }
-@font-face { font-family: 'TT Diatype'; font-style: italic; font-weight: 400; size-adjust: 94%; src: local('ABCDiatype-RegularItalic'), local('ABCDiatypeUnlicensedTrial-RegularItalic'); }
+/* ---------- 4 Commissioner (wght, slnt, FLAR, VOLM) + Hanken Grotesk (wght 100-900) ---------- */
+@font-face {
+  font-family: 'TT Commissioner';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 96%;
+  src: url('@fontsource-variable/commissioner/files/commissioner-latin-ext-full-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Commissioner';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 96%;
+  src: url('@fontsource-variable/commissioner/files/commissioner-latin-full-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Hanken';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Hanken';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Hanken';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Hanken';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
-/* ---------- 5 Geist + Geist Mono (Fontsource) and Geist Serif (self-hosted from Vercel's geist 1.9.0; OFL-Geist.txt) ---------- */
+/* ---------- 5 Alegreya (wght 400-900) + IBM Plex Mono (400, 500) ---------- */
+@font-face {
+  font-family: 'TT Alegreya';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Alegreya';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Alegreya';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Alegreya';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 88%;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 88%;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  size-adjust: 88%;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  size-adjust: 88%;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- 6 Geist + Geist Mono (Fontsource) and Geist Serif (self-hosted from Vercel's geist 1.9.0; OFL-Geist.txt) ---------- */
 @font-face {
   font-family: 'TT Geist';
   font-style: normal;
@@ -286,7 +454,7 @@
   src: url('./type-options/GeistSerif-Regular.woff2') format('woff2');
 }
 
-/* ---------- 6 Mona Sans (wdth 75-125, wght 200-900) ---------- */
+/* ---------- 7 Mona Sans (wdth 75-125, wght 200-900) ---------- */
 @font-face {
   font-family: 'TT Mona Sans';
   font-style: normal;
@@ -327,7 +495,6 @@
   src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-wdth-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
 /* the same Mona Sans for reading, sized to the serif roles' x-height (0.48 em) rather than the controls' */
 @font-face {
   font-family: 'TT Mona Text';
@@ -367,80 +534,6 @@
   font-stretch: 75% 125%;
   size-adjust: 92%;
   src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-wdth-italic.woff2') format('woff2-variations');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-/* ---------- 7 Alegreya (wght 400-900) + IBM Plex Mono (400, 500; both Fontsource) ---------- */
-@font-face {
-  font-family: 'TT Alegreya';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400 900;
-  size-adjust: 105%;
-  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-normal.woff2') format('woff2-variations');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'TT Alegreya';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400 900;
-  size-adjust: 105%;
-  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-normal.woff2') format('woff2-variations');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'TT Alegreya';
-  font-style: italic;
-  font-display: swap;
-  font-weight: 400 900;
-  size-adjust: 105%;
-  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-italic.woff2') format('woff2-variations');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'TT Alegreya';
-  font-style: italic;
-  font-display: swap;
-  font-weight: 400 900;
-  size-adjust: 105%;
-  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-italic.woff2') format('woff2-variations');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'TT Plex Mono';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400;
-  size-adjust: 88%;
-  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-400-normal.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'TT Plex Mono';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400;
-  size-adjust: 88%;
-  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'TT Plex Mono';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  size-adjust: 88%;
-  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-500-normal.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'TT Plex Mono';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  size-adjust: 88%;
-  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -486,47 +579,65 @@ html[data-look='reading-room'][data-rrtype='2'] {
   --rr-book-cap-drop: -0.006em;
 }
 
-/* ---------- 3 GT Alpina + GT America, numbers in GT America Mono ---------- */
+/* ---------- 3 Piazzolla + Public Sans (the free stand-in for GT Alpina + GT America) ---------- */
 html[data-look='reading-room'][data-rrtype='3'] {
-  --rr-book: 'TT GT Alpina', 'TT Literata', Georgia, serif;
-  --rr-ui: 'TT GT America', 'RR Source Sans', system-ui, sans-serif;
+  --rr-book: 'TT Piazzolla', Georgia, serif;
+  --rr-ui: 'TT Public Sans', 'RR Source Sans', system-ui, sans-serif;
   --rr-caps: var(--rr-ui);
-  --rr-title-weight: 400;
-  --rr-title-tracking: -0.015em;
-  --rr-number-face: 'TT GT America Mono', 'TT GT America', ui-monospace, monospace;
-  /* big numerals in the editorial layouts (claude/editorial-layout) take the sans, not the mono */
-  --rr-figure-face: var(--rr-ui);
-  --rr-number-size: 0.875rem;
-  --rr-number-weight: 400;
-  --rr-action-face: var(--rr-ui);
-  --rr-action-weight: 500;
-  --rr-action-size: 1rem;
-  --rr-book-cap-lift: -0.013em;
-  --rr-book-cap-drop: -0.012em;
-}
-
-/* ---------- 4 ABC Arizona Mix + ABC Diatype ---------- */
-html[data-look='reading-room'][data-rrtype='4'] {
-  --rr-book: 'TT Arizona', 'TT Literata', Georgia, serif;
-  --rr-ui: 'TT Diatype', 'RR Source Sans', system-ui, sans-serif;
-  --rr-caps: var(--rr-ui);
-  --rr-title-weight: 400;
+  --rr-title-weight: 500;
   --rr-title-tracking: -0.015em;
   --rr-number-face: var(--rr-ui);
-  --rr-number-weight: 400;
+  --rr-number-weight: 500;
   --rr-action-face: var(--rr-ui);
-  --rr-action-weight: 500;
+  --rr-action-weight: 600;
   --rr-action-size: 1rem;
-  --rr-book-cap-lift: 0em;
-  --rr-book-cap-drop: 0.06em;
-}
-/* Diatype's capital I and lowercase l are the same shape; its ss08 gives the I serifs (Arizona has no ss08) */
-html[data-look='reading-room'][data-rrtype='4'] body {
-  font-feature-settings: 'lnum' 1, 'onum' 0, 'ss08' 1;
+  --rr-book-cap-lift: 0.078em;
+  --rr-book-cap-drop: 0em;
 }
 
-/* ---------- 5 Geist (sans-led) + Geist Serif for titles + Geist Mono for numbers ---------- */
+/* ---------- 4 Commissioner, flared + Hanken Grotesk (the free stand-in for ABC Arizona + ABC Diatype) ---------- */
+html[data-look='reading-room'][data-rrtype='4'] {
+  --rr-book: 'TT Commissioner', Georgia, serif;
+  --rr-ui: 'TT Hanken', 'RR Source Sans', system-ui, sans-serif;
+  --rr-caps: var(--rr-ui);
+  --rr-title-weight: 480;
+  --rr-title-tracking: -0.015em;
+  --rr-number-face: var(--rr-ui);
+  --rr-number-weight: 500;
+  --rr-action-face: var(--rr-ui);
+  --rr-action-weight: 600;
+  --rr-action-size: 1rem;
+  --rr-book-cap-lift: 0.047em;
+  --rr-book-cap-drop: 0em;
+}
+/* the flare, everywhere Commissioner sets (inherited; faces without the axis ignore it). The letter's own text
+   (.font-letter, About) reads --letter-variation, which the room otherwise sets to normal */
+html[data-look='reading-room'][data-rrtype='4'] body {
+  font-variation-settings: 'FLAR' 100;
+  --letter-variation: 'FLAR' 100;
+}
+
+/* ---------- 5 Alegreya + IBM Plex Mono for labels, numbers and actions; Source Sans 3 for the controls ---------- */
 html[data-look='reading-room'][data-rrtype='5'] {
+  --rr-book: 'TT Alegreya', Georgia, serif;
+  --rr-caps: 'TT Plex Mono', ui-monospace, monospace;
+  --rr-title-weight: 500;
+  --rr-title-tracking: -0.01em;
+  --rr-label-face: 'TT Plex Mono', ui-monospace, monospace;
+  --rr-label-weight: 400;
+  --rr-label-tracking: 0;
+  --rr-number-face: 'TT Plex Mono', ui-monospace, monospace;
+  --rr-number-size: 0.875rem;
+  --rr-number-weight: 500;
+  --rr-action-face: 'TT Plex Mono', ui-monospace, monospace;
+  --rr-action-weight: 500;
+  --rr-action-size: 0.9375rem;
+  --rr-book-cap-lift: 0.014em;
+  --rr-book-cap-drop: -0.02em;
+}
+
+/* ---------- 6 Geist (sans-led) + Geist Serif for titles + Geist Mono for numbers ---------- */
+html[data-look='reading-room'][data-rrtype='6'] {
   --rr-ui: 'TT Geist', 'RR Source Sans', system-ui, sans-serif;
   /* the room's book face becomes the sans (the letter text, the record, notes, About's text), sized for reading */
   --rr-book: 'TT Geist Text', 'RR Source Sans', system-ui, sans-serif;
@@ -546,13 +657,13 @@ html[data-look='reading-room'][data-rrtype='5'] {
   --rr-book-cap-drop: 0em;
 }
 /* About's big title takes the display serif too (its text follows the book face) */
-html[data-look='reading-room'][data-rrtype='5'] .about-title {
+html[data-look='reading-room'][data-rrtype='6'] .about-title {
   font-family: var(--rr-title-face);
   font-weight: 400;
 }
 
-/* ---------- 6 Mona Sans alone: wide titles, everything else at normal width ---------- */
-html[data-look='reading-room'][data-rrtype='6'] {
+/* ---------- 7 Mona Sans alone: wide titles, everything else at normal width ---------- */
+html[data-look='reading-room'][data-rrtype='7'] {
   --rr-ui: 'TT Mona Sans', 'RR Source Sans', system-ui, sans-serif;
   --rr-book: 'TT Mona Text', 'RR Source Sans', system-ui, sans-serif;
   --rr-title-face: var(--rr-book);
@@ -570,26 +681,7 @@ html[data-look='reading-room'][data-rrtype='6'] {
   --rr-book-cap-lift: 0.019em;
   --rr-book-cap-drop: -0.016em;
 }
-html[data-look='reading-room'][data-rrtype='6'] .about-title {
+html[data-look='reading-room'][data-rrtype='7'] .about-title {
   font-stretch: 118%;
   font-weight: 560;
-}
-
-/* ---------- 7 Alegreya + IBM Plex Mono for labels, numbers and actions; Source Sans 3 for the controls ---------- */
-html[data-look='reading-room'][data-rrtype='7'] {
-  --rr-book: 'TT Alegreya', Georgia, serif;
-  --rr-caps: 'TT Plex Mono', ui-monospace, monospace;
-  --rr-title-weight: 500;
-  --rr-title-tracking: -0.01em;
-  --rr-label-face: 'TT Plex Mono', ui-monospace, monospace;
-  --rr-label-weight: 400;
-  --rr-label-tracking: 0;
-  --rr-number-face: 'TT Plex Mono', ui-monospace, monospace;
-  --rr-number-size: 0.875rem;
-  --rr-number-weight: 500;
-  --rr-action-face: 'TT Plex Mono', ui-monospace, monospace;
-  --rr-action-weight: 500;
-  --rr-action-size: 0.9375rem;
-  --rr-book-cap-lift: 0.014em;
-  --rr-book-cap-drop: -0.02em;
 }
