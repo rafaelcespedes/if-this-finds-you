@@ -30,7 +30,10 @@ export function handList(count: number, landing: Look): Look[] {
   // the landing hand with its sampled look (pen, ink, values) when it's one of the sampled hands
   const same = (l: Look) => l.seed === landing.seed && l.style === landing.style;
   landing = (sampled as Look[]).find(same) ?? landing;
-  const pool = (sampled as Look[]).filter((l) => !same(l));
+  // no very heavy or very faint pens in the flip: at a new hand every frame the ink weight should stay even
+  // (a big jump in how much ink is on the page, many times a second, reads as flashing)
+  const weight = (l: Look) => engine.penWidthUnits(handOf(l));
+  const pool = (sampled as Look[]).filter((l) => !same(l) && weight(l) <= 150 && weight(l) >= 28);
   // the first slow cuts (one a beat, two a beat) should each read as a font: legible, alternating print and joined
   const slow: Look[] = [];
   const want = ['script', 'print', 'script', 'print', 'script', 'print', 'script', 'print'];
