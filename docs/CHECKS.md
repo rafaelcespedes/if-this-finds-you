@@ -49,7 +49,8 @@ it in Chrome. Pages: `/` (the desk), `/letters` (all letters), the first card's 
 - shows one of the site's own failure messages ("The fonts didn't load", "The letters didn't load", "couldn't be
   set as a font here"; `FAILURE_TEXTS` in the script), or
 - stays blank: within 30 s the desk's letter and the letter page need handwriting, `/letters` at least 6 painted
-  cards (not just the page shell) and `/fonts` at least 3 specimens set in the fonts the page made, and `/about` its one line written live.
+  cards (not just the page shell), `/fonts` its first hand and at least 3 more specimens set in the fonts the page made
+  (the earlier page, `/fonts?fonts=old`, is checked at desktop size: 3 specimens), and `/about` its one line written live.
 
 The library shuffles its cards, so the letter page it opens changes from run to run; the output names it.
 It finds what each page must draw by accessible names and links (`PAGES` at the top of the script). If a redesign
