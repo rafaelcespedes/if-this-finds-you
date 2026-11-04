@@ -55,7 +55,7 @@ export interface PanelProps {
   onKeepLook: (keep: boolean) => void;
   /** controls research #5: keep one of paper, pen or ink through Find another */
   onLock?: (key: LockKey, on: boolean) => void;
-  busy: { download: boolean; font: boolean; video: boolean };
+  busy: { download: boolean; font: boolean; video: boolean; gif: boolean };
   /** the letter writing itself out, as a video or a GIF (null until the browser's been asked what it can make) */
   onExportVideo: (kind: 'video' | 'gif') => void;
   exportable: { video: boolean; gif: boolean } | null;
@@ -228,7 +228,8 @@ export function AboutHand({ children, ...props }: PanelProps & { children: React
 
 /** Share: copy a link, save the image; the font file is a quieter extra. One icon wherever it sits. */
 export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVideo, exportable, onShareOpen, size }: PanelProps & { size?: 'lg' | 'chip' }) {
-  const working = busy.download || busy.font || busy.video;
+  const working = busy.download || busy.font || busy.video || busy.gif;
+  // one letter is written out at a time: while one format is being made, the other's row waits (disabled below)
   // each row shows what it's doing: a spinner while it's made, a tick for a moment once it's saved
   const done = useJustDone(busy);
   const status = (k: keyof typeof busy) => (busy[k] ? 'busy' as const : done[k] ? 'done' as const : null);
@@ -236,10 +237,10 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
     { id: 'link', label: 'Copy link', icon: <Link />, onSelect: onShare },
     { id: 'image', label: 'Download image', icon: <Download />, status: status('download'), hint: busy.download ? 'Preparing…' : undefined, onSelect: onDownload },
     // the letter writing itself out: made in a few seconds, saved when it's done
-    { id: 'video', label: 'Download video', icon: <Film />, status: busy.video ? 'busy' : done.video ? 'done' : null, hint: busy.video ? 'Being made…' : undefined, disabled: exportable?.video === false, onSelect: () => onExportVideo('video') },
+    { id: 'video', label: 'Download video', icon: <Film />, status: status('video'), hint: busy.video ? 'Being made…' : undefined, disabled: busy.gif || exportable?.video === false, onSelect: () => onExportVideo('video') },
     { kind: 'separator', id: 's1' },
     { kind: 'label', id: 'more', label: 'More formats' },
-    { id: 'gif', label: 'Animated GIF', icon: <ImagePlay />, quiet: true, disabled: busy.video || exportable?.gif === false, onSelect: () => onExportVideo('gif') },
+    { id: 'gif', label: 'Animated GIF', icon: <ImagePlay />, quiet: true, status: status('gif'), hint: busy.gif ? 'Being made…' : undefined, disabled: busy.video || exportable?.gif === false, onSelect: () => onExportVideo('gif') },
     {
       id: 'font',
       label: FONT_PACKAGE ? 'Download font' : 'Font file (.otf)',

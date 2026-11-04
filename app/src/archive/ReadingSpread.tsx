@@ -117,7 +117,8 @@ export function ReadingSpread(p: Props) {
     if (!i) return null;
     const open = openNote === key;
     return (
-      <button type="button" className="sp-ref" aria-expanded={open} aria-controls={`${id}-n-${key}`} onClick={() => setOpenNote(open ? null : key)}>
+      // aria-controls only names the note while it's on the page (it's rendered open only)
+      <button type="button" className="sp-ref" aria-expanded={open} aria-controls={open ? `${id}-n-${key}` : undefined} onClick={() => setOpenNote(open ? null : key)}>
         <span className="sr-only">Note </span>{i}
       </button>
     );
@@ -172,7 +173,7 @@ export function ReadingSpread(p: Props) {
         {inline('hand')}
         <div className="sp-record">
           <div className="sp-record-bar">
-            <button type="button" aria-expanded={recordOpen} aria-controls={`${id}-record`} onClick={() => setRecordOpen((o) => !o)} className="sp-record-open">
+            <button type="button" aria-expanded={recordOpen} aria-controls={recordOpen ? `${id}-record` : undefined} onClick={() => setRecordOpen((o) => !o)} className="sp-record-open">
               Full record <span aria-hidden>{recordOpen ? '−' : '+'}</span>
             </button>
             <span className="sp-quiet">

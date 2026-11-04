@@ -174,6 +174,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const onTouchEnd = (e: TouchEvent) => {
     const s0 = swipe.current;
     if (!s0) return;
+    // zoomed in (a pinch), a sideways drag is someone looking closer, not turning the page
+    if ((window.visualViewport?.scale ?? 1) > 1.01) { swipe.current = null; return; }
     const dx = e.changedTouches[0].clientX - s0.x, dy = e.changedTouches[0].clientY - s0.y;
     if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.6) { s0.turned = true; turn(dx < 0 ? 1 : -1); }
   };
@@ -281,7 +283,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const sheetH = r.paper.h * pxPerMm;
   const sheet = (
     <div
-      className="flex touch-pan-y flex-col items-center"
+      className="flex touch-pan-y touch-pinch-zoom flex-col items-center"
       onClick={onSheetClick}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}

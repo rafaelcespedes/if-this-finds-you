@@ -482,3 +482,14 @@ html { scroll-padding-top: var(--site-head-clear); }
 @media (forced-colors: active) {
   [data-site-link][aria-current] [data-site-words] { text-decoration: underline; text-underline-offset: 4px; }
 }
+
+
+/* text fields on touch screens: 16 px, so iPhone Safari doesn't zoom the page when one is tapped (launch QA:
+   the /letters search, the Fonts page's own words, the sheet's Seed field and its select were 13 px, the looks' small
+   text rules outranking the fields' own touch size). Only the fields, only on touch; !important because the looks'
+   rules are long :is() lists and each field sets its size its own way. Here, unlayered, so every page has it */
+@media (pointer: coarse) {
+  :is(input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='button'], [type='submit'], [type='reset'], [type='file'], [type='image'], [type='hidden']), textarea, select) {
+    font-size: 16px !important;
+  }
+}

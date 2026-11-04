@@ -403,7 +403,17 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0 || (e.target as HTMLElement).closest('[data-no-pan]')) return;
     stop();
+    // a second finger: a pinch, the browser's zoom (touch-action: pinch-zoom), so the table stops following
+    if (drag.current && drag.current.id !== e.pointerId) { endDrag(); return; }
     drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false, vx: 0, vy: 0, t: performance.now() };
+  };
+  // the drag ends where it is, with no glide (a pinch took over, or the browser cancelled the touch)
+  const endDrag = () => {
+    if (!drag.current) return;
+    const moved = drag.current.moved;
+    drag.current = null;
+    stageRef.current?.classList.remove('is-dragging');
+    if (moved) { suppressClick.current = true; setTimeout(() => { suppressClick.current = false; }, 0); }
   };
   const onPointerMove = (e: PointerEvent) => {
     const d = drag.current;
@@ -500,11 +510,11 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
   return (
     <div
       ref={stageRef}
-      className="letter-canvas fixed inset-0 touch-none overflow-hidden select-none"
+      className="letter-canvas fixed inset-0 touch-pinch-zoom overflow-hidden select-none"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onPointerCancel={endDrag}
       onClickCapture={onClickCapture}
       onFocus={onFocusIn}
     >
@@ -580,9 +590,9 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
             />
           )}
         </div>
-        <h3 className="canvas-title font-letter mt-2.5 pr-1 leading-[1.25] text-foreground/85 text-pretty">
+        <h2 className="canvas-title font-letter mt-2.5 pr-1 leading-[1.25] text-foreground/85 text-pretty">
           {letter.title ?? opening(letter.text, 48)}
-        </h3>
+        </h2>
         <span className="sr-only">
           {special ? `${circumstanceLabel(letter)}. ` : ''}{fromTo(letter)}. {whereWhen(letter)}.
         </span>
@@ -652,7 +662,7 @@ const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, st
           </div>
         </div>
         <div className="table-label" style={{ marginLeft: inset }}>
-          <h3 className="table-title">{letter.title ?? opening(letter.text, 48)}</h3>
+          <h2 className="table-title">{letter.title ?? opening(letter.text, 48)}</h2>
           <p className="table-meta">
             {[place, letter.year != null ? String(letter.year) : ''].filter(Boolean).join(' · ')}
             {special && <>{place || letter.year != null ? ' · ' : ''}<span className="table-status">{circumstanceLabel(letter)}</span></>}
