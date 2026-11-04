@@ -1,0 +1,968 @@
+/* =====================================================================================================================
+   THE EDITORIAL LAYOUTS (an exploration, Nov 2026): a modern editorial frame around the Reading Room's archival
+   content. ?layout=editorial-1 or ?layout=editorial-2 (lib/layout.ts) sets html[data-layout] on top of
+   html[data-look='reading-room'], and html[data-layout-page] = desk | letters | about.
+   Only the frame changes: the grid, the rules, the type scale and the placement. The handwriting, the paper, the
+   shared components (SiteHeader, Sheet, the controls, the --st-* states) and the Reading Room's tokens stay as they
+   are; this file never names a face, only the --rr-* roles, so any type pairing (?type=) drops in.
+
+   1  Broadsheet (editorial-1): a newspaper's frame. Every column ruled, full height; a thick-and-thin rule under
+      the running head; caps running heads and folios; big serif numerals as design (the catalogue number set like a
+      magazine's page number); the list a dense ruled index with column rules; text in two columns.
+   2  Ruler (editorial-2): a measured, asymmetric page. A ruler under the running head numbers the twelve columns;
+      a tick rule measures the baseline down the left margin; one strong rule divides a margin rail (labels,
+      numbers, the record) from the page; huge titles hang off the grid; numbers in the sans, tabular.
+
+   The grid (both): 12 columns, 40 px margins, 32 px gutters from 64 rem (the Reading Room's own --rr-margin and
+   --rr-gutter); 8 columns, 32 px margins, 24 px gutters from 40 rem; 4 columns, 16 px margins and gutters on a
+   phone. The desk's grid runs the window's width; the library's and About's stop at 90 rem, centred.
+   Rules here are crisp on purpose (the hand-drawn rules stay off: lib/rules.ts), and the grid's lines are drawn by
+   one fixed layer behind the page (.ed-grid) and one in front of it, in the running head's band (.ed-ruler).
+   ===================================================================================================================== */
+
+/* ---------- tokens ---------- */
+html:root[data-layout] {
+  /* the grid */
+  --ed-cols: 4;
+  --ed-margin: 1rem;
+  --ed-gutter: 1rem;
+  --ed-max: 100vw;
+  /* one column's width, for placing things on it: (the grid's width less its margins and gutters) / columns */
+  --ed-w: min(100vw, var(--ed-max));
+  --ed-col: calc((var(--ed-w) - 2 * var(--ed-margin) - (var(--ed-cols) - 1) * var(--ed-gutter)) / var(--ed-cols));
+  /* rules: crisp, in ink. A column line, a rule between rows, a structural rule, the heavy rule */
+  --ed-ink: var(--rr-ink);
+  --ed-line: color-mix(in oklab, var(--rr-ink) 9%, transparent);
+  --ed-rule: color-mix(in oklab, var(--rr-ink) 22%, transparent);
+  --ed-rule-strong: color-mix(in oklab, var(--rr-ink) 72%, transparent);
+  --ed-heavy: 2px;
+
+  /* the display scale (proposed): above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96
+     · 128 px), fluid between a phone and 1440. Face, weight and stretch follow the title role, so a pairing that sets
+     --rr-title-face sets these too; a pairing can give display its own cut with --rr-display-face. */
+  --rr-display-face: var(--rr-title-face);
+  /* never heavier than the title role's own weight (a pairing's 400 stays 400) */
+  --rr-display-weight: min(var(--rr-title-weight, 480), 480);
+  --rr-display-stretch: var(--rr-title-stretch, 100%);
+  --rr-display-leading: 0.94;
+  --rr-display-tracking: -0.025em;
+  --rr-display-1: clamp(3.25rem, 1.6rem + 6.6vw, 8rem); /* the page's one title: About, All letters, a letter */
+  --rr-display-2: clamp(2.5rem, 1.5rem + 4vw, 6rem); /* a hero number, a big title beside a sheet */
+  --rr-display-3: clamp(2rem, 1.35rem + 2.6vw, 4rem); /* a section's title, a figure */
+  --rr-display-4: clamp(1.625rem, 1.25rem + 1.5vw, 2.75rem); /* a sub-title, a stat */
+  --rr-display-5: clamp(1.375rem, 1.2rem + 0.7vw, 1.9375rem); /* a lede, a row's title at size */
+  /* big figures: the number role's face at display size, lining and tabular */
+  --rr-figure-face: var(--rr-number-face);
+  --rr-figure-numeric: lining-nums tabular-nums;
+  /* running heads, folios, column indices: the controls' sans, small */
+  --ed-head-face: var(--rr-ui);
+  --ed-head-size: 0.6875rem;
+  --ed-head-weight: 500;
+  --ed-head-tracking: 0.08em;
+  --ed-head-case: uppercase;
+}
+@media (min-width: 40rem) {
+  html:root[data-layout] {
+    --ed-cols: 8;
+    --ed-margin: 2rem;
+    --ed-gutter: 1.5rem;
+  }
+}
+@media (min-width: 64rem) {
+  html:root[data-layout] {
+    --ed-cols: 12;
+    --ed-margin: var(--rr-margin, 2.5rem);
+    --ed-gutter: var(--rr-gutter, 2rem);
+  }
+}
+html:root[data-layout]:is([data-layout-page='letters'], [data-layout-page='about']) {
+  --ed-max: 90rem;
+}
+/* Ruler: sentence case, a little wider, its numbers in the sans */
+html:root[data-layout='editorial-2'] {
+  --ed-head-case: none;
+  --ed-head-size: 0.75rem;
+  --ed-head-tracking: 0.01em;
+  --rr-figure-face: var(--rr-ui);
+  --rr-display-weight: min(var(--rr-title-weight, 440), 440);
+  --rr-display-tracking: -0.035em;
+  --rr-display-leading: 0.9;
+}
+
+/* a running head's words: the small sans, tracked (caps in Broadsheet) */
+html:root[data-layout] :is(.ed-head, .ed-grid b, .ed-ruler b) {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: var(--ed-head-case);
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+}
+
+/* =====================================================================================================================
+   THE GRID, drawn
+   ===================================================================================================================== */
+.ed-grid,
+.ed-ruler {
+  display: none;
+}
+html:root[data-layout] :is(.ed-grid, .ed-ruler) {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--ed-cols), minmax(0, 1fr));
+  column-gap: var(--ed-gutter);
+  max-width: var(--ed-max);
+  margin-inline: auto;
+  padding-inline: var(--ed-margin);
+  pointer-events: none;
+  contain: strict;
+}
+html:root[data-layout] .ed-grid {
+  z-index: -1;
+}
+html:root[data-layout] :is(.ed-grid, .ed-ruler) > i {
+  position: relative;
+  display: block;
+  min-width: 0;
+  font-style: normal;
+}
+@media (max-width: 39.99rem) {
+  html:root[data-layout] :is(.ed-grid, .ed-ruler) > i:nth-child(n + 5) { display: none; }
+}
+@media (max-width: 63.99rem) {
+  html:root[data-layout] :is(.ed-grid, .ed-ruler) > i:nth-child(n + 9) { display: none; }
+}
+html:root[data-layout] .ed-grid b,
+html:root[data-layout] .ed-ruler b {
+  display: none;
+}
+/* the page's ground is the root's (the same room colour): the body and About's wrapper let the grid show through */
+html:root[data-layout] body,
+html:root[data-layout] .about {
+  background-color: transparent;
+}
+
+/* ---------- Broadsheet: every column ruled, full height (a line in each gutter's middle, and the frame's edges) ---- */
+html:root[data-layout='editorial-1'] .ed-grid > i::before,
+html:root[data-layout='editorial-1'] .ed-grid::before,
+html:root[data-layout='editorial-1'] .ed-grid::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ed-line);
+}
+html:root[data-layout='editorial-1'] .ed-grid > i::before {
+  left: calc(var(--ed-gutter) / -2);
+}
+html:root[data-layout='editorial-1'] .ed-grid > i:first-child::before {
+  display: none;
+}
+html:root[data-layout='editorial-1'] .ed-grid::before {
+  left: var(--ed-margin);
+}
+html:root[data-layout='editorial-1'] .ed-grid::after {
+  right: var(--ed-margin);
+}
+
+/* ---------- Ruler: the columns numbered under the running head, a tick at each column's start and end; the baseline
+   measured down the left margin (a tick every 8 px, a longer one every 24 px) ---------- */
+html:root[data-layout='editorial-2'] {
+  /* the ruler's band, under the running head's rule; the header grows by it (index.css --site-head) */
+  --ed-ruler-h: 1.125rem;
+  --site-head-rule: calc(0.5rem + 1px + var(--ed-ruler-h));
+}
+html:root[data-layout='editorial-2'] .ed-ruler {
+  z-index: 31;
+  bottom: auto;
+  top: calc(var(--site-head) - var(--ed-ruler-h));
+  height: var(--ed-ruler-h);
+}
+html:root[data-layout='editorial-2'] .ed-ruler > i {
+  border-left: 1px solid var(--ed-rule-strong);
+  border-right: 1px solid var(--ed-rule);
+  height: 5px;
+}
+html:root[data-layout='editorial-2'] .ed-ruler b {
+  display: block;
+  position: absolute;
+  top: 7px;
+  left: 4px;
+  color: var(--rr-muted);
+  font-size: 0.625rem;
+  letter-spacing: 0.02em;
+}
+/* the baseline, measured in the left margin (a tick every 8 px, a longer one every 24 px), from under the ruler */
+html:root[data-layout='editorial-2'] .ed-grid::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--site-head) + 0.5rem);
+  bottom: 0;
+  left: calc(var(--ed-margin) / 2 - 4px);
+  width: 9px;
+  background:
+    repeating-linear-gradient(to bottom, var(--ed-rule) 0 1px, transparent 1px 8px) 0 0 / 4px 100% no-repeat,
+    repeating-linear-gradient(to bottom, var(--ed-rule-strong) 0 1px, transparent 1px 24px) 0 0 / 9px 100% no-repeat;
+}
+/* the columns themselves: only their edges, very faint, full height */
+html:root[data-layout='editorial-2'] .ed-grid > i {
+  box-shadow: inset 1px 0 var(--ed-line), inset -1px 0 var(--ed-line);
+}
+@media (max-height: 32rem) {
+  /* the running head scrolls away on a short screen: the ruler goes with it */
+  html:root[data-layout='editorial-2'] .ed-ruler { display: none; }
+}
+
+/* =====================================================================================================================
+   THE RUNNING HEAD (components/SiteHeader.tsx, through its data hooks)
+   ===================================================================================================================== */
+/* on the library and About the head keeps to the page's 90 rem grid */
+html:root[data-layout]:is([data-layout-page='letters'], [data-layout-page='about']) [data-site-row] {
+  max-width: calc(var(--ed-max) - 2 * var(--ed-margin));
+  margin-inline: auto;
+}
+html:root[data-layout] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button) {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: var(--ed-head-case);
+  font-variant-caps: normal;
+}
+html:root[data-layout] [data-site-number] {
+  font-family: var(--rr-figure-face);
+  font-variant-numeric: var(--rr-figure-numeric);
+  font-variant-caps: normal;
+}
+
+/* Broadsheet: the thick-and-thin rule, a newspaper's masthead (2 px ink, 3 px of room, 1 px ink) */
+html:root[data-layout='editorial-1'] {
+  --site-head-rule: calc(0.5rem + var(--ed-heavy) + 4px);
+}
+html:root[data-layout='editorial-1'] [data-site-row] {
+  border-bottom: var(--ed-heavy) solid var(--ed-ink);
+  margin-bottom: 4px;
+}
+html:root[data-layout='editorial-1'] [data-site-row]::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--ed-heavy) - 4px);
+  height: 1px;
+  background: var(--ed-ink);
+}
+/* Ruler: one crisp rule in ink, the ruler hangs from it */
+html:root[data-layout='editorial-2'] [data-site-row] {
+  border-bottom: 1px solid var(--ed-ink);
+  margin-bottom: var(--ed-ruler-h);
+}
+
+/* =====================================================================================================================
+   THE DESK (App.tsx; the record is themes/reading-room/ReadingDesk.tsx + LedgerRecord.tsx)
+   ===================================================================================================================== */
+/* the record, on any screen (the desk's column, the phone's slip under the sheet): the number as a figure, the
+   title at display size, the facts as a ruled table under a heavy rule, the labels as running-head words */
+html:root[data-layout] .rr-ledger-record .rr-card-no {
+  font-family: var(--rr-figure-face);
+  font-size: var(--rr-display-2);
+  font-weight: 400;
+  line-height: 0.8;
+  letter-spacing: -0.03em;
+  font-variant-caps: normal;
+  font-variant-numeric: var(--rr-figure-numeric);
+  color: var(--rr-red);
+}
+html:root[data-layout] .rr-ledger-record .rr-card-no .rr-sc {
+  display: block;
+  margin-bottom: 0.625rem;
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: var(--ed-head-case);
+  line-height: 1;
+  color: var(--rr-ink);
+}
+html:root[data-layout] .rr-ledger-record .rr-ledger-head {
+  align-items: flex-start;
+}
+html:root[data-layout] .rr-ledger-record .rr-card-title {
+  --rr-title-leading: 1;
+  margin: 1rem 0 1.25rem;
+  font-family: var(--rr-display-face);
+  font-size: var(--rr-display-4);
+  font-weight: var(--rr-display-weight);
+  font-stretch: var(--rr-display-stretch);
+  letter-spacing: -0.02em;
+}
+html:root[data-layout] .rr-ledger-record .rr-fact {
+  border-top-color: var(--ed-rule);
+  padding: 7px 0 8px;
+}
+html:root[data-layout] .rr-ledger-record > .rr-facts > .rr-fact:first-child {
+  border-top: var(--ed-heavy) solid var(--ed-ink);
+}
+html:root[data-layout] .rr-ledger-record :is(.rr-fact dt, .rr-full-head .rr-sc),
+html:root[data-layout] :is(.rr-drawer-head, .rr-drawer-head .rr-sc) {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: var(--ed-head-case);
+  font-variant-caps: normal;
+}
+html:root[data-layout] .rr-ledger-record .rr-full {
+  border-top-color: var(--ed-rule-strong);
+}
+html:root[data-layout] .rr-drawer {
+  border-top: 1px solid var(--ed-ink);
+}
+/* the record's column is a panel of the room's ground: the grid's lines stop at its rule, never run through its words */
+html:root[data-layout] .rr-desk {
+  background: var(--rr-room);
+}
+
+@media (min-width: 64rem) {
+  /* the page's columns run up to the record's gutter: the main column's own right margin goes (the record's column
+     brings the gutter) */
+  html:root[data-layout][data-layout-page='desk'] div:has(> main + aside) > main {
+    padding-right: 0;
+  }
+  /* the record column's own rule, from the running head to the foot, in the gutter's middle */
+  html:root[data-layout][data-layout-page='desk'] aside:has(> .rr-desk)::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--site-head) + 0.75rem);
+    bottom: 0;
+    width: 1px;
+    background: var(--ed-ink);
+  }
+}
+
+/* ---------- Broadsheet desk: the sheet on columns 1–8, the record on 9–12 (four columns: the title has room at
+   display size), the rule between them in ink ---------- */
+@media (min-width: 64rem) {
+  html:root[data-layout='editorial-1'][data-layout-page='desk'] {
+    --panel-w: calc(var(--ed-col) * 5 + var(--ed-gutter) * 4);
+  }
+  html:root[data-layout='editorial-1'][data-layout-page='desk'] aside:has(> .rr-desk)::before {
+    left: calc(var(--ed-gutter) / 2);
+  }
+}
+@media (min-width: 80rem) {
+  html:root[data-layout='editorial-1'][data-layout-page='desk'] {
+    --panel-w: calc(var(--ed-col) * 4 + var(--ed-gutter) * 3);
+  }
+}
+
+/* ---------- Ruler desk: asymmetric. The record moves into a margin rail on the left (columns 1–3), one ink rule
+   divides it from the page, the sheet takes columns 4–12; the running head's middle stays over the sheet ---------- */
+@media (min-width: 64rem) {
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] {
+    --panel-w: calc(var(--ed-col) * 4 + var(--ed-gutter) * 3);
+  }
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] div:has(> main + aside) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] div:has(> main + aside) > aside {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] div:has(> main + aside) > main {
+    grid-column: 2;
+    grid-row: 1;
+    padding-left: 0;
+    padding-right: var(--ed-margin);
+  }
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] aside:has(> .rr-desk) {
+    padding: 0 var(--ed-gutter) 0 var(--ed-margin);
+  }
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] aside:has(> .rr-desk)::before {
+    right: calc(var(--ed-gutter) / 2);
+  }
+  /* while writing the record steps aside to the left, not the right */
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] aside.translate-x-3 {
+    translate: -0.75rem 0;
+  }
+  /* the running head over the window: the wordmark over the rail, the middle over the sheet, the places at the right */
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid {
+    /* the places' column never narrower than the places: on a narrow desk the middle gives way to the left */
+    grid-template-columns: calc(var(--panel-w) + var(--ed-gutter) - 1rem) minmax(0, 1fr) auto minmax(max-content, 1fr);
+  }
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > [data-site-centre] {
+    grid-column: 3;
+  }
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > div:last-child {
+    grid-column: 4 / -1;
+  }
+}
+@media (min-width: 80rem) {
+  html:root[data-layout='editorial-2'][data-layout-page='desk'] {
+    --panel-w: calc(var(--ed-col) * 3 + var(--ed-gutter) * 2);
+  }
+}
+
+/* =====================================================================================================================
+   THE LETTER PAGE (archive/ReadingSpread.tsx: .sp, .sp-head, .sp-plate, .sp-body)
+   ===================================================================================================================== */
+/* blocks of words keep the grid's lines out from under them (the lines show in margins, gutters, empty columns) */
+html:root[data-layout] :is(.sp-head, .sp-body, .lib-main > section, .fa, .about-main > *) {
+  position: relative;
+  background: var(--rr-room);
+}
+/* the spread's labels and small lines: running-head words (the same list as library.css's label role) */
+html:root[data-layout] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: var(--ed-head-case);
+  font-variant-caps: normal;
+  line-height: 1.3;
+}
+html:root[data-layout] .sp .sp-title {
+  font-family: var(--rr-display-face);
+  font-weight: var(--rr-display-weight);
+  font-stretch: var(--rr-display-stretch);
+  letter-spacing: var(--rr-display-tracking);
+  line-height: var(--rr-display-leading);
+  font-size: var(--rr-display-4);
+  margin-top: 0.75rem;
+}
+html:root[data-layout] .sp .sp-quiet button {
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+html:root[data-layout] .sp .sp-writer {
+  margin-top: 0.75rem;
+}
+/* the facts: a ruled table, a heavy rule over it, a column rule between its cells */
+html:root[data-layout] .sp .sp-facts {
+  border-top: var(--ed-heavy) solid var(--ed-ink);
+  column-gap: 0;
+}
+html:root[data-layout] .sp .sp-fact {
+  border-bottom-color: var(--ed-rule);
+  padding-inline: 0.75rem;
+}
+html:root[data-layout] .sp .sp-fact:nth-child(2n + 1) {
+  padding-left: 0;
+}
+html:root[data-layout] .sp .sp-fact:nth-child(2n) {
+  box-shadow: inset 1px 0 var(--ed-rule);
+}
+@media (min-width: 640px) {
+  html:root[data-layout] .sp .sp-fact:nth-child(n) {
+    padding-left: 0.75rem;
+    box-shadow: inset 1px 0 var(--ed-rule);
+  }
+  html:root[data-layout] .sp .sp-fact:nth-child(3n + 1) {
+    padding-left: 0;
+    box-shadow: none;
+  }
+}
+html:root[data-layout] .sp :is(.sp-notes, .sp-cite, .sp-next, .sp-actions) {
+  border-top-color: var(--ed-rule-strong);
+}
+html:root[data-layout] .sp .sp-next-title {
+  font-family: var(--rr-display-face);
+  font-size: var(--rr-display-5);
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+html:root[data-layout] .sp .sp-no,
+html:root[data-layout] .sp .sp-note-no {
+  font-family: var(--rr-figure-face);
+  font-variant-numeric: var(--rr-figure-numeric);
+  font-variant-caps: normal;
+}
+@media (min-width: 64em) {
+  html:root[data-layout] .sp {
+    max-width: var(--ed-max);
+    padding-inline: var(--ed-margin);
+  }
+  html:root[data-layout] .sp .sp-title {
+    font-size: var(--rr-display-3);
+  }
+}
+
+/* ---------- Broadsheet letter: plate on 1–7, the page on 8–12 under a heavy rule; the plate's column ruled off in
+   ink; the letter's words set in two columns with a column rule ---------- */
+@media (min-width: 64em) {
+  html:root[data-layout='editorial-1'] .sp .sp-head {
+    border-top: var(--ed-heavy) solid var(--ed-ink);
+    padding-top: 1rem;
+  }
+  html:root[data-layout='editorial-1'][data-layout-page='letters'] .ed-grid > i:nth-child(7)::before {
+    background: var(--ed-ink);
+    top: calc(var(--site-head) + 0.75rem);
+  }
+}
+@media (min-width: 80em) {
+  html:root[data-layout='editorial-1'][data-layout-page='letters'] .ed-grid > i:nth-child(7)::before {
+    background: var(--ed-line);
+    top: 0;
+  }
+  html:root[data-layout='editorial-1'][data-layout-page='letters'] .ed-grid > i:nth-child(8)::before {
+    background: var(--ed-ink);
+    top: calc(var(--site-head) + 0.75rem);
+  }
+  html:root[data-layout='editorial-1'] .sp .sp-reading {
+    column-count: 2;
+    column-gap: var(--ed-gutter);
+    column-rule: 1px solid var(--ed-rule);
+    font-size: var(--rr-text-size);
+    line-height: 1.5;
+  }
+  html:root[data-layout='editorial-1'] .sp .sp-reading p {
+    break-inside: auto;
+  }
+}
+
+/* ---------- Ruler letter: the title across the whole page, huge; under it the page on the left (1–5) and the plate
+   on the right (7–12), divided by one ink rule, as the desk keeps its record on the left and the paper on the right
+   ---------- */
+html:root[data-layout='editorial-2'] .sp .sp-head {
+  text-align: left;
+}
+html:root[data-layout='editorial-2'] .sp .sp-title {
+  font-size: clamp(2.5rem, 1rem + 6vw, 4rem);
+}
+@media (min-width: 64em) {
+  html:root[data-layout='editorial-2'] .sp {
+    grid-template-rows: auto auto 1fr;
+    padding-top: calc(var(--site-head) + 2.5rem);
+  }
+  html:root[data-layout='editorial-2'] .sp .sp-head {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: subgrid;
+    border-top: 0;
+    padding: 0 0 2.25rem;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--ed-ink);
+  }
+  html:root[data-layout='editorial-2'] .sp .sp-head > * {
+    grid-column: 1 / -1;
+  }
+  html:root[data-layout='editorial-2'] .sp .sp-kicker {
+    grid-column: 1 / span 4;
+  }
+  html:root[data-layout='editorial-2'] .sp .sp-title {
+    font-size: var(--rr-display-1);
+    margin-top: 1.25rem;
+    max-width: 14ch;
+  }
+  html:root[data-layout='editorial-2'] .sp .sp-writer {
+    grid-column: 7 / -1;
+    margin-top: 1.25rem;
+    font-size: var(--rr-reading-size);
+  }
+  html:root[data-layout='editorial-2'] .sp .sp-plate {
+    grid-column: 7 / -1;
+    grid-row: 2 / span 2;
+    top: calc(var(--site-head) + 1.5rem);
+  }
+  html:root[data-layout='editorial-2'] .sp .sp-body {
+    grid-column: 1 / span 5;
+    grid-row: 2 / span 2;
+  }
+  html:root[data-layout='editorial-2'][data-layout-page='letters'] .ed-grid > i:nth-child(7) {
+    box-shadow: inset 1px 0 var(--ed-ink), inset -1px 0 var(--ed-line);
+  }
+}
+
+/* =====================================================================================================================
+   ALL LETTERS, the list (archive/Index.tsx grid view + archive/FindingList.tsx)
+   ===================================================================================================================== */
+html:root[data-layout] .lib-main {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+}
+/* the heading in type, at display size (the hand-drawn "All letters" steps aside; its words were already there) */
+html:root[data-layout] .lib-main h1 > [aria-hidden] {
+  display: none;
+}
+html:root[data-layout] .lib-main h1 > .sr-only {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+  display: block;
+  font-family: var(--rr-display-face);
+  font-size: var(--rr-display-1);
+  font-weight: var(--rr-display-weight);
+  font-stretch: var(--rr-display-stretch);
+  letter-spacing: var(--rr-display-tracking);
+  line-height: var(--rr-display-leading);
+}
+html:root[data-layout] .lib-main > section > p:not(.rr-aid) {
+  margin-top: 1.5rem;
+  font-size: var(--rr-display-5);
+  line-height: 1.25;
+  color: var(--rr-ink);
+  max-width: 30ch;
+}
+html:root[data-layout] .lib-main .rr-aid {
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border: 0;
+  max-width: none;
+  color: var(--rr-muted);
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: var(--ed-head-case);
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+html:root[data-layout] .fa .fa-sort,
+html:root[data-layout] .fa .fa-sort-by {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: var(--ed-head-case);
+  font-variant-caps: normal;
+}
+/* the sort chosen: the room's selected state (light red), not an underline */
+html:root[data-layout] .fa .fa-sort-by {
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border-radius: 3px;
+}
+html:root[data-layout] .fa .fa-sort-by.is-on {
+  text-decoration: none;
+  color: var(--rr-red);
+  background: var(--st-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-layout] .fa .fa-sort-by:not(.is-on):hover {
+    background: var(--st-hover);
+  }
+}
+html:root[data-layout] .fa .fa-rows > li {
+  border-bottom-color: var(--ed-rule);
+}
+html:root[data-layout] .fa .fa-no {
+  font-family: var(--rr-figure-face);
+  font-variant-numeric: var(--rr-figure-numeric);
+  font-variant-caps: normal;
+}
+html:root[data-layout] .fa .fa-year {
+  font-family: var(--rr-figure-face);
+  font-variant-numeric: var(--rr-figure-numeric);
+  font-variant-caps: normal;
+  font-size: var(--rr-display-5);
+  line-height: 1;
+}
+html:root[data-layout] .fa .fa-title {
+  font-size: var(--rr-reading-size);
+}
+html:root[data-layout] .fa .fa-place {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: var(--ed-head-case);
+  font-variant-caps: normal;
+}
+
+/* ---------- Broadsheet list: a dense index. Heavy rule over each group, its name at the left; the cells divided by
+   column rules ---------- */
+html:root[data-layout='editorial-1'] .lib-main > section {
+  border-bottom: var(--ed-heavy) solid var(--ed-ink);
+}
+html:root[data-layout='editorial-1'] .lib-main > section::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--ed-heavy) - 4px);
+  height: 1px;
+  background: var(--ed-ink);
+}
+html:root[data-layout='editorial-1'] .fa .fa-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0.625rem 0 0.5rem;
+  border-top: var(--ed-heavy) solid var(--ed-ink);
+  border-bottom: 1px solid var(--ed-ink);
+  font-family: var(--rr-display-face);
+  font-size: var(--rr-display-5);
+  font-variant-caps: normal;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+html:root[data-layout='editorial-1'] .fa .fa-head::before,
+html:root[data-layout='editorial-1'] .fa .fa-head::after {
+  display: none;
+}
+@media (min-width: 720px) {
+  html:root[data-layout='editorial-1'] .fa .fa-row {
+    grid-template-columns: 6.25rem minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr) 5.75rem;
+    column-gap: 0;
+    padding-block: 0;
+  }
+  html:root[data-layout='editorial-1'] .fa .fa-row > .fa-year {
+    padding-right: 0;
+  }
+  html:root[data-layout='editorial-1'] .fa .fa-row > span {
+    padding: 0.75rem 0.875rem;
+  }
+  html:root[data-layout='editorial-1'] .fa .fa-row > span:first-child {
+    padding-left: 0;
+  }
+  html:root[data-layout='editorial-1'] .fa .fa-row > span + span {
+    box-shadow: inset 1px 0 var(--ed-rule);
+  }
+}
+
+/* ---------- Ruler list: asymmetric. Each group's name hangs in the margin rail (columns 1–3) at display size and
+   stays as its rows pass; the rows take columns 4–12 ---------- */
+@media (min-width: 64rem) {
+  html:root[data-layout='editorial-2'] .fa .fa-group {
+    display: grid;
+    grid-template-columns: calc(var(--ed-col) * 3 + var(--ed-gutter) * 2) minmax(0, 1fr);
+    column-gap: var(--ed-gutter);
+    align-items: start;
+    margin-top: 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--ed-ink);
+  }
+  html:root[data-layout='editorial-2'] .fa .fa-group + .fa-group {
+    margin-top: 3rem;
+  }
+  html:root[data-layout='editorial-2'] .fa .fa-head {
+    position: sticky;
+    top: calc(var(--site-head-clear) + 1rem);
+    display: block;
+    margin: 0;
+    font-family: var(--rr-display-face);
+    font-size: var(--rr-display-3);
+    font-weight: var(--rr-display-weight);
+    letter-spacing: var(--rr-display-tracking);
+    line-height: var(--rr-display-leading);
+    font-variant-caps: normal;
+    text-transform: none;
+  }
+  html:root[data-layout='editorial-2'] .fa .fa-head::before,
+  html:root[data-layout='editorial-2'] .fa .fa-head::after {
+    display: none;
+  }
+  html:root[data-layout='editorial-2'] .fa .fa-rows > li:first-child .fa-row {
+    padding-top: 0.25rem;
+  }
+  html:root[data-layout='editorial-2'] .fa .fa-row {
+    grid-template-columns: 5.5rem minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.7fr) 4.5rem;
+  }
+}
+
+/* =====================================================================================================================
+   ABOUT (about/AboutApp.tsx, about/about.css)
+   ===================================================================================================================== */
+html:root[data-layout] .about {
+  --about-label-font: var(--ed-head-face);
+  --about-label-size: var(--ed-head-size);
+  --about-label-spacing: var(--ed-head-tracking);
+  --about-label-case: var(--ed-head-case);
+  --about-label-caps: normal;
+  --about-rule: var(--ed-rule);
+  --about-gap: var(--ed-gutter);
+}
+html:root[data-layout] .about-main {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+}
+html:root[data-layout] .about-title {
+  font-family: var(--rr-display-face);
+  font-size: var(--rr-display-1);
+  font-weight: var(--rr-display-weight);
+  font-stretch: var(--rr-display-stretch);
+  letter-spacing: var(--rr-display-tracking);
+  line-height: var(--rr-display-leading);
+  text-wrap: balance;
+}
+html:root[data-layout] .about-lede {
+  font-size: var(--rr-display-5);
+  line-height: 1.25;
+  color: var(--rr-ink);
+}
+html:root[data-layout] .about-line {
+  border-color: var(--ed-ink);
+  border-radius: 0;
+}
+html:root[data-layout] .about-facts dd {
+  font-family: var(--rr-figure-face);
+  font-size: clamp(1.625rem, 1.2rem + 0.9vw, 2.125rem);
+  font-variant-numeric: var(--rr-figure-numeric);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+html:root[data-layout] .about-section-no {
+  font-family: var(--rr-figure-face);
+  font-variant-numeric: var(--rr-figure-numeric);
+  color: var(--rr-red);
+}
+@media (min-width: 56rem) {
+  /* the page on the whole grid: labels in 1–3, the words in 4–10, rules across all twelve */
+  html:root[data-layout] .about-main > * {
+    grid-column: 1 / -1;
+  }
+  html:root[data-layout] .about-main > * > * {
+    grid-column: 4 / span 7;
+  }
+  html:root[data-layout] .about-head > .about-title {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: 1rem;
+  }
+  html:root[data-layout] .about-head > .about-kicker {
+    grid-row: 1;
+    grid-column: 1 / span 3;
+  }
+  /* the head in order: the kicker, the title across the page, then the lede and the line written live */
+  html:root[data-layout] .about-head > .about-lede {
+    grid-row: 3;
+  }
+  html:root[data-layout] .about-head > :not(.about-kicker, .about-title, .about-lede) {
+    grid-row: 4;
+  }
+  html:root[data-layout] .about-main > * > .about-section-title {
+    grid-column: 1 / span 3;
+  }
+}
+
+/* ---------- Broadsheet About: the title over a thick-and-thin rule, each section under a heavy rule with its number
+   as a big red figure, the facts as a ruled row of figures with column rules ---------- */
+html:root[data-layout='editorial-1'] .about-head {
+  padding-bottom: 2.5rem;
+  border-bottom: var(--ed-heavy) solid var(--ed-ink);
+}
+html:root[data-layout='editorial-1'] .about-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--ed-heavy) - 4px);
+  height: 1px;
+  background: var(--ed-ink);
+}
+html:root[data-layout='editorial-1'] .about-section {
+  border-top: var(--ed-heavy) solid var(--ed-ink);
+}
+html:root[data-layout='editorial-1'] .about-section-no {
+  font-family: var(--rr-display-face);
+  font-size: var(--rr-display-3);
+  line-height: 0.9;
+}
+html:root[data-layout='editorial-1'] .about-facts > div {
+  border-top: 1px solid var(--ed-ink);
+}
+@container about-body (min-width: 37rem) {
+  html:root[data-layout='editorial-1'] .about-facts > div {
+    padding-inline: 0.75rem;
+    box-shadow: inset 1px 0 var(--ed-rule);
+  }
+  html:root[data-layout='editorial-1'] .about-facts > div:nth-child(4n + 1) {
+    padding-left: 0;
+    box-shadow: none;
+  }
+}
+@media (min-width: 80rem) {
+  /* the long reads set in two columns, ruled */
+  html:root[data-layout='editorial-1'] :is(#what, #hands, #made) .about-section-body {
+    column-count: 2;
+    column-gap: var(--ed-gutter);
+    column-rule: 1px solid var(--ed-rule);
+    font-size: var(--rr-reading-size);
+  }
+}
+
+/* ---------- Ruler About: the title huge across the page; each section's number a huge figure in the margin rail,
+   its words in 5–10, one ink rule over each ---------- */
+html:root[data-layout='editorial-2'] .about-head {
+  padding-bottom: 2.5rem;
+  border-bottom: 1px solid var(--ed-ink);
+}
+html:root[data-layout='editorial-2'] .about-section {
+  border-top: 1px solid var(--ed-ink);
+}
+html:root[data-layout='editorial-2'] .about-section-no {
+  font-size: var(--rr-display-2);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+}
+@media (min-width: 56rem) {
+  html:root[data-layout='editorial-2'] .about-main > * > * {
+    grid-column: 5 / span 6;
+  }
+  html:root[data-layout='editorial-2'] .about-head > .about-title {
+    grid-column: 1 / -1;
+  }
+  html:root[data-layout='editorial-2'] .about-head > :is(.about-lede, .about-line) {
+    grid-column: 5 / span 6;
+  }
+}
+
+/* =====================================================================================================================
+   ROOM UNDER THE RUNNING HEAD: both layouts' heads are a little taller (Broadsheet's double rule, Ruler's ruler), so
+   each page starts from the head's own height (index.css --site-head-clear) instead of a fixed offset
+   ===================================================================================================================== */
+@media (max-width: 63.99rem) {
+  /* the desk on a phone or tablet: the letter starts 3 px under the head's fade, as the Reading Room's does */
+  html:root[data-layout][data-layout-page='desk'] main[class*='pt-[calc(4.5rem'] {
+    padding-top: calc(var(--site-head-clear) + 3px);
+  }
+  html:root[data-layout] .sp {
+    padding-top: calc(var(--site-head-clear) + 0.75rem);
+  }
+}
+html:root[data-layout] .lib-main > section {
+  padding-top: calc(var(--site-head-clear) + 1.5rem);
+}
+html:root[data-layout] .about-main {
+  padding-top: calc(var(--site-head-clear) + 1.5rem);
+}
+@media (min-width: 40rem) {
+  html:root[data-layout] .about-main {
+    padding-top: calc(var(--site-head-clear) + 2.5rem);
+  }
+}
+
+/* ---------- phones: the letter's head flush left (both); the list's groups as a left-set head (Ruler; the rail
+   needs the desktop's width) ---------- */
+html:root[data-layout] .sp .sp-head {
+  text-align: left;
+}
+@media (max-width: 63.99rem) {
+  html:root[data-layout='editorial-2'] .fa .fa-head {
+    display: block;
+    margin: 0 0 0.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--ed-ink);
+    font-family: var(--rr-display-face);
+    font-size: var(--rr-display-4);
+    font-weight: var(--rr-display-weight);
+    letter-spacing: var(--rr-display-tracking);
+    line-height: 1;
+    font-variant-caps: normal;
+    text-transform: none;
+  }
+  html:root[data-layout='editorial-2'] .fa .fa-head::before,
+  html:root[data-layout='editorial-2'] .fa .fa-head::after {
+    display: none;
+  }
+}

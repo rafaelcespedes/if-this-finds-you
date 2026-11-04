@@ -12,6 +12,8 @@ import '../themes/reading-room/type-switch'; // temporary: the ?type pairing com
 import '../themes/postmarked.css';
 // the library in the Reading Room (the layout study's proposals 2 and 3), after the look's own sheet
 import '../themes/reading-room/library.css';
+// the editorial layout being explored (?layout=editorial-1/2): a frame on top of the Reading Room (its sheet comes with lib/layout.ts)
+import { applyLayout } from '../lib/layout';
 
 // the letter face (?serif=1…4), loaded beside the page
 applySerif();
@@ -20,6 +22,8 @@ if (!location.hash.startsWith('#/letter/')) cards.warm();
 
 // the look being compared (?look=…); today's design when none
 applyLook();
+
+applyLayout('letters');
 
 // opened once online, the library opens again offline (public/letters-sw.js)
 keepForOffline();
