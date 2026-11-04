@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { AboutApp } from './AboutApp';
 import { applySerif } from '../archive/serif';
 import { applyLook } from '../lib/look';
+import { reloadOnNewVersion } from '../lib/stale-build';
 import '../index.css';
 import '../themes/reading-room.css';
 import '../themes/postmarked.css';
@@ -16,6 +17,9 @@ applySerif();
 applyLook();
 
 applyLayout('about');
+
+// a tab left open across a new version reloads onto it when a file it asks for is gone
+reloadOnNewVersion();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

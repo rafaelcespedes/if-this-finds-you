@@ -4,6 +4,7 @@ import { FontsNew } from './new/FontsNew';
 import { applyFontsSwitch, FONTS_NEW } from './new/switch';
 import { fonts } from './store';
 import { applyLook } from '../lib/look';
+import { reloadOnNewVersion } from '../lib/stale-build';
 import { applyLayout } from '../lib/layout';
 // the tool's stylesheets in the tool's order (its compact control sizes, the looks, the controls' feel), so the
 // shared controls here are the home page's, size for size
@@ -28,6 +29,9 @@ fonts.warm();
 // the earlier page comes in its own small file, only when it's asked for (?fonts=old), so the page everyone gets
 // loads nothing it doesn't show
 const FontsApp = lazy(() => import('./FontsApp').then((m) => ({ default: m.FontsApp })));
+
+// a tab left open across a new version reloads onto it when a file it asks for is gone
+reloadOnNewVersion();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

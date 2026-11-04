@@ -8,6 +8,7 @@ import { rasterizeWriting } from './writing';
 import { write } from './write-core';
 import { sheetSVG, type Live } from './live';
 import type { WriteRequest } from './write-protocol';
+import { reloadForNewVersion, workerDidNotLoad } from './stale-build';
 import { fileSafe, saveBlob } from './utils';
 
 /** Copy text to the clipboard, with a fallback for browsers that block the async API. */
@@ -152,7 +153,12 @@ export function exportFontPackage(req: import('@/workers/font.worker').FontReque
       saveBlob(new Blob([r.zip], { type: 'application/zip' }), r.filename);
       resolve({ filename: r.filename, family: r.info.family, glyphs: r.info.glyphs, bytes: r.zip.byteLength });
     };
-    w.onerror = (e) => { w.terminate(); reject(new Error(e.message || 'The font couldn’t be built')); };
+    w.onerror = (e) => {
+      w.terminate();
+      // its script gone (the site was updated since this tab opened): the page reloads onto the new version
+      if (workerDidNotLoad(e) && reloadForNewVersion()) return;
+      reject(new Error(e.message || 'The font couldn’t be built'));
+    };
     w.postMessage(req);
   });
 }
