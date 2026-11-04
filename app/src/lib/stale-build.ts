@@ -26,6 +26,11 @@ export function reloadForNewVersion(): boolean {
 /** A worker's script that couldn't load (a plain error event, no message), as opposed to an error inside it. */
 export const workerDidNotLoad = (e: Event) => !(e instanceof ErrorEvent) || !e.message;
 
+/** A file that couldn't be fetched, as a worker reports it when a part it loads on demand is gone (Chrome, Safari,
+ * Firefox each word it their own way). */
+export const fileWasGone = (message: string | undefined) =>
+  /dynamically imported module|Importing a module script failed|Failed to load module script/i.test(message ?? '');
+
 export function reloadOnNewVersion() {
   window.addEventListener('vite:preloadError', (e) => {
     if (reloadForNewVersion()) e.preventDefault();
