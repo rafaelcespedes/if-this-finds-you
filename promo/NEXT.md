@@ -32,6 +32,8 @@
 - No red tracking plate on the card through the canvas.
 - The end card is the title alone (6 beats; with the 2-beat lead-in the loop is whole bars). 29.9 s.
 
+## Decided
+- The flip stays in colour, red ink included (Rafael, 3 Nov).
+
 ## Open
-- Colour or one ink in the flip?
 - The plate on frame 1 makes the loop not exact (the end card has none): drop it from frame 1?
