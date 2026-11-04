@@ -1,4 +1,4 @@
-// Hand-ruled lines for the Reading Room (?rules=hand, lib/rules.ts): every hairline divider on the page, whoever's
+// Hand-ruled lines for the Reading Room (the default; ?rules=plain keeps hairlines, lib/rules.ts): every divider on the page, whoever's
 // stylesheet drew it (the running head, the ledger, the record, the shelves, the finding aid, the spread, Fonts, About,
 // the sheets), is redrawn with one of the dip-pen rules in engine-rules.ts. Loaded only with the switch on.
 //
@@ -40,16 +40,17 @@ function sheet(): CSSMediaRule {
 }
 
 // ---------- colours: whatever the stylesheet wrote (oklab, color-mix…), read back as sRGB ----------
-const ctx = (() => {
-  const c = document.createElement('canvas');
-  c.width = c.height = 1;
-  return c.getContext('2d', { willReadFrequently: true });
-})();
+let ctx: CanvasRenderingContext2D | null | undefined; // made on first use (this module loads with every page)
 const colours = new Map<string, Rgba | null>();
 function rgba(css: string): Rgba | null {
   let v = colours.get(css);
   if (v !== undefined) return v;
   v = null;
+  if (ctx === undefined) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 1;
+    ctx = c.getContext('2d', { willReadFrequently: true });
+  }
   if (ctx) {
     ctx.clearRect(0, 0, 1, 1);
     ctx.fillStyle = '#000';
@@ -177,7 +178,7 @@ function flush() {
 
 let started = false;
 export function startHandRules() {
-  if (started || typeof document === 'undefined') return;
+  if (started || typeof document === 'undefined' || !document.body) return;
   started = true;
   queue(document.body);
   new MutationObserver((records) => {

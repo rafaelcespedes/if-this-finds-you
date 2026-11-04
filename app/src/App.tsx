@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Pointer } from 'lucide-react';
+import { ChevronDown, PenLine, Pointer } from 'lucide-react';
+import { writeStarted } from '@/lib/write-start';
 import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, NAME_WITH_DESCRIPTOR } from '@/lib/brand';
@@ -62,7 +63,7 @@ import type { NoteState } from '@/lib/state';
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
 import { LetterMarks } from '@/themes/reading-room/SheetMarks';
-import { useMaterialsOpen } from '@/themes/reading-room/materials';
+import { materials, useMaterialsOpen } from '@/themes/reading-room/materials';
 import { PlateTitle } from '@/themes/reading-room/PlateLine';
 import { PostSheetMarks, ToolArrival } from '@/themes/postmarked/tool';
 
@@ -148,6 +149,8 @@ export default function App() {
   // a found letter before the first key: the editor holds nothing (the reply starts from empty), so an IME's
   // first composition, a paste or dictation lands as typed, never mixed with their letter's words
   const replyPending = !!state.sample && !state.inkLog && SAMPLE_FIRST_KEY === 'reply';
+  const replyPendingRef = useRef(replyPending);
+  replyPendingRef.current = replyPending;
   // every found letter shown joins the recent ones (not shown again within ten hands)
   useEffect(() => { sawLetter(state.sample); }, [state.sample]);
 
@@ -449,15 +452,24 @@ export default function App() {
     return () => window.clearTimeout(t);
   }, [wrote, state.reader]);
   const hintShown = idleLong && !wrote && !editing && !state.reader && !replying;
-  // the first time you write on a desktop: how to stop, once, for a few seconds
+  // the moment the pen is on the paper (desktop): "Start typing" until the first key, so the click visibly worked;
+  // then, the first time you write, how to stop, once, for a few seconds
+  const [keyedSinceFocus, setKeyedSinceFocus] = useState(false);
+  useEffect(() => { if (editing) setKeyedSinceFocus(false); }, [editing]);
+  const startHint = editing && isDesktop && !keyedSinceFocus && !state.reader;
   const [escHint, setEscHint] = useState(false);
   useEffect(() => {
-    if (!editing || !isDesktop || readPref('seedhand:esc-taught') === '1') return;
+    if (!editing || !keyedSinceFocus || !isDesktop || readPref('seedhand:esc-taught') === '1') return;
     writePref('seedhand:esc-taught', '1');
     setEscHint(true);
     const t = window.setTimeout(() => setEscHint(false), 4500);
     return () => window.clearTimeout(t);
-  }, [editing, isDesktop]);
+  }, [editing, keyedSinceFocus, isDesktop]);
+  // whoever answers the start of writing (the Reading Room's materials): the click, not the first key
+  useEffect(() => {
+    if (!editing) return;
+    writeStarted({ reply: replyPendingRef.current, pointer: lastDeskPointer.current || 'keyboard' });
+  }, [editing]);
   const foundName = (l: { author: string; year?: number }) => `${shortAuthor(l.author)}${l.year ? `, ${l.year}` : ''}`;
   const sheetTitle = sample ? foundName(sample) : found ? `Your reply to ${shortAuthor(found.letter.author)}` : 'A letter from you';
   /** At a reply's first moment: keep the found letter's writing, as read. */
@@ -510,6 +522,7 @@ export default function App() {
   }, [update]);
   const onEdit = useCallback((e: Edit) => {
     editLog.push(e);
+    setKeyedSinceFocus(true);
     lastEditAt.current = performance.now();
     // typing is writing yours: their letter goes back down
     if (theirsForwardRef.current) setTheirsForward(false);
@@ -1013,6 +1026,10 @@ export default function App() {
   // the Reading Room's writing materials, cracked open as you start a letter of your own, keep the desk's column
   // beside the sheet while you write (themes/reading-room/materials.ts); the header and the footer still step back
   const materialsOpen = useMaterialsOpen();
+  // the click that starts writing on the letter cracks them open (once a visit; focus stays in the letter)
+  useEffect(() => {
+    if (editing && LOOK === 'reading-room' && isDesktop) materials.crack();
+  }, [editing, isDesktop]);
   const deskColumn = desk || (LOOK === 'reading-room' && isDesktop && materialsOpen);
   const reader = state.reader;
   const brokenLink = linkTrouble === 'incomplete';
@@ -1252,12 +1269,18 @@ export default function App() {
                   {/* a while on the page without writing: a quiet pointer at the letter (gone for good once you write) */}
                   {/* a ghost in the sheet's top margin, pointing in (clear of the label above and the first line below);
                       the first time you write on a desktop, the same place says how to stop */}
-                  {(hintShown || escHint) && (
+                  {(hintShown || escHint || startHint) && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[0.75rem] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700 motion-reduce:slide-in-from-top-0"
+                      className={cn(
+                        'pointer-events-none absolute top-2.5 right-2.5 z-10 flex animate-in items-center gap-1.5 rounded-full bg-panel/95 px-2.5 py-1 text-[0.75rem] text-muted-foreground shadow-[0_1px_2px_rgba(60,45,20,0.08),0_6px_16px_-8px_rgba(60,45,20,0.35)] fade-in-0 slide-in-from-top-1 duration-700 motion-reduce:slide-in-from-top-0',
+                        // the click put the pen on the paper: say so plainly, at once
+                        startHint && 'px-3 py-1.5 text-[0.8125rem] font-medium text-[var(--ink)] duration-200',
+                      )}
                     >
-                      {escHint ? 'Press Esc when you’re done' : <><Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write</>}
+                      {startHint
+                        ? (replyPending ? <><PenLine className="size-3.5" /> Start typing to write back, on a fresh sheet</> : <><PenLine className="size-3.5" /> Start typing</>)
+                        : escHint ? 'Press Esc when you’re done' : <><Pointer className="size-3.5" /> {coarse ? 'Tap' : 'Click'} the letter to write</>}
                     </div>
                   )}
                 </div>

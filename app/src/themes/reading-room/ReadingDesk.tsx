@@ -3,7 +3,7 @@
 // with its key first, then the letter's record (LedgerRecord), and the writing materials as a drawer pinned to the
 // column's foot. Opened, the drawer rises over the record, so the column never needs a scroll bar of its own. The
 // controls inside are the tool's own (Panel.tsx), so everything they do is unchanged.
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { ChevronRight, ChevronUp } from 'lucide-react';
 import { AboutHand, LetterStatus, LookControls, MoreControls, ShareMenu, type PanelProps } from '@/components/Panel';
 import { Signature } from '@/components/Signature';
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { BringAnother } from './BringAnother';
 import { LedgerRecord } from './LedgerRecord';
 import { callNo } from './catalogue';
-import { materials } from './materials';
+import { materials, useMaterialsCrack } from './materials';
 import { useRecord } from './useCatalogue';
 
 const DRAWER_KEY = 'seedhand:rr-slip';
@@ -52,15 +52,8 @@ export function ReadingDesk(props: PanelProps) {
   // the desk's main action, a button at the foot of the record's head (under its number and two-line title)
   const bring = <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Bring another hand'} />;
   const status = props.letter && (!props.letter.found || props.letter.drafts > 0);
-  // starting your reply to the found letter on the sheet (its first typed key, or a Blank page from the In ink menu)
-  // cracks the writing materials open, once a visit; reopening one of My letters doesn't
-  const [crack, setCrack] = useState(0);
-  const wasSample = useRef(sampleId);
-  useEffect(() => {
-    const was = wasSample.current;
-    if (was && !sampleId && state.replyTo?.id === was && materials.canOpen()) setCrack((c) => c + 1);
-    wasSample.current = sampleId;
-  }, [sampleId, state.replyTo?.id]);
+  // the click that starts writing on the letter cracks the writing materials open, once a visit (materials.ts)
+  const crack = useMaterialsCrack();
   const physical = physicalOf(state);
   return (
     // as wide as the tool's panel (density.css --panel-w), so the desk grows with the browser's text size as it does

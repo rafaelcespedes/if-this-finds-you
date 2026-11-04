@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { callNo } from '@/themes/reading-room/catalogue';
 import { useMarks } from '@/themes/reading-room/useCatalogue';
 import { LetterMarks } from '@/themes/reading-room/SheetMarks';
-import { circumstanceLabel, languageName, lostInTransit, shortAuthor, shortRecipient } from './data';
+import { capFirst, circumstanceLabel, languageName, lostInTransit, shortAuthor, shortRecipient } from './data';
 import { HandMenu } from './LetterParts';
 import type { ArchiveLetter } from './model';
 import { letterHash } from './route';
@@ -92,7 +92,9 @@ export function ReadingSpread(p: Props) {
   const why = circumstanceLabel(l);
   const where = l.place ?? '';
   const when = whenOf(l);
-  const placeDate = [where, when].filter(Boolean).join(', ');
+  // as a label (the kicker, the dateline) a place starts with a capital; in the citation it stays as recorded
+  const placeDateRaw = [where, when].filter(Boolean).join(', ');
+  const placeDate = capFirst(placeDateRaw);
   const writerLine = l.recipient ? `${shortAuthor(l)} to ${l.recipient.split(/;\s*/)[0]}` : shortAuthor(l);
   const { paras, signature } = closingOf(l.text);
   const f = l.found;
@@ -124,7 +126,7 @@ export function ReadingSpread(p: Props) {
     <p id={`${id}-n-${key}`} className="sp-note-open"><span className="sp-note-no" aria-hidden>{n(key)}</span>{notes[n(key) - 1].body}</p>
   );
 
-  const citation = `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDate ? `, ${placeDate}` : ''}.`;
+  const citation = `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDateRaw ? `, ${placeDateRaw}` : ''}.`;
   const cite = async () => {
     const ok = await copyText(citation);
     toast(ok ? 'Citation copied' : 'Couldn’t copy the citation', { id: 'cite', description: ok ? undefined : citation });
@@ -173,9 +175,9 @@ export function ReadingSpread(p: Props) {
               Full record <span aria-hidden>{recordOpen ? '−' : '+'}</span>
             </button>
             <span className="sp-quiet">
-              <button type="button" onClick={cite}>cite</button><span aria-hidden> · </span>
-              <button type="button" onClick={p.onShare}>share</button><span aria-hidden> · </span>
-              <button type="button" onClick={p.onImage} disabled={!p.imageReady}>download image</button>
+              <button type="button" onClick={cite}>Cite</button><span aria-hidden> · </span>
+              <button type="button" onClick={p.onShare}>Share</button><span aria-hidden> · </span>
+              <button type="button" onClick={p.onImage} disabled={!p.imageReady}>Download image</button>
             </span>
           </div>
           {recordOpen && (
@@ -220,7 +222,7 @@ export function ReadingSpread(p: Props) {
               {nextNo != null && <span className="sp-no">No. {callNo(nextNo)}</span>}
               <span className="sp-next-title">{p.turn.next.title ?? 'A letter'} <span aria-hidden>→</span></span>
               <span className="sp-next-meta">
-                {[p.turn.next.place, p.turn.next.year != null ? String(p.turn.next.year) : '', shortRecipient(p.turn.next) ? `to ${shortRecipient(p.turn.next)}` : ''].filter(Boolean).join(' · ')}
+                {capFirst([p.turn.next.place, p.turn.next.year != null ? String(p.turn.next.year) : '', shortRecipient(p.turn.next) ? `to ${shortRecipient(p.turn.next)}` : ''].filter(Boolean).join(' · '))}
               </span>
             </a>
           </section>
@@ -307,7 +309,7 @@ function Plate(p: Props) {
         <span className="sp-label">
           {many && p.frameH != null ? (
             <span role="group" aria-label="Sheets">
-              sheet{' '}
+              Sheet{' '}
               {Array.from({ length: p.sheets }, (_, i) => (
                 <span key={i}>
                   {i > 0 && <span aria-hidden> · </span>}
@@ -316,7 +318,7 @@ function Plate(p: Props) {
               ))}
             </span>
           ) : (
-            `${p.sheets === 1 ? 'one sheet' : `${p.sheets} sheets`}`
+            `${p.sheets === 1 ? 'One sheet' : `${p.sheets} sheets`}`
           )}
         </span>
         <span className="sp-credit">Hand: {p.name}, a fictional writer</span>

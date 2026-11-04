@@ -67,11 +67,10 @@
       }
       .places { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
       .places a {
-        position: relative; display: inline-block; padding: 2px 6px; color: var(--text); text-decoration: none;
+        position: relative; display: inline-block; padding: 0.25em 0.5em; border-radius: 3px; /* in em, as the app's places */ color: var(--text); text-decoration: none;
+        transition: background-color 100ms ease-out, scale 100ms ease-out;
         font-size: 0.8125rem; font-weight: 400; letter-spacing: 0.05em; font-variant-caps: all-small-caps;
       }
-      /* the last place's ink ends where the rule ends */
-      header > nav .places li:last-child { margin-right: -6px; }
       .places a::after { content: ''; position: absolute; inset: -12px -4px; }
       .menu { display: none; position: relative; }
       .menu summary {
@@ -137,8 +136,8 @@
       @media (hover: hover) and (pointer: fine) {
         .button:hover { color: #7e2f21; text-decoration-color: currentColor; }
         .link:hover { text-decoration-color: var(--text); }
-        /* a faint underline under the pointer, as the app's header does */
-        .places a:hover { background: none; text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent); text-underline-offset: 3px; }
+        /* a faint ink wash under the pointer, as the app's header does (no underline) */
+        .places a:hover { background: color-mix(in oklab, var(--text) 6%, transparent); }
         .menu summary:hover { background: color-mix(in oklab, #1e2733 6%, transparent); }
       }
       @media (forced-colors: active) {
@@ -167,12 +166,11 @@
       html[data-look='classic'] :is(a, summary):focus-visible { outline-color: var(--mark); }
       @media (hover: hover) and (pointer: fine) {
         html[data-look='classic'] .button:hover { background: var(--ink-soft); color: #faf7f1; }
-        html[data-look='classic'] .places a:hover { background: none; color: var(--text); text-decoration: none; }
         html[data-look='classic'] .menu summary:hover { background: #e6dfd2; }
       }
       /* a press answers at once, as in the app's header (last, so it wins over hover while the pointer is down) */
-      .places a:active, .menu summary:active { background: color-mix(in oklab, #1e2733 11%, transparent); }
-      html[data-look='classic'] :is(.places a, .menu summary):active { background: color-mix(in oklab, #1e1a16 11%, transparent); }
+      .places a:active, .menu summary:active { background: color-mix(in oklab, var(--text) 11%, transparent); }
+      .places a:active { scale: 0.97; }
       html[data-look='classic'] .button:active { color: #faf7f1; background: #0d0b09; }
     </style>
   </head>

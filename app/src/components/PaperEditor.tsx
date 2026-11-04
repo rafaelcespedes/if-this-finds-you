@@ -365,7 +365,9 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   const head = sel.dir === 'backward' ? sel.start : sel.end;
   const caret = useMemo(() => (geo ? geo.caret(toMap(head), side) : null), [geo, head, toMap, side]);
   const asc = geo ? geo.ascU : 740, desc = geo ? geo.descU : 200;
-  const caretPx = caret ? { left: caret.x * k, top: caret.sheet * pitch + (caret.y - asc) * k } : { left: 0, top: 0 };
+  // a found letter on the page (blank: the first key starts a reply on a fresh sheet): the caret isn't anywhere in
+  // it, so the textarea waits at the sheet's top and nothing scrolls the letter to its end
+  const caretPx = caret && !blank ? { left: caret.x * k, top: caret.sheet * pitch + (caret.y - asc) * k } : { left: 0, top: 0 };
   const caretH = (asc + desc) * k;
   const atEnd = /^\s*$/.test(text.slice(head));
 
@@ -404,7 +406,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
 
   // keep the caret's line above the on-screen keyboard (and on screen at all) while writing
   useEffect(() => {
-    if (!sel.focused || !wrap.current || !caret) return;
+    if (!sel.focused || !wrap.current || !caret || blank) return;
     const r = wrap.current.getBoundingClientRect();
     keepInView(r.top + caretPx.top, r.top + caretPx.top + caretH, lineH);
     // only when the caret moves to another line, not on every render
@@ -468,13 +470,13 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
             {composition.text}
           </span>
         )}
-        {caret && sel.start === sel.end && !composition && (() => {
+        {caret && sel.start === sel.end && !composition && !(blank && sel.focused) && (() => {
           // the caret leans with the writing when the engine knows the lean (its top point)
           const bx = caret.x * k, by = caret.sheet * pitch + caret.y * k;
           const lean = caret.top ? (caret.top[0] - caret.x) / Math.max(1, caret.y - caret.top[1]) : 0;
           const opacity = sel.focused ? 0.85 : 0.18;
           const key = sel.focused ? moveKey : 'rest';
-          if (atEnd) {
+          if (atEnd && !sel.focused) {
             // the pen at rest: an ink dot on the baseline, a hairline up to the x-height
             const hx = xHeightU * k;
             return (
@@ -484,10 +486,15 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
               </svg>
             );
           }
-          const top = by - asc * k, bottom = by + desc * k;
+          // writing: a clear caret in the pen's ink, from just under the baseline to the letters' tops, blinking
+          // (solid for a moment after each move); the pen hovers while the writer considers a fix
+          const top = by - asc * k * 1.05, bottom = by + desc * k * 0.6;
+          const w = Math.max(2.25, Math.min(3.5, dot * 0.7));
+          // at the end of the writing, a small gap after the last letter (where the next one goes)
+          const cx = bx + (atEnd ? Math.max(3, dot) : 0);
           return (
-            <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && 'caret-breathe')} width="100%" height="100%" style={{ opacity }}>
-              <line x1={bx - lean * desc * k} y1={bottom} x2={bx + lean * asc * k} y2={top} stroke={ink} strokeWidth={1.5} strokeLinecap="round" />
+            <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && (hovering ? 'pen-hover' : 'caret-blink'))} width="100%" height="100%" style={{ opacity: sel.focused ? 1 : opacity }}>
+              <line x1={cx - lean * (bottom - by)} y1={bottom} x2={cx + lean * (by - top)} y2={top} stroke={ink} strokeOpacity={0.92} strokeWidth={w} strokeLinecap="round" />
             </svg>
           );
         })()}
