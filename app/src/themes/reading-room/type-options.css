@@ -1,0 +1,491 @@
+/* TEMPORARY comparison (type-switch.ts, ?type=1…6): the serif + sans that replace Junicode 2 + Source Sans 3 in the
+   Reading Room. Rafael, 4 Nov: "Every time I look at it, it just feels too old… let's add some tension on the modern
+   side… a hybrid that's not old or new". The paper, the stamps and the handwriting stay old; the type pulls toward
+   now. The six run from closest to today (1, only the serif changes) to furthest (6, no serif at all).
+
+   Each pairing only overrides the room's type tokens (reading-room.css: --rr-book, --rr-ui and the --rr-<role>-face,
+   -size, -weight, -stretch, -tracking variables). Every pairing also shares two things: lining figures (the old-style
+   figures are part of the "old"), and Bring another's optical nudge, which was measured for Junicode.
+
+   Every face is declared under its own name ('TT …'), so nothing downloads unless that pairing is chosen. Each is
+   sized (size-adjust) so its x-height matches today's roles: the serif to Junicode at 115% (0.477 em), the sans to
+   Source Sans 3 at 95% (0.454 em). The scale (13 · 15 · 17 · 22 px, 42 px letter titles) is unchanged.
+
+   Premium faces (3 and 4) are referenced with local() only: they draw from fonts installed on this Mac (Rafael's
+   trial and desktop copies) and are never in the repo or served. On any other machine those two pairings fall back
+   to the free faces named after them. A web licence would swap the local() names for WOFF2 files kept out of the
+   public repo and fetched at build (see the review page).
+
+   1 Literata + Source Sans 3 (free, OFL). Modern serif + humanist sans. A contemporary book face (TypeTogether,
+     2015-19) with sharp wedge serifs and optical sizes; beside it the sans Rafael just chose. Only the serif changes.
+   2 Newsreader + Schibsted Grotesk (free, OFL). The best free pair: a screen serif with optical sizes (Production
+     Type) and a grotesk built for a Norwegian newspaper group (Bakken & Bæck). Both born in news; both rare.
+   3 GT Alpina + GT America (Grilli Type, premium), catalogue numbers in GT America Mono. A serif drawn to sit
+     between the classical and the contemporary, and "the bridge between American Gothics and European Grotesks".
+     (A grotesk mono, not a typewriter: the sites that feel current set their data that way; a typewriter doubles
+     the archive's nostalgia.)
+   4 ABC Arizona + ABC Diatype (Dinamo, premium). Arizona is one family that runs from sans through Flare and Mix to
+     Serif; Mix (shown) sits exactly between. Diatype is a plain grotesk named after a 1920s typesetting machine.
+   5 Geist Serif + Geist + Geist Mono (Vercel, free, OFL; Geist Serif is new this autumn). Sans-led: the record, the
+     letter text and every control in Geist, the serif only for titles, catalogue numbers in Geist Mono.
+   6 Mona Sans alone (GitHub, free, OFL). The wildcard: no serif. A grotesk after the industrial-era grotesques with
+     a width axis; titles set wide, everything else at normal width. The handwriting is the only old voice.
+*/
+
+/* ---------- 1 Literata (opsz 7-72, wght 200-900) ---------- */
+@font-face {
+  font-family: 'TT Literata';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  size-adjust: 94%;
+  src: url('@fontsource-variable/literata/files/literata-latin-ext-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Literata';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  size-adjust: 94%;
+  src: url('@fontsource-variable/literata/files/literata-latin-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Literata';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  size-adjust: 94%;
+  src: url('@fontsource-variable/literata/files/literata-latin-ext-opsz-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Literata';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  size-adjust: 94%;
+  src: url('@fontsource-variable/literata/files/literata-latin-opsz-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- 2 Newsreader (opsz 6-72, wght 200-800) + Schibsted Grotesk (wght 400-900) ---------- */
+@font-face {
+  font-family: 'TT Newsreader';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('@fontsource-variable/newsreader/files/newsreader-latin-ext-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Newsreader';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Newsreader';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('@fontsource-variable/newsreader/files/newsreader-latin-ext-opsz-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Newsreader';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('@fontsource-variable/newsreader/files/newsreader-latin-opsz-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Schibsted';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Schibsted';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Schibsted';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Schibsted';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- 3 GT Alpina + GT America + GT America Mono (local only: trial or licensed copies on this Mac) ---------- */
+@font-face { font-family: 'TT GT Alpina'; font-style: normal; font-weight: 300; size-adjust: 100%; src: local('GTAlpina-Light'), local('GTAlpinaTrial-Light'); }
+@font-face { font-family: 'TT GT Alpina'; font-style: normal; font-weight: 400; size-adjust: 100%; src: local('GTAlpina-Regular'), local('GTAlpinaTrial-Regular'); }
+@font-face { font-family: 'TT GT Alpina'; font-style: normal; font-weight: 500 600; size-adjust: 100%; src: local('GTAlpina-Medium'), local('GTAlpinaTrial-Medium'); }
+@font-face { font-family: 'TT GT Alpina'; font-style: normal; font-weight: 700; size-adjust: 100%; src: local('GTAlpina-Bold'), local('GTAlpinaTrial-Bold'); }
+@font-face { font-family: 'TT GT Alpina'; font-style: italic; font-weight: 300; size-adjust: 100%; src: local('GTAlpina-LightItalic'), local('GTAlpinaTrial-LightItalic'); }
+@font-face { font-family: 'TT GT Alpina'; font-style: italic; font-weight: 400; size-adjust: 100%; src: local('GTAlpina-RegularItalic'), local('GTAlpinaTrial-RegularItalic'); }
+@font-face { font-family: 'TT GT Alpina'; font-style: italic; font-weight: 500 600; size-adjust: 100%; src: local('GTAlpina-MediumItalic'), local('GTAlpinaTrial-MediumItalic'); }
+@font-face { font-family: 'TT GT America'; font-style: normal; font-weight: 400; size-adjust: 91%; src: local('GTAmerica-Rg'), local('GTAmericaTrial-Rg'); }
+@font-face { font-family: 'TT GT America'; font-style: normal; font-weight: 500 600; size-adjust: 91%; src: local('GTAmerica-Md'), local('GTAmericaTrial-Md'); }
+@font-face { font-family: 'TT GT America'; font-style: normal; font-weight: 700; size-adjust: 91%; src: local('GTAmerica-Bd'), local('GTAmericaTrial-Bd'); }
+@font-face { font-family: 'TT GT America'; font-style: italic; font-weight: 400; size-adjust: 91%; src: local('GTAmerica-RgIt'), local('GTAmericaTrial-RgIt'); }
+@font-face { font-family: 'TT GT America Mono'; font-style: normal; font-weight: 400; size-adjust: 91%; src: local('GTAmericaMono-Rg'), local('GTAmericaMonoTrial-Rg'); }
+@font-face { font-family: 'TT GT America Mono'; font-style: normal; font-weight: 500 600; size-adjust: 91%; src: local('GTAmericaMono-Md'), local('GTAmericaMonoTrial-Md'); }
+
+/* ---------- 4 ABC Arizona Mix and Flare + ABC Diatype (local only: Dinamo trial copies on this Mac) ----------
+   The regular weight (titles, the letter text, the record) is Arizona Mix: Flare's flared strokes with a few real
+   serifs kept (O, n, d, m), the halfway point of the family. Only Mix's regular is installed, so the other weights
+   are Flare. A licence would add Arizona Text for long reading. */
+@font-face { font-family: 'TT Arizona'; font-style: normal; font-weight: 300; size-adjust: 100%; src: local('ABCArizonaFlare-Light'), local('ABCArizonaFlareTrial-Light'); }
+@font-face { font-family: 'TT Arizona'; font-style: normal; font-weight: 400; size-adjust: 100%; src: local('ABCArizonaMix-Regular'), local('ABCArizonaMixTrial-Regular'); }
+@font-face { font-family: 'TT Arizona'; font-style: normal; font-weight: 500 600; size-adjust: 100%; src: local('ABCArizonaFlare-Medium'), local('ABCArizonaFlareTrial-Medium'); }
+@font-face { font-family: 'TT Arizona'; font-style: normal; font-weight: 700; size-adjust: 100%; src: local('ABCArizonaFlare-Bold'), local('ABCArizonaFlareTrial-Bold'); }
+@font-face { font-family: 'TT Arizona'; font-style: italic; font-weight: 300; size-adjust: 100%; src: local('ABCArizonaFlare-LightItalic'), local('ABCArizonaFlareTrial-LightItalic'); }
+@font-face { font-family: 'TT Arizona'; font-style: italic; font-weight: 400; size-adjust: 100%; src: local('ABCArizonaMix-RegularItalic'), local('ABCArizonaMixTrial-RegularItalic'); }
+@font-face { font-family: 'TT Arizona'; font-style: italic; font-weight: 500 600; size-adjust: 100%; src: local('ABCArizonaFlare-MediumItalic'), local('ABCArizonaFlareTrial-MediumItalic'); }
+@font-face { font-family: 'TT Diatype'; font-style: normal; font-weight: 300; size-adjust: 94%; src: local('ABCDiatype-Light'), local('ABCDiatypeUnlicensedTrial-Light'); }
+@font-face { font-family: 'TT Diatype'; font-style: normal; font-weight: 400; size-adjust: 94%; src: local('ABCDiatype-Regular'), local('ABCDiatypeUnlicensedTrial-Regular'); }
+@font-face { font-family: 'TT Diatype'; font-style: normal; font-weight: 500 600; size-adjust: 94%; src: local('ABCDiatype-Medium'), local('ABCDiatypeUnlicensedTrial-Medium'); }
+@font-face { font-family: 'TT Diatype'; font-style: normal; font-weight: 700; size-adjust: 94%; src: local('ABCDiatype-Bold'), local('ABCDiatypeUnlicensedTrial-Bold'); }
+@font-face { font-family: 'TT Diatype'; font-style: italic; font-weight: 400; size-adjust: 94%; src: local('ABCDiatype-RegularItalic'), local('ABCDiatypeUnlicensedTrial-RegularItalic'); }
+
+/* ---------- 5 Geist + Geist Mono (Fontsource) and Geist Serif (self-hosted from Vercel's geist 1.9.0; OFL-Geist.txt) ---------- */
+@font-face {
+  font-family: 'TT Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/geist/files/geist-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Geist';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/geist/files/geist-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Geist';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/geist/files/geist-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Geist Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/geist-mono/files/geist-mono-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Geist Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 86%;
+  src: url('@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* the same Geist for reading (the letter text, the record, notes), sized to the serif roles' x-height (0.48 em)
+   rather than the controls' (0.45 em) */
+@font-face {
+  font-family: 'TT Geist Text';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 91%;
+  src: url('@fontsource-variable/geist/files/geist-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Geist Text';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 91%;
+  src: url('@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Geist Text';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 91%;
+  src: url('@fontsource-variable/geist/files/geist-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Geist Text';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  size-adjust: 91%;
+  src: url('@fontsource-variable/geist/files/geist-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* one weight, no italic: a display face, used here only for titles */
+@font-face {
+  font-family: 'TT Geist Serif';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 100%;
+  src: url('./type-options/GeistSerif-Regular.woff2') format('woff2');
+}
+
+/* ---------- 6 Mona Sans (wdth 75-125, wght 200-900) ---------- */
+@font-face {
+  font-family: 'TT Mona Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  size-adjust: 88%;
+  src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-ext-wdth-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Mona Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  size-adjust: 88%;
+  src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-wdth-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Mona Sans';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  size-adjust: 88%;
+  src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-ext-wdth-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Mona Sans';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  size-adjust: 88%;
+  src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-wdth-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* the same Mona Sans for reading, sized to the serif roles' x-height (0.48 em) rather than the controls' */
+@font-face {
+  font-family: 'TT Mona Text';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-ext-wdth-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Mona Text';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-wdth-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Mona Text';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-ext-wdth-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Mona Text';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  size-adjust: 92%;
+  src: url('@fontsource-variable/mona-sans/files/mona-sans-latin-wdth-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- what every pairing shares ---------- */
+html[data-look='reading-room'][data-rrtype] {
+  /* Junicode's titles were widened to 112%; the new faces keep their own width */
+  --rr-title-stretch: 100%;
+  /* catalogue numbers: lining, tabular figures, no small capitals */
+  --rr-number-caps: normal;
+  --rr-number-tracking: 0;
+}
+/* lining figures everywhere: the rules that ask for old-style figures find none */
+html[data-look='reading-room'][data-rrtype] body {
+  font-feature-settings: 'lnum' 1, 'onum' 0;
+}
+/* Bring another's label sat 0.105 em low to centre Junicode's capitals; each pairing sets its own, about 0.85 × the
+   face's metric offset (the share the Junicode measurement came to) */
+html[data-look='reading-room'][data-rrtype] .rr-desk .rr-bring .rr-bring-label {
+  translate: 0 var(--tt-bring-nudge, 0em);
+}
+
+/* ---------- 1 Literata + Source Sans 3 ---------- */
+html[data-look='reading-room'][data-rrtype='1'] {
+  --rr-book: 'TT Literata', Georgia, serif;
+  --rr-caps: var(--rr-ui);
+  --rr-title-weight: 470;
+  --rr-title-tracking: -0.012em;
+  --rr-number-face: var(--rr-ui);
+  --rr-number-weight: 500;
+  --rr-action-weight: 580;
+  --tt-bring-nudge: -0.07em;
+}
+
+/* ---------- 2 Newsreader + Schibsted Grotesk ---------- */
+html[data-look='reading-room'][data-rrtype='2'] {
+  --rr-book: 'TT Newsreader', Georgia, serif;
+  --rr-ui: 'TT Schibsted', 'RR Source Sans', system-ui, sans-serif;
+  --rr-caps: var(--rr-ui);
+  --rr-title-weight: 480;
+  --rr-title-tracking: -0.015em;
+  --rr-number-face: var(--rr-ui);
+  --rr-number-weight: 500;
+  --rr-action-face: var(--rr-ui);
+  --rr-action-weight: 600;
+  --rr-action-size: 1rem;
+  --tt-bring-nudge: -0.006em;
+}
+
+/* ---------- 3 GT Alpina + GT America, numbers in GT America Mono ---------- */
+html[data-look='reading-room'][data-rrtype='3'] {
+  --rr-book: 'TT GT Alpina', 'TT Literata', Georgia, serif;
+  --rr-ui: 'TT GT America', 'RR Source Sans', system-ui, sans-serif;
+  --rr-caps: var(--rr-ui);
+  --rr-title-weight: 400;
+  --rr-title-tracking: -0.015em;
+  --rr-number-face: 'TT GT America Mono', 'TT GT America', ui-monospace, monospace;
+  --rr-number-size: 0.875rem;
+  --rr-number-weight: 400;
+  --rr-action-face: var(--rr-ui);
+  --rr-action-weight: 500;
+  --rr-action-size: 1rem;
+  --tt-bring-nudge: -0.012em;
+}
+
+/* ---------- 4 ABC Arizona Mix + ABC Diatype ---------- */
+html[data-look='reading-room'][data-rrtype='4'] {
+  --rr-book: 'TT Arizona', 'TT Literata', Georgia, serif;
+  --rr-ui: 'TT Diatype', 'RR Source Sans', system-ui, sans-serif;
+  --rr-caps: var(--rr-ui);
+  --rr-title-weight: 400;
+  --rr-title-tracking: -0.015em;
+  --rr-number-face: var(--rr-ui);
+  --rr-number-weight: 400;
+  --rr-action-face: var(--rr-ui);
+  --rr-action-weight: 500;
+  --rr-action-size: 1rem;
+  --tt-bring-nudge: 0.06em;
+}
+/* Diatype's capital I and lowercase l are the same shape; its ss08 gives the I serifs (Arizona has no ss08) */
+html[data-look='reading-room'][data-rrtype='4'] body {
+  font-feature-settings: 'lnum' 1, 'onum' 0, 'ss08' 1;
+}
+
+/* ---------- 5 Geist (sans-led) + Geist Serif for titles + Geist Mono for numbers ---------- */
+html[data-look='reading-room'][data-rrtype='5'] {
+  --rr-ui: 'TT Geist', 'RR Source Sans', system-ui, sans-serif;
+  /* the room's book face becomes the sans (the letter text, the record, notes, About's text), sized for reading */
+  --rr-book: 'TT Geist Text', 'RR Source Sans', system-ui, sans-serif;
+  --rr-caps: var(--rr-ui);
+  --rr-title-face: 'TT Geist Serif', 'TT Literata', Georgia, serif;
+  --rr-title-weight: 400;
+  --rr-title-tracking: -0.01em;
+  --rr-reading-leading: 1.55;
+  --rr-number-face: 'TT Geist Mono', ui-monospace, monospace;
+  --rr-number-size: 0.875rem;
+  --rr-number-weight: 400;
+  --rr-action-face: var(--rr-ui);
+  --rr-action-weight: 500;
+  --rr-action-size: 1rem;
+  --tt-bring-nudge: 0em;
+}
+/* About's big title takes the display serif too (its text follows the book face) */
+html[data-look='reading-room'][data-rrtype='5'] .about-title {
+  font-family: var(--rr-title-face);
+  font-weight: 400;
+}
+
+/* ---------- 6 Mona Sans alone: wide titles, everything else at normal width ---------- */
+html[data-look='reading-room'][data-rrtype='6'] {
+  --rr-ui: 'TT Mona Sans', 'RR Source Sans', system-ui, sans-serif;
+  --rr-book: 'TT Mona Text', 'RR Source Sans', system-ui, sans-serif;
+  --rr-title-face: var(--rr-book);
+  --rr-caps: var(--rr-ui);
+  --rr-title-weight: 560;
+  --rr-title-stretch: 118%;
+  --rr-title-tracking: -0.01em;
+  --rr-title-leading: 1.12;
+  --rr-reading-leading: 1.55;
+  --rr-number-face: var(--rr-ui);
+  --rr-number-weight: 500;
+  --rr-action-face: var(--rr-ui);
+  --rr-action-weight: 600;
+  --rr-action-size: 1rem;
+  --tt-bring-nudge: -0.016em;
+}
+html[data-look='reading-room'][data-rrtype='6'] .about-title {
+  font-stretch: 118%;
+  font-weight: 560;
+}

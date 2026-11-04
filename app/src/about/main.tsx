@@ -5,6 +5,7 @@ import { applySerif } from '../archive/serif';
 import { applyLook } from '../lib/look';
 import '../index.css';
 import '../themes/reading-room.css';
+import '../themes/reading-room/type-switch'; // temporary: the ?type pairing comparison
 import '../themes/postmarked.css';
 import './about.css';
 
