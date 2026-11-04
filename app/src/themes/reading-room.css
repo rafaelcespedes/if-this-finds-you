@@ -661,6 +661,22 @@ html[data-look='reading-room'] .rr-bring.rr-bring-button {
     min-height: 2.75rem;
   }
 }
+/* the same button holding only an icon (BringAnother's icon): square, the icon in the middle, in the same red */
+html[data-look='reading-room'] .rr-bring.rr-bring-button.rr-bring-icon.rr-bring.rr-bring {
+  justify-content: center;
+  width: 2.25rem;
+  padding: 0;
+}
+html[data-look='reading-room'] .rr-bring.rr-bring-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+@media (pointer: coarse) {
+  html[data-look='reading-room'] .rr-bring.rr-bring-button.rr-bring-icon.rr-bring.rr-bring {
+    width: 2.75rem;
+  }
+}
 html[data-look='reading-room'] .rr-bring:disabled {
   opacity: 0.5;
   pointer-events: none;
