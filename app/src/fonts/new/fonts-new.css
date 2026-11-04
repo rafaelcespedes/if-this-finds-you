@@ -82,13 +82,19 @@ html[data-fonts='new'][data-theme='dark'] body {
   background: var(--background);
   color: var(--foreground);
 }
+/* under a sheet (Filters, Text, the phone's menu) the night room dims: the room's backdrop is mixed from its ink,
+   which is light here */
+html[data-fonts='new'][data-theme='dark'] .sheet-backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
 /* the popovers and sheets lift off the night room by a lighter slip and a deeper shadow */
 html[data-fonts='new'][data-theme='dark'] :is([data-radix-popper-content-wrapper] > *, .sheet-surface) {
   box-shadow: 0 0 0 1px var(--rr-edge), 0 18px 44px -16px rgba(0, 0, 0, 0.75);
 }
 
 /* ---------- every clickable thing shows the hand ---------- */
-html[data-fonts='new'] :is(button, a[href], [role='button'], [role='radio'], [role='checkbox'], [role='switch'], [role='menuitem'], [role='menuitemradio'], [role='slider'], summary, select, label:has(> input[type='checkbox'])):not(:disabled, [aria-disabled='true']) {
+/* (not the size slider: it keeps the desk's sideways cursor, ui/controls.css) */
+html[data-fonts='new'] :is(button, a[href], [role='button'], [role='radio'], [role='checkbox'], [role='switch'], [role='menuitem'], [role='menuitemradio'], summary, select, label:has(> input[type='checkbox'])):not(:disabled, [aria-disabled='true']) {
   cursor: pointer;
 }
 
@@ -129,7 +135,7 @@ html[data-fonts='new'] .fx-title {
   margin: 0;
   font-family: var(--fx-book);
   font-size: 2.125rem;
-  font-weight: 540;
+  font-weight: var(--ed-display-weight, 440); /* every page title's weight (themes/editorial.css) */
   font-stretch: var(--rr-title-stretch, normal);
   line-height: 1.05;
   letter-spacing: -0.012em;
