@@ -35,5 +35,13 @@
 ## Decided
 - The flip stays in colour, red ink included (Rafael, 3 Nov).
 
+## Done in drafts 6–7 (3–4 Nov)
+- The video's own type is the site's: Schibsted Grotesk for the counter, descriptions and credit, Newsreader for the
+  writers' names (type.ts; confirmed with the coordinator: Alegreya + Plex Mono was a mix-up).
+- "HAND NO." in capitals (Schibsted has no small capitals), as wide as the number, the pair centred in a 104 px plate.
+- Sound made from the handwriting (scripts/sound.ts): taps, press, air, nib scratches, change taps.
+
 ## Open
+- Sound alone, or a licensed track under it?
+- The final renders (1080, 30 fps for X; 60 fps for Instagram?).
 - The plate on frame 1 makes the loop not exact (the end card has none): drop it from frame 1?

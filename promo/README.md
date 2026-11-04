@@ -15,8 +15,9 @@ cd promo
 npm install
 npm run canvas          # once: the 4908 writers of the canvas and their atlas pages (public/atlas, ~20 s)
 npm run studio          # Remotion Studio: scrub the timeline, change the settings on the right
-npm run render          # out/draft-540.mp4       (the working draft: 540 × 540, 30 fps, click track; ~30 s)
-npm run render:timing   # out/timing-540.mp4      (the same with a bar.beat counter, to try tracks against)
+npm run sound           # public/sound.wav: the sound, made from the handwriting (the render scripts run it too)
+npm run render          # out/draft-540.mp4       (the working draft: 540 × 540, 30 fps, with sound; ~30 s)
+npm run render:timing   # out/timing-540.mp4      (a bar.beat counter and a click, to try tracks against)
 npm run render:final    # out/promo-x-30fps.mp4   (X: 1080 × 1080, 30 fps)
 npm run render:60       # out/promo-60fps.mp4     (Instagram: 1080 × 1080, 60 fps, silent)
 ```
@@ -38,7 +39,9 @@ The first render downloads Remotion's headless browser (~140 MB). Drafts render 
 | `src/scene/endcard.ts` | The end card: the title written again where it began, then the stamped lines. |
 | `src/Promo.tsx`, `src/Root.tsx` | The Remotion composition and its settings panel (zod schema). |
 | `scripts/sample-hands.mjs` | Picks the flip's hands with the engine's sampler (`npm run hands`). |
-| `scripts/click.mjs` | Writes the placeholder click track for the tempo. |
+| `scripts/sound.ts`, `sound.mjs` | The sound, made from the same clock and pen strokes as the pictures: taps on the cuts, a press on the stop, air on the pull back, the nib along every stroke, taps on the letter changes. `sound.mjs` bundles it with the scene's code (esbuild) and writes `public/sound.wav`. |
+| `src/scene/type.ts` | The video's own type by role: the site's Newsreader + Schibsted Grotesk (default) or the earlier Junicode. |
+| `scripts/click.mjs` | A click track for the tempo (the timing version). |
 | `review/build.mjs` | Builds the private review page from the same timing code. |
 
 ## The timing
@@ -51,7 +54,7 @@ never drift. When the track is chosen, set `bpm` and `offset` (seconds to its fi
 
 ## Settings (Studio panel or `--props`)
 
-`bpm`, `offset`, `click`, `ownInk` (each hand in its own ink), `labels` (counter and names), `perWordBeats` (beats at
+`bpm`, `offset`, `audio` (`pen`, `click`, `none`), `type` (`site`, `junicode`), `ownInk`, `ownPaper` (each hand in its own ink and on its own paper), `labels` (counter and names), `perWordBeats` (beats at
 the end of the flip where each word takes its own hand), `landingSeed` / `landingStyle` (the hand it lands on),
 `letterId` (an id from `content/sample-texts.json`), `grid` (the bar.beat counter), `size` (540 drafts, 1080 final),
 `fps` (render only). Section lengths and the flip's curve are in `DEFAULTS` in `src/scene/timeline.ts`.

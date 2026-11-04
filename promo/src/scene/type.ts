@@ -8,7 +8,8 @@ import { staticFile } from 'remotion';
 
 export type Pairing = 'site' | 'junicode';
 type Face = 'book' | 'ui';
-export interface Role { face: Face; weight: number; italic?: boolean; caps?: boolean; tracking: number }
+/** caps: small capitals (the face's own); upper: set in capitals (for a face without small capitals) */
+export interface Role { face: Face; weight: number; italic?: boolean; caps?: boolean; upper?: boolean; tracking: number }
 export type RoleName = 'label' | 'number' | 'name' | 'meta' | 'credit';
 
 interface TypeSet {
@@ -30,7 +31,7 @@ export const TYPESETS: Record<Pairing, TypeSet> = {
       { family: 'Promo Schibsted', file: 'schibsted-grotesk-latin-italic.woff2', weight: '400 900', style: 'italic' },
     ],
     roles: {
-      label: { face: 'ui', weight: 500, tracking: 0.01 },
+      label: { face: 'ui', weight: 500, upper: true, tracking: 0.08 },
       number: { face: 'ui', weight: 500, tracking: 0 },
       name: { face: 'book', weight: 480, tracking: -0.015 },
       meta: { face: 'ui', weight: 400, tracking: 0.01 },
@@ -61,7 +62,7 @@ export const pairing = () => current;
 export function role(name: RoleName) {
   const T = TYPESETS[current];
   const r = T.roles[name];
-  return { family: T.families[r.face], weight: r.weight, italic: !!r.italic, caps: !!r.caps, tracking: r.tracking };
+  return { family: T.families[r.face], weight: r.weight, italic: !!r.italic, caps: !!r.caps, upper: !!r.upper, tracking: r.tracking };
 }
 /** The CSS font shorthand for a role at a size. */
 export function fontOf(name: RoleName, size: number) {

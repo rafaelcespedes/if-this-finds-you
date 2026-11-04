@@ -70,7 +70,7 @@ const beatTable = P30.sections.map((s) => `<tr><td>${s.label}</td><td>${bars(s)}
 
 const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Launch video, draft 6</title>
+<title>Launch video, draft 7</title>
 <style>
 @font-face { font-family: 'Newsreader'; font-style: normal; font-weight: 200 800; src: url(data:font/woff2;base64,${font('newsreader-latin-roman.woff2')}) format('woff2'); }
 @font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 200 800; src: url(data:font/woff2;base64,${font('newsreader-latin-italic.woff2')}) format('woff2'); }
@@ -129,9 +129,9 @@ a { color: var(--red); }
 <body><main>
 <header class="lede">
   <p class="caps">If This Finds You · launch video</p>
-  <h1>Launch video, draft 6</h1>
+  <h1>Launch video, draft 7</h1>
   <p>A square video for X and Instagram, drawn frame by frame by the site’s own engine: every hand in it is generated, and Maybelle’s letter is written out by the same code the site uses. No music yet; the cuts sit on a 112.5 BPM grid so any track at that tempo drops in.</p>
-  <p><b>Changed since draft 5:</b> the video’s own type is now the site’s: the counter, the descriptions under the names and the letter’s credit in Schibsted Grotesk (sentence case, the number in lining figures at a fixed spacing), the writers’ names in Newsreader. Nothing else changed.</p>
+  <p><b>Changed since draft 6:</b> sound, made from the handwriting itself (below); “HAND NO.” in capitals, as wide as the number, the pair centred in a slightly taller plate so there’s more room above it.</p>
   <p class="specs"><span><b>${P30.seconds.toFixed(1)}</b> seconds</span><span><b>1080 × 1080</b></span><span><b>112.5</b> BPM, a two-beat lead-in and <b>12</b> bars</span><span><b>${P30.handsShown}</b> hands in the flip, <b>${canvasWriters.toLocaleString('en')}</b> on the canvas</span></p>
 </header>
 
@@ -139,7 +139,7 @@ a { color: var(--red); }
   <video src="draft.mp4" poster="img/f0000.jpg" controls loop muted playsinline preload="metadata"></video>
   <div class="files">
     <h2>The draft</h2>
-    <p>The 540 × 540 working draft at 30 fps, with a placeholder click on every beat (higher on each bar’s first beat) so the timing can be judged; unmute to hear it.</p>
+    <p>The 540 × 540 working draft at 30 fps, with sound; unmute to hear it. The sound is made in code from the same clock and the same pen strokes as the pictures: a pen tapped on paper on every cut, speeding up into a rattle; one low press on the stop, then silence; air swelling as the camera pulls back, silence on the still beat, a rush on the dive; the nib scratching along every stroke of Maybelle’s letter, louder where the pen moves faster, and a small tap each time the letters change; the title scratched out again at the end.</p>
     <p class="term">Rendered in about 30 seconds on this Mac. The final renders at 1080 × 1080 (30 fps for X, 60 for Instagram) once we’re happy.</p>
   </div>
 </section>
@@ -183,9 +183,9 @@ a { color: var(--red); }
 <section class="card">
   <h2>Decisions for you</h2>
   <ol class="q">
-    <li><b>Ready for the final?</b> If this round looks right, I render 1080 × 1080 at 30 fps for X (and 60 fps for Instagram, if you want it).</li>
-    <li><b>Music.</b> Which track? Anything near 112.5 BPM fits as it is. Its first downbeat goes on the first cut, 1.07 s in.</li>
-    <li><b>The loop.</b> The video ends on the title alone and starts on the title with “Hand no. 0001”, so the plate appears as it loops. Drop the plate from the first frame for an exact loop?</li>
+    <li><b>The sound.</b> Does the handwriting sound work on its own, or should a licensed music track (Artlist or Epidemic Sound, about $10 a month) sit under it? The cuts stay on a 112.5 BPM grid either way.</li>
+    <li><b>Ready for the final?</b> If this round looks and sounds right, I render 1080 × 1080 at 30 fps for X (and 60 fps for Instagram, if you want it).</li>
+    <li><b>The loop.</b> The video ends on the title alone and starts on the title with “HAND NO. 0001”, so the plate appears as it loops. Drop the plate from the first frame for an exact loop?</li>
     <li><b>Flashing.</b> The fastest two beats change the hand 30 times a second, paper colour included. Before posting, run the final file through a free flash checker such as PEAT.</li>
   </ol>
 </section>

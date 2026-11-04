@@ -36,10 +36,10 @@ export function styleOf(look: Look, o: { ownInk: boolean; ownPaper: boolean }): 
 const NUM = 52; // the number's size at 1080 px
 const PAD_X = 20;
 
-interface CounterMetrics { pitch: number; numW: number; zeroL: number; label: number }
+interface CounterMetrics { pitch: number; numW: number; zeroL: number; label: number; labelH: number; numH: number }
 const metricsCache = new Map<string, CounterMetrics>();
 /** the label as the pairing sets it: small capitals ("hand no." drawn as caps) or sentence case */
-const labelText = () => (role('label').caps ? 'hand no.' : 'Hand no.');
+const labelText = () => { const r = role('label'); return r.upper ? 'HAND NO.' : r.caps ? 'hand no.' : 'Hand no.'; };
 /** Digit pitch (the widest figure: the number never changes width), the number's ink width, and the label size that
  *  makes "HAND NO." exactly as wide as the number. */
 function counterMetrics(ctx: CanvasRenderingContext2D, k: number): CounterMetrics {
@@ -54,6 +54,7 @@ function counterMetrics(ctx: CanvasRenderingContext2D, k: number): CounterMetric
   for (let d = 0; d <= 9; d++) pitch = Math.max(pitch, ctx.measureText(String(d)).width);
   const z = ctx.measureText('0');
   const zeroW = z.actualBoundingBoxRight + z.actualBoundingBoxLeft;
+  const numH = z.actualBoundingBoxAscent;
   // ink from the first digit's left edge to the last one's right edge, four digits centred in their cells
   const numW = 3 * pitch + zeroW;
   const L = role('label');
@@ -63,7 +64,8 @@ function counterMetrics(ctx: CanvasRenderingContext2D, k: number): CounterMetric
   const m = ctx.measureText(labelText());
   const labelW100 = m.actualBoundingBoxRight + m.actualBoundingBoxLeft;
   ctx.restore();
-  const out = { pitch, numW, zeroL: (pitch - zeroW) / 2, label: (100 * numW) / labelW100 };
+  const label = (100 * numW) / labelW100;
+  const out = { pitch, numW, zeroL: (pitch - zeroW) / 2, label, labelH: (m.actualBoundingBoxAscent * label) / 100, numH };
   metricsCache.set(key, out);
   return out;
 }
@@ -99,14 +101,18 @@ export function drawCounter(ctx: CanvasRenderingContext2D, S: number, count: num
   (ctx as any).fontVariantCaps = L.caps ? 'all-small-caps' : 'normal';
   (ctx as any).letterSpacing = `${L.tracking * M.label}px`;
   const lm = ctx.measureText(labelText());
-  ctx.fillText(labelText(), x0 + lm.actualBoundingBoxLeft, g.plate.y + 31 * k);
+  // the label over the number, the pair centred in the plate (the same room above as below)
+  const gap = 11 * k;
+  const top = g.plate.y + (g.plate.h - (M.labelH + gap + M.numH)) / 2;
+  const labelBase = top + M.labelH, numBase = labelBase + gap + M.numH;
+  ctx.fillText(labelText(), x0 + lm.actualBoundingBoxLeft, labelBase);
   // the number: each digit centred in a fixed cell
   ctx.font = fontOf('number', NUM * k);
   (ctx as any).fontVariantCaps = 'normal';
   (ctx as any).letterSpacing = '0px';
   ctx.textAlign = 'center';
   const digits = String(Math.min(9999, count)).padStart(4, '0');
-  for (let i = 0; i < 4; i++) ctx.fillText(digits[i], x0 - M.zeroL + (i + 0.5) * M.pitch, g.plate.y + 80 * k);
+  for (let i = 0; i < 4; i++) ctx.fillText(digits[i], x0 - M.zeroL + (i + 0.5) * M.pitch, numBase);
   ctx.restore();
 }
 

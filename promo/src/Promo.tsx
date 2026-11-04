@@ -10,8 +10,8 @@ export const promoSchema = z.object({
   bpm: z.number().min(60).max(180).step(0.5),
   /** where beat 1 of the music falls, seconds */
   offset: z.number().min(0).max(4).step(0.01),
-  /** the click track (a placeholder to judge the timing; off for the music) */
-  click: z.boolean(),
+  /** the sound: 'pen' (made from the handwriting, public/sound.wav), 'click' (a beat click to judge timing), 'none' */
+  audio: z.enum(['pen', 'click', 'none']),
   /** in the flip, each hand in its own ink, or all in one ink */
   ownInk: z.boolean(),
   /** in the flip, each hand on its own paper's colour, or all on one paper */
@@ -37,7 +37,7 @@ export type PromoProps = z.infer<typeof promoSchema> & { fps?: number };
 export const defaultProps: PromoProps = {
   bpm: DEFAULTS.bpm,
   offset: 0,
-  click: true,
+  audio: 'pen',
   ownInk: true,
   ownPaper: true,
   labels: true,
@@ -83,11 +83,11 @@ export const Promo: React.FC<PromoProps & { fpsNow: number }> = (props) => {
   return (
     <AbsoluteFill style={{ backgroundColor: '#f3eee1' }}>
       <canvas ref={ref} width={S} height={S} style={{ width: '100%', height: '100%' }} />
-      {props.click ? (
+      {props.audio === 'click' ? (
         <Sequence from={Math.round(props.offset * props.fpsNow)}>
           <Audio src={staticFile(`click-${props.bpm}.wav`)} volume={0.5} />
         </Sequence>
-      ) : null}
+      ) : props.audio === 'pen' ? <Audio src={staticFile('sound.wav')} /> : null}
     </AbsoluteFill>
   );
 };
