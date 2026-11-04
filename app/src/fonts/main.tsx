@@ -11,7 +11,6 @@ import '../index.css';
 import '../density.css';
 import '../archive/archive.css';
 import '../themes/reading-room.css';
-import '../themes/reading-room/type-switch'; // temporary: the ?type pairing comparison
 import '../themes/postmarked.css';
 import '../components/ui/controls.css';
 import './fonts.css';
