@@ -13,7 +13,7 @@ import letters from '../../../content/sample-texts.json';
 
 /** The candidates, oldest first: ten schools, five centuries, a few languages. */
 export const CAROUSEL = [
-  'betson-1476', 'verney-1691', 'wheatley-1779', 'goya-1786', 'august-goethe-1797', 'hoen-1814',
+  'stonor-1476', 'verney-1691', 'wheatley-1779', 'goya-1786', 'august-goethe-1797', 'hoen-1814',
   'carlyle-1850-from-nero', 'dickinson-1861', 'santa-1908-sister', 'stewart-1914-home', 'aibonito-1929',
 ];
 

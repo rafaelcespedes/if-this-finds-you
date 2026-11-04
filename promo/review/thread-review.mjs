@@ -21,8 +21,10 @@ for (const c of cards) {
   execFileSync('python3', ['-c', `from PIL import Image; Image.open(${JSON.stringify(path.join(root, `out/carousel/letter-${pad(c.n - 1)}.png`))}).convert('RGB').save(${JSON.stringify(path.join(out, `img/letter-${pad(c.n)}.jpg`))}, quality=86)`]);
 }
 // the final video once it's rendered, else the latest draft
-const finalVideo = path.join(root, 'out/if-this-finds-you-x-1080.mp4');
-fs.copyFileSync(fs.existsSync(finalVideo) ? finalVideo : path.join(root, 'out/draft-v8-540.mp4'), path.join(out, 'video.mp4'));
+// (a 720 copy of it: the page takes files under 20 MB; scripts/ff.sh -i out/if-this-finds-you-x-1080.mp4 -vf scale=720:720
+// -crf 24 → out/video-720.mp4)
+const small = path.join(root, 'out/video-720.mp4');
+fs.copyFileSync(fs.existsSync(small) ? small : path.join(root, 'out/draft-v8-540.mp4'), path.join(out, 'video.mp4'));
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const linkify = (s) => esc(s).replace(/https?:\/\/\S+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\//, '')}</a>`);
@@ -108,12 +110,12 @@ const html = `<!DOCTYPE html>
   <p class="lede">Three posts for X, drafted in your voice. Nothing has been posted anywhere. Every draft fits in 280 characters as X counts them (a link counts as 23). Each Copy button copies one draft.</p>
 
   <h2>1. The hook, with the video</h2>
-  <p class="note">The final video: 1080 × 1080, 30 fps, 29.9 s, with sound.</p>
+  <p class="note">The final video (shown here at 720 to keep the page light; the file to post is 1080 × 1080, 30 fps, 29.9 s, with sound).</p>
   <video src="video.mp4" controls playsinline preload="metadata"></video>
   ${copy.post1.map((o, i) => post(o, 'post1', i)).join('')}
 
   <h2>2. Your favourites, as a carousel</h2>
-  <p class="note">Eleven real letters from the collection, each in the hand the site gives it: the writer's era and school, its pen and its period paper, drawn by the engine. Tap the heart on <b>four</b>, then Copy picks and send me the list. Each image is 1080 × 1350, X's tallest. The caption on each card names the letter, the writer who copied it out, and the seed.</p>
+  <p class="note">Eleven real letters from the collection, each in the hand the site gives it: the writer's era and school, its pen and its period paper, drawn by the engine. Tap the heart on <b>four</b>, then Copy picks and send me the list. Each image is 1080 × 1350, X's tallest. (Card 1 is now Elizabeth Stonor's 1476 letter to her husband, in the same Chancery italic: the Betson letter has been retired from the site.) The caption on each card names the letter, the writer who copied it out, and the seed.</p>
   <section class="pickzone">
   <div class="grid" id="grid">${cardHtml}
   </div>
