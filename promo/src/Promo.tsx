@@ -25,6 +25,8 @@ export const promoSchema = z.object({
   letterId: z.string(),
   /** a small bar.beat counter in the corner, to judge the timing against a track */
   grid: z.boolean(),
+  /** frame size, px: 540 while we iterate (quick), 1080 for the final */
+  size: z.number().int().min(270).max(2160),
 });
 export type PromoProps = z.infer<typeof promoSchema> & { fps?: number };
 
@@ -39,10 +41,11 @@ export const defaultProps: PromoProps = {
   landingStyle: 'quebec-print',
   letterId: 'santa-1908-papa',
   grid: false,
+  size: 540,
 };
 
 export function settingsOf(props: PromoProps, fps: number): Settings {
-  return { ...DEFAULTS, bpm: props.bpm, offset: props.offset, fps, perWordBeats: props.perWordBeats };
+  return { ...DEFAULTS, bpm: props.bpm, offset: props.offset, fps, perWordBeats: props.perWordBeats, size: props.size };
 }
 
 export const Promo: React.FC<PromoProps & { fpsNow: number }> = (props) => {
@@ -52,7 +55,7 @@ export const Promo: React.FC<PromoProps & { fpsNow: number }> = (props) => {
     ownInk: props.ownInk, labels: props.labels,
     landing: { seed: props.landingSeed, style: props.landingStyle },
     letterId: props.letterId, grid: props.grid,
-  }), [props.bpm, props.offset, props.fpsNow, props.ownInk, props.labels, props.perWordBeats, props.landingSeed, props.landingStyle, props.letterId, props.grid]);
+  }), [props.bpm, props.offset, props.fpsNow, props.ownInk, props.labels, props.perWordBeats, props.landingSeed, props.landingStyle, props.letterId, props.grid, props.size]);
   // each frame: fonts, then any slow work it needs (the table's sheets), then draw; the render waits for all of it
   useLayoutEffect(() => {
     const handle = delayRender(`frame ${frame}`, { timeoutInMilliseconds: 240000 });

@@ -1,3 +1,5 @@
 node_modules/
 out/
 public/click-*.wav
+public/atlas/
+src/data/canvas-hands.json

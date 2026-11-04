@@ -33,6 +33,9 @@ export interface InkOpts {
   ink?: string;
   reveal?: (item: any, stroke: number) => number;
   alpha?: number;
+  /** where the drawing's top-left goes on ctx (default 0, 0) */
+  x?: number;
+  y?: number;
 }
 
 /** Write items (page units) onto ctx at 1 px = emPx / UPM page units, multiplied into what's below. */
@@ -46,7 +49,7 @@ export function drawInk(ctx: CanvasRenderingContext2D, p: any, items: any[], o: 
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
   ctx.globalAlpha = o.alpha ?? 1;
-  ctx.drawImage(c, 0, 0, o.width, o.height);
+  ctx.drawImage(c, o.x ?? 0, o.y ?? 0, o.width, o.height);
   ctx.restore();
 }
 

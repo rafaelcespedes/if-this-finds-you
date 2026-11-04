@@ -179,6 +179,24 @@ export function drawLetter(ctx: CanvasRenderingContext2D, m: LetterModel, c: Cam
       });
     }
   }
+  // a light red highlight behind each marked letter (sized by its own drawing, so it holds still while the form
+  // changes), then the rest dimmed, then the marked letters in archival red
+  ctx.save();
+  ctx.globalAlpha = st.dim;
+  ctx.fillStyle = 'rgba(155, 59, 42, 0.17)';
+  const xh = m.p.xHeight * 700; // page units
+  for (const it of all) {
+    if (it.ch !== st.ch) continue;
+    const [x0, y0, x1, y1] = it.box;
+    // at least about an x-height wide, so a narrow r or i still gets a visible mark
+    const cx = (x0 + x1) / 2, half = Math.max((x1 - x0) / 2 + 0.24 * xh, 0.5 * xh);
+    const padY = 0.2 * xh;
+    const X = (cx - half) * sc, Y = (y0 - padY) * sc, W = 2 * half * sc, H = (y1 - y0 + 2 * padY) * sc;
+    ctx.beginPath();
+    ctx.roundRect(X, Y, W, H, Math.min(W, H) * 0.28);
+    ctx.fill();
+  }
+  ctx.restore();
   drawInk(ctx, m.p, rest, { emPx, width: S, height: S, ink, reveal, alpha: 1 - 0.65 * st.dim });
   drawInk(ctx, m.p, marked, { emPx, width: S, height: S, ink: RR.red, reveal });
 }

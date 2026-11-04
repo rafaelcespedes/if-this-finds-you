@@ -1,10 +1,10 @@
 // The whole video as a pure function of the frame number: draw(ctx, frame) paints that frame and nothing else.
 // Remotion renders frames in parallel and out of order, so nothing here keeps state between frames except caches.
-import { drawFlip, type FlipOpts } from './flip';
-import { handList, type Look } from './hands';
-import { clamp, easeInOutQuint, easeOutQuint, RR, text } from './ink';
+import { drawCounter, drawFlip, type FlipOpts } from './flip';
+import { caption, handList, type Look } from './hands';
+import { clamp, easeOutQuint, RR, text } from './ink';
 import { drawLetter, letterCam, letterModel, type LetterState } from './letter';
-import { centerSheetAt, CELL, drawTable, layoutTable, paintTable, tableReady } from './table';
+import { drawCanvas, loadAtlas } from './zoom';
 import { drawEnd } from './endcard';
 import { plan, type Plan, type Settings } from './timeline';
 
@@ -19,9 +19,12 @@ export interface Scene {
   P: Plan;
   hands: Look[];
   draw(ctx: CanvasRenderingContext2D, frame: number): void;
-  /** work a frame needs before it can be drawn (the table's sheets), or null */
+  /** work a frame needs before it can be drawn (the canvas of hands' atlas), or null */
   prepare(frame: number): Promise<void> | null;
 }
+
+/** how small a card gets by the end of the pull back, as a share of the frame (1/400: a speck) */
+const ZOOM_END = 1 / 400;
 
 export function makeScene(s: Settings, o: SceneOpts): Scene {
   const P = plan(s);
@@ -30,18 +33,7 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
   const S = s.size;
   const fps = s.fps;
   const sec = (id: string) => P.sections.find((x) => x.id === id)!;
-
   const model = () => letterModel(o.letterId, landing);
-  const table = () => { const m = model(); return layoutTable(m.id, m.paper); };
-
-  /** the table camera that matches the letter section's framing */
-  function startCam() {
-    const m = model();
-    const t = table();
-    const c0 = letterCam(m, S);
-    // the letter camera puts the sheet's top-left at (c0.x, c0.y): the frame's centre is then this table point
-    return { k: c0.k, cx: t.center.x + (S / 2 - c0.x) / c0.k, cy: t.center.y + (S / 2 - c0.y) / c0.k };
-  }
 
   function letterState(frame: number): LetterState {
     const m = model();
@@ -61,13 +53,18 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
     return { inkT: Infinity, ch: span.ch, step, dim };
   }
 
+  /** the landing card's size on screen: S at the stop, a speck at the end; the pull back gathers speed */
+  function cardSize(frame: number) {
+    const z = sec('zoom');
+    const u = clamp((frame - z.from) / Math.max(1, z.to - z.from), 0, 1);
+    const f = 0.3 * u + 0.7 * u * u;
+    return S * 2 ** (Math.log2(ZOOM_END) * f);
+  }
+
   return {
     P, hands,
     prepare(frame) {
-      const id = P.sectionAt(frame).id;
-      if (id !== 'canvas') return null;
-      table();
-      return tableReady() ? null : paintTable();
+      return P.sectionAt(frame).id === 'zoom' ? loadAtlas() : null;
     },
     draw(ctx, frame) {
       const id = P.sectionAt(frame).id;
@@ -77,33 +74,26 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       if (id === 'title' || id === 'flip' || id === 'land') drawFlip(ctx, P, hands, frame, o);
-      else if (id === 'letter') {
+      else if (id === 'zoom') {
+        const z = sec('zoom');
+        const onScreen = drawCanvas(ctx, S, cardSize(frame), landing);
+        if (o.labels) {
+          // the counter keeps going: the hands of the flip, then every writer on the canvas
+          drawCounter(ctx, S, P.handsShown + Math.max(0, onScreen - 1));
+          // the landed writer's name goes as the card shrinks
+          const a = 1 - clamp((frame - z.from) / (P.fpb / 2), 0, 1);
+          if (a > 0) {
+            const k = S / 1080, c = caption(landing);
+            text(ctx, c.name, S / 2, S - 118 * k, { size: 34 * k, color: RR.ink, align: 'center', italic: true, alpha: a });
+            text(ctx, `${c.school} · ${c.pen}`, S / 2, S - 78 * k, { size: 24 * k, color: RR.muted, align: 'center', caps: true, tracking: 0.06, alpha: a });
+          }
+        }
+      } else if (id === 'letter') {
         const m = model();
         ctx.fillStyle = RR.room;
         ctx.fillRect(0, 0, S, S);
         drawLetter(ctx, m, letterCam(m, S), letterState(frame), S, undefined);
-        credit(ctx, m.credit, 1);
-      } else if (id === 'canvas') {
-        const m = model();
-        const t = table();
-        const a = sec('canvas');
-        const c0 = startCam();
-        // pull back over four beats (on a log scale, so the zoom reads as steady), then drift
-        const k1 = S / (7.2 * CELL.w);
-        const pull = easeInOutQuint((frame - a.from) / (4 * P.fpb));
-        const drift = clamp((frame - a.from - 4 * P.fpb) / (a.to - a.from - 4 * P.fpb), 0, 1);
-        const k = Math.exp(Math.log(c0.k) + (Math.log(k1) - Math.log(c0.k)) * pull) * (1 - 0.1 * drift);
-        const end = { cx: t.center.x + t.center.w / 2 + 0.2 * CELL.w, cy: t.center.y + t.center.h / 2 - 0.1 * CELL.h };
-        // the centre follows the zoom (the letter's text stays put on screen while it's big)
-        const follow = 1 - (k - k1) / (c0.k - k1);
-        const cam = {
-          k,
-          cx: c0.cx + (end.cx - c0.cx) * clamp(follow, 0, 1) + 0.12 * CELL.w * drift,
-          cy: c0.cy + (end.cy - c0.cy) * clamp(follow, 0, 1) + 0.05 * CELL.h * drift,
-        };
-        drawTable(ctx, S, cam);
-        drawLetter(ctx, m, centerSheetAt(S, cam), { inkT: Infinity, ch: null, step: 0, dim: 0 }, S, undefined);
-        credit(ctx, m.credit, 1 - clamp((frame - a.from) / (P.fpb / 2), 0, 1));
+        credit(ctx, m.credit);
       } else if (id === 'end') drawEnd(ctx, P, frame, sec('end').from, { writeOn: true });
       if (o.grid) beatGrid(ctx, frame);
       ctx.restore();
@@ -127,10 +117,8 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
     text(ctx, `${P.sectionAt(frame).label} · ${(frame / fps).toFixed(2)} s`, S - 248 * k, S - 12 * k, { size: 15 * k, color: '#cfd3da' });
   }
 
-  function credit(ctx: CanvasRenderingContext2D, c: { who: string; to: string; year: string }, alpha: number) {
-    if (alpha <= 0) return;
+  function credit(ctx: CanvasRenderingContext2D, c: { who: string; to: string; year: string }) {
     const k = S / 1080;
-    const line = `${c.who}, to ${c.to} · ${c.year}`;
-    text(ctx, line, S / 2, S - 54 * k, { size: 25 * k, align: 'center', caps: true, tracking: 0.07, color: RR.muted, alpha });
+    text(ctx, `${c.who}, to ${c.to} · ${c.year}`, S / 2, S - 54 * k, { size: 25 * k, align: 'center', caps: true, tracking: 0.07, color: RR.muted });
   }
 }

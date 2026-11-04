@@ -1,17 +1,14 @@
 // The video's clock: everything sits on a beat grid, in whole frames, worked out from the settings alone.
 // Nothing here draws; the scene asks "which section, which hand, which form of the letter" for a frame number.
 //
-// The grid: beat n starts at frame round(offset·fps + n · 60/bpm · fps), rounded per beat from a running total so a
-// tempo whose beat isn't a whole number of frames never drifts. At the default 112.5 BPM a beat is exactly 16
-// frames at 30 fps (32 at 60), a bar of four beats 2.13 s, and every halving of the gap between cuts (8, 4, 2, 1
-// frames) lands on a frame.
-
-export interface FlipStep {
-  /** how many beats this step lasts */
-  beats: number;
-  /** cuts per beat: 1, 2, 4… or 0 for a new hand every frame */
-  perBeat: number;
-}
+// The grid: beat n starts at frame round(offset·fps + n · 60/bpm · fps), placed from a running total so a tempo
+// whose beat isn't a whole number of frames never drifts. At the default 112.5 BPM a beat is exactly 16 frames at
+// 30 fps (32 at 60) and a bar of four beats 2.13 s.
+//
+// The flip: one hand a beat for a while, then a smooth speed-up (the cut rate doubles every few beats, from one a
+// beat to one a frame), a moment at full speed, then a dead stop on a bar's first beat. Each cut is snapped to the
+// finest power-of-two division of the beat that is no longer than its gap (eighths, sixteenths…), so even the
+// speed-up stays on the music.
 
 export interface LetterBeat {
   ch: string;
@@ -27,21 +24,25 @@ export interface Settings {
   offset: number;
   /** 1. the title, already written, before the first cut (beats) */
   titleBeats: number;
-  /** 2. the flip: the gap between cuts halves step by step */
-  steps: FlipStep[];
-  /** at the end of the every-frame stretch, this many beats where each word takes its own hand */
+  /** 2. the flip: beats at one hand a beat */
+  slowBeats: number;
+  /** beats over which the rate climbs from one hand a beat to one a frame */
+  rampBeats: number;
+  /** beats at one hand a frame before the stop */
+  peakBeats: number;
+  /** at the end of the full-speed stretch, this many beats where each word takes its own hand */
   perWordBeats: number;
-  /** the brake into the landing: gaps as fractions of a beat (they add up to one beat) */
+  /** a brake into the landing: gaps as fractions of a beat (empty = a dead stop) */
   brake: number[];
-  /** how long the hand it lands on holds (beats) */
+  /** how long the hand it lands on holds before the camera pulls back (beats) */
   landBeats: number;
-  /** 3. the letter: written out live (beats), then each highlighted letter changes form */
+  /** 3. the pull back into the canvas of hands (beats) */
+  zoomBeats: number;
+  /** 4. the letter: written out live (beats), then each highlighted letter changes form */
   letterWriteBeats: number;
   letters: LetterBeat[];
   /** a highlighted letter changes form every this many beats */
   swapEvery: number;
-  /** 4. all the letters on the table, the camera pulling back (beats) */
-  canvasBeats: number;
   /** 5. the end card (beats) */
   endBeats: number;
 }
@@ -52,29 +53,24 @@ export const DEFAULTS: Settings = {
   size: 1080,
   offset: 0,
   titleBeats: 4,
-  steps: [
-    { beats: 4, perBeat: 1 },
-    { beats: 2, perBeat: 2 },
-    { beats: 1, perBeat: 4 },
-    { beats: 1, perBeat: 8 },
-    { beats: 1, perBeat: 16 },
-    { beats: 6, perBeat: 0 },
-  ],
-  perWordBeats: 3,
-  brake: [1 / 16, 3 / 16, 1 / 4, 1 / 2],
-  landBeats: 4,
+  slowBeats: 4,
+  rampBeats: 10,
+  peakBeats: 2,
+  perWordBeats: 0,
+  brake: [],
+  landBeats: 2,
+  zoomBeats: 10,
   letterWriteBeats: 4,
   letters: [
-    { ch: 'e', beats: 4 },
-    { ch: 'a', beats: 2 },
-    { ch: 'r', beats: 2 },
+    { ch: 'e', beats: 6 },
+    { ch: 'a', beats: 3 },
+    { ch: 'r', beats: 3 },
   ],
   swapEvery: 0.5,
-  canvasBeats: 8,
   endBeats: 8,
 };
 
-export type SectionId = 'title' | 'flip' | 'land' | 'letter' | 'canvas' | 'end';
+export type SectionId = 'title' | 'flip' | 'land' | 'zoom' | 'letter' | 'end';
 
 export interface Section {
   id: SectionId;
@@ -109,7 +105,7 @@ export interface Plan {
   s: Settings;
   /** frames per beat (fractional when the tempo isn't a whole number of frames) */
   fpb: number;
-  /** frame where beat n starts */
+  /** frame where beat n starts (n may be fractional) */
   beatFrame: (n: number) => number;
   frames: number;
   seconds: number;
@@ -140,7 +136,7 @@ export function plan(s: Settings = DEFAULTS): Plan {
     sections.push({ id, label, from, to: beatFrame(beat) });
   };
 
-  // ---- the flip: cuts on the grid ----
+  // ---- the flip ----
   const cuts: Cut[] = [{ frame: 0, hand: 0, perWord: false, gap: 0, count: 1 }];
   let next = 1; // the next unused hand
   let count = 1;
@@ -151,29 +147,43 @@ export function plan(s: Settings = DEFAULTS): Plan {
   };
   add('title', 'Title', s.titleBeats);
   const flipStart = beat;
-  let b = beat;
-  const stepsBeats = s.steps.reduce((a, st) => a + st.beats, 0);
-  const perWordFrom = flipStart + stepsBeats - s.perWordBeats;
-  for (const st of s.steps) {
-    for (let i = 0; i < st.beats; i++, b++) {
-      const f0 = beatFrame(b), f1 = beatFrame(b + 1);
-      if (st.perBeat > 0) {
-        for (let k = 0; k < st.perBeat; k++) cut(f0 + Math.round(((f1 - f0) * k) / st.perBeat));
-      } else {
-        for (let f = f0; f < f1; f++) cut(f, b >= perWordFrom);
-      }
+  // one a beat
+  for (let i = 0; i < s.slowBeats; i++) cut(beatFrame(flipStart + i));
+  // the speed-up: rate r(x) = 2^(a·x) hands a beat, x beats into the ramp, reaching one a frame at the end. The n-th
+  // cut falls where the hands so far, ∫ r, reach n; each is snapped to the beat division that fits its gap
+  const rampStart = flipStart + s.slowBeats;
+  const top = Math.max(1, fpb); // one a frame, in hands a beat
+  const a = Math.log2(top) / Math.max(1e-6, s.rampBeats);
+  if (s.rampBeats > 0 && a > 0) {
+    for (let n = 0; ; n++) {
+      const x = Math.log2(1 + n * a * Math.LN2) / a;
+      if (x >= s.rampBeats) break;
+      const gap = 1 / 2 ** (a * x);
+      const grid = Math.max(1 / top, 2 ** Math.floor(Math.log2(gap)));
+      cut(beatFrame(rampStart + Math.round(x / grid) * grid));
     }
   }
-  // the brake: a few slowing cuts, ending on the next beat, where the landing hand appears and stays
-  const landFrame = beatFrame(b + 1);
-  let acc = 0;
-  for (const g of s.brake) { cut(beatFrame(b) + Math.round(acc * fpb)); acc += g; }
+  // full speed: a new hand every frame (the last few beats one hand per word, when asked)
+  const peakStart = rampStart + s.rampBeats;
+  const perWordFrom = peakStart + s.peakBeats - s.perWordBeats;
+  for (let b = 0; b < s.peakBeats; b++) {
+    const f0 = beatFrame(peakStart + b), f1 = beatFrame(peakStart + b + 1);
+    for (let f = f0; f < f1; f++) cut(f, peakStart + b >= perWordFrom);
+  }
+  // a brake, if any, ending on the next beat; then the hand it lands on, on that beat
+  let endBeat = peakStart + s.peakBeats;
+  if (s.brake.length) {
+    let acc = 0;
+    for (const g of s.brake) { cut(beatFrame(endBeat) + Math.round(acc * fpb)); acc += g; }
+    endBeat += Math.max(1, Math.round(acc));
+  }
+  const landFrame = beatFrame(endBeat);
   const landHand = next;
   cut(landFrame);
   for (let i = 0; i < cuts.length; i++) cuts[i].gap = (cuts[i + 1]?.frame ?? Infinity) - cuts[i].frame;
-  beat = flipStart;
-  add('flip', 'Flip', b + 1 - flipStart);
-  add('land', 'Landing', s.landBeats);
+  add('flip', 'Flip', endBeat - flipStart);
+  add('land', 'Stop', s.landBeats);
+  add('zoom', 'All the hands', s.zoomBeats);
 
   // ---- the letter: written in live, then each highlighted letter changes form on the grid ----
   const letterFrom = beatFrame(beat);
@@ -187,7 +197,6 @@ export function plan(s: Settings = DEFAULTS): Plan {
     return { ch: L.ch, from, to: beatFrame(lb), swaps };
   });
   add('letter', 'The letter', lb - beat);
-  add('canvas', 'All the letters', s.canvasBeats);
   add('end', 'End card', s.endBeats);
 
   const frames = sections[sections.length - 1].to;

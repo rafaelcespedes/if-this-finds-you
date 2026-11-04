@@ -13,6 +13,24 @@ export interface FlipOpts {
   labels: boolean;
 }
 
+/** The "Hand no." tag, top left: archival red on a light red plate, like a stamped number in the archive. */
+export function drawCounter(ctx: CanvasRenderingContext2D, S: number, count: number, alpha = 1) {
+  if (alpha <= 0) return;
+  const k = S / 1080;
+  const x = 60 * k, y = 58 * k, w = 148 * k, h = 96 * k, r = 7 * k;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.fillStyle = RR.card; // solid, so it reads over the canvas of cards too
+  ctx.fill();
+  ctx.fillStyle = 'rgba(155, 59, 42, 0.13)';
+  ctx.fill();
+  ctx.restore();
+  text(ctx, 'hand no.', x + 18 * k, y + 34 * k, { size: 25 * k, color: RR.red, caps: true, tracking: 0.06, alpha });
+  text(ctx, String(count).padStart(4, '0'), x + 17 * k, y + 78 * k, { size: 44 * k, color: RR.red, tracking: 0.02, alpha });
+}
+
 export function looksAt(P: Plan, hands: Look[], frame: number): { looks: Look[]; count: number; gap: number; index: number } {
   const c = P.cutAt(frame);
   const at = (i: number) => hands[Math.min(hands.length - 1, i)];
@@ -31,11 +49,7 @@ export function drawFlip(ctx: CanvasRenderingContext2D, P: Plan, hands: Look[], 
   // the counter: every hand gets a number, as every letter in the archive does
   const k = S / 1080;
   const sec = P.sectionAt(frame).id;
-  const showCount = sec !== 'title';
-  if (showCount) {
-    text(ctx, 'hand no.', 72 * k, 92 * k, { size: 25 * k, color: RR.red, caps: true, tracking: 0.06 });
-    text(ctx, String(count).padStart(4, '0'), 72 * k, 136 * k, { size: 44 * k, color: RR.red, tracking: 0.02 });
-  }
+  if (sec !== 'title') drawCounter(ctx, S, count);
   // the writer the site names for this hand, while the cuts are slow enough to read it
   const slow = gap >= P.fpb / 2 || sec === 'land';
   if (slow && looks.length === 1 && sec !== 'title') {

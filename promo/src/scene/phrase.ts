@@ -25,7 +25,7 @@ export interface Geometry {
 
 export function geometry(size: number): Geometry {
   const xh = 0.104 * size;
-  const gap = 2.95 * xh;
+  const gap = 2.62 * xh; // baseline to baseline
   const b1 = Math.round((size + xh - gap) / 2 - 0.035 * size);
   return { size, xh, baselines: [b1, Math.round(b1 + gap)], maxW: 0.84 * size, cx: size / 2 };
 }
@@ -51,6 +51,7 @@ function laid(look: Look, text: string, ink: string | undefined, salt: string) {
     const items = page.items.filter((it: any) => it.kind === 'glyph');
     const glyphs = items.length ? items : page.items;
     L = { items, box: inkBox(glyphs), base: glyphs[0]?.y ?? 0 };
+    if (laidCache.size > 1200) laidCache.clear();
     laidCache.set(key, L);
   }
   return L;
