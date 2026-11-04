@@ -65,9 +65,24 @@ class CardStore {
   private listeners = new Map<string, Set<() => void>>();
   private pool: { worker: Worker; job: number | null; key: string | null }[] = [];
   private jobs = 0;
+  /** what each slot is writing, so leaving the page can put it back on the list */
+  private inflight = new Map<number, Want>();
+  /** the page is hidden or going away (pagehide): nothing more is written, read or kept until it shows again */
+  private hidden = false;
   private cache: Promise<Cache | null> | null = null;
   /** QA: timings (window.__lostLetters) */
   stats = { firstCardMs: 0, firstShownMs: 0, rendered: [] as number[], cached: 0 };
+
+  constructor() {
+    // Leaving All letters while its cards are being written: WebKit stops the page's context, and any Cache Storage
+    // or blob work still under way then fails ("Context is stopped", "… access control checks"). So on pagehide the
+    // store stops: what was being written goes back on the list and its result, if it comes, is dropped. If the page
+    // comes back from the back-forward cache (pageshow), it carries on.
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pagehide', () => this.hide());
+      window.addEventListener('pageshow', () => this.show());
+    }
+  }
 
   get(key: string) { return this.done.get(key); }
 
@@ -89,6 +104,27 @@ class CardStore {
 
   private emit(key: string) { this.listeners.get(key)?.forEach((fn) => fn()); }
 
+  private hide() {
+    this.hidden = true;
+    for (const slot of this.pool) {
+      if (slot.job == null) continue;
+      const w = this.inflight.get(slot.job);
+      if (w && slot.key) {
+        this.running.delete(slot.key);
+        this.wanted.set(slot.key, w);
+      }
+      this.inflight.delete(slot.job);
+      // the worker may still answer this job: finished() drops it, as the slot no longer expects it
+      slot.job = null;
+      slot.key = null;
+    }
+  }
+  private show() {
+    if (!this.hidden) return;
+    this.hidden = false;
+    this.pump();
+  }
+
   /** Start the workers now, while the letters download: they load the engine and warm up its renderer. */
   warm() {
     this.ensurePool();
@@ -103,13 +139,15 @@ class CardStore {
       const worker = new Worker(workerSrc, { type: 'module', name: 'lost-letters-cards' });
       const slot = { worker, job: null as number | null, key: null as string | null };
       worker.onmessage = (e: MessageEvent<CardResult>) => this.finished(slot, e.data);
-      worker.onerror = () => { if (slot.key) this.fail(slot.key); slot.job = null; slot.key = null; this.pump(); };
+      worker.onerror = () => { if (slot.job != null) this.inflight.delete(slot.job); if (slot.key) this.fail(slot.key); slot.job = null; slot.key = null; this.pump(); };
       worker.postMessage({ warm: true });
       this.pool.push(slot);
     }
   }
 
+  /** The cache, opened once a visit (opening it again on every call left promises nobody caught). */
   private persistent() {
+    if (this.cache) return this.cache;
     const store = PERSIST ? cacheStorage() : null;
     if (!store) return Promise.resolve(null);
     let opened: Promise<Cache>;
@@ -118,10 +156,10 @@ class CardStore {
     } catch {
       return Promise.resolve(null);
     }
-    this.cache ??= opened.then(async (c) => {
-      // entries from older builds can go
+    this.cache = opened.then(async (c) => {
+      // entries from older builds can go (each in its own time: one that fails, as the page goes, is let be)
       try {
-        for (const req of await c.keys()) if (!new URL(req.url).pathname.includes(`/${BUILD}/`)) c.delete(req);
+        for (const req of await c.keys()) if (!new URL(req.url).pathname.includes(`/${BUILD}/`)) c.delete(req).catch(() => {});
       } catch { /* fine */ }
       return c;
     }).catch(() => null);
@@ -145,6 +183,7 @@ class CardStore {
   }
 
   private pump() {
+    if (this.hidden) return;
     this.ensurePool();
     for (const slot of this.pool) {
       if (slot.job != null) continue;
@@ -155,9 +194,11 @@ class CardStore {
       const job = ++this.jobs;
       slot.job = job;
       slot.key = w.key;
+      this.inflight.set(job, w);
       this.fromCache(w).then((hit) => {
         if (slot.job !== job) return;
         if (hit) {
+          this.inflight.delete(job);
           slot.job = null;
           slot.key = null;
           this.pump();
@@ -177,8 +218,12 @@ class CardStore {
       if (!res) return false;
       const look = JSON.parse(decodeURIComponent(res.headers.get('x-look') ?? '')) as Look;
       const num = (h: string) => Number(res.headers.get(h));
-      const blob = await res.blob();
+      // as bytes, like a written card (card-protocol.ts CardResult)
+      const bytes = await res.arrayBuffer();
+      // the page went while it was read: hide() has put the card back on the list
+      if (this.hidden) return false;
       this.stats.cached++;
+      const blob = new Blob([bytes], { type: res.headers.get('content-type') ?? 'image/webp' });
       this.store(w.key, { url: URL.createObjectURL(blob), look, width: num('x-width'), height: num('x-height'), bleed: num('x-bleed'), shaped: res.headers.get('x-shaped') === '1', fresh: false });
       return true;
     } catch {
@@ -188,6 +233,7 @@ class CardStore {
 
   private finished(slot: (typeof this.pool)[number], msg: CardResult) {
     if (slot.job !== msg.job) return;
+    this.inflight.delete(msg.job);
     const key = slot.key!;
     slot.job = null;
     slot.key = null;
@@ -196,15 +242,29 @@ class CardStore {
       this.fail(key);
     } else {
       this.stats.rendered.push(Math.round(msg.ms));
-      this.store(key, { url: URL.createObjectURL(msg.blob), look: msg.look, width: msg.width, height: msg.height, bleed: msg.bleed, shaped: msg.shaped, fresh: true });
-      this.persistent().then((c) => c?.put(this.cacheUrl(key), new Response(msg.blob, {
-        headers: {
-          'content-type': msg.blob.type, 'x-look': encodeURIComponent(JSON.stringify(msg.look)),
-          'x-width': String(msg.width), 'x-height': String(msg.height), 'x-bleed': String(msg.bleed), 'x-shaped': msg.shaped ? '1' : '0',
-        },
-      })).catch(() => {}));
+      this.store(key, { url: URL.createObjectURL(new Blob([msg.bytes], { type: msg.type })), look: msg.look, width: msg.width, height: msg.height, bleed: msg.bleed, shaped: msg.shaped, fresh: true });
+      void this.keep(key, msg);
     }
     this.pump();
+  }
+
+  /**
+   * Keep a written card in Cache Storage for the next visit. It goes in as bytes, never as a Blob: given a Blob,
+   * WebKit's put loads it, and if the page goes meanwhile (leaving All letters while its cards are being written) the
+   * load fails as "Cannot load blob … due to access control checks" or "Context is stopped", reported as uncaught
+   * whatever catches it. Bytes have nothing to load.
+   */
+  private async keep(key: string, msg: Extract<CardResult, { bytes: ArrayBuffer }>) {
+    try {
+      const c = await this.persistent();
+      if (!c || this.hidden) return;
+      await c.put(this.cacheUrl(key), new Response(msg.bytes, {
+        headers: {
+          'content-type': msg.type, 'x-look': encodeURIComponent(JSON.stringify(msg.look)),
+          'x-width': String(msg.width), 'x-height': String(msg.height), 'x-bleed': String(msg.bleed), 'x-shaped': msg.shaped ? '1' : '0',
+        },
+      }));
+    } catch { /* not kept: written again next visit */ }
   }
 
   private store(key: string, img: CardImage) {

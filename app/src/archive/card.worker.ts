@@ -14,7 +14,7 @@ import type { CardRequest, CardResult, CardWarm } from './card-protocol';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
-const post = (msg: CardResult) => (self as unknown as Worker).postMessage(msg);
+const post = (msg: CardResult, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(msg, transfer);
 /** A card's sheet is at most this wide (mm): A5, the size most of the stationery is. */
 const CARD_SHEET_MM = 148;
 
@@ -96,7 +96,8 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
 
     let blob: Blob;
     try { blob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.86 }); } catch { blob = await canvas.convertToBlob(); }
-    post({ job: req.job, id: req.letter.id, blob, look, width: W, height: H, bleed: B, shaped, ms: performance.now() - t0 });
+    const bytes = await blob.arrayBuffer();
+    post({ job: req.job, id: req.letter.id, bytes, type: blob.type, look, width: W, height: H, bleed: B, shaped, ms: performance.now() - t0 }, [bytes]);
   } catch (err) {
     post({ job: req.job, id: req.letter.id, error: err instanceof Error ? err.message : String(err) });
   }
