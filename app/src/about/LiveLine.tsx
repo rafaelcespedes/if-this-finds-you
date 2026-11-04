@@ -6,8 +6,10 @@ import type { Writer } from './write';
 
 export const LINE = 'I hope this finds you well.';
 
-/** The line's size: as big as a heading on a wide screen, still one or two lines on a phone. */
-const emFor = (width: number) => Math.round(Math.min(46, Math.max(30, width / 13)));
+/** The line's size: as big as a heading on a wide screen, still one or two lines on a phone. A layout may let it grow
+ * (--about-line-em-max on the line's box, in px: the editorial Register sets it poster-size, as the Fonts page's hand). */
+let emMax = 46;
+const emFor = (width: number) => Math.round(Math.min(emMax, Math.max(30, width / 13)));
 /**
  * The room the line gets, held from the first frame so nothing below moves when it arrives. Measured over 160 writers
  * each (3 Nov 2026): one line of ink is 1.2–1.75 em tall with its margin, two lines up to 3.45 em. Wide slips keep the
@@ -32,7 +34,9 @@ export function LiveLine() {
   // before the first paint: the slip's room, from its width
   useLayoutEffect(() => {
     const host = hostRef.current;
-    if (host) setSlot(slotFor(Math.floor(host.clientWidth)).height);
+    if (!host) return;
+    emMax = parseFloat(getComputedStyle(host).getPropertyValue('--about-line-em-max')) || 46;
+    setSlot(slotFor(Math.floor(host.clientWidth)).height);
   }, []);
 
   const writeOnce = useCallback(async () => {
