@@ -44,6 +44,20 @@ export function closingOf(text: string): { paras: string[]; signature: string | 
 /** When, as the record gives it: the curator's date ("August 1798") or the year. */
 const whenOf = (l: ArchiveLetter) => l.found?.dateNote ?? (l.year != null ? String(l.year) : '');
 
+/** The line to cite a letter by (the page's "Cite this letter", and the phone dock's "Copy citation"). */
+export function citationOf(l: ArchiveLetter, no: number | undefined) {
+  const placeDateRaw = [l.place ?? '', whenOf(l)].filter(Boolean).join(', ');
+  const writerLine = l.recipient ? `${shortAuthor(l)} to ${l.recipient.split(/;\s*/)[0]}` : shortAuthor(l);
+  return `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDateRaw ? `, ${placeDateRaw}` : ''}.`;
+}
+/** Copies it, with the desk's toasts. */
+export async function copyCitation(l: ArchiveLetter, no: number | undefined) {
+  const citation = citationOf(l, no);
+  const ok = await copyText(citation);
+  if (ok) toast.success('Citation copied', { id: 'cite' });
+  else toast.error('Couldn’t copy the citation', { id: 'cite', description: citation });
+}
+
 export interface Turn {
   at: number;
   total: number;
@@ -127,12 +141,8 @@ export function ReadingSpread(p: Props) {
     <p id={`${id}-n-${key}`} className="sp-note-open"><span className="sp-note-no" aria-hidden>{n(key)}</span>{notes[n(key) - 1].body}</p>
   );
 
-  const citation = `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDateRaw ? `, ${placeDateRaw}` : ''}.`;
-  const cite = async () => {
-    const ok = await copyText(citation);
-    if (ok) toast.success('Citation copied', { id: 'cite' });
-    else toast.error('Couldn’t copy the citation', { id: 'cite', description: citation });
-  };
+  const citation = citationOf(l, no);
+  const cite = () => copyCitation(l, no);
 
   const handMenu = (
     <HandMenu
@@ -243,7 +253,7 @@ export function ReadingSpread(p: Props) {
 
 function Fact({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <div className="sp-fact">
+    <div className="sp-fact" data-term={term.toLowerCase()}>
       <dt className="sp-label">{term}</dt>
       <dd>{children}</dd>
     </div>

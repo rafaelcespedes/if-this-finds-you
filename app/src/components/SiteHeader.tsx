@@ -83,12 +83,12 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
         // over the page, clear of a notch or camera island (the phone sideways too); only its links take clicks, so
         // the canvas under it still drags. Its own layer (30): above the page and the desk's side column, below the
         // docks' menus, the phone's control sheet (40), and every menu, sheet and toast (50).
-        // Pinned to the top while the page scrolls (Rafael: "keep the nav sticky"), on any screen at least 32rem
-        // tall; a shorter one (a phone on its side, or very large text) lets it scroll away rather than lose the
-        // page to it. Print keeps it where it was. Its height is --site-head (index.css).
+        // Pinned to the top while the page scrolls (Rafael: "keep the nav sticky"), on every screen, a short one too
+        // (a phone on its side, a window at 200%): unpinned, it still drew over the page's top, which kept no room
+        // for it there. Print keeps it where it was. Its height is --site-head (index.css).
         // One treatment on every page (Rafael: "make all of them full width"): the window's full width, its side margins
         // from --site-margin (index.css), the same on every page, so the wordmark and the last place never move.
-        'absolute inset-x-0 top-0 z-30 [@media(min-height:32rem)]:fixed print:absolute',
+        'fixed inset-x-0 top-0 z-30 print:absolute',
         'pointer-events-none overflow-x-clip pt-[max(1rem,env(safe-area-inset-top,0px))] pr-[max(var(--site-margin),env(safe-area-inset-right,0px))] pl-[max(var(--site-margin),env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground lg:pt-5',
         // a band of the page's own ground from the top of the window, so nothing scrolling under it shows through,
         // fading out over 12 px below it

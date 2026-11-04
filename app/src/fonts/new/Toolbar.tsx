@@ -100,7 +100,7 @@ export function Toolbar(p: Props) {
           </Button>
         )}
         {/* the desk's main action, its Bring another letter button: words alone, its key at the end */}
-        <BringAnother onClick={p.onNewSet} label="New set" shortcut="Space" className="rr-bring-button" />
+        <BringAnother onClick={p.onNewSet} label="New set" shortcut="N" className="rr-bring-button" />
       </div>
     </div>
   );
