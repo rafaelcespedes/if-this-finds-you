@@ -258,6 +258,25 @@ textarea {
     animation: none;
   }
 }
+/* writing: the caret blinks like a text caret (on, off), solid for a moment after each move */
+@keyframes caret-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+.caret-blink {
+  animation: caret-blink 1.06s step-end 700ms infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret-blink {
+    animation: none;
+  }
+}
 
 /* The highlighter sweeps in left to right on pointer selections */
 @keyframes highlighter-sweep {
