@@ -1189,7 +1189,7 @@ html[data-look='reading-room'] .lib-menu {
   border-radius: 3px;
 }
 html[data-look='reading-room'] .canvas-title,
-html[data-look='reading-room'] .archive-card h3 {
+html[data-look='reading-room'] .archive-card :is(h2, h3) {
   color: var(--rr-ink);
 }
 
@@ -1448,7 +1448,7 @@ html[data-look='reading-room'] :is(.rr-card-title, [class*='text-[22px]']) {
 }
 
 /* text */
-html[data-look='reading-room'] :is(.rr-fact dd, .font-row-name, .canvas-title, .archive-card h3) {
+html[data-look='reading-room'] :is(.rr-fact dd, .font-row-name, .canvas-title, .archive-card h2, .archive-card h3) {
   font-family: var(--rr-text-face);
   font-size: var(--rr-text-size);
   font-weight: var(--rr-text-weight);
