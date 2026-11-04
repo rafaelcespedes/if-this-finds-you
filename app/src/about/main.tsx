@@ -8,9 +8,8 @@ import '../themes/reading-room.css';
 import '../themes/reading-room/type-switch'; // temporary: the ?type pairing comparison
 import '../themes/postmarked.css';
 import './about.css';
-// the editorial layout being explored (?layout=editorial-1/2): a frame on top of the Reading Room, after its sheets
+// the editorial layout being explored (?layout=editorial-1/2): a frame on top of the Reading Room (its sheet comes with lib/layout.ts)
 import { applyLayout } from '../lib/layout';
-import '../themes/editorial.css';
 
 // the letter face for the page's reading text in today's look (the Reading Room sets its own book face)
 applySerif();

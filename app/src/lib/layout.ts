@@ -6,6 +6,10 @@
 // Only the frame changes: html[data-layout] is read by themes/editorial.css, which styles the shared components through
 // the Reading Room's own classes, data hooks and --rr-* type tokens. Without the Reading Room it does nothing.
 // The Fonts page doesn't call applyLayout (it has its own redesign).
+// The stylesheet comes with this module, which every page already loads (lib/look.ts → lib/rules.ts), so it rides in
+// the pages' shared stylesheet rather than adding a request of its own. Its selectors carry one more type than the
+// Reading Room's (html:root[data-layout] against html[data-look]), so their order in that sheet doesn't matter.
+import '@/themes/editorial.css';
 
 export type LayoutId = 'none' | 'editorial-1' | 'editorial-2';
 const ALIASES: Record<string, LayoutId> = {
