@@ -1028,6 +1028,15 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-
   background: transparent;
   white-space: nowrap;
 }
+/* …and its words midway between its rule and the body's: the 8 px the row kept under the 44 px button is the button's
+   own, so the row is one 52 px band (the same height as before, so the peek doesn't move) */
+html[data-look='reading-room'] .control-sheet .sheet-pill-row {
+  padding-bottom: 0;
+}
+html[data-look='reading-room'] .control-sheet .sheet-pill-row > button[aria-expanded],
+html[data-look='reading-room'] .control-sheet .sheet-pill-row > button[aria-expanded] > span[data-pill] {
+  height: 3.25rem;
+}
 /* the shared sheet (components/ui/sheet.tsx: Share and the other action sheets on phones), cut like the control sheet:
    square-cut, a soft rule along its top, its title a label in small capitals, its rows ruled lines rather than tiles */
 html[data-look='reading-room'] .sheet-surface {

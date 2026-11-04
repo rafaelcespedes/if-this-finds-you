@@ -368,7 +368,9 @@ export function LookControls(props: PanelProps & { rows?: boolean; flush?: boole
           value={penName(state.pen)}
           className={pad}
           lock={lockFor(props, 'pen')}
-          aside={<TipChoice value={state.penSize} ink={ink} onChange={props.onPenSize} />}
+          // on a phone its 44 px tips reach into the group's padding rather than heighten the header, so "Pen" sits
+          // under its rule where Paper and Ink sit under theirs
+          aside={<TipChoice value={state.penSize} ink={ink} onChange={props.onPenSize} className="pointer-coarse:-my-2" />}
         >
           {!PENS_LIVE && <Soon />}
           <PenSwatches seed={state.seed} style={state.style} pen={state.pen} penSize={state.penSize} ink={ink} inkKey={props.inkKey} onPen={props.onPen} />
