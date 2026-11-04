@@ -46,7 +46,7 @@ import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
 import { mapGeometry } from '@/lib/geometry';
-import { LIVE, engineGeometry, liveExtras, liveLayout } from '@/lib/live';
+import { LIVE, engineGeometry, liveExtras, liveLayout, pageSetup } from '@/lib/live';
 import { LiveSheets } from '@/components/LiveSheets';
 import { INK, InkSession, decodeInk, encodeInk, inkExtras, inkFromText, inkGeometry, inkLive, inkOpts, inkPage, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
 import { inkOn } from '@/lib/request';
@@ -250,6 +250,11 @@ export default function App() {
   // the session belongs to one look (hand, paper, size): a new look replays the log in the new hand
   const inkLook = JSON.stringify([state.seed, state.style, lookKey, state.paper]);
   const inkLayout = useMemo(() => inkOpts(p, paper, eff.size, eff.lineSpacing).layout, [p, paper, eff.size, eff.lineSpacing]);
+  /** where the first letter goes on an empty sheet (the first line, at the margin), for the caret before the first key */
+  const startCaret = useMemo(() => {
+    const { opts } = pageSetup(p, paper, eff.size, eff.lineSpacing);
+    return { sheet: 0, x: opts.marginLeft as number, y: opts.firstBaseline as number, line: 0 };
+  }, [p, paper, eff.size, eff.lineSpacing]);
   const inkSession = useCallback((doc?: InkDoc): InkSession => {
     if (!doc && inkRef.current && inkFor.current === inkLook) return inkRef.current;
     const s = stateNow.current;
@@ -990,10 +995,14 @@ export default function App() {
   }, [p, name, state.seed, state.style, eff.overrides]);
 
   // R for a new hand, Shift R for a similar one, when not typing; ⌘\\ shows or hides the desk while writing.
-  // While the letter is in use (focus on it after Esc, or a key within the last while, say after Sign it or a
-  // toast's button), a letter key carries on the writing instead: the editor takes the focus and the key
+  // While the letter is in use (a key within the last while, say after Sign it or a toast's button), a letter key
+  // carries on the writing instead: the editor takes the focus and the key. Not after Esc: that's the writer
+  // stopping, so R is a new hand again (launch QA: "Hi", Esc, R gave "Hir")
+  const stoppedWriting = useRef(false);
+  useEffect(() => { if (editing) stoppedWriting.current = false; }, [editing]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && (e.target as HTMLElement | null)?.closest?.('[data-paper]')) stoppedWriting.current = true;
       if (e.key === '\\' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); posture.toggle(); return; }
       if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
       const t = e.target as HTMLElement | null;
@@ -1001,7 +1010,7 @@ export default function App() {
       // menus and dialogs keep their own keys (type-ahead, Escape)
       if (t?.closest?.('[role="menu"],[role="listbox"],[role="dialog"]')) return;
       const typed = e.key.length === 1 && e.key !== ' ';
-      if (typed && editor.current && (t?.closest?.('[data-paper]') || performance.now() - lastEditAt.current < WRITING_LATELY_MS)) {
+      if (typed && editor.current && !stoppedWriting.current && (t?.closest?.('[data-paper]') || performance.now() - lastEditAt.current < WRITING_LATELY_MS)) {
         editor.current.focus();
         return;
       }
@@ -1371,6 +1380,7 @@ export default function App() {
                   hovering={inkActive && inkRef.current!.hovering}
                   onEdit={onEdit}
                   onHistory={onHistory}
+                  start={startCaret}
                   onFormat={onFormat}
                   writerName={name}
                   geometry={geometry}

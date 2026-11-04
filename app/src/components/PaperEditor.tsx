@@ -7,7 +7,7 @@
 // - Pen-only formatting: ⌘U/⌘I underline by hand (again for double), ⌘B press harder, ⌘↩ P.S.
 // - Up/Down/Home/End follow the written lines; IME compositions own the keys while they last.
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { across, type Geometry, type Side } from '@/lib/geometry';
+import { across, type CaretPos, type Geometry, type Side } from '@/lib/geometry';
 import type { Edit } from '@/lib/edits';
 import { wordAt } from '@/lib/doc';
 import { historyKey, isComposingKey, isMac, useEditInput, type Composition } from '@/hooks/useEditInput';
@@ -31,6 +31,8 @@ interface Props {
   text: string;
   /** every change, as one Edit (see lib/edits.ts) */
   onEdit: (e: Edit) => void;
+  /** where writing starts on an empty sheet (the first line's start): the caret waits there before the first key */
+  start?: CaretPos | null;
   /** undo and redo, the page's own (the browser's are cancelled) */
   onHistory?: (dir: 'undo' | 'redo') => void;
   /** pen-only formatting on a range (or the word at the caret) */
@@ -70,7 +72,7 @@ interface Sel {
 const AMBER = '#f3d27a';
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onHistory, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
+  { text, onEdit, onHistory, start, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -373,7 +375,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
 
   // ---------- caret & selection geometry ----------
   const head = sel.dir === 'backward' ? sel.start : sel.end;
-  const caret = useMemo(() => (geo ? geo.caret(toMap(head), side) : null), [geo, head, toMap, side]);
+  // nothing written yet: the caret waits where the first letter will go (launch QA: a blank sheet showed none)
+  const caret = useMemo(() => (geo ? geo.caret(toMap(head), side) ?? (!text && start ? start : null) : null), [geo, head, toMap, side, text, start]);
   const asc = geo ? geo.ascU : 740, desc = geo ? geo.descU : 200;
   // a found letter on the page (blank: the first key starts a reply on a fresh sheet): the caret isn't anywhere in
   // it, so the textarea waits at the sheet's top and nothing scrolls the letter to its end
