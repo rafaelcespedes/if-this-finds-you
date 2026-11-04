@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { AboutApp } from './AboutApp';
 import { applySerif } from '../archive/serif';
 import { applyLook } from '../lib/look';
-import { applySansOption } from '../themes/reading-room/sans-switch'; // temporary: ?rrsans comparison
 import '../index.css';
 import '../themes/reading-room.css';
+import '../themes/reading-room/type-switch'; // temporary: the ?type pairing comparison
 import '../themes/postmarked.css';
 import './about.css';
 // the editorial layout being explored (?layout=editorial-1/2): a frame on top of the Reading Room, after its sheets
@@ -16,7 +16,6 @@ import '../themes/editorial.css';
 applySerif();
 // the look being compared (?look=…), kept for the tab like the other pages
 applyLook();
-applySansOption();
 
 applyLayout('about');
 

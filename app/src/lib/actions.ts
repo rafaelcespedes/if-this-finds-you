@@ -3,6 +3,7 @@ import * as E from '@engine';
 import { buildFont, verify, type Hand } from '@engine';
 import { getPaper, paintPaper } from './papers';
 import { marksForExport, printMarks } from './paper/marks';
+import { wornForExport } from './paper/wear';
 import { rasterizeWriting } from './writing';
 import { write } from './write-core';
 import { sheetSVG, type Live } from './live';
@@ -36,7 +37,8 @@ const PAGE_GAP_MM = 8;
  * Several sheets are stacked top to bottom with a little desk between them.
  */
 export async function renderNote(req: Omit<WriteRequest, 'id'>, ink: string, cssPxPerMm: number) {
-  const paper = getPaper(req.paper);
+  // the letter's own sheet, worn as it is on screen (lib/paper/wear.ts)
+  const paper = wornForExport(getPaper(req.paper));
   // the same SVG the screen shows (written fresh here, deterministically), drawn larger
   const res = write({ ...req, id: -1 });
   // 3x what's on screen, but never smaller than ~1800 px wide, and capped for memory on phones
@@ -57,7 +59,7 @@ export async function renderNote(req: Omit<WriteRequest, 'id'>, ink: string, css
     ctx.translate(0, i * (sheetH + gap));
     // a look's printed marks on the first sheet: those stamped before writing go into the paper
     const marks = i === 0 ? marksForExport(paper) : null;
-    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined });
+    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined, sheet: i });
     const img = await rasterizeWriting(res.svgs[i], sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
     // and those stamped after it, over the writing
@@ -71,7 +73,7 @@ export async function renderNote(req: Omit<WriteRequest, 'id'>, ink: string, css
 
 /** The live page as a JPEG: each sheet's whole SVG (windowed onto the page), at 3x the screen. */
 export async function renderLiveNote(live: Live, extras: string[], inkKey: string | undefined, ink: string, cssPxPerMm: number) {
-  const paper = live.paper;
+  const paper = wornForExport(live.paper);
   let k = cssPxPerMm * 3;
   k = Math.max(k, 1800 / paper.w);
   k = Math.min(k, 3600 / paper.w);
@@ -89,7 +91,7 @@ export async function renderLiveNote(live: Live, extras: string[], inkKey: strin
     ctx.translate(0, i * (sheetH + gap));
     // a look's printed marks on the first sheet: those stamped before writing go into the paper
     const marks = i === 0 ? marksForExport(paper) : null;
-    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined });
+    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined, sheet: i });
     const img = await rasterizeWriting(sheetSVG(live, i, inkKey ?? 'currentColor', extras[i] ?? ''), sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
     // and those stamped after it, over the writing

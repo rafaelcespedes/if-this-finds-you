@@ -216,7 +216,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
   );
 }
 
-/** "the 1790s · Cairo, Madrid, Westminster": the decade under the middle of the screen, as you drag. */
+/** "The 1790s · Cairo, Madrid, Westminster": the decade under the middle of the screen, as you drag. */
 function CanvasReadout() {
   const text = useCanvasReadout();
   return text ? <span className="canvas-readout">{text}</span> : null;

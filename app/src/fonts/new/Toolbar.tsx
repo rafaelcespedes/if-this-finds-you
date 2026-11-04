@@ -1,0 +1,106 @@
+// Wide screens: the page's one control surface, a single ruled line that stays under the header as you scroll, the
+// way a foundry's tester bar does. Left, what to show (Joined or print, the filters in the shared Sheet); middle, what
+// every hand writes (the line's menu and your own words) and how big; right, list or grid, your saved hands and New
+// set. Every control is a shared one. Phones and tablets keep the floating dock (../Dock.tsx) instead.
+import { useState } from 'react';
+import { Heart, LayoutGrid, LayoutList, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet } from '@/components/ui/sheet';
+import { Slider } from '@/components/ui/slider';
+import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { FilterGroups, withFamily } from '../Dock';
+import { filterCount, NO_FILTERS, type Catalogue, type Filters } from '../filters';
+import type { Line } from '../route';
+import { LinePicker, WordsField } from '../SpecimenBar';
+
+export type Layout = 'list' | 'grid';
+
+interface Props {
+  filters: Filters;
+  onFilters: (f: Filters, neatOnly?: boolean) => void;
+  neatOnly: boolean;
+  onNeatOnly: (v: boolean) => void;
+  catalogue: Catalogue;
+  view: 'set' | 'saved';
+  onView: (v: 'set' | 'saved') => void;
+  savedCount: number;
+  onNewSet: () => void;
+  line: Line;
+  onLine: (l: Line) => void;
+  text: string;
+  onText: (t: string) => void;
+  placeholder: string;
+  size: number;
+  onSize: (px: number) => void;
+  layout: Layout;
+  onLayout: (l: Layout) => void;
+}
+
+export const SIZE = { min: 28, max: 120, step: 2 };
+
+export function Toolbar(p: Props) {
+  const [open, setOpen] = useState(false);
+  const n = filterCount({ ...p.filters, family: [] }) + (p.neatOnly ? 0 : 1);
+  const saved = p.view === 'saved';
+  return (
+    <div role="toolbar" aria-label="Choose the fonts and what they write" className="fx-toolbar">
+      <div className="fx-tool-group">
+        <Segmented slide type="single" aria-label="Joined or print" value={saved ? '' : p.filters.family[0] ?? 'any'}
+          onValueChange={(v) => v && p.onFilters(withFamily(p.filters, v, p.catalogue))} className="fx-family">
+          <SegmentedItem value="any">Any</SegmentedItem>
+          <SegmentedItem value="print">Print</SegmentedItem>
+          <SegmentedItem value="script">Joined</SegmentedItem>
+        </Segmented>
+        <Sheet title="Filters" open={open} onOpenChange={setOpen} side="bottom" align="start" className="w-[440px] overflow-hidden p-0"
+          trigger={
+            <Button variant="outline" className={cn('fx-tool-btn', open && 'is-open')} aria-label={n ? `Filters, ${n} on` : 'Filters'} disabled={saved}>
+              <SlidersHorizontal aria-hidden /> Filters
+              {n > 0 && <span aria-hidden className="fx-count">{n}</span>}
+            </Button>
+          }>
+          {(close) => (
+            <div className="filter-panel flex max-h-[min(72dvh,640px,var(--radix-popover-content-available-height))] flex-col">
+              <div className="panel-scroll min-h-0 overflow-y-auto overscroll-contain px-[var(--pad,1.25rem)]">
+                <FilterGroups filters={p.filters} onFilters={p.onFilters} neatOnly={p.neatOnly} onNeatOnly={p.onNeatOnly} catalogue={p.catalogue} />
+              </div>
+              <div className="filter-panel-foot flex shrink-0 items-center justify-between gap-2 px-3 py-2">
+                <Button variant="ghost" disabled={!n} onClick={() => p.onFilters({ ...NO_FILTERS, family: p.filters.family }, true)} className="fx-quiet">Clear filters</Button>
+                <Button onClick={close} className="fx-done">Done</Button>
+              </div>
+            </div>
+          )}
+        </Sheet>
+      </div>
+
+      <div className="fx-tool-group fx-tester">
+        <LinePicker line={p.line} onLine={p.onLine} />
+        <WordsField text={p.text} onText={p.onText} placeholder={p.placeholder} escapeClears />
+        <label className="fx-size">
+          <span className="fx-size-label">Size</span>
+          <Slider aria-label="Size of the writing" aria-valuetext={`${p.size} pixels`} value={[p.size]} min={SIZE.min} max={SIZE.max} step={SIZE.step}
+            onValueChange={(v) => p.onSize(v[0])} className="fx-size-slider" />
+          <span className="fx-size-value tabular" aria-hidden>{p.size}</span>
+        </label>
+      </div>
+
+      <div className="fx-tool-group fx-tool-end">
+        <Segmented type="single" aria-label="List or grid" value={p.layout} onValueChange={(v) => v && p.onLayout(v as Layout)} className="fx-layout">
+          <Tooltip><TooltipTrigger asChild><SegmentedItem value="list" aria-label="List"><LayoutList aria-hidden className="size-4" /></SegmentedItem></TooltipTrigger><TooltipContent>List</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><SegmentedItem value="grid" aria-label="Grid"><LayoutGrid aria-hidden className="size-4" /></SegmentedItem></TooltipTrigger><TooltipContent>Grid</TooltipContent></Tooltip>
+        </Segmented>
+        {(p.savedCount > 0 || saved) && (
+          <Button variant="ghost" aria-pressed={saved} onClick={() => p.onView(saved ? 'set' : 'saved')} className="fx-quiet fx-saved"
+            aria-label={saved ? 'Back to the set' : `Saved hands (${p.savedCount})`}>
+            <Heart aria-hidden className="fill-current" />
+            <span className="tabular">{saved ? 'Back to the set' : p.savedCount}</span>
+          </Button>
+        )}
+        <Button onClick={p.onNewSet} className="fx-newset" title="New set (Space)">
+          <RefreshCw aria-hidden /> New set
+        </Button>
+      </div>
+    </div>
+  );
+}

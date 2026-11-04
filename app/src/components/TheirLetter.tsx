@@ -9,7 +9,7 @@
 // click your sheet, ⌘], Esc, or "Back to your letter". On wide desks both are readable side by side, so you can
 // answer line by line; picking theirs up there just brings it to full size.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { PaperGuide } from '@/components/PaperCanvas';
+import { PaperGuide, PaperLetter } from '@/components/PaperCanvas';
 import { SheetLabel } from '@/components/SheetLabel';
 import { SheetView } from '@/components/SheetView';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -198,11 +198,14 @@ export function TheirLetterDesk({ found, layout, pxPerMm, forward, onForward, on
         >
           {/* a letter that was sent: the guide sheet stayed in the writer's pad */}
           <PaperGuide value={false}>
+            {/* worn as their letter is on the desk */}
+            <PaperLetter value={{ id: letter.id, year: letter.year }}>
             <div className="flex flex-col pr-2" style={{ gap: SHEET_GAP_THEIRS }}>
               {svgs.map((svg, i) => (
                 <SheetView key={i} paper={paper} pxPerMm={pxPerMm} svg={svg} ink={ink} index={i} count={svgs.length} />
               ))}
             </div>
+            </PaperLetter>
           </PaperGuide>
           {/* the words, for screen readers (the handwriting is a picture) */}
           <div className="sr-only">{letter.text}</div>
@@ -343,11 +346,13 @@ export function TheirLetterPull({ found, open, onOpen, onDismiss, viewport, reac
       >
         <div className="h-[calc(100%-56px)] overflow-y-auto overscroll-contain px-4 pt-[max(12px,env(safe-area-inset-top,0px))]">
           <PaperGuide value={false}>
+            <PaperLetter value={{ id: letter.id, year: letter.year }}>
             <div className="mx-auto flex flex-col pb-3" style={{ width: paper.w * px, gap: SHEET_GAP_THEIRS }}>
               {svgs.map((svg, i) => (
                 <SheetView key={i} paper={paper} pxPerMm={px} svg={svg} ink={ink} index={i} count={svgs.length} />
               ))}
             </div>
+            </PaperLetter>
           </PaperGuide>
           <div className="sr-only">{letter.text}</div>
         </div>

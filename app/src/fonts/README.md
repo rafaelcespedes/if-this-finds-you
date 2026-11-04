@@ -20,6 +20,15 @@ carries on with the same set; "New set" (or Space) draws another.
 
 Run: `cd app && npm run dev`, open `/fonts.html` (the live site serves it at `/fonts`, clean URLs).
 
+## The redesign, behind `?fonts=new` (3 Nov 2026)
+`new/` holds a redesigned page on the same store, workers, route and filters (docs/research/fonts-redesign.md has the
+research and the principles): one hand at poster size first (`Hero.tsx`), one sticky tester line on wide screens
+(`Toolbar.tsx`; phones keep `Dock.tsx`), the rest of the set as a register or a grid (`Row.tsx`, `?grid=1`), a
+write-in as each line arrives and again under a resting pointer (`Specimen.tsx`), and a night room (`?theme=dark` or
+the sun/moon). `new/switch.ts` reads `?fonts=new|old` and `?theme=` and keeps them for the tab; `main.tsx` loads the
+redesign as its own file, so today's page loads what it did. All its styles are in `new/fonts-new.css`, scoped to
+`html[data-fonts='new']`.
+
 ## Honest about limits (PRINCIPLES.md #7)
 - **As a font** (default): the row's line is set in the hand's real font, built in a worker for the characters the row
   shows (`buildFont` with `chars`, stroke-merged with clipper, every alternate, join and kerning pair the download has)

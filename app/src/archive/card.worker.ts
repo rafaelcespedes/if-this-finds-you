@@ -8,6 +8,7 @@ import * as E from '@engine';
 import { layout, makeHand } from '@engine';
 import { liveLayout } from '@/lib/live';
 import { isShaped, paintPaper } from '@/lib/papers';
+import { setWearLevel, wornPaper } from '@/lib/paper/wear';
 import { lookFor, renderingOf } from './look';
 import type { CardRequest, CardResult, CardWarm } from './card-protocol';
 
@@ -51,6 +52,8 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
   const req = e.data;
   const t0 = performance.now();
   try {
+    // the page's sheets are worn as much as this (a worker can't read the page's address)
+    setWearLevel(req.wear);
     const look = lookFor(req.letter, req.hand);
     const r = renderingOf(look);
     const full = r.paper;
@@ -62,7 +65,9 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
     const hMm = req.full ? full.h : Math.min(full.h, wMm * req.aspect);
     const right = Math.min(20, Math.max(10, full.w - full.text.right));
     const bottom = Math.max(10, full.h - full.text.last);
-    const paper = req.full ? full : { ...full, w: wMm, h: hMm, text: { ...full.text, right: Math.min(full.text.right, wMm - right), last: Math.min(full.text.last, hMm - bottom) } };
+    const cut = req.full ? full : { ...full, w: wMm, h: hMm, text: { ...full.text, right: Math.min(full.text.right, wMm - right), last: Math.min(full.text.last, hMm - bottom) } };
+    // the letter's own sheet, aged as it is everywhere else (lib/paper/wear.ts)
+    const paper = wornPaper(cut, req.letter.id, req.letter.year);
     const W = Math.round(req.width);
     const k = W / wMm;
     const H = Math.round(hMm * k);
