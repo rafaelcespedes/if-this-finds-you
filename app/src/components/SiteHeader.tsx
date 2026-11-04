@@ -51,27 +51,12 @@ type Props = {
 /** The phone header's small chips (Menu here, Share in the tool): drawn 32 px, a 48 px target (44 at the least
  * beside another chip, 12 px away). */
 export const headerChip =
-  "pointer-events-auto relative grid size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-[background-color,scale] duration-[var(--dur-press,100ms)] ease-out after:absolute after:-inset-2 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-[var(--st-press,var(--accent))] [&_svg]:size-[16px]";
+  "pointer-events-auto relative grid cursor-pointer size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-[background-color,scale] duration-[var(--dur-press,100ms)] ease-out after:absolute after:-inset-2 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-[var(--st-press,var(--accent))] [&_svg]:size-[16px]";
 const CHIP = 32;
 
 // a place in the header: a big enough target without making the line taller
 const link =
-  "pointer-events-auto relative inline-flex shrink-0 items-baseline gap-1 rounded-[3px] px-1.5 py-0.5 font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground";
-/**
- * How the place you're in shows (index.css): 1 its words in the look's red (the default), 2 a soft tint of it behind
- * them, 3 full ink with the other places quieter. ?navsel=1|2|3 to compare; kept for the tab, as ?look= is.
- */
-export type NavSel = '1' | '2' | '3';
-function readNavSel(): NavSel {
-  try {
-    const asked = new URLSearchParams(location.search).get('navsel');
-    if (asked === '1' || asked === '2' || asked === '3') { sessionStorage.setItem('seedhand:navsel', asked); return asked; }
-    const kept = sessionStorage.getItem('seedhand:navsel');
-    if (kept === '1' || kept === '2' || kept === '3') return kept;
-  } catch { /* storage off: the default */ }
-  return '1';
-}
-export const NAV_SEL: NavSel = typeof location !== 'undefined' ? readNavSel() : '1';
+  "pointer-events-auto relative inline-flex cursor-pointer shrink-0 items-baseline gap-1 rounded-[3px] px-1.5 py-0.5 font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground";
 // a piece that isn't shown right now: still laid out (so it can be measured), out of sight and out of reach
 const away = 'invisible absolute top-0 right-0';
 
@@ -93,7 +78,6 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
     <header
       ref={m.headerRef}
       data-site-header
-      data-navsel={NAV_SEL}
       style={beside ? { ...style, ['--site-beside' as string]: beside } : style}
       className={cn(
         // over the page, clear of a notch or camera island (the phone sideways too); only its links take clicks, so
@@ -170,8 +154,7 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
             <nav aria-label="Site">
               <ul className="flex items-center gap-x-1">
                 {PLACES.map((p) => (
-                  // the last place's ink ends where the rule ends (its padding reaches past the edge)
-                  <li key={p.id} className="flex last:-mr-1.5">
+                  <li key={p.id} className="flex">
                     <PlaceLink place={p} current={current} inside={inside} href={hrefs?.[p.id]} className={link} />
                   </li>
                 ))}
@@ -334,7 +317,7 @@ function KeptMenu({ kept }: { kept: Kept }) {
       entries={entries}
       width="w-[min(18rem,calc(100vw-24px))]"
       trigger={
-        <button type="button" data-site-kept className={cn(link, 'active:underline active:decoration-current active:underline-offset-[3px]')}>
+        <button type="button" data-site-kept className={link}>
           My letters
           <span className="font-normal text-muted-foreground tabular-nums">{n}</span>
         </button>
@@ -382,7 +365,7 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
       }
     >
       {(close) => (
-        <div ref={body} data-site-menu data-navsel={NAV_SEL} className={cn('grid', sheets && 'pb-1')}>
+        <div ref={body} data-site-menu className={cn('grid', sheets && 'pb-1')}>
           <nav aria-label="Site">
             <ul className="grid">
               {PLACES.map((p) => (
