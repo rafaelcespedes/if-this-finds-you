@@ -14,7 +14,8 @@
     "render:timing": "node scripts/click.mjs && remotion render src/index.ts Promo out/timing-540.mp4 --crf=22 --props='{\"grid\":true,\"audio\":\"click\"}'",
     "still": "remotion still src/index.ts Promo out/still.png",
     "hands": "node scripts/sample-hands.mjs 600",
-    "specimens": "node scripts/node-ts.mjs scripts/specimens.ts 120 && remotion render src/index.ts Specimen out/specimens --sequence --image-format=jpeg --jpeg-quality=82 --image-sequence-pattern='hand-[frame].[ext]'"
+    "specimens": "node scripts/node-ts.mjs scripts/specimens.ts 120 && remotion render src/index.ts Specimen out/specimens --sequence --image-format=jpeg --jpeg-quality=82 --image-sequence-pattern='hand-[frame].[ext]'",
+    "carousel": "remotion render src/index.ts Carousel out/carousel --sequence --image-format=png --image-sequence-pattern='letter-[frame].[ext]'"
   },
   "dependencies": {
     "@remotion/cli": "4.0.540",

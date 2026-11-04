@@ -2,6 +2,8 @@ import { Composition } from 'remotion';
 import { Promo, defaultProps, promoSchema, settingsOf, type PromoProps } from './Promo';
 import { Atlas } from './Atlas';
 import { Specimen } from './Specimen';
+import { Carousel } from './Carousel';
+import { CAROUSEL } from './scene/carousel';
 import { SPECIMENS } from './scene/specimen';
 import { ATLAS } from './scene/zoom';
 import { plan } from './scene/timeline';
@@ -29,6 +31,8 @@ export const RemotionRoot: React.FC = () => (
     />
     {/* the launch thread's specimens: 800 × 450 to choose from (--width/--height or --scale for the chosen ones) */}
     <Composition id="Specimen" component={Specimen} width={800} height={450} fps={1} durationInFrames={Math.max(1, SPECIMENS.length)} />
+    {/* the launch thread's carousel: real letters in their own hands, 1080 × 1350 */}
+    <Composition id="Carousel" component={Carousel} width={1080} height={1350} fps={1} durationInFrames={CAROUSEL.length} />
     <Composition id="Atlas" component={Atlas} width={ATLAS.tile * ATLAS.per} height={ATLAS.tile * ATLAS.per} fps={1} durationInFrames={ATLAS.pages} />
   </>
 );

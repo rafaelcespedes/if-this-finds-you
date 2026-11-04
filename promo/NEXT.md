@@ -47,7 +47,18 @@
 - For the thread: 120 hands writing "The quick brown fox jumps over the lazy dog", each with its seed and a link that
   opens the tool writing it in that exact hand (a private page with hearts and Copy picks).
 
+## Launch thread (4 Nov, drafts only: nothing posted)
+- Brought up to date with the live site's code (preview): the engine now caps a pen's width against the writing's
+  size. The pangram page was re-rendered with it; the final video must be rendered after this too (atlas re-rendered).
+- Post 1, 2 and 3 drafts in review/thread-copy.json (2–3 options each, X lengths checked by review/x-count.mjs).
+- The count: 36 × 34 × 90 = 110,160 seed names × 13 traditions = 1,432,080 hands, before pen, ink, paper and the
+  19 sliders (scripts/count-hands.ts); 19,500 random seeds across the 13 traditions gave no two identical hands
+  (scripts/count-check.ts).
+- Carousel: 11 real letters in their own hands (scene/carousel.ts, `npm run carousel`, 1080 × 1350), Rafael picks 4.
+- Review page: review/thread-review.mjs → out/thread-review/ (private artifact "Launch thread: drafts").
+
 ## Open
+- Rafael: post options, the four letters, About link in post 3 or not.
 - Rafael picks the thread's hands; render the chosen ones large (size and format to decide: 1600 × 900, or square?).
 - Sound alone, or a licensed track under it?
 - The final renders (1080, 30 fps for X; 60 fps for Instagram?).

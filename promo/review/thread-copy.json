@@ -1,0 +1,36 @@
+{
+ "post1": [
+  {
+   "label": "A · closest to your words",
+   "text": "A recent experiment that, as usual, got out of hand.\n\nI couldn’t find a handwritten font for Rueca, so I tried making one. Now there’s an engine that writes in the hands people were taught from 1522 to today. Like anyone writing on paper, it never makes the same letter twice."
+  },
+  {
+   "label": "B · says where the hands come from",
+   "text": "Went looking for a handwritten font for Rueca, didn’t find one I liked, and tried making my own. As usual, it got out of hand.\n\nIt’s now an engine built from copybooks and school hands, Rome 1522 to Québec today, with the wobble of real writing, so no two letters match."
+  },
+  {
+   "label": "C · shortest",
+   "text": "Couldn’t find the handwritten font I wanted for Rueca, so I made one. That got out of hand.\n\nIt’s now an engine that writes in 13 traditions across five centuries, a little differently every time, because nobody writes the same letter twice."
+  }
+ ],
+ "post2": [
+  {
+   "label": "A · with the maths",
+   "text": "A few of my favourites, each copying out a real letter from the collection.\n\nEvery seed is a different writer, and any writer can write in any of 13 traditions. That’s over a million hands (110,160 seeds × 13) before you touch the pen, ink or paper. Each card has its seed."
+  },
+  {
+   "label": "B · without the maths",
+   "text": "Some favourites so far. Each is a real letter, copied out by a writer who never existed.\n\nThere are over a million of these writers to find, and that’s before you pick a pen, an ink or a paper. Each card has its seed, so you can find the same hand on the site."
+  }
+ ],
+ "post3": [
+  {
+   "label": "A · About link in the post",
+   "text": "I burned through all my Claude credits building the engine and the site. It’s free, and every hand is an open-source font.\n\nIf it’s useful to you and you want to pay it forward, give to the people who kept these letters: https://ifthisfindsyou.app/about\n\nhttps://ifthisfindsyou.app"
+  },
+  {
+   "label": "B · names them, no About link",
+   "text": "I burned through all my Claude credits building the engine and the site. If you find it useful and want to pay it forward, give to the foundations that kept these letters, like the Internet Archive and Project Gutenberg. They’re all on the About page.\n\nhttps://ifthisfindsyou.app"
+  }
+ ]
+}
