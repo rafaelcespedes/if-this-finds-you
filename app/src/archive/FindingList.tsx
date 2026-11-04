@@ -6,12 +6,13 @@ import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { callNo, marksOf } from '@/themes/reading-room/catalogue';
 import { useMarks } from '@/themes/reading-room/useCatalogue';
-import { circumstanceLabel, eraOf, ERAS, fromTo, lostInTransit, opening, shortAuthor } from './data';
+import { capFirst, circumstanceLabel, eraOf, ERAS, fromTo, lostInTransit, opening, shortAuthor } from './data';
 import type { ArchiveLetter } from './model';
 import { letterHash } from './route';
 
 type Sort = 'year' | 'place' | 'writer';
 const SORTS: Sort[] = ['year', 'place', 'writer'];
+const SORT_NAME: Record<Sort, string> = { year: 'Year', place: 'Place', writer: 'Writer' };
 const SORT_KEY = 'seedhand:list-sort';
 
 function readSort(): Sort {
@@ -86,12 +87,12 @@ export function FindingList({ letters, onOpen }: { letters: ArchiveLetter[]; onO
   return (
     <div className="fa">
       <div className="fa-sort" role="group" aria-label="Sort the letters">
-        <span aria-hidden>sort by</span>
+        <span aria-hidden>Sort by</span>
         {SORTS.map((s, i) => (
           <span key={s} className="contents">
             {i > 0 && <span aria-hidden className="fa-sep">·</span>}
             <button type="button" aria-pressed={sort === s} onClick={() => choose(s)} className={cn('fa-sort-by', sort === s && 'is-on')}>
-              <span className="sr-only">Sort by </span>{s}
+              <span className="sr-only">Sort by </span>{SORT_NAME[s]}
             </button>
           </span>
         ))}
@@ -119,7 +120,7 @@ function Row({ letter: l, onOpen }: { letter: ArchiveLetter; onOpen: () => void 
         <span className="fa-title">{l.title ?? opening(l.text, 60)}</span>
         <span className="fa-writer">{fromTo(l)}</span>
         <span className="fa-place">
-          {place}
+          {capFirst(place)}
           {lost && <>{place ? ' · ' : ''}<span className="fa-status">{circumstanceLabel(l)}</span></>}
         </span>
         <span className="fa-year">{l.year ?? ''}</span>
