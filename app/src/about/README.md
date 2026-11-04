@@ -19,22 +19,14 @@ The site's one header (`components/SiteHeader.tsx`), with About as the fourth an
 docs/NAVIGATION.md). The page renders `<SiteHeader current="about" />`; where the four places don't fit (phones), the
 header's Menu takes them. The 404 page's hand-made copy of the header lists About too.
 
-## Lines waiting for Rafael
+## The words
 
-Trimmed on 3 November 2026 (Rafael: "way too long"; about 580 words to read, from about 1,700, credits folded away).
-The earlier "The hope is to bring letters, people and handwriting traditions…" line was cut.
+Rafael's own text (4 November 2026, ifthisfindsyou-about.md), set word for word; only the quotes and apostrophes are
+the site's curly ones. The full credits stay folded at the foot, since the licences ask for them.
 
-1. "Designed by Rafael Cespedes and built with Claude." (How it started)
-2. "It's a free lab experiment with nothing to sell. He wanted to use AI in ways he finds clever. Drawing hundreds of
-   handwriting fonts, for one, used to take too many resources to try."
-3. "The fonts and the code are open source." ("the code" links to github.com/rafaelcespedes/if-this-finds-you, public under MIT since 4 Nov 2026)
-4. "Every source the project used, 484 so far, is listed with what it decided in a reference library, still to be
-   published." (Full credits, folded; the library isn't in the public repo)
-5. "Spotted a mistake in a letter or its story? Rafael would like to know." (Contact)
-6. Give back: the intro, the five sources and the Red Cross, each with one short line, and "Each link opens the
-   organisation's own donation page. We get nothing from it." Links checked on each organisation's own site on
-   3 November 2026; the Library of Congress was left out because its site's bot check blocked verification.
-7. "It started as a search for a font. Rafael Cespedes, a designer, was looking for a handwritten face for Rueca,
-   another project of his. He couldn't find the hand he had in mind, so he tried making one. It grew from there, a
-   happy accident that got a little out of hand." (Rueca isn't linked: no public address in the repo.)
-8. "Each visit opens on a writer and a letter picked at random." (What this is; true since 237360d.)
+Numbers in the text to keep true when letters are switched on or off (count them from content/sample-texts.json:
+enabled letters whose source URL is on that host):
+- Give back: the Internet Archive's letters (and its four copybooks: Arrighi, Palomares, Spencer, Palmer), Project
+  Gutenberg's letters, Wikisource's six letters, Project Runeberg's two.
+- The hands: eight copybooks, thirteen traditions (engine/sources/*.js), 1522, 1917 and 1967.
+- The stats block reads `LETTERS` at the top of AboutApp.tsx.

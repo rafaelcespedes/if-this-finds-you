@@ -1,8 +1,8 @@
 // About: what If This Finds You is, where the letters and the hands come from, the fonts, how it started, where to give
 // back, contact; then the full credits, folded away. A short reading page (Rafael, 3 Nov 2026: "way too long"; about
 // 600 words to read, under a minute): sections ruled off like a finding aid, their labels in the margin on a wide
-// screen. Every claim is checked against the repo (the letters' counts against content/check-texts.mjs); lines waiting
-// for Rafael's sign-off are listed in about/README.md.
+// screen. The words are Rafael's own (4 Nov 2026); the numbers in them are checked against the repo (the letters'
+// counts against content/check-texts.mjs, the copybooks against engine/sources/*.js): about/README.md says how.
 import { useEffect, type ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { APP_NAME, NAME_WITH_DESCRIPTOR, withLogo } from '@/lib/brand';
@@ -62,16 +62,16 @@ const LETTER_SOURCES: { href: string; text: ReactNode }[] = [
  */
 const GIVE: { name: string; href: string; kept: ReactNode }[] = [
   { name: 'Internet Archive', href: 'https://archive.org/donate/', kept: <>Scans of 77 of the letters and four of the copybooks.</> },
-  { name: 'Project Gutenberg', href: 'https://www.gutenberg.org/donate/', kept: <>Volunteers’ transcriptions of 22 letters.</> },
+  { name: 'Project Gutenberg', href: 'https://www.gutenberg.org/donate/', kept: <>Volunteer transcriptions of 22 of the letters.</> },
   { name: 'Wikimedia Foundation', href: 'https://donate.wikimedia.org/', kept: <>Six letters on Wikisource, and the Sütterlin alphabet on Commons.</> },
-  { name: 'Fondation de BAnQ', href: 'https://www.jedonneenligne.org/fondationdebanq/', kept: <>For Québec’s national library, whose volunteers gave the hand our logo is written in.</> },
-  { name: 'Project Runeberg', href: 'https://runeberg.org/admin/sponsors.html', kept: <>A volunteer library of Nordic texts, and two of the letters.</> },
+  { name: 'Fondation de BAnQ', href: 'https://www.jedonneenligne.org/fondationdebanq/', kept: <>Supports Québec’s national library, whose volunteers gave us the hand our logo is written in.</> },
+  { name: 'Project Runeberg', href: 'https://runeberg.org/admin/sponsors.html', kept: <>A volunteer library of Nordic texts, and the source of two of the letters.</> },
 ];
 /** One related cause, not a source: the people who still carry letters between families separated by war. */
 const GIVE_ALSO = {
   name: 'International Committee of the Red Cross',
   href: 'https://www.icrc.org/en/donate',
-  kept: <>Not one of our sources. It still carries messages between families separated by war.</>,
+  kept: <>Not one of my sources, but it still carries messages between families separated by war.</>,
 };
 
 /** The project's code, public under the MIT licence (the fonts stay OFL, the letters public domain). */
@@ -135,13 +135,13 @@ export function AboutApp() {
 
         <Section id="what">
           <p>
-            This is a small collection of real letters, most by people nobody remembers: emigrants, settlers, children,
-            soldiers, servants. A writer who never existed copies each one out by hand, stroke by stroke. Each visit
-            opens on a writer and a letter picked at random.
+            A small collection of real letters, mostly from people nobody remembers: emigrants, settlers, children,
+            soldiers, servants. Each one is copied out by hand, stroke by stroke, by a writer who never existed. Every
+            visit opens on a new writer and a new letter.
           </p>
           <p>
-            The name is how a message in a bottle begins. Each of these letters was meant for one person. Now one has
-            found you. Only the words are the original writer’s.
+            The name comes from how a message in a bottle begins. Each of these letters was written for one person. Now
+            one has found you. The words are theirs. The handwriting isn’t.
           </p>
         </Section>
 
@@ -157,56 +157,61 @@ export function AboutApp() {
             <div><dt>By Hispanic and Latin American writers</dt><dd>{L.hispanic}</dd></div>
           </dl>
           <p>
-            Every letter is real and in the public domain. Each shows where it was found, with a link to the page, and
-            if the source doesn’t say something, neither do we. They’re short excerpts in the writer’s own spelling and
-            language. A “…” marks a cut.
+            Every letter is real and in the public domain. Each one links to where it was found, and if the source
+            doesn’t say something, neither do I. They’re short excerpts, kept in the writer’s own spelling and language.
+            A “…” marks a cut.
           </p>
           <p><a className="about-link" href={withLogo(ARCHIVE_URL)}>Read all the letters<ArrowLeft aria-hidden className="about-arrow about-arrow--on" /></a></p>
         </Section>
 
         <Section id="hands">
           <p>
-            Handwriting is learned, so every writer here starts from a hand someone was taught. The hands come from eight
-            copybooks, from Rome in 1522 to Berlin in 1917, from Dr. A. V. Hershey’s 1967 stroke letters, and from
-            volunteers in Québec and France today. Each writer then makes it their own, in slant, size, rhythm and the
-            shape of each letter. A simulated pen writes it in ink on the kinds of paper people really used. Writers
-            slip, too, and cross things out.
+            Handwriting is learned, so every writer here starts from a hand someone was taught. Those hands come from
+            eight copybooks, from Rome in 1522 to Berlin in 1917, from Dr. A. V. Hershey’s stroke letters from 1967, and
+            from volunteers in Québec and France today.
           </p>
           <p>
-            No AI model draws the letters. The engine is plain code, and every letter shape carries its source. Most of
-            its thirteen traditions are European or American, and so far it writes only the Latin alphabet.
+            Each writer then makes the hand their own: the slant, the size, the rhythm, the shape of each letter. A
+            simulated pen puts it down in ink, on the kinds of paper people actually used. And like anyone writing, they
+            slip and cross things out.
+          </p>
+          <p>
+            No AI model draws the letters. The engine is plain code, and every letter shape can be traced back to its
+            source. Most of the thirteen traditions are European or American, and for now it only writes the Latin
+            alphabet.
           </p>
         </Section>
 
         <Section id="fonts">
           <p>
-            Every hand here is a font you can keep, free and open source under the SIL Open Font License. A font holds
-            four or five versions of each letter, so it’s a little steadier than the page.
+            Every hand here is also a font you can keep, free and open source under the SIL Open Font License. A font can
+            only hold four or five versions of each letter, so it’s a little more consistent than what you see on the
+            page.
           </p>
           <p><a className="about-link" href={withLogo(FONTS_URL)}>Browse the fonts<ArrowLeft aria-hidden className="about-arrow about-arrow--on" /></a></p>
         </Section>
 
         <Section id="made">
-          {/* Rafael's own story (his words, 3 Nov 2026). Rueca has no public address in the repo, so it isn't linked */}
+          {/* Rueca has no public address in the repo, so it isn't linked */}
           <p>
-            It started as a search for a font. Rafael Cespedes, a designer, was looking for a handwritten face for
-            Rueca, another project of his. He couldn’t find the hand he had in mind, so he tried making one. It grew
-            from there, a happy accident that got a little out of hand.
+            I was looking for a handwritten font for Rueca, another project of mine, and couldn’t find the hand I had in
+            mind. So I tried making one. It grew from there, and like most of my experiments, it got a little out of
+            hand.
           </p>
           <p>
-            It’s a free lab experiment with nothing to sell. He wanted to use AI in ways he finds clever. Drawing
-            hundreds of handwriting fonts, for one, used to take too many resources to try. The fonts and{' '}
+            There’s nothing to sell here. It’s a free lab experiment, and a chance to use AI for something that used to
+            be too much work to even try, like drawing hundreds of handwriting fonts. The fonts and{' '}
             <Out href={REPO_URL}>the code</Out> are open source.
           </p>
           <p className="about-credit-line">
-            Designed by Rafael Cespedes and built with Claude.
+            Designed by Rafael Cespedes, built with Claude.
           </p>
         </Section>
 
         <Section id="give">
           <p>
-            Found this useful? These are the people who kept the letters and the hands. If you’d like to give back, give
-            to them.
+            If this was worth your time, thank the people who kept these letters and hands around. Most of them run on
+            donations and volunteers.
           </p>
           <ul className="about-give">
             {GIVE.map((g) => <GiveRow key={g.name} {...g} />)}
@@ -215,13 +220,13 @@ export function AboutApp() {
           <ul className="about-give">
             <GiveRow {...GIVE_ALSO} />
           </ul>
-          <p className="about-give-note">Each link opens the organisation’s own donation page. We get nothing from it.</p>
+          <p className="about-give-note">Each link goes to the organization’s own donation page. I get nothing from it.</p>
         </Section>
 
         <Section id="contact">
-          <p>Spotted a mistake in a letter or its story? Rafael would like to know.</p>
+          <p>Spotted a mistake in a letter or its story? I’d like to know.</p>
           <dl className="about-contact">
-            <div><dt>Site</dt><dd><Out href="https://rafaelcespedes.com">rafaelcespedes.com</Out></dd></div>
+            <div><dt>Site</dt><dd><Out href="https://rafaelcespedes.com/">rafaelcespedes.com</Out></dd></div>
             <div><dt>X</dt><dd><Out href="https://x.com/rafcespedes">@rafcespedes</Out></dd></div>
             <div><dt>GitHub</dt><dd><Out href={REPO_URL}>if-this-finds-you</Out></dd></div>
           </dl>
@@ -289,8 +294,8 @@ export function AboutApp() {
         <footer className="about-colophon">
           <p className="about-colophon-name">{NAME_WITH_DESCRIPTOR}</p>
           <p>
-            A lab experiment by Rafael Cespedes. Letters in the public domain; fonts under the SIL Open Font License; code
-            under the MIT licence.
+            A lab experiment by Rafael Cespedes. Letters in the public domain, fonts under the SIL Open Font License, code
+            under the MIT license.
           </p>
         </footer>
       </main>
