@@ -1,6 +1,10 @@
 // ---------- the layout: an editorial frame around the Reading Room (an exploration, Nov 2026) ----------
-// ?layout=editorial-1 (or e1, 1) and ?layout=editorial-2 (e2, 2) lay the Reading Room's pages out on a visible
-// editorial grid: crisp hairline rules, column lines, rulers, running heads and folios, and a display type scale.
+//   ?layout=editorial-1 (e1, 1, broadsheet): Broadsheet, a newspaper's frame on a visible grid (crisp ruled columns,
+//     a thick-and-thin rule under the running head, big figures).
+//   ?layout=editorial-2 (e2, 2, register): Register, the new Fonts page's balance on every page (Rafael, 4 Nov: "that's
+//     the type of balance that we should try to maintain everywhere"): a strict modern frame, three sizes of voice far
+//     apart, the handwriting the only big thing, soft rules, one red action.
+//   ?layout=editorial-3 (e3, 3, ruler): Ruler, a measured asymmetric page (numbered columns, a baseline ruler, a rail).
 // ?layout=off (0, none, reading-room) goes back. Read once at load and kept for the tab, like the look (lib/look.ts);
 // never put into share links.
 // Only the frame changes: html[data-layout] is read by themes/editorial.css, which styles the shared components through
@@ -11,10 +15,11 @@
 // Reading Room's (html:root[data-layout] against html[data-look]), so their order in that sheet doesn't matter.
 import '@/themes/editorial.css';
 
-export type LayoutId = 'none' | 'editorial-1' | 'editorial-2';
+export type LayoutId = 'none' | 'editorial-1' | 'editorial-2' | 'editorial-3';
 const ALIASES: Record<string, LayoutId> = {
   'editorial-1': 'editorial-1', e1: 'editorial-1', '1': 'editorial-1', broadsheet: 'editorial-1',
-  'editorial-2': 'editorial-2', e2: 'editorial-2', '2': 'editorial-2', margin: 'editorial-2',
+  'editorial-2': 'editorial-2', e2: 'editorial-2', '2': 'editorial-2', register: 'editorial-2',
+  'editorial-3': 'editorial-3', e3: 'editorial-3', '3': 'editorial-3', ruler: 'editorial-3',
   off: 'none', none: 'none', '0': 'none', 'reading-room': 'none', default: 'none',
 };
 const KEY = 'seedhand:layout';
@@ -29,19 +34,22 @@ function readLayout(): LayoutId {
       return id;
     }
     const kept = sessionStorage.getItem(KEY);
-    if (kept === 'editorial-1' || kept === 'editorial-2') return kept;
+    if (kept === 'editorial-1' || kept === 'editorial-2' || kept === 'editorial-3') return kept;
   } catch { /* storage off: no layout */ }
   return 'none';
 }
 export const LAYOUT: LayoutId = typeof location !== 'undefined' ? readLayout() : 'none';
-/** An editorial layout is on (its rules are crisp: lib/rules.ts keeps the hand-drawn ones off unless ?rules=hand). */
+/** An editorial layout is on. */
 export const EDITORIAL = LAYOUT !== 'none';
+/** A layout whose rules are crisp and whose grid is drawn (Broadsheet, Ruler): lib/rules.ts keeps the hand-drawn rules
+ * off there unless ?rules=hand. Register keeps them, as the Fonts page does. */
+export const CRISP = LAYOUT === 'editorial-1' || LAYOUT === 'editorial-3';
 
 export type LayoutPage = 'desk' | 'letters' | 'about';
 
 /**
  * Call once in each page's entry, after applyLook(). Only on top of the Reading Room. Sets html[data-layout] and
- * html[data-layout-page], and lays the grid itself over the page: twelve columns (four on a phone, eight on a tablet)
+ * html[data-layout-page], and (Broadsheet, Ruler) lays the grid itself over the page: twelve columns (four on a phone, eight on a tablet)
  * with their index numbers, behind everything and out of reach (themes/editorial.css draws it per layout).
  */
 export function applyLayout(page: LayoutPage) {
@@ -54,7 +62,7 @@ export function applyLayout(page: LayoutPage) {
   }
   html.dataset.layout = LAYOUT;
   html.dataset.layoutPage = page;
-  if (document.querySelector('.ed-grid')) return;
+  if (!CRISP || document.querySelector('.ed-grid')) return;
   // two layers with the same twelve columns: the lines behind the page, and the ruler in the running head's band
   for (const name of ['ed-grid', 'ed-ruler']) {
     const layer = document.createElement('div');

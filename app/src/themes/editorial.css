@@ -9,7 +9,8 @@
    1  Broadsheet (editorial-1): a newspaper's frame. Every column ruled, full height; a thick-and-thin rule under
       the running head; caps running heads and folios; big serif numerals as design (the catalogue number set like a
       magazine's page number); the list a dense ruled index with column rules; text in two columns.
-   2  Ruler (editorial-2): a measured, asymmetric page. A ruler under the running head numbers the twelve columns;
+   2  Register (editorial-2): the new Fonts page's balance carried to every page (at the end of this file).
+   3  Ruler (editorial-3): a measured, asymmetric page. A ruler under the running head numbers the twelve columns;
       a tick rule measures the baseline down the left margin; one strong rule divides a margin rail (labels,
       numbers, the record) from the page; huge titles hang off the grid; numbers in the sans, tabular.
 
@@ -37,23 +38,25 @@ html:root[data-layout] {
   --ed-rule-strong: color-mix(in oklab, var(--rr-ink) 72%, transparent);
   --ed-heavy: 2px;
 
-  /* the display scale (proposed): above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96
+  /* every --rr-display-* and --rr-figure-* below is read with this file's value as the fallback (--ed-…: var(--rr-…,
+     default)), so a type pairing that sets any of them wins, whatever order the sheets load in.
+     the display scale (proposed): above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96
      · 128 px), fluid between a phone and 1440. Face, weight and stretch follow the title role, so a pairing that sets
      --rr-title-face sets these too; a pairing can give display its own cut with --rr-display-face. */
-  --rr-display-face: var(--rr-title-face);
+  --ed-display-face: var(--rr-display-face, var(--rr-title-face));
   /* never heavier than the title role's own weight (a pairing's 400 stays 400) */
-  --rr-display-weight: min(var(--rr-title-weight, 480), 480);
-  --rr-display-stretch: var(--rr-title-stretch, 100%);
-  --rr-display-leading: 0.94;
-  --rr-display-tracking: -0.025em;
-  --rr-display-1: clamp(3.25rem, 1.6rem + 6.6vw, 8rem); /* the page's one title: About, All letters, a letter */
-  --rr-display-2: clamp(2.5rem, 1.5rem + 4vw, 6rem); /* a hero number, a big title beside a sheet */
-  --rr-display-3: clamp(2rem, 1.35rem + 2.6vw, 4rem); /* a section's title, a figure */
-  --rr-display-4: clamp(1.625rem, 1.25rem + 1.5vw, 2.75rem); /* a sub-title, a stat */
-  --rr-display-5: clamp(1.375rem, 1.2rem + 0.7vw, 1.9375rem); /* a lede, a row's title at size */
+  --ed-display-weight: var(--rr-display-weight, min(var(--rr-title-weight, 480), 480));
+  --ed-display-stretch: var(--rr-display-stretch, var(--rr-title-stretch, 100%));
+  --ed-display-leading: var(--rr-display-leading, 0.94);
+  --ed-display-tracking: var(--rr-display-tracking, -0.025em);
+  --ed-display-1: var(--rr-display-1, clamp(3.25rem, 1.6rem + 6.6vw, 8rem)); /* the page's one title: About, All letters, a letter */
+  --ed-display-2: var(--rr-display-2, clamp(2.5rem, 1.5rem + 4vw, 6rem)); /* a hero number, a big title beside a sheet */
+  --ed-display-3: var(--rr-display-3, clamp(2rem, 1.35rem + 2.6vw, 4rem)); /* a section's title, a figure */
+  --ed-display-4: var(--rr-display-4, clamp(1.625rem, 1.25rem + 1.5vw, 2.75rem)); /* a sub-title, a stat */
+  --ed-display-5: var(--rr-display-5, clamp(1.375rem, 1.2rem + 0.7vw, 1.9375rem)); /* a lede, a row's title at size */
   /* big figures: the number role's face at display size, lining and tabular */
-  --rr-figure-face: var(--rr-number-face);
-  --rr-figure-numeric: lining-nums tabular-nums;
+  --ed-figure-face: var(--rr-figure-face, var(--rr-number-face));
+  --ed-figure-numeric: var(--rr-figure-numeric, lining-nums tabular-nums);
   /* running heads, folios, column indices: the controls' sans, small */
   --ed-head-face: var(--rr-ui);
   --ed-head-size: 0.6875rem;
@@ -79,18 +82,18 @@ html:root[data-layout]:is([data-layout-page='letters'], [data-layout-page='about
   --ed-max: 90rem;
 }
 /* Ruler: sentence case, a little wider, its numbers in the sans */
-html:root[data-layout='editorial-2'] {
+html:root[data-layout='editorial-3'] {
   --ed-head-case: none;
   --ed-head-size: 0.75rem;
   --ed-head-tracking: 0.01em;
-  --rr-figure-face: var(--rr-ui);
-  --rr-display-weight: min(var(--rr-title-weight, 440), 440);
-  --rr-display-tracking: -0.035em;
-  --rr-display-leading: 0.9;
+  --ed-figure-face: var(--rr-figure-face, var(--rr-ui));
+  --ed-display-weight: var(--rr-display-weight, min(var(--rr-title-weight, 440), 440));
+  --ed-display-tracking: var(--rr-display-tracking, -0.035em);
+  --ed-display-leading: var(--rr-display-leading, 0.9);
 }
 
 /* a running head's words: the small sans, tracked (caps in Broadsheet) */
-html:root[data-layout] :is(.ed-head, .ed-grid b, .ed-ruler b) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-head, .ed-grid b, .ed-ruler b) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
@@ -108,7 +111,7 @@ html:root[data-layout] :is(.ed-head, .ed-grid b, .ed-ruler b) {
 .ed-ruler {
   display: none;
 }
-html:root[data-layout] :is(.ed-grid, .ed-ruler) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-grid, .ed-ruler) {
   position: fixed;
   inset: 0;
   display: grid;
@@ -120,28 +123,28 @@ html:root[data-layout] :is(.ed-grid, .ed-ruler) {
   pointer-events: none;
   contain: strict;
 }
-html:root[data-layout] .ed-grid {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .ed-grid {
   z-index: -1;
 }
-html:root[data-layout] :is(.ed-grid, .ed-ruler) > i {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-grid, .ed-ruler) > i {
   position: relative;
   display: block;
   min-width: 0;
   font-style: normal;
 }
 @media (max-width: 39.99rem) {
-  html:root[data-layout] :is(.ed-grid, .ed-ruler) > i:nth-child(n + 5) { display: none; }
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-grid, .ed-ruler) > i:nth-child(n + 5) { display: none; }
 }
 @media (max-width: 63.99rem) {
-  html:root[data-layout] :is(.ed-grid, .ed-ruler) > i:nth-child(n + 9) { display: none; }
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-grid, .ed-ruler) > i:nth-child(n + 9) { display: none; }
 }
-html:root[data-layout] .ed-grid b,
-html:root[data-layout] .ed-ruler b {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .ed-grid b,
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .ed-ruler b {
   display: none;
 }
 /* the page's ground is the root's (the same room colour): the body and About's wrapper let the grid show through */
-html:root[data-layout] body,
-html:root[data-layout] .about {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) body,
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about {
   background-color: transparent;
 }
 
@@ -171,23 +174,23 @@ html:root[data-layout='editorial-1'] .ed-grid::after {
 
 /* ---------- Ruler: the columns numbered under the running head, a tick at each column's start and end; the baseline
    measured down the left margin (a tick every 8 px, a longer one every 24 px) ---------- */
-html:root[data-layout='editorial-2'] {
+html:root[data-layout='editorial-3'] {
   /* the ruler's band, under the running head's rule; the header grows by it (index.css --site-head) */
   --ed-ruler-h: 1.125rem;
   --site-head-rule: calc(0.5rem + 1px + var(--ed-ruler-h));
 }
-html:root[data-layout='editorial-2'] .ed-ruler {
+html:root[data-layout='editorial-3'] .ed-ruler {
   z-index: 31;
   bottom: auto;
   top: calc(var(--site-head) - var(--ed-ruler-h));
   height: var(--ed-ruler-h);
 }
-html:root[data-layout='editorial-2'] .ed-ruler > i {
+html:root[data-layout='editorial-3'] .ed-ruler > i {
   border-left: 1px solid var(--ed-rule-strong);
   border-right: 1px solid var(--ed-rule);
   height: 5px;
 }
-html:root[data-layout='editorial-2'] .ed-ruler b {
+html:root[data-layout='editorial-3'] .ed-ruler b {
   display: block;
   position: absolute;
   top: 7px;
@@ -197,7 +200,7 @@ html:root[data-layout='editorial-2'] .ed-ruler b {
   letter-spacing: 0.02em;
 }
 /* the baseline, measured in the left margin (a tick every 8 px, a longer one every 24 px), from under the ruler */
-html:root[data-layout='editorial-2'] .ed-grid::before {
+html:root[data-layout='editorial-3'] .ed-grid::before {
   content: '';
   position: absolute;
   top: calc(var(--site-head) + 0.5rem);
@@ -209,23 +212,23 @@ html:root[data-layout='editorial-2'] .ed-grid::before {
     repeating-linear-gradient(to bottom, var(--ed-rule-strong) 0 1px, transparent 1px 24px) 0 0 / 9px 100% no-repeat;
 }
 /* the columns themselves: only their edges, very faint, full height */
-html:root[data-layout='editorial-2'] .ed-grid > i {
+html:root[data-layout='editorial-3'] .ed-grid > i {
   box-shadow: inset 1px 0 var(--ed-line), inset -1px 0 var(--ed-line);
 }
 @media (max-height: 32rem) {
   /* the running head scrolls away on a short screen: the ruler goes with it */
-  html:root[data-layout='editorial-2'] .ed-ruler { display: none; }
+  html:root[data-layout='editorial-3'] .ed-ruler { display: none; }
 }
 
 /* =====================================================================================================================
    THE RUNNING HEAD (components/SiteHeader.tsx, through its data hooks)
    ===================================================================================================================== */
 /* on the library and About the head keeps to the page's 90 rem grid */
-html:root[data-layout]:is([data-layout-page='letters'], [data-layout-page='about']) [data-site-row] {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']):is([data-layout-page='letters'], [data-layout-page='about']) [data-site-row] {
   max-width: calc(var(--ed-max) - 2 * var(--ed-margin));
   margin-inline: auto;
 }
-html:root[data-layout] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
@@ -233,9 +236,9 @@ html:root[data-layout] [data-site-header] :is([data-site-link], [data-site-kept]
   text-transform: var(--ed-head-case);
   font-variant-caps: normal;
 }
-html:root[data-layout] [data-site-number] {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) [data-site-number] {
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
 
@@ -257,7 +260,7 @@ html:root[data-layout='editorial-1'] [data-site-row]::after {
   background: var(--ed-ink);
 }
 /* Ruler: one crisp rule in ink, the ruler hangs from it */
-html:root[data-layout='editorial-2'] [data-site-row] {
+html:root[data-layout='editorial-3'] [data-site-row] {
   border-bottom: 1px solid var(--ed-ink);
   margin-bottom: var(--ed-ruler-h);
 }
@@ -267,17 +270,17 @@ html:root[data-layout='editorial-2'] [data-site-row] {
    ===================================================================================================================== */
 /* the record, on any screen (the desk's column, the phone's slip under the sheet): the number as a figure, the
    title at display size, the facts as a ruled table under a heavy rule, the labels as running-head words */
-html:root[data-layout] .rr-ledger-record .rr-card-no {
-  font-family: var(--rr-figure-face);
-  font-size: var(--rr-display-2);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-card-no {
+  font-family: var(--ed-figure-face);
+  font-size: var(--ed-display-2);
   font-weight: 400;
   line-height: 0.8;
   letter-spacing: -0.03em;
   font-variant-caps: normal;
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-variant-numeric: var(--ed-figure-numeric);
   color: var(--rr-red);
 }
-html:root[data-layout] .rr-ledger-record .rr-card-no .rr-sc {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-card-no .rr-sc {
   display: block;
   margin-bottom: 0.625rem;
   font-family: var(--ed-head-face);
@@ -288,27 +291,27 @@ html:root[data-layout] .rr-ledger-record .rr-card-no .rr-sc {
   line-height: 1;
   color: var(--rr-ink);
 }
-html:root[data-layout] .rr-ledger-record .rr-ledger-head {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-ledger-head {
   align-items: flex-start;
 }
-html:root[data-layout] .rr-ledger-record .rr-card-title {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-card-title {
   --rr-title-leading: 1;
   margin: 1rem 0 1.25rem;
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-4);
-  font-weight: var(--rr-display-weight);
-  font-stretch: var(--rr-display-stretch);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-4);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
   letter-spacing: -0.02em;
 }
-html:root[data-layout] .rr-ledger-record .rr-fact {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-fact {
   border-top-color: var(--ed-rule);
   padding: 7px 0 8px;
 }
-html:root[data-layout] .rr-ledger-record > .rr-facts > .rr-fact:first-child {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record > .rr-facts > .rr-fact:first-child {
   border-top: var(--ed-heavy) solid var(--ed-ink);
 }
-html:root[data-layout] .rr-ledger-record :is(.rr-fact dt, .rr-full-head .rr-sc),
-html:root[data-layout] :is(.rr-drawer-head, .rr-drawer-head .rr-sc) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record :is(.rr-fact dt, .rr-full-head .rr-sc),
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.rr-drawer-head, .rr-drawer-head .rr-sc) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
@@ -316,25 +319,25 @@ html:root[data-layout] :is(.rr-drawer-head, .rr-drawer-head .rr-sc) {
   text-transform: var(--ed-head-case);
   font-variant-caps: normal;
 }
-html:root[data-layout] .rr-ledger-record .rr-full {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-full {
   border-top-color: var(--ed-rule-strong);
 }
-html:root[data-layout] .rr-drawer {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-drawer {
   border-top: 1px solid var(--ed-ink);
 }
 /* the record's column is a panel of the room's ground: the grid's lines stop at its rule, never run through its words */
-html:root[data-layout] .rr-desk {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-desk {
   background: var(--rr-room);
 }
 
 @media (min-width: 64rem) {
   /* the page's columns run up to the record's gutter: the main column's own right margin goes (the record's column
      brings the gutter) */
-  html:root[data-layout][data-layout-page='desk'] div:has(> main + aside) > main {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3'])[data-layout-page='desk'] div:has(> main + aside) > main {
     padding-right: 0;
   }
   /* the record column's own rule, from the running head to the foot, in the gutter's middle */
-  html:root[data-layout][data-layout-page='desk'] aside:has(> .rr-desk)::before {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3'])[data-layout-page='desk'] aside:has(> .rr-desk)::before {
     content: '';
     position: absolute;
     top: calc(var(--site-head) + 0.75rem);
@@ -363,46 +366,46 @@ html:root[data-layout] .rr-desk {
 /* ---------- Ruler desk: asymmetric. The record moves into a margin rail on the left (columns 1–3), one ink rule
    divides it from the page, the sheet takes columns 4–12; the running head's middle stays over the sheet ---------- */
 @media (min-width: 64rem) {
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] {
     --panel-w: calc(var(--ed-col) * 4 + var(--ed-gutter) * 3);
   }
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] div:has(> main + aside) {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] div:has(> main + aside) {
     grid-template-columns: auto minmax(0, 1fr);
   }
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] div:has(> main + aside) > aside {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] div:has(> main + aside) > aside {
     grid-column: 1;
     grid-row: 1;
   }
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] div:has(> main + aside) > main {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] div:has(> main + aside) > main {
     grid-column: 2;
     grid-row: 1;
     padding-left: 0;
     padding-right: var(--ed-margin);
   }
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] aside:has(> .rr-desk) {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] aside:has(> .rr-desk) {
     padding: 0 var(--ed-gutter) 0 var(--ed-margin);
   }
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] aside:has(> .rr-desk)::before {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] aside:has(> .rr-desk)::before {
     right: calc(var(--ed-gutter) / 2);
   }
   /* while writing the record steps aside to the left, not the right */
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] aside.translate-x-3 {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] aside.translate-x-3 {
     translate: -0.75rem 0;
   }
   /* the running head over the window: the wordmark over the rail, the middle over the sheet, the places at the right */
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid {
     /* the places' column never narrower than the places: on a narrow desk the middle gives way to the left */
     grid-template-columns: calc(var(--panel-w) + var(--ed-gutter) - 1rem) minmax(0, 1fr) auto minmax(max-content, 1fr);
   }
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > [data-site-centre] {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > [data-site-centre] {
     grid-column: 3;
   }
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > div:last-child {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > div:last-child {
     grid-column: 4 / -1;
   }
 }
 @media (min-width: 80rem) {
-  html:root[data-layout='editorial-2'][data-layout-page='desk'] {
+  html:root[data-layout='editorial-3'][data-layout-page='desk'] {
     --panel-w: calc(var(--ed-col) * 3 + var(--ed-gutter) * 2);
   }
 }
@@ -411,12 +414,12 @@ html:root[data-layout] .rr-desk {
    THE LETTER PAGE (archive/ReadingSpread.tsx: .sp, .sp-head, .sp-plate, .sp-body)
    ===================================================================================================================== */
 /* blocks of words keep the grid's lines out from under them (the lines show in margins, gutters, empty columns) */
-html:root[data-layout] :is(.sp-head, .sp-body, .lib-main > section, .fa, .about-main > *) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.sp-head, .sp-body, .lib-main > section, .fa, .about-main > *) {
   position: relative;
   background: var(--rr-room);
 }
 /* the spread's labels and small lines: running-head words (the same list as library.css's label role) */
-html:root[data-layout] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
@@ -425,69 +428,69 @@ html:root[data-layout] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-la
   font-variant-caps: normal;
   line-height: 1.3;
 }
-html:root[data-layout] .sp .sp-title {
-  font-family: var(--rr-display-face);
-  font-weight: var(--rr-display-weight);
-  font-stretch: var(--rr-display-stretch);
-  letter-spacing: var(--rr-display-tracking);
-  line-height: var(--rr-display-leading);
-  font-size: var(--rr-display-4);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-title {
+  font-family: var(--ed-display-face);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
+  font-size: var(--ed-display-4);
   margin-top: 0.75rem;
 }
-html:root[data-layout] .sp .sp-quiet button {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-quiet button {
   text-transform: inherit;
   letter-spacing: inherit;
 }
-html:root[data-layout] .sp .sp-writer {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-writer {
   margin-top: 0.75rem;
 }
 /* the facts: a ruled table, a heavy rule over it, a column rule between its cells */
-html:root[data-layout] .sp .sp-facts {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-facts {
   border-top: var(--ed-heavy) solid var(--ed-ink);
   column-gap: 0;
 }
-html:root[data-layout] .sp .sp-fact {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact {
   border-bottom-color: var(--ed-rule);
   padding-inline: 0.75rem;
 }
-html:root[data-layout] .sp .sp-fact:nth-child(2n + 1) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact:nth-child(2n + 1) {
   padding-left: 0;
 }
-html:root[data-layout] .sp .sp-fact:nth-child(2n) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact:nth-child(2n) {
   box-shadow: inset 1px 0 var(--ed-rule);
 }
 @media (min-width: 640px) {
-  html:root[data-layout] .sp .sp-fact:nth-child(n) {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact:nth-child(n) {
     padding-left: 0.75rem;
     box-shadow: inset 1px 0 var(--ed-rule);
   }
-  html:root[data-layout] .sp .sp-fact:nth-child(3n + 1) {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact:nth-child(3n + 1) {
     padding-left: 0;
     box-shadow: none;
   }
 }
-html:root[data-layout] .sp :is(.sp-notes, .sp-cite, .sp-next, .sp-actions) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp :is(.sp-notes, .sp-cite, .sp-next, .sp-actions) {
   border-top-color: var(--ed-rule-strong);
 }
-html:root[data-layout] .sp .sp-next-title {
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-5);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-next-title {
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-5);
   letter-spacing: -0.015em;
   line-height: 1.05;
 }
-html:root[data-layout] .sp .sp-no,
-html:root[data-layout] .sp .sp-note-no {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-no,
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-note-no {
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
 @media (min-width: 64em) {
-  html:root[data-layout] .sp {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp {
     max-width: var(--ed-max);
     padding-inline: var(--ed-margin);
   }
-  html:root[data-layout] .sp .sp-title {
-    font-size: var(--rr-display-3);
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-title {
+    font-size: var(--ed-display-3);
   }
 }
 
@@ -527,18 +530,18 @@ html:root[data-layout] .sp .sp-note-no {
 /* ---------- Ruler letter: the title across the whole page, huge; under it the page on the left (1–5) and the plate
    on the right (7–12), divided by one ink rule, as the desk keeps its record on the left and the paper on the right
    ---------- */
-html:root[data-layout='editorial-2'] .sp .sp-head {
+html:root[data-layout='editorial-3'] .sp .sp-head {
   text-align: left;
 }
-html:root[data-layout='editorial-2'] .sp .sp-title {
+html:root[data-layout='editorial-3'] .sp .sp-title {
   font-size: clamp(2.5rem, 1rem + 6vw, 4rem);
 }
 @media (min-width: 64em) {
-  html:root[data-layout='editorial-2'] .sp {
+  html:root[data-layout='editorial-3'] .sp {
     grid-template-rows: auto auto 1fr;
     padding-top: calc(var(--site-head) + 2.5rem);
   }
-  html:root[data-layout='editorial-2'] .sp .sp-head {
+  html:root[data-layout='editorial-3'] .sp .sp-head {
     grid-column: 1 / -1;
     grid-row: 1;
     display: grid;
@@ -548,32 +551,32 @@ html:root[data-layout='editorial-2'] .sp .sp-title {
     margin-bottom: 2.5rem;
     border-bottom: 1px solid var(--ed-ink);
   }
-  html:root[data-layout='editorial-2'] .sp .sp-head > * {
+  html:root[data-layout='editorial-3'] .sp .sp-head > * {
     grid-column: 1 / -1;
   }
-  html:root[data-layout='editorial-2'] .sp .sp-kicker {
+  html:root[data-layout='editorial-3'] .sp .sp-kicker {
     grid-column: 1 / span 4;
   }
-  html:root[data-layout='editorial-2'] .sp .sp-title {
-    font-size: var(--rr-display-1);
+  html:root[data-layout='editorial-3'] .sp .sp-title {
+    font-size: var(--ed-display-1);
     margin-top: 1.25rem;
     max-width: 14ch;
   }
-  html:root[data-layout='editorial-2'] .sp .sp-writer {
+  html:root[data-layout='editorial-3'] .sp .sp-writer {
     grid-column: 7 / -1;
     margin-top: 1.25rem;
     font-size: var(--rr-reading-size);
   }
-  html:root[data-layout='editorial-2'] .sp .sp-plate {
+  html:root[data-layout='editorial-3'] .sp .sp-plate {
     grid-column: 7 / -1;
     grid-row: 2 / span 2;
     top: calc(var(--site-head) + 1.5rem);
   }
-  html:root[data-layout='editorial-2'] .sp .sp-body {
+  html:root[data-layout='editorial-3'] .sp .sp-body {
     grid-column: 1 / span 5;
     grid-row: 2 / span 2;
   }
-  html:root[data-layout='editorial-2'][data-layout-page='letters'] .ed-grid > i:nth-child(7) {
+  html:root[data-layout='editorial-3'][data-layout-page='letters'] .ed-grid > i:nth-child(7) {
     box-shadow: inset 1px 0 var(--ed-ink), inset -1px 0 var(--ed-line);
   }
 }
@@ -581,15 +584,15 @@ html:root[data-layout='editorial-2'] .sp .sp-title {
 /* =====================================================================================================================
    ALL LETTERS, the list (archive/Index.tsx grid view + archive/FindingList.tsx)
    ===================================================================================================================== */
-html:root[data-layout] .lib-main {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main {
   max-width: var(--ed-max);
   padding-inline: var(--ed-margin);
 }
 /* the heading in type, at display size (the hand-drawn "All letters" steps aside; its words were already there) */
-html:root[data-layout] .lib-main h1 > [aria-hidden] {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main h1 > [aria-hidden] {
   display: none;
 }
-html:root[data-layout] .lib-main h1 > .sr-only {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main h1 > .sr-only {
   position: static;
   width: auto;
   height: auto;
@@ -599,21 +602,21 @@ html:root[data-layout] .lib-main h1 > .sr-only {
   clip-path: none;
   white-space: normal;
   display: block;
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-1);
-  font-weight: var(--rr-display-weight);
-  font-stretch: var(--rr-display-stretch);
-  letter-spacing: var(--rr-display-tracking);
-  line-height: var(--rr-display-leading);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-1);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
 }
-html:root[data-layout] .lib-main > section > p:not(.rr-aid) {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main > section > p:not(.rr-aid) {
   margin-top: 1.5rem;
-  font-size: var(--rr-display-5);
+  font-size: var(--ed-display-5);
   line-height: 1.25;
   color: var(--rr-ink);
   max-width: 30ch;
 }
-html:root[data-layout] .lib-main .rr-aid {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main .rr-aid {
   margin: 1.25rem 0 0;
   padding: 0;
   border: 0;
@@ -627,8 +630,8 @@ html:root[data-layout] .lib-main .rr-aid {
   font-variant-caps: normal;
   font-variant-numeric: lining-nums tabular-nums;
 }
-html:root[data-layout] .fa .fa-sort,
-html:root[data-layout] .fa .fa-sort-by {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort,
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort-by {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
@@ -637,40 +640,40 @@ html:root[data-layout] .fa .fa-sort-by {
   font-variant-caps: normal;
 }
 /* the sort chosen: the room's selected state (light red), not an underline */
-html:root[data-layout] .fa .fa-sort-by {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort-by {
   min-height: 44px;
   padding: 0 0.5rem;
   border-radius: 3px;
 }
-html:root[data-layout] .fa .fa-sort-by.is-on {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort-by.is-on {
   text-decoration: none;
   color: var(--rr-red);
   background: var(--st-accent);
 }
 @media (hover: hover) and (pointer: fine) {
-  html:root[data-layout] .fa .fa-sort-by:not(.is-on):hover {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort-by:not(.is-on):hover {
     background: var(--st-hover);
   }
 }
-html:root[data-layout] .fa .fa-rows > li {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-rows > li {
   border-bottom-color: var(--ed-rule);
 }
-html:root[data-layout] .fa .fa-no {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-no {
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
-html:root[data-layout] .fa .fa-year {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-year {
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
-  font-size: var(--rr-display-5);
+  font-size: var(--ed-display-5);
   line-height: 1;
 }
-html:root[data-layout] .fa .fa-title {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-title {
   font-size: var(--rr-reading-size);
 }
-html:root[data-layout] .fa .fa-place {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-place {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   letter-spacing: var(--ed-head-tracking);
@@ -693,6 +696,7 @@ html:root[data-layout='editorial-1'] .lib-main > section::after {
   background: var(--ed-ink);
 }
 html:root[data-layout='editorial-1'] .fa .fa-head {
+  font-stretch: var(--ed-display-stretch);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -700,8 +704,8 @@ html:root[data-layout='editorial-1'] .fa .fa-head {
   padding: 0.625rem 0 0.5rem;
   border-top: var(--ed-heavy) solid var(--ed-ink);
   border-bottom: 1px solid var(--ed-ink);
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-5);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-5);
   font-variant-caps: normal;
   letter-spacing: -0.01em;
   text-transform: none;
@@ -733,7 +737,7 @@ html:root[data-layout='editorial-1'] .fa .fa-head::after {
 /* ---------- Ruler list: asymmetric. Each group's name hangs in the margin rail (columns 1–3) at display size and
    stays as its rows pass; the rows take columns 4–12 ---------- */
 @media (min-width: 64rem) {
-  html:root[data-layout='editorial-2'] .fa .fa-group {
+  html:root[data-layout='editorial-3'] .fa .fa-group {
     display: grid;
     grid-template-columns: calc(var(--ed-col) * 3 + var(--ed-gutter) * 2) minmax(0, 1fr);
     column-gap: var(--ed-gutter);
@@ -742,30 +746,31 @@ html:root[data-layout='editorial-1'] .fa .fa-head::after {
     padding-top: 1.25rem;
     border-top: 1px solid var(--ed-ink);
   }
-  html:root[data-layout='editorial-2'] .fa .fa-group + .fa-group {
+  html:root[data-layout='editorial-3'] .fa .fa-group + .fa-group {
     margin-top: 3rem;
   }
-  html:root[data-layout='editorial-2'] .fa .fa-head {
+  html:root[data-layout='editorial-3'] .fa .fa-head {
     position: sticky;
     top: calc(var(--site-head-clear) + 1rem);
     display: block;
     margin: 0;
-    font-family: var(--rr-display-face);
-    font-size: var(--rr-display-3);
-    font-weight: var(--rr-display-weight);
-    letter-spacing: var(--rr-display-tracking);
-    line-height: var(--rr-display-leading);
+    font-stretch: var(--ed-display-stretch);
+    font-family: var(--ed-display-face);
+    font-size: var(--ed-display-3);
+    font-weight: var(--ed-display-weight);
+    letter-spacing: var(--ed-display-tracking);
+    line-height: var(--ed-display-leading);
     font-variant-caps: normal;
     text-transform: none;
   }
-  html:root[data-layout='editorial-2'] .fa .fa-head::before,
-  html:root[data-layout='editorial-2'] .fa .fa-head::after {
+  html:root[data-layout='editorial-3'] .fa .fa-head::before,
+  html:root[data-layout='editorial-3'] .fa .fa-head::after {
     display: none;
   }
-  html:root[data-layout='editorial-2'] .fa .fa-rows > li:first-child .fa-row {
+  html:root[data-layout='editorial-3'] .fa .fa-rows > li:first-child .fa-row {
     padding-top: 0.25rem;
   }
-  html:root[data-layout='editorial-2'] .fa .fa-row {
+  html:root[data-layout='editorial-3'] .fa .fa-row {
     grid-template-columns: 5.5rem minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.7fr) 4.5rem;
   }
 }
@@ -773,7 +778,7 @@ html:root[data-layout='editorial-1'] .fa .fa-head::after {
 /* =====================================================================================================================
    ABOUT (about/AboutApp.tsx, about/about.css)
    ===================================================================================================================== */
-html:root[data-layout] .about {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about {
   --about-label-font: var(--ed-head-face);
   --about-label-size: var(--ed-head-size);
   --about-label-spacing: var(--ed-head-tracking);
@@ -782,65 +787,65 @@ html:root[data-layout] .about {
   --about-rule: var(--ed-rule);
   --about-gap: var(--ed-gutter);
 }
-html:root[data-layout] .about-main {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main {
   max-width: var(--ed-max);
   padding-inline: var(--ed-margin);
 }
-html:root[data-layout] .about-title {
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-1);
-  font-weight: var(--rr-display-weight);
-  font-stretch: var(--rr-display-stretch);
-  letter-spacing: var(--rr-display-tracking);
-  line-height: var(--rr-display-leading);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-title {
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-1);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
   text-wrap: balance;
 }
-html:root[data-layout] .about-lede {
-  font-size: var(--rr-display-5);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-lede {
+  font-size: var(--ed-display-5);
   line-height: 1.25;
   color: var(--rr-ink);
 }
-html:root[data-layout] .about-line {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-line {
   border-color: var(--ed-ink);
   border-radius: 0;
 }
-html:root[data-layout] .about-facts dd {
-  font-family: var(--rr-figure-face);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-facts dd {
+  font-family: var(--ed-figure-face);
   font-size: clamp(1.625rem, 1.2rem + 0.9vw, 2.125rem);
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-variant-numeric: var(--ed-figure-numeric);
   letter-spacing: -0.02em;
   line-height: 1;
 }
-html:root[data-layout] .about-section-no {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-section-no {
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   color: var(--rr-red);
 }
 @media (min-width: 56rem) {
   /* the page on the whole grid: labels in 1–3, the words in 4–10, rules across all twelve */
-  html:root[data-layout] .about-main > * {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main > * {
     grid-column: 1 / -1;
   }
-  html:root[data-layout] .about-main > * > * {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main > * > * {
     grid-column: 4 / span 7;
   }
-  html:root[data-layout] .about-head > .about-title {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-head > .about-title {
     grid-column: 1 / -1;
     grid-row: 2;
     margin-top: 1rem;
   }
-  html:root[data-layout] .about-head > .about-kicker {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-head > .about-kicker {
     grid-row: 1;
     grid-column: 1 / span 3;
   }
   /* the head in order: the kicker, the title across the page, then the lede and the line written live */
-  html:root[data-layout] .about-head > .about-lede {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-head > .about-lede {
     grid-row: 3;
   }
-  html:root[data-layout] .about-head > :not(.about-kicker, .about-title, .about-lede) {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-head > :not(.about-kicker, .about-title, .about-lede) {
     grid-row: 4;
   }
-  html:root[data-layout] .about-main > * > .about-section-title {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main > * > .about-section-title {
     grid-column: 1 / span 3;
   }
 }
@@ -864,8 +869,9 @@ html:root[data-layout='editorial-1'] .about-section {
   border-top: var(--ed-heavy) solid var(--ed-ink);
 }
 html:root[data-layout='editorial-1'] .about-section-no {
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-3);
+  font-stretch: var(--ed-display-stretch);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-3);
   line-height: 0.9;
 }
 html:root[data-layout='editorial-1'] .about-facts > div {
@@ -893,26 +899,26 @@ html:root[data-layout='editorial-1'] .about-facts > div {
 
 /* ---------- Ruler About: the title huge across the page; each section's number a huge figure in the margin rail,
    its words in 5–10, one ink rule over each ---------- */
-html:root[data-layout='editorial-2'] .about-head {
+html:root[data-layout='editorial-3'] .about-head {
   padding-bottom: 2.5rem;
   border-bottom: 1px solid var(--ed-ink);
 }
-html:root[data-layout='editorial-2'] .about-section {
+html:root[data-layout='editorial-3'] .about-section {
   border-top: 1px solid var(--ed-ink);
 }
-html:root[data-layout='editorial-2'] .about-section-no {
-  font-size: var(--rr-display-2);
+html:root[data-layout='editorial-3'] .about-section-no {
+  font-size: var(--ed-display-2);
   line-height: 0.85;
   letter-spacing: -0.04em;
 }
 @media (min-width: 56rem) {
-  html:root[data-layout='editorial-2'] .about-main > * > * {
+  html:root[data-layout='editorial-3'] .about-main > * > * {
     grid-column: 5 / span 6;
   }
-  html:root[data-layout='editorial-2'] .about-head > .about-title {
+  html:root[data-layout='editorial-3'] .about-head > .about-title {
     grid-column: 1 / -1;
   }
-  html:root[data-layout='editorial-2'] .about-head > :is(.about-lede, .about-line) {
+  html:root[data-layout='editorial-3'] .about-head > :is(.about-lede, .about-line) {
     grid-column: 5 / span 6;
   }
 }
@@ -923,46 +929,375 @@ html:root[data-layout='editorial-2'] .about-section-no {
    ===================================================================================================================== */
 @media (max-width: 63.99rem) {
   /* the desk on a phone or tablet: the letter starts 3 px under the head's fade, as the Reading Room's does */
-  html:root[data-layout][data-layout-page='desk'] main[class*='pt-[calc(4.5rem'] {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3'])[data-layout-page='desk'] main[class*='pt-[calc(4.5rem'] {
     padding-top: calc(var(--site-head-clear) + 3px);
   }
-  html:root[data-layout] .sp {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp {
     padding-top: calc(var(--site-head-clear) + 0.75rem);
   }
 }
-html:root[data-layout] .lib-main > section {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main > section {
   padding-top: calc(var(--site-head-clear) + 1.5rem);
 }
-html:root[data-layout] .about-main {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main {
   padding-top: calc(var(--site-head-clear) + 1.5rem);
 }
 @media (min-width: 40rem) {
-  html:root[data-layout] .about-main {
+  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main {
     padding-top: calc(var(--site-head-clear) + 2.5rem);
   }
 }
 
 /* ---------- phones: the letter's head flush left (both); the list's groups as a left-set head (Ruler; the rail
    needs the desktop's width) ---------- */
-html:root[data-layout] .sp .sp-head {
+html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-head {
   text-align: left;
 }
 @media (max-width: 63.99rem) {
-  html:root[data-layout='editorial-2'] .fa .fa-head {
+  html:root[data-layout='editorial-3'] .fa .fa-head {
     display: block;
     margin: 0 0 0.25rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--ed-ink);
-    font-family: var(--rr-display-face);
-    font-size: var(--rr-display-4);
-    font-weight: var(--rr-display-weight);
-    letter-spacing: var(--rr-display-tracking);
+    font-family: var(--ed-display-face);
+    font-size: var(--ed-display-4);
+    font-weight: var(--ed-display-weight);
+    letter-spacing: var(--ed-display-tracking);
     line-height: 1;
     font-variant-caps: normal;
     text-transform: none;
   }
-  html:root[data-layout='editorial-2'] .fa .fa-head::before,
-  html:root[data-layout='editorial-2'] .fa .fa-head::after {
+  html:root[data-layout='editorial-3'] .fa .fa-head::before,
+  html:root[data-layout='editorial-3'] .fa .fa-head::after {
     display: none;
+  }
+}
+
+/* =====================================================================================================================
+   REGISTER (editorial-2): the new Fonts page's balance on every page (fonts/new/fonts-new.css, and "What makes the
+   balance work" in docs/research/fonts-redesign.md). Rafael, 4 Nov: "something about this modern grid just kind of
+   balances everything really well. That's the type of balance that we should try to maintain everywhere."
+   The moves, with the Fonts page's own values:
+   - a strict modern frame around old material: the window's width (no 1440 cap) inside the header's margins (16 · 32
+     · 40 px), a register whose columns never move (a 15 rem name column, then the thing itself);
+   - three sizes of voice, far apart: the handwriting is the only big thing; the book face 18–44 px (page titles 44,
+     names 28, row names 18); the sans 13–15 px for everything you operate or scan, sentence case;
+   - each face one job: the book face for what belongs to the archive (titles, names, the lede, credits, in italic),
+     the sans for controls, labels and counts;
+   - soft rules, no boxes (the hand-drawn rules stay on, as on the Fonts page); only floating things get an edge;
+   - one colour, one job: archival red for the main action (a filled button) and the catalogue's numbers;
+   - rhythm from repetition: every row the same padding and column edges; air only where the hierarchy changes.
+   No grid is drawn: it is felt in the edges.
+   ===================================================================================================================== */
+html:root[data-layout='editorial-2'] {
+  --ed-max: 120rem;
+  --ed-who: 15rem;
+  --ed-title-size: 2.125rem;
+  --ed-lede-size: 1.0625rem;
+  --ed-name-size: 1.5rem;
+  --ed-row-name-size: 1.125rem;
+  --ed-meta-size: 0.875rem;
+  --ed-title-weight: min(var(--rr-title-weight, 540), 540);
+}
+@media (min-width: 64rem) {
+  html:root[data-layout='editorial-2'] {
+    --ed-title-size: 2.75rem;
+    --ed-lede-size: 1.1875rem;
+    --ed-name-size: 1.75rem;
+  }
+}
+/* the three voices, as classes of their own job */
+html:root[data-layout='editorial-2'] :is(.lib-main h1 > .sr-only, .about-title, .sp .sp-title) {
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-title-size);
+  font-weight: var(--ed-title-weight);
+  font-stretch: var(--rr-title-stretch, normal);
+  line-height: 1.05;
+  letter-spacing: -0.012em;
+  color: var(--rr-ink);
+  text-wrap: balance;
+}
+html:root[data-layout='editorial-2'] :is(.lib-main > section > p:not(.rr-aid), .about-lede, .sp .sp-writer) {
+  max-width: 34rem;
+  font-family: var(--rr-reading-face, var(--rr-book));
+  font-size: var(--ed-lede-size);
+  font-style: normal;
+  line-height: 1.45;
+  color: var(--rr-muted);
+  text-wrap: pretty;
+}
+
+/* ---------- the desk: already the Fonts page's arrangement (the paper is the big thing, the record a quiet column);
+   the record's title takes the name size, its number the sans, the plate line under the sheet a credit ---------- */
+html:root[data-layout='editorial-2'] .rr-ledger-record .rr-card-title {
+  --rr-title-leading: 1.15;
+  font-size: var(--ed-name-size);
+  font-weight: min(var(--rr-title-weight, 500), 500);
+  letter-spacing: -0.008em;
+}
+html:root[data-layout='editorial-2'] .rr-ledger-record .rr-card-no {
+  font-family: var(--rr-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+html:root[data-layout='editorial-2'] .rr-plate-title {
+  font-family: var(--rr-book);
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--rr-faint);
+}
+
+/* ---------- the letter page: the window's width, the title at the page-title size, the writer's line as the lede,
+   one filled red action (Write a reply), the rest quiet ---------- */
+@media (min-width: 64em) {
+  html:root[data-layout='editorial-2'] .sp {
+    max-width: var(--ed-max);
+  }
+}
+html:root[data-layout='editorial-2'] .sp .sp-head {
+  text-align: left;
+}
+html:root[data-layout='editorial-2'] .sp .sp-writer {
+  margin-top: 0.625rem;
+}
+html:root[data-layout='editorial-2'] .sp .sp-actions {
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-inline: 0;
+}
+html:root[data-layout='editorial-2'] .sp .sp-actions :is(.sp-reply, button) {
+  min-height: 44px;
+  font-family: var(--rr-ui);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+html:root[data-layout='editorial-2'] .sp .sp-actions button {
+  padding: 0 0.75rem;
+}
+html:root[data-layout='editorial-2'] .sp .sp-reply {
+  padding: 0 1.25rem 0 1.125rem;
+  margin-right: 0.5rem;
+  border-radius: 999px;
+  background: var(--rr-red);
+  color: var(--rr-slip, #fff);
+  transition: background-color var(--st-dur, 150ms) var(--ease-out), scale var(--dur-press, 100ms) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-layout='editorial-2'] .sp .sp-reply:hover {
+    background: var(--rr-red-deep, color-mix(in oklab, var(--rr-red) 82%, black));
+  }
+}
+html:root[data-layout='editorial-2'] .sp .sp-reply:active {
+  scale: var(--st-scale, 0.97);
+}
+
+/* ---------- All letters: the page title in type ("Fonts" is typed too), its one sentence, then the list as a register:
+   the catalogue number and year in the name column, the title at the name size, who wrote to whom as a credit ---------- */
+html:root[data-layout='editorial-2'] .lib-main {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+}
+html:root[data-layout='editorial-2'] .lib-main h1 > [aria-hidden] {
+  display: none;
+}
+html:root[data-layout='editorial-2'] .lib-main h1 > .sr-only {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+}
+html:root[data-layout='editorial-2'] .lib-main > section > p:not(.rr-aid) {
+  margin-top: 0.5rem;
+}
+html:root[data-layout='editorial-2'] .lib-main .rr-aid {
+  margin: 0.875rem 0 0;
+  padding: 0;
+  border: 0;
+  font-family: var(--rr-ui);
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--rr-muted);
+}
+/* a group: its name at the name size, flush left over a soft rule; air above it, where the list changes */
+html:root[data-layout='editorial-2'] .fa .fa-group {
+  margin-top: 3rem;
+}
+html:root[data-layout='editorial-2'] .fa .fa-head {
+  display: block;
+  margin: 0;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--rr-hair);
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-name-size);
+  font-weight: min(var(--rr-title-weight, 500), 500);
+  font-stretch: var(--rr-title-stretch, normal);
+  font-variant-caps: normal;
+  letter-spacing: -0.008em;
+  line-height: 1.15;
+  text-transform: none;
+}
+html:root[data-layout='editorial-2'] .fa .fa-head::before,
+html:root[data-layout='editorial-2'] .fa .fa-head::after {
+  display: none;
+}
+html:root[data-layout='editorial-2'] .fa .fa-no,
+html:root[data-layout='editorial-2'] .fa .fa-year {
+  font-family: var(--rr-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+html:root[data-layout='editorial-2'] .fa .fa-year {
+  text-align: left;
+  font-weight: 400;
+  color: var(--rr-muted);
+}
+html:root[data-layout='editorial-2'] .fa .fa-title {
+  font-family: var(--rr-title-face);
+  font-size: 1.375rem;
+  font-weight: min(var(--rr-title-weight, 500), 500);
+  font-stretch: var(--rr-title-stretch, normal);
+  line-height: 1.2;
+  letter-spacing: -0.006em;
+}
+html:root[data-layout='editorial-2'] .fa .fa-writer {
+  font-family: var(--rr-book);
+  font-size: 0.9375rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--rr-muted);
+}
+html:root[data-layout='editorial-2'] .fa .fa-place {
+  font-family: var(--rr-ui);
+  font-size: var(--ed-meta-size);
+  letter-spacing: 0;
+  font-variant-caps: normal;
+  text-transform: none;
+  color: var(--rr-faint);
+}
+@media (min-width: 720px) {
+  html:root[data-layout='editorial-2'] .fa .fa-row {
+    grid-template-columns: var(--ed-who) minmax(0, 1fr) minmax(0, 26rem);
+    grid-template-areas: 'no title writer' 'year title place';
+    align-items: baseline;
+    column-gap: 2rem;
+    row-gap: 0.125rem;
+    margin-inline: -0.75rem;
+    padding: 1.125rem 0.75rem;
+    border-radius: 6px;
+  }
+  html:root[data-layout='editorial-2'] .fa .fa-no { grid-area: no; }
+  html:root[data-layout='editorial-2'] .fa .fa-year { grid-area: year; }
+  html:root[data-layout='editorial-2'] .fa .fa-title { grid-area: title; align-self: center; font-size: var(--ed-name-size); }
+  html:root[data-layout='editorial-2'] .fa .fa-writer { grid-area: writer; }
+  html:root[data-layout='editorial-2'] .fa .fa-place { grid-area: place; }
+}
+@media (min-width: 720px) and (max-width: 63.99rem) {
+  html:root[data-layout='editorial-2'] .fa .fa-row {
+    grid-template-columns: 9rem minmax(0, 1fr) minmax(0, 16rem);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-layout='editorial-2'] .fa .fa-row:active {
+    background: var(--st-press);
+    scale: var(--st-scale-row, 0.985);
+  }
+}
+
+/* ---------- About: the page title and its sentence where the Fonts page has them; the line written just now as the
+   page's one big thing, poster-size, on the room with no box; the sections as a register (the name column holds each
+   section's number and name) ---------- */
+html:root[data-layout='editorial-2'] .about {
+  --about-gap: 2rem;
+}
+html:root[data-layout='editorial-2'] .about-main {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+}
+html:root[data-layout='editorial-2'] .about-kicker {
+  display: none;
+}
+html:root[data-layout='editorial-2'] .about-title {
+  margin-top: 0;
+}
+html:root[data-layout='editorial-2'] .about-lede {
+  margin-top: 0.5rem !important;
+}
+/* the line: poster-size (LiveLine reads --about-line-em-max), on the room, a soft rule before its caption */
+html:root[data-layout='editorial-2'] .about-line {
+  margin-top: 3rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+html:root[data-layout='editorial-2'] .about-line-ink {
+  --about-line-em-max: 128;
+}
+html:root[data-layout='editorial-2'] .about-line-caption {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rr-hair);
+}
+html:root[data-layout='editorial-2'] .about-line-by {
+  font-size: 1.125rem;
+}
+html:root[data-layout='editorial-2'] .about-line-name {
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-name-size);
+  font-weight: min(var(--rr-title-weight, 500), 500);
+}
+html:root[data-layout='editorial-2'] .about-section-title {
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-name-size);
+  font-weight: min(var(--rr-title-weight, 500), 500);
+  font-stretch: var(--rr-title-stretch, normal);
+  letter-spacing: -0.008em;
+}
+html:root[data-layout='editorial-2'] .about-section-no {
+  font-family: var(--rr-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--rr-red);
+}
+html:root[data-layout='editorial-2'] .about-facts dd {
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-name-size);
+  line-height: 1.1;
+}
+@media (min-width: 56rem) {
+  /* the register: the name column (15 rem), then the words at a reading measure; the head and the line run wider */
+  html:root[data-layout='editorial-2'] .about-main {
+    grid-template-columns: var(--ed-who) minmax(0, 46rem) minmax(0, 1fr);
+    column-gap: var(--about-gap);
+  }
+  html:root[data-layout='editorial-2'] .about-main > * {
+    grid-column: 1 / -1;
+  }
+  html:root[data-layout='editorial-2'] .about-main > * > * {
+    grid-column: 2;
+  }
+  html:root[data-layout='editorial-2'] .about-main > * > .about-section-title {
+    grid-column: 1;
+  }
+  html:root[data-layout='editorial-2'] .about-head > :is(.about-title, .about-lede) {
+    grid-column: 1 / span 2;
+    grid-row: auto;
+  }
+  html:root[data-layout='editorial-2'] .about-head > .about-line {
+    grid-column: 1 / -1;
   }
 }
