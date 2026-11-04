@@ -141,6 +141,29 @@ function landedCard(look: Look, S: number) {
   return landed.c;
 }
 
+/** The card we stopped on, as it was when the flip stopped (paper and ink, no labels), S px. */
+export const landedFrame = (look: Look, S: number) => landedCard(look, S);
+
+/**
+ * The card we stopped on keeps a light red plate under it, so the eye can follow it all the way out: a red frame
+ * round the card while it's big, a red dot once it's a speck (the plate never gets smaller than ~14 px at 1080).
+ */
+function trackPlate(ctx: CanvasRenderingContext2D, S: number, s: number) {
+  const k = S / 1080;
+  const pad = Math.max(0.03 * s, 6 * k);
+  const c0 = S / 2 - s / 2;
+  // stronger as the card gets small, so the dot still finds the eye among the specks
+  const small = Math.min(1, Math.max(0, Math.log2(S / s) / Math.log2(400)));
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(c0 - pad, c0 - pad, s + 2 * pad, s + 2 * pad, Math.max(3 * k, 0.04 * s));
+  ctx.fillStyle = RR.card;
+  ctx.fill();
+  ctx.fillStyle = `rgba(155, 59, 42, ${0.13 + 0.67 * small})`;
+  ctx.fill();
+  ctx.restore();
+}
+
 /**
  * Paint the canvas with the landing card filling `s` px (s = S: the landing frame exactly), centred.
  * Returns how many different writers are on screen (for the counter).
@@ -158,10 +181,14 @@ export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, 
       const x = c0 + i * pitch, y = c0 + j * pitch;
       if (x > S || y > S || x + s < 0 || y + s < 0) continue;
       const h = handAt(i, j);
-      if (h < 0 || s > ATLAS.tile) ctx.drawImage(liveCard(h, landing, () => landedCard(landing, S), s), x, y, s, s);
-      else drawFromAtlas(ctx, h, x, y, s);
+      if (h >= 0) {
+        if (s > ATLAS.tile) ctx.drawImage(liveCard(h, landing, () => landedCard(landing, S), s), x, y, s, s);
+        else drawFromAtlas(ctx, h, x, y, s);
+      }
       if (seen.size < N + 1) seen.add(h);
     }
+    trackPlate(ctx, S, s);
+    ctx.drawImage(landedCard(landing, S), c0, c0, s, s);
     return seen.size;
   }
   // specks: blocks of 64 × 64 cards, each block one of the four orders
@@ -173,7 +200,8 @@ export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, 
     const c = block(orderOf(bi, bj));
     if (c) ctx.drawImage(c, x, y, bp, bp);
   }
-  // the landing card stays itself
+  // the landing card stays itself, on its plate
+  trackPlate(ctx, S, s);
   ctx.drawImage(landedCard(landing, S), c0, c0, s, s);
   return Math.min(N + 1, cards);
 }

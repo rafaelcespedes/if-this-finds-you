@@ -21,13 +21,40 @@ export interface Geometry {
   baselines: [number, number];
   maxW: number;
   cx: number;
+  /** the counter's plate (top slot): top edge and height, px */
+  plate: { y: number; h: number };
+  /** the writer's name and its descriptor (bottom slot): baselines, px */
+  name: number;
+  descriptor: number;
 }
 
+// The frame is one centred stack, fixed for every hand: the counter's plate at the top, the phrase, the writer's name
+// and descriptor at the bottom, with the same gap above the phrase (plate to the tallest letters) as below it (the
+// deepest letters to the name). Measured at 1080 px, scaled to the frame.
+const STACK = {
+  top: 64, // plate's top edge
+  plate: 94, // plate's height
+  bottom: 72, // descriptor's baseline, from the bottom edge
+  xh: 0.104, // reference x-height, share of the frame
+  lines: 2.45, // baseline to baseline, x-heights
+  asc: 1.85, // the tallest letters above the first baseline, x-heights (nominal)
+  desc: 0.95, // the deepest letters below the second, x-heights (nominal)
+  nameAsc: 24, // the name's capitals above its baseline
+  descLine: 40, // name baseline to descriptor baseline
+};
+
 export function geometry(size: number): Geometry {
-  const xh = 0.104 * size;
-  const gap = 2.62 * xh; // baseline to baseline
-  const b1 = Math.round((size + xh - gap) / 2 - 0.035 * size);
-  return { size, xh, baselines: [b1, Math.round(b1 + gap)], maxW: 0.84 * size, cx: size / 2 };
+  const k = size / 1080;
+  const xh = STACK.xh * size;
+  const block = (STACK.asc + STACK.lines + STACK.desc) * xh;
+  const gap = (size - STACK.bottom * k - STACK.top * k - STACK.plate * k - block - STACK.nameAsc * k - STACK.descLine * k) / 2;
+  const b1 = STACK.top * k + STACK.plate * k + gap + STACK.asc * xh;
+  const b2 = b1 + STACK.lines * xh;
+  const name = b2 + STACK.desc * xh + gap + STACK.nameAsc * k;
+  return {
+    size, xh, baselines: [Math.round(b1), Math.round(b2)], maxW: 0.84 * size, cx: size / 2,
+    plate: { y: STACK.top * k, h: STACK.plate * k }, name, descriptor: name + STACK.descLine * k,
+  };
 }
 
 const REF_XH = 0.47; // a typical hand's x-height, as a share of the cap height

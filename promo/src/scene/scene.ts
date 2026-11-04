@@ -1,10 +1,10 @@
 // The whole video as a pure function of the frame number: draw(ctx, frame) paints that frame and nothing else.
 // Remotion renders frames in parallel and out of order, so nothing here keeps state between frames except caches.
-import { drawCounter, drawFlip, type FlipOpts } from './flip';
-import { caption, handList, type Look } from './hands';
-import { clamp, easeOutQuint, RR, text } from './ink';
+import { drawCaption, drawCounter, drawFlip, type FlipOpts } from './flip';
+import { handList, type Look } from './hands';
+import { clamp, easeInOutQuint, easeOutQuint, RR, text } from './ink';
 import { drawLetter, letterCam, letterModel, type LetterState } from './letter';
-import { drawCanvas, loadAtlas } from './zoom';
+import { drawCanvas, landedFrame, loadAtlas, N } from './zoom';
 import { drawEnd } from './endcard';
 import { plan, type Plan, type Settings } from './timeline';
 
@@ -53,11 +53,14 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
     return { inkT: Infinity, ch: span.ch, step, dim };
   }
 
-  /** the landing card's size on screen: S at the stop, a speck at the end; the pull back gathers speed */
+  /** the landing card's size on screen: S at the stop; out to a speck (gathering speed), a still beat, then the
+   *  dive back in (fast in the middle, settling as the card fills the frame on the bar). On a log scale throughout. */
   function cardSize(frame: number) {
-    const z = sec('zoom');
-    const u = clamp((frame - z.from) / Math.max(1, z.to - z.from), 0, 1);
-    const f = 0.3 * u + 0.7 * u * u;
+    const Z = P.zoom;
+    let f: number;
+    if (frame < Z.out) { const u = (frame - Z.from) / Math.max(1, Z.out - Z.from); f = 0.3 * u + 0.7 * u * u; }
+    else if (frame < Z.hold) f = 1;
+    else f = 1 - easeInOutQuint((frame - Z.hold) / Math.max(1, Z.to - Z.hold));
     return S * 2 ** (Math.log2(ZOOM_END) * f);
   }
 
@@ -75,18 +78,17 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
       ctx.imageSmoothingQuality = 'high';
       if (id === 'title' || id === 'flip' || id === 'land') drawFlip(ctx, P, hands, frame, o);
       else if (id === 'zoom') {
-        const z = sec('zoom');
+        const Z = P.zoom;
         const onScreen = drawCanvas(ctx, S, cardSize(frame), landing);
         if (o.labels) {
-          // the counter keeps going: the hands of the flip, then every writer on the canvas
-          drawCounter(ctx, S, P.handsShown + Math.max(0, onScreen - 1));
+          // the counter keeps going: the hands of the flip, then every writer on the canvas (it never counts down:
+          // on the way back in it stays at the most it reached), and it fades over the dive's second beat
+          const most = frame < Z.out ? onScreen : N + 1;
+          const fade = 1 - clamp((frame - (Z.hold + (Z.to - Z.hold) / 2)) / ((Z.to - Z.hold) / 2), 0, 1);
+          drawCounter(ctx, S, P.handsShown + Math.max(0, most - 1), fade);
           // the landed writer's name goes as the card shrinks
-          const a = 1 - clamp((frame - z.from) / (P.fpb / 2), 0, 1);
-          if (a > 0) {
-            const k = S / 1080, c = caption(landing);
-            text(ctx, c.name, S / 2, S - 118 * k, { size: 34 * k, color: RR.ink, align: 'center', italic: true, alpha: a });
-            text(ctx, `${c.school} · ${c.pen}`, S / 2, S - 78 * k, { size: 24 * k, color: RR.muted, align: 'center', caps: true, tracking: 0.06, alpha: a });
-          }
+          const a = 1 - clamp((frame - Z.from) / (P.fpb / 2), 0, 1);
+          if (a > 0) drawCaption(ctx, S, landing, a);
         }
       } else if (id === 'letter') {
         const m = model();
@@ -94,6 +96,9 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
         ctx.fillRect(0, 0, S, S);
         drawLetter(ctx, m, letterCam(m, S), letterState(frame), S, undefined);
         credit(ctx, m.credit);
+        // the hand-off: the card we dived into dissolves over half a beat as the same hand starts the letter
+        const a = 1 - easeOutQuint((frame - P.letter.from) / Math.max(1, P.fpb / 2));
+        if (a > 0) { ctx.globalAlpha = a; ctx.drawImage(landedFrame(landing, S), 0, 0, S, S); ctx.globalAlpha = 1; }
       } else if (id === 'end') drawEnd(ctx, P, frame, sec('end').from, { writeOn: true });
       if (o.grid) beatGrid(ctx, frame);
       ctx.restore();

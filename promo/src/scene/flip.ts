@@ -1,6 +1,7 @@
 // Sections 1 and 2: the title, already written in the site's wordmark hand, then the flip through the engine's hands
-// on the beat, faster and faster, the brake, and the hand it lands on. The paper never changes; only the ink does.
-import { drawInk, FLIP_INK, ground, RR, text } from './ink';
+// on the beat, faster and faster, and the dead stop. The paper never changes; only the ink does.
+// Every frame is one centred stack (phrase.ts geometry): the counter's plate on top, the phrase, the writer's name.
+import { drawInk, FLIP_INK, ground, RR, SERIF, text } from './ink';
 import { caption, type Look } from './hands';
 import { geometry, phrase } from './phrase';
 import type { Plan } from './timeline';
@@ -13,22 +14,83 @@ export interface FlipOpts {
   labels: boolean;
 }
 
-/** The "Hand no." tag, top left: archival red on a light red plate, like a stamped number in the archive. */
-export function drawCounter(ctx: CanvasRenderingContext2D, S: number, count: number, alpha = 1) {
-  if (alpha <= 0) return;
-  const k = S / 1080;
-  const x = 60 * k, y = 58 * k, w = 148 * k, h = 96 * k, r = 7 * k;
+const NUM = 52; // the number's size at 1080 px
+const PAD_X = 20;
+
+interface CounterMetrics { pitch: number; numW: number; zeroL: number; label: number }
+const metricsCache = new Map<number, CounterMetrics>();
+/** Digit pitch (the widest figure: the number never changes width), the number's ink width, and the label size that
+ *  makes "HAND NO." exactly as wide as the number. */
+function counterMetrics(ctx: CanvasRenderingContext2D, k: number): CounterMetrics {
+  const hit = metricsCache.get(k);
+  if (hit) return hit;
+  ctx.save();
+  ctx.font = `400 ${NUM * k}px ${SERIF}`;
+  (ctx as any).letterSpacing = '0px';
+  (ctx as any).fontVariantCaps = 'normal';
+  let pitch = 0;
+  for (let d = 0; d <= 9; d++) pitch = Math.max(pitch, ctx.measureText(String(d)).width);
+  const z = ctx.measureText('0');
+  const zeroW = z.actualBoundingBoxRight + z.actualBoundingBoxLeft;
+  // ink from the first digit's left edge to the last one's right edge, four digits centred in their cells
+  const numW = 3 * pitch + zeroW;
+  ctx.font = `400 100px ${SERIF}`;
+  (ctx as any).fontVariantCaps = 'all-small-caps';
+  (ctx as any).letterSpacing = '6px';
+  const m = ctx.measureText('hand no.');
+  const labelW100 = m.actualBoundingBoxRight + m.actualBoundingBoxLeft;
+  ctx.restore();
+  const out = { pitch, numW, zeroL: (pitch - zeroW) / 2, label: (100 * numW) / labelW100 };
+  metricsCache.set(k, out);
+  return out;
+}
+
+/** The plate in the top slot, centred: light red on a solid card, so it reads over anything. */
+export function drawPlate(ctx: CanvasRenderingContext2D, S: number, w: number, alpha = 1) {
+  const g = geometry(S), k = S / 1080;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-  ctx.fillStyle = RR.card; // solid, so it reads over the canvas of cards too
+  ctx.roundRect(S / 2 - w / 2, g.plate.y, w, g.plate.h, 7 * k);
+  ctx.fillStyle = RR.card;
   ctx.fill();
   ctx.fillStyle = 'rgba(155, 59, 42, 0.13)';
   ctx.fill();
   ctx.restore();
-  text(ctx, 'hand no.', x + 18 * k, y + 34 * k, { size: 25 * k, color: RR.red, caps: true, tracking: 0.06, alpha });
-  text(ctx, String(count).padStart(4, '0'), x + 17 * k, y + 78 * k, { size: 44 * k, color: RR.red, tracking: 0.02, alpha });
+}
+
+/** "HAND NO." over the number, the two exactly as wide as each other, on the plate. */
+export function drawCounter(ctx: CanvasRenderingContext2D, S: number, count: number, alpha = 1) {
+  if (alpha <= 0) return;
+  const k = S / 1080, g = geometry(S);
+  const M = counterMetrics(ctx, k);
+  drawPlate(ctx, S, M.numW + 2 * PAD_X * k, alpha);
+  const x0 = S / 2 - M.numW / 2;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = RR.red;
+  ctx.textBaseline = 'alphabetic';
+  // the label: its ink spans the number's ink (tracking is 6% of its size, as measured)
+  ctx.font = `400 ${M.label}px ${SERIF}`;
+  (ctx as any).fontVariantCaps = 'all-small-caps';
+  (ctx as any).letterSpacing = `${0.06 * M.label}px`;
+  const lm = ctx.measureText('hand no.');
+  ctx.fillText('hand no.', x0 + lm.actualBoundingBoxLeft, g.plate.y + 31 * k);
+  // the number: each digit centred in a fixed cell
+  ctx.font = `400 ${NUM * k}px ${SERIF}`;
+  (ctx as any).fontVariantCaps = 'normal';
+  (ctx as any).letterSpacing = '0px';
+  ctx.textAlign = 'center';
+  const digits = String(Math.min(9999, count)).padStart(4, '0');
+  for (let i = 0; i < 4; i++) ctx.fillText(digits[i], x0 - M.zeroL + (i + 0.5) * M.pitch, g.plate.y + 80 * k);
+  ctx.restore();
+}
+
+/** The writer's name and the school and pen, in the bottom slot. */
+export function drawCaption(ctx: CanvasRenderingContext2D, S: number, look: Look, alpha = 1) {
+  const k = S / 1080, g = geometry(S), c = caption(look);
+  text(ctx, c.name, S / 2, g.name, { size: 34 * k, color: RR.ink, align: 'center', italic: true, alpha });
+  text(ctx, `${c.school} · ${c.pen}`, S / 2, g.descriptor, { size: 24 * k, color: RR.muted, align: 'center', caps: true, tracking: 0.06, alpha });
 }
 
 export function looksAt(P: Plan, hands: Look[], frame: number): { looks: Look[]; count: number; gap: number; index: number } {
@@ -46,15 +108,10 @@ export function drawFlip(ctx: CanvasRenderingContext2D, P: Plan, hands: Look[], 
   const ink = o.ownInk ? undefined : FLIP_INK;
   for (const gr of phrase(looks, g, ink)) drawInk(ctx, gr.p, gr.items, { emPx: gr.emPx, width: S, height: S, ink: ink ?? undefined });
   if (!o.labels) return;
-  // the counter: every hand gets a number, as every letter in the archive does
-  const k = S / 1080;
+  // the counter, from the first frame: the wordmark's hand is hand no. 0001
+  drawCounter(ctx, S, count);
+  // the writer the site names for this hand, while the cuts are slow enough to read it (not on the title)
   const sec = P.sectionAt(frame).id;
-  if (sec !== 'title') drawCounter(ctx, S, count);
-  // the writer the site names for this hand, while the cuts are slow enough to read it
   const slow = gap >= P.fpb / 2 || sec === 'land';
-  if (slow && looks.length === 1 && sec !== 'title') {
-    const c = caption(looks[0]);
-    text(ctx, c.name, S / 2, S - 118 * k, { size: 34 * k, color: RR.ink, align: 'center', italic: true });
-    text(ctx, `${c.school} · ${c.pen}`, S / 2, S - 78 * k, { size: 24 * k, color: RR.muted, align: 'center', caps: true, tracking: 0.06 });
-  }
+  if (slow && looks.length === 1 && sec !== 'title') drawCaption(ctx, S, looks[0]);
 }

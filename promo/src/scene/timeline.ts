@@ -36,8 +36,10 @@ export interface Settings {
   brake: number[];
   /** how long the hand it lands on holds before the camera pulls back (beats) */
   landBeats: number;
-  /** 3. the pull back into the canvas of hands (beats) */
-  zoomBeats: number;
+  /** 3. the canvas of hands: the pull back (beats), a still beat at the farthest point, the dive back into the card */
+  zoomOutBeats: number;
+  zoomHoldBeats: number;
+  zoomInBeats: number;
   /** 4. the letter: written out live (beats), then each highlighted letter changes form */
   letterWriteBeats: number;
   letters: LetterBeat[];
@@ -59,7 +61,9 @@ export const DEFAULTS: Settings = {
   perWordBeats: 0,
   brake: [],
   landBeats: 2,
-  zoomBeats: 10,
+  zoomOutBeats: 7,
+  zoomHoldBeats: 1,
+  zoomInBeats: 2,
   letterWriteBeats: 4,
   letters: [
     { ch: 'e', beats: 6 },
@@ -118,6 +122,8 @@ export interface Plan {
   /** how many hands the list needs */
   handsNeeded: number;
   letter: { from: number; writeTo: number; to: number; spans: LetterSpan[] };
+  /** the canvas of hands: pull back from, farthest point reached, dive back from, card fills the frame again */
+  zoom: { from: number; out: number; hold: number; to: number };
   sectionAt(frame: number): Section;
   cutAt(frame: number): Cut;
 }
@@ -183,7 +189,12 @@ export function plan(s: Settings = DEFAULTS): Plan {
   for (let i = 0; i < cuts.length; i++) cuts[i].gap = (cuts[i + 1]?.frame ?? Infinity) - cuts[i].frame;
   add('flip', 'Flip', endBeat - flipStart);
   add('land', 'Stop', s.landBeats);
-  add('zoom', 'All the hands', s.zoomBeats);
+  const zb = beat;
+  const zoom = {
+    from: beatFrame(zb), out: beatFrame(zb + s.zoomOutBeats), hold: beatFrame(zb + s.zoomOutBeats + s.zoomHoldBeats),
+    to: beatFrame(zb + s.zoomOutBeats + s.zoomHoldBeats + s.zoomInBeats),
+  };
+  add('zoom', 'All the hands', s.zoomOutBeats + s.zoomHoldBeats + s.zoomInBeats);
 
   // ---- the letter: written in live, then each highlighted letter changes form on the grid ----
   const letterFrom = beatFrame(beat);
@@ -204,6 +215,7 @@ export function plan(s: Settings = DEFAULTS): Plan {
     s, fpb, beatFrame, frames, seconds: frames / s.fps, sections, cuts,
     handsShown: cuts[cuts.length - 1].count, landHand, handsNeeded: landHand + 1,
     letter: { from: letterFrom, writeTo, to: spans.length ? spans[spans.length - 1].to : writeTo, spans },
+    zoom,
     sectionAt(frame: number) {
       for (const sec of sections) if (frame < sec.to) return sec;
       return sections[sections.length - 1];
