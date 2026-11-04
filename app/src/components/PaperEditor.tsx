@@ -86,6 +86,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   }, [onComposingChange]);
   const input = useEditInput(ta, text, onEdit, 'paper', onComposition);
   const descId = useId();
+  // the shortcuts' key by its name on this keyboard (Command on Apple's, Ctrl elsewhere), as the keys themselves follow isMac
+  const modKey = isMac() ? 'Command' : 'Ctrl';
   // indices in the live text <-> indices in the text the page was written from
   const toMap = useCallback((i: number) => (geo ? (blank ? geo.text.length : across(i, text, geo.text)) : i), [geo, text, blank]);
   const fromMap = useCallback((i: number) => (geo ? across(i, geo.text, text) : i), [geo, text]);
@@ -550,7 +552,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
         style={{ left: caretPx.left, top: caretPx.top, width: lineW, height: lineH, caretColor: 'transparent' }}
       />
       <span id={descId} hidden>
-        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}Fair copy: the page is rewritten cleanly as you type. Command U underlines, Command B presses harder, Command Return adds a P.S.
+        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}Fair copy: the page is rewritten cleanly as you type. {`${modKey} U underlines, ${modKey} B presses harder, ${modKey} Return adds a P.S.`}
         {geo?.summary ? ` This draft has ${geo.summary}.` : ''}
       </span>
     </div>
