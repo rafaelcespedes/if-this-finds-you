@@ -36,36 +36,50 @@ export function styleOf(look: Look, o: { ownInk: boolean; ownPaper: boolean }): 
 const NUM = 47; // the number's size at 1080 px
 const PAD_X = 18;
 
-interface CounterMetrics { pitch: number; numW: number; zeroL: number; label: number; labelH: number; numH: number }
+interface CounterMetrics { pitch: number; numW: number; zeroL: number; num: number; label: number; labelW: number; labelH: number; numH: number }
 const metricsCache = new Map<string, CounterMetrics>();
 /** the label as the pairing sets it: small capitals ("hand no." drawn as caps) or sentence case */
 const labelText = () => { const r = role('label'); return r.upper ? 'HAND NO.' : r.caps ? 'hand no.' : 'Hand no.'; };
-/** Digit pitch (the widest figure: the number never changes width), the number's ink width, and the label size that
- *  makes "HAND NO." exactly as wide as the number. */
+/** The label's size: "HAND NO." as wide as four figures at NUM (its period included). Then the number's size: a
+ *  little smaller, so its four figures end under the O, not under the period (which hardly shows). Digits sit at a
+ *  fixed pitch (the widest figure), so the number never changes width. */
 function counterMetrics(ctx: CanvasRenderingContext2D, k: number): CounterMetrics {
   const key = `${pairing()}@${k}`;
   const hit = metricsCache.get(key);
   if (hit) return hit;
   ctx.save();
-  ctx.font = fontOf('number', NUM * k);
   (ctx as any).letterSpacing = '0px';
   (ctx as any).fontVariantCaps = 'normal';
-  let pitch = 0;
-  for (let d = 0; d <= 9; d++) pitch = Math.max(pitch, ctx.measureText(String(d)).width);
-  const z = ctx.measureText('0');
-  const zeroW = z.actualBoundingBoxRight + z.actualBoundingBoxLeft;
-  const numH = z.actualBoundingBoxAscent;
-  // ink from the first digit's left edge to the last one's right edge, four digits centred in their cells
-  const numW = 3 * pitch + zeroW;
+  const figures = (size: number) => {
+    ctx.font = fontOf('number', size);
+    let pitch = 0;
+    for (let d = 0; d <= 9; d++) pitch = Math.max(pitch, ctx.measureText(String(d)).width);
+    const z = ctx.measureText('0');
+    const zeroW = z.actualBoundingBoxRight + z.actualBoundingBoxLeft;
+    // ink from the first digit's left edge to the last one's right edge, four digits centred in their cells
+    return { pitch, zeroW, numW: 3 * pitch + zeroW, numH: z.actualBoundingBoxAscent };
+  };
   const L = role('label');
-  ctx.font = fontOf('label', 100);
-  (ctx as any).fontVariantCaps = L.caps ? 'all-small-caps' : 'normal';
-  (ctx as any).letterSpacing = `${L.tracking * 100}px`;
-  const m = ctx.measureText(labelText());
-  const labelW100 = m.actualBoundingBoxRight + m.actualBoundingBoxLeft;
+  // ink width with the tracking added by hand (one space between each pair of letters): Chrome's ink box for tracked
+  // text counts some of the spacing after the last letter, which put the number's end under the period
+  const inkW = (t: string, size: number) => {
+    ctx.font = fontOf('label', size);
+    (ctx as any).fontVariantCaps = L.caps ? 'all-small-caps' : 'normal';
+    (ctx as any).letterSpacing = '0px';
+    const m = ctx.measureText(t);
+    return { w: m.actualBoundingBoxRight + m.actualBoundingBoxLeft + L.tracking * size * ([...t].length - 1), h: m.actualBoundingBoxAscent };
+  };
+  const ref = figures(NUM * k);
+  const full = labelText();
+  const label = (100 * ref.numW) / inkW(full, 100).w;
+  const labelW = inkW(full, label).w;
+  // the label's ink without its period: where the O ends
+  const toO = inkW(full.replace(/\.$/, ''), label).w;
+  const num = (NUM * k * toO) / ref.numW;
+  const f = figures(num);
+  const labelH = inkW(full, label).h;
   ctx.restore();
-  const label = (100 * numW) / labelW100;
-  const out = { pitch, numW, zeroL: (pitch - zeroW) / 2, label, labelH: (m.actualBoundingBoxAscent * label) / 100, numH };
+  const out = { pitch: f.pitch, numW: f.numW, zeroL: (f.pitch - f.zeroW) / 2, num, label, labelW, labelH, numH: f.numH };
   metricsCache.set(key, out);
   return out;
 }
@@ -84,30 +98,30 @@ export function drawPlate(ctx: CanvasRenderingContext2D, S: number, w: number, a
   ctx.restore();
 }
 
-/** "HAND NO." over the number, the two exactly as wide as each other, on the plate. */
+/** "HAND NO." over the number, the number's figures from the H to the O, on the plate. */
 export function drawCounter(ctx: CanvasRenderingContext2D, S: number, count: number, alpha = 1) {
   if (alpha <= 0) return;
   const k = S / 1080, g = geometry(S);
   const M = counterMetrics(ctx, k);
-  drawPlate(ctx, S, M.numW + 2 * PAD_X * k, alpha);
-  const x0 = S / 2 - M.numW / 2;
+  drawPlate(ctx, S, M.labelW + 2 * PAD_X * k, alpha);
+  const x0 = S / 2 - M.labelW / 2;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.fillStyle = RR.red;
   ctx.textBaseline = 'alphabetic';
-  // the label: its ink spans the number's ink (its tracking scales with its size, as measured)
   const L = role('label');
   ctx.font = fontOf('label', M.label);
   (ctx as any).fontVariantCaps = L.caps ? 'all-small-caps' : 'normal';
   (ctx as any).letterSpacing = `${L.tracking * M.label}px`;
   const lm = ctx.measureText(labelText());
-  // the label over the number, the pair centred in the plate (the same room above as below)
-  const gap = 10 * k;
-  const top = g.plate.y + (g.plate.h - (M.labelH + gap + M.numH)) / 2;
-  const labelBase = top + M.labelH, numBase = labelBase + gap + M.numH;
+  // the label over the number, a little more room under the number than over the label (the figures' round
+  // bottoms read closer to the edge than the capitals' flat tops)
+  const gap = 10 * k, extra = 4 * k;
+  const pad = (g.plate.h - (M.labelH + gap + M.numH) - extra) / 2;
+  const labelBase = g.plate.y + pad + M.labelH, numBase = labelBase + gap + M.numH;
   ctx.fillText(labelText(), x0 + lm.actualBoundingBoxLeft, labelBase);
   // the number: each digit centred in a fixed cell
-  ctx.font = fontOf('number', NUM * k);
+  ctx.font = fontOf('number', M.num);
   (ctx as any).fontVariantCaps = 'normal';
   (ctx as any).letterSpacing = '0px';
   ctx.textAlign = 'center';

@@ -57,6 +57,15 @@
 - Carousel: 11 real letters in their own hands (scene/carousel.ts, `npm run carousel`, 1080 × 1350), Rafael picks 4.
 - Review page: review/thread-review.mjs → out/thread-review/ (private artifact "Launch thread: drafts").
 
+## Final (4 Nov)
+- The number a little smaller, so its four figures end under the O of "HAND NO." rather than the period (which
+  hardly shows); a little more room under the number (plate 98 px, 4 px more below than above). Tracked text is
+  measured by hand: Chrome's ink box for tracked text counted spacing after the last letter.
+- Final video: out/if-this-finds-you-x-1080.mp4 (1080 × 1080, 30 fps, sound), with the site's current engine.
+- Rafael's 15 pangram favourites as 1080 × 1350 cards (writer, school and pen, seed, evenly spaced), and the post
+  text with alt text, in ~/Downloads/If This Finds You launch/. Post 2: A; post 3: B; post 1 still to choose.
+- X takes 4 images per post: 15 cards → post 2 plus three replies, or fewer cards.
+
 ## Open
 - Rafael: post options, the four letters, About link in post 3 or not.
 - Rafael picks the thread's hands; render the chosen ones large (size and format to decide: 1600 × 900, or square?).

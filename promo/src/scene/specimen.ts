@@ -3,6 +3,7 @@
 import specimens from '../data/specimens.json';
 import { engine, CAP, UPM, RR, drawInk, ground, inkBox, shifted, text } from './ink';
 import { handOf, type Look } from './hands';
+import { fontOf, type RoleName } from './type';
 
 export const SPECIMENS = specimens as (Look & { n: number; paper: string; seed: string; name: string; school: string; penLabel: string })[];
 export const LINES = ['The quick brown', 'fox jumps over', 'the lazy dog'];
@@ -52,8 +53,21 @@ export function drawSpecimen(ctx: CanvasRenderingContext2D, i: number, W: number
   ctx.fillRect(0, band, W, H0 - band);
   ctx.fillStyle = RR.edge;
   ctx.fillRect(0, band, W, Math.max(1, 1.5 * k0));
+  // three lines with the same gap between each (from one line's baseline to the tops of the next line's capitals
+  // and ascenders), the block centred in the band
+  const rows: { t: string; size: number; color: string; role: RoleName }[] = [
+    { t: s.name, size: 36 * k0, color: RR.ink, role: 'name' },
+    { t: `${s.school} · ${s.penLabel}`, size: 24 * k0, color: RR.ink, role: 'meta' },
+    { t: `Seed ${s.seed}`, size: 22 * k0, color: RR.red, role: 'credit' },
+  ];
+  const tops = rows.map((r) => { ctx.font = fontOf(r.role, r.size); return ctx.measureText('Hdl').actualBoundingBoxAscent; });
+  const gap = 20 * k0;
+  const blockH = tops.reduce((a, b) => a + b, 0) + gap * (rows.length - 1);
+  let y = band + (H0 - band - blockH) / 2;
   const cx = 0.08 * W;
-  text(ctx, s.name, cx, band + 70 * k0, { size: 36 * k0, color: RR.ink, role: 'name' });
-  text(ctx, `${s.school} · ${s.penLabel}`, cx, band + 118 * k0, { size: 24 * k0, color: RR.ink, role: 'meta' });
-  text(ctx, `Seed ${s.seed}`, cx, band + 158 * k0, { size: 22 * k0, color: RR.red, role: 'credit' });
+  rows.forEach((r, j) => {
+    y += tops[j];
+    text(ctx, r.t, cx, y, { size: r.size, color: r.color, role: r.role });
+    y += gap;
+  });
 }
