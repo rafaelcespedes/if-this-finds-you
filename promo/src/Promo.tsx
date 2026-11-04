@@ -47,7 +47,7 @@ export const defaultProps: PromoProps = {
   letterId: 'santa-1908-papa',
   grid: false,
   size: 540,
-  type: 'junicode',
+  type: 'site',
 };
 
 export function settingsOf(props: PromoProps, fps: number): Settings {

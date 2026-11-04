@@ -50,7 +50,7 @@ function chart(P) {
 
 const img = (f, alt) => `<img src="img/f${String(f).padStart(4, '0')}.jpg" alt="${alt}" loading="lazy" width="540" height="540">`;
 const board = [
-  { s: S.title, frames: [0], title: 'Title', what: 'The phrase, already written, in the site’s wordmark hand, with “Hand no. 0001” on its plate above it: the wordmark’s hand is the first hand. Every frame is one centred stack (plate, phrase, writer’s name). Held two beats, a lead-in: the music’s first downbeat falls on the first cut.', term: 'Hold (lead-in)' },
+  { s: S.title, frames: [0], title: 'Title', what: 'The phrase, already written, in the site’s wordmark hand, with “Hand no. 0001” on its plate above it: the wordmark’s hand is the first hand. Every frame is one centred stack (plate, phrase, writer’s name), in the site’s type: Schibsted Grotesk for the counter and descriptions, Newsreader for names. Held two beats, a lead-in: the music’s first downbeat falls on the first cut.', term: 'Hold (lead-in)' },
   { s: S.flip, frames: [60, 140, 180, 250], title: 'The flip', what: 'Each hand on its own paper in its own ink (white, cream, legal yellow, airmail blue; black, blue, sepia, pencil, red), as on the canvas, to show how far apart the hands are. One hand a beat for four beats, then a smooth speed-up over ten beats to one a frame, two beats at full speed, then a dead stop on the bar. The one-ink version is a switch (a second file came with this draft).', term: 'Hard cuts, speed ramp (exponential), dead stop' },
   { s: S.land, frames: [300], title: 'Stop', what: `Hand no. ${String(P30.handsShown).padStart(4, '0')}: lunar-willow-41, Québec school print, fountain pen, on its own laid cotton paper. Lands on a bar’s first beat and holds two beats.`, term: 'Hold' },
   { s: S.zoom, frames: [330, 380, 420, 440, 470], title: 'All the hands, and back', what: `The camera pulls back from that card into a canvas of ${canvasWriters.toLocaleString('en')} writers, each “If this / finds you” on that writer’s own paper in their own ink, gathering speed for seven beats until the cards are small coloured squares; one still beat; then it dives back into the same card over two beats and lands on the bar with it filling the frame. No red frame round the card any more. The counter climbs to 5000 and fades during the dive.`, term: 'Pull back and return (Powers of Ten)' },
@@ -70,28 +70,31 @@ const beatTable = P30.sections.map((s) => `<tr><td>${s.label}</td><td>${bars(s)}
 
 const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Launch video, draft 5</title>
+<title>Launch video, draft 6</title>
 <style>
-@font-face { font-family: 'Junicode'; font-style: normal; font-weight: 400 600; font-stretch: 100% 112%; src: url(data:font/woff2;base64,${font('junicode-latin-roman.woff2')}) format('woff2'); }
-@font-face { font-family: 'Junicode'; font-style: italic; font-weight: 400 600; font-stretch: 100% 112%; src: url(data:font/woff2;base64,${font('junicode-latin-italic.woff2')}) format('woff2'); }
+@font-face { font-family: 'Newsreader'; font-style: normal; font-weight: 200 800; src: url(data:font/woff2;base64,${font('newsreader-latin-roman.woff2')}) format('woff2'); }
+@font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 200 800; src: url(data:font/woff2;base64,${font('newsreader-latin-italic.woff2')}) format('woff2'); }
+@font-face { font-family: 'Schibsted Grotesk'; font-style: normal; font-weight: 400 900; src: url(data:font/woff2;base64,${font('schibsted-grotesk-latin.woff2')}) format('woff2'); }
 :root {
   /* the Reading Room's own palette (app/src/themes/reading-room.css); one column of record cards on the room grey */
   --room: #e6e4de; --card: #f3eee1; --ink: #1e2733; --red: #9b3b2a; --muted: #575146; --rule: rgba(30,39,51,.14);
-  --serif: 'Junicode', 'Iowan Old Style', Georgia, serif;
+  --serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --sans: 'Schibsted Grotesk', 'Helvetica Neue', Arial, sans-serif;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--room); color: var(--ink); font: 400 1.0625rem/1.5 var(--serif); }
 main { max-width: 64rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; display: grid; gap: 2.5rem; }
 h1, h2, h3 { font-weight: 400; text-wrap: balance; margin: 0; }
-h1 { font-size: 2.4rem; font-stretch: 112%; line-height: 1.1; }
-h2 { font-size: 1.5rem; font-stretch: 112%; }
-h3 { font-size: 1.25rem; font-stretch: 112%; }
-.caps { font-variant-caps: all-small-caps; letter-spacing: .06em; color: var(--muted); }
+h1, h2, h3 { font-weight: 480; letter-spacing: -0.015em; }
+h1 { font-size: 2.4rem; line-height: 1.1; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+.caps { font: 500 .8125rem/1.3 var(--sans); letter-spacing: .01em; color: var(--muted); }
 .lede { display: grid; gap: .6rem; max-width: 42rem; }
 .lede p { margin: 0; }
-.specs { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; font-variant-caps: all-small-caps; letter-spacing: .06em; color: var(--muted); }
-.specs b { color: var(--red); font-weight: 400; font-variant-numeric: tabular-nums; }
+.specs { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; font: 500 .875rem/1.3 var(--sans); letter-spacing: .01em; color: var(--muted); }
+.specs b { color: var(--red); font-weight: 500; font-variant-numeric: tabular-nums lining-nums; }
 .player { display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
 .player video { width: 100%; aspect-ratio: 1; background: var(--card); border: 1px solid var(--rule); }
 .files { display: grid; gap: .5rem; font-size: .95rem; }
@@ -100,20 +103,20 @@ section { display: grid; gap: 1.1rem; }
 .card { background: var(--card); border: 1px solid var(--rule); padding: 1.25rem 1.4rem; display: grid; gap: .8rem; }
 .beat { background: var(--card); border: 1px solid var(--rule); padding: 1.1rem 1.3rem 1.2rem; display: grid; gap: .7rem; }
 .beat header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .4rem 1rem; border-bottom: 1px solid var(--rule); padding-bottom: .5rem; }
-.when { margin: 0; display: flex; gap: 1rem; font-variant-caps: all-small-caps; letter-spacing: .06em; color: var(--red); font-variant-numeric: tabular-nums; }
+.when { margin: 0; display: flex; gap: 1rem; font: 500 .8125rem/1.3 var(--sans); letter-spacing: .01em; color: var(--red); font-variant-numeric: tabular-nums lining-nums; }
 .beat p { margin: 0; max-width: 46rem; }
 .term { font-style: italic; color: var(--muted); }
 .stills { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .6rem; }
 figure { margin: 0; display: grid; gap: .25rem; }
 figure img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); }
-figcaption { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+figcaption { font: 400 .75rem/1.3 var(--sans); color: var(--muted); font-variant-numeric: tabular-nums lining-nums; }
 svg { width: 100%; height: auto; }
-svg .g { stroke: var(--rule); } svg .a { stroke: var(--muted); } svg .t { fill: var(--muted); font: 12px var(--serif); }
+svg .g { stroke: var(--rule); } svg .a { stroke: var(--muted); } svg .t { fill: var(--muted); font: 500 11px var(--sans); }
 svg .line { fill: none; stroke: var(--red); stroke-width: 2.2; }
 table { border-collapse: collapse; width: 100%; font-size: .95rem; }
 th, td { text-align: left; padding: .35rem .6rem .35rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
-th { font-weight: 400; font-variant-caps: all-small-caps; letter-spacing: .06em; color: var(--muted); }
-td.n { font-variant-numeric: tabular-nums; }
+th { font: 500 .8125rem/1.3 var(--sans); letter-spacing: .01em; color: var(--muted); }
+td.n { font-family: var(--sans); font-variant-numeric: tabular-nums lining-nums; }
 .wrap { overflow-x: auto; }
 ol.q { margin: 0; padding-left: 1.4rem; display: grid; gap: .7rem; list-style: decimal; }
 ol.q li::marker { color: var(--red); font-variant-numeric: tabular-nums; }
@@ -126,9 +129,9 @@ a { color: var(--red); }
 <body><main>
 <header class="lede">
   <p class="caps">If This Finds You · launch video</p>
-  <h1>Launch video, draft 5</h1>
+  <h1>Launch video, draft 6</h1>
   <p>A square video for X and Instagram, drawn frame by frame by the site’s own engine: every hand in it is generated, and Maybelle’s letter is written out by the same code the site uses. No music yet; the cuts sit on a 112.5 BPM grid so any track at that tempo drops in.</p>
-  <p><b>Changed since draft 4:</b> twice as long on the changing letters (e for eight beats, a for four, then every letter at once for four); the flip in colour, each hand on its own paper in its own ink; no red frame on the card through the canvas; the end card is the title alone. 29.9 s.</p>
+  <p><b>Changed since draft 5:</b> the video’s own type is now the site’s: the counter, the descriptions under the names and the letter’s credit in Schibsted Grotesk (sentence case, the number in lining figures at a fixed spacing), the writers’ names in Newsreader. Nothing else changed.</p>
   <p class="specs"><span><b>${P30.seconds.toFixed(1)}</b> seconds</span><span><b>1080 × 1080</b></span><span><b>112.5</b> BPM, a two-beat lead-in and <b>12</b> bars</span><span><b>${P30.handsShown}</b> hands in the flip, <b>${canvasWriters.toLocaleString('en')}</b> on the canvas</span></p>
 </header>
 
@@ -180,12 +183,10 @@ a { color: var(--red); }
 <section class="card">
   <h2>Decisions for you</h2>
   <ol class="q">
-    <li><b>Colour or one ink in the flip.</b> This draft is in colour; the one-ink version came with it to compare.</li>
+    <li><b>Ready for the final?</b> If this round looks right, I render 1080 × 1080 at 30 fps for X (and 60 fps for Instagram, if you want it).</li>
     <li><b>Music.</b> Which track? Anything near 112.5 BPM fits as it is. Its first downbeat goes on the first cut, 1.07 s in.</li>
-    <li><b>Length.</b> 29.9 s with the longer letter section. If it should be shorter, the canvas (ten beats) is where I’d take time from.</li>
     <li><b>The loop.</b> The video ends on the title alone and starts on the title with “Hand no. 0001”, so the plate appears as it loops. Drop the plate from the first frame for an exact loop?</li>
-    <li><b>Frame rate.</b> X’s help pages cap uploads at 40 fps, so the X version is 30 fps. Also a 60 fps version for Instagram?</li>
-    <li><b>Flashing.</b> The fastest two beats change the hand 30 times a second, and in colour the paper too (all light papers, so small changes in brightness). Before posting, run the final file through a free flash checker such as PEAT.</li>
+    <li><b>Flashing.</b> The fastest two beats change the hand 30 times a second, paper colour included. Before posting, run the final file through a free flash checker such as PEAT.</li>
   </ol>
 </section>
 
