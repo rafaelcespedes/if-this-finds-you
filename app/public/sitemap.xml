@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The four places (app/src/lib/places.ts). A letter's own page lives after the # in /letters, so it has no address
+     of its own to list here. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://ifthisfindsyou.app/</loc><lastmod>2026-11-04</lastmod></url>
+  <url><loc>https://ifthisfindsyou.app/letters</loc><lastmod>2026-11-04</lastmod></url>
+  <url><loc>https://ifthisfindsyou.app/fonts</loc><lastmod>2026-11-04</lastmod></url>
+  <url><loc>https://ifthisfindsyou.app/about</loc><lastmod>2026-11-04</lastmod></url>
+</urlset>

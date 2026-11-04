@@ -42,7 +42,7 @@ export function SlipDock(a: DockActions & { id?: string }) {
           entries={[
             { id: 'text', label: 'Read as text', icon: <FileText />, onSelect: a.onText },
             { id: 'image', label: 'Download image', icon: <Download />, onSelect: a.onImage, disabled: !a.imageReady },
-            { id: 'hand', label: 'Another hand', icon: <Shuffle />, onSelect: a.onNewHand },
+            { id: 'hand', label: 'Change writer', icon: <Shuffle />, onSelect: a.onNewHand },
             { id: 'share', label: 'Copy link', icon: <Link2 />, onSelect: a.onShare },
           ]}
         />
