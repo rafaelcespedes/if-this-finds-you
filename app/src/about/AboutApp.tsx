@@ -89,14 +89,10 @@ const SECTIONS = [
 type SectionId = (typeof SECTIONS)[number]['id'];
 
 function Section({ id, children }: { id: SectionId; children: ReactNode }) {
-  const n = SECTIONS.findIndex((s) => s.id === id) + 1;
-  const title = SECTIONS[n - 1].title;
+  const title = SECTIONS.find((s) => s.id === id)!.title;
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="about-section">
-      <h2 id={`${id}-title`} className="about-section-title">
-        <span className="about-section-no" aria-hidden>{n}</span>
-        <span>{title}</span>
-      </h2>
+      <h2 id={`${id}-title`} className="about-section-title">{title}</h2>
       <div className="about-section-body">{children}</div>
     </section>
   );
