@@ -297,7 +297,7 @@ html:root[data-layout='ruler'] .rr-drawer {
    the citation are quieter
    ===================================================================================================================== */
 /* the spread's labels and small lines: the small sans (the same list as library.css's label role) */
-html:root[data-layout='ruler'] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
+html:root[data-layout='ruler'] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-next-meta) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
@@ -338,11 +338,11 @@ html:root[data-layout='ruler'] .sp .sp-fact {
 html:root[data-layout='ruler'] .sp .sp-fact dd {
   margin-top: 0;
 }
-/* the notes and the citation: quieter (they're there for whoever looks) */
-html:root[data-layout='ruler'] .sp :is(.sp-notes, .sp-cite) {
+/* the notes: quieter (they're there for whoever looks) */
+html:root[data-layout='ruler'] .sp .sp-notes {
   border-top-color: var(--ed-rule);
 }
-html:root[data-layout='ruler'] .sp :is(.sp-notes li, .sp-cite p) {
+html:root[data-layout='ruler'] .sp .sp-notes li {
   color: var(--rr-faint);
 }
 /* a note's mark: the desk's size and weight (the record's marks, 11.25 px, 500), wherever it sits */
@@ -818,14 +818,14 @@ html:root[data-layout='ruler'] .sp .sp-ref::after {
    THE LETTER PAGE WHERE THE DOCK SHOWS (phones, tablets: below the spread's 64em): nothing said twice (Rafael: "very
    little redundancy… it should be like a breeze to get through"). The floating dock carries the actions (‹ No. ›,
    Bring another, ⋯: Download image, Copy link, Copy citation; Write a reply) and the Hand fact's menu changes the writer,
-   so the page drops its own actions' row, its Cite · Download image line, its citation and Next in the collection (the
-   dock's ›). What the page already says goes too: the place and date under the words (the kicker), the sheet's caption
-   when there's one sheet ("Hand: …" is the Hand fact and its note), "The letter" over the words (kept for screen
-   readers), and the record's Why it survives (the kicker), Source and Rights (the last note); Full record goes when
-   nothing else is in it. The head, its kicker and writer's line, and the facts stay.
+   so the page drops its own actions' row, its Cite · Download image line and Next in the collection (the dock's ›).
+   What the page already says goes too: the sheet's caption when there's one sheet, "The letter" over the words (kept
+   for screen readers), and the record's Why it survives (the kicker), Source and Rights (the last note); Full record
+   goes when nothing else is in it. The head, its kicker and writer's line, and the facts stay. (The place and date
+   under the words, the sheet's "Hand: …" credit and the citation written out are gone at every width: ReadingSpread.)
    ===================================================================================================================== */
 @media (max-width: 63.99em) {
-  html:root[data-layout='ruler'] .sp :is(.sp-actions, .sp-quiet, .sp-cite, .sp-next, .sp-dateline, .sp-credit) {
+  html:root[data-layout='ruler'] .sp :is(.sp-actions, .sp-quiet, .sp-next) {
     display: none;
   }
   html:root[data-layout='ruler'] .sp .sp-caption[data-sheets='1'],
