@@ -187,6 +187,18 @@ html:root[data-layout='ruler'] .rr-ledger-record .rr-card-no .rr-sc {
   line-height: 1;
   color: var(--rr-ink);
 }
+/* phones (the slip under the sheet, CatalogueSlip): the big figure needs no "No." over it (Rafael, 4 Nov). It stays
+   for screen readers, so the number still reads "No. 0004", and takes no room, so the figure sits where it began */
+html:root[data-layout='ruler'] .rr-under-sheet .rr-card-no .rr-sc {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 html:root[data-layout='ruler'] .rr-ledger-record .rr-ledger-head {
   align-items: flex-start;
 }
