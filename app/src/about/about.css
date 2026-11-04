@@ -131,8 +131,22 @@
   outline-offset: 2px;
   border-radius: 2px;
 }
-.about-go::after {
-  content: ' →';
+.about-arrow {
+  /* the site's drawn arrow (themes/reading-room/icons; Lucide's in today's look), turned to point the way: no font
+     has to load to draw an arrow glyph */
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  vertical-align: -0.08em;
+  flex: none;
+}
+.about-arrow--on {
+  margin-left: 0.3em;
+  transform: scaleX(-1);
+}
+.about-arrow--out {
+  margin-right: 0.3em;
+  transform: rotate(-45deg) scaleX(-1);
 }
 .about cite {
   font-style: italic;
@@ -230,31 +244,10 @@
   margin-right: 0.25rem;
   color: var(--about-number);
 }
-.about-text-button {
-  /* a 44px target on touch without a taller line */
-  position: relative;
-  margin-left: auto;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--about-text);
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  text-decoration: underline;
-  text-decoration-color: var(--rule-link);
-  text-underline-offset: 0.25em;
-  cursor: pointer;
-}
-.about-text-button::after {
-  content: '';
-  position: absolute;
-  inset: -0.75rem -0.5rem;
-}
-@media (hover: hover) and (pointer: fine) {
-  .about-text-button:hover {
-    text-decoration-color: currentColor;
-  }
+/* Change writer: the desk's own control (Button, secondary), on its own line under the caption */
+.about-line-change {
+  align-self: flex-start;
+  margin-top: 0.25rem;
 }
 .about-line--type {
   margin-top: 2rem;
@@ -422,12 +415,6 @@
   position: absolute;
   inset: -0.75rem -0.5rem;
 }
-.about-give-link::before {
-  content: '↗';
-  display: inline-block;
-  margin-right: 0.3em;
-  text-decoration: none;
-}
 @media (hover: hover) and (pointer: fine) {
   .about-give-link:hover {
     text-decoration-color: currentColor;
@@ -542,7 +529,7 @@
 }
 
 /* pressed: a tap shows it landed (shared state tokens, with today's chip tints until they land) */
-:is(.about-link, .about-text-button, .about-give-link):active {
+:is(.about-link, .about-give-link):active {
   text-decoration-color: currentColor;
   background: var(--st-hover, var(--chip-hover));
   border-radius: 2px;
@@ -552,8 +539,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .about-link,
-  .about-text-button {
+  .about-link {
     transition: none;
   }
 }
