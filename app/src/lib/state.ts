@@ -289,7 +289,8 @@ export function linkIssue(hash: string): LinkIssue {
   const k = q.get('k'), t = q.get('t'), c = q.get('c');
   if (k != null || t != null) {
     const raw = decompressFromEncodedURIComponent((k ?? t)!);
-    if (!raw || (c && check(raw) !== c)) return 'incomplete';
+    // '' is a real letter (a fresh sheet: t=Q); null is a link cut short
+    if (raw == null || (c && check(raw) !== c)) return 'incomplete';
     const doc = k != null ? decodeInk(raw) : null;
     if (k != null && !doc) return 'incomplete';
     return (doc ? inkText(doc) : raw).length > MAX_LETTER ? 'too-long' : null;
