@@ -32,13 +32,12 @@ every header picks it up, and where the line no longer fits, the Menu takes over
 
 ## Where you are
 
-- The place you're on is marked quietly, with no underline (Rafael: "i don't like the underlined selected state").
-  Three ways to compare, `?navsel=1|2|3`, kept for the tab: **1** (default) its words in the look's red (Rubric's
-  vermilion in Classic, the archival red of "No. 0004" in the Reading Room); **2** a soft tint of that red behind
-  them (8 %, no edge, the controls' radius) with the words in it; **3** the place in full ink and the others at 68 %.
-  The same in the phone Menu's rows. It's said to screen readers (`aria-current="page"`), isn't a link (clicking
-  where you already are does nothing), and in forced colours the words are underlined. The Reading Room's faint
-  hover underline shows on the other places only.
+- The place you're on has a light-red fill behind its words, and the words in the look's red (Rafael: "I like the
+  light red fill"; Rubric's vermilion in Classic, the archival red of "No. 0004" in the Reading Room). The places you
+  can go, and My letters, take a faint ink wash under the pointer and a firmer one when pressed (with a 0.97 press),
+  in the same shape; no underlines. The same in the phone Menu's rows. It's said to screen readers
+  (`aria-current="page"`), isn't a link (clicking where you already are does nothing), and in forced colours its
+  words are underlined.
 - A letter's page sits inside All letters: All letters is marked too, and stays a link, the way back to the
   list as you left it (search and era kept).
 - A shared letter (the reader view, `?read=1`) isn't one of the places, so nothing is marked there.

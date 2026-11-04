@@ -296,7 +296,7 @@ html[data-look='reading-room'] [data-site-row] {
   padding-bottom: 0.5rem;
 }
 /* the rule and its space, for the header's height (index.css --site-head); the place you're in shows in archival
-   red (index.css --site-here, ?navsel) */
+   red, on its light-red fill (index.css --site-here, --st-accent) */
 html[data-look='reading-room'] { --site-head-rule: calc(0.5rem + 1px); --site-here: var(--rr-red); }
 html[data-look='reading-room'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button),
 html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site-label]) {
@@ -313,13 +313,6 @@ html[data-look='reading-room'] [data-site-menu] :is([data-site-link], [data-site
 html[data-look='reading-room'] .sheet-surface [data-site-menu] [data-site-link] {
   font-size: 1.125rem;
   letter-spacing: 0.06em;
-}
-/* a place you can go, under the pointer: a faint underline (the place you're in keeps its own mark) */
-@media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] [data-site-header] a[data-site-link]:not([aria-current]):hover [data-site-words] {
-    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
-    text-underline-offset: 3px;
-  }
 }
 /* the letter's number: archival red, as on its sheet */
 html[data-look='reading-room'] [data-site-number] {

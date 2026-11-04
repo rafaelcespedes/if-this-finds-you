@@ -409,36 +409,41 @@ textarea {
 html { scroll-padding-top: var(--site-head-clear); }
 /* a page's chip in the header (Share on the desk) gets the same 48 px target as the Menu chip beside it */
 [data-site-header] [data-site-action] [data-chip]::after { inset: -8px; }
-/* a place you can go answers a press with an underline (the place you're in isn't a link, so never) */
-[data-site-header] a[data-site-link]:active [data-site-words] { text-decoration: underline 1px currentColor; text-underline-offset: 3px; }
 
-/* ---------- the place you're in (SiteHeader's [aria-current]): quiet, no underline. ?navsel=1|2|3 to compare ----------
-   1 (default) its words in the look's red (--site-here: Rubric's vermilion; the Reading Room's archival red);
-   2 a soft tint of that red behind them (8 %, no edge, the controls' radius), the words in it;
-   3 the place you're in in full ink, the others (and My letters) quieter at 68 % (the least that keeps them at
-     4.5:1 on the room and the desk).
-   A letter's page marks All letters the same way (aria-current="true"). In forced colours the words are underlined. */
+/* ---------- the place you're in, and the places you can go (SiteHeader) ----------
+   Rafael, 4 Nov: "I like the light red fill", and no underline on hover. All in one shape: the place's own padding and
+   the controls' radius.
+   - The place you're in (and All letters on a letter's page): a light-red fill (--st-accent where the look defines
+     it, else the look's red at 8 %), its words in that red (--site-here: Rubric's vermilion; the Reading Room's
+     archival red). A letter's All letters is still a link: a press firms the fill and scales it.
+   - A place you can go, and My letters: a faint ink wash under the pointer (--st-hover), a firmer one pressed
+     (--st-press) with --st-scale. The same in the phone Menu's rows (their own row shape).
+   :root, not html, so these outrank a look's own colour for the places. In forced colours the place you're in is
+   underlined (below). */
 :root { --site-here: var(--mark); }
-html [data-site-header][data-navsel='1'] [data-site-link][aria-current],
-html [data-site-menu][data-navsel='1'] [data-site-link][aria-current],
-html [data-site-header][data-navsel='2'] [data-site-link][aria-current],
-html [data-site-menu][data-navsel='2'] [data-site-link][aria-current] {
-  color: var(--site-here);
-}
-html [data-site-header][data-navsel='2'] [data-site-link][aria-current] {
-  background: color-mix(in oklab, var(--site-here) 8%, transparent);
+:root [data-site-header] :is([data-site-link], [data-site-kept]) {
   border-radius: var(--radius);
+  transition: color 150ms ease-out, background-color var(--dur-press, 100ms) ease-out, scale var(--dur-press, 100ms) ease-out;
 }
-html [data-site-menu][data-navsel='2'] [data-site-link][aria-current] {
-  background: color-mix(in oklab, var(--site-here) 8%, transparent);
+:root [data-site-header] [data-site-link][aria-current],
+:root [data-site-menu] [data-site-link][aria-current] {
+  color: var(--site-here);
+  background: var(--st-accent, color-mix(in oklab, var(--site-here) 8%, transparent));
 }
-html [data-site-header][data-navsel='3'] :is([data-site-link]:not([aria-current]), [data-site-kept]),
-html [data-site-menu][data-navsel='3'] [data-site-link]:not([aria-current]) {
-  color: color-mix(in oklab, var(--foreground) 68%, transparent);
+:root [data-site-header] a[data-site-link][aria-current]:active {
+  background: var(--st-accent-press, color-mix(in oklab, var(--site-here) 16%, transparent));
+  scale: var(--st-scale, 0.97);
 }
-html [data-site-header][data-navsel='3'] [data-site-link][aria-current],
-html [data-site-menu][data-navsel='3'] [data-site-link][aria-current] {
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  :root [data-site-header] :is(a[data-site-link]:not([aria-current]), [data-site-kept]):hover {
+    background: var(--st-hover, color-mix(in oklab, var(--foreground) 6%, transparent));
+  }
+}
+:root [data-site-header] :is(a[data-site-link]:not([aria-current]), [data-site-kept]):is(:active, [data-state='open']) {
+  background: var(--st-press, color-mix(in oklab, var(--foreground) 11%, transparent));
+}
+:root [data-site-header] :is(a[data-site-link]:not([aria-current]), [data-site-kept]):active {
+  scale: var(--st-scale, 0.97);
 }
 @media (forced-colors: active) {
   [data-site-link][aria-current] [data-site-words] { text-decoration: underline; text-underline-offset: 4px; }
