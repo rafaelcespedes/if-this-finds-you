@@ -222,12 +222,18 @@ export function handInk(p) {
 // A pen's line has a real width, so scaling the writing must not scale the nib (controls-and-feel.md
 // §4.1 #3): width in font units = tip width (mm) / x-height (mm) × x-height (units).
 // Nominal line widths in mm for Fine / Medium / Bold (pointed: the hairline-to-swell base; italic: the
-// nib's edge).
+// nib's edge — everyday italic fountain-pen nibs, not calligraphy nibs).
 export const TIPS = ['fine', 'medium', 'bold'];
 const TIP_MM = {
   ballpoint: [0.26, 0.36, 0.5], gel: [0.32, 0.45, 0.62], fountain: [0.36, 0.5, 0.7], pointed: [0.38, 0.52, 0.72],
-  italic: [1.1, 1.5, 2.0], felt: [0.45, 0.75, 1.2], pencil: [0.35, 0.5, 0.75],
+  italic: [0.6, 0.9, 1.3], felt: [0.45, 0.75, 1.2], pencil: [0.35, 0.5, 0.75],
 };
+// A writer holding a wide pen writes the letters several pen widths tall; nobody writes letters
+// whose counters the nib would fill. So the width is held under a share of the x-height (for the
+// italic nib: x-height ≥ ~3.7 nib widths). A soft ceiling: widths well under it don't move, a
+// bold tip on small writing settles just below it, and Fine < Medium < Bold stays in order.
+const MAX_OF_XH = { italic: 0.27, felt: 0.32, pointed: 0.18, fountain: 0.32, gel: 0.32, pencil: 0.32, ballpoint: 0.2 };
+const ceilingSoft = (W, cap) => W / Math.pow(1 + Math.pow(W / cap, 4), 0.25);
 // The writer's natural x-height in mm (2.5–4.3), from the seed; p.size overrides it.
 export const handSize = (p) => +(2.5 + 1.8 * rng('size:' + p.seed)()).toFixed(2);
 export const sizeMM = (p) => (+p.size > 0 ? +p.size : handSize(p));
@@ -241,10 +247,11 @@ export function penWidthUnits(p, key = penKey(p)) {
   if (!spec) return p.penWidth;
   const xh = (p.xHeight || 0.5) * CAP_U;
   const t = p.tip, i = TIPS.indexOf(t);
-  if (typeof t === 'number' && t > 0) return t / sizeMM(p) * xh;
-  if (i >= 0) return TIP_MM[key][i] / sizeMM(p) * xh;
-  const W = key === 'ballpoint' ? clamp(p.penWidth * spec.wScale, 0.075 * xh, 0.12 * xh) : p.penWidth * spec.wScale;
-  return W * handSize(p) / sizeMM(p);
+  let W;
+  if (typeof t === 'number' && t > 0) W = t / sizeMM(p) * xh;
+  else if (i >= 0) W = TIP_MM[key][i] / sizeMM(p) * xh;
+  else W = (key === 'ballpoint' ? clamp(p.penWidth * spec.wScale, 0.075 * xh, 0.12 * xh) : p.penWidth * spec.wScale) * handSize(p) / sizeMM(p);
+  return ceilingSoft(W, (MAX_OF_XH[key] || 0.32) * xh);
 }
 
 // ---------- the stroke profile ----------
