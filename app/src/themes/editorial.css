@@ -37,23 +37,25 @@ html:root[data-layout] {
   --ed-rule-strong: color-mix(in oklab, var(--rr-ink) 72%, transparent);
   --ed-heavy: 2px;
 
-  /* the display scale (proposed): above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96
+  /* every --rr-display-* and --rr-figure-* below is read with this file's value as the fallback (--ed-…: var(--rr-…,
+     default)), so a type pairing that sets any of them wins, whatever order the sheets load in.
+     the display scale (proposed): above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96
      · 128 px), fluid between a phone and 1440. Face, weight and stretch follow the title role, so a pairing that sets
      --rr-title-face sets these too; a pairing can give display its own cut with --rr-display-face. */
-  --rr-display-face: var(--rr-title-face);
+  --ed-display-face: var(--rr-display-face, var(--rr-title-face));
   /* never heavier than the title role's own weight (a pairing's 400 stays 400) */
-  --rr-display-weight: min(var(--rr-title-weight, 480), 480);
-  --rr-display-stretch: var(--rr-title-stretch, 100%);
-  --rr-display-leading: 0.94;
-  --rr-display-tracking: -0.025em;
-  --rr-display-1: clamp(3.25rem, 1.6rem + 6.6vw, 8rem); /* the page's one title: About, All letters, a letter */
-  --rr-display-2: clamp(2.5rem, 1.5rem + 4vw, 6rem); /* a hero number, a big title beside a sheet */
-  --rr-display-3: clamp(2rem, 1.35rem + 2.6vw, 4rem); /* a section's title, a figure */
-  --rr-display-4: clamp(1.625rem, 1.25rem + 1.5vw, 2.75rem); /* a sub-title, a stat */
-  --rr-display-5: clamp(1.375rem, 1.2rem + 0.7vw, 1.9375rem); /* a lede, a row's title at size */
+  --ed-display-weight: var(--rr-display-weight, min(var(--rr-title-weight, 480), 480));
+  --ed-display-stretch: var(--rr-display-stretch, var(--rr-title-stretch, 100%));
+  --ed-display-leading: var(--rr-display-leading, 0.94);
+  --ed-display-tracking: var(--rr-display-tracking, -0.025em);
+  --ed-display-1: var(--rr-display-1, clamp(3.25rem, 1.6rem + 6.6vw, 8rem)); /* the page's one title: About, All letters, a letter */
+  --ed-display-2: var(--rr-display-2, clamp(2.5rem, 1.5rem + 4vw, 6rem)); /* a hero number, a big title beside a sheet */
+  --ed-display-3: var(--rr-display-3, clamp(2rem, 1.35rem + 2.6vw, 4rem)); /* a section's title, a figure */
+  --ed-display-4: var(--rr-display-4, clamp(1.625rem, 1.25rem + 1.5vw, 2.75rem)); /* a sub-title, a stat */
+  --ed-display-5: var(--rr-display-5, clamp(1.375rem, 1.2rem + 0.7vw, 1.9375rem)); /* a lede, a row's title at size */
   /* big figures: the number role's face at display size, lining and tabular */
-  --rr-figure-face: var(--rr-number-face);
-  --rr-figure-numeric: lining-nums tabular-nums;
+  --ed-figure-face: var(--rr-figure-face, var(--rr-number-face));
+  --ed-figure-numeric: var(--rr-figure-numeric, lining-nums tabular-nums);
   /* running heads, folios, column indices: the controls' sans, small */
   --ed-head-face: var(--rr-ui);
   --ed-head-size: 0.6875rem;
@@ -83,10 +85,10 @@ html:root[data-layout='editorial-2'] {
   --ed-head-case: none;
   --ed-head-size: 0.75rem;
   --ed-head-tracking: 0.01em;
-  --rr-figure-face: var(--rr-ui);
-  --rr-display-weight: min(var(--rr-title-weight, 440), 440);
-  --rr-display-tracking: -0.035em;
-  --rr-display-leading: 0.9;
+  --ed-figure-face: var(--rr-figure-face, var(--rr-ui));
+  --ed-display-weight: var(--rr-display-weight, min(var(--rr-title-weight, 440), 440));
+  --ed-display-tracking: var(--rr-display-tracking, -0.035em);
+  --ed-display-leading: var(--rr-display-leading, 0.9);
 }
 
 /* a running head's words: the small sans, tracked (caps in Broadsheet) */
@@ -234,8 +236,8 @@ html:root[data-layout] [data-site-header] :is([data-site-link], [data-site-kept]
   font-variant-caps: normal;
 }
 html:root[data-layout] [data-site-number] {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
 
@@ -268,13 +270,13 @@ html:root[data-layout='editorial-2'] [data-site-row] {
 /* the record, on any screen (the desk's column, the phone's slip under the sheet): the number as a figure, the
    title at display size, the facts as a ruled table under a heavy rule, the labels as running-head words */
 html:root[data-layout] .rr-ledger-record .rr-card-no {
-  font-family: var(--rr-figure-face);
-  font-size: var(--rr-display-2);
+  font-family: var(--ed-figure-face);
+  font-size: var(--ed-display-2);
   font-weight: 400;
   line-height: 0.8;
   letter-spacing: -0.03em;
   font-variant-caps: normal;
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-variant-numeric: var(--ed-figure-numeric);
   color: var(--rr-red);
 }
 html:root[data-layout] .rr-ledger-record .rr-card-no .rr-sc {
@@ -294,10 +296,10 @@ html:root[data-layout] .rr-ledger-record .rr-ledger-head {
 html:root[data-layout] .rr-ledger-record .rr-card-title {
   --rr-title-leading: 1;
   margin: 1rem 0 1.25rem;
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-4);
-  font-weight: var(--rr-display-weight);
-  font-stretch: var(--rr-display-stretch);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-4);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
   letter-spacing: -0.02em;
 }
 html:root[data-layout] .rr-ledger-record .rr-fact {
@@ -426,12 +428,12 @@ html:root[data-layout] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-la
   line-height: 1.3;
 }
 html:root[data-layout] .sp .sp-title {
-  font-family: var(--rr-display-face);
-  font-weight: var(--rr-display-weight);
-  font-stretch: var(--rr-display-stretch);
-  letter-spacing: var(--rr-display-tracking);
-  line-height: var(--rr-display-leading);
-  font-size: var(--rr-display-4);
+  font-family: var(--ed-display-face);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
+  font-size: var(--ed-display-4);
   margin-top: 0.75rem;
 }
 html:root[data-layout] .sp .sp-quiet button {
@@ -470,15 +472,15 @@ html:root[data-layout] .sp :is(.sp-notes, .sp-cite, .sp-next, .sp-actions) {
   border-top-color: var(--ed-rule-strong);
 }
 html:root[data-layout] .sp .sp-next-title {
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-5);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-5);
   letter-spacing: -0.015em;
   line-height: 1.05;
 }
 html:root[data-layout] .sp .sp-no,
 html:root[data-layout] .sp .sp-note-no {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
 @media (min-width: 64em) {
@@ -487,7 +489,7 @@ html:root[data-layout] .sp .sp-note-no {
     padding-inline: var(--ed-margin);
   }
   html:root[data-layout] .sp .sp-title {
-    font-size: var(--rr-display-3);
+    font-size: var(--ed-display-3);
   }
 }
 
@@ -555,7 +557,7 @@ html:root[data-layout='editorial-2'] .sp .sp-title {
     grid-column: 1 / span 4;
   }
   html:root[data-layout='editorial-2'] .sp .sp-title {
-    font-size: var(--rr-display-1);
+    font-size: var(--ed-display-1);
     margin-top: 1.25rem;
     max-width: 14ch;
   }
@@ -599,16 +601,16 @@ html:root[data-layout] .lib-main h1 > .sr-only {
   clip-path: none;
   white-space: normal;
   display: block;
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-1);
-  font-weight: var(--rr-display-weight);
-  font-stretch: var(--rr-display-stretch);
-  letter-spacing: var(--rr-display-tracking);
-  line-height: var(--rr-display-leading);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-1);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
 }
 html:root[data-layout] .lib-main > section > p:not(.rr-aid) {
   margin-top: 1.5rem;
-  font-size: var(--rr-display-5);
+  font-size: var(--ed-display-5);
   line-height: 1.25;
   color: var(--rr-ink);
   max-width: 30ch;
@@ -656,15 +658,15 @@ html:root[data-layout] .fa .fa-rows > li {
   border-bottom-color: var(--ed-rule);
 }
 html:root[data-layout] .fa .fa-no {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
 html:root[data-layout] .fa .fa-year {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
-  font-size: var(--rr-display-5);
+  font-size: var(--ed-display-5);
   line-height: 1;
 }
 html:root[data-layout] .fa .fa-title {
@@ -693,6 +695,7 @@ html:root[data-layout='editorial-1'] .lib-main > section::after {
   background: var(--ed-ink);
 }
 html:root[data-layout='editorial-1'] .fa .fa-head {
+  font-stretch: var(--ed-display-stretch);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -700,8 +703,8 @@ html:root[data-layout='editorial-1'] .fa .fa-head {
   padding: 0.625rem 0 0.5rem;
   border-top: var(--ed-heavy) solid var(--ed-ink);
   border-bottom: 1px solid var(--ed-ink);
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-5);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-5);
   font-variant-caps: normal;
   letter-spacing: -0.01em;
   text-transform: none;
@@ -750,11 +753,12 @@ html:root[data-layout='editorial-1'] .fa .fa-head::after {
     top: calc(var(--site-head-clear) + 1rem);
     display: block;
     margin: 0;
-    font-family: var(--rr-display-face);
-    font-size: var(--rr-display-3);
-    font-weight: var(--rr-display-weight);
-    letter-spacing: var(--rr-display-tracking);
-    line-height: var(--rr-display-leading);
+    font-stretch: var(--ed-display-stretch);
+    font-family: var(--ed-display-face);
+    font-size: var(--ed-display-3);
+    font-weight: var(--ed-display-weight);
+    letter-spacing: var(--ed-display-tracking);
+    line-height: var(--ed-display-leading);
     font-variant-caps: normal;
     text-transform: none;
   }
@@ -787,16 +791,16 @@ html:root[data-layout] .about-main {
   padding-inline: var(--ed-margin);
 }
 html:root[data-layout] .about-title {
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-1);
-  font-weight: var(--rr-display-weight);
-  font-stretch: var(--rr-display-stretch);
-  letter-spacing: var(--rr-display-tracking);
-  line-height: var(--rr-display-leading);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-1);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
   text-wrap: balance;
 }
 html:root[data-layout] .about-lede {
-  font-size: var(--rr-display-5);
+  font-size: var(--ed-display-5);
   line-height: 1.25;
   color: var(--rr-ink);
 }
@@ -805,15 +809,15 @@ html:root[data-layout] .about-line {
   border-radius: 0;
 }
 html:root[data-layout] .about-facts dd {
-  font-family: var(--rr-figure-face);
+  font-family: var(--ed-figure-face);
   font-size: clamp(1.625rem, 1.2rem + 0.9vw, 2.125rem);
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-variant-numeric: var(--ed-figure-numeric);
   letter-spacing: -0.02em;
   line-height: 1;
 }
 html:root[data-layout] .about-section-no {
-  font-family: var(--rr-figure-face);
-  font-variant-numeric: var(--rr-figure-numeric);
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
   color: var(--rr-red);
 }
 @media (min-width: 56rem) {
@@ -864,8 +868,9 @@ html:root[data-layout='editorial-1'] .about-section {
   border-top: var(--ed-heavy) solid var(--ed-ink);
 }
 html:root[data-layout='editorial-1'] .about-section-no {
-  font-family: var(--rr-display-face);
-  font-size: var(--rr-display-3);
+  font-stretch: var(--ed-display-stretch);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-3);
   line-height: 0.9;
 }
 html:root[data-layout='editorial-1'] .about-facts > div {
@@ -901,7 +906,7 @@ html:root[data-layout='editorial-2'] .about-section {
   border-top: 1px solid var(--ed-ink);
 }
 html:root[data-layout='editorial-2'] .about-section-no {
-  font-size: var(--rr-display-2);
+  font-size: var(--ed-display-2);
   line-height: 0.85;
   letter-spacing: -0.04em;
 }
@@ -953,10 +958,10 @@ html:root[data-layout] .sp .sp-head {
     margin: 0 0 0.25rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--ed-ink);
-    font-family: var(--rr-display-face);
-    font-size: var(--rr-display-4);
-    font-weight: var(--rr-display-weight);
-    letter-spacing: var(--rr-display-tracking);
+    font-family: var(--ed-display-face);
+    font-size: var(--ed-display-4);
+    font-weight: var(--ed-display-weight);
+    letter-spacing: var(--ed-display-tracking);
     line-height: 1;
     font-variant-caps: normal;
     text-transform: none;
