@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { cardAspect } from './card-protocol';
 import { cardKey, cards, cardSize } from './cards';
 import { cardLetter } from './Card';
-import { circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
+import { capFirst, circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
 import type { ArchiveLetter } from './model';
 // the look in use: the Reading Room lays the letters on a table (no numbers on the sheets: the list has them)
 import { LOOK } from '@/lib/look';
@@ -221,7 +221,7 @@ interface Props {
 const MARGIN = 280;
 
 // ---------- where you are on the table: the running head's middle (SiteHeader's `centre`) ----------
-// The decade of the letter nearest the middle of the screen and a few of that decade's places near it ("the 1790s ·
+// The decade of the letter nearest the middle of the screen and a few of that decade's places near it ("The 1790s ·
 // Cairo, Madrid, Westminster"); nothing while the heading is nearest. Kept in a tiny store so only the readout
 // re-renders as you drag, and only when the words change.
 let readoutNow = '';
@@ -246,7 +246,7 @@ function readoutOf(near: { it: Placed; d: number }[]) {
     if (place && !places.includes(place)) places.push(place);
     if (places.length === 3) break;
   }
-  return `the ${decade}s${places.length ? ` · ${places.join(', ')}` : ''}`;
+  return `The ${decade}s${places.length ? ` · ${places.join(', ')}` : ''}`;
 }
 
 /** The Reading Room lays the letters on a table (layTable); the other looks scatter them (layField). */
@@ -595,7 +595,7 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
  * ("Mount Rest, Clay-Ashland, Liberia" → "Mount Rest, Liberia"; "Béxar (San Antonio), Mexican Texas" → "Béxar, Mexican Texas"). */
 function labelPlace(place: string | undefined) {
   const parts = (place ?? '').replace(/\s*\([^)]*\)/g, '').split(/,\s*/).filter(Boolean);
-  return parts.length > 2 ? `${parts[0]}, ${parts[parts.length - 1]}` : parts.join(', ');
+  return capFirst(parts.length > 2 ? `${parts[0]}, ${parts[parts.length - 1]}` : parts.join(', '));
 }
 
 /**
