@@ -39,7 +39,9 @@ The first render downloads Remotion's headless browser (~140 MB). Drafts render 
 | `src/scene/endcard.ts` | The end card: the title written again where it began, then the stamped lines. |
 | `src/Promo.tsx`, `src/Root.tsx` | The Remotion composition and its settings panel (zod schema). |
 | `scripts/sample-hands.mjs` | Picks the flip's hands with the engine's sampler (`npm run hands`). |
-| `scripts/sound.ts`, `sound.mjs` | The sound, made from the same clock and pen strokes as the pictures: taps on the cuts, a press on the stop, air on the pull back, the nib along every stroke, taps on the letter changes. `sound.mjs` bundles it with the scene's code (esbuild) and writes `public/sound.wav`. |
+| `scripts/sound.ts` | The sound, made from the same clock and pen strokes as the pictures: taps on the cuts, a press on the stop, air on the pull back, the nib along every stroke, taps on the letter changes. Writes `public/sound.wav`. |
+| `scripts/node-ts.mjs` | Bundles a script with the scene's code (esbuild, the same `@engine` and `@` aliases) and runs it: `node scripts/node-ts.mjs scripts/sound.ts`. |
+| `scripts/specimens.ts`, `src/Specimen.tsx`, `src/scene/specimen.ts`, `review/thread.mjs` | The launch thread's favourites: 120 hands from the site's sampler (neat only, as the Fonts page draws them) with their seeds and "Write with it" links (`src/data/specimens.json`), each writing the pangram on its paper in its ink (`npm run specimens`, 800 × 450 into `out/specimens/`), and the page to pick from (`node review/thread.mjs` → `out/thread/`). |
 | `src/scene/type.ts` | The video's own type by role: the site's Newsreader + Schibsted Grotesk (default) or the earlier Junicode. |
 | `scripts/click.mjs` | A click track for the tempo (the timing version). |
 | `review/build.mjs` | Builds the private review page from the same timing code. |

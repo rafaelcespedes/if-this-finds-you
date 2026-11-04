@@ -33,8 +33,8 @@ export function styleOf(look: Look, o: { ownInk: boolean; ownPaper: boolean }): 
   };
 }
 
-const NUM = 52; // the number's size at 1080 px
-const PAD_X = 20;
+const NUM = 47; // the number's size at 1080 px
+const PAD_X = 18;
 
 interface CounterMetrics { pitch: number; numW: number; zeroL: number; label: number; labelH: number; numH: number }
 const metricsCache = new Map<string, CounterMetrics>();
@@ -102,7 +102,7 @@ export function drawCounter(ctx: CanvasRenderingContext2D, S: number, count: num
   (ctx as any).letterSpacing = `${L.tracking * M.label}px`;
   const lm = ctx.measureText(labelText());
   // the label over the number, the pair centred in the plate (the same room above as below)
-  const gap = 11 * k;
+  const gap = 10 * k;
   const top = g.plate.y + (g.plate.h - (M.labelH + gap + M.numH)) / 2;
   const labelBase = top + M.labelH, numBase = labelBase + gap + M.numH;
   ctx.fillText(labelText(), x0 + lm.actualBoundingBoxLeft, labelBase);

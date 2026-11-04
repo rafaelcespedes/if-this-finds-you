@@ -32,9 +32,9 @@ export interface Geometry {
 // and descriptor at the bottom, with the same gap above the phrase (plate to the tallest letters) as below it (the
 // deepest letters to the name). Measured at 1080 px, scaled to the frame.
 const STACK = {
-  top: 64, // plate's top edge
-  plate: 104, // plate's height
-  bottom: 72, // descriptor's baseline, from the bottom edge
+  top: 52, // plate's top edge, from the top edge
+  plate: 94, // plate's height
+  bottom: 52, // descriptor's baseline, from the bottom edge (the same margin as the plate's at the top)
   xh: 0.104, // reference x-height, share of the frame
   lines: 2.45, // baseline to baseline, x-heights
   asc: 1.85, // the tallest letters above the first baseline, x-heights (nominal)

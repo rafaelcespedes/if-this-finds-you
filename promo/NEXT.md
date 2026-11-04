@@ -41,7 +41,14 @@
 - "HAND NO." in capitals (Schibsted has no small capitals), as wide as the number, the pair centred in a 104 px plate.
 - Sound made from the handwriting (scripts/sound.ts): taps, press, air, nib scratches, change taps.
 
+## Done in draft 8 (4 Nov)
+- The counter 10% smaller (number 47 px at 1080, plate 94 px) and higher: the plate starts 52 px from the top, and the
+  descriptor's baseline (and the letter's credit) sits 52 px from the bottom, the same margin. The phrase stays put.
+- For the thread: 120 hands writing "The quick brown fox jumps over the lazy dog", each with its seed and a link that
+  opens the tool writing it in that exact hand (a private page with hearts and Copy picks).
+
 ## Open
+- Rafael picks the thread's hands; render the chosen ones large (size and format to decide: 1600 × 900, or square?).
 - Sound alone, or a licensed track under it?
 - The final renders (1080, 30 fps for X; 60 fps for Instagram?).
 - The plate on frame 1 makes the loop not exact (the end card has none): drop it from frame 1?

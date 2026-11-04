@@ -70,7 +70,7 @@ const beatTable = P30.sections.map((s) => `<tr><td>${s.label}</td><td>${bars(s)}
 
 const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Launch video, draft 7</title>
+<title>Launch video, draft 8</title>
 <style>
 @font-face { font-family: 'Newsreader'; font-style: normal; font-weight: 200 800; src: url(data:font/woff2;base64,${font('newsreader-latin-roman.woff2')}) format('woff2'); }
 @font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 200 800; src: url(data:font/woff2;base64,${font('newsreader-latin-italic.woff2')}) format('woff2'); }
@@ -129,7 +129,7 @@ a { color: var(--red); }
 <body><main>
 <header class="lede">
   <p class="caps">If This Finds You · launch video</p>
-  <h1>Launch video, draft 7</h1>
+  <h1>Launch video, draft 8</h1>
   <p>A square video for X and Instagram, drawn frame by frame by the site’s own engine: every hand in it is generated, and Maybelle’s letter is written out by the same code the site uses. No music yet; the cuts sit on a 112.5 BPM grid so any track at that tempo drops in.</p>
   <p><b>Changed since draft 6:</b> sound, made from the handwriting itself (below); “HAND NO.” in capitals, as wide as the number, the pair centred in a slightly taller plate so there’s more room above it.</p>
   <p class="specs"><span><b>${P30.seconds.toFixed(1)}</b> seconds</span><span><b>1080 × 1080</b></span><span><b>112.5</b> BPM, a two-beat lead-in and <b>12</b> bars</span><span><b>${P30.handsShown}</b> hands in the flip, <b>${canvasWriters.toLocaleString('en')}</b> on the canvas</span></p>
