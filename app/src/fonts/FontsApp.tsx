@@ -27,7 +27,7 @@ import type { FontEntry, LiveSpec } from './protocol';
 import { defaultSize, FALLBACK_TEXT, LINES, newSetSeed, readRoute, routeSearch, SET_COUNT, type FontsRoute, type Line } from './route';
 import { fonts, useCatalogue, useSet } from './store';
 
-function useRoute() {
+export function useRoute() {
   const [route, setRoute] = useState<FontsRoute>(() => {
     const r = readRoute(location.search);
     if (!r.set) {
@@ -52,7 +52,7 @@ function useRoute() {
 }
 
 /** A value that follows another once it has stopped changing for a moment (typing, resizing). */
-function useSettled<T>(value: T, ms: number) {
+export function useSettled<T>(value: T, ms: number) {
   const [v, setV] = useState(value);
   useEffect(() => {
     const t = window.setTimeout(() => setV(value), ms);
@@ -62,7 +62,7 @@ function useSettled<T>(value: T, ms: number) {
 }
 
 /** px per rem: the root's font size, which the reader's text size scales (read again on resize). */
-function useRootRem() {
+export function useRootRem() {
   const read = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
   const [rem, setRem] = useState(read);
   useEffect(() => {
@@ -73,7 +73,7 @@ function useRootRem() {
   return rem;
 }
 
-function useViewportWidth() {
+export function useViewportWidth() {
   const [w, setW] = useState(() => document.documentElement.clientWidth || innerWidth);
   useEffect(() => {
     const on = () => setW(document.documentElement.clientWidth || innerWidth);
@@ -84,7 +84,7 @@ function useViewportWidth() {
 }
 
 /** The screen's pixel density (capped at 3), kept up to date when it changes (another screen, browser zoom). */
-function useDevicePixelRatio() {
+export function useDevicePixelRatio() {
   const read = () => Math.min(3, Math.max(1, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1));
   const [dpr, setDpr] = useState(read);
   useEffect(() => {
@@ -98,8 +98,8 @@ function useDevicePixelRatio() {
 }
 
 // the pitch and the longer intro: docs/brand/naming-and-copy.md §2.11 (Rafael's approved copy)
-const INTRO = 'Every hand here is a font you can keep. Free and open source.';
-const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font keeps four or five versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
+export const INTRO = 'Every hand here is a font you can keep. Free and open source.';
+export const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font keeps four or five versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
 
 export function FontsApp() {
   const [route, update] = useRoute();

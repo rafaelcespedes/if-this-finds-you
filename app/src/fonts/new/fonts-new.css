@@ -1,0 +1,779 @@
+/* The redesigned Fonts page (FontsNew.tsx), behind ?fonts=new: everything here is scoped to html[data-fonts='new'],
+   so the page that's live today is untouched. On top of index.css and the Reading Room's tokens (reading-room.css):
+   colours, rules and states come from --rr-* and --st-*; this file only sets the page's type scale, its layout and
+   its night colours (?theme=dark). docs/research/fonts-redesign.md has the reasoning.
+
+   Type: two faces, two jobs (the room's --rr-book and --rr-ui).
+     Junicode 2 (the archive's words): the page title, the writers' names, the intro and the letter's credit
+     Source Sans 3 (everything you operate or scan): controls, labels, the few words about each hand, in sentence case
+   The handwriting is the third voice and always the biggest: the hero at poster size, the rows at the tester's size. */
+
+/* ---------- tokens ---------- */
+html[data-fonts='new'] {
+  /* Source Sans 3 for the controls and every label, sentence case, no small capitals: the room's own --rr-ui and
+     label tokens (reading-room.css, since 3588909); this page only names them */
+  --fx-ui: var(--rr-ui, system-ui, sans-serif);
+  --fx-book: var(--rr-book, Georgia, serif);
+  --fx-ink: var(--rr-ink, var(--ink));
+  --fx-muted: var(--rr-muted, var(--text-muted));
+  --fx-faint: var(--rr-faint, var(--text-faint));
+  --fx-red: var(--rr-red, var(--mark));
+  --fx-red-deep: var(--rr-red-deep, var(--mark));
+  --fx-on-red: var(--rr-slip, #fff);
+  --fx-rule: var(--rr-rule, var(--hairline));
+  --fx-hair: var(--rr-hair, var(--hairline));
+  --fx-ground: var(--background);
+
+  /* the page's margins: the header's own (16, 32, 40 px); no 1440 cap, the writing may run to 1920 */
+  --fx-margin: 1rem;
+  --fx-max: 120rem;
+  /* the register's name column on wide lists */
+  --fx-who: 15rem;
+  --fx-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  /* a hand writing: steady, settling at the end */
+  --fx-write-ease: cubic-bezier(0.33, 0.45, 0.35, 1);
+}
+@media (min-width: 40rem) {
+  html[data-fonts='new'] { --fx-margin: 2rem; }
+}
+@media (min-width: 64rem) {
+  html[data-fonts='new'] { --fx-margin: 2.5rem; }
+}
+
+/* ---------- night: the same room with the lamps on (?theme=dark) ----------
+   Warm blue-black, the ledger's ink turned to paper white; every text colour is AA on the room and on the slips. The
+   rules, washes and chosen faces follow from the room's own formulas (reading-room.css), which read these values */
+html[data-fonts='new'][data-theme='dark'],
+html[data-fonts='new'][data-theme='dark'][data-look='reading-room'] {
+  --rr-room: #14171c;
+  --rr-card: #1b1f26;
+  --rr-slip: #20252d;
+  --rr-ink: #ebe7de; /* 15.6:1 on the room */
+  --rr-red: #eb8f78; /* 7.4:1 on the room: Download, New set, numbers */
+  --rr-red-deep: #f6b3a2;
+  --rr-muted: #b3ad9f; /* 8.6:1 */
+  --rr-faint: #9a9488; /* 6.2:1 */
+  --rr-edge: #313741;
+  --rc-ctl-on: #2b313a;
+  --rc-ctl-edge: color-mix(in oklab, var(--rr-ink) 26%, transparent);
+  --rc-ctl-hover: color-mix(in oklab, var(--rr-ink) 8%, transparent);
+  --rc-ctl-press: color-mix(in oklab, var(--rr-ink) 14%, transparent);
+  --rc-track: #8b867c;
+  --rc-track-soft: #3a4048;
+  --ink-soft: #d6d1c6;
+  --ink-press: #ffffff;
+  --input: #444a54;
+  --primary-foreground: #14171c;
+  --rule-link: color-mix(in oklab, var(--rr-ink) 34%, transparent);
+  --rr-rule: color-mix(in oklab, var(--rr-ink) 13%, transparent);
+  --rr-hair: color-mix(in oklab, var(--rr-ink) 18%, transparent);
+  --fx-on-red: #14171c;
+  --sheet-shadow: none;
+  --lib-surface-shadow: 0 0 0 1px var(--rr-edge), 0 10px 24px -14px rgba(0, 0, 0, 0.6);
+  --lib-menu-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 34px -14px rgba(0, 0, 0, 0.7);
+  background: #14171c;
+  color-scheme: dark;
+}
+html[data-fonts='new'][data-theme='dark'] body {
+  background: var(--background);
+  color: var(--foreground);
+}
+/* the popovers and sheets lift off the night room by a lighter slip and a deeper shadow */
+html[data-fonts='new'][data-theme='dark'] :is([data-radix-popper-content-wrapper] > *, .sheet-surface) {
+  box-shadow: 0 0 0 1px var(--rr-edge), 0 18px 44px -16px rgba(0, 0, 0, 0.75);
+}
+
+/* ---------- every clickable thing shows the hand ---------- */
+html[data-fonts='new'] :is(button, a[href], [role='button'], [role='radio'], [role='checkbox'], [role='switch'], [role='menuitem'], [role='menuitemradio'], [role='slider'], summary, select, label:has(> input[type='checkbox'])):not(:disabled, [aria-disabled='true']) {
+  cursor: pointer;
+}
+
+/* ---------- the page ---------- */
+html[data-fonts='new'] .fx-page {
+  min-height: 100dvh;
+  background: var(--fx-ground);
+  color: var(--fx-ink);
+}
+html[data-fonts='new'] .fx-main {
+  width: 100%;
+  max-width: var(--fx-max);
+  margin-inline: auto;
+  padding: 0 max(var(--fx-margin), env(safe-area-inset-right, 0px)) 10rem max(var(--fx-margin), env(safe-area-inset-left, 0px));
+  overflow-x: clip;
+}
+@media (min-width: 64rem) {
+  html[data-fonts='new'] .fx-main { padding-bottom: 6rem; }
+}
+
+/* the intro: the page's name and its one sentence, quiet beside the writing under it; light or dark at the right */
+html[data-fonts='new'] .fx-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: calc(var(--site-head-clear) + 1.75rem);
+}
+@media (min-width: 64rem) {
+  html[data-fonts='new'] .fx-intro { padding-top: calc(var(--site-head-clear) + 2.75rem); }
+}
+html[data-fonts='new'] .fx-intro-words {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+html[data-fonts='new'] .fx-title {
+  margin: 0;
+  font-family: var(--fx-book);
+  font-size: 2.125rem;
+  font-weight: 540;
+  font-stretch: 112%;
+  line-height: 1.05;
+  letter-spacing: -0.012em;
+  color: var(--fx-ink);
+}
+html[data-fonts='new'] .fx-lede {
+  margin: 0;
+  max-width: 34rem;
+  font-family: var(--fx-book);
+  font-size: 1.0625rem;
+  line-height: 1.45;
+  color: var(--fx-muted);
+  text-wrap: pretty;
+}
+@media (min-width: 64rem) {
+  html[data-fonts='new'] .fx-title { font-size: 2.75rem; }
+  html[data-fonts='new'] .fx-lede { font-size: 1.1875rem; }
+}
+html[data-fonts='new'] .fx-theme {
+  flex: none;
+  margin: -0.25rem -0.5rem 0 0;
+}
+
+/* ---------- a line of handwriting, set in the hand's own font ---------- */
+html[data-fonts='new'] .fx-specimen {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  /* the font's line box (Specimen.tsx LINE) */
+  line-height: 1.42;
+  color: var(--fx-ink);
+}
+/* one line runs off the right edge and fades; several wrap, and the last fades where the words run on */
+html[data-fonts='new'] .fx-specimen.is-single {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 5rem), transparent);
+}
+html[data-fonts='new'] .fx-specimen.is-multi {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem), transparent);
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+html[data-fonts='new'] .fx-line {
+  margin: 0;
+  padding-left: 0.04em;
+  white-space: nowrap;
+  font-kerning: normal;
+  font-feature-settings: 'calt' 1, 'kern' 1;
+  font-variant-ligatures: contextual;
+  font-synthesis: none;
+  letter-spacing: normal;
+  word-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+html[data-fonts='new'] .fx-specimen.is-multi .fx-line {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+html[data-fonts='new'] .fx-failed {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  font-family: var(--fx-ui);
+  font-size: 0.875rem;
+  color: var(--fx-faint);
+}
+/* waiting: the line's space already there, faintly ruled where the writing will sit (a breath, not a spinner) */
+html[data-fonts='new'] .fx-rules {
+  position: absolute;
+  inset: 0 0 0 0.04em;
+  background-image: linear-gradient(to bottom, transparent calc(1.06em - 1px), var(--fx-hair) calc(1.06em - 1px), var(--fx-hair) 1.06em, transparent 1.06em);
+  background-size: 100% 1.42em;
+  background-repeat: repeat-y;
+  animation: fx-breathe 1.8s ease-in-out infinite;
+}
+@keyframes fx-breathe {
+  50% { opacity: 0.35; }
+}
+/* written in, left to right, at a writing pace: a soft-edged mask sweeps across, the first time a line arrives */
+@keyframes fx-write {
+  from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  to { -webkit-mask-position: 0 0; mask-position: 0 0; }
+}
+html[data-fonts='new'] :is(.fx-write, .fx-write-hero) {
+  -webkit-mask-image: linear-gradient(to right, #000 45%, transparent 55%);
+  mask-image: linear-gradient(to right, #000 45%, transparent 55%);
+  -webkit-mask-size: 220% 100%;
+  mask-size: 220% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: fx-write 900ms var(--fx-write-ease) both;
+}
+html[data-fonts='new'] .fx-write-hero {
+  animation-duration: 1600ms;
+}
+/* under a resting pointer, the line is written again over a faint trace of itself (Row.tsx), so it never vanishes */
+html[data-fonts='new'] .fx-rewrite {
+  -webkit-mask-image: linear-gradient(to right, #000 45%, rgba(0, 0, 0, 0.16) 55%);
+  mask-image: linear-gradient(to right, #000 45%, rgba(0, 0, 0, 0.16) 55%);
+  -webkit-mask-size: 220% 100%;
+  mask-size: 220% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: fx-write 1100ms var(--fx-write-ease) both;
+}
+@keyframes fx-appear {
+  from { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-fonts='new'] .fx-rewrite { -webkit-mask-image: none; mask-image: none; animation: none; }
+  html[data-fonts='new'] :is(.fx-write, .fx-write-hero) {
+    -webkit-mask-image: none;
+    mask-image: none;
+    animation: fx-appear 200ms ease-out both;
+  }
+  html[data-fonts='new'] .fx-rules { animation: none; }
+}
+html[data-fonts='new'] .fx-skeleton {
+  display: block;
+  height: 0.75em;
+  border-radius: 2px;
+  background: var(--fx-rule);
+}
+html[data-fonts='new'] .fx-skeleton-name { width: 9rem; margin-block: 0.35em; }
+html[data-fonts='new'] .fx-skeleton-meta { width: 14rem; height: 0.6em; margin-top: 0.6rem; }
+
+/* ---------- the shared words ---------- */
+html[data-fonts='new'] .fx-meta {
+  margin: 0;
+  font-family: var(--fx-ui);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--fx-muted);
+}
+html[data-fonts='new'] .fx-near {
+  color: var(--fx-faint);
+  font-style: italic;
+}
+/* a link inside words: never underlined under the pointer (the wash instead); a soft underline marks it at rest */
+html[data-fonts='new'] .fx-quiet-link {
+  color: inherit;
+  text-decoration: underline 1px var(--st-line, var(--rule-link));
+  text-underline-offset: 3px;
+  border-radius: 2px;
+  transition: background-color var(--st-dur, 150ms) var(--fx-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'] .fx-quiet-link:hover { background: var(--st-hover); }
+}
+html[data-fonts='new'] .fx-quiet-link:active { background: var(--st-press); }
+html[data-fonts='new'] button.fx-quiet-link {
+  padding: 0;
+  font: inherit;
+}
+/* the name opens the hand's record; it carries the whole row as its target (an invisible layer over the row) */
+html[data-fonts='new'] .fx-open {
+  border-radius: 2px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+html[data-fonts='new'] .fx-open:focus-visible {
+  outline: none;
+}
+
+/* ---------- the buttons: one filled (Download), red words (New set), quiet words and icons ---------- */
+html[data-fonts='new'][data-look] .fx-download.fx-download,
+html[data-fonts='new'][data-look] .font-record .record-actions .dock-primary.dock-primary.dock-primary {
+  height: 2.75rem;
+  padding-inline: 1.125rem 1.25rem;
+  border-radius: 999px;
+  background: var(--fx-red);
+  color: var(--fx-on-red);
+  box-shadow: none;
+  text-decoration: none;
+  font-family: var(--fx-ui);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'][data-look] .fx-download.fx-download:hover,
+  html[data-fonts='new'][data-look] .font-record .record-actions .dock-primary.dock-primary.dock-primary:hover {
+    background: var(--fx-red-deep);
+    color: var(--fx-on-red);
+    text-decoration: none;
+  }
+}
+html[data-fonts='new'][data-look] .fx-download.fx-download:active,
+html[data-fonts='new'][data-look] .font-record .record-actions .dock-primary.dock-primary.dock-primary:active {
+  background: var(--fx-red-deep);
+  color: var(--fx-on-red);
+  scale: var(--st-scale, 0.97);
+}
+html[data-fonts='new'][data-look] :is(.fx-quiet, .fx-newset, .fx-done, .fx-more, .fx-tool-btn):is([class]) {
+  font-family: var(--fx-ui);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+html[data-fonts='new'] .fx-quiet {
+  color: var(--fx-muted);
+  background: transparent;
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'] .fx-quiet:hover {
+    color: var(--fx-ink);
+    background: var(--st-hover);
+  }
+}
+html[data-fonts='new'] .fx-quiet:active { background: var(--st-press); }
+html[data-fonts='new'] .fx-quiet[aria-pressed='true'] { color: var(--fx-ink); }
+html[data-fonts='new'] .fx-save[aria-pressed='true'] { color: var(--fx-red); }
+html[data-fonts='new'] .fx-newset {
+  color: var(--fx-red);
+  background: transparent;
+  box-shadow: none;
+  font-weight: 600;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'] .fx-newset:hover { color: var(--fx-red-deep); background: var(--st-accent-hover); }
+}
+html[data-fonts='new'] .fx-newset:active { color: var(--fx-red-deep); background: var(--st-accent-press); }
+html[data-fonts='new'] .fx-done {
+  background: var(--fx-ink);
+  color: var(--fx-ground);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'] .fx-done:hover { background: var(--ink-soft); }
+}
+html[data-fonts='new'] :is(.fx-tool-btn, .fx-more) {
+  border: 1px solid var(--rc-ctl-edge, var(--border));
+  background: transparent;
+  color: var(--fx-ink);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'] :is(.fx-tool-btn, .fx-more):hover { background: var(--st-hover); }
+}
+html[data-fonts='new'] :is(.fx-tool-btn, .fx-more):active,
+html[data-fonts='new'] .fx-tool-btn.is-open { background: var(--st-press); }
+html[data-fonts='new'] .fx-count {
+  display: inline-grid;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  padding-inline: 0.3rem;
+  border-radius: 999px;
+  background: var(--fx-red);
+  color: var(--fx-on-red);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- the hero: one hand at poster size ---------- */
+html[data-fonts='new'] .fx-hero {
+  margin-top: 1.5rem;
+}
+@media (min-width: 64rem) {
+  html[data-fonts='new'] .fx-hero { margin-top: 2.25rem; }
+}
+html[data-fonts='new'] .fx-hero > .fx-specimen {
+  /* the writing's own left edge sits a hair left of the words under it, as a pen's first stroke does */
+  margin-left: -0.04em;
+}
+html[data-fonts='new'] .fx-hero-caption {
+  display: grid;
+  gap: 1rem 2rem;
+  margin-top: 1rem;
+  padding-top: 1.125rem;
+  border-top: 1px solid var(--fx-rule);
+}
+@media (min-width: 48rem) {
+  html[data-fonts='new'] .fx-hero-caption {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+}
+html[data-fonts='new'] .fx-hero-who {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+html[data-fonts='new'] .fx-hero-name {
+  margin: 0;
+  font-family: var(--fx-book);
+  font-size: 1.5rem;
+  font-weight: 500;
+  font-stretch: 106%;
+  line-height: 1.15;
+  color: var(--fx-ink);
+}
+@media (min-width: 64rem) {
+  html[data-fonts='new'] .fx-hero-name { font-size: 1.75rem; }
+}
+html[data-fonts='new'] .fx-hero-who .fx-meta { font-size: 0.9375rem; }
+html[data-fonts='new'] .fx-credit {
+  margin: 0.25rem 0 0;
+  font-family: var(--fx-book);
+  font-size: 0.9375rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--fx-faint);
+}
+html[data-fonts='new'] .fx-hero-name .fx-open {
+  margin-inline: -0.25rem;
+  padding-inline: 0.25rem;
+  transition: background-color var(--st-dur, 150ms) var(--fx-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'] .fx-hero-name .fx-open:hover { background: var(--st-hover); }
+}
+html[data-fonts='new'] .fx-hero-name .fx-open:active { background: var(--st-press); }
+html[data-fonts='new'] .fx-hero-name .fx-open:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+html[data-fonts='new'] .fx-hero-act {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+@media (min-width: 48rem) {
+  html[data-fonts='new'] .fx-hero-act { justify-items: end; }
+}
+html[data-fonts='new'] .fx-promise {
+  margin: 0;
+  font-family: var(--fx-ui);
+  font-size: 0.8125rem;
+  color: var(--fx-faint);
+}
+@media (max-width: 47.99rem) {
+  html[data-fonts='new'] .fx-hero-act { justify-items: stretch; }
+}
+html[data-fonts='new'] .fx-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+html[data-fonts='new'] .fx-hero-actions .fx-quiet { height: 2.75rem; }
+html[data-fonts='new'] .fx-hero-actions .fx-save { width: 2.75rem; }
+@media (max-width: 47.99rem) {
+  html[data-fonts='new'] .fx-hero-actions { flex-wrap: nowrap; }
+  html[data-fonts='new'] .fx-hero-actions .fx-download { flex: 1 1 auto; min-width: 0; }
+}
+/* the narrowest phones: Write with it keeps its pen (its name stays for screen readers and in its tooltip) */
+@media (max-width: 23.99rem) {
+  html[data-fonts='new'] .fx-write-with { width: 2.75rem; padding: 0; }
+  html[data-fonts='new'] .fx-write-with .fx-words { display: none; }
+}
+html[data-fonts='new'] .fx-hero .font-record { margin-top: 1.5rem; }
+
+/* ---------- the tester line: one control surface, under the header as you scroll ---------- */
+html[data-fonts='new'] .fx-toolbar-wrap {
+  position: sticky;
+  top: var(--site-head);
+  z-index: 20;
+  margin-top: 3rem;
+  margin-inline: calc(var(--fx-margin) * -1);
+  padding-inline: var(--fx-margin);
+  background: var(--fx-ground);
+  border-bottom: 1px solid var(--fx-hair);
+}
+html[data-fonts='new'] .fx-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem 1.5rem;
+  padding-block: 0.75rem;
+}
+html[data-fonts='new'] .fx-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+html[data-fonts='new'] .fx-tester {
+  flex: 1 1 26rem;
+}
+html[data-fonts='new'] .fx-tester > label:not(.fx-size) {
+  flex: 1 1 12rem;
+}
+html[data-fonts='new'] .fx-tool-end {
+  margin-left: auto;
+}
+/* under 84rem the tester takes a line of its own, under the choices, so your words always have room */
+@media (max-width: 83.99rem) {
+  html[data-fonts='new'] .fx-tester { order: 3; flex-basis: 100%; }
+  html[data-fonts='new'] .fx-toolbar { row-gap: 0.5rem; }
+}
+html[data-fonts='new'] .fx-toolbar :is(input[type='text']) {
+  font-family: var(--fx-ui);
+  font-size: 0.9375rem;
+  height: 2.25rem;
+}
+html[data-fonts='new'] .fx-toolbar [data-slot='button'][aria-haspopup] {
+  font-family: var(--fx-ui);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-variant-caps: normal;
+  letter-spacing: 0;
+}
+html[data-fonts='new'] .fx-size {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.625rem;
+  width: 12.5rem;
+  font-family: var(--fx-ui);
+  font-size: 0.8125rem;
+  color: var(--fx-muted);
+}
+html[data-fonts='new'] .fx-size-slider { flex: 1; }
+html[data-fonts='new'] .fx-size-value {
+  min-width: 1.75rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--fx-ink);
+}
+html[data-fonts='new'] .fx-layout [data-slot='segmented-item'] {
+  width: 2.25rem;
+  padding: 0;
+}
+html[data-fonts='new'] .fx-saved { gap: 0.375rem; }
+html[data-fonts='new'] .fx-saved svg { color: var(--fx-red); }
+html[data-fonts='new'] .fx-chosen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin: 1rem 0 0;
+  font-family: var(--fx-ui);
+  font-size: 0.875rem;
+  color: var(--fx-muted);
+}
+html[data-fonts='new'] .fx-chosen-count { color: var(--fx-ink); font-weight: 600; font-variant-numeric: lining-nums tabular-nums; }
+html[data-fonts='new'] .fx-chosen-words { min-width: 0; }
+html[data-fonts='new'] .fx-note {
+  margin: 1rem 0 0;
+  font-family: var(--fx-book);
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--fx-muted);
+}
+
+/* ---------- the list: the rest of the set ---------- */
+html[data-fonts='new'] .fx-list {
+  container: fx-list / inline-size;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+html[data-fonts='new'] .fx-list.is-lines {
+  margin-top: 0.5rem;
+}
+@media (max-width: 63.99rem) {
+  /* phones and tablets: no tester line between the hero and the list, so a soft rule closes the hero */
+  html[data-fonts='new'] .fx-list { margin-top: 2.5rem; border-top: 1px solid var(--fx-hair); }
+}
+html[data-fonts='new'] .fx-row {
+  border-bottom: 1px solid var(--fx-rule);
+}
+html[data-fonts='new'] .fx-row-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'spec spec' 'who actions';
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-inline: -0.75rem;
+  padding: 1.5rem 0.75rem 1.125rem;
+  border-radius: 6px;
+  transition: background-color var(--st-dur, 150ms) var(--fx-ease), scale var(--dur-press, 100ms) var(--fx-ease);
+}
+html[data-fonts='new'] .fx-row-body > .fx-specimen { grid-area: spec; }
+html[data-fonts='new'] .fx-row-who {
+  grid-area: who;
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+html[data-fonts='new'] .fx-row-actions {
+  grid-area: actions;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin-right: -0.375rem;
+}
+html[data-fonts='new'] .fx-row-name {
+  margin: 0;
+  font-family: var(--fx-book);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--fx-ink);
+}
+/* the whole row is the name's target: under the pointer the faint wash, pressed the press wash, focused a ring */
+html[data-fonts='new'] .fx-row-body .fx-open::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: inherit;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'] .fx-row-body:has(.fx-open:hover) { background: var(--st-hover); }
+}
+html[data-fonts='new'] .fx-row-body:has(.fx-open:active) {
+  background: var(--st-press);
+  scale: var(--st-scale-row, 0.985);
+}
+html[data-fonts='new'] .fx-row-body:has(.fx-open:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+html[data-fonts='new'] .fx-row.is-open .fx-row-body { background: transparent; }
+html[data-fonts='new'] .fx-icon { color: var(--fx-muted); }
+html[data-fonts='new'] .fx-row-actions .fx-quiet:not(.fx-icon) { padding-inline: 0.625rem; }
+/* a list not wide enough for the actions' words: their icons alone, so the writing keeps the width */
+@container fx-list (width < 76rem) {
+  html[data-fonts='new'] .fx-row-actions .fx-quiet:not(.fx-icon) { width: 2.25rem; padding: 0; }
+  html[data-fonts='new'] .fx-row-actions .fx-words { display: none; }
+}
+@media (pointer: coarse) {
+  html[data-fonts='new'] .fx-row-actions .fx-quiet:not(.fx-icon) { min-width: 2.75rem; }
+}
+
+/* a wide list reads as a register: who on the left, their writing, then what you can do */
+@container fx-list (width >= 56rem) {
+  html[data-fonts='new'] .fx-list.is-lines .fx-row-body {
+    grid-template-columns: var(--fx-who) minmax(0, 1fr) auto;
+    grid-template-areas: 'who spec actions';
+    gap: 0 2rem;
+    padding-block: 1.125rem;
+  }
+  html[data-fonts='new'] .fx-list.is-lines .fx-row-who { align-self: center; }
+}
+
+/* the grid: cards of a few lines, the same row turned on its side */
+html[data-fonts='new'] .fx-list.is-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  column-gap: 2.5rem;
+  margin-top: 0.5rem;
+}
+html[data-fonts='new'] .fx-list.is-grid .fx-row-body { padding-block: 1.5rem 1rem; }
+html[data-fonts='new'] .fx-list.is-grid .fx-row-name { font-size: 1.0625rem; }
+html[data-fonts='new'] .fx-list.is-grid .fx-row.is-open { grid-column: 1 / -1; }
+
+/* ---------- a hand's record, opened in place (../Record.tsx): the room's rows in the page's two faces ---------- */
+html[data-fonts='new'] .fx-row .font-record { margin: 0.25rem 0 1.5rem; }
+html[data-fonts='new'][data-look] .font-record :is(.record-rows dt, .record-folds button[aria-expanded] > span:first-child) {
+  font-family: var(--fx-ui);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-caps: normal;
+  letter-spacing: 0;
+  text-transform: none;
+}
+/* a fold's summary ("5 sources", "317 in the font") is a few quiet words, not a catalogue number */
+html[data-fonts='new'][data-look] .font-record .record-folds button[aria-expanded] > span:first-child > span {
+  font-family: var(--fx-ui);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: 0;
+  color: var(--fx-muted);
+}
+html[data-fonts='new'][data-look] .font-record .record-actions [data-slot='button']:not(.dock-primary) {
+  height: 2.75rem;
+  padding-inline: 0.875rem;
+  border-radius: 999px;
+  font-family: var(--fx-ui);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--fx-ink);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'][data-look] .font-record .record-actions [data-slot='button']:not(.dock-primary):not(.x):hover {
+    background: var(--st-hover);
+    text-decoration: none;
+  }
+}
+html[data-fonts='new'][data-look] .font-record .record-actions { gap: 0.5rem; }
+/* the ruled rows that fold things (More, the record's folds) and the links inside words: under the pointer the faint
+   wash, never an underline (the room underlines them; this page doesn't) */
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'][data-look] .ruled-row:hover > :first-child { text-decoration: none; }
+  html[data-fonts='new'][data-look] .ruled-row:hover { background: var(--st-hover); }
+  html[data-fonts='new'] .ed-link:hover { text-decoration-color: color-mix(in oklab, currentColor 30%, transparent); background: var(--st-hover); border-radius: 2px; }
+}
+
+/* ---------- the end of the list ---------- */
+html[data-fonts='new'] .fx-end {
+  display: grid;
+  justify-items: start;
+  gap: 2rem;
+  padding-top: 2.5rem;
+  font-family: var(--fx-ui);
+  font-size: 0.9375rem;
+  color: var(--fx-muted);
+}
+html[data-fonts='new'] .fx-end-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+html[data-fonts='new'] .fx-more { height: 2.75rem; padding-inline: 1.25rem; border-radius: 999px; }
+html[data-fonts='new'] .fx-end .fx-quiet { height: 2.75rem; }
+html[data-fonts='new'] .fx-end-or { color: var(--fx-faint); }
+html[data-fonts='new'] .fx-about {
+  max-width: 40rem;
+  margin: 0;
+  font-family: var(--fx-book);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--fx-muted);
+  text-wrap: pretty;
+}
+
+/* ---------- the phone dock (../Dock.tsx) on this page: its words and red action in the page's faces; under the
+   pointer the wash, never an underline ---------- */
+/* the red word actions the dock and its sheets share (New set, Done): Source Sans, and the red wash under the pointer */
+html[data-fonts='new'][data-look] .dock-primary.dock-primary.dock-primary.dock-primary {
+  font-family: var(--fx-ui);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-fonts='new'][data-look] .dock-primary.dock-primary:hover { background: var(--st-accent-hover); text-decoration: none; }
+}
+html[data-fonts='new'][data-look] .fonts-dock :is([data-slot='button']) {
+  font-family: var(--fx-ui);
+}
+/* every control on the page in Source Sans (the room gives some of them the book face) */
+html[data-fonts='new'][data-look] :is(.fx-page, .filter-panel, .text-panel, .sheet-surface, [data-radix-popper-content-wrapper]) :is([data-slot='segmented-item'], [data-slot='button']:not(.fx-open), input, [role='menuitem'], [role='menuitemradio'], .sheet-row) {
+  font-family: var(--fx-ui);
+  letter-spacing: 0;
+  font-variant-caps: normal;
+}
+html[data-fonts='new'][data-theme='dark'] .archive-dock {
+  box-shadow: 0 0 0 1px var(--rr-edge), 0 12px 30px -12px rgba(0, 0, 0, 0.7);
+}
