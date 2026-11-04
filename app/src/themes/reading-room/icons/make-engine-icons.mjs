@@ -118,6 +118,13 @@ ICONS.Pointer = [
 ];
 ICONS.LayoutList = [dot(190, 720), line(330, 720, 850, 720), dot(190, 500), line(330, 500, 850, 500), dot(190, 280), line(330, 280, 850, 280)];
 ICONS.Menu = [line(170, 740, 830, 740), line(170, 500, 830, 500), line(170, 260, 830, 260)];
+// the Fonts page's Dark page and Light page (design QA, 4 Nov): a crescent in one stroke (the full moon's edge, then the
+// shadow's inner curve back to where it began), and a sun, its disc and eight short rays
+ICONS.Moon = [join(arc(500, 500, 380, 100.2, 343.8), arc(700, 680, 330, -60, -216))];
+ICONS.Sun = [arc(500, 500, 185, 90, 452), ...Array.from({ length: 8 }, (_, i) => {
+  const a = (i * 45 * Math.PI) / 180;
+  return line(500 + 300 * Math.cos(a), 500 + 300 * Math.sin(a), 500 + 420 * Math.cos(a), 500 + 420 * Math.sin(a));
+})];
 
 // ---------- one live area for all (design QA, 3 Nov) ----------
 // Each icon's centre lines are centred on (500, 500) and scaled so its ink's longer side is 780 units (chevrons 560),

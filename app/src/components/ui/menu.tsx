@@ -8,7 +8,7 @@ export const menuContent =
 
 /** A plain or radio item (the Writing menu's): a 44 px row, highlighted under the pointer. */
 export const menuItem =
-  'flex min-h-11 cursor-default items-center gap-3 rounded-[3px] px-3 py-2 text-[0.875rem] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
+  'flex min-h-11 cursor-pointer items-center gap-3 rounded-[3px] px-3 py-2 text-[0.875rem] text-foreground outline-none select-none data-[disabled]:opacity-45 data-[highlighted]:bg-accent';
 
 export function MenuItem({ children, icon, onSelect, disabled, quiet, hint }: { children: React.ReactNode; icon: React.ReactNode; onSelect: () => void; disabled?: boolean; quiet?: boolean; hint?: string }) {
   return (
@@ -16,7 +16,7 @@ export function MenuItem({ children, icon, onSelect, disabled, quiet, hint }: { 
       disabled={disabled}
       onSelect={onSelect}
       className={cn(
-        'flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
+        'flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-[3px] px-3 text-foreground outline-none select-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent [&_svg]:size-[17px] [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
         quiet ? 'text-[0.8125rem]' : 'text-[0.875rem]',
         hint && 'py-2',
       )}

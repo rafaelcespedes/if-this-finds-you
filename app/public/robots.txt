@@ -1,0 +1,5 @@
+# If This Finds You: every page is open to search engines and link previews.
+User-agent: *
+Allow: /
+
+Sitemap: https://ifthisfindsyou.app/sitemap.xml

@@ -186,7 +186,7 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
                     disabled={e.disabled || e.status === 'busy'}
                     onSelect={() => { setChose(true); e.onSelect(); }}
                     className={cn(
-                      'menu-row flex min-h-11 cursor-default items-center justify-between gap-3 rounded-[3px] px-3 text-foreground outline-none transition-transform duration-100 ease-out select-none active:scale-[0.98] data-[disabled]:opacity-50 data-[highlighted]:bg-accent',
+                      'menu-row flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-[3px] px-3 text-foreground outline-none transition-transform duration-100 ease-out select-none active:scale-[0.98] data-[disabled]:opacity-50 data-[highlighted]:bg-accent',
                       e.quiet ? 'text-[0.8125rem]' : 'text-[0.875rem]',
                       e.hint && 'py-2',
                     )}

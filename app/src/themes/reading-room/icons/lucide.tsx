@@ -31,6 +31,7 @@ import {
   MailOpen as LMailOpen,
   Mails as LMails,
   Menu as LMenu,
+  Moon as LMoon,
   Pause as LPause,
   PenLine as LPenLine,
   Play as LPlay,
@@ -42,6 +43,7 @@ import {
   Shuffle as LShuffle,
   SlidersHorizontal as LSlidersHorizontal,
   Sparkles as LSparkles,
+  Sun as LSun,
   Undo2 as LUndo2,
   Users as LUsers,
   X as LX,
@@ -122,6 +124,7 @@ export const LockOpen = icon(LLockOpen as ComponentType<P>, 'LockOpen');
 export const MailOpen = icon(LMailOpen as ComponentType<P>, 'MailOpen');
 export const Mails = icon(LMails as ComponentType<P>, 'Mails');
 export const Menu = icon(LMenu as ComponentType<P>, 'Menu');
+export const Moon = icon(LMoon as ComponentType<P>, 'Moon');
 export const Pause = icon(LPause as ComponentType<P>, 'Pause');
 export const PenLine = icon(LPenLine as ComponentType<P>, 'PenLine');
 export const Play = icon(LPlay as ComponentType<P>, 'Play');
@@ -133,6 +136,7 @@ export const Share = icon(LShare as ComponentType<P>, 'Share');
 export const Shuffle = icon(LShuffle as ComponentType<P>, 'Shuffle');
 export const SlidersHorizontal = icon(LSlidersHorizontal as ComponentType<P>, 'SlidersHorizontal');
 export const Sparkles = icon(LSparkles as ComponentType<P>, 'Sparkles');
+export const Sun = icon(LSun as ComponentType<P>, 'Sun');
 export const Undo2 = icon(LUndo2 as ComponentType<P>, 'Undo2', 'RotateCcw');
 export const Users = icon(LUsers as ComponentType<P>, 'Users');
 export const X = icon(LX as ComponentType<P>, 'X');

@@ -8,7 +8,7 @@
 // light red tint, its words in the action role, its key at the end). The row carries the drawer's control surface class
 // (rr-slip-inner), so the room gives it the same control type role and sizes.
 import { useState } from 'react';
-import { Heart, LayoutGrid, LayoutList, SlidersHorizontal } from 'lucide-react';
+import { Heart, LayoutGrid, List, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
 import { SliderRow } from '@/components/ui/slider-row';
@@ -72,7 +72,7 @@ export function Toolbar(p: Props) {
               </div>
               <div className="filter-panel-foot flex shrink-0 items-center justify-between gap-2 px-3 py-2">
                 <Button variant="ghost" disabled={!n} onClick={() => p.onFilters({ ...NO_FILTERS, family: p.filters.family }, true)} className="fx-quiet">Clear filters</Button>
-                <Button size="sm" onClick={close} className="dock-primary">Done</Button>
+                <BringAnother onClick={close} label="Done" shortcut="" className="rr-bring-button" />
               </div>
             </div>
           )}
@@ -89,7 +89,7 @@ export function Toolbar(p: Props) {
 
       <div className="fx-tool-group fx-tool-end">
         <Segmented slide type="single" aria-label="List or grid" value={p.layout} onValueChange={(v) => v && p.onLayout(v as Layout)} className="fx-layout">
-          <Tooltip><TooltipTrigger asChild><SegmentedItem value="list" aria-label="List"><LayoutList aria-hidden className="size-4" /></SegmentedItem></TooltipTrigger><TooltipContent>List</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><SegmentedItem value="list" aria-label="List"><List aria-hidden className="size-4" /></SegmentedItem></TooltipTrigger><TooltipContent>List</TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><SegmentedItem value="grid" aria-label="Grid"><LayoutGrid aria-hidden className="size-4" /></SegmentedItem></TooltipTrigger><TooltipContent>Grid</TooltipContent></Tooltip>
         </Segmented>
         {(p.savedCount > 0 || saved) && (

@@ -2,10 +2,10 @@
 
 _Set up 2026-11-03._ How people move around the site, in the same words and the same places on every page. Every
 page draws its header with one component, `app/src/components/SiteHeader.tsx`; the names, order and addresses come
-from `app/src/lib/places.ts`. Change them there, never in a page. The 404 page can't run app code, so it carries a
-hand-made copy (`app/public/404.html`, the Reading Room by default and the earlier design under `?look=classic`); keep
-it in step: the Reading Room's label role (a sans at 12 px, sentence case), the wordmark in ink at 85% sized in rem,
-the boxless Menu chip, the band across the full width and the row between the margins.
+from `app/src/lib/places.ts`. Change them there, never in a page. The 404 is a built page like the others
+(`app/404.html` with `src/notfound/`, built as `dist/404.html`, which Vercel serves for any address that isn't
+there): the same `<SiteHeader />` with no place marked, and its words and two ways on written in the page itself, so
+they show even if the script can't load.
 
 ## The places
 
@@ -27,8 +27,7 @@ Words we don't use for these: "Letters", "Library", "Archive", "Home", "Write" o
 without words.
 
 **Adding a place.** A new page that people should be able to reach from anywhere gets one line in `PLACES`
-(`lib/places.ts`), after the others, and its page renders `<SiteHeader current="<its id>" />`; the 404's copy gets
-the same link. **About** (`/about`) is the fourth and last place, in that one word. Nothing else changes:
+(`lib/places.ts`), after the others, and its page renders `<SiteHeader current="<its id>" />`. **About** (`/about`) is the fourth and last place, in that one word. Nothing else changes:
 every header picks it up, and where the line no longer fits, the Menu takes over.
 
 ## Where you are
@@ -108,7 +107,8 @@ the label role's small capitals; the letter's number is archival red. Other look
 [wordmark]                                         [page action] [≡]
 ```
 
-- Everything goes into one **Menu** chip at the top right (drawn 32 px, a 44 px target, the same chip as Share).
+- Everything goes into one **Menu** chip at the top right (drawn 32 px, a 44 px target, the same chip as Share): a
+  quiet icon button, only its icon at rest, a wash in 4 px corners under the pointer and while pressed or open.
   It opens the shared Sheet (`components/ui/sheet.tsx`): on a phone a bottom sheet that slides up, follows your
   finger, and closes on a swipe or flick down, the backdrop or Escape; the four places as big 56 px rows (the
   current one marked), then "My letters, kept on this device" with the list. On a larger screen (large text, a
