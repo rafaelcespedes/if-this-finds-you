@@ -3,15 +3,16 @@
    colours, rules and states come from --rr-* and --st-*; this file only sets the page's type scale, its layout and
    its night colours (?theme=dark). docs/research/fonts-redesign.md has the reasoning.
 
-   Type: two faces, two jobs (the room's --rr-book and --rr-ui).
-     Junicode 2 (the archive's words): the page title, the writers' names, the intro and the letter's credit
-     Source Sans 3 (everything you operate or scan): controls, labels, the few words about each hand, in sentence case
+   Type: two faces, two jobs, named only through the room's tokens (--rr-book, --rr-ui, --rr-title-stretch), so a new
+   pairing (?type=…) reaches this page by values alone.
+     the book face (Junicode today; the archive's words): the page title, the writers' names, the intro, the credit
+     the sans (Source Sans 3 today; what you operate or scan): controls, labels, the few words about each hand
    The handwriting is the third voice and always the biggest: the hero at poster size, the rows at the tester's size. */
 
 /* ---------- tokens ---------- */
 html[data-fonts='new'] {
-  /* Source Sans 3 for the controls and every label, sentence case, no small capitals: the room's own --rr-ui and
-     label tokens (reading-room.css, since 3588909); this page only names them */
+  /* the sans for the controls and every label, sentence case, no small capitals: the room's own --rr-ui and label
+     tokens (reading-room.css, since 3588909); this page only reads them */
   --fx-ui: var(--rr-ui, system-ui, sans-serif);
   --fx-book: var(--rr-book, Georgia, serif);
   --fx-ink: var(--rr-ink, var(--ink));
@@ -126,7 +127,7 @@ html[data-fonts='new'] .fx-title {
   font-family: var(--fx-book);
   font-size: 2.125rem;
   font-weight: 540;
-  font-stretch: 112%;
+  font-stretch: var(--rr-title-stretch, normal);
   line-height: 1.05;
   letter-spacing: -0.012em;
   color: var(--fx-ink);
@@ -417,7 +418,7 @@ html[data-fonts='new'] .fx-hero-name {
   font-family: var(--fx-book);
   font-size: 1.5rem;
   font-weight: 500;
-  font-stretch: 106%;
+  font-stretch: var(--rr-title-stretch, normal);
   line-height: 1.15;
   color: var(--fx-ink);
 }
@@ -754,7 +755,7 @@ html[data-fonts='new'] .fx-about {
 
 /* ---------- the phone dock (../Dock.tsx) on this page: its words and red action in the page's faces; under the
    pointer the wash, never an underline ---------- */
-/* the red word actions the dock and its sheets share (New set, Done): Source Sans, and the red wash under the pointer */
+/* the red word actions the dock and its sheets share (New set, Done): the sans, and the red wash under the pointer */
 html[data-fonts='new'][data-look] .dock-primary.dock-primary.dock-primary.dock-primary {
   font-family: var(--fx-ui);
   font-size: 0.9375rem;
@@ -768,7 +769,7 @@ html[data-fonts='new'][data-look] .dock-primary.dock-primary.dock-primary.dock-p
 html[data-fonts='new'][data-look] .fonts-dock :is([data-slot='button']) {
   font-family: var(--fx-ui);
 }
-/* every control on the page in Source Sans (the room gives some of them the book face) */
+/* every control on the page in the sans (the room gives some of them the book face) */
 html[data-fonts='new'][data-look] :is(.fx-page, .filter-panel, .text-panel, .sheet-surface, [data-radix-popper-content-wrapper]) :is([data-slot='segmented-item'], [data-slot='button']:not(.fx-open), input, [role='menuitem'], [role='menuitemradio'], .sheet-row) {
   font-family: var(--fx-ui);
   letter-spacing: 0;
