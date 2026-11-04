@@ -133,7 +133,7 @@ export default function App() {
   }, []);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
-  const [busy, setBusy] = useState({ download: false, font: false, video: false });
+  const [busy, setBusy] = useState({ download: false, font: false, video: false, gif: false });
   const [editing, setEditing] = useState(false);
   const [plainText, setPlainText] = useState(() => readPref('seedhand:plain-text') === '1');
   const [variety, setVariety] = useState(() => Number(readPref('seedhand:variety') ?? 60) || 60);
@@ -459,10 +459,11 @@ export default function App() {
   }, [wrote, state.reader]);
   const hintShown = idleLong && !wrote && !editing && !state.reader && !replying;
   // the moment the pen is on the paper (desktop): "Start typing" until the first key, so the click visibly worked;
-  // then, the first time you write, how to stop, once, for a few seconds
+  // then, the first time you write, how to stop, once, for a few seconds. On a phone too for a found letter, where a
+  // reply starts on a fresh sheet and so has no caret to show until the first key (launch QA)
   const [keyedSinceFocus, setKeyedSinceFocus] = useState(false);
   useEffect(() => { if (editing) setKeyedSinceFocus(false); }, [editing]);
-  const startHint = editing && isDesktop && !keyedSinceFocus && !state.reader;
+  const startHint = editing && (isDesktop || replyPending) && !keyedSinceFocus && !state.reader;
   const [escHint, setEscHint] = useState(false);
   useEffect(() => {
     if (!editing || !keyedSinceFocus || !isDesktop || readPref('seedhand:esc-taught') === '1') return;
@@ -839,7 +840,8 @@ export default function App() {
     if (exporting.current) return;
     const ac = new AbortController();
     exporting.current = ac;
-    setBusy((b) => ({ ...b, video: true }));
+    // each format its own flag, so only the row being made shows it
+    setBusy((b) => ({ ...b, [kind]: true }));
     const what = kind === 'gif' ? 'GIF' : 'video';
     const stop = { label: 'Stop', onClick: () => ac.abort() };
     toast.loading(`Making the ${what}…`, { id: 'export', description: 'The letter writes itself out, then it saves', action: stop, duration: Infinity });
@@ -888,7 +890,7 @@ export default function App() {
       }
     } finally {
       exporting.current = null;
-      setBusy((b) => ({ ...b, video: false }));
+      setBusy((b) => ({ ...b, video: false, gif: false }));
     }
   }, [name, coarse]);
 
