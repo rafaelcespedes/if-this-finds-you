@@ -60,6 +60,15 @@ export function keepDraft(s: NoteState): boolean {
   return save([d, ...rest].slice(0, KEEP));
 }
 
+/** The letter on the desk is open again (back from another page, a reload, Back): it leaves this tab's kept pile, so
+ *  My letters doesn't list it twice. */
+export function forgetOpen(s: Pick<NoteState, 'text' | 'inkLog' | 'sample'>) {
+  if (s.sample || (!s.text.trim() && !s.inkLog)) return;
+  const all = drafts();
+  const rest = all.filter((d) => !(d.tab === TAB && d.text === s.text && (d.inkLog ?? null) === (s.inkLog ?? null)));
+  if (rest.length !== all.length) save(rest);
+}
+
 /** This tab's newest kept letter (-1 when it has none). */
 export const mineIndex = (all: Draft[]) => all.findIndex((d) => d.tab === TAB);
 
