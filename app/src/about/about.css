@@ -154,10 +154,13 @@
 
 /* phones (the page's one-column layout, under 56rem): no small "About" over the title and no section numbers. On a
    wide screen they set the margin rail; on a phone the title and each section's name say enough (Rafael, 4 Nov 2026).
-   The numbers are aria-hidden anyway, and the title already names the page */
+   The numbers are aria-hidden anyway, and the title already names the page. Nor the footer, which says again what the
+   page has just said (Rafael, phone redundancy sweep) */
 @media (max-width: 55.99rem) {
   .about-kicker,
-  .about-section-no {
+  .about-section-no,
+  /* the footer's lines restate the opening and sections 2, 4 and 5 just above it */
+  .about-colophon {
     display: none;
   }
   .about-title {
