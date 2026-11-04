@@ -121,7 +121,8 @@ html[data-fonts='new'] .fx-intro {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding-top: calc(var(--site-head-clear) + 1.75rem);
+  /* phones: the title's top at 101 px, where About's and the letter pages' first line sits */
+  padding-top: calc(var(--site-head-clear) + 2rem);
 }
 @media (min-width: 64rem) {
   html[data-fonts='new'] .fx-intro { padding-top: calc(var(--site-head-clear) + 2.75rem); }
@@ -476,8 +477,11 @@ html[data-fonts='new'] .fx-list.is-lines {
   margin-top: 0.5rem;
 }
 @media (max-width: 63.99rem) {
-  /* phones and tablets: no tester line between the hero and the list, so a soft rule closes the hero */
-  html[data-fonts='new'] .fx-list { margin-top: 2.5rem; border-top: 1px solid var(--fx-hair); }
+  /* phones and tablets: no tester line between the hero and the list, so a soft rule closes the hero, as far below
+     its last line (the icons) as the caption's own rule is above the name (1.125rem), and as each row's facts sit
+     above its rule */
+  html[data-fonts='new'] .fx-hero-caption { padding-bottom: 1.125rem; }
+  html[data-fonts='new'] :is(.fx-list, .fx-list.is-lines) { margin-top: 0; border-top: 1px solid var(--fx-hair); }
 }
 html[data-fonts='new'] .fx-row {
   border-bottom: 1px solid var(--fx-rule);
@@ -602,6 +606,10 @@ html[data-fonts='new'][data-look] .font-record .record-actions { gap: 0.5rem; }
   html[data-fonts='new'] .ed-link:hover { text-decoration-color: color-mix(in oklab, currentColor 30%, transparent); background: var(--st-hover); border-radius: 2px; }
 }
 
+/* the record's closing sentence ("Drawn by the engine from…, with a ballpoint, on a letter pad. … is a fictional
+   writer.") says again what its rows just said (Writer, Taught, Pen, Paper): on this page the rows say it once */
+html[data-fonts='new'] .font-record .record-about { display: none; }
+
 /* ---------- the end of the list ---------- */
 html[data-fonts='new'] .fx-end {
   display: grid;
@@ -617,6 +625,10 @@ html[data-fonts='new'] .fx-end-actions {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
+}
+/* phones: the licence line goes (the intro says free and open source; every record has its Licence row) */
+@media (max-width: 39.99rem) {
+  html[data-fonts='new'] .fx-about { display: none; }
 }
 html[data-fonts='new'] .fx-about {
   max-width: 40rem;
