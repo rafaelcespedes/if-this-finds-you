@@ -4,6 +4,7 @@
 // No ticks and no column numbers (Rafael: "kill the tickers and the numbers on every page and just leave the grid").
 //   no ?layout          the Ruler (the default)
 //   ?layout=off         the Reading Room without it (0, none, reading-room), an escape hatch for now
+//   ?layout=register    Register, the earlier study of the Fonts page's balance (editorial-2), kept to compare
 // Read once at load and kept for the tab, like the look (lib/look.ts); never put into share links.
 // Only the frame changes: html[data-layout] is read by themes/editorial.css, which styles the shared components through
 // the Reading Room's own classes, data hooks and --rr-* type tokens. Without the Reading Room it does nothing.
@@ -14,13 +15,13 @@
 // Reading Room's (html:root[data-layout] against html[data-look]), so their order in that sheet doesn't matter.
 import '@/themes/editorial.css';
 
-export type LayoutId = 'none' | 'ruler';
+export type LayoutId = 'none' | 'ruler' | 'register';
 export const DEFAULT_LAYOUT: LayoutId = 'ruler';
 const ALIASES: Record<string, LayoutId> = {
   ruler: 'ruler', 'editorial-3': 'ruler', e3: 'ruler', '3': 'ruler', default: DEFAULT_LAYOUT,
-  // the retired studies' addresses (Broadsheet, Register) land on the default
+  // the retired Broadsheet's addresses land on the default
   'editorial-1': DEFAULT_LAYOUT, e1: DEFAULT_LAYOUT, '1': DEFAULT_LAYOUT, broadsheet: DEFAULT_LAYOUT,
-  'editorial-2': DEFAULT_LAYOUT, e2: DEFAULT_LAYOUT, '2': DEFAULT_LAYOUT, register: DEFAULT_LAYOUT,
+  register: 'register', 'editorial-2': 'register', e2: 'register', '2': 'register',
   off: 'none', none: 'none', '0': 'none', 'reading-room': 'none',
 };
 const KEY = 'seedhand:layout';
@@ -35,7 +36,7 @@ function readLayout(): LayoutId {
       return id;
     }
     const kept = sessionStorage.getItem(KEY);
-    if (kept === 'none') return kept;
+    if (kept === 'none' || kept === 'register') return kept;
   } catch { /* storage off: the default */ }
   return DEFAULT_LAYOUT;
 }
@@ -43,7 +44,7 @@ export const LAYOUT: LayoutId = typeof location !== 'undefined' ? readLayout() :
 /** An editorial layout is on. */
 export const EDITORIAL = LAYOUT !== 'none';
 /** The Ruler: its rules are crisp and its grid is drawn, so lib/rules.ts keeps the hand-drawn rules off unless
- * ?rules=hand. */
+ * ?rules=hand. Register keeps them, as the Fonts page does. */
 export const CRISP = LAYOUT === 'ruler';
 
 export type LayoutPage = 'desk' | 'letters' | 'about' | 'fonts';

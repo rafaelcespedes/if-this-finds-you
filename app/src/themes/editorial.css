@@ -18,6 +18,7 @@
    margins. Rules are crisp (the hand-drawn ones stay off under the Ruler: lib/rules.ts). The grid is one fixed layer
    behind the page (.ed-grid), built by lib/layout.ts.
 
+   At the end: REGISTER (?layout=register), the earlier study of the Fonts page's balance, kept to compare.
    ===================================================================================================================== */
 
 /* ---------- tokens ---------- */
@@ -628,5 +629,334 @@ html:root[data-layout='ruler'] .about-section-no {
   }
   html:root[data-layout='ruler'] .sp {
     padding-top: calc(var(--site-head-clear) + 0.75rem);
+  }
+}
+
+/* =====================================================================================================================
+   REGISTER (?layout=register, kept to compare): the new Fonts page's balance on every page (fonts/new/fonts-new.css, and "What makes the
+   balance work" in docs/research/fonts-redesign.md). Rafael, 4 Nov: "something about this modern grid just kind of
+   balances everything really well. That's the type of balance that we should try to maintain everywhere."
+   The moves, with the Fonts page's own values:
+   - a strict modern frame around old material: the window's width (no 1440 cap) inside the header's margins (16 · 32
+     · 40 px), a register whose columns never move (a 15 rem name column, then the thing itself);
+   - three sizes of voice, far apart: the handwriting is the only big thing; the book face 18–44 px (page titles 44,
+     names 28, row names 18); the sans 13–15 px for everything you operate or scan, sentence case;
+   - each face one job: the book face for what belongs to the archive (titles, names, the lede, credits, in italic),
+     the sans for controls, labels and counts;
+   - soft rules, no boxes (the hand-drawn rules stay on, as on the Fonts page); only floating things get an edge;
+   - one colour, one job: archival red for the main action (a filled button) and the catalogue's numbers;
+   - rhythm from repetition: every row the same padding and column edges; air only where the hierarchy changes.
+   No grid is drawn: it is felt in the edges.
+   ===================================================================================================================== */
+html:root[data-layout='register'] {
+  --ed-max: 120rem;
+  --ed-who: 15rem;
+  --ed-title-size: 2.125rem;
+  --ed-lede-size: 1.0625rem;
+  --ed-name-size: 1.5rem;
+  --ed-row-name-size: 1.125rem;
+  --ed-meta-size: 0.875rem;
+  --ed-title-weight: min(var(--rr-title-weight, 540), 540);
+}
+@media (min-width: 64rem) {
+  html:root[data-layout='register'] {
+    --ed-title-size: 2.75rem;
+    --ed-lede-size: 1.1875rem;
+    --ed-name-size: 1.75rem;
+  }
+}
+/* the three voices, as classes of their own job */
+html:root[data-layout='register'] :is(.lib-main h1 > .sr-only, .about-title, .sp .sp-title) {
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-title-size);
+  font-weight: var(--ed-title-weight);
+  font-stretch: var(--rr-title-stretch, normal);
+  line-height: 1.05;
+  letter-spacing: -0.012em;
+  color: var(--rr-ink);
+  text-wrap: balance;
+}
+html:root[data-layout='register'] :is(.lib-main > section > p:not(.rr-aid), .about-lede, .sp .sp-writer) {
+  max-width: 34rem;
+  font-family: var(--rr-reading-face, var(--rr-book));
+  font-size: var(--ed-lede-size);
+  font-style: normal;
+  line-height: 1.45;
+  color: var(--rr-muted);
+  text-wrap: pretty;
+}
+
+/* ---------- the desk: already the Fonts page's arrangement (the paper is the big thing, the record a quiet column);
+   the record's title takes the name size, its number the sans, the plate line under the sheet a credit ---------- */
+html:root[data-layout='register'] .rr-ledger-record .rr-card-title {
+  --rr-title-leading: 1.15;
+  font-size: var(--ed-name-size);
+  font-weight: min(var(--rr-title-weight, 500), 500);
+  letter-spacing: -0.008em;
+}
+html:root[data-layout='register'] .rr-ledger-record .rr-card-no {
+  font-family: var(--rr-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+html:root[data-layout='register'] .rr-plate-title {
+  font-family: var(--rr-book);
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--rr-faint);
+}
+
+/* ---------- the letter page: the window's width, the title at the page-title size, the writer's line as the lede,
+   one filled red action (Write a reply), the rest quiet ---------- */
+@media (min-width: 64em) {
+  html:root[data-layout='register'] .sp {
+    max-width: var(--ed-max);
+  }
+}
+html:root[data-layout='register'] .sp .sp-head {
+  text-align: left;
+}
+html:root[data-layout='register'] .sp .sp-writer {
+  margin-top: 0.625rem;
+}
+html:root[data-layout='register'] .sp .sp-actions {
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-inline: 0;
+}
+html:root[data-layout='register'] .sp .sp-actions :is(.sp-reply, button) {
+  min-height: 44px;
+  font-family: var(--rr-ui);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+html:root[data-layout='register'] .sp .sp-actions button {
+  padding: 0 0.75rem;
+}
+html:root[data-layout='register'] .sp .sp-reply {
+  padding: 0 1.25rem 0 1.125rem;
+  margin-right: 0.5rem;
+  border-radius: 999px;
+  background: var(--rr-red);
+  color: var(--rr-slip, #fff);
+  transition: background-color var(--st-dur, 150ms) var(--ease-out), scale var(--dur-press, 100ms) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-layout='register'] .sp .sp-reply:hover {
+    background: var(--rr-red-deep, color-mix(in oklab, var(--rr-red) 82%, black));
+  }
+}
+html:root[data-layout='register'] .sp .sp-reply:active {
+  scale: var(--st-scale, 0.97);
+}
+
+/* ---------- All letters: the page title in type ("Fonts" is typed too), its one sentence, then the list as a register:
+   the catalogue number and year in the name column, the title at the name size, who wrote to whom as a credit ---------- */
+html:root[data-layout='register'] .lib-main {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+}
+html:root[data-layout='register'] .lib-main h1 > [aria-hidden] {
+  display: none;
+}
+html:root[data-layout='register'] .lib-main h1 > .sr-only {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+}
+html:root[data-layout='register'] .lib-main > section > p:not(.rr-aid) {
+  margin-top: 0.5rem;
+}
+html:root[data-layout='register'] .lib-main .rr-aid {
+  margin: 0.875rem 0 0;
+  padding: 0;
+  border: 0;
+  font-family: var(--rr-ui);
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--rr-muted);
+}
+/* a group: its name at the name size, flush left over a soft rule; air above it, where the list changes */
+html:root[data-layout='register'] .fa .fa-group {
+  margin-top: 3rem;
+}
+html:root[data-layout='register'] .fa .fa-head {
+  display: block;
+  margin: 0;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--rr-hair);
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-name-size);
+  font-weight: min(var(--rr-title-weight, 500), 500);
+  font-stretch: var(--rr-title-stretch, normal);
+  font-variant-caps: normal;
+  letter-spacing: -0.008em;
+  line-height: 1.15;
+  text-transform: none;
+}
+html:root[data-layout='register'] .fa .fa-head::before,
+html:root[data-layout='register'] .fa .fa-head::after {
+  display: none;
+}
+html:root[data-layout='register'] .fa .fa-no,
+html:root[data-layout='register'] .fa .fa-year {
+  font-family: var(--rr-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+html:root[data-layout='register'] .fa .fa-year {
+  text-align: left;
+  font-weight: 400;
+  color: var(--rr-muted);
+}
+html:root[data-layout='register'] .fa .fa-title {
+  font-family: var(--rr-title-face);
+  font-size: 1.375rem;
+  font-weight: min(var(--rr-title-weight, 500), 500);
+  font-stretch: var(--rr-title-stretch, normal);
+  line-height: 1.2;
+  letter-spacing: -0.006em;
+}
+html:root[data-layout='register'] .fa .fa-writer {
+  font-family: var(--rr-book);
+  font-size: 0.9375rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--rr-muted);
+}
+html:root[data-layout='register'] .fa .fa-place {
+  font-family: var(--rr-ui);
+  font-size: var(--ed-meta-size);
+  letter-spacing: 0;
+  font-variant-caps: normal;
+  text-transform: none;
+  color: var(--rr-faint);
+}
+@media (min-width: 720px) {
+  html:root[data-layout='register'] .fa .fa-row {
+    grid-template-columns: var(--ed-who) minmax(0, 1fr) minmax(0, 26rem);
+    grid-template-areas: 'no title writer' 'year title place';
+    align-items: baseline;
+    column-gap: 2rem;
+    row-gap: 0.125rem;
+    margin-inline: -0.75rem;
+    padding: 1.125rem 0.75rem;
+    border-radius: 6px;
+  }
+  html:root[data-layout='register'] .fa .fa-no { grid-area: no; }
+  html:root[data-layout='register'] .fa .fa-year { grid-area: year; }
+  html:root[data-layout='register'] .fa .fa-title { grid-area: title; align-self: center; font-size: var(--ed-name-size); }
+  html:root[data-layout='register'] .fa .fa-writer { grid-area: writer; }
+  html:root[data-layout='register'] .fa .fa-place { grid-area: place; }
+}
+@media (min-width: 720px) and (max-width: 63.99rem) {
+  html:root[data-layout='register'] .fa .fa-row {
+    grid-template-columns: 9rem minmax(0, 1fr) minmax(0, 16rem);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-layout='register'] .fa .fa-row:active {
+    background: var(--st-press);
+    scale: var(--st-scale-row, 0.985);
+  }
+}
+
+/* ---------- About: the page title and its sentence where the Fonts page has them; the line written just now as the
+   page's one big thing, poster-size, on the room with no box; the sections as a register (the name column holds each
+   section's number and name) ---------- */
+html:root[data-layout='register'] .about {
+  --about-gap: 2rem;
+}
+html:root[data-layout='register'] .about-main {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+}
+html:root[data-layout='register'] .about-kicker {
+  display: none;
+}
+html:root[data-layout='register'] .about-title {
+  margin-top: 0;
+}
+html:root[data-layout='register'] .about-lede {
+  margin-top: 0.5rem !important;
+}
+/* the line: poster-size (LiveLine reads --about-line-em-max), on the room, a soft rule before its caption */
+html:root[data-layout='register'] .about-line {
+  margin-top: 3rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+html:root[data-layout='register'] .about-line-ink {
+  --about-line-em-max: 128;
+}
+html:root[data-layout='register'] .about-line-caption {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rr-hair);
+}
+html:root[data-layout='register'] .about-line-by {
+  font-size: 1.125rem;
+}
+html:root[data-layout='register'] .about-line-name {
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-name-size);
+  font-weight: min(var(--rr-title-weight, 500), 500);
+}
+html:root[data-layout='register'] .about-section-title {
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-name-size);
+  font-weight: min(var(--rr-title-weight, 500), 500);
+  font-stretch: var(--rr-title-stretch, normal);
+  letter-spacing: -0.008em;
+}
+html:root[data-layout='register'] .about-section-no {
+  font-family: var(--rr-ui);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--rr-red);
+}
+html:root[data-layout='register'] .about-facts dd {
+  font-family: var(--rr-title-face);
+  font-size: var(--ed-name-size);
+  line-height: 1.1;
+}
+@media (min-width: 56rem) {
+  /* the register: the name column (15 rem), then the words at a reading measure; the head and the line run wider */
+  html:root[data-layout='register'] .about-main {
+    grid-template-columns: var(--ed-who) minmax(0, 46rem) minmax(0, 1fr);
+    column-gap: var(--about-gap);
+  }
+  html:root[data-layout='register'] .about-main > * {
+    grid-column: 1 / -1;
+  }
+  html:root[data-layout='register'] .about-main > * > * {
+    grid-column: 2;
+  }
+  html:root[data-layout='register'] .about-main > * > .about-section-title {
+    grid-column: 1;
+  }
+  html:root[data-layout='register'] .about-head > :is(.about-title, .about-lede) {
+    grid-column: 1 / span 2;
+    grid-row: auto;
+  }
+  html:root[data-layout='register'] .about-head > .about-line {
+    grid-column: 1 / -1;
   }
 }
