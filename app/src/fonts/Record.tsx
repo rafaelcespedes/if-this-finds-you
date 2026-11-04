@@ -87,7 +87,8 @@ export function HandRecordView(p: Props) {
     return { school, place: place ? `${place}.` : '', later: m?.[2] ?? '' };
   })();
   const rows: [string, ReactNode][] = record ? [
-    ['Writer', <>{p.entry.name}, a fictional writer</>],
+    // (the name is the record's heading already)
+    ['Writer', 'A fictional writer'],
     ['Taught', <>{taught.school}{(taught.place || taught.later) && <span className="record-sub">{[taught.place, taught.later].filter(Boolean).join(' ')}</span>}</>],
     ['Pen', record.pen],
     ['Paper', record.paper],
