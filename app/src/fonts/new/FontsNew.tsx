@@ -130,12 +130,13 @@ export function FontsNew() {
   const onView = (v: 'set' | 'saved') => { update({ view: v, hand: '' }, true); toTop(); };
   const onOpen = useCallback((id: string | null) => update({ hand: id ?? '' }, !!id), []);
 
-  // Space draws a new set (when nothing that takes Space has focus)
+  // N draws a new set, as R brings another letter on the desk (Space scrolls the page, as everywhere: it drew a new
+  // set from anywhere and replaced what you were reading). Never while you type, never in a dialog.
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
-      if (e.key !== ' ' || e.metaKey || e.ctrlKey || e.altKey || route.view !== 'set') return;
+      if (e.key.toLowerCase() !== 'n' || e.metaKey || e.ctrlKey || e.altKey || e.repeat || route.view !== 'set') return;
       const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(input|textarea|select|button|a|summary)$/i.test(t.tagName) || t.closest('[role=dialog],[role=slider],[role=radio],[role=switch]'))) return;
+      if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName) || t.closest('[role=dialog]'))) return;
       e.preventDefault();
       newSet();
     };

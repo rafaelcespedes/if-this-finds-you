@@ -13,7 +13,7 @@ import { PEN_CHOICES } from './pens';
 import { CONTROLS, controlByCode, controlByKey, PEN_SIZES, type PenSize } from './controls';
 import { OCCASIONS } from './occasions';
 import { decodeMarks, encodeMarks, type Mark } from './doc';
-import { recentLetters, sampleById, sampleForSeed } from './samples';
+import { randomSampleFor, recentLetters, sampleById, sampleForSeed } from './samples';
 // a few dozen first hands, rolled ahead by the app's own sampler (neat, each with its pen, ink and paper): a fresh
 // visit opens on one of them at random, with a letter that suits it, at no cost to the first paint
 import FIRST_LOOKS from './first-looks.json';
@@ -179,11 +179,14 @@ export function firstVisitState(): NoteState {
   try { if (new URLSearchParams(location.search).has('repeatable')) return DEFAULT_STATE; } catch { /* no window */ }
   const looks = FIRST_LOOKS as Partial<NoteState>[];
   if (!looks.length) return DEFAULT_STATE;
-  const a = new Uint32Array(1);
+  const a = new Uint32Array(2);
   globalThis.crypto?.getRandomValues?.(a);
-  const look = looks[(a[0] || Math.floor(Math.random() * 2 ** 32)) % looks.length];
+  const pick = (i: number) => (a[i] || Math.floor(Math.random() * 2 ** 32)) / 2 ** 32;
+  const look = looks[Math.floor(pick(0) * looks.length)];
   const s: NoteState = { ...DEFAULT_STATE, ...look, offsets: { ...(look.offsets ?? {}) } };
-  const letter = sampleForSeed(s.seed, s.style, recentLetters());
+  // the letter drawn at random among those that suit the look's hand (not by its seed): every first look opens on
+  // its whole pool, so many visitors arriving at once see many different letters
+  const letter = randomSampleFor(s.style, pick(1), recentLetters());
   return letter ? { ...s, sample: letter.id, text: letter.text } : s;
 }
 

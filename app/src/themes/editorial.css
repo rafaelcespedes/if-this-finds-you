@@ -187,6 +187,18 @@ html:root[data-layout='ruler'] .rr-ledger-record .rr-card-no .rr-sc {
   line-height: 1;
   color: var(--rr-ink);
 }
+/* phones (the slip under the sheet, CatalogueSlip): the big figure needs no "No." over it (Rafael, 4 Nov). It stays
+   for screen readers, so the number still reads "No. 0004", and takes no room, so the figure sits where it began */
+html:root[data-layout='ruler'] .rr-under-sheet .rr-card-no .rr-sc {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 html:root[data-layout='ruler'] .rr-ledger-record .rr-ledger-head {
   align-items: flex-start;
 }
@@ -753,5 +765,67 @@ html:root[data-layout='ruler'] .about-section-no {
   }
   html:root[data-layout='ruler'] .sp {
     padding-top: calc(var(--site-head-clear) + 0.75rem);
+  }
+}
+
+/* =====================================================================================================================
+   PHONE QA (launch)
+   ===================================================================================================================== */
+/* a note's mark on the letter page: the desk's bigger, unseen target (24 px with a mouse, 44 px to a finger) */
+html:root[data-layout='ruler'] .sp .sp-ref {
+  position: relative;
+}
+html:root[data-layout='ruler'] .sp .sp-ref::after {
+  content: '';
+  position: absolute;
+  inset: -7px -6px;
+}
+@media (pointer: coarse) {
+  html:root[data-layout='ruler'] .sp .sp-ref::after {
+    inset: -17px -14px;
+  }
+}
+/* a phone held sideways (a short, wide window): the letter's slip dock tucks into the bottom-right corner, its count
+   folded away, so it no longer sits across the middle of the sheet while it writes */
+@media (orientation: landscape) and (max-height: 32rem) {
+  html:root[data-layout='ruler'] div:has(> .rr-dock) {
+    justify-content: flex-end;
+  }
+  html:root[data-layout='ruler'] .rr-dock .rr-dock-of {
+    display: none;
+  }
+}
+/* Windows contrast themes drop the strip's gradient ground (a gradient is a background image): All letters' dock keeps
+   a solid ground in the system's colours, so the decades never run into the cards */
+@media (forced-colors: active) {
+  html:root[data-look='reading-room'] .archive-dock-box::before {
+    inset: -0.5rem 0 calc(-14px - env(safe-area-inset-bottom, 0px));
+    background: Canvas;
+  }
+}
+
+/* =====================================================================================================================
+   THE LETTER PAGE WHERE THE DOCK SHOWS (phones, tablets: below the spread's 64em): nothing said twice (Rafael: "very
+   little redundancy… it should be like a breeze to get through"). The floating dock carries the actions (‹ No. ›,
+   Bring another, More: Read as text, Download image, Change writer, Copy link, Copy citation; Write a reply), so the
+   page drops its own actions' row, its Cite · Download image line and its citation; and what the head already says:
+   the facts From, To, When and Where (the writer's line and the kicker), the place and date under the words (the
+   kicker), the sheet's "Hand: …" credit (the Hand fact and its note). Language and Hand stay, with Full record.
+   ===================================================================================================================== */
+@media (max-width: 63.99em) {
+  html:root[data-layout='ruler'] .sp :is(.sp-actions, .sp-quiet, .sp-cite, .sp-dateline, .sp-credit) {
+    display: none;
+  }
+  html:root[data-layout='ruler'] .sp .sp-fact:is([data-term='from'], [data-term='to'], [data-term='when'], [data-term='where']) {
+    display: none;
+  }
+  /* the two facts left share one ruled row */
+  html:root[data-layout='ruler'] .sp .sp-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.25rem;
+  }
+  html:root[data-layout='ruler'] .sp .sp-fact {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.125rem;
   }
 }

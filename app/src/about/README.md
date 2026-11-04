@@ -24,7 +24,7 @@ header's Menu takes them. The 404 page's hand-made copy of the header lists Abou
 Trimmed on 3 November 2026 (Rafael: "way too long"; about 580 words to read, from about 1,700, credits folded away).
 The earlier "The hope is to bring letters, people and handwriting traditions…" line was cut.
 
-1. "Designed by Rafael Cespedes and built with Claude, an AI model made by Anthropic." (How it started)
+1. "Designed by Rafael Cespedes and built with Claude." (How it started)
 2. "It's a free lab experiment with nothing to sell. He wanted to use AI in ways he finds clever. Drawing hundreds of
    handwriting fonts, for one, used to take too many resources to try."
 3. "The fonts are open source now, and the code will follow once it's polished."

@@ -1005,11 +1005,19 @@ html[data-look='reading-room'] .control-sheet > div:first-child > div:first-chil
   background: color-mix(in oklab, var(--rr-ink) 22%, transparent);
   border-radius: 2px;
 }
-html[data-look='reading-room'] .control-sheet .rr-bring {
-  width: auto;
-  min-height: 44px;
-  padding: 6px 4px 6px 10px;
-  border: 0;
+/* Bring another in the peek: the desk's light-red button (rr-bring-button; Rafael, launch day: "Similar to desktop on
+   mobile ... a light red button"), kept near the size its words took: the desktop's 36 px fill, even padding (no key
+   on a phone), and a finger's 44 px reached by an invisible band above and below rather than a taller fill. The row
+   centres it on the writer's name beside it. (Its class over and over: the touch rule above, at 44 px, has five.) */
+html[data-look='reading-room'] .control-sheet .rr-bring.rr-bring-button.rr-bring.rr-bring.rr-bring {
+  position: relative;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+}
+html[data-look='reading-room'] .control-sheet .rr-bring.rr-bring-button::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
 }
 /* "Paper, pen & ink": a ruled row like the desk's "Writing materials", its name left and its chevron right, no box */
 html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-pill] {
@@ -1189,7 +1197,7 @@ html[data-look='reading-room'] .lib-menu {
   border-radius: 3px;
 }
 html[data-look='reading-room'] .canvas-title,
-html[data-look='reading-room'] .archive-card h3 {
+html[data-look='reading-room'] .archive-card :is(h2, h3) {
   color: var(--rr-ink);
 }
 
@@ -1448,7 +1456,7 @@ html[data-look='reading-room'] :is(.rr-card-title, [class*='text-[22px]']) {
 }
 
 /* text */
-html[data-look='reading-room'] :is(.rr-fact dd, .font-row-name, .canvas-title, .archive-card h3) {
+html[data-look='reading-room'] :is(.rr-fact dd, .font-row-name, .canvas-title, .archive-card h2, .archive-card h3) {
   font-family: var(--rr-text-face);
   font-size: var(--rr-text-size);
   font-weight: var(--rr-text-weight);

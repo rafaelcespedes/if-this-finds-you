@@ -2,7 +2,8 @@
 // skin (the Reading Room's slips, rules and small caps); this gives the behaviour, and the same feel everywhere.
 //
 //   Phones: a bottom sheet (vaul): drag it down to dismiss, flick it away, rubber-banding at the top, a spring settle,
-//           the page dimming in step with the drag; safe-area aware, focus kept inside, Esc and the backdrop close it.
+//           the page dimming in step with the drag; safe-area aware, focus kept inside, Esc, the backdrop and the
+//           phone's Back close it.
 //   Desktop: a menu or popover that scales and fades from its trigger (transform-origin at the trigger), in ~180 ms.
 //
 // Two shapes:
@@ -11,7 +12,7 @@
 //
 // Rows have a fixed slot at the end for their icon, a spinner while something is being made, or a tick once it's done,
 // so nothing moves while it works; every row and button answers a press at once (scale 0.97).
-import { useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { DropdownMenu, Popover } from 'radix-ui';
 import { Drawer } from 'vaul';
 import { Check, Loader2 } from 'lucide-react';
@@ -45,7 +46,113 @@ export type SheetEntry =
   | { kind: 'separator'; id: string }
   | { kind: 'label'; id: string; label: ReactNode };
 
+// ---------- Back closes a phone sheet ----------
+// A phone's Back button (or a swipe back) closes an open sheet instead of leaving the page (phone QA, launch day).
+// Opening a sheet adds one entry to the tab's history, at the same address. Back takes it out: the sheet closes, and
+// the page's own listeners never hear of it. Closing the sheet any other way (a choice, the backdrop, a swipe down,
+// Escape) takes the entry back out the same quiet way, so no stray step is left for Back. Whatever the page wrote to
+// the address while the sheet was open (the Fonts filters, the desk's link) stays. A choice that leaves the page (a
+// link, a kept letter opened from another page) leaves history alone, so the new page loads as it should.
+
+type OpenSheet = { close: () => void; length: number; popped: boolean };
+/** the open sheets, the last opened on top */
+const openSheets: OpenSheet[] = [];
+/** sheets closed some other way whose entry is about to be taken back out */
+const tidying: { timer: number; at: string }[] = [];
+/** our own history.back() calls still to arrive, and the address to keep after each */
+const swallowing: string[] = [];
+/** the address while a sheet is open, a frame at a time (Back arrives on the entry before it, at the old address) */
+let latest = '';
+let sampling = 0;
+/** the page is going (a link, location.assign): leave history alone */
+let leaving = false;
+let leavingTimer = 0;
+
+function sample() {
+  if (!openSheets.length) { sampling = 0; return; }
+  latest = location.href;
+  sampling = requestAnimationFrame(sample);
+}
+function onLeave() {
+  leaving = true;
+  // a navigation that didn't happen after all (a download, a cancelled one): sheets tidy up again
+  clearTimeout(leavingTimer);
+  leavingTimer = window.setTimeout(() => { leaving = false; }, 3000);
+}
+function keep(at: string) {
+  if (at && location.href !== at) history.replaceState(history.state, '', at);
+}
+function onPop(e: PopStateEvent) {
+  // our own tidying up: the page doesn't hear it, and keeps its address
+  const own = swallowing.shift();
+  if (own != null) { e.stopImmediatePropagation(); keep(own); return; }
+  // Back on an entry about to be tidied away (closed a moment ago): that's the tidying done
+  const t = tidying.pop();
+  if (t) { clearTimeout(t.timer); e.stopImmediatePropagation(); keep(t.at); return; }
+  // Back with a sheet open: close the top one, and nothing else
+  const top = openSheets.pop();
+  if (!top) return;
+  e.stopImmediatePropagation();
+  keep(latest);
+  top.popped = true;
+  top.close();
+}
+if (typeof window !== 'undefined') {
+  // registered at load and in the capture phase, so it runs before any page's own popstate listener
+  window.addEventListener('popstate', onPop, true);
+  window.addEventListener('pageshow', (e) => { if (e.persisted) leaving = false; });
+}
+
+/** While `open`, Back closes the sheet (see above). */
+function useBackCloses(open: boolean, close: () => void) {
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  useEffect(() => {
+    if (!open) return;
+    const state = history.state;
+    history.pushState(state && typeof state === 'object' ? { ...state } : state, '');
+    const me: OpenSheet = { close: () => closeRef.current(), length: history.length, popped: false };
+    openSheets.push(me);
+    if (openSheets.length === 1) window.addEventListener('beforeunload', onLeave);
+    latest = location.href;
+    if (!sampling) sampling = requestAnimationFrame(sample);
+    return () => {
+      const i = openSheets.indexOf(me);
+      if (i >= 0) openSheets.splice(i, 1);
+      if (!openSheets.length) window.removeEventListener('beforeunload', onLeave);
+      if (me.popped) return;
+      // closed some other way: take its entry back out, once whatever the choice started has begun (a navigation
+      // shows itself by then, in WebKit too, where location.assign waits for a task of its own)
+      const t = {
+        at: location.href,
+        timer: window.setTimeout(() => {
+          const k = tidying.indexOf(t);
+          if (k >= 0) tidying.splice(k, 1);
+          // the page is going, or something has been added on top since: leave history alone
+          if (leaving || history.length !== me.length) return;
+          swallowing.push(location.href);
+          history.back();
+        }, 50),
+      };
+      tidying.push(t);
+    };
+  }, [open]);
+}
+
 // ---------- the phone sheet ----------
+
+/**
+ * The grabber on every phone sheet (these, and the desk's control sheet): the same room above it and below it, so it
+ * never sits on a rule or a first line (Rafael, launch day: "it's touching the divider rule"). What comes next starts
+ * at its bottom edge; a title is drawn up by its line's leading, so its words sit there too.
+ */
+export function SheetGrabber({ onClick, className, barClassName }: { onClick?: () => void; className?: string; barClassName?: string }) {
+  return (
+    <div aria-hidden onClick={onClick} className={cn('flex shrink-0 cursor-grab justify-center pt-3 pb-3', className)}>
+      <span className={cn('h-[5px] w-9 rounded-full', barClassName)} />
+    </div>
+  );
+}
 
 /** The sheet's surface: the page's panel colour, a grabber, room for the home indicator. */
 const sheetSurface =
@@ -54,6 +161,7 @@ const sheetBackdrop = 'sheet-backdrop fixed inset-0 z-50 bg-[rgba(24,20,14,0.32)
 
 function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, children, describe, onOpenAutoFocus, onEscapeKeyDown }: { trigger: ReactElement; title: string; showTitle?: boolean; open?: boolean; onOpenChange?: (o: boolean) => void; children: ReactNode; describe?: string; onOpenAutoFocus?: (e: Event) => void; onEscapeKeyDown?: (e: KeyboardEvent) => void }) {
   const surface = useRef<HTMLDivElement>(null);
+  useBackCloses(!!open, () => onOpenChange?.(false));
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
       <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>
@@ -74,10 +182,8 @@ function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, chil
           }}
           onEscapeKeyDown={onEscapeKeyDown}
         >
-          <div aria-hidden className="flex h-6 shrink-0 cursor-grab items-end justify-center">
-            <span className="h-[5px] w-9 rounded-full bg-[color-mix(in_oklab,var(--foreground)_18%,transparent)]" />
-          </div>
-          <Drawer.Title className={cn('sheet-title shrink-0 px-5 pt-2 pb-2 text-[0.8125rem] font-medium text-muted-foreground', !showTitle && 'sr-only')}>{title}</Drawer.Title>
+          <SheetGrabber barClassName="bg-[color-mix(in_oklab,var(--foreground)_18%,transparent)]" />
+          <Drawer.Title className={cn('sheet-title -mt-1 shrink-0 px-5 pt-0 pb-2 text-[0.8125rem] font-medium text-muted-foreground', !showTitle && 'sr-only')}>{title}</Drawer.Title>
           {describe && <Drawer.Description className="sr-only">{describe}</Drawer.Description>}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2">{children}</div>
         </Drawer.Content>

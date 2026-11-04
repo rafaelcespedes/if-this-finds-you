@@ -10,7 +10,7 @@ import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayo
 import { across, type Geometry, type Side } from '@/lib/geometry';
 import type { Edit } from '@/lib/edits';
 import { wordAt } from '@/lib/doc';
-import { isComposingKey, isMac, useEditInput, type Composition } from '@/hooks/useEditInput';
+import { historyKey, isComposingKey, isMac, useEditInput, type Composition } from '@/hooks/useEditInput';
 import { keepInView } from '@/hooks/useVisualViewport';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +31,8 @@ interface Props {
   text: string;
   /** every change, as one Edit (see lib/edits.ts) */
   onEdit: (e: Edit) => void;
+  /** undo and redo, the page's own (the browser's are cancelled) */
+  onHistory?: (dir: 'undo' | 'redo') => void;
   /** pen-only formatting on a range (or the word at the caret) */
   onFormat: (cmd: FormatCommand, from: number, to: number) => void;
   writerName: string;
@@ -68,7 +70,7 @@ interface Sel {
 const AMBER = '#f3d27a';
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
+  { text, onEdit, onHistory, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -84,8 +86,10 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     setComposition(c);
     onComposingChange?.(c != null);
   }, [onComposingChange]);
-  const input = useEditInput(ta, text, onEdit, 'paper', onComposition);
+  const input = useEditInput(ta, text, onEdit, 'paper', onComposition, onHistory);
   const descId = useId();
+  // the shortcuts' key by its name on this keyboard (Command on Apple's, Ctrl elsewhere), as the keys themselves follow isMac
+  const modKey = isMac() ? 'Command' : 'Ctrl';
   // indices in the live text <-> indices in the text the page was written from
   const toMap = useCallback((i: number) => (geo ? (blank ? geo.text.length : across(i, text, geo.text)) : i), [geo, text, blank]);
   const fromMap = useCallback((i: number) => (geo ? across(i, geo.text, text) : i), [geo, text]);
@@ -307,6 +311,12 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       el.blur();
       wrap.current?.focus({ preventScroll: true });
       sync();
+      return;
+    }
+    const hist = onHistory ? historyKey(e) : null;
+    if (hist) {
+      e.preventDefault();
+      onHistory!(hist);
       return;
     }
     const mod = isMac() ? e.metaKey : e.ctrlKey;
@@ -550,7 +560,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
         style={{ left: caretPx.left, top: caretPx.top, width: lineW, height: lineH, caretColor: 'transparent' }}
       />
       <span id={descId} hidden>
-        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}Fair copy: the page is rewritten cleanly as you type. Command U underlines, Command B presses harder, Command Return adds a P.S.
+        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}Fair copy: the page is rewritten cleanly as you type. {`${modKey} U underlines, ${modKey} B presses harder, ${modKey} Return adds a P.S.`}
         {geo?.summary ? ` This draft has ${geo.summary}.` : ''}
       </span>
     </div>

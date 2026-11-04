@@ -28,7 +28,8 @@ import { ARCHIVE_URL, Missing, SiteHeader, toolHref } from './SiteHeader';
 // the Reading Room: its own letter layout (ReadingSpread.tsx) and, where the spread doesn't fit, its slip dock (SlipDock.tsx)
 import { LOOK } from '@/lib/look';
 import { SlipDock } from './SlipDock';
-import { LetterCounter, ReadingSpread, SPREAD_QUERY } from './ReadingSpread';
+import { copyCitation, LetterCounter, ReadingSpread, SPREAD_QUERY } from './ReadingSpread';
+import { marksOf } from '@/themes/reading-room/catalogue';
 const Dock: (a: DockActions & { id?: string }) => ReactNode = LOOK === 'reading-room' ? SlipDock : LetterDock;
 import { LetterArrival } from '@/themes/postmarked/letter';
 
@@ -74,6 +75,12 @@ interface Props {
 }
 
 /** The window's height, kept current. */
+/** A paper's name as words after "on": "laid paper", "a notebook page", "an aerogramme" (never "laid paper paper"). */
+function paperWords(name: string) {
+  const n = name.toLowerCase();
+  return /paper$/.test(n) ? n : `${/^[aeiou]/.test(n) ? 'an' : 'a'} ${n}`;
+}
+
 function useWindowHeight() {
   const [h, setH] = useState(() => window.innerHeight);
   useEffect(() => {
@@ -174,6 +181,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const onTouchEnd = (e: TouchEvent) => {
     const s0 = swipe.current;
     if (!s0) return;
+    // zoomed in (a pinch), a sideways drag is someone looking closer, not turning the page
+    if ((window.visualViewport?.scale ?? 1) > 1.01) { swipe.current = null; return; }
     const dx = e.changedTouches[0].clientX - s0.x, dy = e.changedTouches[0].clientY - s0.y;
     if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.6) { s0.turned = true; turn(dx < 0 ? 1 : -1); }
   };
@@ -281,12 +290,12 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const sheetH = r.paper.h * pxPerMm;
   const sheet = (
     <div
-      className="flex touch-pan-y flex-col items-center"
+      className="flex touch-pan-y touch-pinch-zoom flex-col items-center"
       onClick={onSheetClick}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       role="img"
-      aria-label={`The letter, written out by hand on ${r.paper.name.toLowerCase()} paper`}
+      aria-label={`The letter, written out by hand on ${paperWords(r.paper.name)}`}
     >
       {/* a sent letter: no guide sheet under the paper */}
       <PaperGuide value={false}>
@@ -366,6 +375,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
         onImage={download}
         imageReady={!!ready && !saving}
         onRandom={another}
+        onCite={() => void copyCitation(letter, marksOf(letter.id)?.no)}
         onText={() => {
           setTextOpen(true);
           requestAnimationFrame(() => document.querySelector('.ed-transcript, .sp-text')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));

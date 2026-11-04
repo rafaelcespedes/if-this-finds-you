@@ -21,21 +21,21 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useNoteState } from '@/hooks/useNoteState';
+import { rememberOpen, useNoteState } from '@/hooks/useNoteState';
 import { useStableProps } from '@/hooks/useStableProps';
 import { useWideScale } from '@/hooks/useWideScale';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
 import { FONT_PACKAGE, canShareLinks, copyText, exportFont, exportFontPackage, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
-import { EditLog, type Edit } from '@/lib/edits';
+import { EditLog, UndoHistory, diffEdit, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib/roll';
 import type { RollAsk, RollReply } from '@/lib/roll-protocol';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
-import { DRAFTS_KEY, drafts, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
+import { DRAFTS_KEY, drafts, forgetOpen, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
@@ -63,7 +63,7 @@ import type { NoteState } from '@/lib/state';
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
 import { LetterMarks } from '@/themes/reading-room/SheetMarks';
-import { materials, useMaterialsOpen } from '@/themes/reading-room/materials';
+import { useMaterialsOpen } from '@/themes/reading-room/materials';
 import { PlateTitle } from '@/themes/reading-room/PlateLine';
 import { PostSheetMarks, ToolArrival } from '@/themes/postmarked/tool';
 
@@ -83,6 +83,8 @@ function writePref(key: string, v: string) {
 
 /** Every edit to the note, in order: the seed of the ink log (see lib/edits.ts). */
 const editLog = new EditLog();
+/** the letter's undo and redo (the browser's are cancelled: lib/edits.ts) */
+const undoHistory = new UndoHistory();
 /** the Reading Room's desk, skipped when nothing it shows changed (its props are stable: useStableProps) */
 const ReadingDeskMemo = memo(ReadingDesk);
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
@@ -133,7 +135,7 @@ export default function App() {
   }, []);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [detent, setDetent] = useState<Detent>('peek');
-  const [busy, setBusy] = useState({ download: false, font: false, video: false });
+  const [busy, setBusy] = useState({ download: false, font: false, video: false, gif: false });
   const [editing, setEditing] = useState(false);
   const [plainText, setPlainText] = useState(() => readPref('seedhand:plain-text') === '1');
   const [variety, setVariety] = useState(() => Number(readPref('seedhand:variety') ?? 60) || 60);
@@ -161,7 +163,8 @@ export default function App() {
   useEffect(() => { sawLetter(state.sample); }, [state.sample]);
 
   // ---------- found letters and your own: always a way to each ----------
-  const [kept, setKept] = useState<Draft[]>(() => drafts());
+  // the letter on the desk now, if it was kept on leaving (back from another page, a reload): not listed twice
+  const [kept, setKept] = useState<Draft[]>(() => { forgetOpen(state); return drafts(); });
   // another tab kept or took a letter: the list follows
   useEffect(() => {
     const on = (e: StorageEvent) => { if (e.key === DRAFTS_KEY || e.key == null) setKept(drafts()); };
@@ -307,20 +310,35 @@ export default function App() {
   // the link saved at once, without waiting for the pen or the debounce
   useEffect(() => {
     const leave = () => {
-      if (holdLinkRef.current) return;
+      if (holdLinkRef.current) return null;
       const ink = inkRef.current;
       if (ink && inkFor.current === inkLook && ink.waiting) {
         ink.flush();
-        saveNow({ text: ink.text(), inkLog: encodeInk(ink.doc), sample: null, marks: [] });
+        const patch = { text: ink.text(), inkLog: encodeInk(ink.doc), sample: null, marks: [] };
+        saveNow(patch);
         setInkTick((n) => n + 1);
-      } else saveNow();
+        return { ...stateNow.current, ...patch };
+      }
+      saveNow();
+      return stateNow.current;
     };
     const onVis = () => { if (document.visibilityState === 'hidden') leave(); };
+    // leaving the page itself (the site's menu, the wordmark, another site, closing the tab): a letter of your own is
+    // kept in My letters too, and this tab's desk comes back to it (launch QA: it was lost to a found letter)
+    const onHide = () => {
+      const s = leave();
+      if (s && !s.reader && !s.sample) keepDraft(s);
+      rememberOpen(s);
+    };
+    // back on the same page from the browser's cache (Back): it's open again, so it's not kept twice
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) { forgetOpen(stateNow.current); rememberOpen(null); setKept(drafts()); } };
     document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('pagehide', leave);
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('pageshow', onShow);
     return () => {
       document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('pagehide', leave);
+      window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('pageshow', onShow);
     };
   }, [inkLook, saveNow]);
   // and while typing, what the pen hasn't reached yet is kept for this tab, so even a crash keeps it: on the
@@ -459,10 +477,11 @@ export default function App() {
   }, [wrote, state.reader]);
   const hintShown = idleLong && !wrote && !editing && !state.reader && !replying;
   // the moment the pen is on the paper (desktop): "Start typing" until the first key, so the click visibly worked;
-  // then, the first time you write, how to stop, once, for a few seconds
+  // then, the first time you write, how to stop, once, for a few seconds. On a phone too for a found letter, where a
+  // reply starts on a fresh sheet and so has no caret to show until the first key (launch QA)
   const [keyedSinceFocus, setKeyedSinceFocus] = useState(false);
   useEffect(() => { if (editing) setKeyedSinceFocus(false); }, [editing]);
-  const startHint = editing && isDesktop && !keyedSinceFocus && !state.reader;
+  const startHint = editing && (isDesktop || replyPending) && !keyedSinceFocus && !state.reader;
   const [escHint, setEscHint] = useState(false);
   useEffect(() => {
     if (!editing || !keyedSinceFocus || !isDesktop || readPref('seedhand:esc-taught') === '1') return;
@@ -566,6 +585,14 @@ export default function App() {
         });
       }
     }
+    // what the letter's field showed before this edit, for the undo history (a found letter answered: a blank sheet)
+    const shownBefore = (() => {
+      const s = stateNow.current;
+      if (s.sample && !s.inkLog && SAMPLE_FIRST_KEY === 'reply') return '';
+      const li = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+      return li ? li.text() : s.text;
+    })();
+    const remember = (after: string) => { if (e.kind !== 'undo') undoHistory.record(shownBefore, after, e); };
     // most of the letter cut at once (select all, then Delete or a key): a note to bring it back
     const was = stateNow.current;
     const liveInk = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
@@ -596,6 +623,7 @@ export default function App() {
       const reply = onSample && SAMPLE_FIRST_KEY === 'reply';
       const ink = !onSample ? inkSession() : inkSession(reply ? newInkDoc(s.seed, s.style) : inkFromText(s.seed, s.style, s.text));
       ink.edit(reply ? { ...e, at: 0, del: 0 } : e);
+      remember(ink.text());
       // a long paste or dictation: written down now (minutes at the pen's pace, and the page busy all the while)
       if (e.ins.length >= WRITE_AT_ONCE) ink.flush();
       if (reply) { replyArrive.current = true; keepTheirs(s); update({ replyTo: replyOf(s) }); }
@@ -609,14 +637,61 @@ export default function App() {
       replyArrive.current = true;
       keepTheirs(s0);
       update({ text: e.ins, marks: [], sample: null, replyTo: replyOf(s0) });
+      remember(e.ins);
       return;
     }
+    remember(shownBefore.slice(0, e.at) + e.ins + shownBefore.slice(e.at + e.del));
     update((s) => {
       const doc = applyEdit({ text: s.text, marks: s.marks, signed: s.signed }, e);
       // the first edit makes a sample letter the writer's own text
       return { text: doc.text, marks: doc.marks, sample: null };
     });
   }, [update, posture.onTyped, inkMode, inkSession, syncInk, keepTail, inkLook, offerBack]);
+  /**
+   * Undo and redo, one step each (a word, a run of Backspaces, a paste: lib/edits.ts UndoHistory), never more than
+   * the last edit. In ink, typing the pen hasn't reached is taken back, and wet ink (the last 3 s) is lifted; dry ink
+   * stays, and says so. A step that would take most of the letter offers it back, as any big cut does.
+   */
+  const onHistory = useCallback((dir: 'undo' | 'redo') => {
+    const s = stateNow.current;
+    if (s.sample && !s.inkLog && SAMPLE_FIRST_KEY === 'reply') return;
+    const ink = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+    const cur = ink ? ink.text() : s.text;
+    const e = dir === 'undo' ? undoHistory.undo(cur) : undoHistory.redo(cur);
+    if (!e) return;
+    lastEditAt.current = performance.now();
+    setKeyedSinceFocus(true);
+    if (e.del >= 30 && e.del >= cur.length * 0.5 && e.ins.length * 4 < e.del) {
+      ink?.flush();
+      offerBack({ text: ink ? ink.text() : s.text, inkLog: ink ? encodeInk(ink.doc) : s.inkLog, marks: s.marks, signed: s.signed }, 'Most of the letter is gone');
+    }
+    const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
+    if (ink) {
+      if (want.length < cur.length && !ink.waiting) {
+        // written: lift wet ink back to what the step asks for, and no further
+        let lifted = 0;
+        while (ink.text().length > want.length && lifted < 2000 && ink.undo()) lifted++;
+        if (!lifted) {
+          undoHistory.keep(dir);
+          toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
+          return;
+        }
+        // a lifted stroke that took a letter too many: the pen writes it again
+        const fix = diffEdit(ink.text(), want, 'type', 'paper');
+        if (fix) ink.edit(fix);
+      } else {
+        ink.edit({ ...e, kind: e.ins ? 'replace' : 'delete' });
+      }
+      if (ink.text() !== want) undoHistory.clear();
+      syncInk();
+    } else {
+      update((st) => {
+        const doc = applyEdit({ text: st.text, marks: st.marks, signed: st.signed }, e);
+        return { text: doc.text, marks: doc.marks, sample: null };
+      });
+    }
+    requestAnimationFrame(() => editor.current?.setSelection(e.at + e.ins.length));
+  }, [update, inkMode, inkLook, syncInk, offerBack]);
 
   // ---------- pen-only formatting: underline by hand, press harder, sign ----------
   const editor = useRef<PaperEditorApi>(null);
@@ -839,7 +914,8 @@ export default function App() {
     if (exporting.current) return;
     const ac = new AbortController();
     exporting.current = ac;
-    setBusy((b) => ({ ...b, video: true }));
+    // each format its own flag, so only the row being made shows it
+    setBusy((b) => ({ ...b, [kind]: true }));
     const what = kind === 'gif' ? 'GIF' : 'video';
     const stop = { label: 'Stop', onClick: () => ac.abort() };
     toast.loading(`Making the ${what}…`, { id: 'export', description: 'The letter writes itself out, then it saves', action: stop, duration: Infinity });
@@ -888,7 +964,7 @@ export default function App() {
       }
     } finally {
       exporting.current = null;
-      setBusy((b) => ({ ...b, video: false }));
+      setBusy((b) => ({ ...b, video: false, gif: false }));
     }
   }, [name, coarse]);
 
@@ -1032,10 +1108,7 @@ export default function App() {
   // the Reading Room's writing materials, cracked open as you start a letter of your own, keep the desk's column
   // beside the sheet while you write (themes/reading-room/materials.ts); the header and the footer still step back
   const materialsOpen = useMaterialsOpen();
-  // the click that starts writing on the letter cracks them open (once a visit; focus stays in the letter)
-  useEffect(() => {
-    if (editing && LOOK === 'reading-room' && isDesktop) materials.crack();
-  }, [editing, isDesktop]);
+  // (they crack open on the click that starts writing: ReadingDesk answers lib/write-start.ts, a mouse or pen only)
   const deskColumn = desk || (LOOK === 'reading-room' && isDesktop && materialsOpen);
   const reader = state.reader;
   const brokenLink = linkTrouble === 'incomplete';
@@ -1297,6 +1370,7 @@ export default function App() {
                   blank={replyPending}
                   hovering={inkActive && inkRef.current!.hovering}
                   onEdit={onEdit}
+                  onHistory={onHistory}
                   onFormat={onFormat}
                   writerName={name}
                   geometry={geometry}
@@ -1406,7 +1480,7 @@ export default function App() {
             onSign={toggleSigned}
             onDone={() => editor.current?.blur()}
             ink={inkMode}
-            onUndo={inkMode ? () => onEdit({ at: 0, del: 0, ins: '', kind: 'undo', t: Date.now(), source: 'paper' }) : undefined}
+            onUndo={inkMode ? () => onHistory('undo') : undefined}
             mode={panelProps.ink ? (state.pen === 'pencil' ? 'pencil' : state.mode) : undefined}
             onMode={panelProps.ink?.onMode}
             onFairCopy={inkMode && state.inkLog ? () => panelProps.ink?.onFairCopy() : undefined}

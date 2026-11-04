@@ -79,12 +79,14 @@ the label role's small capitals; the letter's number is archival red. Other look
   64rem (the safe-area inset wins when wider). So the wordmark and the last place sit at the same x on every page
   (40 and 1400 at 1440; 40 and 1880 at 1920). The Reading Room's --rr-margin and the editorial grid's --ed-margin
   carry the same values; the header never takes a max-width.
-- It pins only on a screen at least 32rem tall. A phone on its side, or a phone with very large browser text (the rem
-  grows, so the screen counts as shorter), lets it scroll away rather than give it the screen. Print is unchanged.
+- It pins on every screen, a short one too: a phone on its side, a window under 32rem tall, a laptop at 200%. (It used
+  to scroll away there, but it still drew over the page's top, which kept no room for it: launch-day phone QA.) Print
+  is unchanged: at the top of the first page.
 - It floats over the page (nothing moves on first paint; pages keep their own top space). Its height is
-  `--site-head-box`; while pinned it covers `--site-head`, and with its fade `--site-head-clear` (both 0 when it
-  isn't pinned). `html` has `scroll-padding-top: var(--site-head-clear)`, so a jump to an anchor stops below it, and
-  anything else that sticks to the top uses `top: var(--site-head-clear)` (the Fonts bar and rail, About's titles).
+  `--site-head-box`; it covers `--site-head`, and with its fade `--site-head-clear`, on every screen and in print.
+  Pages start below it with them (`padding-top: calc(var(--site-head-clear) + …)`). `html` has
+  `scroll-padding-top: var(--site-head-clear)`, so a jump to an anchor stops below it, and anything else that sticks
+  to the top uses `top: var(--site-head-clear)` (the Fonts bar and rail, About's titles).
 
 ## When the words fit (desktops, tablets)
 

@@ -44,6 +44,20 @@ export function closingOf(text: string): { paras: string[]; signature: string | 
 /** When, as the record gives it: the curator's date ("August 1798") or the year. */
 const whenOf = (l: ArchiveLetter) => l.found?.dateNote ?? (l.year != null ? String(l.year) : '');
 
+/** The line to cite a letter by (the page's "Cite this letter", and the phone dock's "Copy citation"). */
+export function citationOf(l: ArchiveLetter, no: number | undefined) {
+  const placeDateRaw = [l.place ?? '', whenOf(l)].filter(Boolean).join(', ');
+  const writerLine = l.recipient ? `${shortAuthor(l)} to ${l.recipient.split(/;\s*/)[0]}` : shortAuthor(l);
+  return `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDateRaw ? `, ${placeDateRaw}` : ''}.`;
+}
+/** Copies it, with the desk's toasts. */
+export async function copyCitation(l: ArchiveLetter, no: number | undefined) {
+  const citation = citationOf(l, no);
+  const ok = await copyText(citation);
+  if (ok) toast.success('Citation copied', { id: 'cite' });
+  else toast.error('Couldn’t copy the citation', { id: 'cite', description: citation });
+}
+
 export interface Turn {
   at: number;
   total: number;
@@ -117,7 +131,8 @@ export function ReadingSpread(p: Props) {
     if (!i) return null;
     const open = openNote === key;
     return (
-      <button type="button" className="sp-ref" aria-expanded={open} aria-controls={`${id}-n-${key}`} onClick={() => setOpenNote(open ? null : key)}>
+      // aria-controls only names the note while it's on the page (it's rendered open only)
+      <button type="button" className="sp-ref" aria-expanded={open} aria-controls={open ? `${id}-n-${key}` : undefined} onClick={() => setOpenNote(open ? null : key)}>
         <span className="sr-only">Note </span>{i}
       </button>
     );
@@ -126,12 +141,8 @@ export function ReadingSpread(p: Props) {
     <p id={`${id}-n-${key}`} className="sp-note-open"><span className="sp-note-no" aria-hidden>{n(key)}</span>{notes[n(key) - 1].body}</p>
   );
 
-  const citation = `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDateRaw ? `, ${placeDateRaw}` : ''}.`;
-  const cite = async () => {
-    const ok = await copyText(citation);
-    if (ok) toast.success('Citation copied', { id: 'cite' });
-    else toast.error('Couldn’t copy the citation', { id: 'cite', description: citation });
-  };
+  const citation = citationOf(l, no);
+  const cite = () => copyCitation(l, no);
 
   const handMenu = (
     <HandMenu
@@ -172,7 +183,7 @@ export function ReadingSpread(p: Props) {
         {inline('hand')}
         <div className="sp-record">
           <div className="sp-record-bar">
-            <button type="button" aria-expanded={recordOpen} aria-controls={`${id}-record`} onClick={() => setRecordOpen((o) => !o)} className="sp-record-open">
+            <button type="button" aria-expanded={recordOpen} aria-controls={recordOpen ? `${id}-record` : undefined} onClick={() => setRecordOpen((o) => !o)} className="sp-record-open">
               Full record <span aria-hidden>{recordOpen ? '−' : '+'}</span>
             </button>
             <span className="sp-quiet">
@@ -242,7 +253,7 @@ export function ReadingSpread(p: Props) {
 
 function Fact({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <div className="sp-fact">
+    <div className="sp-fact" data-term={term.toLowerCase()}>
       <dt className="sp-label">{term}</dt>
       <dd>{children}</dd>
     </div>

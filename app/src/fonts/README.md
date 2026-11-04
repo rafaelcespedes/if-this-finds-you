@@ -4,7 +4,7 @@ Every hand as a free, open-source font, served like a foundry's list: a set of 2
 own generated font**, with the writer's name (lib/hands.ts `writerName`, as the tool's label; it opens the hand's
 record), a few plain words about the hand (Joined · Palmer · fountain pen) and three actions: save it (heart), write
 with it (opens the tool in that exact hand on a fresh sheet), download the font (.otf + .ttf zip). "Show 24 more"
-carries on with the same set; "New set" (or Space) draws another.
+carries on with the same set; "New set" (or N) draws another.
 
 ## The controls: one home at a time (4 Nov 2026)
 - **Below 1024 px** (phones, tablets): one floating dock, `Dock.tsx`: Filters (the shared Sheet: Joined or print first,
