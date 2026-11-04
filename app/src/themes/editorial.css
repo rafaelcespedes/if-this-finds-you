@@ -803,3 +803,29 @@ html:root[data-layout='ruler'] .sp .sp-ref::after {
     background: Canvas;
   }
 }
+
+/* =====================================================================================================================
+   THE LETTER PAGE WHERE THE DOCK SHOWS (phones, tablets: below the spread's 64em): nothing said twice (Rafael: "very
+   little redundancy… it should be like a breeze to get through"). The floating dock carries the actions (‹ No. ›,
+   Bring another, More: Read as text, Download image, Change writer, Copy link, Copy citation; Write a reply), so the
+   page drops its own actions' row, its Cite · Download image line and its citation; and what the head already says:
+   the facts From, To, When and Where (the writer's line and the kicker), the place and date under the words (the
+   kicker), the sheet's "Hand: …" credit (the Hand fact and its note). Language and Hand stay, with Full record.
+   ===================================================================================================================== */
+@media (max-width: 63.99em) {
+  html:root[data-layout='ruler'] .sp :is(.sp-actions, .sp-quiet, .sp-cite, .sp-dateline, .sp-credit) {
+    display: none;
+  }
+  html:root[data-layout='ruler'] .sp .sp-fact:is([data-term='from'], [data-term='to'], [data-term='when'], [data-term='where']) {
+    display: none;
+  }
+  /* the two facts left share one ruled row */
+  html:root[data-layout='ruler'] .sp .sp-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.25rem;
+  }
+  html:root[data-layout='ruler'] .sp .sp-fact {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.125rem;
+  }
+}

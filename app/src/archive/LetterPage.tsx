@@ -28,7 +28,8 @@ import { ARCHIVE_URL, Missing, SiteHeader, toolHref } from './SiteHeader';
 // the Reading Room: its own letter layout (ReadingSpread.tsx) and, where the spread doesn't fit, its slip dock (SlipDock.tsx)
 import { LOOK } from '@/lib/look';
 import { SlipDock } from './SlipDock';
-import { LetterCounter, ReadingSpread, SPREAD_QUERY } from './ReadingSpread';
+import { copyCitation, LetterCounter, ReadingSpread, SPREAD_QUERY } from './ReadingSpread';
+import { marksOf } from '@/themes/reading-room/catalogue';
 const Dock: (a: DockActions & { id?: string }) => ReactNode = LOOK === 'reading-room' ? SlipDock : LetterDock;
 import { LetterArrival } from '@/themes/postmarked/letter';
 
@@ -374,6 +375,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
         onImage={download}
         imageReady={!!ready && !saving}
         onRandom={another}
+        onCite={() => void copyCitation(letter, marksOf(letter.id)?.no)}
         onText={() => {
           setTextOpen(true);
           requestAnimationFrame(() => document.querySelector('.ed-transcript, .sp-text')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
