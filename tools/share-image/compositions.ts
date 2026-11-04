@@ -42,7 +42,8 @@ const HEAD = { h: 76, rule: true, tagline: { text: 'Real letters, written out by
 const MARK = { x: 40, y: 27, h: 26 };
 
 export const COMPOSITIONS: Record<string, Composition> = {
-  // A. A tight pile: eight letters dropped on the table one after another, the room round them
+  // A. A tight pile: eight letters dropped on the table one after another, the room round them (share.jpg, live a
+  // few hours on 4 Nov)
   pile: {
     width: 1200, height: 630, pxPerMm: 1.78, grid: true, head: HEAD, wordmark: MARK,
     sheets: [
@@ -56,7 +57,8 @@ export const COMPOSITIONS: Record<string, Composition> = {
       { id: 'stewart-1914-home', x: 626, y: 352, rot: 2 },
     ],
   },
-  // B. A scattered fan: the letters spread across the table, edges running off the picture
+  // B. A scattered fan: the letters spread across the table, edges running off the picture. The site's picture
+  // (Rafael, 4 Nov: "i prefer B"), published as app/public/brand/share-2.jpg
   fan: {
     width: 1200, height: 630, pxPerMm: 1.9, grid: true, head: HEAD, wordmark: MARK,
     sheets: [
