@@ -236,7 +236,7 @@ export function FontsDock(p: Props) {
                 <span aria-hidden className="tabular">{p.savedCount}</span>
               </Button>
             )}
-            <Button onClick={p.onNewSet} className="dock-primary ml-auto min-w-11 px-3" title="New set (Space)">
+            <Button onClick={p.onNewSet} className="dock-primary ml-auto min-w-11 px-3" title="New set (N)">
               <RefreshCw aria-hidden />
               {/* its words give way only with very large text on a phone (fonts.css) */}
               <span className="dock-newset-words">New set</span>

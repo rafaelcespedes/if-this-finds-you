@@ -141,7 +141,7 @@ export const canShareLinks = () => typeof navigator !== 'undefined' && typeof na
 /** The engine builds the open font package (zip: .otf, .ttf, how to install it, the licence, the credits). */
 export const FONT_PACKAGE = typeof (E as unknown as { buildFontPackage?: unknown }).buildFontPackage === 'function';
 
-/** The open font package, built in a worker, saved as the engine names it ("IfThisFindsYou-Yara-Rowe.zip"). */
+/** The open font package, built in a worker, saved as the engine names it ("IfThisFindsYou-Yara-Rowe-K7Q2.zip": the writer, then the hand's own code). */
 export function exportFontPackage(req: import('@/workers/font.worker').FontRequest) {
   return new Promise<{ filename: string; family: string; glyphs: number; bytes: number }>((resolve, reject) => {
     const w = new Worker(new URL('../workers/font.worker.ts', import.meta.url), { type: 'module' });
