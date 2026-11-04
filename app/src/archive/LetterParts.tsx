@@ -73,6 +73,8 @@ export interface DockActions {
   imageReady: boolean;
   onRandom: () => void;
   onText: () => void;
+  /** copies the letter's citation (the Reading Room's dock offers it in More) */
+  onCite?: () => void;
 }
 
 function useKeyboardLift() {
