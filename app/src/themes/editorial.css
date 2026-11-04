@@ -9,8 +9,8 @@
    A measured, asymmetric page: one rule divides a margin rail (the record, the groups' names, the sections' numbers)
    from the page; a faint line in each gutter between the twelve columns shows behind it; titles are big and hang across the grid; numbers
    in the sans, tabular. Rafael: "the ruler idea is kind of overdone", then "kill the tickers and the numbers on every
-   page and just leave the grid": no ticks and no column numbers anywhere, the grid kept, quiet (About's quieter
-   still, and one line drops it: --ed-grid-line), rules only where they divide.
+   page and just leave the grid": no ticks and no column numbers anywhere; then, at launch, the grid only on All
+   letters' list, and every rule as soft as the Fonts page's. Rules only where they divide.
 
    The grid: 12 columns, 40 px margins, 32 px gutters from 64 rem (the Reading Room's own --rr-margin and --rr-gutter);
    8 columns, 32 px margins, 24 px gutters from 40 rem; 4 columns, 16 px margins and gutters on a phone. It runs the
@@ -32,11 +32,13 @@ html:root[data-layout] {
   /* one column's width, for placing things on it: (the grid's width less its margins and gutters) / columns */
   --ed-w: min(100vw, var(--ed-max));
   --ed-col: calc((var(--ed-w) - 2 * var(--ed-margin) - (var(--ed-cols) - 1) * var(--ed-gutter)) / var(--ed-cols));
-  /* rules: crisp. A grid line, a rule between rows, a rule that divides, ink */
+  /* rules: a grid line, a rule between rows, a rule that divides. The rules are the Fonts page's own, soft
+     (Rafael: "Soften to match Fonts"): the Reading Room's --rr-rule (12% ink) and --rr-hair (16%), which also firm up
+     under prefers-contrast: more; so every page's header line is the same */
   --ed-ink: var(--rr-ink);
   --ed-line: color-mix(in oklab, var(--rr-ink) 12%, transparent);
-  --ed-rule: color-mix(in oklab, var(--rr-ink) 20%, transparent);
-  --ed-rule-strong: color-mix(in oklab, var(--rr-ink) 55%, transparent);
+  --ed-rule: var(--rr-rule);
+  --ed-rule-strong: var(--rr-hair);
 
   /* the display scale: above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96 · 128 px),
      fluid between a phone and 1440. Each is read with this file's value as the fallback (--ed-…: var(--rr-…,
@@ -84,11 +86,8 @@ html:root[data-layout] {
   display: none;
 }
 html:root[data-layout='ruler'] {
-  /* the grid's line; About's is quieter. To drop a page's grid, set this to transparent there (one line) */
+  /* the grid's line. To drop a page's grid, set this to transparent there (one line), or hide the layer as below */
   --ed-grid-line: var(--ed-line);
-}
-html:root[data-layout='ruler'][data-layout-page='about'] {
-  --ed-grid-line: color-mix(in oklab, var(--rr-ink) 7%, transparent);
 }
 html:root[data-layout='ruler'] .ed-grid {
   position: fixed;
@@ -125,10 +124,10 @@ html:root[data-layout='ruler'] .ed-grid > i + i::before {
 @media (max-width: 63.99rem) {
   html:root[data-layout='ruler'] .ed-grid > i:nth-child(n + 9) { display: none; }
 }
-/* the Fonts page keeps only the running head (its content is its own), and All letters' table moves under a still
-   frame, so neither shows the grid */
-html:root[data-layout='ruler'][data-layout-page='fonts'] .ed-grid,
-html:root[data-layout='ruler']:has(.letter-canvas) .ed-grid {
+/* only All letters' list shows the grid (Rafael: "Hide grid on those pages"): not the desk, a letter page or About;
+   not the Fonts page (its content is its own) nor the table (it moves under a still frame) */
+html:root[data-layout='ruler']:is([data-layout-page='desk'], [data-layout-page='about'], [data-layout-page='fonts']) .ed-grid,
+html:root[data-layout='ruler']:has(.letter-canvas, .sp) .ed-grid {
   display: none;
 }
 /* the page's ground is the root's (the same room colour), so the grid behind the page shows */
