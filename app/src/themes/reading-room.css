@@ -876,7 +876,7 @@ html[data-look='reading-room'] :is(.sheet-surface, .control-sheet) .sheet-row:ac
 }
 /* the controls you operate: fills, edges, the held-down state */
 html[data-look='reading-room'] :is(
-    [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+    [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item'],
     [data-slot='segmented-item'][data-chip],
     [role='radiogroup']:is([aria-label='Pen'], [aria-label='School']) > button,
     [data-slot='button'].bg-secondary
@@ -886,7 +886,7 @@ html[data-look='reading-room'] :is(
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-look='reading-room'] :is(
-      [data-slot='segmented']:is([aria-label^='Kind of'], [aria-label='Paper']) > [data-slot='segmented-item'],
+      [data-slot='segmented'][aria-label='Paper'] > [data-slot='segmented-item'],
       [data-slot='segmented-item'][data-chip],
       [role='radiogroup']:is([aria-label='Pen'], [aria-label='School'], [aria-label='Tip']) > button,
       [data-slot='button'].bg-secondary
@@ -1496,18 +1496,6 @@ html[data-look='reading-room'] :is(.rr-bring, .rr-dock-reply, .dock-primary, div
     --rr-rule: color-mix(in oklab, var(--rr-ink) 45%, transparent);
     --rr-hair: color-mix(in oklab, var(--rr-ink) 60%, transparent);
   }
-}
-/* the ruled rows that open things (Full record, Writing materials, Handwriting and more): under the pointer their
-   name underlines faintly, pressed the row takes the press wash. TEMPORARY, the same as ui/controls.css's shared
-   .ruled-row from the components owner: delete this once that lands */
-@media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .ruled-row:hover > :first-child {
-    text-decoration: underline 1px color-mix(in oklab, currentColor 40%, transparent);
-    text-underline-offset: 3px;
-  }
-}
-html[data-look='reading-room'] .ruled-row:active {
-  background: var(--st-press);
 }
 /* pressed, every control answers, phones included (the tap highlight is off everywhere): icons and quiet words on the
    ink press wash, red words on their red one in the deeper red (red on the ink wash would be 4.4:1) */
