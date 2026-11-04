@@ -1136,8 +1136,8 @@ export default function App() {
     />
   );
 
-  // the running head (the Reading Room layouts, house rule 2): in the Reading Room on a desktop it runs the width of
-  // the window, its places reaching the desk's right edge; elsewhere it stays over the letter's side
+  // the running head (the Reading Room layouts, house rule 2) runs the width of the window on every page; with the
+  // Reading Room's desk column beside the letter, its middle centres over the letter's side (`beside`)
   const headSpansDesk = LOOK === 'reading-room' && isDesktop && !reader;
   const folio = useFolio(LOOK === 'reading-room' ? sample?.id : null);
   const siteHeader = (
@@ -1156,9 +1156,7 @@ export default function App() {
       // grid's gutter before it and its margin after, reading-room.css), less the header row's own gap (gap-x-4)
       beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + var(--rr-gutter, 0rem) + var(--rr-margin, 0.75rem) - 1rem)' : undefined}
       quiet={editing && !isDesktop}
-      // pinned within its column (narrower than the window beside Classic's panel), not to the window
-      within
-      style={wide > 1 && isDesktop ? { zoom: wide } : undefined}
+      // never zoomed with a wide desk: the same size and margins as on every other page
       className={cn('transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
     >
       {/* no hints up here: they come as ghosts by the letter, once; screen readers still hear the state, and what
@@ -1170,7 +1168,8 @@ export default function App() {
   return (
     <TooltipProvider>
       <div className={cn('relative min-h-dvh', !reader && 'lg:grid lg:grid-cols-[minmax(0,1fr)_auto]')}>
-        {headSpansDesk && siteHeader}
+        {/* the site's header, full width over the desk and its side column, as on every page */}
+        {siteHeader}
         <main
           className={cn(
             'relative min-w-0 overflow-x-clip px-4 pb-32 sm:px-8 lg:px-10 lg:pt-[6.25rem] lg:pb-16',
@@ -1179,7 +1178,6 @@ export default function App() {
           )}
           style={mobileSheet ? { paddingBottom: metrics.peek + 28 } : wide > 1 && isDesktop ? { paddingTop: `${(6.25 * wide).toFixed(3)}rem` } : undefined}
         >
-          {!headSpansDesk && siteHeader}
           <div ref={stageRef} className="w-full">
           <div className={cn(replyDesk && 'mx-auto flex items-start')} style={replyDesk ? { width: replyDesk.colW + replyDesk.mineW } : undefined}>
           {replyDesk && found && pxPerMm > 0 && (
@@ -1423,6 +1421,8 @@ export default function App() {
             inert={!deskColumn}
             className={cn(
               'sticky top-0 h-dvh py-3 pr-3 transition-[opacity,transform] ease-out',
+              // Classic's panel starts under the full-width header (the Reading Room's desk keeps its own top room)
+              LOOK !== 'reading-room' && 'pt-[calc(var(--site-head-box)+0.75rem)]',
               deskColumn ? 'duration-[180ms]' : 'pointer-events-none translate-x-3 opacity-0 duration-[240ms] motion-reduce:translate-x-0',
             )}
           >

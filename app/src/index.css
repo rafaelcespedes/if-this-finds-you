@@ -423,12 +423,20 @@ textarea {
    (top: var(--site-head-clear)), and jumps to an anchor stop below it. A screen under 32rem tall doesn't pin the
    header, so there it covers nothing. */
 :root {
+  /* the header's side margins, the one source for every page: 16 px on a phone, 32 px from 40rem, 40 px from 64rem
+     (the Reading Room's --rr-margin, the editorial grid's --ed-margin); the safe-area inset wins when it's wider */
+  --site-margin: 1rem;
   --site-head-rule: 0px;
-  --site-head: calc(max(1rem, env(safe-area-inset-top, 0px)) + 2rem + var(--site-head-rule));
+  /* the header's own height (to keep clear of it, as Classic's panel does), and what it covers while pinned */
+  --site-head-box: calc(max(1rem, env(safe-area-inset-top, 0px)) + 2rem + var(--site-head-rule));
+  --site-head: var(--site-head-box);
   --site-head-clear: calc(var(--site-head) + 12px);
 }
+@media (min-width: 40rem) {
+  :root { --site-margin: 2rem; }
+}
 @media (min-width: 64rem) {
-  :root { --site-head: calc(1.25rem + 2.25rem + var(--site-head-rule)); }
+  :root { --site-margin: 2.5rem; --site-head-box: calc(1.25rem + 2.25rem + var(--site-head-rule)); }
 }
 @media (max-height: 31.99rem), print {
   :root { --site-head: 0px; --site-head-clear: 0px; }

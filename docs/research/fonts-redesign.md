@@ -98,8 +98,9 @@ style, size and reset.
 ## Principles for presenting live-generated handwriting fonts
 
 1. **The writing is the only big thing.** A hand at poster size first, then rows at the tester's size (28–120 px).
-   Everything else is small: one sans (Source Sans 3) for controls and labels at 13–15 px in sentence case, and the
-   archive's serif (Junicode 2) only for names, the page title and the letter's credit. No small capitals.
+   Everything else is small: one sans (`--rr-ui`; Schibsted Grotesk since 4 Nov, Source Sans 3 when this was written)
+   for controls and labels at 13–15 px in sentence case, and the archive's serif (`--rr-book`; Newsreader, then
+   Junicode 2) only for names, the page title and the letter's credit. No small capitals.
 2. **Open on one hand.** The first thing on the page is a single hand writing a real letter's opening across the full
    width, with its writer's name and one action. That is the "where to look", and it reminds you where these hands come
    from.
@@ -143,8 +144,8 @@ maintain everywhere." These are the moves behind it, with the values, so other p
    sits between the tiers, so the eye always knows what's first. The specimen is at least five times the interface
    text, as on every foundry site we studied. Old faces look intended, not dusty, when everything around them is
    small, crisp and calm.
-3. **Each face has one job.** The book face (today Junicode, `--rr-book`) is only for what belongs to the archive: the
-   page title, writers' names, the intro, the letter's credit (italic). The sans (today Source Sans 3, `--rr-ui`) is
+3. **Each face has one job.** The book face (`--rr-book`, today Newsreader) is only for what belongs to the archive: the
+   page title, writers' names, the intro, the letter's credit (italic). The sans (`--rr-ui`, today Schibsted Grotesk) is
    for everything you operate or scan: controls, labels, the few words about a hand, buttons, counts. Sentence case, no
    small capitals in the interface, no face named outside the tokens. The two never share a line.
 4. **Soft rules, no boxes.** Rows are divided by hairlines at 12–16% ink (`--rr-rule`, `--rr-hair`; the hand-drawn
@@ -166,7 +167,8 @@ maintain everywhere." These are the moves behind it, with the values, so other p
 
 ## How the new page applies them
 
-- **Order:** header → "Fonts" and its one sentence (Junicode 44 px; light/dark at the right) → the hero hand (88–150 px
+- **Order** (faces as built on 3 Nov; the page now reads them from the tokens): header → "Fonts" and its one sentence
+  (Junicode 44 px; light/dark at the right) → the hero hand (88–150 px
   wide screens, 2 lines; 44–56 px phones, 3 lines) → a soft rule and the caption (name in Junicode 28 px; "Print ·
   Québec school · ballpoint · Field journal" in Source Sans; the letter's credit in Junicode italic; Download font, Write
   with it, Save) → the tester line (sticky) → the rest of the set.

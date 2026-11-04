@@ -75,6 +75,11 @@ html[data-fonts='new'][data-theme='dark'][data-look='reading-room'] {
   background: #14171c;
   color-scheme: dark;
 }
+/* a focused field brightens on the night room's own scale (the shared field's focus colour is a fixed paper white,
+   which would leave light words on white) */
+html[data-fonts='new'][data-theme='dark'] :is(input, textarea):focus {
+  background-color: var(--rc-ctl-on);
+}
 html[data-fonts='new'][data-theme='dark'] body {
   background: var(--background);
   color: var(--foreground);
@@ -322,7 +327,7 @@ html[data-fonts='new'][data-look] .font-record .record-actions .dock-primary.doc
   color: var(--fx-on-red);
   scale: var(--st-scale, 0.97);
 }
-html[data-fonts='new'][data-look] :is(.fx-quiet, .fx-newset, .fx-done, .fx-more, .fx-tool-btn):is([class]) {
+html[data-fonts='new'][data-look] :is(.fx-quiet, .fx-done, .fx-more):is([class]):not(.fx-toolbar *) {
   font-family: var(--fx-ui);
   font-size: 0.875rem;
   font-weight: 500;
@@ -343,16 +348,44 @@ html[data-fonts='new'] .fx-quiet {
 html[data-fonts='new'] .fx-quiet:active { background: var(--st-press); }
 html[data-fonts='new'] .fx-quiet[aria-pressed='true'] { color: var(--fx-ink); }
 html[data-fonts='new'] .fx-save[aria-pressed='true'] { color: var(--fx-red); }
-html[data-fonts='new'] .fx-newset {
-  color: var(--fx-red);
-  background: transparent;
-  box-shadow: none;
-  font-weight: 600;
+/* New set: the desk's main action, Bring another letter (reading-room.css, .rr-desk .rr-ledger .rr-bring), value for
+   value: a light archival-red tint with no edge, the controls' corners, 2.25rem tall, its words in the action role
+   (the book face) nudged onto the button's centre, its key at the end; the deeper tint under the pointer, the
+   deepest pressed with the deeper red. (Kept in step by hand: a shared class for it would be better; see the note
+   to the Reading Room session.) */
+html[data-fonts='new'][data-look] .fx-newset.fx-newset {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 2.25rem;
+  padding: 0 0.375rem 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--st-accent);
+  color: var(--rr-red);
+  font-family: var(--rr-action-face);
+  font-size: var(--rr-action-size);
+  font-weight: var(--rr-action-weight);
+  line-height: var(--rr-action-leading);
+  letter-spacing: var(--rr-action-tracking);
+  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
+}
+html[data-fonts='new'] .fx-newset .fx-newset-label {
+  translate: 0 var(--rr-book-cap-drop, 0);
+}
+html[data-fonts='new'] .fx-newset .rr-key {
+  background: color-mix(in oklab, var(--rr-red) 10%, transparent);
+  color: color-mix(in oklab, var(--rr-red) 75%, var(--rr-ink));
 }
 @media (hover: hover) and (pointer: fine) {
-  html[data-fonts='new'] .fx-newset:hover { color: var(--fx-red-deep); background: var(--st-accent-hover); }
+  html[data-fonts='new'][data-look] .fx-newset.fx-newset:hover { background: var(--st-accent-hover); }
 }
-html[data-fonts='new'] .fx-newset:active { color: var(--fx-red-deep); background: var(--st-accent-press); }
+html[data-fonts='new'][data-look] .fx-newset.fx-newset:active {
+  background: var(--st-accent-press);
+  color: var(--rr-red-deep);
+  scale: var(--st-scale);
+}
+html[data-fonts='new'] .fx-newset:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 html[data-fonts='new'] .fx-done {
   background: var(--fx-ink);
   color: var(--fx-ground);
@@ -360,16 +393,15 @@ html[data-fonts='new'] .fx-done {
 @media (hover: hover) and (pointer: fine) {
   html[data-fonts='new'] .fx-done:hover { background: var(--ink-soft); }
 }
-html[data-fonts='new'] :is(.fx-tool-btn, .fx-more) {
+html[data-fonts='new'] .fx-more {
   border: 1px solid var(--rc-ctl-edge, var(--border));
   background: transparent;
   color: var(--fx-ink);
 }
 @media (hover: hover) and (pointer: fine) {
-  html[data-fonts='new'] :is(.fx-tool-btn, .fx-more):hover { background: var(--st-hover); }
+  html[data-fonts='new'] .fx-more:hover { background: var(--st-hover); }
 }
-html[data-fonts='new'] :is(.fx-tool-btn, .fx-more):active,
-html[data-fonts='new'] .fx-tool-btn.is-open { background: var(--st-press); }
+html[data-fonts='new'] .fx-more:active { background: var(--st-press); }
 html[data-fonts='new'] .fx-count {
   display: inline-grid;
   min-width: 1.25rem;
@@ -507,7 +539,7 @@ html[data-fonts='new'] .fx-tool-group {
 html[data-fonts='new'] .fx-tester {
   flex: 1 1 26rem;
 }
-html[data-fonts='new'] .fx-tester > label:not(.fx-size) {
+html[data-fonts='new'] .fx-tester > label {
   flex: 1 1 12rem;
 }
 html[data-fonts='new'] .fx-tool-end {
@@ -518,38 +550,10 @@ html[data-fonts='new'] .fx-tool-end {
   html[data-fonts='new'] .fx-tester { order: 3; flex-basis: 100%; }
   html[data-fonts='new'] .fx-toolbar { row-gap: 0.5rem; }
 }
-html[data-fonts='new'] .fx-toolbar :is(input[type='text']) {
-  font-family: var(--fx-ui);
-  font-size: 0.9375rem;
-  height: 2.25rem;
-}
-html[data-fonts='new'] .fx-toolbar [data-slot='button'][aria-haspopup] {
-  font-family: var(--fx-ui);
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-variant-caps: normal;
-  letter-spacing: 0;
-}
+/* the size: the desk's ink-bar SliderRow (its name and value inside the bar), as wide as the drawer's are narrow */
 html[data-fonts='new'] .fx-size {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.625rem;
-  width: 12.5rem;
-  font-family: var(--fx-ui);
-  font-size: 0.8125rem;
-  color: var(--fx-muted);
-}
-html[data-fonts='new'] .fx-size-slider { flex: 1; }
-html[data-fonts='new'] .fx-size-value {
-  min-width: 1.75rem;
-  text-align: right;
-  font-variant-numeric: tabular-nums lining-nums;
-  color: var(--fx-ink);
-}
-html[data-fonts='new'] .fx-layout [data-slot='segmented-item'] {
-  width: 2.25rem;
-  padding: 0;
+  flex: 0 0 13rem;
+  min-width: 0;
 }
 html[data-fonts='new'] .fx-saved { gap: 0.375rem; }
 html[data-fonts='new'] .fx-saved svg { color: var(--fx-red); }
@@ -755,24 +759,19 @@ html[data-fonts='new'] .fx-about {
 
 /* ---------- the phone dock (../Dock.tsx) on this page: its words and red action in the page's faces; under the
    pointer the wash, never an underline ---------- */
-/* the red word actions the dock and its sheets share (New set, Done): the sans, and the red wash under the pointer */
+/* the red word actions the dock and its sheets share (New set, Done): the room's action role, as the phone sheet's
+   Bring another; under the pointer the red wash, never an underline */
 html[data-fonts='new'][data-look] .dock-primary.dock-primary.dock-primary.dock-primary {
-  font-family: var(--fx-ui);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: 0;
   text-decoration: none;
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-fonts='new'][data-look] .dock-primary.dock-primary:hover { background: var(--st-accent-hover); text-decoration: none; }
 }
-html[data-fonts='new'][data-look] .fonts-dock :is([data-slot='button']) {
-  font-family: var(--fx-ui);
-}
-/* every control on the page in the sans (the room gives some of them the book face) */
-html[data-fonts='new'][data-look] :is(.fx-page, .filter-panel, .text-panel, .sheet-surface, [data-radix-popper-content-wrapper]) :is([data-slot='segmented-item'], [data-slot='button']:not(.fx-open), input, [role='menuitem'], [role='menuitemradio'], .sheet-row) {
-  font-family: var(--fx-ui);
-  letter-spacing: 0;
+/* the page's other controls (the hero's and the rows' actions, the record's) in the room's control face; the tester
+   line, the dock, the sheets and popovers get it from the room itself */
+html[data-fonts='new'][data-look] .fx-page :is([data-slot='segmented-item'], [data-slot='button']:not(.fx-open, .dock-primary)):not(.rr-slip-inner *, .archive-dock *) {
+  font-family: var(--rr-control-face);
+  letter-spacing: var(--rr-control-tracking);
   font-variant-caps: normal;
 }
 html[data-fonts='new'][data-theme='dark'] .archive-dock {

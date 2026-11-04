@@ -309,10 +309,11 @@ html[data-look='reading-room'] .rr-icon svg {
 }
 
 /* ---------- icons beside words (design QA) ----------
-   Centred in a row, an icon centres on the line box; Junicode's capitals sit 0.123 em above that centre (its ascent
-   and descent are uneven), so beside Junicode words an icon lifts by that much. Beside the controls' face or
-   Junicode's small capitals the centres already agree. Each icon reads what its words are set in and marks itself
-   [data-beside-text='book' | 'ui'] (icons/lucide.tsx). */
+   Centred in a row, an icon centres on the line box, but a face's capitals need not: the serif's sit off that centre
+   by --rr-book-cap-lift (its ascent and descent are uneven), so beside the serif's words an icon moves by that much.
+   Beside the sans the centres agree. Each icon reads what its words are set in and marks itself
+   [data-beside-text='book' | 'ui'] (icons/lucide.tsx). Measured in real Chrome and WebKit windows: within half a
+   pixel of the capitals beside either face. */
 html[data-look='reading-room'] .rr-pen-icon[data-beside-text='book'] {
   translate: 0 var(--rr-book-cap-lift);
 }
@@ -351,7 +352,7 @@ html[data-look='reading-room'] [data-site-number] {
   font-weight: var(--rr-number-weight);
   letter-spacing: var(--rr-number-tracking);
   font-variant-caps: var(--rr-number-caps);
-  font-variant-numeric: oldstyle-nums tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 /* the phone header's chips (Menu, Share): only their drawn icons, no box (the paper is the only thing with an edge);
    their size is the shared header's own */
@@ -618,9 +619,9 @@ html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring {
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-bring-label {
   text-decoration: none;
-  /* Junicode's capitals sit above its line box's centre (see "icons beside words"): down onto the button's centre, so
-     the space above the capitals matches the space below the baseline. Measured in the ink in real Chrome and
-     WebKit windows at 1×, 2× and 4× (headless Chromium sets text a little higher and misleads) */
+  /* onto the button's centre (--rr-book-cap-drop, set with the faces), so the space above the capitals matches the
+     space below the baseline. Measured in the ink in real Chrome and WebKit windows at 1×, 2× and 4× (headless
+     Chromium sets text a little higher and misleads): 13.5 px and 13.5 px at 2× in both */
   translate: 0 var(--rr-book-cap-drop);
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-key {
@@ -1356,23 +1357,23 @@ html[data-look='reading-room'] .dock-caption {
    TYPE. Nine roles, each with one purpose, and one face, size, weight, leading and tracking (Rafael, 3 Nov: "be very
    intentful about the styling"). Faces and values are the --rr-<role>-* tokens at the top of this file.
      display  the handwritten headings ("All letters", "Fonts") and the wordmark: drawn in the logo's hand, no font
-     title    a letter's title, wherever it names the letter (Junicode at 112% width, 22 px, 560)
-     reading  text read at length: the transcript, a page's opening paragraph (Junicode, 17 px)
-     text     the record's values and the room's own words: card values, a slip's title, names (Junicode, 15 px)
-     small    what comes second in the record: notes, sub-lines, footnotes (Junicode, 13 px)
-     label    the keys of the record, group names, places and counts: the sans in sentence case (Source Sans 3,
-              12 px, 500)
-     number   catalogue numbers: capitals and small capitals, old-style tabular figures, archival red (15 px)
+     title    a letter's title, wherever it names the letter (the serif, 22 px, 480)
+     reading  text read at length: the transcript, a page's opening paragraph (the serif, 17 px)
+     text     the record's values and the room's own words: card values, a slip's title, names (the serif, 15 px)
+     small    what comes second in the record: notes, sub-lines, footnotes (the serif, 13 px)
+     label    the keys of the record, group names, places and counts: the sans in sentence case (12 px, 500)
+     number   catalogue numbers: lining tabular figures, archival red (the sans, 15 px, 500)
      action   the one thing to do next, in archival red words: Bring another letter, Write a reply, New set, Done
-              (Junicode, 17 px, 600)
+              (the sans, 16 px, 600)
      control  everything you operate: the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
-              tooltips (Source Sans 3, 13 px, 400)
+              tooltips (the sans, 13 px, 400)
+   The faces are named only in the tokens (--rr-book, the serif; --rr-ui, the sans).
    and one size outside the scale, for a reason:
      micro    words inside fixed-size controls, under an icon or a bar: the pen tips (Fine, Medium, Bold) and the
               timeline's centuries (11 px). Plain for a choice, small capitals for a group.
    The scale: 13 · 15 · 17 · 22 px.
-   The same sizes on every screen; rem, so they follow the browser's text size. Small capitals only for catalogue
-   numbers. Tabular figures only for numbers that line up or tick.
+   The same sizes on every screen; rem, so they follow the browser's text size. Lining figures throughout; tabular
+   ones only for numbers that line up or tick.
    Controls keep their own line boxes: their heights come from the compact density (density.css).
    ===================================================================================================================== */
 
@@ -1452,7 +1453,7 @@ html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag, .rr-c
   line-height: var(--rr-number-leading);
   letter-spacing: var(--rr-number-tracking);
   font-variant-caps: var(--rr-number-caps);
-  font-variant-numeric: oldstyle-nums tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 /* the dock's place in the list ("4 of 127") is words around a count: the text face, figures that tick in place */
 html[data-look='reading-room'] .rr-dock-of {
