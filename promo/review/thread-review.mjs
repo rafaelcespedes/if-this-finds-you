@@ -20,7 +20,9 @@ const pad = (n) => String(n).padStart(2, '0');
 for (const c of cards) {
   execFileSync('python3', ['-c', `from PIL import Image; Image.open(${JSON.stringify(path.join(root, `out/carousel/letter-${pad(c.n - 1)}.png`))}).convert('RGB').save(${JSON.stringify(path.join(out, `img/letter-${pad(c.n)}.jpg`))}, quality=86)`]);
 }
-fs.copyFileSync(path.join(root, 'out/draft-v8-540.mp4'), path.join(out, 'video.mp4'));
+// the final video once it's rendered, else the latest draft
+const finalVideo = path.join(root, 'out/if-this-finds-you-x-1080.mp4');
+fs.copyFileSync(fs.existsSync(finalVideo) ? finalVideo : path.join(root, 'out/draft-v8-540.mp4'), path.join(out, 'video.mp4'));
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const linkify = (s) => esc(s).replace(/https?:\/\/\S+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u.replace(/^https?:\/\//, '')}</a>`);
@@ -106,7 +108,7 @@ const html = `<!DOCTYPE html>
   <p class="lede">Three posts for X, drafted in your voice. Nothing has been posted anywhere. Every draft fits in 280 characters as X counts them (a link counts as 23). Each Copy button copies one draft.</p>
 
   <h2>1. The hook, with the video</h2>
-  <p class="note">The video here is draft 8 at low resolution. The final render is 1080 × 1080 at 30 fps.</p>
+  <p class="note">The final video: 1080 × 1080, 30 fps, 29.9 s, with sound.</p>
   <video src="video.mp4" controls playsinline preload="metadata"></video>
   ${copy.post1.map((o, i) => post(o, 'post1', i)).join('')}
 

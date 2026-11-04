@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { AbsoluteFill, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
 import { drawSpecimen } from './scene/specimen';
+import { loadPairing, setPairing } from './scene/type';
 
 export const Specimen: React.FC = () => {
   const frame = useCurrentFrame();
@@ -10,9 +11,12 @@ export const Specimen: React.FC = () => {
   const ref = useRef<HTMLCanvasElement>(null);
   useLayoutEffect(() => {
     const handle = delayRender(`specimen ${frame}`, { timeoutInMilliseconds: 120000 });
-    const ctx = ref.current?.getContext('2d', { alpha: false });
-    if (ctx) drawSpecimen(ctx, frame, width, height);
-    continueRender(handle);
+    setPairing('site');
+    loadPairing('site').then(() => {
+      const ctx = ref.current?.getContext('2d', { alpha: false });
+      if (ctx) drawSpecimen(ctx, frame, width, height);
+      continueRender(handle);
+    });
   }, [frame, width, height]);
   return (
     <AbsoluteFill>
