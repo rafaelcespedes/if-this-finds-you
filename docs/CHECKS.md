@@ -115,7 +115,11 @@ print as KNOWN and only fail again if they get worse.
 
 ## Build minutes
 
-The repo is private, so GitHub counts these runs against the account's monthly Actions minutes. Each push
-costs about 4 billed minutes (two jobs of 1–2 minutes, each rounded up to the minute), and a nightly full run
-~40–50 minutes on days the engine changed. Pushing several merged branches at once instead of one by one, and the
-cancellation of superseded runs, keep this down. The account's usage is under GitHub → Settings → Billing.
+A public repo runs these checks on GitHub's standard machines free, with no monthly limit. While the repo is
+private, GitHub counts them against the account's monthly Actions minutes: each push costs about 4 billed minutes
+(two jobs of 1–2 minutes, each rounded up to the minute), and a nightly full run ~40–50 minutes on days the engine
+changed. Pushing several merged branches at once instead of one by one, and the cancellation of superseded runs, keep
+this down. The account's usage is under GitHub → Settings → Billing.
+
+In a public repo, pull requests from other people's copies (forks) run the same checks with read-only access and no
+secrets; a first-time contributor's run waits until someone approves it on the pull request (GitHub's default).
