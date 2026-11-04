@@ -2,6 +2,7 @@
 // panel and the Fonts page.
 import { memo, useId } from 'react';
 import { Slider } from '@/components/ui/slider';
+import { useSheets } from '@/components/ui/sheet';
 
 export function Soon() {
   return (
@@ -21,6 +22,8 @@ export const SliderRow = memo(function SliderRow({
 }) {
   const id = useId();
   const word = describe(value);
+  // phones: the word in the bar already says where it is ("Careful"), so the ends row would label it twice
+  const phone = useSheets();
   return (
     <div data-row className="grid gap-1">
       <div className="flex items-baseline justify-between gap-2">
@@ -44,7 +47,7 @@ export const SliderRow = memo(function SliderRow({
         onReset={onReset}
         onValueChange={(v) => onChange(v[0])}
       />
-      {ends && (
+      {ends && !phone && (
         <span aria-hidden className="-mt-1 flex justify-between text-[0.7188rem] text-faint pointer-coarse:-mt-2">
           <span>{ends[0]}</span>
           <span>{ends[1]}</span>
