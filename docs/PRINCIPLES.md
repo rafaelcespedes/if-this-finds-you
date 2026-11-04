@@ -28,3 +28,8 @@ Rules every workstream follows. Most come straight from Rafael.
     (Rafael, 2026-11-03)
 11. **No hard lines.** Dividers and edges are soft (low-contrast ink, never near-black), so nothing competes with the
     handwriting. (Rafael, 2026-11-03)
+12. **Old content, modern frame.** The letters, hands, papers, stamps and wear can be as old as they like; the frame
+    around them (grid, type scale, type pairing, controls) leans modern so the two hold each other in tension. The
+    redesigned Fonts page is the reference: "this modern grid just kind of balances everything really well. That's
+    the type of balance that we should try to maintain everywhere." (Rafael, 2026-11-03)
+13. **Free fonts only, for now.** Site type comes from free faces (OFL first); no paid licences. (Rafael, 2026-11-03)

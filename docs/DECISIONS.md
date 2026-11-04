@@ -2,6 +2,18 @@
 
 Rafael's calls, newest first. Builders follow these. If one conflicts with a research recommendation, this log wins.
 
+## 2026-11-03 (evening)
+
+- **Stamps:** the organic stamps with era adornments (folds, rust, seal traces, folio notes) are the default.
+- **Nav:** the current page shows a light-red fill; other places take a faint ink wash on hover. No underlines on hover anywhere.
+- **Type:** Source Sans 3 for all controls and labels, sentence case; the small-caps serif labels are retired. The serif is under review (?type=1…7, free fonts only).
+- **Dividers:** hand-drawn by default (?rules=plain for hairlines).
+- **Letter pages:** the big title. **All letters canvas:** no numbers, no hover copy (the list keeps numbers).
+- **Hand cursor** on everything clickable.
+- **Click to write (desktop):** a click shows a clear caret and "Start typing", and opens the writing materials partway.
+- **Fonts page:** the redesign (?fonts=new) replaces the old page; it sets the balance for the whole site (Principle 12).
+- **Project home:** moved to ~/Developer/if-this-finds-you; ~/Documents/Dynamic Font is a link to it.
+
 ## 2026-11-02
 
 ### Purpose (Rafael's own words, the frame for every other decision)
