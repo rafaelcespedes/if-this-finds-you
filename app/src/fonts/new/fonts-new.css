@@ -602,6 +602,10 @@ html[data-fonts='new'][data-look] .font-record .record-actions { gap: 0.5rem; }
   html[data-fonts='new'] .ed-link:hover { text-decoration-color: color-mix(in oklab, currentColor 30%, transparent); background: var(--st-hover); border-radius: 2px; }
 }
 
+/* the record's closing sentence ("Drawn by the engine from…, with a ballpoint, on a letter pad. … is a fictional
+   writer.") says again what its rows just said (Writer, Taught, Pen, Paper): on this page the rows say it once */
+html[data-fonts='new'] .font-record .record-about { display: none; }
+
 /* ---------- the end of the list ---------- */
 html[data-fonts='new'] .fx-end {
   display: grid;
@@ -617,6 +621,10 @@ html[data-fonts='new'] .fx-end-actions {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
+}
+/* phones: the licence line goes (the intro says free and open source; every record has its Licence row) */
+@media (max-width: 39.99rem) {
+  html[data-fonts='new'] .fx-about { display: none; }
 }
 html[data-fonts='new'] .fx-about {
   max-width: 40rem;
