@@ -1,9 +1,9 @@
 // The Reading Room's letter dock on phones (and wherever the spread doesn't fit): a request slip, one hairline-ruled
 // line of words along the bottom edge. "‹ No. 0004 · 4 of 127 › · Bring another · ⋯ · Write a reply", the reply in
-// archival red. Its "more" is the site's overlay system (a menu on desktop, a sheet on phones). Styled by the look
+// archival red; the ⋯ holds Download image, Copy link and Copy citation. Its "more" is the site's overlay system (a menu on desktop, a sheet on phones). Styled by the look
 // (reading-room.css: .rr-dock and its parts). Moved here from themes/reading-room/ReadingLetter.tsx, which the
 // letter page no longer uses (ReadingSpread.tsx took its place).
-import { ChevronLeft, ChevronRight, Download, Ellipsis, FileText, Link2, List, PenLine, Shuffle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Ellipsis, Link2, List, PenLine } from 'lucide-react';
 import { ActionSheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
@@ -39,12 +39,12 @@ export function SlipDock(a: DockActions & { id?: string }) {
           title="More"
           side="top"
           trigger={<button type="button" className="rr-icon hit-44" aria-label="More"><Ellipsis aria-hidden /></button>}
+          // only what the page itself doesn't offer where this dock shows (phones and tablets): the words are already
+          // on the page under the sheet, and Change writer is the Hand fact's own menu (ReadingSpread.tsx); the page
+          // keeps no Cite or Download image of its own here
           entries={[
-            { id: 'text', label: 'Read as text', icon: <FileText />, onSelect: a.onText },
             { id: 'image', label: 'Download image', icon: <Download />, onSelect: a.onImage, disabled: !a.imageReady },
-            { id: 'hand', label: 'Change writer', icon: <Shuffle />, onSelect: a.onNewHand },
             { id: 'share', label: 'Copy link', icon: <Link2 />, onSelect: a.onShare },
-            // the page keeps no Cite of its own where this dock shows (phones and tablets): it's here
             ...(a.onCite ? [{ id: 'cite', label: 'Copy citation', icon: <List />, onSelect: a.onCite }] : []),
           ]}
         />
