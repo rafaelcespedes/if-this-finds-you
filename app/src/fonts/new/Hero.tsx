@@ -67,7 +67,7 @@ export const Hero = memo(function Hero({ entry, text, em, lines, opening, saved,
                 </button>
               </h2>
               <p className="fx-meta">
-                {[entry.family === 'script' ? 'Joined' : 'Print', entry.tradition, penWords(entry.pen), entry.kind].filter(Boolean).join(' · ')}
+                {[entry.family === 'script' ? 'Joined' : 'Print', entry.tradition, penWords(entry.pen)].filter(Boolean).join(' · ')}
                 {!entry.matches && <span className="fx-near"> · close match</span>}
               </p>
             </>

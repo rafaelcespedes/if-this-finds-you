@@ -108,8 +108,9 @@ style, size and reset.
    is one ruled line that stays under the header (Joined or print, Filters, the line and your words, size, list or
    grid, saved, New set); on phones and tablets it's the floating dock and its sheets. Never both.
 4. **Quiet rows, one loud action.** A row is the writing, the writer's name and a few plain words, with three quiet
-   actions. The only filled button on the page is the hero's red "Download font", with the promise said once beside it
-   ("Free and open source · .otf and .ttf · SIL Open Font License"), where a foundry puts its price.
+   icons. The one coloured button is the hero's Download font: the desk's own main action (its light red), holding only
+   its icon (Rafael, 4 Nov: "We really just want the fonts to come through"). "Free and open source" is said once, in
+   the intro; the licence at the foot.
 5. **Show it being written.** Handwriting's own motion is writing, so that's the motion: a line arrives written left to
    right at a writing pace (the hero more slowly); under a resting pointer a row writes its line again over a faint
    trace of itself, so it never vanishes. Every other change takes 150 ms or less. With reduced motion, lines simply
@@ -120,7 +121,8 @@ style, size and reset.
    font can set new words, the line keeps the last words it could. The live hand, which varies more, sits in the
    hand's record with a plain note on the difference.
 8. **The text has a voice.** By default every hand writes the opening of a real letter from the library, credited
-   ("From a letter by Elizabeth Watson, 1823. Read the letter"), so browsing fonts is also a way into the letters.
+   ("The line is from a letter by Elizabeth Watson, 1823. Read the letter", with the hand's record), so browsing fonts
+   is also a way into the letters.
 9. **Say what's chosen.** When filters are on, the count and the choices are spelled out above the list, with
    "Clear filters". When none are on, nothing is said.
 10. **Dark is a choice, made from the same room.** A Light/Dark control (and `?theme=dark`), never automatic. The night
@@ -161,9 +163,9 @@ maintain everywhere." These are the moves behind it, with the values, so other p
    deeper one with a slight scale (`--st-press`, `--st-scale-row` 0.985), 150 ms or less, never an underline. The one
    expressive motion is the old medium's own: the pen writing each line in, left to right, at a writing pace (0.9 s a
    row, 1.6 s for the first hand). Reduced motion keeps the writing and drops the movement.
-8. **Plain words for the controls, the archive's voice for the content.** Controls say what happens ("Download font",
-   "Write with it", "New set", "Clear filters") with 44 px targets and the hand cursor. The content keeps its own
-   register: "From a letter by Elizabeth Watson, 1823."
+8. **Plain words for the controls, the archive's voice for the content.** Controls say what happens ("New set",
+   "Clear filters"; the icons say "Download font", "Write with it" and "Save" in their tooltips) with 44 px targets on
+   touch and the hand cursor. The content keeps its own register: "a letter by Elizabeth Watson, 1823."
 
 ## How the new page applies them
 

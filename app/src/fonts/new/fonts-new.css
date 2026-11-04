@@ -612,7 +612,6 @@ html[data-fonts='new'] .fx-end-actions {
   align-items: center;
   gap: 0.5rem 0.75rem;
 }
-html[data-fonts='new'] .fx-end-or { color: var(--fx-faint); }
 html[data-fonts='new'] .fx-about {
   max-width: 40rem;
   margin: 0;

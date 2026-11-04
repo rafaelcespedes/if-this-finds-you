@@ -18,7 +18,7 @@ import { APP_NAME } from '@/lib/brand';
 import { cn } from '@/lib/utils';
 import { SiteHeader } from '@/archive/SiteHeader';
 import { FontsDock } from '../Dock';
-import { ABOUT, INTRO, useDevicePixelRatio, useRootRem, useRoute, useSettled, useViewportWidth } from '../page';
+import { useDevicePixelRatio, useRootRem, useRoute, useSettled, useViewportWidth } from '../page';
 import { useSaved } from '../favourites';
 import { describeFilters, filterCount, filterKey, NO_FILTERS, type Filters } from '../filters';
 import type { FontEntry, LiveSpec } from '../protocol';
@@ -160,7 +160,8 @@ export function FontsNew() {
           <header className="fx-intro" ref={top}>
             <div className="fx-intro-words">
               <h1 className="fx-title">{inSet ? 'Fonts' : 'Saved hands'}</h1>
-              <p className="fx-lede">{inSet ? INTRO : 'The hands you saved, kept in this browser. Each one downloads as a free, open-source font.'}</p>
+              {/* the page's words, as few as will do (Rafael: "anything that can be hidden, let's hide") */}
+              <p className="fx-lede">{inSet ? <>Every hand here is a free, <span className="whitespace-nowrap">open-source</span> font.</> : 'Kept in this browser.'}</p>
             </div>
             <ThemeToggle />
           </header>
@@ -183,7 +184,7 @@ export function FontsNew() {
           {inSet && (filterCount(route.filters) > 0 || !route.neatOnly) && (
             <p className="fx-chosen">
               <span className="fx-chosen-count tabular">{set.done ? `${set.entries.length} ${set.entries.length === 1 ? 'hand' : 'hands'}` : 'Choosing hands'}</span>
-              <span className="fx-chosen-words">{[describeFilters(route.filters, catalogue), !route.neatOnly && 'any hand, the messy ones too'].filter(Boolean).join(' · ')}</span>
+              <span className="fx-chosen-words">{[describeFilters(route.filters, catalogue), !route.neatOnly && 'messy hands too'].filter(Boolean).join(' · ')}</span>
               <button type="button" className="fx-quiet-link" onClick={() => setFilters(NO_FILTERS, true)}>Clear filters</button>
             </p>
           )}
@@ -200,17 +201,16 @@ export function FontsNew() {
             {set.failed ? (
               <p>The fonts didn’t load. <button type="button" className="fx-quiet-link" onClick={newSet}>Try again</button></p>
             ) : !inSet ? (
-              empty ? <p>Nothing saved yet. Save a hand with the heart and it stays here.</p> : null
+              empty ? <p>Nothing saved yet. Save a hand with the heart.</p> : null
             ) : empty ? (
               <p>{set.note ?? 'No hands match these filters.'} <button type="button" className="fx-quiet-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
             ) : set.done && !set.exhausted ? (
+              // (New set is always at hand, in the tester line or the dock)
               <div className="fx-end-actions">
                 <Button variant="secondary" onClick={() => fonts.more()}>Show {SET_COUNT} more</Button>
-                <span className="fx-end-or">or</span>
-                <Button variant="ghost" onClick={newSet} className="fx-quiet">Draw a new set</Button>
               </div>
             ) : null}
-            <p className="fx-about">{ABOUT} Free to use under the <a className="fx-quiet-link" href="https://openfontlicense.org" target="_blank" rel="noreferrer">SIL Open Font License</a>.</p>
+            <p className="fx-about">Free to use under the <a className="fx-quiet-link" href="https://openfontlicense.org" target="_blank" rel="noreferrer">SIL Open Font License</a>.</p>
           </footer>
         </main>
         {!wide && (
