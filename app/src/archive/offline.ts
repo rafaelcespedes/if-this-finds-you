@@ -6,9 +6,18 @@ export function keepForOffline() {
   const base = import.meta.env.BASE_URL;
   // after the page has loaded: the worker's own first fetches never compete with the letters'
   addEventListener('load', () => {
-    navigator.serviceWorker
+    // with site data blocked (Firefox), even reading navigator.serviceWorker throws: the library then just isn't kept
+    // for offline, and nothing else changes
+    let sw: ServiceWorkerContainer;
+    try {
+      sw = navigator.serviceWorker;
+      if (!sw) return;
+    } catch {
+      return;
+    }
+    sw
       .register(`${base}letters-sw.js`, { scope: `${base}letters` })
-      .then(() => navigator.serviceWorker.ready)
+      .then(() => sw.ready)
       .then((reg) => {
         // what this visit loaded before the worker was looking (the letters, the chunks, the faces): keep those too
         const keep = performance.getEntriesByType('resource').map((e) => e.name);

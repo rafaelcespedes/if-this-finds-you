@@ -74,6 +74,12 @@ interface Props {
 }
 
 /** The window's height, kept current. */
+/** A paper's name as words after "on": "laid paper", "a notebook page", "an aerogramme" (never "laid paper paper"). */
+function paperWords(name: string) {
+  const n = name.toLowerCase();
+  return /paper$/.test(n) ? n : `${/^[aeiou]/.test(n) ? 'an' : 'a'} ${n}`;
+}
+
 function useWindowHeight() {
   const [h, setH] = useState(() => window.innerHeight);
   useEffect(() => {
@@ -288,7 +294,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       role="img"
-      aria-label={`The letter, written out by hand on ${r.paper.name.toLowerCase()} paper`}
+      aria-label={`The letter, written out by hand on ${paperWords(r.paper.name)}`}
     >
       {/* a sent letter: no guide sheet under the paper */}
       <PaperGuide value={false}>
