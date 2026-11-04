@@ -10,15 +10,15 @@ import { SiteHeader } from '@/components/SiteHeader';
 import { ARCHIVE_URL, FONTS_URL } from '@/lib/places';
 import { LiveLine } from './LiveLine';
 
-// ---------- the letters, as `node content/check-texts.mjs` counted them on 3 November 2026 ----------
+// ---------- the letters, as `node content/check-texts.mjs` counted them on 4 November 2026 ----------
 // Update these when letters are switched on or off (the checker prints every one of them).
 const LETTERS = {
-  count: 127,
+  count: 123,
   from: 1395,
   to: 1929,
   languages: 14,
-  writers: 123,
-  womenShare: 59,
+  writers: 119,
+  womenShare: 60,
   african: 25,
   hispanic: 21,
   ordinaryShare: 83,
@@ -245,12 +245,10 @@ export function AboutApp() {
               Library, the DBNL, the Bavarian State Library, Project Runeberg, Wikisource and the UK National Archives.
             </p>
             <p>
-              Each letter is in the public domain in both the United States and Europe: first printed before 1931 (125
-              letters), or first made public in 2003 or later by a writer who died before 1956 or, with no known date of
-              death, written before 1906 (2 letters); and its writer died before 1956 (98 letters) or it was printed
-              anonymously before 1956 (29 letters). Writers’ sex and heritage are counted only from what each source
-              says, never guessed from a name; a letter written in Spanish or Brazilian Portuguese counts as Hispanic or
-              Latin American. Counted on 3 November 2026.
+              Each letter is in the public domain in both the United States and Europe: it was first printed before 1931,
+              and its writer died before 1956 (95 letters) or it was printed anonymously before 1956 (28 letters).
+              Writers’ sex and heritage are counted only from what each source says, never guessed from a name; a letter
+              written in Spanish or Brazilian Portuguese counts as Hispanic or Latin American. Counted on 4 November 2026.
             </p>
 
             <h3 className="about-subhead">The hands</h3>
