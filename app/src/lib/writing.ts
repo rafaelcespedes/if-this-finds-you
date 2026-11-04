@@ -25,6 +25,30 @@ export function scopeIds(svg: string, uid: string) {
 }
 
 /**
+ * The ink's rough edge taken off while the pen writes, and the way to put it back (call it when the pen is done; more
+ * than once is fine). The edge is an SVG filter over the whole sheet (engine ink-svg.js: turbulence and displacement),
+ * and Safari runs it again over the whole sheet on every frame the writing changes: about 12 frames a second on an
+ * iPhone, 60 without it. It moves the edges by a fraction of a pixel, so the ink looks the same while it's moving.
+ * A pen whose filter does more than roughen (felt's bleed, pencil's grain) keeps it.
+ */
+export function liftInkEdge(svg: Element): () => void {
+  const lifted: [Element, string][] = [];
+  for (const el of svg.querySelectorAll('[filter]')) {
+    const ref = el.getAttribute('filter') ?? '';
+    const id = /^url\(#([^)]+)\)$/.exec(ref)?.[1];
+    if (!id || !id.startsWith('inkEdge')) continue;
+    const def = svg.querySelector(`filter[id="${id}"]`);
+    const parts = def ? [...def.children].map((c) => c.localName) : [];
+    if (!parts.length || parts.some((n) => n !== 'feTurbulence' && n !== 'feDisplacementMap')) continue;
+    el.removeAttribute('filter');
+    lifted.push([el, ref]);
+  }
+  return () => {
+    for (const [el, ref] of lifted.splice(0)) el.setAttribute('filter', ref);
+  };
+}
+
+/**
  * The writing of one sheet as an SVG string covering the whole sheet, at the reference scale.
  * inkKey: a swatch key when the engine models ink itself (pens & ink); otherwise the ink is
  * `currentColor` and the page sets the colour.

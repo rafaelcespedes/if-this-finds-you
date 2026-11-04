@@ -6,6 +6,7 @@ import * as E from '@engine';
 import { getStyle, layout, UPM } from '@engine';
 import { handLook, renderingOf } from '@/archive/look';
 import { writerName } from '@/lib/hands';
+import { liftInkEdge } from '@/lib/writing';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
@@ -63,14 +64,18 @@ export function write(text: string, entropy: string, widthPx: number, size: numb
         el.setAttribute('height', String(hgt));
       }
       let player: { replay(): void; destroy(): void } | null = null;
+      // the ink's rough edge is off while the pen writes (lib/writing.ts liftInkEdge) and comes back when it's done
+      let edgeBack = () => {};
       return {
         play(onEnd) {
           player?.destroy();
+          edgeBack();
+          edgeBack = liftInkEdge(el);
           // a little quicker than life, so the line is written while you're still reading the page's opening
-          player = engine.playSVG(el, page, { emPx, rate: 1.35, onEnd });
+          player = engine.playSVG(el, page, { emPx, rate: 1.35, onEnd: () => { edgeBack(); onEnd?.(); } });
           player!.replay();
         },
-        destroy() { player?.destroy(); player = null; },
+        destroy() { player?.destroy(); player = null; edgeBack(); },
       };
     },
   };
