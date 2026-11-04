@@ -3,8 +3,8 @@
 // dividers. Let's use them."). ?rules=plain (or crisp) keeps the plain hairlines, as an escape; ?rules=hand goes back.
 // Read once at load and kept for the tab, like the look (lib/look.ts); never put into share links.
 import { startHandRules } from '@/themes/reading-room/rules/hand-rules';
-// the editorial layouts (?layout=editorial-1/2) want crisp rules: the hand-drawn ones stay off there unless ?rules=hand
-import { EDITORIAL } from './layout';
+// the editorial layouts with a drawn grid (Broadsheet, Ruler) want crisp rules: the hand-drawn ones stay off there unless ?rules=hand
+import { CRISP } from './layout';
 
 export type RulesId = 'plain' | 'hand';
 function readRules(): RulesId {
@@ -13,7 +13,7 @@ function readRules(): RulesId {
     if (asked === 'hand') { sessionStorage.removeItem('seedhand:rules'); return 'hand'; }
     if (asked === 'plain' || asked === 'crisp') { sessionStorage.setItem('seedhand:rules', 'plain'); return 'plain'; }
     const kept = sessionStorage.getItem('seedhand:rules');
-    if (EDITORIAL && asked !== 'hand') return 'plain'; // the editorial layouts' crisp hairlines
+    if (CRISP && asked !== 'hand') return 'plain'; // Broadsheet's and Ruler's crisp hairlines
     return kept === 'plain' || kept === 'crisp' ? 'plain' : 'hand';
   } catch { return 'hand'; }
 }

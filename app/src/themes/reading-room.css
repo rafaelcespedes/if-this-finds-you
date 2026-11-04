@@ -1,80 +1,97 @@
 /* Concept A, "The Reading Room" (?look=reading-room). Everything here is scoped to html[data-look="reading-room"]. */
 /*
-   A letter is brought to your desk, with its catalogue card. The interface steps back into a book face with real
-   small capitals and old-style figures, on a paper-grey room with one archival ink colour; archival red is kept for
-   numbers and the main action. The new pieces (card, request slips, the desk) live in themes/reading-room/.
+   A letter is brought to your desk, with its catalogue card. The paper, the stamps and the handwriting carry the
+   past; the type pulls toward now. On a paper-grey room with one archival ink colour; archival red is kept for numbers
+   and the main action. The new pieces (card, request slips, the desk) live in themes/reading-room/.
 
    Type: two faces, both only ever named in the tokens (--rr-book, --rr-ui), so a pairing swaps by token values.
-   Junicode 2 (Peter S. Baker; Rafael, 3 Nov) for everything archival: reading, titles, the record's values, the
-   catalogue numbers in its small capitals and old-style figures. Self-hosted from fontTools subsets of the upstream
-   release (reading-room/fonts/, OFL.txt there): Fontsource has no Junicode, and its subsets drop small capitals and
-   old-style figures. Enlarged 115% (size-adjust): its x-height is small (0.415 em) for the roles' sizes.
-   Source Sans 3 (Paul D. Hunt; Rafael, 4 Nov: "Let's give Source Sans 3 a chance") for everything you operate and
-   every label, in sentence case: the small-capital labels are retired. Self-hosted too (OFL-SourceSans3.txt).
+   Rafael, 4 Nov, from the type study (?type, retired): "too old" for Junicode, then Newsreader + Schibsted Grotesk,
+   both free (SIL OFL), both born in news. Newsreader (Production Type) for everything archival: titles, reading,
+   the record's values. Schibsted Grotesk (Bakken & Bæck) for everything you operate, every label in sentence case,
+   the main actions and the catalogue numbers in lining, tabular figures. Both self-hosted in reading-room/fonts/
+   with their OFL files.
    The faces are declared under their own names, so the classic look never downloads them.
    Text sizes are in rem, so the room follows the browser's text size as the tool does.
 */
 
 /* ---------- type ---------- */
+/* the serif for everything archival: Newsreader (Production Type, 2020; SIL OFL 1.1, OFL-Newsreader.txt beside it),
+   self-hosted from Fontsource's variable subsets with its optical sizes (opsz 6-72: the titles get the display cut,
+   the reading the text cut, by font-optical-sizing), enlarged 110% so its x-height matches the roles' sizes */
 @font-face {
-  font-family: 'RR Junicode';
+  font-family: 'RR Newsreader';
   font-style: normal;
   font-display: swap;
-  font-weight: 400 600;
-  font-stretch: 100% 112%;
-  size-adjust: 115%;
-  src: url('./reading-room/fonts/junicode-latin-ext-roman.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('./reading-room/fonts/newsreader-latin-ext-roman.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Junicode';
+  font-family: 'RR Newsreader';
   font-style: normal;
   font-display: swap;
-  font-weight: 400 600;
-  font-stretch: 100% 112%;
-  size-adjust: 115%;
-  src: url('./reading-room/fonts/junicode-latin-roman.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('./reading-room/fonts/newsreader-latin-roman.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'RR Junicode';
+  font-family: 'RR Newsreader';
   font-style: italic;
   font-display: swap;
-  font-weight: 400 600;
-  font-stretch: 100% 112%;
-  size-adjust: 115%;
-  src: url('./reading-room/fonts/junicode-latin-ext-italic.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('./reading-room/fonts/newsreader-latin-ext-italic.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Junicode';
+  font-family: 'RR Newsreader';
   font-style: italic;
   font-display: swap;
-  font-weight: 400 600;
-  font-stretch: 100% 112%;
-  size-adjust: 115%;
-  src: url('./reading-room/fonts/junicode-latin-italic.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('./reading-room/fonts/newsreader-latin-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-/* the sans for everything you operate and every label: Source Sans 3 (Paul D. Hunt, Adobe; SIL OFL 1.1, OFL-SourceSans3.txt
-   beside it), self-hosted from Fontsource's variable subsets (one file a script carries every weight), sized so its
-   x-height matches the control size the roles were tuned for */
+/* the sans for everything you operate, every label and the catalogue numbers: Schibsted Grotesk (Bakken & Bæck for
+   Schibsted, 2023; SIL OFL 1.1, OFL-SchibstedGrotesk.txt), self-hosted from Fontsource's subsets with one change:
+   its tabular figures (tnum) no longer swap the full stop and other punctuation for wide tabular forms, so
+   "No. 0004" keeps its full stop close. Sized 86% so its x-height matches the control size */
 @font-face {
-  font-family: 'RR Source Sans';
+  font-family: 'RR Schibsted';
   font-style: normal;
   font-display: swap;
-  font-weight: 200 900;
-  size-adjust: 95%;
-  src: url('./reading-room/fonts/source-sans-3-latin-ext.woff2') format('woff2-variations');
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('./reading-room/fonts/schibsted-grotesk-latin-ext.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Source Sans';
+  font-family: 'RR Schibsted';
   font-style: normal;
   font-display: swap;
-  font-weight: 200 900;
-  size-adjust: 95%;
-  src: url('./reading-room/fonts/source-sans-3-latin.woff2') format('woff2-variations');
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('./reading-room/fonts/schibsted-grotesk-latin.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RR Schibsted';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('./reading-room/fonts/schibsted-grotesk-latin-ext-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RR Schibsted';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('./reading-room/fonts/schibsted-grotesk-latin-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -127,24 +144,25 @@ html[data-look='reading-room'] {
      them, the 20rem panel (density.css --panel-w) */
   --rr-margin: 2.5rem;
   --rr-gutter: 2rem;
-  --rr-book: 'RR Junicode', 'Iowan Old Style', Georgia, serif;
-  /* small capitals are the book face's own (Junicode keeps smcp and c2sc), switched on by the roles that use them */
-  --rr-caps: var(--rr-book);
-  --rr-ui: 'RR Source Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --rr-book: 'RR Newsreader', 'Iowan Old Style', Georgia, serif;
+  /* the catalogue numbers' face (the number role, and the fallback for labels): the sans, no small capitals */
+  --rr-caps: var(--rr-ui);
+  --rr-ui: 'RR Schibsted', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
   /* the serif's own vertical habits, set with the face (a pairing swaps them with it): where its capitals sit against
      its line box's centre. An icon beside its words lifts by --rr-book-cap-lift (icons/lucide.tsx); the desk's Bring
-     another label drops by --rr-book-cap-drop onto its button's centre. Junicode's, measured in real windows */
-  --rr-book-cap-lift: -0.123em;
-  --rr-book-cap-drop: 0.105em;
+     another label drops by --rr-book-cap-drop onto its button's centre (that label is in the sans now, so the drop is
+     Schibsted's). Estimated from Newsreader's and Schibsted's vertical metrics; measure in real windows to refine */
+  --rr-book-cap-lift: -0.11em;
+  --rr-book-cap-drop: -0.006em;
 
   /* the type roles (TYPE, at the end of this file): each a face, a size, a weight, a leading and a tracking. A font
      pairing swaps one face variable per role; the sizes are the scale 13 · 15 · 17 · 22 px, in rem */
   --rr-title-face: var(--rr-book);
   --rr-title-size: 1.375rem;
-  --rr-title-weight: 560;
-  --rr-title-stretch: 112%;
+  --rr-title-weight: 480;
+  --rr-title-stretch: 100%;
   --rr-title-leading: 1.15;
-  --rr-title-tracking: -0.005em;
+  --rr-title-tracking: -0.015em;
   --rr-reading-face: var(--rr-book);
   --rr-reading-size: 1.0625rem;
   --rr-reading-weight: 400;
@@ -169,12 +187,12 @@ html[data-look='reading-room'] {
   --rr-label-caps: normal;
   --rr-number-face: var(--rr-caps);
   --rr-number-size: 0.9375rem;
-  --rr-number-weight: 400;
+  --rr-number-weight: 500;
   --rr-number-leading: 1.2;
-  --rr-number-tracking: 0.04em;
-  --rr-number-caps: small-caps;
-  --rr-action-face: var(--rr-book);
-  --rr-action-size: 1.0625rem;
+  --rr-number-tracking: 0;
+  --rr-number-caps: normal;
+  --rr-action-face: var(--rr-ui);
+  --rr-action-size: 1rem;
   --rr-action-weight: 600;
   --rr-action-leading: 1.2;
   --rr-action-tracking: 0;
@@ -237,11 +255,12 @@ html[data-look='reading-room'] body {
   font-family: var(--rr-text-face);
   font-size: var(--rr-text-size);
   line-height: var(--rr-text-leading);
-  font-variant-numeric: oldstyle-nums proportional-nums;
+  /* lining figures: the old-style ones were part of the "old" */
+  font-variant-numeric: lining-nums proportional-nums;
   font-feature-settings: normal;
 }
 html[data-look='reading-room'] .tabular {
-  font-variant-numeric: oldstyle-nums tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* ---------- small pieces ---------- */
@@ -290,10 +309,11 @@ html[data-look='reading-room'] .rr-icon svg {
 }
 
 /* ---------- icons beside words (design QA) ----------
-   Centred in a row, an icon centres on the line box; Junicode's capitals sit 0.123 em above that centre (its ascent
-   and descent are uneven), so beside Junicode words an icon lifts by that much. Beside the controls' face or
-   Junicode's small capitals the centres already agree. Each icon reads what its words are set in and marks itself
-   [data-beside-text='book' | 'ui'] (icons/lucide.tsx). */
+   Centred in a row, an icon centres on the line box, but a face's capitals need not: the serif's sit off that centre
+   by --rr-book-cap-lift (its ascent and descent are uneven), so beside the serif's words an icon moves by that much.
+   Beside the sans the centres agree. Each icon reads what its words are set in and marks itself
+   [data-beside-text='book' | 'ui'] (icons/lucide.tsx). Measured in real Chrome and WebKit windows: within half a
+   pixel of the capitals beside either face. */
 html[data-look='reading-room'] .rr-pen-icon[data-beside-text='book'] {
   translate: 0 var(--rr-book-cap-lift);
 }
@@ -332,7 +352,7 @@ html[data-look='reading-room'] [data-site-number] {
   font-weight: var(--rr-number-weight);
   letter-spacing: var(--rr-number-tracking);
   font-variant-caps: var(--rr-number-caps);
-  font-variant-numeric: oldstyle-nums tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 /* the phone header's chips (Menu, Share): only their drawn icons, no box (the paper is the only thing with an edge);
    their size is the shared header's own */
@@ -599,9 +619,9 @@ html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring {
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-bring-label {
   text-decoration: none;
-  /* Junicode's capitals sit above its line box's centre (see "icons beside words"): down onto the button's centre, so
-     the space above the capitals matches the space below the baseline. Measured in the ink in real Chrome and
-     WebKit windows at 1×, 2× and 4× (headless Chromium sets text a little higher and misleads) */
+  /* onto the button's centre (--rr-book-cap-drop, set with the faces), so the space above the capitals matches the
+     space below the baseline. Measured in the ink in real Chrome and WebKit windows at 1×, 2× and 4× (headless
+     Chromium sets text a little higher and misleads): 13.5 px and 13.5 px at 2× in both */
   translate: 0 var(--rr-book-cap-drop);
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-key {
@@ -1337,23 +1357,23 @@ html[data-look='reading-room'] .dock-caption {
    TYPE. Nine roles, each with one purpose, and one face, size, weight, leading and tracking (Rafael, 3 Nov: "be very
    intentful about the styling"). Faces and values are the --rr-<role>-* tokens at the top of this file.
      display  the handwritten headings ("All letters", "Fonts") and the wordmark: drawn in the logo's hand, no font
-     title    a letter's title, wherever it names the letter (Junicode at 112% width, 22 px, 560)
-     reading  text read at length: the transcript, a page's opening paragraph (Junicode, 17 px)
-     text     the record's values and the room's own words: card values, a slip's title, names (Junicode, 15 px)
-     small    what comes second in the record: notes, sub-lines, footnotes (Junicode, 13 px)
-     label    the keys of the record, group names, places and counts: the sans in sentence case (Source Sans 3,
-              12 px, 500)
-     number   catalogue numbers: capitals and small capitals, old-style tabular figures, archival red (15 px)
+     title    a letter's title, wherever it names the letter (the serif, 22 px, 480)
+     reading  text read at length: the transcript, a page's opening paragraph (the serif, 17 px)
+     text     the record's values and the room's own words: card values, a slip's title, names (the serif, 15 px)
+     small    what comes second in the record: notes, sub-lines, footnotes (the serif, 13 px)
+     label    the keys of the record, group names, places and counts: the sans in sentence case (12 px, 500)
+     number   catalogue numbers: lining tabular figures, archival red (the sans, 15 px, 500)
      action   the one thing to do next, in archival red words: Bring another letter, Write a reply, New set, Done
-              (Junicode, 17 px, 600)
+              (the sans, 16 px, 600)
      control  everything you operate: the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
-              tooltips (Source Sans 3, 13 px, 400)
+              tooltips (the sans, 13 px, 400)
+   The faces are named only in the tokens (--rr-book, the serif; --rr-ui, the sans).
    and one size outside the scale, for a reason:
      micro    words inside fixed-size controls, under an icon or a bar: the pen tips (Fine, Medium, Bold) and the
               timeline's centuries (11 px). Plain for a choice, small capitals for a group.
    The scale: 13 · 15 · 17 · 22 px.
-   The same sizes on every screen; rem, so they follow the browser's text size. Small capitals only for catalogue
-   numbers. Tabular figures only for numbers that line up or tick.
+   The same sizes on every screen; rem, so they follow the browser's text size. Lining figures throughout; tabular
+   ones only for numbers that line up or tick.
    Controls keep their own line boxes: their heights come from the compact density (density.css).
    ===================================================================================================================== */
 
@@ -1433,7 +1453,7 @@ html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag, .rr-c
   line-height: var(--rr-number-leading);
   letter-spacing: var(--rr-number-tracking);
   font-variant-caps: var(--rr-number-caps);
-  font-variant-numeric: oldstyle-nums tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 /* the dock's place in the list ("4 of 127") is words around a count: the text face, figures that tick in place */
 html[data-look='reading-room'] .rr-dock-of {
