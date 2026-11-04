@@ -68,12 +68,36 @@ export function sampleForSeed(seed: string, style: string, avoid?: ReadonlySet<s
   if (!SAMPLES.length) return undefined;
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619);
+  return fromPools(letterPools(style), h >>> 0, avoid);
+}
+
+/**
+ * A letter for a fresh visit, drawn at random (`r` in [0, 1)) rather than by the seed, so the curated first looks
+ * (first-looks.json) open on the whole of their pools, not one letter each. A hand's own tradition comes first, but a
+ * tradition with fewer than FRESH letters fills only its share of the draws (7 French letters: 7 in 12) and the rest
+ * come from the wider collection, so the many first looks that share a small tradition (most of them are French
+ * hands) don't keep opening on the same few letters. `avoid` as above.
+ */
+const FRESH = 12;
+export function randomSampleFor(style: string, r: number, avoid?: ReadonlySet<string>): SampleText | undefined {
+  if (!SAMPLES.length) return undefined;
+  const pools = letterPools(style);
+  const own = pools.length > 1 && STYLE_TRADITIONS[style] ? Math.min(1, pools[0].length / FRESH) : 1;
+  if (r < own) return fromPools(pools, Math.floor((r / own) * pools[0].length), avoid);
+  const wider = pools.slice(1);
+  return fromPools(wider, Math.floor(((r - own) / (1 - own)) * wider[0].length), avoid);
+}
+
+/** The letters a style can bring, narrowest first (a small pool, a tradition with few letters, still tries the
+ * wider collection before repeating). */
+function letterPools(style: string) {
   const old = historical(style);
   const fit = SAMPLES.filter((s) => old || s.year >= 1660);
   const suited = fit.filter((s) => suits(s, style) && STYLE_TRADITIONS[style]);
-  // a small pool (a tradition with few letters) still tries the wider collection before repeating
-  const pools = [suited, fit, SAMPLES].filter((p) => p.length);
-  const start = h >>> 0;
+  return [suited, fit, SAMPLES].filter((p) => p.length);
+}
+
+function fromPools(pools: SampleText[][], start: number, avoid?: ReadonlySet<string>) {
   for (const pool of pools) {
     for (let d = 0; d < pool.length; d++) {
       const s = pool[(start + d) % pool.length];
