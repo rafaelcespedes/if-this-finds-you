@@ -24,7 +24,7 @@ menu or a search; icon buttons carry tooltips; counts appear only when they help
 
 ## The library's controls (all three options)
 
-- **Letters vs notes: dropped.** Only 5 of 127 are notes, and search still finds them ("note").
+- **Letters vs notes: dropped.** Only 3 of 123 are notes, and search still finds them ("note").
 - **Language: in search, and a light menu where there's room.** Search already matches language names
   ("Spanish", "French").
 - **Era: lighter.** Plain words with a small chevron (a native menu underneath, so phones get their own picker),
