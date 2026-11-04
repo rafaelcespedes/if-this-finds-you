@@ -14,7 +14,7 @@ import { paintAdornment } from './adorn';
 
 export type WearLevel = 0 | 1 | 2;
 /** What a page shows when the URL doesn't say (gentle once Rafael has seen it). */
-export const DEFAULT_WEAR: WearLevel = 0;
+export const DEFAULT_WEAR: WearLevel = 1; // Rafael, 2026-11-03: "let's go with gentle"
 
 /** How worn one sheet is. */
 export interface Wear {
