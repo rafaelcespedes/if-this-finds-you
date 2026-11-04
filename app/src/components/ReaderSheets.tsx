@@ -11,7 +11,7 @@ import { PaperCanvas } from '@/components/PaperCanvas';
 import { sheetPaper, sheetShadow } from '@/lib/papers';
 import { SheetMarks } from '@/components/SheetView';
 import { sheetFrame, sheetOfLine, type Live } from '@/lib/live';
-import { scopeIds } from '@/lib/writing';
+import { liftInkEdge, scopeIds } from '@/lib/writing';
 import { liveInk } from '@/lib/write-live';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -80,8 +80,10 @@ export const ReaderSheets = memo(function ReaderSheets({ live, extras, inkKey, i
       el.insertAdjacentHTML('beforeend', `${fill}${extras[s] ?? ''}</g>`);
       const extrasEl = el.querySelector(':scope > g.extras');
       // the signature, underlines and page number land when the pen is done
-      const player = engine.playSVG(el, page, { emPx, timeline: tl, rate, reducedMotion: reduce, onEnd: () => showExtras([{ extras: extrasEl }]) });
-      made.push({ player, extras: extrasEl, host });
+      // the ink's rough edge is off while the pen writes (lib/writing.ts liftInkEdge) and comes back when it's done
+      const edge = { back: () => {} };
+      const player = engine.playSVG(el, page, { emPx, timeline: tl, rate, reducedMotion: reduce, onEnd: () => { edge.back(); showExtras([{ extras: extrasEl }]); } });
+      made.push({ player, extras: extrasEl, host, el, edge });
     });
     players.current = made;
 
@@ -91,6 +93,7 @@ export const ReaderSheets = memo(function ReaderSheets({ live, extras, inkKey, i
     }
     for (const m of made) {
       m.extras?.setAttribute('opacity', '0');
+      m.edge.back = liftInkEdge(m.el);
       m.player.play();
     }
     return () => made.forEach((m) => m.player.destroy());

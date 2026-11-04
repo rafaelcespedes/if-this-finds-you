@@ -17,16 +17,35 @@ const MISS_STYLE =
 /** Give every id in an engine SVG a unique suffix, so several SVGs on one page don't share filters. */
 export function scopeIds(svg: string, uid: string) {
   const ids = new Set<string>();
-  svg.replace(/\sid="([^"]+)"/g, (_, id: string) => { ids.add(id); return ''; });
-  let out = svg;
-  for (const id of ids) {
-    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    out = out
-      .replace(new RegExp(`id="${esc}"`, 'g'), `id="${id}-${uid}"`)
-      .replace(new RegExp(`url\\(#${esc}\\)`, 'g'), `url(#${id}-${uid})`)
-      .replace(new RegExp(`href="#${esc}"`, 'g'), `href="#${id}-${uid}"`);
+  for (const m of svg.matchAll(/\sid="([^"]+)"/g)) ids.add(m[1]);
+  if (!ids.size) return svg;
+  // every id="…", url(#…) and href="#…" in one pass (it was three passes over the whole sheet per id, ~80 ids a
+  // sheet: opening a letter froze a phone for over a second)
+  return svg.replace(/(id="|url\(#|href="#)([^")]+)(?=[")])/g, (m, pre: string, id: string) => (ids.has(id) ? `${pre}${id}-${uid}` : m));
+}
+
+/**
+ * The ink's rough edge taken off while the pen writes, and the way to put it back (call it when the pen is done; more
+ * than once is fine). The edge is an SVG filter over the whole sheet (engine ink-svg.js: turbulence and displacement),
+ * and Safari runs it again over the whole sheet on every frame the writing changes: about 12 frames a second on an
+ * iPhone, 60 without it. It moves the edges by a fraction of a pixel, so the ink looks the same while it's moving.
+ * A pen whose filter does more than roughen (felt's bleed, pencil's grain) keeps it.
+ */
+export function liftInkEdge(svg: Element): () => void {
+  const lifted: [Element, string][] = [];
+  for (const el of svg.querySelectorAll('[filter]')) {
+    const ref = el.getAttribute('filter') ?? '';
+    const id = /^url\(#([^)]+)\)$/.exec(ref)?.[1];
+    if (!id || !id.startsWith('inkEdge')) continue;
+    const def = svg.querySelector(`filter[id="${id}"]`);
+    const parts = def ? [...def.children].map((c) => c.localName) : [];
+    if (!parts.length || parts.some((n) => n !== 'feTurbulence' && n !== 'feDisplacementMap')) continue;
+    el.removeAttribute('filter');
+    lifted.push([el, ref]);
   }
-  return out;
+  return () => {
+    for (const [el, ref] of lifted.splice(0)) el.setAttribute('filter', ref);
+  };
 }
 
 /**
