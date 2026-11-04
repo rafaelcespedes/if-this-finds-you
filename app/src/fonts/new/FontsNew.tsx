@@ -2,8 +2,8 @@
 // docs/research/fonts-redesign.md has the research, the reasoning and what makes its balance work). One thing to look at first: a single hand writing a real letter's opening at poster size, with
 // its name and its one filled action, Download font. Then one control surface (a ruled tester line that stays under
 // the header on wide screens, the floating dock on phones and tablets), and the rest of the set as a calm list (or a
-// grid), the writing always the biggest thing in each row. Junicode for the archive's words, Source Sans 3 for every
-// control and label, in sentence case. By day the reading room, by night (?theme=dark) the same room with the lamps on.
+// grid), the writing always the biggest thing in each row. Newsreader for the archive's words, Schibsted Grotesk for
+// every control and label, in sentence case. By day the reading room, by night (?theme=dark) the same room with the lamps on.
 //
 // The data, the store and the workers are the current page's (route.ts, store.ts, fonts.worker.ts): the page never
 // loads the engine, and everything that decides a set is in the URL.
