@@ -995,10 +995,14 @@ export default function App() {
   }, [p, name, state.seed, state.style, eff.overrides]);
 
   // R for a new hand, Shift R for a similar one, when not typing; ⌘\\ shows or hides the desk while writing.
-  // While the letter is in use (focus on it after Esc, or a key within the last while, say after Sign it or a
-  // toast's button), a letter key carries on the writing instead: the editor takes the focus and the key
+  // While the letter is in use (a key within the last while, say after Sign it or a toast's button), a letter key
+  // carries on the writing instead: the editor takes the focus and the key. Not after Esc: that's the writer
+  // stopping, so R is a new hand again (launch QA: "Hi", Esc, R gave "Hir")
+  const stoppedWriting = useRef(false);
+  useEffect(() => { if (editing) stoppedWriting.current = false; }, [editing]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && (e.target as HTMLElement | null)?.closest?.('[data-paper]')) stoppedWriting.current = true;
       if (e.key === '\\' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); posture.toggle(); return; }
       if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
       const t = e.target as HTMLElement | null;
@@ -1006,7 +1010,7 @@ export default function App() {
       // menus and dialogs keep their own keys (type-ahead, Escape)
       if (t?.closest?.('[role="menu"],[role="listbox"],[role="dialog"]')) return;
       const typed = e.key.length === 1 && e.key !== ' ';
-      if (typed && editor.current && (t?.closest?.('[data-paper]') || performance.now() - lastEditAt.current < WRITING_LATELY_MS)) {
+      if (typed && editor.current && !stoppedWriting.current && (t?.closest?.('[data-paper]') || performance.now() - lastEditAt.current < WRITING_LATELY_MS)) {
         editor.current.focus();
         return;
       }
