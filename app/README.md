@@ -219,6 +219,13 @@ rust, the archivist's pencilled folio, foxing and a tide line; no rubber stamp b
 `?flaw=bleed` puts a flaw on every stamp, `?adorn=all` gives a letter everything its era allows.
 `/papers.html?view=compare` shows letters across the eras in all three.
 
+**Wear** (`lib/paper/wear.ts`): `?wear=0|1|2` (new, gentle, well worn; `DEFAULT_WEAR` sets the default). A worn sheet's
+straight edges wear soft with nibbles and now and then a tiny tear, its corners rub round (part of the outline, so
+everything clips to it), and a patina is painted into the paper once: a darker rim, grime where it was held, an
+uneven fade, fibre unevenness, faint foxing, rarely a tide mark. Seeded by the letter (`<PaperLetter value={{ id,
+year }}>` from `components/PaperCanvas.tsx`, else the marks' letter); older letters wear more. `/papers.html?view=wear`
+shows ten letters at the three levels.
+
 Sizes come from makers' and retailers' listings, DIN 5008, USPS and Wikipedia; colours and line weights are matched
 by eye. Everything is painted by `lib/paper/paint.ts` from small textures made once (grain, formation, cockle)
 and stretched, so a sheet paints in a few milliseconds; shared textures and outlines are made in idle time.

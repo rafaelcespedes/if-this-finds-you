@@ -7,6 +7,8 @@ import { PaperCanvas, PaperGuide, PaperMarks } from '@/components/PaperCanvas';
 import { liveLayout, sheetSVG } from '@/lib/live';
 import { SAMPLES } from '@/lib/samples';
 import { planMarks, printMarks, type MarkLook, type MarkMode } from '@/lib/paper/marks';
+import { paintPatina, wornPaper, type WearLevel } from '@/lib/paper/wear';
+import { outlineOf, outlinePath } from '@/lib/paper/outline';
 import { ALL_PAPERS, getPaper, paintPaper, sheetShadow, type PaperSpec } from '@/lib/papers';
 import '../index.css';
 
@@ -57,13 +59,14 @@ function Lettered({ paperId, badge, i, look }: { paperId: string; badge: number;
   const raw = letter as unknown as { place?: string; year?: number };
   return (
     <PaperMarks value={{ id: letter.id, hand: seed, place: raw.place ?? 'Lisbon', year: raw.year ?? 1838, number: 4 + i * 31 + badge, look, badge }}>
-      <div className="relative isolate shrink-0 rounded-[1.5px]" style={{ width: paper.w * K, height: paper.h * K, boxShadow: sheetShadow(paper) }}>
-        <PaperCanvas paper={paper} pxPerMm={K} className="absolute inset-0 rounded-[1.5px]" />
+      <div className="relative isolate shrink-0" style={{ width: paper.w * K, height: paper.h * K, boxShadow: sheetShadow(paper) }}>
+        <PaperCanvas paper={paper} pxPerMm={K} className="absolute inset-0" />
         <div className="writing writing-fill pointer-events-none absolute inset-0 overflow-hidden" style={{ color: '#1f2a44' }} dangerouslySetInnerHTML={{ __html: svg }} />
       </div>
     </PaperMarks>
   );
 }
+
 const Z = parseFloat(q.get('z') || '6');
 
 // view=compare: letters across the eras, each as plain, organic and adorned (?modes=plain,organic&letters=id:paper,…)
@@ -78,7 +81,7 @@ const COMPARE: [string, string, MarkLook][] = [
   ['migrant-1917-chicago-sister', 'pad', 'reading-room'],
   ['aibonito-1929', 'airmail', 'reading-room'],
 ];
-function Compared({ id, paperId, look, mode, i }: { id: string; paperId: string; look: MarkLook; mode: MarkMode; i: number }) {
+function Compared({ id, paperId, look, mode, i, wear }: { id: string; paperId: string; look: MarkLook; mode: MarkMode; i: number; wear?: WearLevel }) {
   const paper = getPaper(paperId);
   const letter = SAMPLES.find((s) => s.id === id) ?? SAMPLES[i];
   const raw = letter as unknown as { place?: string; year?: number; origin?: string };
@@ -90,13 +93,27 @@ function Compared({ id, paperId, look, mode, i }: { id: string; paperId: string;
   const cancel = look === 'postmarked' && raw.origin === 'undelivered' ? 'Undelivered' : null;
   return (
     <PaperMarks value={{ id: letter.id, hand: seed, place: raw.place ?? null, year: raw.year ?? null, number: look === 'reading-room' ? 12 + i * 37 : null, cancel, look, origin: raw.origin, kind: letter.kind, mode }}>
-      <div className="relative isolate shrink-0 rounded-[1.5px]" style={{ width: paper.w * K, height: paper.h * K, boxShadow: sheetShadow(paper) }}>
-        <PaperCanvas paper={paper} pxPerMm={K} className="absolute inset-0 rounded-[1.5px]" />
+      <div className="relative isolate shrink-0" style={{ width: paper.w * K, height: paper.h * K, boxShadow: wear ? 'none' : sheetShadow(paper) }}>
+        <PaperCanvas paper={paper} pxPerMm={K} wear={wear} className="absolute inset-0" />
         <div className="writing writing-fill pointer-events-none absolute inset-0 overflow-hidden" style={{ color: '#1f2a44' }} dangerouslySetInnerHTML={{ __html: svg }} />
       </div>
     </PaperMarks>
   );
 }
+
+// view=wear: papers across the eras, each new, gently worn and well worn (?letters=id:paper[:look],…)
+const WORN: [string, string, MarkLook][] = [
+  ['mazzei-1395', 'laid-cotton', 'reading-room'],
+  ['cely-1482', 'laid', 'reading-room'],
+  ['wentworth-1705', 'laid-blue', 'reading-room'],
+  ['dezirad-1798', 'pad-uk', 'reading-room'],
+  ['snetter-1834', 'airmail', 'postmarked'],
+  ['harpers-1882-goldfish', 'notebook', 'reading-room'],
+  ['mathea-1887', 'pad-a4', 'postmarked'],
+  ['santa-1908-miss-myra', 'notebook-loose', 'postmarked'],
+  ['migrant-1917-chicago-sister', 'postcard', 'reading-room'],
+  ['aibonito-1929', 'card', 'reading-room'],
+];
 
 function Gallery() {
   const ms = useMemo(() => (q.get('time') ? timings() : new Map<string, number>()), []);
@@ -143,6 +160,23 @@ function Gallery() {
                     <div key={mode} className="grid gap-1">
                       <Compared id={id} paperId={paperId} look={look} mode={mode} i={i} />
                       <span className="text-muted-foreground">{mode}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+        {VIEW === 'wear' && (
+          <div className="grid gap-10">
+            {(q.get('letters')?.split(',').map((x) => [...x.split(':'), 'reading-room'] as [string, string, MarkLook]) ?? WORN).map(([id, paperId, look], i) => (
+              <section key={id + paperId} data-letter={id} className="grid gap-2">
+                <h2 className="text-[13px] font-medium">{id} · {paperId}</h2>
+                <div className="flex flex-wrap items-start gap-6">
+                  {([0, 1, 2] as WearLevel[]).map((w) => (
+                    <div key={w} className="grid gap-1">
+                      <Compared id={id} paperId={paperId} look={look} mode={(q.get('mode') as MarkMode) || 'adorned'} i={i} wear={w} />
+                      <span className="text-muted-foreground">{['new', 'gentle', 'well worn'][w]}</span>
                     </div>
                   ))}
                 </div>
@@ -230,6 +264,36 @@ function Gallery() {
   const cancel = look === 'postmarked' && raw.origin === 'undelivered' ? 'Undelivered' : null;
   const plan = planMarks(getPaper(paperId), { id, hand: HANDS[i % HANDS.length][0], place: raw.place ?? null, year: raw.year ?? null, number: look === 'reading-room' ? 12 + i * 37 : null, cancel, look, origin: raw.origin, kind: s.kind, mode });
   return plan.marks.map((m) => ({ kind: m.kind, layer: m.layer, ink: m.ink, flaws: m.flaws, wheel: m.wheel?.at, label: m.text.label, x: m.x, y: m.y, size: m.size, data: m.data }));
+};
+
+// window.__wearCost('pad'): a first (cold) worn sheet, part by part: the outline, its path, the patina, the whole paint
+(window as unknown as Record<string, unknown>).__wearCost = (id: string, n = 4, dpr = 1.75) => {
+  const base = ALL_PAPERS.find((p) => p.id === id)!;
+  const k = 3.7 * dpr;
+  const rows: Record<string, number>[] = [];
+  for (let i = 0; i < n; i++) {
+    const seed = 'cold-' + Math.random();
+    const p = wornPaper(base, seed, 1800, 1);
+    const c = document.createElement('canvas');
+    c.width = Math.round(p.w * k); c.height = Math.round(p.h * k);
+    const ctx = c.getContext('2d')!;
+    let t = performance.now();
+    const o = outlineOf(p, 0)!;
+    const outline = performance.now() - t; t = performance.now();
+    outlinePath(o, k);
+    const path = performance.now() - t; t = performance.now();
+    paintPatina(ctx, p, k, 0); ctx.getImageData(0, 0, 1, 1);
+    const patina = performance.now() - t;
+    const p2 = wornPaper(base, seed + 'b', 1800, 1);
+    t = performance.now();
+    paintPaper(ctx, p2, { pxPerMm: k, grainScale: dpr, holeFill: 'clear', guide: true, shadow: 'full' }); ctx.getImageData(0, 0, 1, 1);
+    const whole = performance.now() - t;
+    t = performance.now();
+    paintPaper(ctx, base, { pxPerMm: k, grainScale: dpr, holeFill: 'clear', guide: true, shadow: 'full' }); ctx.getImageData(0, 0, 1, 1);
+    const plain = performance.now() - t;
+    rows.push({ outline: +outline.toFixed(1), path: +path.toFixed(1), patina: +patina.toFixed(1), whole: +whole.toFixed(1), plain: +plain.toFixed(1) });
+  }
+  return rows;
 };
 
 // one root, even when the module hot-reloads

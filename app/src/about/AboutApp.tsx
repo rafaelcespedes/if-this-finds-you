@@ -4,6 +4,7 @@
 // screen. Every claim is checked against the repo (the letters' counts against content/check-texts.mjs); lines waiting
 // for Rafael's sign-off are listed in about/README.md.
 import { useEffect, type ReactNode } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { APP_NAME, NAME_WITH_DESCRIPTOR, withLogo } from '@/lib/brand';
 import { SiteHeader } from '@/components/SiteHeader';
 import { ARCHIVE_URL, FONTS_URL } from '@/lib/places';
@@ -111,7 +112,7 @@ function GiveRow({ name, href, kept }: { name: string; href: string; kept: React
         <span className="about-give-kept">{kept}</span>
       </span>
       <a className="about-give-link" href={href} target="_blank" rel="noopener" aria-label={`Donate to ${name} (opens in a new tab)`}>
-        Donate
+        <ArrowLeft aria-hidden className="about-arrow about-arrow--out" />Donate
       </a>
     </li>
   );
@@ -161,7 +162,7 @@ export function AboutApp() {
             if the source doesn’t say something, neither do we. They’re short excerpts in the writer’s own spelling and
             language. A “…” marks a cut.
           </p>
-          <p><a className="about-link about-go" href={withLogo(ARCHIVE_URL)}>Read all the letters</a></p>
+          <p><a className="about-link" href={withLogo(ARCHIVE_URL)}>Read all the letters<ArrowLeft aria-hidden className="about-arrow about-arrow--on" /></a></p>
         </Section>
 
         <Section id="hands">
@@ -183,7 +184,7 @@ export function AboutApp() {
             Every hand here is a font you can keep, free and open source under the SIL Open Font License. A font holds
             four or five versions of each letter, so it’s a little steadier than the page.
           </p>
-          <p><a className="about-link about-go" href={withLogo(FONTS_URL)}>Browse the fonts</a></p>
+          <p><a className="about-link" href={withLogo(FONTS_URL)}>Browse the fonts<ArrowLeft aria-hidden className="about-arrow about-arrow--on" /></a></p>
         </Section>
 
         <Section id="made">
@@ -199,7 +200,7 @@ export function AboutApp() {
             now, and the code will follow once it’s polished.
           </p>
           <p className="about-credit-line">
-            Designed by Rafael Cespedes and built with Claude, an AI model made by Anthropic.
+            Designed by Rafael Cespedes and built with Claude.
           </p>
         </Section>
 

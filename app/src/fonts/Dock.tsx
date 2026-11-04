@@ -39,7 +39,7 @@ export function withFamily(filters: Filters, v: string, catalogue: Catalogue): F
 }
 
 /** Joined or print, the first of the filters, on the sliding segmented control. */
-function FamilyGroup({ filters, onFilters, catalogue }: Pick<Props, 'filters' | 'onFilters' | 'catalogue'>) {
+export function FamilyGroup({ filters, onFilters, catalogue }: Pick<Props, 'filters' | 'onFilters' | 'catalogue'>) {
   return (
     <Group label="Joined or print" first>
       <Segmented slide type="single" aria-label="Joined or print" value={filters.family[0] ?? 'any'} onValueChange={(v) => v && onFilters(withFamily(filters, v, catalogue))}>
@@ -236,7 +236,7 @@ export function FontsDock(p: Props) {
                 <span aria-hidden className="tabular">{p.savedCount}</span>
               </Button>
             )}
-            <Button onClick={p.onNewSet} className="dock-primary ml-auto min-w-11 px-3" title="New set (Space)">
+            <Button onClick={p.onNewSet} className="dock-primary ml-auto min-w-11 px-3" title="New set (N)">
               <RefreshCw aria-hidden />
               {/* its words give way only with very large text on a phone (fonts.css) */}
               <span className="dock-newset-words">New set</span>

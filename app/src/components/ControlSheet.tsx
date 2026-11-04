@@ -16,6 +16,7 @@ import { inkColor } from '@/lib/inks';
 // the look being compared (?look=reading-room): "Bring another" in words (src/themes/reading-room/)
 import { LOOK } from '@/lib/look';
 import { BringAnother } from '@/themes/reading-room/BringAnother';
+import { SheetGrabber } from '@/components/ui/sheet';
 import { PhoneStamp } from '@/themes/postmarked/tool';
 
 export type Detent = 'peek' | 'half' | 'full';
@@ -241,7 +242,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
   return (
     <section
       ref={contentRef}
-      aria-label="Hand, paper and ink"
+      aria-label="Writing materials"
       data-detent={detent}
       inert={!open}
       onPointerDown={onPointerDown}
@@ -264,11 +265,10 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
     >
       <div ref={peekRef} data-fade className="shrink-0 touch-none px-4">
         {/* the grabber: drag it, or tap to go up a height (and back down from the top) */}
-        <div aria-hidden onClick={cycle} className="-mx-4 flex h-5 cursor-grab items-end justify-center">
-          <span className="h-[5px] w-9 rounded-full bg-[#d4cec2]" />
-        </div>
+        {/* (the name below keeps a little room inside its own button, so the gap under the grabber is 8 px here) */}
+        <SheetGrabber onClick={cycle} className="-mx-4 pb-2" barClassName="bg-[#d4cec2]" />
         {/* large text: Find another goes under the name rather than squeezing it to nothing */}
-        <div className="flex flex-wrap items-center gap-2 pt-1.5 pb-2.5">
+        <div className="flex flex-wrap items-center gap-2 pb-2.5">
           {/* the writer's name in their own hand, as on desktop: it connects the sheet to the letter. It still opens
               what's known about the hand (a quiet extra; the Writer row in the sheet is the way in that says so) */}
           <AboutHand {...props}>
@@ -283,8 +283,8 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
               </span>
             </button>
           </AboutHand>
-          {/* look C (?look=postmarked): Find another is a round stamp; look A: Bring another, in words */}
-          {LOOK === 'postmarked' ? <PhoneStamp {...props} /> : LOOK === 'reading-room' ? <BringAnother onClick={props.onNewHand} label={props.letter?.found ? 'Bring another' : 'Another hand'} shortcut="" /> : (
+          {/* look C (?look=postmarked): Find another is a round stamp; look A: Bring another, the desk's light-red button */}
+          {LOOK === 'postmarked' ? <PhoneStamp {...props} /> : LOOK === 'reading-room' ? <BringAnother onClick={props.onNewHand} label={props.letter?.found ? 'Bring another' : 'Change writer'} shortcut="" className="rr-bring-button" /> : (
           <Button onClick={props.onNewHand} className="h-11 px-3.5">
             <Shuffle aria-hidden /> Find another
           </Button>
@@ -304,7 +304,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
             className="group flex h-11 w-full items-center select-none focus-visible:outline-none"
           >
             <span data-pill className="flex h-11 w-full items-center justify-center gap-1.5 rounded-md bg-secondary px-3.5 text-[0.8125rem] font-medium text-foreground transition-colors duration-150 group-active:bg-accent group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ring">
-              Paper, pen and ink
+              Writing materials
               <ChevronUp aria-hidden className={cn('size-3.5 text-muted-foreground transition-transform duration-300 ease-[var(--ease-drawer)]', expanded && 'rotate-180')} />
             </span>
           </button>

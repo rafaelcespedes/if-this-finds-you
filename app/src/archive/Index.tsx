@@ -139,8 +139,8 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
           active={active}
           onList={showList}
           heading={
-            <div className="flex h-full flex-col items-center justify-center px-2 text-center">
-              <span aria-hidden className="block h-[52px] text-foreground [&_svg]:h-full [&_svg]:w-auto sm:h-[68px]" dangerouslySetInnerHTML={{ __html: allLetters }} />
+            <div className="canvas-heading flex h-full flex-col items-center justify-center px-2 text-center">
+              <span aria-hidden className="canvas-heading-art block h-[52px] text-foreground [&_svg]:h-full [&_svg]:w-auto sm:h-[68px]" dangerouslySetInnerHTML={{ __html: allLetters }} />
               <p className="mt-4 max-w-[28rem] text-[15px] leading-[1.55] text-muted-foreground text-pretty sm:text-[16px]">{intro}</p>
               {LOOK === 'reading-room' && <FindingAid letters={pool} />}
             </div>
@@ -189,11 +189,11 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
 
         <div ref={panelRef}>
           {error ? (
-            <Empty title="The letters didn’t load" action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>
+            <Empty title="The letters didn’t load" action={<Button variant="secondary" onClick={onRetry}>Try again</Button>}>
               Check your connection, then try again.
             </Empty>
           ) : letters && !shown.length ? (
-            <Empty title={filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} action={<Button variant="outline" onClick={clear}>Clear filters</Button>}>
+            <Empty title={filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} action={<Button variant="secondary" onClick={clear}>Clear filters</Button>}>
               Try fewer words, or another era or language.
             </Empty>
           ) : letters && LOOK === 'reading-room' ? (
@@ -216,7 +216,7 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
   );
 }
 
-/** "the 1790s · Cairo, Madrid, Westminster": the decade under the middle of the screen, as you drag. */
+/** "The 1790s · Cairo, Madrid, Westminster": the decade under the middle of the screen, as you drag. */
 function CanvasReadout() {
   const text = useCanvasReadout();
   return text ? <span className="canvas-readout">{text}</span> : null;

@@ -21,7 +21,7 @@ interface Props {
 }
 
 /** The field for your own words, with a clear button once there are some. */
-function WordsField({ text, onText, placeholder, onFocusChange, escapeClears }: Omit<Props, 'line' | 'onLine'> & { escapeClears?: boolean }) {
+export function WordsField({ text, onText, placeholder, onFocusChange, escapeClears }: Omit<Props, 'line' | 'onLine'> & { escapeClears?: boolean }) {
   return (
     <label className="relative flex min-w-0 flex-1 items-center">
       <span className="sr-only">Your own words</span>
@@ -50,7 +50,7 @@ function WordsField({ text, onText, placeholder, onFocusChange, escapeClears }: 
 }
 
 /** What every hand writes: the shared ActionSheet (a menu from a quiet button on desktop, rows on phones). */
-function LinePicker({ line, onLine }: { line: Line; onLine: (l: Line) => void }) {
+export function LinePicker({ line, onLine, variant = 'outline' }: { line: Line; onLine: (l: Line) => void; variant?: 'outline' | 'secondary' }) {
   const current = line === 'own' ? 'Your words' : LINES.find((l) => l.id === line)?.label ?? '';
   return (
     <ActionSheet
@@ -60,7 +60,7 @@ function LinePicker({ line, onLine }: { line: Line; onLine: (l: Line) => void })
       width="w-[236px]"
       entries={LINES.map((l) => ({ id: l.id, label: l.label, checked: line === l.id, onSelect: () => onLine(l.id) }))}
       trigger={
-        <Button variant="outline" className="group max-w-[11rem] shrink-0 justify-between gap-1.5 px-3 font-normal" aria-label={`What every hand writes: ${current}`}>
+        <Button variant={variant} className="group max-w-[11rem] shrink-0 justify-between gap-1.5 px-3 font-normal data-[state=open]:bg-[var(--st-press)]" aria-label={`What every hand writes: ${current}`}>
           <span className="truncate">{current}</span>
           <ChevronDown aria-hidden className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
         </Button>

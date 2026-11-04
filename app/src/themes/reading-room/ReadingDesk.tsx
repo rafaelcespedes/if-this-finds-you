@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 import { BringAnother } from './BringAnother';
 import { LedgerRecord } from './LedgerRecord';
 import { callNo } from './catalogue';
-import { materials } from './materials';
+import { onWriteStart } from '@/lib/write-start';
+import { materials, useMaterialsCrack } from './materials';
 import { useRecord } from './useCatalogue';
 
 const DRAWER_KEY = 'seedhand:rr-slip';
@@ -50,17 +51,12 @@ export function ReadingDesk(props: PanelProps) {
   );
   const share = <ShareMenu {...props} size="lg" />;
   // the desk's main action, a button at the foot of the record's head (under its number and two-line title)
-  const bring = <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Bring another hand'} />;
+  const bring = <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Change writer'} />;
   const status = props.letter && (!props.letter.found || props.letter.drafts > 0);
-  // starting your reply to the found letter on the sheet (its first typed key, or a Blank page from the In ink menu)
-  // cracks the writing materials open, once a visit; reopening one of My letters doesn't
-  const [crack, setCrack] = useState(0);
-  const wasSample = useRef(sampleId);
-  useEffect(() => {
-    const was = wasSample.current;
-    if (was && !sampleId && state.replyTo?.id === was && materials.canOpen()) setCrack((c) => c + 1);
-    wasSample.current = sampleId;
-  }, [sampleId, state.replyTo?.id]);
+  // the click that starts writing on the letter cracks the writing materials open, once a visit (materials.ts): a mouse
+  // or a pen only, never the keyboard, so Tab never opens a drawer over what it moves to next
+  const crack = useMaterialsCrack();
+  useEffect(() => onWriteStart((w) => { if (w.pointer === 'mouse' || w.pointer === 'pen') materials.crack(); }), []);
   const physical = physicalOf(state);
   return (
     // as wide as the tool's panel (density.css --panel-w), so the desk grows with the browser's text size as it does
@@ -68,7 +64,7 @@ export function ReadingDesk(props: PanelProps) {
       <div className="rr-ledger">
         {status && <div className="rr-desk-actions"><LetterStatus {...props} className="rr-status" /></div>}
         {found && record ? (
-          <LedgerRecord record={record} hand={signature} handName={props.name} actions={share} headAction={bring} physical={physical} />
+          <LedgerRecord record={record} hand={signature} handName={props.name} actions={share} headAction={bring} titleAs="h1" physical={physical} />
         ) : found ? (
           // the record on its way: its head's room kept, so Bring another is already where it will stay
           <section className="rr-ledger-record rr-ledger-waiting">
@@ -82,7 +78,7 @@ export function ReadingDesk(props: PanelProps) {
               <p className="rr-card-no"><span className="rr-sc">{replyTo ? 'A reply' : 'Your letter'}</span></p>
               <div className="rr-card-actions">{share}</div>
             </div>
-            <h2 className="rr-card-title">{replyTo ? <>To {replyTo.from}</> : 'A letter of your own'}</h2>
+            <h1 className="rr-card-title">{replyTo ? <>To {replyTo.from}</> : 'A letter of your own'}</h1>
             {bring}
             <dl className="rr-facts">
               {replyTo?.no != null && (
@@ -113,6 +109,7 @@ export function ReadingDesk(props: PanelProps) {
 function WritingDrawer(props: PanelProps & { crack: number }) {
   const [mode, setMode] = useState<'closed' | 'peek' | 'open'>(() => (readDrawer() ? 'open' : 'closed'));
   const id = useId();
+  const self = useRef<HTMLElement>(null);
   const shown = mode !== 'closed';
   const put = (m: 'closed' | 'open') => {
     setMode(m);
@@ -124,6 +121,20 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
     setMode((m) => (m === 'closed' ? 'peek' : m));
     materials.open();
   }, [props.crack]);
+  // partway open, the drawer lies over the record's foot: if focus moves to something under it (Tab through the
+  // record), the drawer goes away, so what has focus is always in sight
+  useEffect(() => {
+    const drawer = self.current;
+    const desk = drawer?.parentElement;
+    if (mode !== 'peek' || !drawer || !desk) return;
+    const onFocus = (e: FocusEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t || drawer.contains(t)) return;
+      if (t.getBoundingClientRect().bottom > drawer.getBoundingClientRect().top) put('closed');
+    };
+    desk.addEventListener('focusin', onFocus);
+    return () => desk.removeEventListener('focusin', onFocus);
+  }, [mode]);
   // Escape puts the drawer away (focus comes back to its handle)
   useEffect(() => {
     if (!shown) return;
@@ -138,7 +149,7 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [shown, id]);
   return (
-    <section className={cn('rr-drawer', mode === 'open' && 'is-open', mode === 'peek' && 'is-peek')} aria-labelledby={`${id}-h`}>
+    <section ref={self} className={cn('rr-drawer', mode === 'open' && 'is-open', mode === 'peek' && 'is-peek')} aria-labelledby={`${id}-h`}>
       <h2 id={`${id}-h`} className="m-0">
         <button type="button" aria-expanded={shown} aria-controls={`${id}-b`} onClick={() => put(shown ? 'closed' : 'open')} className="rr-drawer-head ruled-row">
           <span className="rr-sc">Writing materials</span>
@@ -175,6 +186,13 @@ function keepWriting(e: React.PointerEvent | React.MouseEvent) {
   e.preventDefault();
 }
 
+function showAboveSheet(e: React.FocusEvent) {
+  const t = e.target as HTMLElement;
+  const sheet = document.querySelector('.control-sheet');
+  if (!sheet || !t.matches(':focus-visible')) return;
+  if (t.getBoundingClientRect().bottom > sheet.getBoundingClientRect().top) t.scrollIntoView({ block: 'center' });
+}
+
 /** Phones: the same record as ruled rows under the sheet (found letters only). Its Hand row is the clear way into
  * what's known about the writer: "About this hand ›" under their name. */
 export function CatalogueSlip({ id, name, panel }: { id: string | null | undefined; name: string; panel?: PanelProps }) {
@@ -185,5 +203,10 @@ export function CatalogueSlip({ id, name, panel }: { id: string | null | undefin
       <button type="button" className="rr-hand-link">About this hand<ChevronRight aria-hidden /></button>
     </AboutHand>
   );
-  return <LedgerRecord record={record} hand={name} handAction={about} handName={name} className="rr-under-sheet" />;
+  return (
+    // a piece of the record reached with the keyboard that the resting sheet covers scrolls up into sight
+    <div style={{ display: 'contents' }} onFocusCapture={showAboveSheet}>
+      <LedgerRecord record={record} hand={name} handAction={about} handName={name} titleAs="h1" className="rr-under-sheet" />
+    </div>
+  );
 }

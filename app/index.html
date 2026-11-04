@@ -17,34 +17,62 @@
         } catch (e) {}
         var html = document.documentElement;
         if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
+        // the layout (lib/layout.ts reads the same): the Ruler on the Reading Room unless ?layout=off (or this tab chose
+        // off), so the first frame already has its frame
+        var lay = 'ruler';
+        try {
+          var al = (new URLSearchParams(location.search).get('layout') || '').toLowerCase();
+          var kl = sessionStorage.getItem('seedhand:layout');
+          lay = /^(off|none|0|reading-room)$/.test(al) ? 'none' : al ? 'ruler' : kl === 'none' ? 'none' : 'ruler';
+        } catch (e) {}
+        if (id === 'reading-room' && lay !== 'none') html.setAttribute('data-layout', lay);
         var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
         document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
       })();
     </script>
     <!-- the name with its descriptor, and the link previews (docs/brand/naming-and-copy.md §2.11). A shared letter's
-         link carries the letter after the #, which link previews never see: it previews as this page, never its text -->
+         link carries the letter after the #, which link previews never see: it previews as this page, never its text.
+         The share picture is remade by tools/share-image (README.md); the same tags on every page, each with its own
+         title, description and address. -->
     <title>If This Finds You · Real letters, written out by hand</title>
     <meta name="description" content="Write a letter and watch it written out by hand. Real letters from 1395 to 1929, each in a stranger&#8217;s handwriting. Free." />
-    <!-- #5 is the logo; ?logo=32 swaps the tab icon back (Wordmark.tsx). The PNG icons and share image are #32's until #5's arrive. -->
+    <link rel="canonical" href="https://ifthisfindsyou.app/" />
+    <!-- logo #5 (brand/wordmark/README.md); ?logo=32 swaps the tab icon back (Wordmark.tsx) -->
     <link rel="icon" href="/brand/favicon-5.svg" type="image/svg+xml" />
     <link rel="icon" href="/brand/favicon-5.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon-5.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <!-- the Reading Room's book face, fetched with the page so a title doesn't reflow when it arrives (design QA) -->
-    <link rel="preload" href="/src/themes/reading-room/fonts/junicode-latin-roman.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- the Reading Room's two faces, fetched with the page so nothing reflows when they arrive (design QA) -->
+    <link rel="preload" href="/src/themes/reading-room/fonts/newsreader-latin-roman.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/themes/reading-room/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="If This Finds You" />
     <meta property="og:title" content="If This Finds You" />
     <meta property="og:description" content="Write a letter and watch it written out by hand. Real letters from 1395 to 1929, each in a stranger&#8217;s handwriting. Free." />
     <meta property="og:url" content="https://ifthisfindsyou.app/" />
-    <meta property="og:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
+    <meta property="og:image" content="https://ifthisfindsyou.app/brand/share.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="If This Finds You, in handwriting" />
+    <meta property="og:image:alt" content="A loose pile of real letters from 1450 to 1929, each in a different hand on its own paper and stamped with its catalogue number. On top: &#8220;Dear, dear Friend, Can you guess how happy I am?&#8221;" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="If This Finds You" />
     <meta name="twitter:description" content="Write a letter and watch it written out by hand. Real letters from 1395 to 1929, each in a stranger&#8217;s handwriting. Free." />
-    <meta name="twitter:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
+    <meta name="twitter:image" content="https://ifthisfindsyou.app/brand/share.jpg" />
+    <meta name="twitter:image:alt" content="A loose pile of real letters from 1450 to 1929, each in a different hand on its own paper and stamped with its catalogue number. On top: &#8220;Dear, dear Friend, Can you guess how happy I am?&#8221;" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://ifthisfindsyou.app/#site",
+        "name": "If This Finds You",
+        "url": "https://ifthisfindsyou.app/",
+        "description": "Real letters by ordinary people, from 1395 to 1929, written out by hand by writers who never existed. Every hand is a free font.",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "creator": { "@type": "Person", "name": "Rafael Cespedes", "url": "https://rafaelcespedes.com" }
+      }
+    </script>
     <!-- The first paint, before any script: the desk, the wordmark and an empty sheet, so a slow connection shows
          the page at once. React replaces it (everything inside #root) on its first render. -->
     <style>
@@ -69,6 +97,15 @@
         .boot-panel div { width: 336px; height: 100%; border-radius: var(--boot-panel-r); background: var(--boot-panel); box-shadow: 0 1px 2px rgba(60, 45, 20, 0.07), 0 10px 30px -14px rgba(60, 45, 20, 0.22); }
         .boot-read .boot-panel { display: none; }
         html[data-look='reading-room'] .boot-panel div { box-shadow: none; }
+        /* the Ruler: the record's rail on the left (3 columns from 1280, 4 below; 40 px margin, 32 px gutters) */
+        html[data-layout='ruler'] .boot { flex-direction: row-reverse; }
+        html[data-layout='ruler'] .boot-main { padding-left: 0; }
+        html[data-layout='ruler'] .boot-logo { position: fixed; }
+        html[data-layout='ruler'] .boot-panel { padding: 0 32px 0 40px; }
+        html[data-layout='ruler'] .boot-panel div { width: calc((100vw - 432px) / 12 * 4 + 96px); }
+      }
+      @media (min-width: 1280px) {
+        html[data-layout='ruler'] .boot-panel div { width: calc((100vw - 432px) / 12 * 3 + 64px); }
       }
     </style>
   </head>

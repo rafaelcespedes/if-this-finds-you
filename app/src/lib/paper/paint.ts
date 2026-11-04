@@ -8,6 +8,7 @@ import type { PaperSpec, Rule } from './types';
 import { fbm2 } from './noise';
 import { outlineOf, outlinePath, type Rim } from './outline';
 import { printMarks, type Mark } from './marks';
+import { paintPatina } from './wear';
 
 export interface PaintOptions {
   /** device pixels per mm */
@@ -162,6 +163,8 @@ export function paintPaper(ctx: Ctx2D, paper: PaperSpec, o: PaintOptions) {
   if (paper.flaps) flaps(ctx, paper, k);
   if (fin.gum) gumEdge(ctx, paper, k, seed);
   if (o.marks?.length) printMarks(ctx, o.marks, k, 'under', paper);
+  // age: grime, an uneven fade, foxing (lib/paper/wear.ts)
+  if (paper.wear) paintPatina(ctx, paper, k, sheet);
   if (outline) for (const rim of outline.rims) rimLayer(ctx, rim, k, o.holeFill);
   ctx.restore();
   // fibres poke out past a deckled or torn edge
@@ -596,6 +599,21 @@ function rimLayer(ctx: Ctx2D, rim: Rim, k: number, holeFill: string) {
       ctx.lineWidth = wMm * k;
       ctx.stroke(path);
     }
+  } else if (rim.kind === 'worn') {
+    // a worn edge: a little grubbier right at the edge, its fibres rubbed up into a faint lighter fuzz
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.strokeStyle = 'rgb(150, 125, 90)';
+    // two widths, faint, so it shades off inward instead of ending in a line
+    for (const [wMm, a] of [[2, 0.045], [0.9, 0.05]] as const) {
+      ctx.globalAlpha = a;
+      ctx.lineWidth = wMm * k;
+      ctx.stroke(path);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.14;
+    ctx.lineWidth = 0.22 * k;
+    ctx.stroke(path);
   } else {
     // a tear splits the sheet's layers: a narrow, whiter, fuzzier rim
     ctx.strokeStyle = '#ffffff';
@@ -613,7 +631,7 @@ function wisps(ctx: Ctx2D, rim: Rim, paper: PaperSpec, k: number, seed: string) 
   if (rim.kind === 'perforated') return;
   const r = rng('wisps:' + seed + rim.side);
   const out = { top: [0, -1], right: [1, 0], bottom: [0, 1], left: [-1, 0] }[rim.side];
-  const density = rim.kind === 'deckle' ? 0.5 : 0.32;
+  const density = rim.kind === 'deckle' ? 0.5 : rim.kind === 'worn' ? 0.1 : 0.32;
   ctx.save();
   ctx.strokeStyle = mixWhite(paper.tint, 0.35);
   ctx.lineCap = 'round';
@@ -627,7 +645,7 @@ function wisps(ctx: Ctx2D, rim: Rim, paper: PaperSpec, k: number, seed: string) 
     if (carry < 0.6) continue;
     carry = 0;
     if (r() > density) continue;
-    const len = 0.25 + r() * (rim.kind === 'deckle' ? 0.9 : 0.6);
+    const len = 0.25 + r() * (rim.kind === 'deckle' ? 0.9 : rim.kind === 'worn' ? 0.35 : 0.6);
     const a = Math.atan2(out[1], out[0]) + (r() - 0.5) * 1.6;
     const x = pts[i] - out[0] * 0.2, y = pts[i + 1] - out[1] * 0.2;
     const path = paths[Math.floor(r() * 3)];

@@ -1,7 +1,9 @@
 // The page's one bit of live writing: a short line written out by a writer met just now, a different one on each
-// visit, with "Another writer" to meet someone else. The engine loads only after the page has painted (write.ts),
+// visit, with "Change writer" (the desk's own control) to meet someone else. The engine loads only after the page has painted (write.ts),
 // and the line's words are on the page as text, so nothing waits for it and a screen reader hears it once.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Shuffle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { Writer } from './write';
 
 export const LINE = 'I hope this finds you well.';
@@ -84,8 +86,10 @@ export function LiveLine() {
           <span className="about-line-meta">
             <span><span className="about-label">Hand</span> Norwegian school 1849</span>
             <span><span className="about-label">Pen</span> Broad / italic nib</span>
-            <span className="about-text-button">Another writer</span>
           </span>
+          <Button variant="secondary" size="sm" tabIndex={-1} className="about-line-change">
+            <Shuffle aria-hidden /> Change writer
+          </Button>
         </span>
         <span className="about-line-cap" aria-live="polite">
           {writer ? (
@@ -96,10 +100,10 @@ export function LiveLine() {
               <span className="about-line-meta">
                 <span><span className="about-label">Hand</span> {writer.tradition}</span>
                 {writer.pen && <span><span className="about-label">Pen</span> {writer.pen}</span>}
-                <button type="button" className="about-text-button" onClick={() => void writeOnce()}>
-                  Another writer
-                </button>
               </span>
+              <Button variant="secondary" size="sm" className="about-line-change" onClick={() => void writeOnce()}>
+                <Shuffle aria-hidden /> Change writer
+              </Button>
             </>
           ) : (
             <span className="about-line-by about-line-by--waiting">A writer is picking up a pen…</span>

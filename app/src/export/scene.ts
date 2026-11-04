@@ -10,6 +10,7 @@ import { makeHand, withOverrides, type Hand } from '@engine';
 import { requestFor } from '@/lib/request';
 import { EDGE_TONE, getPaper, isShaped, paintPaper, type PaperSpec } from '@/lib/papers';
 import { marksForExport, printMarks, type Mark } from '@/lib/paper/marks';
+import { wornForExport } from '@/lib/paper/wear';
 import { liveExtras, liveLayout, sheetOfLine, type Live } from '@/lib/live';
 import { decodeInk, inkLive, inkPage } from '@/lib/ink';
 import { sampleById, sampleCredit } from '@/lib/samples';
@@ -93,7 +94,8 @@ export async function buildScene(state: NoteState, o: SceneOptions): Promise<Sce
   const natural = makeHand(state.seed, state.style);
   const req = requestFor(state, natural);
   const p: Hand = withOverrides(natural, req.overrides);
-  const paper = getPaper(req.paper);
+  // the letter's own sheet, worn as it is on screen (lib/paper/wear.ts)
+  const paper = wornForExport(getPaper(req.paper));
   // First lines, close up: in a tall frame the full line is too wide to read big, so the letter flows into a
   // narrower column on the same sheet (same hand, same paper and size; the lines just break sooner), and the
   // block of opening lines comes out about the frame's shape. A wide frame keeps the paper's own measure.

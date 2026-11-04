@@ -11,8 +11,8 @@ export interface Rule {
 
 export interface Edge {
   /** deckle: a mould-made or handmade edge; torn: ripped from a stapled book; fringe: ripped off a spiral;
-   *  perforated: torn along a perforation */
-  kind: 'deckle' | 'torn' | 'fringe' | 'perforated';
+   *  perforated: torn along a perforation; worn: a straight cut softened by age (lib/paper/wear.ts) */
+  kind: 'deckle' | 'torn' | 'fringe' | 'perforated' | 'worn';
   /** how far the edge may reach into the sheet, mm */
   depth: number;
   /** fringe: the spiral's hole pitch, mm */
@@ -30,6 +30,8 @@ export interface PrintedWord {
 }
 
 export interface PaperSpec {
+  /** this letter's sheet of it, aged (lib/paper/wear.ts wornPaper); absent: as new */
+  wear?: import('./wear').Wear;
   /** a family ('notebook') or a family and its variant ('notebook-fr') */
   id: PaperId;
   /** the paper, as the picker shows it ('Notebook page') */

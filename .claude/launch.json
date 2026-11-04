@@ -4,14 +4,29 @@
     {
       "name": "spike",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["spike/tools/serve.py", "8765"],
+      "runtimeArgs": [
+        "spike/tools/serve.py",
+        "8765"
+      ],
       "port": 8765
     },
     {
       "name": "app-production",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "cd app && npm run build && npx vite preview --port 4174 --strictPort"],
+      "runtimeArgs": [
+        "-c",
+        "cd app && npm run build && npx vite preview --port 4174 --strictPort"
+      ],
       "port": 4174
+    },
+    {
+      "name": "app-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd app && npx vite --port 5173 --strictPort"
+      ],
+      "port": 5173
     }
   ]
 }

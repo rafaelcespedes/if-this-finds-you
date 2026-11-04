@@ -370,8 +370,8 @@ export function planMarks(paper: PaperSpec, input: MarkInput): MarkPlan {
       press: st.press * (input.look === 'postmarked' ? 0.9 : 1),
       ink: kind === 'pencil' ? INKS.pencil : inkFor(input.look === 'postmarked' ? ['violet', 'violet', 'blue', 'red'] : ['red', 'violet', 'blue']),
       text: {
-        // the oval and the box hold a short form (up to 12 letters, cut at a word); rings an arc's worth; the line all
-        place: kind === 'pencil' ? fullPlace : (kind === 'line' ? fullPlace : kind === 'oval' || kind === 'registry' ? stampPlace(input.place, 12) : shortPlace).toUpperCase(),
+        // the oval holds a short form (up to 12 letters, cut at a word), the box's cell a shorter one (9); rings an arc's worth; the line all
+        place: kind === 'pencil' ? fullPlace : (kind === 'line' ? fullPlace : kind === 'oval' ? stampPlace(input.place, 12) : kind === 'registry' ? stampPlace(input.place, 9) : shortPlace).toUpperCase(),
         year,
         label: kind === 'oval' ? 'RECEIVED' : kind === 'registry' ? 'ENTERED' : undefined,
       },
@@ -1047,7 +1047,7 @@ const SHAPES: Partial<Record<Kind, Shape>> = {
     const place = m.text.place || '';
     const cellY = (top + h / 2 - inset) / 2;
     const placeW = split - (-w / 2 + inset);
-    if (place) spaced(g, place, (-w / 2 + inset + split) / 2, cellY, Math.max(MIN_EM, Math.max(h * 0.15, fitPx(g, place, SANS, placeW - 2.4, h * 0.22, 0.08))), SANS, 0.08);
+    if (place) spaced(g, place, (-w / 2 + inset + split) / 2, cellY, Math.max(MIN_EM, fitPx(g, place, SANS, placeW - 2.4, h * 0.22, 0.08)), SANS, 0.08);
     const yearW = w / 2 - inset - split;
     if (m.text.year) spaced(g, m.text.year, split + yearW / 2, cellY, Math.min(h * 0.3, fitPx(g, m.text.year, SANS, yearW - 2.4, h * 0.3, 0.05)), SANS, 0.05, 700);
   },

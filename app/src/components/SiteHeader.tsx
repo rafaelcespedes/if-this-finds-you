@@ -40,43 +40,28 @@ type Props = {
   beside?: string;
   /** writing on a phone: everything but the wordmark steps aside */
   quiet?: boolean;
-  /** pinned within its container rather than the window (the desk, where it can be narrower than the window): the
-   * container must be positioned and as tall as the page */
-  within?: boolean;
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
 };
 
-/** The phone header's small chips (Menu here, Share in the tool): drawn 32 px, a 48 px target (44 at the least
- * beside another chip, 12 px away). */
+/** The phone header's small chips (Menu here, Share in the tool): quiet icon buttons, only their drawn icon at rest
+ * (no box, no shadow), a wash under the pointer and while pressed or open, in 4 px corners like the controls. Drawn
+ * 32 px, a 48 px target (44 at the least beside another chip, 12 px away). The edge is transparent so a Windows
+ * contrast theme still draws one. */
 export const headerChip =
-  "pointer-events-auto relative grid size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-[background-color,scale] duration-[var(--dur-press,100ms)] ease-out after:absolute after:-inset-2 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-[var(--st-press,var(--accent))] [&_svg]:size-[16px]";
+  "pointer-events-auto relative grid cursor-pointer size-[32px] shrink-0 place-items-center rounded-[4px] border border-transparent bg-transparent text-foreground/85 transition-[background-color,scale] duration-[var(--dur-press,100ms)] ease-out after:absolute after:-inset-2 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-[var(--st-press,var(--accent))] [&_svg]:size-[16px]";
 const CHIP = 32;
 
-// a place in the header: a big enough target without making the line taller
+// a place in the header: a big enough target without making the line taller. Its padding is in em, so the light-red
+// fill and the hover wash keep their shape around whichever face and size a look sets for the places (and large text)
 const link =
-  "pointer-events-auto relative inline-flex shrink-0 items-baseline gap-1 rounded-[3px] px-1.5 py-0.5 font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground";
-/**
- * How the place you're in shows (index.css): 1 its words in the look's red (the default), 2 a soft tint of it behind
- * them, 3 full ink with the other places quieter. ?navsel=1|2|3 to compare; kept for the tab, as ?look= is.
- */
-export type NavSel = '1' | '2' | '3';
-function readNavSel(): NavSel {
-  try {
-    const asked = new URLSearchParams(location.search).get('navsel');
-    if (asked === '1' || asked === '2' || asked === '3') { sessionStorage.setItem('seedhand:navsel', asked); return asked; }
-    const kept = sessionStorage.getItem('seedhand:navsel');
-    if (kept === '1' || kept === '2' || kept === '3') return kept;
-  } catch { /* storage off: the default */ }
-  return '1';
-}
-export const NAV_SEL: NavSel = typeof location !== 'undefined' ? readNavSel() : '1';
+  "pointer-events-auto relative inline-flex cursor-pointer shrink-0 items-baseline gap-1 rounded-[3px] px-[0.5em] py-[0.25em] font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground";
 // a piece that isn't shown right now: still laid out (so it can be measured), out of sight and out of reach
 const away = 'invisible absolute top-0 right-0';
 
 export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
-  { current, inside, hrefs, kept, action, centre: centreProp, beside, quiet, within, className, style, children },
+  { current, inside, hrefs, kept, action, centre: centreProp, beside, quiet, className, style, children },
   ref,
 ) {
   const device = useDeviceKept();
@@ -93,7 +78,6 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
     <header
       ref={m.headerRef}
       data-site-header
-      data-navsel={NAV_SEL}
       style={beside ? { ...style, ['--site-beside' as string]: beside } : style}
       className={cn(
         // over the page, clear of a notch or camera island (the phone sideways too); only its links take clicks, so
@@ -102,10 +86,10 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
         // Pinned to the top while the page scrolls (Rafael: "keep the nav sticky"), on any screen at least 32rem
         // tall; a shorter one (a phone on its side, or very large text) lets it scroll away rather than lose the
         // page to it. Print keeps it where it was. Its height is --site-head (index.css).
-        within
-          ? 'relative top-0 [@media(min-height:32rem)]:sticky print:relative'
-          : 'absolute inset-x-0 top-0 z-30 [@media(min-height:32rem)]:fixed print:absolute',
-        'pointer-events-none overflow-x-clip pt-[max(1rem,env(safe-area-inset-top,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:pl-[max(2rem,env(safe-area-inset-left,0px))] lg:pt-5 lg:pr-[max(2.5rem,env(safe-area-inset-right,0px))] lg:pl-[max(2.5rem,env(safe-area-inset-left,0px))]',
+        // One treatment on every page (Rafael: "make all of them full width"): the window's full width, its side margins
+        // from --site-margin (index.css), the same on every page, so the wordmark and the last place never move.
+        'absolute inset-x-0 top-0 z-30 [@media(min-height:32rem)]:fixed print:absolute',
+        'pointer-events-none overflow-x-clip pt-[max(1rem,env(safe-area-inset-top,0px))] pr-[max(var(--site-margin),env(safe-area-inset-right,0px))] pl-[max(var(--site-margin),env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground lg:pt-5',
         // a band of the page's own ground from the top of the window, so nothing scrolling under it shows through,
         // fading out over 12 px below it
         "bg-background after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-3 after:bg-gradient-to-b after:from-background after:to-transparent after:content-['']",
@@ -170,8 +154,7 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
             <nav aria-label="Site">
               <ul className="flex items-center gap-x-1">
                 {PLACES.map((p) => (
-                  // the last place's ink ends where the rule ends (its padding reaches past the edge)
-                  <li key={p.id} className="flex last:-mr-1.5">
+                  <li key={p.id} className="flex">
                     <PlaceLink place={p} current={current} inside={inside} href={hrefs?.[p.id]} className={link} />
                   </li>
                 ))}
@@ -183,8 +166,7 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
       </div>
     </header>
   );
-  // the desk: a track as tall as its column, for the header to stick in (the layer is the track's)
-  return within ? <div className="pointer-events-none absolute inset-0 z-30 print:static">{header}</div> : header;
+  return header;
 });
 
 /**
@@ -334,7 +316,7 @@ function KeptMenu({ kept }: { kept: Kept }) {
       entries={entries}
       width="w-[min(18rem,calc(100vw-24px))]"
       trigger={
-        <button type="button" data-site-kept className={cn(link, 'active:underline active:decoration-current active:underline-offset-[3px]')}>
+        <button type="button" data-site-kept className={link}>
           My letters
           <span className="font-normal text-muted-foreground tabular-nums">{n}</span>
         </button>
@@ -382,7 +364,7 @@ function SiteMenu({ current, inside, hrefs, kept }: { current?: Place; inside?: 
       }
     >
       {(close) => (
-        <div ref={body} data-site-menu data-navsel={NAV_SEL} className={cn('grid', sheets && 'pb-1')}>
+        <div ref={body} data-site-menu className={cn('grid', sheets && 'pb-1')}>
           <nav aria-label="Site">
             <ul className="grid">
               {PLACES.map((p) => (

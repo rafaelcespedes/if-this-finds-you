@@ -17,7 +17,27 @@
         } catch (e) {}
         var html = document.documentElement;
         if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
+        // the layout (lib/layout.ts reads the same): the Ruler on the Reading Room unless ?layout=off (or this tab chose
+        // off), so the first frame already has its frame
+        var lay = 'ruler';
+        try {
+          var al = (new URLSearchParams(location.search).get('layout') || '').toLowerCase();
+          var kl = sessionStorage.getItem('seedhand:layout');
+          lay = /^(off|none|0|reading-room)$/.test(al) ? 'none' : al ? 'ruler' : kl === 'none' ? 'none' : 'ruler';
+        } catch (e) {}
+        if (id === 'reading-room' && lay !== 'none') html.setAttribute('data-layout', lay);
         var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
+        // the page (the redesign unless ?fonts=old) and its night colours (fonts/new/switch.ts reads the same), so a
+        // dark page never flashes light
+        try {
+          var q = new URLSearchParams(location.search);
+          var page = q.get('fonts') || sessionStorage.getItem('seedhand:fonts');
+          var theme = q.get('theme') || sessionStorage.getItem('seedhand:fonts-theme');
+          if (page !== 'old') {
+            html.setAttribute('data-fonts', 'new');
+            if (theme === 'dark') { html.setAttribute('data-theme', 'dark'); desk = '#14171c'; }
+          }
+        } catch (e) {}
         document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
       })();
     </script>
@@ -26,27 +46,45 @@
       html { background: #e6e4de; }
       html:not([data-look]) { background: #eeeae2; }
       html[data-look='postmarked'] { background: #f1ebdc; }
+      html[data-fonts='new'][data-theme='dark'] { background: #14171c; color-scheme: dark; }
     </style>
     <title>Fonts · If This Finds You</title>
-    <meta name="description" content="Every hand is a font you can keep. Free and open source." />
+    <meta name="description" content="Every hand that writes out a letter here is a font you can download, free and open source under the SIL Open Font License." />
+    <link rel="canonical" href="https://ifthisfindsyou.app/fonts" />
     <!-- the same icons as the tool (index.html): #5 is the logo; ?logo=32 swaps the tab icon (Wordmark.tsx) -->
     <link rel="icon" href="/brand/favicon-5.svg" type="image/svg+xml" />
     <link rel="icon" href="/brand/favicon-5.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon-5.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- the Reading Room's two faces, fetched with the page so nothing reflows when they arrive (design QA) -->
+    <link rel="preload" href="/src/themes/reading-room/fonts/newsreader-latin-roman.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/themes/reading-room/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="If This Finds You" />
     <meta property="og:title" content="Fonts · If This Finds You" />
     <meta property="og:description" content="Every hand is a font you can keep. Free and open source." />
     <meta property="og:url" content="https://ifthisfindsyou.app/fonts" />
-    <meta property="og:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
+    <meta property="og:image" content="https://ifthisfindsyou.app/brand/share.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="If This Finds You, in handwriting" />
+    <meta property="og:image:alt" content="A loose pile of real letters from 1450 to 1929, each in a different hand on its own paper and stamped with its catalogue number. On top: &#8220;Dear, dear Friend, Can you guess how happy I am?&#8221;" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Fonts · If This Finds You" />
     <meta name="twitter:description" content="Every hand is a font you can keep. Free and open source." />
-    <meta name="twitter:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
+    <meta name="twitter:image" content="https://ifthisfindsyou.app/brand/share.jpg" />
+    <meta name="twitter:image:alt" content="A loose pile of real letters from 1450 to 1929, each in a different hand on its own paper and stamped with its catalogue number. On top: &#8220;Dear, dear Friend, Can you guess how happy I am?&#8221;" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "Fonts",
+        "url": "https://ifthisfindsyou.app/fonts",
+        "description": "Every hand that writes out a letter here is a font you can download, free and open source under the SIL Open Font License.",
+        "inLanguage": "en",
+        "isPartOf": { "@type": "WebSite", "@id": "https://ifthisfindsyou.app/#site", "name": "If This Finds You", "url": "https://ifthisfindsyou.app/" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

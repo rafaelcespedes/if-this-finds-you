@@ -94,9 +94,9 @@ export const Card = memo(function Card({ letter, size, aspect, onOpen }: Props) 
             />
           )}
         </div>
-        <h3 className="font-letter mt-3.5 pr-2 text-[calc(14px*var(--letter-scale))] leading-[1.3] text-foreground/90 text-pretty sm:text-[calc(16px*var(--letter-scale))]">
+        <h2 className="font-letter mt-3.5 pr-2 text-[calc(14px*var(--letter-scale))] leading-[1.3] text-foreground/90 text-pretty sm:text-[calc(16px*var(--letter-scale))]">
           {letter.title ?? opening(letter.text, 48)}
-        </h3>
+        </h2>
         <span className="sr-only">
           {special ? `${circumstanceLabel(letter)}. ` : ''}{fromTo(letter)}. {whereWhen(letter)}. Begins: {opening(letter.text, 160)}
         </span>

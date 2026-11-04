@@ -1,0 +1,805 @@
+/* =====================================================================================================================
+   THE RULER: the site's layout (Rafael picked it, 4 Nov 2026), an editorial frame around the Reading Room's archival
+   content. lib/layout.ts sets html[data-layout='ruler'] on top of html[data-look='reading-room'] by default
+   (?layout=off goes back), and html[data-layout-page] = desk | letters | about | fonts.
+   Only the frame changes: the grid, the rules, the type scale and the placement. The handwriting, the paper, the
+   shared components (SiteHeader, Sheet, the controls, the --st-* states) and the Reading Room's tokens stay as they
+   are; this file never names a face, only the --rr-* roles.
+
+   A measured, asymmetric page: one rule divides a margin rail (the record, the groups' names, the sections' numbers)
+   from the page; a faint line in each gutter between the twelve columns shows behind it; titles are big and hang across the grid; numbers
+   in the sans, tabular. Rafael: "the ruler idea is kind of overdone", then "kill the tickers and the numbers on every
+   page and just leave the grid": no ticks and no column numbers anywhere; then, at launch, the grid only on All
+   letters' list, and every rule as soft as the Fonts page's. Rules only where they divide.
+
+   The grid: 12 columns, 40 px margins, 32 px gutters from 64 rem (the Reading Room's own --rr-margin and --rr-gutter);
+   8 columns, 32 px margins, 24 px gutters from 40 rem; 4 columns, 16 px margins and gutters on a phone. It runs the
+   window's width on every page (as the Fonts page does; no 1440 cap, up to 120 rem), inside the running head's own
+   margins. Rules are crisp (the hand-drawn ones stay off under the Ruler: lib/rules.ts). The grid is one fixed layer
+   behind the page (.ed-grid), built by lib/layout.ts.
+
+   ===================================================================================================================== */
+
+/* ---------- tokens ---------- */
+html:root[data-layout] {
+  /* the grid */
+  --ed-cols: 4;
+  /* the margins are the running head's own (index.css --site-margin, which includes the safe-area insets), so the
+     grid's edges and the header's line up on every page */
+  --ed-margin: var(--site-margin, 1rem);
+  --ed-gutter: 1rem;
+  --ed-max: 120rem;
+  /* one column's width, for placing things on it: (the grid's width less its margins and gutters) / columns */
+  --ed-w: min(100vw, var(--ed-max));
+  --ed-col: calc((var(--ed-w) - 2 * var(--ed-margin) - (var(--ed-cols) - 1) * var(--ed-gutter)) / var(--ed-cols));
+  /* rules: a grid line, a rule between rows, a rule that divides. The rules are the Fonts page's own, soft
+     (Rafael: "Soften to match Fonts"): the Reading Room's --rr-rule (12% ink) and --rr-hair (16%), which also firm up
+     under prefers-contrast: more; so every page's header line is the same */
+  --ed-ink: var(--rr-ink);
+  --ed-line: color-mix(in oklab, var(--rr-ink) 12%, transparent);
+  --ed-rule: var(--rr-rule);
+  --ed-rule-strong: var(--rr-hair);
+
+  /* the display scale: above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96 · 128 px),
+     fluid between a phone and 1440. Each is read with this file's value as the fallback (--ed-…: var(--rr-…,
+     default)), so the type tokens can set any of them. Face, weight and width follow the title role (never heavier
+     than its own weight); big figures follow the number role, lining and tabular */
+  --ed-display-face: var(--rr-display-face, var(--rr-title-face));
+  --ed-display-weight: var(--rr-display-weight, min(var(--rr-title-weight, 440), 440));
+  --ed-display-stretch: var(--rr-display-stretch, var(--rr-title-stretch, 100%));
+  --ed-display-leading: var(--rr-display-leading, 0.9);
+  --ed-display-tracking: var(--rr-display-tracking, -0.035em);
+  --ed-display-1: var(--rr-display-1, clamp(3.25rem, 1.6rem + 6.6vw, 8rem)); /* the page's one title: About, All letters, a letter */
+  --ed-display-2: var(--rr-display-2, clamp(2.5rem, 1.5rem + 4vw, 6rem)); /* a hero number */
+  --ed-display-3: var(--rr-display-3, clamp(2rem, 1.35rem + 2.6vw, 4rem)); /* a group's name in the rail */
+  --ed-display-4: var(--rr-display-4, clamp(1.625rem, 1.25rem + 1.5vw, 2.75rem)); /* a title beside a sheet */
+  --ed-display-5: var(--rr-display-5, clamp(1.375rem, 1.2rem + 0.7vw, 1.9375rem)); /* a lede, a year at size */
+  --ed-figure-face: var(--rr-figure-face, var(--rr-ui));
+  --ed-figure-numeric: var(--rr-figure-numeric, lining-nums tabular-nums);
+  /* running heads, labels, the small lines: the controls' sans, sentence case */
+  --ed-head-face: var(--rr-ui);
+  --ed-head-size: 0.75rem;
+  --ed-head-weight: 500;
+  --ed-head-tracking: 0.01em;
+}
+@media (min-width: 40rem) {
+  html:root[data-layout] {
+    --ed-cols: 8;
+    --ed-margin: var(--site-margin, 2rem);
+    --ed-gutter: 1.5rem;
+  }
+}
+@media (min-width: 64rem) {
+  html:root[data-layout] {
+    --ed-cols: 12;
+    --ed-margin: var(--site-margin, var(--rr-margin, 2.5rem));
+    --ed-gutter: var(--rr-gutter, 2rem);
+  }
+}
+
+/* =====================================================================================================================
+   THE GRID: one faint line in the middle of each gutter between the twelve columns, full height, behind the page (no ticks and no numbers anywhere: Rafael,
+   "kill the tickers and the numbers on every page and just leave the grid"). Words sit on the room's ground, so the
+   lines show only in the margins, the gutters and the empty columns.
+   ===================================================================================================================== */
+.ed-grid {
+  display: none;
+}
+html:root[data-layout='ruler'] {
+  /* the grid's line. To drop a page's grid, set this to transparent there (one line), or hide the layer as below */
+  --ed-grid-line: var(--ed-line);
+}
+html:root[data-layout='ruler'] .ed-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  display: grid;
+  grid-template-columns: repeat(var(--ed-cols), minmax(0, 1fr));
+  column-gap: var(--ed-gutter);
+  max-width: var(--ed-max);
+  margin-inline: auto;
+  padding-inline: var(--ed-margin);
+  pointer-events: none;
+  contain: strict;
+}
+html:root[data-layout='ruler'] .ed-grid > i {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+/* one line per gutter, in its middle (Rafael: "make the grid lines single, one per gutter"): 11 at 12 columns, 7 at
+   8, 3 at 4; none at the outer margins */
+html:root[data-layout='ruler'] .ed-grid > i + i::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--ed-gutter) / -2);
+  width: 1px;
+  background: var(--ed-grid-line);
+}
+@media (max-width: 39.99rem) {
+  html:root[data-layout='ruler'] .ed-grid > i:nth-child(n + 5) { display: none; }
+}
+@media (max-width: 63.99rem) {
+  html:root[data-layout='ruler'] .ed-grid > i:nth-child(n + 9) { display: none; }
+}
+/* only All letters' list shows the grid (Rafael: "Hide grid on those pages"): not the desk, a letter page or About;
+   not the Fonts page (its content is its own) nor the table (it moves under a still frame) */
+html:root[data-layout='ruler']:is([data-layout-page='desk'], [data-layout-page='about'], [data-layout-page='fonts']) .ed-grid,
+html:root[data-layout='ruler']:has(.letter-canvas, .sp) .ed-grid {
+  display: none;
+}
+/* the page's ground is the root's (the same room colour), so the grid behind the page shows */
+html:root[data-layout='ruler'] body,
+html:root[data-layout='ruler'] .about {
+  background-color: transparent;
+}
+/* words keep the lines out from under them: each block of them takes the room's ground */
+html:root[data-layout='ruler'] :is(.rr-desk, .sp-head, .sp-body, .lib-main > section, .fa, .about-main > *) {
+  position: relative;
+  background: var(--rr-room);
+}
+
+/* =====================================================================================================================
+   THE RUNNING HEAD (components/SiteHeader.tsx, through its data hooks), on every page, the Fonts page too
+   ===================================================================================================================== */
+html:root[data-layout='ruler'] [data-site-row] {
+  border-bottom: 1px solid var(--ed-rule-strong);
+}
+html:root[data-layout='ruler'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button) {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: none;
+  font-variant-caps: normal;
+}
+html:root[data-layout='ruler'] [data-site-number] {
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
+  font-variant-caps: normal;
+}
+
+/* =====================================================================================================================
+   THE DESK (App.tsx; the record is themes/reading-room/ReadingDesk.tsx + LedgerRecord.tsx)
+   ===================================================================================================================== */
+/* the record, on any screen (the desk's rail, the phone's slip under the sheet): the number as a big figure in the
+   sans, the title at display size, the facts as a ruled table, the labels in the small sans */
+html:root[data-layout='ruler'] .rr-ledger-record .rr-card-no {
+  font-family: var(--ed-figure-face);
+  font-size: var(--ed-display-2);
+  font-weight: 400;
+  line-height: 0.8;
+  letter-spacing: -0.03em;
+  font-variant-caps: normal;
+  font-variant-numeric: var(--ed-figure-numeric);
+  color: var(--rr-red);
+}
+html:root[data-layout='ruler'] .rr-ledger-record .rr-card-no .rr-sc {
+  display: block;
+  margin-bottom: 0.625rem;
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: none;
+  line-height: 1;
+  color: var(--rr-ink);
+}
+/* phones (the slip under the sheet, CatalogueSlip): the big figure needs no "No." over it (Rafael, 4 Nov). It stays
+   for screen readers, so the number still reads "No. 0004", and takes no room, so the figure sits where it began */
+html:root[data-layout='ruler'] .rr-under-sheet .rr-card-no .rr-sc {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+html:root[data-layout='ruler'] .rr-ledger-record .rr-ledger-head {
+  align-items: flex-start;
+}
+html:root[data-layout='ruler'] .rr-ledger-record .rr-card-title {
+  --rr-title-leading: 1;
+  margin: 1rem 0 1.25rem;
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-4);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: -0.02em;
+}
+html:root[data-layout='ruler'] .rr-ledger-record .rr-fact {
+  border-top-color: var(--ed-rule);
+  padding: 7px 0 8px;
+}
+html:root[data-layout='ruler'] .rr-ledger-record > .rr-facts > .rr-fact:first-child {
+  border-top-color: var(--ed-rule-strong);
+}
+html:root[data-layout='ruler'] .rr-ledger-record :is(.rr-fact dt, .rr-full-head .rr-sc),
+html:root[data-layout='ruler'] :is(.rr-drawer-head, .rr-drawer-head .rr-sc) {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: none;
+  font-variant-caps: normal;
+}
+html:root[data-layout='ruler'] .rr-drawer {
+  border-top-color: var(--ed-rule-strong);
+}
+
+/* the desk on a wide screen: asymmetric. The record moves into a margin rail on the left (3 columns at 1280 and up,
+   4 below), one rule divides it from the page, the sheet takes the rest; the running head's middle stays over the
+   sheet */
+@media (min-width: 64rem) {
+  html:root[data-layout='ruler'][data-layout-page='desk'] {
+    --panel-w: calc(var(--ed-col) * 4 + var(--ed-gutter) * 3);
+  }
+  html:root[data-layout='ruler'][data-layout-page='desk'] div:has(> main + aside) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  html:root[data-layout='ruler'][data-layout-page='desk'] div:has(> main + aside) > aside {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  html:root[data-layout='ruler'][data-layout-page='desk'] div:has(> main + aside) > main {
+    grid-column: 2;
+    grid-row: 1;
+    padding-left: 0;
+    padding-right: var(--ed-margin);
+  }
+  html:root[data-layout='ruler'][data-layout-page='desk'] aside:has(> .rr-desk) {
+    padding: 0 var(--ed-gutter) 0 var(--ed-margin);
+  }
+  /* the rule between the rail and the page, from under the running head to the foot, in the gutter's middle */
+  html:root[data-layout='ruler'][data-layout-page='desk'] aside:has(> .rr-desk)::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--site-head) + 0.75rem);
+    bottom: 0;
+    right: calc(var(--ed-gutter) / 2);
+    width: 1px;
+    background: var(--ed-rule-strong);
+  }
+  /* while writing the record steps aside to the left, not the right */
+  html:root[data-layout='ruler'][data-layout-page='desk'] aside.translate-x-3 {
+    translate: -0.75rem 0;
+  }
+  /* the running head over the window: the wordmark over the rail, the middle over the sheet, the places at the right
+     (the places' column never narrower than the places: on a narrow desk the middle gives way to the left) */
+  html:root[data-layout='ruler'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid {
+    grid-template-columns: calc(var(--panel-w) + var(--ed-gutter) - 1rem) minmax(0, 1fr) auto minmax(max-content, 1fr);
+  }
+  html:root[data-layout='ruler'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > [data-site-centre] {
+    grid-column: 3;
+  }
+  html:root[data-layout='ruler'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > div:last-child {
+    grid-column: 4 / -1;
+  }
+}
+@media (min-width: 80rem) {
+  html:root[data-layout='ruler'][data-layout-page='desk'] {
+    --panel-w: calc(var(--ed-col) * 3 + var(--ed-gutter) * 2);
+  }
+}
+
+/* =====================================================================================================================
+   THE LETTER PAGE (archive/ReadingSpread.tsx: .sp, .sp-head, .sp-plate, .sp-body)
+   Streamlined for launch (Rafael: "there's some streamlining that can be done in the letter view, or we could just get
+   better at the hierarchy. Maybe some of these CTAs are actually sticky… next in the collection, maybe you give that
+   slightly different background"). Laid out like the desk: the letter itself is the first and biggest thing, on the
+   right, staying put; the record is a rail on the left (the title, who to whom, the facts as the desk's ruled rows,
+   the words of the letter), one rule between them. The actions stay in view at the rail's foot (Write a reply in the
+   desk's own button, the rest quiet); Next in the collection is a card of the room's own, a zone apart; the notes and
+   the citation are quieter
+   ===================================================================================================================== */
+/* the spread's labels and small lines: the small sans (the same list as library.css's label role) */
+html:root[data-layout='ruler'] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: none;
+  font-variant-caps: normal;
+  line-height: 1.3;
+}
+html:root[data-layout='ruler'] .sp .sp-head {
+  text-align: left;
+}
+html:root[data-layout='ruler'] .sp .sp-title {
+  margin-top: 0.75rem;
+  font-family: var(--ed-display-face);
+  font-size: clamp(2.25rem, 1rem + 5vw, 3rem);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+html:root[data-layout='ruler'] .sp .sp-writer {
+  margin-top: 0.75rem;
+}
+/* the facts as the desk's record: one ruled row each, the label at the left */
+html:root[data-layout='ruler'] .sp .sp-facts {
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 1.25rem;
+  border-top-color: var(--ed-rule-strong);
+}
+html:root[data-layout='ruler'] .sp .sp-fact {
+  display: grid;
+  grid-template-columns: 5.375rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0 8px;
+  border-bottom-color: var(--ed-rule);
+}
+html:root[data-layout='ruler'] .sp .sp-fact dd {
+  margin-top: 0;
+}
+/* the notes and the citation: quieter (they're there for whoever looks) */
+html:root[data-layout='ruler'] .sp :is(.sp-notes, .sp-cite) {
+  border-top-color: var(--ed-rule);
+}
+html:root[data-layout='ruler'] .sp :is(.sp-notes li, .sp-cite p) {
+  color: var(--rr-faint);
+}
+/* a note's mark: the desk's size and weight (the record's marks, 11.25 px, 500), wherever it sits */
+html:root[data-layout='ruler'] .sp .sp-ref {
+  font-size: 0.703125rem;
+  font-weight: 500;
+}
+html:root[data-layout='ruler'] .sp :is(.sp-no, .sp-note-no) {
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
+  font-variant-caps: normal;
+}
+/* Next in the collection: a zone of its own, on the room's card, not more of the letter */
+html:root[data-layout='ruler'] .sp .sp-next {
+  margin-top: 2.5rem;
+  padding: 1rem 1.125rem 0.75rem;
+  border-top: 0;
+  border-radius: var(--radius);
+  background: var(--rr-card);
+}
+html:root[data-layout='ruler'] .sp .sp-next .sp-label {
+  color: var(--rr-muted);
+}
+html:root[data-layout='ruler'] .sp .sp-next-link {
+  margin: 0.5rem -0.5rem 0;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+}
+html:root[data-layout='ruler'] .sp .sp-next-title {
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-5);
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+/* the actions: Write a reply in the desk's own button (Bring another letter's tokens), the others quiet */
+html:root[data-layout='ruler'] .sp .sp-actions {
+  align-items: center;
+  gap: 0.25rem 0.375rem;
+  margin-inline: 0;
+  border-top-color: var(--ed-rule-strong);
+}
+html:root[data-layout='ruler'] .sp .sp-actions :is(.sp-reply, button) {
+  min-height: 2.25rem;
+  border-radius: var(--radius);
+  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
+}
+html:root[data-layout='ruler'] .sp .sp-actions button {
+  padding: 0 0.625rem;
+  font-family: var(--rr-control-face);
+  font-size: var(--rr-control-size);
+  letter-spacing: var(--rr-control-tracking);
+  color: var(--rr-ink);
+}
+html:root[data-layout='ruler'] .sp .sp-actions button:active {
+  background: var(--st-press);
+  scale: var(--st-scale-row);
+  transition-duration: var(--dur-press);
+}
+html:root[data-layout='ruler'] .sp .sp-reply {
+  margin-right: 0.375rem;
+  padding: 0 0.875rem 0 0.75rem;
+  background: var(--st-accent);
+  color: var(--rr-red);
+}
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-layout='ruler'] .sp .sp-reply:hover {
+    background: var(--st-accent-hover);
+    color: var(--rr-red-deep);
+  }
+}
+html:root[data-layout='ruler'] .sp .sp-reply:active {
+  background: var(--st-accent-press);
+  color: var(--rr-red-deep);
+  scale: var(--st-scale-row);
+  transition-duration: var(--dur-press);
+}
+html:root[data-layout='ruler'] .sp .sp-reply:focus-visible {
+  outline-color: var(--rr-red);
+}
+@media (pointer: coarse) {
+  html:root[data-layout='ruler'] .sp .sp-actions :is(.sp-reply, button) {
+    min-height: 2.75rem;
+  }
+}
+
+/* a wide screen: the rail (columns 1–5; 1–4 from 80em) and the letter on the rest, staying put */
+@media (min-width: 64em) {
+  html:root[data-layout='ruler'] .sp {
+    --sp-rail: 5;
+    position: relative;
+    grid-template-rows: auto 1fr;
+    max-width: var(--ed-max);
+    padding: calc(var(--site-head) + 1.75rem) var(--ed-margin) 0;
+  }
+  html:root[data-layout='ruler'] .sp .sp-head {
+    grid-column: 1 / span 5;
+    grid-row: 1;
+    border-top: 0;
+    padding: 0 0 0.25rem;
+  }
+  html:root[data-layout='ruler'] .sp .sp-body {
+    grid-column: 1 / span 5;
+    grid-row: 2;
+    padding-bottom: 0;
+  }
+  html:root[data-layout='ruler'] .sp .sp-plate {
+    grid-column: 6 / -1;
+    grid-row: 1 / span 2;
+    top: calc(var(--site-head) + 1.75rem);
+  }
+  /* the one rule between the rail and the letter, in the gutter's middle, from the head to the foot */
+  html:root[data-layout='ruler'] .sp::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--site-head) + 1.75rem);
+    bottom: 0;
+    left: calc(var(--ed-margin) + var(--sp-rail) * var(--ed-col) + (var(--sp-rail) - 0.5) * var(--ed-gutter));
+    width: 1px;
+    background: var(--ed-rule-strong);
+  }
+  /* whatever the keyboard focuses scrolls clear of the actions' bar */
+  html:root[data-layout='ruler'][data-layout-page='letters']:has(.sp) {
+    scroll-padding-bottom: 4.5rem;
+  }
+  /* the actions stay in view at the rail's foot while the record scrolls, and settle at its end */
+  html:root[data-layout='ruler'] .sp .sp-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-top: 2rem;
+    padding: 0.75rem 0;
+    background: var(--rr-room);
+  }
+}
+@media (min-width: 80em) {
+  html:root[data-layout='ruler'] .sp {
+    --sp-rail: 4;
+  }
+  html:root[data-layout='ruler'] .sp :is(.sp-head, .sp-body) {
+    grid-column: 1 / span 4;
+  }
+  html:root[data-layout='ruler'] .sp .sp-plate {
+    grid-column: 5 / -1;
+  }
+}
+
+/* =====================================================================================================================
+   ALL LETTERS: the list (archive/Index.tsx grid view + archive/FindingList.tsx) and the table's frame (Canvas.tsx)
+   ===================================================================================================================== */
+html:root[data-layout='ruler'] .lib-main {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+}
+/* the heading in type, at display size (the hand-drawn "All letters" steps aside; its words were already there) */
+html:root[data-layout='ruler'] .lib-main h1 > [aria-hidden] {
+  display: none;
+}
+html:root[data-layout='ruler'] .lib-main h1 > .sr-only {
+  position: static;
+  display: block;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-1);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
+}
+html:root[data-layout='ruler'] .lib-main > section {
+  padding-top: calc(var(--site-head-clear) + 1.5rem);
+}
+html:root[data-layout='ruler'] .lib-main > section > p:not(.rr-aid) {
+  max-width: 30ch;
+  margin-top: 1.5rem;
+  font-size: var(--ed-display-5);
+  line-height: 1.25;
+  color: var(--rr-ink);
+}
+html:root[data-layout='ruler'] :is(.lib-main .rr-aid, .fa .fa-sort, .fa .fa-sort-by) {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  font-weight: var(--ed-head-weight);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: none;
+  font-variant-caps: normal;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+html:root[data-layout='ruler'] .lib-main .rr-aid {
+  max-width: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border: 0;
+  color: var(--rr-muted);
+}
+/* the sort chosen: the running head's place pill (index.css [data-site-link][aria-current]): a 22 px light-red fill
+   around the words, a 44 px target beyond it that nobody sees */
+html:root[data-layout='ruler'] .fa .fa-sort-by {
+  position: relative;
+  min-height: 0;
+  padding: 0.1875rem 0.375rem;
+  border-radius: 3px;
+}
+html:root[data-layout='ruler'] .fa .fa-sort-by::after {
+  content: '';
+  position: absolute;
+  inset: -0.6875rem -0.25rem;
+}
+html:root[data-layout='ruler'] .fa .fa-sort-by.is-on {
+  text-decoration: none;
+  color: var(--rr-red);
+  background: var(--st-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-layout='ruler'] .fa .fa-sort-by:not(.is-on):hover {
+    background: var(--st-hover);
+  }
+}
+html:root[data-layout='ruler'] .fa .fa-rows > li {
+  border-bottom-color: var(--ed-rule);
+}
+/* no sliver of grid between the heading and the list (a short gap shows the lines as ticks): the list's own ground
+   reaches up to the heading's */
+html:root[data-layout='ruler'] .fa {
+  margin-top: 0;
+  padding-top: 0.5rem;
+}
+html:root[data-layout='ruler'] .fa :is(.fa-no, .fa-year) {
+  font-family: var(--ed-figure-face);
+  font-variant-numeric: var(--ed-figure-numeric);
+  font-variant-caps: normal;
+}
+html:root[data-layout='ruler'] .fa .fa-year {
+  font-size: var(--ed-display-5);
+  line-height: 1;
+}
+html:root[data-layout='ruler'] .fa .fa-title {
+  font-size: var(--rr-reading-size);
+}
+html:root[data-layout='ruler'] .fa .fa-place {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  letter-spacing: var(--ed-head-tracking);
+  text-transform: none;
+  font-variant-caps: normal;
+}
+/* a group: its name over its rows, left-set at display size, one rule over it */
+html:root[data-layout='ruler'] .fa .fa-head {
+  display: block;
+  margin: 0 0 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ed-rule-strong);
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-4);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: 1;
+  font-variant-caps: normal;
+  text-transform: none;
+}
+html:root[data-layout='ruler'] .fa .fa-head::before,
+html:root[data-layout='ruler'] .fa .fa-head::after {
+  display: none;
+}
+/* a wide list: each group's name hangs in the margin rail (columns 1–3) and stays as its rows pass (4–12) */
+@media (min-width: 64rem) {
+  html:root[data-layout='ruler'] .fa .fa-group {
+    display: grid;
+    grid-template-columns: calc(var(--ed-col) * 3 + var(--ed-gutter) * 2) minmax(0, 1fr);
+    column-gap: var(--ed-gutter);
+    align-items: start;
+    margin-top: 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--ed-rule-strong);
+  }
+  html:root[data-layout='ruler'] .fa .fa-group + .fa-group {
+    margin-top: 3rem;
+  }
+  html:root[data-layout='ruler'] .fa .fa-head {
+    position: sticky;
+    top: calc(var(--site-head-clear) + 1rem);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: var(--ed-display-3);
+    line-height: var(--ed-display-leading);
+  }
+  html:root[data-layout='ruler'] .fa .fa-rows > li:first-child .fa-row {
+    padding-top: 0.25rem;
+  }
+  html:root[data-layout='ruler'] .fa .fa-row {
+    grid-template-columns: 5.5rem minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.7fr) 4.5rem;
+  }
+}
+
+/* the table (the canvas view): each letter's name only (Rafael: "only have the name of the letter for the canvas view…
+   if they really want to see more details, they can go into the list view"); the place, year and why it survives
+   stay in the list, the card's tooltip and its words for screen readers */
+html:root[data-layout='ruler'] .table-card .table-meta {
+  display: none;
+}
+/* its heading in type like the list's */
+html:root[data-layout='ruler'] .canvas-heading svg {
+  display: none;
+}
+html:root[data-layout='ruler'] .canvas-heading .canvas-heading-art::before {
+  content: 'All letters';
+  display: block;
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-2);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
+  color: var(--rr-ink);
+}
+html:root[data-layout='ruler'] .canvas-heading .canvas-heading-art {
+  height: auto;
+}
+
+/* =====================================================================================================================
+   ABOUT (about/AboutApp.tsx, about/about.css): the title across the page, huge; each section's number a big figure in
+   the margin rail, its words in columns 5–10, one rule over each
+   ===================================================================================================================== */
+html:root[data-layout='ruler'] .about {
+  --about-label-font: var(--ed-head-face);
+  --about-label-size: var(--ed-head-size);
+  --about-label-spacing: var(--ed-head-tracking);
+  --about-label-case: none;
+  --about-label-caps: normal;
+  --about-rule: var(--ed-rule);
+  --about-gap: var(--ed-gutter);
+}
+html:root[data-layout='ruler'] .about-main {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+  padding-top: calc(var(--site-head-clear) + 1.5rem);
+}
+@media (min-width: 40rem) {
+  html:root[data-layout='ruler'] .about-main {
+    padding-top: calc(var(--site-head-clear) + 2.5rem);
+  }
+}
+html:root[data-layout='ruler'] .about-title {
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-1);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
+  text-wrap: balance;
+}
+html:root[data-layout='ruler'] .about-lede {
+  font-size: var(--ed-display-5);
+  line-height: 1.25;
+  color: var(--rr-ink);
+}
+html:root[data-layout='ruler'] .about-head {
+  padding-bottom: 1rem;
+}
+html:root[data-layout='ruler'] .about-section {
+  border-top: 1px solid var(--ed-rule-strong);
+}
+html:root[data-layout='ruler'] .about-facts dd {
+  font-family: var(--ed-figure-face);
+  font-size: clamp(1.625rem, 1.2rem + 0.9vw, 2.125rem);
+  font-variant-numeric: var(--ed-figure-numeric);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+html:root[data-layout='ruler'] .about-section-no {
+  font-family: var(--ed-figure-face);
+  font-size: var(--ed-display-2);
+  font-variant-numeric: var(--ed-figure-numeric);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  color: var(--rr-red);
+}
+@media (min-width: 56rem) {
+  html:root[data-layout='ruler'] .about-main > * {
+    grid-column: 1 / -1;
+  }
+  html:root[data-layout='ruler'] .about-main > * > * {
+    grid-column: 5 / span 6;
+  }
+  html:root[data-layout='ruler'] .about-main > * > .about-section-title {
+    grid-column: 1 / span 3;
+  }
+  /* the head in order: the kicker, the title across the page, then the lede and the line written live */
+  html:root[data-layout='ruler'] .about-head > .about-kicker {
+    grid-row: 1;
+    grid-column: 1 / span 3;
+  }
+  html:root[data-layout='ruler'] .about-head > .about-title {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+  }
+  html:root[data-layout='ruler'] .about-head > .about-lede {
+    grid-row: 3;
+  }
+  html:root[data-layout='ruler'] .about-head > :not(.about-kicker, .about-title, .about-lede) {
+    grid-row: 4;
+  }
+}
+
+/* =====================================================================================================================
+   ROOM UNDER THE RUNNING HEAD: the pages start from the head's own height (index.css --site-head-clear)
+   ===================================================================================================================== */
+@media (max-width: 63.99rem) {
+  /* the desk on a phone or tablet: the letter starts 3 px under the head's fade, as the Reading Room's does */
+  html:root[data-layout='ruler'][data-layout-page='desk'] main[class*='pt-[calc(4.5rem'] {
+    padding-top: calc(var(--site-head-clear) + 3px);
+  }
+  html:root[data-layout='ruler'] .sp {
+    padding-top: calc(var(--site-head-clear) + 0.75rem);
+  }
+}
+
+/* =====================================================================================================================
+   PHONE QA (launch)
+   ===================================================================================================================== */
+/* a note's mark on the letter page: the desk's bigger, unseen target (24 px with a mouse, 44 px to a finger) */
+html:root[data-layout='ruler'] .sp .sp-ref {
+  position: relative;
+}
+html:root[data-layout='ruler'] .sp .sp-ref::after {
+  content: '';
+  position: absolute;
+  inset: -7px -6px;
+}
+@media (pointer: coarse) {
+  html:root[data-layout='ruler'] .sp .sp-ref::after {
+    inset: -17px -14px;
+  }
+}
+/* a phone held sideways (a short, wide window): the letter's slip dock tucks into the bottom-right corner, its count
+   folded away, so it no longer sits across the middle of the sheet while it writes */
+@media (orientation: landscape) and (max-height: 32rem) {
+  html:root[data-layout='ruler'] div:has(> .rr-dock) {
+    justify-content: flex-end;
+  }
+  html:root[data-layout='ruler'] .rr-dock .rr-dock-of {
+    display: none;
+  }
+}
+/* Windows contrast themes drop the strip's gradient ground (a gradient is a background image): All letters' dock keeps
+   a solid ground in the system's colours, so the decades never run into the cards */
+@media (forced-colors: active) {
+  html:root[data-look='reading-room'] .archive-dock-box::before {
+    inset: -0.5rem 0 calc(-14px - env(safe-area-inset-bottom, 0px));
+    background: Canvas;
+  }
+}

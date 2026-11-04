@@ -158,6 +158,13 @@
     user-select: none;
     touch-action: manipulation;
   }
+  /* everything you can click shows the hand (Rafael, 4 Nov; hover and press audit N2), a menu's rows too (launch QA) */
+  :is(button, [role='button'], [role='radio'], [role='switch'], [role='tab'], summary, select):not(:disabled, [aria-disabled='true']) {
+    cursor: pointer;
+  }
+  [role^='menuitem']:not([data-disabled]) {
+    cursor: pointer;
+  }
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
@@ -255,6 +262,25 @@ textarea {
 }
 @media (prefers-reduced-motion: reduce) {
   .caret-breathe {
+    animation: none;
+  }
+}
+/* writing: the caret blinks like a text caret (on, off), solid for a moment after each move */
+@keyframes caret-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+.caret-blink {
+  animation: caret-blink 1.06s step-end 700ms infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret-blink {
     animation: none;
   }
 }
@@ -396,12 +422,20 @@ textarea {
    (top: var(--site-head-clear)), and jumps to an anchor stop below it. A screen under 32rem tall doesn't pin the
    header, so there it covers nothing. */
 :root {
+  /* the header's side margins, the one source for every page: 16 px on a phone, 32 px from 40rem, 40 px from 64rem
+     (the Reading Room's --rr-margin, the editorial grid's --ed-margin); the safe-area inset wins when it's wider */
+  --site-margin: 1rem;
   --site-head-rule: 0px;
-  --site-head: calc(max(1rem, env(safe-area-inset-top, 0px)) + 2rem + var(--site-head-rule));
+  /* the header's own height (to keep clear of it, as Classic's panel does), and what it covers while pinned */
+  --site-head-box: calc(max(1rem, env(safe-area-inset-top, 0px)) + 2rem + var(--site-head-rule));
+  --site-head: var(--site-head-box);
   --site-head-clear: calc(var(--site-head) + 12px);
 }
+@media (min-width: 40rem) {
+  :root { --site-margin: 2rem; }
+}
 @media (min-width: 64rem) {
-  :root { --site-head: calc(1.25rem + 2.25rem + var(--site-head-rule)); }
+  :root { --site-margin: 2.5rem; --site-head-box: calc(1.25rem + 2.25rem + var(--site-head-rule)); }
 }
 @media (max-height: 31.99rem), print {
   :root { --site-head: 0px; --site-head-clear: 0px; }
@@ -409,37 +443,53 @@ textarea {
 html { scroll-padding-top: var(--site-head-clear); }
 /* a page's chip in the header (Share on the desk) gets the same 48 px target as the Menu chip beside it */
 [data-site-header] [data-site-action] [data-chip]::after { inset: -8px; }
-/* a place you can go answers a press with an underline (the place you're in isn't a link, so never) */
-[data-site-header] a[data-site-link]:active [data-site-words] { text-decoration: underline 1px currentColor; text-underline-offset: 3px; }
 
-/* ---------- the place you're in (SiteHeader's [aria-current]): quiet, no underline. ?navsel=1|2|3 to compare ----------
-   1 (default) its words in the look's red (--site-here: Rubric's vermilion; the Reading Room's archival red);
-   2 a soft tint of that red behind them (8 %, no edge, the controls' radius), the words in it;
-   3 the place you're in in full ink, the others (and My letters) quieter at 68 % (the least that keeps them at
-     4.5:1 on the room and the desk).
-   A letter's page marks All letters the same way (aria-current="true"). In forced colours the words are underlined. */
+/* ---------- the place you're in, and the places you can go (SiteHeader) ----------
+   Rafael, 4 Nov: "I like the light red fill", and no underline on hover. All in one shape: the place's own padding and
+   the controls' radius.
+   - The place you're in (and All letters on a letter's page): a light-red fill (--st-accent where the look defines
+     it, else the look's red at 8 %), its words in that red (--site-here: Rubric's vermilion; the Reading Room's
+     archival red). A letter's All letters is still a link: a press firms the fill and scales it.
+   - A place you can go, and My letters: a faint ink wash under the pointer (--st-hover), a firmer one pressed
+     (--st-press) with --st-scale. The same in the phone Menu's rows (their own row shape).
+   :root, not html, so these outrank a look's own colour for the places. In forced colours the place you're in is
+   underlined (below). */
 :root { --site-here: var(--mark); }
-html [data-site-header][data-navsel='1'] [data-site-link][aria-current],
-html [data-site-menu][data-navsel='1'] [data-site-link][aria-current],
-html [data-site-header][data-navsel='2'] [data-site-link][aria-current],
-html [data-site-menu][data-navsel='2'] [data-site-link][aria-current] {
-  color: var(--site-here);
-}
-html [data-site-header][data-navsel='2'] [data-site-link][aria-current] {
-  background: color-mix(in oklab, var(--site-here) 8%, transparent);
+:root [data-site-header] :is([data-site-link], [data-site-kept]) {
   border-radius: var(--radius);
+  transition: color 150ms ease-out, background-color var(--dur-press, 100ms) ease-out, scale var(--dur-press, 100ms) ease-out;
 }
-html [data-site-menu][data-navsel='2'] [data-site-link][aria-current] {
-  background: color-mix(in oklab, var(--site-here) 8%, transparent);
+:root [data-site-header] [data-site-link][aria-current],
+:root [data-site-menu] [data-site-link][aria-current] {
+  color: var(--site-here);
+  background: var(--st-accent, color-mix(in oklab, var(--site-here) 8%, transparent));
 }
-html [data-site-header][data-navsel='3'] :is([data-site-link]:not([aria-current]), [data-site-kept]),
-html [data-site-menu][data-navsel='3'] [data-site-link]:not([aria-current]) {
-  color: color-mix(in oklab, var(--foreground) 68%, transparent);
+:root [data-site-header] a[data-site-link][aria-current]:active {
+  background: var(--st-accent-press, color-mix(in oklab, var(--site-here) 16%, transparent));
+  scale: var(--st-scale, 0.97);
 }
-html [data-site-header][data-navsel='3'] [data-site-link][aria-current],
-html [data-site-menu][data-navsel='3'] [data-site-link][aria-current] {
-  color: var(--foreground);
+@media (hover: hover) and (pointer: fine) {
+  :root [data-site-header] :is(a[data-site-link]:not([aria-current]), [data-site-kept]):hover {
+    background: var(--st-hover, color-mix(in oklab, var(--foreground) 6%, transparent));
+  }
+}
+:root [data-site-header] :is(a[data-site-link]:not([aria-current]), [data-site-kept]):is(:active, [data-state='open']) {
+  background: var(--st-press, color-mix(in oklab, var(--foreground) 11%, transparent));
+}
+:root [data-site-header] :is(a[data-site-link]:not([aria-current]), [data-site-kept]):active {
+  scale: var(--st-scale, 0.97);
 }
 @media (forced-colors: active) {
   [data-site-link][aria-current] [data-site-words] { text-decoration: underline; text-underline-offset: 4px; }
+}
+
+
+/* text fields on touch screens: 16 px, so iPhone Safari doesn't zoom the page when one is tapped (launch QA:
+   the /letters search, the Fonts page's own words, the sheet's Seed field and its select were 13 px, the looks' small
+   text rules outranking the fields' own touch size). Only the fields, only on touch; !important because the looks'
+   rules are long :is() lists and each field sets its size its own way. Here, unlayered, so every page has it */
+@media (pointer: coarse) {
+  :is(input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='button'], [type='submit'], [type='reset'], [type='file'], [type='image'], [type='hidden']), textarea, select) {
+    font-size: 16px !important;
+  }
 }

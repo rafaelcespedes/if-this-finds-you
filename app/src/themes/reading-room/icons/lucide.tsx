@@ -31,6 +31,7 @@ import {
   MailOpen as LMailOpen,
   Mails as LMails,
   Menu as LMenu,
+  Moon as LMoon,
   Pause as LPause,
   PenLine as LPenLine,
   Play as LPlay,
@@ -42,6 +43,7 @@ import {
   Shuffle as LShuffle,
   SlidersHorizontal as LSlidersHorizontal,
   Sparkles as LSparkles,
+  Sun as LSun,
   Undo2 as LUndo2,
   Users as LUsers,
   X as LX,
@@ -54,16 +56,18 @@ export * from 'lucide-react/icons';
 type P = SVGProps<SVGSVGElement> & { size?: number | string; strokeWidth?: number | string; absoluteStrokeWidth?: boolean };
 const PEN = LOOK === 'reading-room';
 
-/** What the words beside an icon are set in: 'book' (Junicode, its capitals higher than its line box's centre), 'ui'
- * (the controls' face, or Junicode's small capitals, which already centre), or nothing when it stands alone. */
+/** What the words beside an icon are set in: 'book' (the look's serif, --rr-book, whose capitals sit off its line box's
+ * centre by --rr-book-cap-lift), 'ui' (the sans, or the serif's small capitals, which already centre), or nothing
+ * when it stands alone. The serif is read from the token, so a new pairing needs no change here. */
 function besideFace(el: SVGSVGElement): 'book' | 'ui' | null {
   const parent = el.parentElement;
   if (!parent) return null;
+  const book = getComputedStyle(document.documentElement).getPropertyValue('--rr-book').split(',')[0].trim().replace(/^['"]|['"]$/g, '');
   const walk = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
   for (let n = walk.nextNode(); n; n = walk.nextNode()) {
     if (!n.textContent?.trim() || !n.parentElement) continue;
     const cs = getComputedStyle(n.parentElement);
-    return /Junicode/.test(cs.fontFamily) && cs.fontVariantCaps === 'normal' ? 'book' : 'ui';
+    return !!book && cs.fontFamily.includes(book) && cs.fontVariantCaps === 'normal' ? 'book' : 'ui';
   }
   return null;
 }
@@ -120,6 +124,7 @@ export const LockOpen = icon(LLockOpen as ComponentType<P>, 'LockOpen');
 export const MailOpen = icon(LMailOpen as ComponentType<P>, 'MailOpen');
 export const Mails = icon(LMails as ComponentType<P>, 'Mails');
 export const Menu = icon(LMenu as ComponentType<P>, 'Menu');
+export const Moon = icon(LMoon as ComponentType<P>, 'Moon');
 export const Pause = icon(LPause as ComponentType<P>, 'Pause');
 export const PenLine = icon(LPenLine as ComponentType<P>, 'PenLine');
 export const Play = icon(LPlay as ComponentType<P>, 'Play');
@@ -131,6 +136,7 @@ export const Share = icon(LShare as ComponentType<P>, 'Share');
 export const Shuffle = icon(LShuffle as ComponentType<P>, 'Shuffle');
 export const SlidersHorizontal = icon(LSlidersHorizontal as ComponentType<P>, 'SlidersHorizontal');
 export const Sparkles = icon(LSparkles as ComponentType<P>, 'Sparkles');
+export const Sun = icon(LSun as ComponentType<P>, 'Sun');
 export const Undo2 = icon(LUndo2 as ComponentType<P>, 'Undo2', 'RotateCcw');
 export const Users = icon(LUsers as ComponentType<P>, 'Users');
 export const X = icon(LX as ComponentType<P>, 'X');

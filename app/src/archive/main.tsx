@@ -7,11 +7,12 @@ import { applySerif } from './serif';
 import '../index.css';
 import './archive.css';
 import { applyLook } from '../lib/look';
-import { applySansOption } from '../themes/reading-room/sans-switch'; // temporary: ?rrsans comparison
 import '../themes/reading-room.css';
 import '../themes/postmarked.css';
 // the library in the Reading Room (the layout study's proposals 2 and 3), after the look's own sheet
 import '../themes/reading-room/library.css';
+// the site's layout, the Ruler (lib/layout.ts; ?layout=off goes back): a frame on top of the Reading Room
+import { applyLayout } from '../lib/layout';
 
 // the letter face (?serif=1…4), loaded beside the page
 applySerif();
@@ -20,7 +21,8 @@ if (!location.hash.startsWith('#/letter/')) cards.warm();
 
 // the look being compared (?look=…); today's design when none
 applyLook();
-applySansOption();
+
+applyLayout('letters');
 
 // opened once online, the library opens again offline (public/letters-sw.js)
 keepForOffline();

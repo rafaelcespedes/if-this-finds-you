@@ -17,6 +17,15 @@
         } catch (e) {}
         var html = document.documentElement;
         if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
+        // the layout (lib/layout.ts reads the same): the Ruler on the Reading Room unless ?layout=off (or this tab chose
+        // off), so the first frame already has its frame
+        var lay = 'ruler';
+        try {
+          var al = (new URLSearchParams(location.search).get('layout') || '').toLowerCase();
+          var kl = sessionStorage.getItem('seedhand:layout');
+          lay = /^(off|none|0|reading-room)$/.test(al) ? 'none' : al ? 'ruler' : kl === 'none' ? 'none' : 'ruler';
+        } catch (e) {}
+        if (id === 'reading-room' && lay !== 'none') html.setAttribute('data-layout', lay);
         var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
         document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
       })();
@@ -29,24 +38,41 @@
     </style>
     <title>About · If This Finds You</title>
     <meta name="description" content="Real letters by ordinary people, written out by hand by writers who never existed. Where the letters and the hands come from, and how it was made." />
+    <link rel="canonical" href="https://ifthisfindsyou.app/about" />
     <!-- the same icons as the tool (index.html): #5 is the logo; ?logo=32 swaps the tab icon (Wordmark.tsx) -->
     <link rel="icon" href="/brand/favicon-5.svg" type="image/svg+xml" />
     <link rel="icon" href="/brand/favicon-5.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon-5.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- the Reading Room's two faces, fetched with the page so nothing reflows when they arrive (design QA) -->
+    <link rel="preload" href="/src/themes/reading-room/fonts/newsreader-latin-roman.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/themes/reading-room/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="If This Finds You" />
     <meta property="og:title" content="About · If This Finds You" />
     <meta property="og:description" content="Real letters by ordinary people, written out by hand by writers who never existed." />
     <meta property="og:url" content="https://ifthisfindsyou.app/about" />
-    <meta property="og:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
+    <meta property="og:image" content="https://ifthisfindsyou.app/brand/share.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="If This Finds You, in handwriting" />
+    <meta property="og:image:alt" content="A loose pile of real letters from 1450 to 1929, each in a different hand on its own paper and stamped with its catalogue number. On top: &#8220;Dear, dear Friend, Can you guess how happy I am?&#8221;" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="About · If This Finds You" />
     <meta name="twitter:description" content="Real letters by ordinary people, written out by hand by writers who never existed." />
-    <meta name="twitter:image" content="https://ifthisfindsyou.app/brand/og-image-5.png" />
+    <meta name="twitter:image" content="https://ifthisfindsyou.app/brand/share.jpg" />
+    <meta name="twitter:image:alt" content="A loose pile of real letters from 1450 to 1929, each in a different hand on its own paper and stamped with its catalogue number. On top: &#8220;Dear, dear Friend, Can you guess how happy I am?&#8221;" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        "name": "About",
+        "url": "https://ifthisfindsyou.app/about",
+        "description": "Where the letters and the hands come from, and how it was made.",
+        "inLanguage": "en",
+        "isPartOf": { "@type": "WebSite", "@id": "https://ifthisfindsyou.app/#site", "name": "If This Finds You", "url": "https://ifthisfindsyou.app/" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

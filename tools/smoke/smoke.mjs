@@ -9,13 +9,14 @@
 //
 // Pages: / (the desk), /letters (all letters), one letter page (the first card's link; the library shuffles,
 // so it varies from run to run and the output names it), /fonts and /about, each at desktop (1440×900) and phone
-// (375×812) size. A page fails when
+// (375×812) size, and the earlier Fonts page (/fonts?fonts=old) at desktop size. A page fails when
 //   - it logs a console error or throws an uncaught exception
 //   - one of its web workers fails (a worker's uncaught error or console error; every `new Worker` is watched)
 //   - a request to the site itself fails (4xx / 5xx, or no answer)
 //   - it shows one of the site's own failure messages ("The fonts didn't load", FAILURE_TEXTS below)
 //   - it stays blank: within 30 s the desk's letter has no handwriting, fewer than 6 letter cards have painted,
-//     the letter page has no handwriting, fewer than 3 font specimens have drawn, or About's live line is unwritten
+//     the letter page has no handwriting, the Fonts page's first hand or 3 more of its specimens haven't drawn in
+//     the fonts it made, or About's live line is unwritten
 // Screenshots of every page land in tools/smoke/out/ (CI keeps them). Exit code 1 on any failure.
 //
 // What each page must draw is found by accessible names and links (PAGES below). If a redesign renames one,
@@ -40,12 +41,16 @@ const VIEWPORTS = [
 ];
 // What each page must draw before it counts as working: `sel` finds the things, `need` of them must be drawn.
 //   sheet: one element with handwriting (svg paths or a loaded image)    cards: elements each with handwriting
-//   fonts: rows whose specimen is set in a font the page loaded itself (or shows a loaded image)
+//   fonts: rows whose specimen is set in a font the page loaded itself (or shows a loaded image); with `lead`, that
+//          one (the page's first hand) must be drawn too, and `need` counts the rows after it
 const PAGES = {
   home: { what: 'the letter on the desk', kind: 'sheet', sel: '[role="group"][aria-label="Letter"]', need: 1 },
   letters: { what: 'letter cards painted', kind: 'cards', sel: 'a[href*="#/letter/"]', need: 6 },
   letter: { what: 'the letter in its hand', kind: 'sheet', sel: '[role="img"][aria-label^="The letter"]', need: 1 },
-  fonts: { what: 'font specimens drawn', kind: 'fonts', sel: 'ol[aria-label="Fonts"] > li', need: 3 },
+  // Fonts: the first hand at poster size, then the rest of the set as a list (new/FontsNew.tsx)
+  fonts: { what: 'the first hand and font specimens drawn', kind: 'fonts', lead: 'section[aria-label="The first hand in this set"]', sel: 'ol[aria-label="More hands in this set"] > li', need: 3 },
+  // the earlier Fonts page, kept behind ?fonts=old for now (FontsApp.tsx): a lighter check, desktop only
+  fontsOld: { what: 'font specimens drawn (?fonts=old)', kind: 'fonts', sel: 'ol[aria-label="Fonts"] > li', need: 3 },
   // About: the one line a writer writes live (a figure, captioned with the writer's name)
   about: { what: 'the line written live', kind: 'sheet', sel: 'main figure', need: 1 },
 };
@@ -104,11 +109,11 @@ function watchWorkers() {
 }
 
 // ---------- the probe, run inside the page: has it drawn what it should? ----------
-function probePage({ kind, sel, minStrokes, failureTexts }) {
+function probePage({ kind, sel, lead, minStrokes, failureTexts }) {
   const written = (el) => el.querySelectorAll('svg path').length >= minStrokes ||
     [...el.querySelectorAll('img')].some((i) => i.complete && i.naturalWidth > 50);
   const els = [...document.querySelectorAll(sel)];
-  let count = 0, detail = '';
+  let count = 0, detail = '', found = els.length > 0;
   if (kind === 'sheet') {
     const el = els[0];
     if (el) {
@@ -125,12 +130,16 @@ function probePage({ kind, sel, minStrokes, failureTexts }) {
     const loaded = new Set([...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/["']/g, '')));
     const drawn = (li) => [...li.querySelectorAll('[style*="font-family"]')].some((e) => loaded.has(e.style.fontFamily.replace(/["']/g, ''))) ||
       [...li.querySelectorAll('img')].some((i) => i.complete && i.naturalWidth > 50);
-    count = els.filter(drawn).length;
-    detail = `${count} of ${els.length} specimens drawn`;
+    const rows = els.filter(drawn).length;
+    const leadEl = lead ? document.querySelector(lead) : null;
+    const leadDrawn = !lead || (!!leadEl && drawn(leadEl));
+    count = leadDrawn ? rows : 0;
+    detail = `${lead ? `first hand ${leadEl ? (leadDrawn ? 'drawn' : 'not drawn') : 'missing'}, ` : ''}${rows} of ${els.length} specimens drawn`;
+    if (lead) found = !!leadEl || els.length > 0;
   }
   const text = document.body ? document.body.innerText : '';
   const failures = failureTexts.map((re) => (text.match(new RegExp(re)) || [])[0]).filter(Boolean);
-  return { found: els.length > 0, count, detail, failures, workers: window.__smokeWorkers || { made: [], errors: [] } };
+  return { found, count, detail, failures, workers: window.__smokeWorkers || { made: [], errors: [] } };
 }
 
 async function checkPage(browser, base, vp, page) {
@@ -152,7 +161,7 @@ async function checkPage(browser, base, vp, page) {
 
   const url = base.replace(/\/$/, '') + page.path;
   const want = PAGES[page.kind];
-  const args = { kind: want.kind, sel: want.sel, minStrokes: MIN_STROKES, failureTexts: FAILURE_TEXTS.map((re) => re.source) };
+  const args = { kind: want.kind, sel: want.sel, lead: want.lead || null, minStrokes: MIN_STROKES, failureTexts: FAILURE_TEXTS.map((re) => re.source) };
   let probe = { found: false, count: 0, detail: '', failures: [], workers: { made: [], errors: [] } };
   try {
     const res = await tab.goto(url, { waitUntil: 'load', timeout: WAIT_MS });
@@ -167,7 +176,7 @@ async function checkPage(browser, base, vp, page) {
     } while (Date.now() - t0 < WAIT_MS);
     const waited = Math.round((Date.now() - t0) / 1000);
     const broke = crashed || probe.workers.errors.length || probe.failures.length;
-    if (!probe.found) problems.push(`blank page: ${want.what}: nothing found after ${waited} s (looked for ${want.sel}${broke ? '' : '; if the page was redesigned, update PAGES in tools/smoke/smoke.mjs'})`);
+    if (!probe.found) problems.push(`blank page: ${want.what}: nothing found after ${waited} s (looked for ${want.lead ? `${want.lead} and ` : ''}${want.sel}${broke ? '' : '; if the page was redesigned, update PAGES in tools/smoke/smoke.mjs'})`);
     else if (probe.count < want.need) problems.push(`blank: ${want.what}: ${probe.detail} after ${waited} s, needs ${want.need}`);
     await tab.waitForTimeout(SETTLE_MS);
     probe = await tab.evaluate(probePage, args).catch(() => probe);
@@ -223,6 +232,7 @@ async function main() {
       { name: 'letters', path: '/letters', kind: 'letters' },
       { name: 'letter', path: null, kind: 'letter' },
       { name: 'fonts', path: '/fonts', kind: 'fonts' },
+      ...(vp.name === 'desktop' ? [{ name: 'fonts-old', path: '/fonts?fonts=old', kind: 'fontsOld' }] : []),
       { name: 'about', path: '/about', kind: 'about' },
     ];
     for (const page of pages) {

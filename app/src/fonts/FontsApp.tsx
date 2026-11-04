@@ -24,82 +24,11 @@ import { SpecimenBar } from './SpecimenBar';
 import { useSaved } from './favourites';
 import { filterKey, NO_FILTERS, type Filters } from './filters';
 import type { FontEntry, LiveSpec } from './protocol';
-import { defaultSize, FALLBACK_TEXT, LINES, newSetSeed, readRoute, routeSearch, SET_COUNT, type FontsRoute, type Line } from './route';
+import { defaultSize, FALLBACK_TEXT, LINES, newSetSeed, SET_COUNT, type Line } from './route';
+import { ABOUT, INTRO, useDevicePixelRatio, useRootRem, useRoute, useSettled, useViewportWidth } from './page';
+// the shared helpers live in page.ts now; still exported from here for anything that imports them from this file
+export { ABOUT, INTRO, useDevicePixelRatio, useRootRem, useRoute, useSettled, useViewportWidth } from './page';
 import { fonts, useCatalogue, useSet } from './store';
-
-function useRoute() {
-  const [route, setRoute] = useState<FontsRoute>(() => {
-    const r = readRoute(location.search);
-    if (!r.set) {
-      r.set = newSetSeed();
-      history.replaceState(history.state, '', routeSearch(r) + location.hash);
-    }
-    return r;
-  });
-  useEffect(() => {
-    const on = () => setRoute(readRoute(location.search));
-    window.addEventListener('popstate', on);
-    return () => window.removeEventListener('popstate', on);
-  }, []);
-  const update = useCallback((patch: Partial<FontsRoute>, push = false) => {
-    setRoute((r) => {
-      const next = { ...r, ...patch };
-      history[push ? 'pushState' : 'replaceState'](history.state, '', routeSearch(next) + location.hash);
-      return next;
-    });
-  }, []);
-  return [route, update] as const;
-}
-
-/** A value that follows another once it has stopped changing for a moment (typing, resizing). */
-function useSettled<T>(value: T, ms: number) {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setV(value), ms);
-    return () => window.clearTimeout(t);
-  }, [value, ms]);
-  return v;
-}
-
-/** px per rem: the root's font size, which the reader's text size scales (read again on resize). */
-function useRootRem() {
-  const read = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  const [rem, setRem] = useState(read);
-  useEffect(() => {
-    const on = () => setRem(read());
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  return rem;
-}
-
-function useViewportWidth() {
-  const [w, setW] = useState(() => document.documentElement.clientWidth || innerWidth);
-  useEffect(() => {
-    const on = () => setW(document.documentElement.clientWidth || innerWidth);
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  return w;
-}
-
-/** The screen's pixel density (capped at 3), kept up to date when it changes (another screen, browser zoom). */
-function useDevicePixelRatio() {
-  const read = () => Math.min(3, Math.max(1, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1));
-  const [dpr, setDpr] = useState(read);
-  useEffect(() => {
-    // a media query that matches only the current density: it stops matching when the density changes
-    const mq = matchMedia(`(resolution: ${devicePixelRatio || 1}dppx)`);
-    const on = () => setDpr(read());
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, [dpr]);
-  return dpr;
-}
-
-// the pitch and the longer intro: docs/brand/naming-and-copy.md §2.11 (Rafael's approved copy)
-const INTRO = 'Every hand here is a font you can keep. Free and open source.';
-const ABOUT = 'Every writer who copies out a letter here has a hand of their own, and every hand is a font you can download, free and open source. Each one is named after its writer. A font keeps four or five versions of each letter, so it won’t vary the way the page does, but it’s the same hand.';
 
 export function FontsApp() {
   const [route, update] = useRoute();
@@ -180,12 +109,13 @@ export function FontsApp() {
   // opening one is a step in the history, so Back closes it again
   const onOpen = useCallback((id: string | null) => update({ hand: id ?? '' }, !!id), []);
 
-  // Space draws a new set (when nothing that takes Space has focus)
+  // N draws a new set, as R brings another letter on the desk (Space scrolls the page, as everywhere: it drew a new
+  // set from anywhere and replaced what you were reading). Never while you type, never in a dialog.
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
-      if (e.key !== ' ' || e.metaKey || e.ctrlKey || e.altKey || route.view !== 'set') return;
+      if (e.key.toLowerCase() !== 'n' || e.metaKey || e.ctrlKey || e.altKey || e.repeat || route.view !== 'set') return;
       const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(input|textarea|select|button|a|summary)$/i.test(t.tagName) || t.closest('[role=dialog],[role=slider],[role=radio],[role=switch]'))) return;
+      if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName) || t.closest('[role=dialog]'))) return;
       e.preventDefault();
       newSet();
     };

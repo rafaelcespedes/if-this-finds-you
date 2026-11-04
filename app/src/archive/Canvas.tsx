@@ -17,11 +17,10 @@ import { cn } from '@/lib/utils';
 import { cardAspect } from './card-protocol';
 import { cardKey, cards, cardSize } from './cards';
 import { cardLetter } from './Card';
-import { circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
+import { capFirst, circumstanceLabel, fromTo, lostInTransit, opening, whereWhen } from './data';
 import type { ArchiveLetter } from './model';
-// the look being compared (?look=reading-room): the letter's number stamped on its sheet (src/themes/reading-room/)
+// the look in use: the Reading Room lays the letters on a table (no numbers on the sheets: the list has them)
 import { LOOK } from '@/lib/look';
-import { CardStamp } from '@/themes/reading-room/SheetMarks';
 import { letterHash } from './route';
 import { paperSize } from './paper-of';
 // look C (?look=postmarked): each letter in its addressed envelope (src/themes/postmarked/)
@@ -53,6 +52,9 @@ interface Placed {
   aspect: number;
   /** the table: the sheet at its paper's size (px) and its own tilt, standing on the cell's shelf */
   sheet?: { w: number; h: number; tilt: number };
+  /** the table: a letter laid again in a spare cell, so the table never shows an empty band as it wraps (hidden from
+   * screen readers and Tab; the original is the one in the list) */
+  copy?: boolean;
 }
 interface Field {
   items: Placed[];
@@ -176,15 +178,25 @@ function layTable(letters: ArchiveLetter[], papers: Map<string, { w: number; h: 
   // nearest first, rows read left to right within a ring (a little give, so the order is felt more than seen)
   for (const c of cells) c.d += r() * 0.35;
   cells.sort((a, b) => a.d - b.d);
-  const items: Placed[] = letters.map((l, k) => {
-    const c = cells[k];
+  const lay = (l: ArchiveLetter, c: { cx: number; cy: number }, id: string, copy?: boolean): Placed => {
     const p = papers.get(l.id) ?? { w: 148, h: 210 };
     return {
-      id: l.id, letter: l, aspect: p.h / p.w,
+      id, letter: l, aspect: p.h / p.w, copy,
       x: c.cx, y: c.cy, w: t.cellInner, h: itemH, tilt: 0,
       sheet: { w: Math.round(p.w * t.k), h: Math.round(p.h * t.k), tilt: (r() - 0.5) * 1.4 },
     };
-  });
+  };
+  const items: Placed[] = letters.map((l, k) => lay(l, cells[k], l.id));
+  // the table is at least a screen wide, so it has more cells than letters, the spare ones at its edges; as it wraps
+  // they'd show as an empty band. Lay letters again in them, from the nearest letter out (the nearest sit by the
+  // heading, so a copy at the edge is never beside its original), unless the letters are a handful (a search's few
+  // matches stay gathered on their own)
+  if (n >= 12) {
+    for (let k = n; k < cells.length; k++) {
+      const l = letters[(k - n) % n];
+      items.push(lay(l, cells[k], `${l.id}~${k}`, true));
+    }
+  }
   items.push({ id: 'heading', x: 0, y: 0, w: o.head.w, h: o.head.h, tilt: 0, aspect: 0 });
   return { items, tileW: cols * cellW, tileH: rows * cellH };
 }
@@ -222,7 +234,7 @@ interface Props {
 const MARGIN = 280;
 
 // ---------- where you are on the table: the running head's middle (SiteHeader's `centre`) ----------
-// The decade of the letter nearest the middle of the screen and a few of that decade's places near it ("the 1790s ·
+// The decade of the letter nearest the middle of the screen and a few of that decade's places near it ("The 1790s ·
 // Cairo, Madrid, Westminster"); nothing while the heading is nearest. Kept in a tiny store so only the readout
 // re-renders as you drag, and only when the words change.
 let readoutNow = '';
@@ -247,7 +259,7 @@ function readoutOf(near: { it: Placed; d: number }[]) {
     if (place && !places.includes(place)) places.push(place);
     if (places.length === 3) break;
   }
-  return `the ${decade}s${places.length ? ` · ${places.join(', ')}` : ''}`;
+  return `The ${decade}s${places.length ? ` · ${places.join(', ')}` : ''}`;
 }
 
 /** The Reading Room lays the letters on a table (layTable); the other looks scatter them (layField). */
@@ -404,7 +416,17 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0 || (e.target as HTMLElement).closest('[data-no-pan]')) return;
     stop();
+    // a second finger: a pinch, the browser's zoom (touch-action: pinch-zoom), so the table stops following
+    if (drag.current && drag.current.id !== e.pointerId) { endDrag(); return; }
     drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false, vx: 0, vy: 0, t: performance.now() };
+  };
+  // the drag ends where it is, with no glide (a pinch took over, or the browser cancelled the touch)
+  const endDrag = () => {
+    if (!drag.current) return;
+    const moved = drag.current.moved;
+    drag.current = null;
+    stageRef.current?.classList.remove('is-dragging');
+    if (moved) { suppressClick.current = true; setTimeout(() => { suppressClick.current = false; }, 0); }
   };
   const onPointerMove = (e: PointerEvent) => {
     const d = drag.current;
@@ -501,11 +523,11 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
   return (
     <div
       ref={stageRef}
-      className="letter-canvas fixed inset-0 touch-none overflow-hidden select-none"
+      className="letter-canvas fixed inset-0 touch-pinch-zoom overflow-hidden select-none"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onPointerCancel={endDrag}
       onClickCapture={onClickCapture}
       onFocus={onFocusIn}
     >
@@ -531,7 +553,7 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
             );
           }
           // the Reading Room: on the table, at its paper's size
-          if (table && it.sheet) return <TableCard key={id} letter={it.letter!} sheet={it.sheet} shelfH={table.shelfH} cellInner={table.cellInner} style={style} itemRef={ref} onOpen={onOpen} />;
+          if (table && it.sheet) return <TableCard key={id} placeId={id} copy={it.copy} letter={it.letter!} sheet={it.sheet} shelfH={table.shelfH} cellInner={table.cellInner} style={style} itemRef={ref} onOpen={onOpen} />;
           // look C (?look=postmarked): each letter in its addressed envelope
           const Card = LOOK === 'postmarked' ? EnvelopeCard : CanvasCard;
           return <Card key={id} letter={it.letter!} aspect={it.aspect} size={size} style={style} itemRef={ref} onOpen={onOpen} />;
@@ -568,7 +590,6 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
       >
         <div ref={paperRef} className="relative isolate" style={{ aspectRatio: `1 / ${aspect}` }}>
           <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', loaded && 'is-gone')} />
-          {LOOK === 'reading-room' && <CardStamp id={letter.id} />}
           {img && (
             <img
               src={img.url}
@@ -582,9 +603,9 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
             />
           )}
         </div>
-        <h3 className="canvas-title font-letter mt-2.5 pr-1 leading-[1.25] text-foreground/85 text-pretty">
+        <h2 className="canvas-title font-letter mt-2.5 pr-1 leading-[1.25] text-foreground/85 text-pretty">
           {letter.title ?? opening(letter.text, 48)}
-        </h3>
+        </h2>
         <span className="sr-only">
           {special ? `${circumstanceLabel(letter)}. ` : ''}{fromTo(letter)}. {whereWhen(letter)}.
         </span>
@@ -597,17 +618,19 @@ const CanvasCard = memo(function CanvasCard({ letter, aspect, size, style, itemR
  * ("Mount Rest, Clay-Ashland, Liberia" → "Mount Rest, Liberia"; "Béxar (San Antonio), Mexican Texas" → "Béxar, Mexican Texas"). */
 function labelPlace(place: string | undefined) {
   const parts = (place ?? '').replace(/\s*\([^)]*\)/g, '').split(/,\s*/).filter(Boolean);
-  return parts.length > 2 ? `${parts[0]}, ${parts[parts.length - 1]}` : parts.join(', ');
+  return capFirst(parts.length > 2 ? `${parts[0]}, ${parts[parts.length - 1]}` : parts.join(', '));
 }
 
 /**
  * A letter on the Reading Room's table: its sheet at its paper's size standing on the shelf (bottom-aligned in a
  * shelf as tall as the tallest paper), a little askew; under the shelf a museum label, the title, then place, year
  * and, for a letter lost in transit, why (in red), in small capitals. The label starts at the sheet's left edge.
- * Under the pointer or the keyboard's focus the letter lifts, its label adds who wrote to whom, and the rest of the
- * table steps back a little (library.css).
+ * Under the pointer or the keyboard's focus the letter lifts and the rest of the table steps back a little
+ * (library.css); no number on the sheet and nothing added to the label, so the table stays clean (the list keeps the
+ * numbers).
  */
-const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, style, itemRef, onOpen }: {
+const TableCard = memo(function TableCard({ placeId, copy, letter, sheet, shelfH, cellInner, style, itemRef, onOpen }: {
+  placeId: string; copy?: boolean;
   letter: ArchiveLetter; sheet: { w: number; h: number; tilt: number }; shelfH: number; cellInner: number;
   style: CSSProperties; itemRef: (el: HTMLElement | null) => void; onOpen: () => void;
 }) {
@@ -627,18 +650,18 @@ const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, st
   const inset = Math.max(0, (cellInner - sheet.w) / 2);
   const place = labelPlace(letter.place);
   return (
-    <li ref={itemRef} data-place={letter.id} className="canvas-item table-item absolute top-0 left-0" style={style}>
+    <li ref={itemRef} data-place={placeId} aria-hidden={copy || undefined} className="canvas-item table-item absolute top-0 left-0" style={style}>
       <a
         href={letterHash(letter.id)}
         onClick={onOpen}
         draggable={false}
+        tabIndex={copy ? -1 : undefined}
         title={`${fromTo(letter)}\n${whereWhen(letter)}`}
         className="archive-card table-card group block outline-none"
       >
         <div className="flex items-end justify-center" style={{ height: shelfH }}>
           <div ref={paperRef} className="table-sheet relative isolate shrink-0" style={{ width: sheet.w, height: sheet.h, '--tilt': `${sheet.tilt.toFixed(2)}deg` } as CSSProperties}>
             <div aria-hidden className={cn('archive-sheet-blank absolute inset-0 rounded-[1px] bg-[var(--paper)]', loaded && 'is-gone')} />
-            <CardStamp id={letter.id} />
             {img && (
               <img
                 src={img.url}
@@ -654,9 +677,7 @@ const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, st
           </div>
         </div>
         <div className="table-label" style={{ marginLeft: inset }}>
-          <h3 className="table-title">{letter.title ?? opening(letter.text, 48)}</h3>
-          {/* under the pointer or the keyboard's focus: who wrote to whom (library.css shows it) */}
-          <p aria-hidden className="table-writer">{fromTo(letter)}</p>
+          <h2 className="table-title">{letter.title ?? opening(letter.text, 48)}</h2>
           <p className="table-meta">
             {[place, letter.year != null ? String(letter.year) : ''].filter(Boolean).join(' · ')}
             {special && <>{place || letter.year != null ? ' · ' : ''}<span className="table-status">{circumstanceLabel(letter)}</span></>}
