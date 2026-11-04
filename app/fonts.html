@@ -18,6 +18,16 @@
         var html = document.documentElement;
         if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
         var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
+        // the redesigned page and its night colours (fonts/new/switch.ts reads the same), so a dark page never flashes light
+        try {
+          var q = new URLSearchParams(location.search);
+          var page = q.get('fonts') || sessionStorage.getItem('seedhand:fonts');
+          var theme = q.get('theme') || sessionStorage.getItem('seedhand:fonts-theme');
+          if (page === 'new') {
+            html.setAttribute('data-fonts', 'new');
+            if (theme === 'dark') { html.setAttribute('data-theme', 'dark'); desk = '#14171c'; }
+          }
+        } catch (e) {}
         document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
       })();
     </script>
@@ -26,6 +36,7 @@
       html { background: #e6e4de; }
       html:not([data-look]) { background: #eeeae2; }
       html[data-look='postmarked'] { background: #f1ebdc; }
+      html[data-fonts='new'][data-theme='dark'] { background: #14171c; color-scheme: dark; }
     </style>
     <title>Fonts · If This Finds You</title>
     <meta name="description" content="Every hand is a font you can keep. Free and open source." />

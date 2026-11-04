@@ -21,7 +21,7 @@ interface Props {
 }
 
 /** The field for your own words, with a clear button once there are some. */
-function WordsField({ text, onText, placeholder, onFocusChange, escapeClears }: Omit<Props, 'line' | 'onLine'> & { escapeClears?: boolean }) {
+export function WordsField({ text, onText, placeholder, onFocusChange, escapeClears }: Omit<Props, 'line' | 'onLine'> & { escapeClears?: boolean }) {
   return (
     <label className="relative flex min-w-0 flex-1 items-center">
       <span className="sr-only">Your own words</span>
@@ -50,7 +50,7 @@ function WordsField({ text, onText, placeholder, onFocusChange, escapeClears }: 
 }
 
 /** What every hand writes: the shared ActionSheet (a menu from a quiet button on desktop, rows on phones). */
-function LinePicker({ line, onLine }: { line: Line; onLine: (l: Line) => void }) {
+export function LinePicker({ line, onLine }: { line: Line; onLine: (l: Line) => void }) {
   const current = line === 'own' ? 'Your words' : LINES.find((l) => l.id === line)?.label ?? '';
   return (
     <ActionSheet
