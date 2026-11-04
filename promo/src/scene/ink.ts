@@ -2,6 +2,7 @@
 // colour from the ink model) multiplied over the tool's paper painter.
 import * as E from '@engine';
 import { getPaper, paintPaper } from '@/lib/papers';
+import { role as roleOf, type RoleName } from './type';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const engine = E as any;
@@ -93,9 +94,12 @@ export function ground(size: number, id = 'laid', mm = 210): HTMLCanvasElement {
 export const SERIF = '"RR Junicode", Junicode, Georgia, serif';
 export function text(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, o: {
   size: number; color?: string; align?: CanvasTextAlign; caps?: boolean; italic?: boolean; weight?: number; tracking?: number; alpha?: number; stretch?: string;
+  /** a type role (type.ts): its face, weight, italics, caps and tracking, unless given here */
+  role?: RoleName; family?: string;
 }) {
+  if (o.role) { const r = roleOf(o.role); o = { family: r.family, weight: r.weight, italic: r.italic, caps: r.caps, tracking: r.tracking, ...o }; }
   ctx.save();
-  ctx.font = `${o.italic ? 'italic ' : ''}${o.weight ?? 400} ${o.size}px ${SERIF}`;
+  ctx.font = `${o.italic ? 'italic ' : ''}${o.weight ?? 400} ${o.size}px ${o.family ?? SERIF}`;
   (ctx as any).fontVariantCaps = o.caps ? 'all-small-caps' : 'normal';
   (ctx as any).fontKerning = 'normal';
   (ctx as any).fontStretch = o.stretch ?? 'normal';

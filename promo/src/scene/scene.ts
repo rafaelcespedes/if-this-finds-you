@@ -130,6 +130,6 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
 
   function credit(ctx: CanvasRenderingContext2D, c: { who: string; to: string; year: string }) {
     const k = S / 1080;
-    text(ctx, `${c.who}, to ${c.to} · ${c.year}`, S / 2, S - 54 * k, { size: 25 * k, align: 'center', caps: true, tracking: 0.07, color: RR.muted });
+    text(ctx, `${c.who}, to ${c.to} · ${c.year}`, S / 2, S - 54 * k, { size: 25 * k, align: 'center', role: 'credit', color: RR.muted });
   }
 }

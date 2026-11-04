@@ -2,7 +2,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { AbsoluteFill, Audio, Sequence, continueRender, delayRender, staticFile, useCurrentFrame } from 'remotion';
 import { z } from 'zod';
-import { loadFonts } from './fonts';
+import { loadPairing, setPairing, type Pairing } from './scene/type';
 import { makeScene } from './scene/scene';
 import { DEFAULTS, type Settings } from './scene/timeline';
 
@@ -29,6 +29,8 @@ export const promoSchema = z.object({
   grid: z.boolean(),
   /** frame size, px: 540 while we iterate (quick), 1080 for the final */
   size: z.number().int().min(270).max(2160),
+  /** the type of the counter, names and credit: the live site's pairing (Newsreader + Schibsted) or the earlier Junicode */
+  type: z.enum(['site', 'junicode']),
 });
 export type PromoProps = z.infer<typeof promoSchema> & { fps?: number };
 
@@ -45,6 +47,7 @@ export const defaultProps: PromoProps = {
   letterId: 'santa-1908-papa',
   grid: false,
   size: 540,
+  type: 'junicode',
 };
 
 export function settingsOf(props: PromoProps, fps: number): Settings {
@@ -54,18 +57,19 @@ export function settingsOf(props: PromoProps, fps: number): Settings {
 export const Promo: React.FC<PromoProps & { fpsNow: number }> = (props) => {
   const frame = useCurrentFrame();
   const ref = useRef<HTMLCanvasElement>(null);
+  setPairing(props.type as Pairing);
   const scene = useMemo(() => makeScene(settingsOf(props, props.fpsNow), {
     ownInk: props.ownInk, ownPaper: props.ownPaper, labels: props.labels,
     landing: { seed: props.landingSeed, style: props.landingStyle },
     letterId: props.letterId, grid: props.grid,
-  }), [props.bpm, props.offset, props.fpsNow, props.ownInk, props.ownPaper, props.labels, props.perWordBeats, props.landingSeed, props.landingStyle, props.letterId, props.grid, props.size]);
+  }), [props.bpm, props.offset, props.fpsNow, props.ownInk, props.ownPaper, props.labels, props.perWordBeats, props.landingSeed, props.landingStyle, props.letterId, props.grid, props.size, props.type]);
   // each frame: fonts, then any slow work it needs (the table's sheets), then draw; the render waits for all of it
   useLayoutEffect(() => {
     const handle = delayRender(`frame ${frame}`, { timeoutInMilliseconds: 240000 });
     let done = false;
     const finish = () => { if (!done) { done = true; continueRender(handle); } };
     (async () => {
-      await loadFonts();
+      await loadPairing(props.type as Pairing);
       const job = scene.prepare(frame);
       if (job) await job;
       if (done) return;
