@@ -17,16 +17,11 @@ const MISS_STYLE =
 /** Give every id in an engine SVG a unique suffix, so several SVGs on one page don't share filters. */
 export function scopeIds(svg: string, uid: string) {
   const ids = new Set<string>();
-  svg.replace(/\sid="([^"]+)"/g, (_, id: string) => { ids.add(id); return ''; });
-  let out = svg;
-  for (const id of ids) {
-    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    out = out
-      .replace(new RegExp(`id="${esc}"`, 'g'), `id="${id}-${uid}"`)
-      .replace(new RegExp(`url\\(#${esc}\\)`, 'g'), `url(#${id}-${uid})`)
-      .replace(new RegExp(`href="#${esc}"`, 'g'), `href="#${id}-${uid}"`);
-  }
-  return out;
+  for (const m of svg.matchAll(/\sid="([^"]+)"/g)) ids.add(m[1]);
+  if (!ids.size) return svg;
+  // every id="…", url(#…) and href="#…" in one pass (it was three passes over the whole sheet per id, ~80 ids a
+  // sheet: opening a letter froze a phone for over a second)
+  return svg.replace(/(id="|url\(#|href="#)([^")]+)(?=[")])/g, (m, pre: string, id: string) => (ids.has(id) ? `${pre}${id}-${uid}` : m));
 }
 
 /**
