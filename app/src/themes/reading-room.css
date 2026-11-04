@@ -4,13 +4,13 @@
    small capitals and old-style figures, on a paper-grey room with one archival ink colour; archival red is kept for
    numbers and the main action. The new pieces (card, request slips, the desk) live in themes/reading-room/.
 
-   Type (Rafael, 3 Nov, from the type study): Junicode 2 (Peter S. Baker) for reading, titles, the record, small
-   capitals and figures, and Ysabeau Office (Christian Thalmann) for everything you operate. Both SIL OFL 1.1 with no
-   Reserved Font Name. Junicode is self-hosted from fontTools subsets of the upstream release (reading-room/fonts/,
-   OFL.txt there): Fontsource has no Junicode, and its subsets drop small capitals and old-style figures from every
-   face. Ysabeau Office comes from @fontsource-variable (controls need neither). Both are enlarged 115% (size-adjust):
-   Junicode's x-height is small (0.415 em) and the roles' sizes were set for a larger one; Ysabeau Office, a wider
-   face, is enlarged only 105% so the compact controls keep their widths.
+   Type: two faces, both only ever named in the tokens (--rr-book, --rr-ui), so a pairing swaps by token values.
+   Junicode 2 (Peter S. Baker; Rafael, 3 Nov) for everything archival: reading, titles, the record's values, the
+   catalogue numbers in its small capitals and old-style figures. Self-hosted from fontTools subsets of the upstream
+   release (reading-room/fonts/, OFL.txt there): Fontsource has no Junicode, and its subsets drop small capitals and
+   old-style figures. Enlarged 115% (size-adjust): its x-height is small (0.415 em) for the roles' sizes.
+   Source Sans 3 (Paul D. Hunt; Rafael, 4 Nov: "Let's give Source Sans 3 a chance") for everything you operate and
+   every label, in sentence case: the small-capital labels are retired. Self-hosted too (OFL-SourceSans3.txt).
    The faces are declared under their own names, so the classic look never downloads them.
    Text sizes are in rem, so the room follows the browser's text size as the tool does.
 */
@@ -56,22 +56,25 @@
   src: url('./reading-room/fonts/junicode-latin-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* the sans for everything you operate and every label: Source Sans 3 (Paul D. Hunt, Adobe; SIL OFL 1.1, OFL-SourceSans3.txt
+   beside it), self-hosted from Fontsource's variable subsets (one file a script carries every weight), sized so its
+   x-height matches the control size the roles were tuned for */
 @font-face {
-  font-family: 'RR Ysabeau Office';
+  font-family: 'RR Source Sans';
   font-style: normal;
   font-display: swap;
-  font-weight: 1 1000;
-  size-adjust: 105%;
-  src: url('@fontsource-variable/ysabeau-office/files/ysabeau-office-latin-ext-wght-normal.woff2') format('woff2-variations');
+  font-weight: 200 900;
+  size-adjust: 95%;
+  src: url('./reading-room/fonts/source-sans-3-latin-ext.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Ysabeau Office';
+  font-family: 'RR Source Sans';
   font-style: normal;
   font-display: swap;
-  font-weight: 1 1000;
-  size-adjust: 105%;
-  src: url('@fontsource-variable/ysabeau-office/files/ysabeau-office-latin-wght-normal.woff2') format('woff2-variations');
+  font-weight: 200 900;
+  size-adjust: 95%;
+  src: url('./reading-room/fonts/source-sans-3-latin.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -127,7 +130,7 @@ html[data-look='reading-room'] {
   --rr-book: 'RR Junicode', 'Iowan Old Style', Georgia, serif;
   /* small capitals are the book face's own (Junicode keeps smcp and c2sc), switched on by the roles that use them */
   --rr-caps: var(--rr-book);
-  --rr-ui: 'RR Ysabeau Office', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --rr-ui: 'RR Source Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
 
   /* the type roles (TYPE, at the end of this file): each a face, a size, a weight, a leading and a tracking. A font
      pairing swaps one face variable per role; the sizes are the scale 13 · 15 · 17 · 22 px, in rem */
@@ -152,12 +155,13 @@ html[data-look='reading-room'] {
   --rr-small-weight: 400;
   --rr-small-leading: 1.45;
   --rr-small-tracking: 0;
-  --rr-label-face: var(--rr-caps);
-  --rr-label-size: 0.8125rem;
-  --rr-label-weight: 400;
+  /* labels: the sans in sentence case, a step under the controls, a touch heavier so they hold at that size */
+  --rr-label-face: var(--rr-ui);
+  --rr-label-size: 0.75rem;
+  --rr-label-weight: 500;
   --rr-label-leading: 1.3;
-  --rr-label-tracking: 0.05em;
-  --rr-label-caps: all-small-caps;
+  --rr-label-tracking: 0.01em;
+  --rr-label-caps: normal;
   --rr-number-face: var(--rr-caps);
   --rr-number-size: 0.9375rem;
   --rr-number-weight: 400;
@@ -314,10 +318,16 @@ html[data-look='reading-room'] .sheet-surface [data-site-menu] [data-site-link] 
   font-size: 1.125rem;
   letter-spacing: 0.06em;
 }
-/* the letter's number: archival red, as on its sheet */
+/* the letter's number: archival, as on its sheet and its record: the number role (the serif's small capitals and
+   figures) in red, among the header's sans words */
 html[data-look='reading-room'] [data-site-number] {
   color: var(--rr-red);
-  font-variant-numeric: tabular-nums;
+  font-family: var(--rr-number-face);
+  font-size: var(--rr-control-size); /* the header's words are smaller than a record's: the number keeps step */
+  font-weight: var(--rr-number-weight);
+  letter-spacing: var(--rr-number-tracking);
+  font-variant-caps: var(--rr-number-caps);
+  font-variant-numeric: oldstyle-nums tabular-nums;
 }
 /* the phone header's chips (Menu, Share): only their drawn icons, no box (the paper is the only thing with an edge);
    their size is the shared header's own */
@@ -1326,18 +1336,19 @@ html[data-look='reading-room'] .dock-caption {
      reading  text read at length: the transcript, a page's opening paragraph (Junicode, 17 px)
      text     the record's values and the room's own words: card values, a slip's title, names (Junicode, 15 px)
      small    what comes second in the record: notes, sub-lines, footnotes (Junicode, 13 px)
-     label    the keys of the record, group names, places and counts, in the face's own small capitals (13 px)
+     label    the keys of the record, group names, places and counts: the sans in sentence case (Source Sans 3,
+              12 px, 500)
      number   catalogue numbers: capitals and small capitals, old-style tabular figures, archival red (15 px)
      action   the one thing to do next, in archival red words: Bring another letter, Write a reply, New set, Done
               (Junicode, 17 px, 600)
      control  everything you operate: the writing materials, the phone sheet, docks, menus, popovers, fields, toasts,
-              tooltips (Ysabeau Office, 13 px, 400)
+              tooltips (Source Sans 3, 13 px, 400)
    and one size outside the scale, for a reason:
      micro    words inside fixed-size controls, under an icon or a bar: the pen tips (Fine, Medium, Bold) and the
               timeline's centuries (11 px). Plain for a choice, small capitals for a group.
    The scale: 13 · 15 · 17 · 22 px.
-   The same sizes on every screen; rem, so they follow the browser's text size. Small capitals only for keys and
-   numbers, where they help a reader scan a record. Tabular figures only for numbers that line up or tick.
+   The same sizes on every screen; rem, so they follow the browser's text size. Small capitals only for catalogue
+   numbers. Tabular figures only for numbers that line up or tick.
    Controls keep their own line boxes: their heights come from the compact density (density.css).
    ===================================================================================================================== */
 
@@ -1387,7 +1398,7 @@ html[data-look='reading-room'] :is(.rr-sub, .rr-card-foot, .specimen-note, .set-
   line-height: var(--rr-small-leading);
   letter-spacing: var(--rr-small-tracking);
 }
-/* label: small capitals */
+/* label: the sans, sentence case */
 html[data-look='reading-room'] :is(.rr-sc, .rr-aid, .font-tag, [role='menu'] > div:not([role]), .rr-slip-inner section[data-row] h3, .control-sheet section[data-row] h3) {
   font-family: var(--rr-label-face);
   font-size: var(--rr-label-size);
@@ -1425,8 +1436,10 @@ html[data-look='reading-room'] .rr-dock-of {
   letter-spacing: var(--rr-control-tracking);
   font-variant-caps: normal;
 }
-/* inside a number, "No." keeps the number's size (not the label's) */
+/* inside a number, "No." is the number's: its face, size and small capitals (not the label's) */
 html[data-look='reading-room'] :is(.rr-card-no, .rr-dock-no, .rr-card-tag) .rr-sc {
+  font-family: inherit;
+  font-weight: inherit;
   font-size: inherit;
   letter-spacing: inherit;
   line-height: inherit;
