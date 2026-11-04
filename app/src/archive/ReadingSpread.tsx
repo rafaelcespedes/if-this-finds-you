@@ -181,7 +181,9 @@ export function ReadingSpread(p: Props) {
           <Fact term="Hand"><span className="inline-flex items-baseline">{handMenu}{ref('hand')}</span></Fact>
         </dl>
         {inline('hand')}
-        <div className="sp-record">
+        {/* brief: none of the record's rows but the ones a phone leaves out (why it survives is the kicker; the source
+            and rights are the last note), so a phone drops Full record altogether (themes/editorial.css) */}
+        <div className="sp-record" data-brief={!(l.recipient && l.recipient !== shortRecipient(l)) && !f?.heritage && !f?.translator && !f?.rights?.basis ? '' : undefined}>
           <div className="sp-record-bar">
             <button type="button" aria-expanded={recordOpen} aria-controls={recordOpen ? `${id}-record` : undefined} onClick={() => setRecordOpen((o) => !o)} className="sp-record-open">
               Full record <span aria-hidden>{recordOpen ? '−' : '+'}</span>
@@ -261,7 +263,7 @@ function Fact({ term, children }: { term: string; children: ReactNode }) {
 }
 function Row({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <div className="sp-row">
+    <div className="sp-row" data-term={term.toLowerCase()}>
       <dt className="sp-label">{term}</dt>
       <dd>{children}</dd>
     </div>
@@ -317,7 +319,7 @@ function Plate(p: Props) {
           </div>
         </div>
       </div>
-      <figcaption className="sp-caption" style={{ width: p.paper.w * p.pxPerMm || undefined }}>
+      <figcaption className="sp-caption" data-sheets={p.sheets} style={{ width: p.paper.w * p.pxPerMm || undefined }}>
         <span className="sp-label">
           {many && p.frameH != null ? (
             <span role="group" aria-label="Sheets">

@@ -763,8 +763,18 @@ html:root[data-layout='ruler'] .about-section-no {
   html:root[data-layout='ruler'][data-layout-page='desk'] main[class*='pt-[calc(4.5rem'] {
     padding-top: calc(var(--site-head-clear) + 3px);
   }
+  /* the letter page and All letters' list start where About and the 404 do: 101 px on a phone, 45 px under the head's
+     rule (the desk keeps its own, tighter start) */
   html:root[data-layout='ruler'] .sp {
-    padding-top: calc(var(--site-head-clear) + 0.75rem);
+    padding-top: calc(var(--site-head-clear) + 2rem);
+  }
+  html:root[data-layout='ruler'] .lib-main > section {
+    padding-top: calc(var(--site-head-clear) + 2rem);
+  }
+  /* All letters' list: a group's last row has no rule of its own, so the gap before the next group reads as space and
+     that group's rule closes it (two hairlines at every break before); the list's last row keeps its rule */
+  html:root[data-layout='ruler'] .fa .fa-group:not(:last-child) .fa-rows > li:last-child {
+    border-bottom: 0;
   }
 }
 
@@ -807,25 +817,36 @@ html:root[data-layout='ruler'] .sp .sp-ref::after {
 /* =====================================================================================================================
    THE LETTER PAGE WHERE THE DOCK SHOWS (phones, tablets: below the spread's 64em): nothing said twice (Rafael: "very
    little redundancy… it should be like a breeze to get through"). The floating dock carries the actions (‹ No. ›,
-   Bring another, More: Read as text, Download image, Change writer, Copy link, Copy citation; Write a reply), so the
-   page drops its own actions' row, its Cite · Download image line and its citation; and what the head already says:
-   the facts From, To, When and Where (the writer's line and the kicker), the place and date under the words (the
-   kicker), the sheet's "Hand: …" credit (the Hand fact and its note). Language and Hand stay, with Full record.
+   Bring another, ⋯: Download image, Copy link, Copy citation; Write a reply) and the Hand fact's menu changes the writer,
+   so the page drops its own actions' row, its Cite · Download image line, its citation and Next in the collection (the
+   dock's ›). What the page already says goes too: the place and date under the words (the kicker), the sheet's caption
+   when there's one sheet ("Hand: …" is the Hand fact and its note), "The letter" over the words (kept for screen
+   readers), and the record's Why it survives (the kicker), Source and Rights (the last note); Full record goes when
+   nothing else is in it. The head, its kicker and writer's line, and the facts stay.
    ===================================================================================================================== */
 @media (max-width: 63.99em) {
-  html:root[data-layout='ruler'] .sp :is(.sp-actions, .sp-quiet, .sp-cite, .sp-dateline, .sp-credit) {
+  html:root[data-layout='ruler'] .sp :is(.sp-actions, .sp-quiet, .sp-cite, .sp-next, .sp-dateline, .sp-credit) {
     display: none;
   }
-  html:root[data-layout='ruler'] .sp .sp-fact:is([data-term='from'], [data-term='to'], [data-term='when'], [data-term='where']) {
+  html:root[data-layout='ruler'] .sp .sp-caption[data-sheets='1'],
+  html:root[data-layout='ruler'] .sp .sp-record[data-brief],
+  html:root[data-layout='ruler'] .sp .sp-row:is([data-term='why it survives'], [data-term='source'], [data-term='rights']) {
     display: none;
   }
-  /* the two facts left share one ruled row */
-  html:root[data-layout='ruler'] .sp .sp-facts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 1.25rem;
+  /* the words start under the record's rule at the notes' rhythm (17 px to the line's top; was 40 to a label) */
+  html:root[data-layout='ruler'] .sp .sp-text {
+    margin-top: 1rem;
   }
-  html:root[data-layout='ruler'] .sp .sp-fact {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.125rem;
+  html:root[data-layout='ruler'] .sp .sp-text > .sp-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  html:root[data-layout='ruler'] .sp .sp-reading {
+    margin-top: 0;
   }
 }
