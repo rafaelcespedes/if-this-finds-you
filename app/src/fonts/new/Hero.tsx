@@ -41,7 +41,8 @@ export const Hero = memo(function Hero({ entry, text, em, lines, opening, saved,
   const tool = entry ? `${toolHref}#${entry.tool}` : undefined;
 
   return (
-    <section ref={ref} className="fx-hero" aria-label={entry ? `${entry.name}’s hand` : 'The first hand'} aria-busy={!font}>
+    // a stable name for the lead hand (its writer's name is its heading): screen readers and the smoke test find it by it
+    <section ref={ref} className="fx-hero" aria-label="The first hand in this set" aria-busy={!font}>
       <SpecimenLine family={font?.family ?? null} fresh={!!font?.fresh} failed={failed} text={shown} em={em} lines={lines} pace="hero"
         label={entry ? `“${shown}”, in ${entry.name}’s hand` : undefined} />
       <div className="fx-hero-caption">
