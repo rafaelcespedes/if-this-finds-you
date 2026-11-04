@@ -242,7 +242,7 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
     { id: 'gif', label: 'Animated GIF', icon: <ImagePlay />, quiet: true, disabled: busy.video || exportable?.gif === false, onSelect: () => onExportVideo('gif') },
     {
       id: 'font',
-      label: FONT_PACKAGE ? 'Download font (.zip)' : 'Font file (.otf)',
+      label: FONT_PACKAGE ? 'Download font' : 'Font file (.otf)',
       icon: <CaseSensitive />,
       quiet: true,
       status: status('font'),

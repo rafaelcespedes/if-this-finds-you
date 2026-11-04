@@ -423,7 +423,8 @@ html[data-look='reading-room'] .rr-card-actions.rr-card-actions [data-slot='butt
     color: var(--rr-ink);
   }
 }
-html[data-look='reading-room'] .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary:active {
+/* (as heavy as the hover rule above, or the hover wash wins while it's held) */
+html[data-look='reading-room'] .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary:not([aria-checked='true']):active {
   background: var(--st-press);
 }
 html[data-look='reading-room'] .rr-card-actions [data-slot='button'] svg {
@@ -492,7 +493,7 @@ html[data-look='reading-room'] .rr-sig {
   margin: -4px -6px -6px;
   padding: 0 6px;
   border-radius: 3px;
-  transition: background-color 150ms var(--ease-out);
+  transition: background-color 150ms var(--ease-out), scale 150ms var(--ease-out);
 }
 html[data-look='reading-room'] .rr-sig .writing {
   max-width: 11.875rem;
@@ -506,6 +507,11 @@ html[data-look='reading-room'] .rr-sig .writing svg {
   html[data-look='reading-room'] .rr-sig:hover {
     background: var(--st-hover);
   }
+}
+/* held: the press wash (after the hover rule, which would otherwise win while it's held) */
+html[data-look='reading-room'] .rr-sig:active {
+  background: var(--st-press);
+  scale: var(--st-scale);
 }
 
 /* ---------- the tool's desk, kept as a ledger (ReadingDesk.tsx, LedgerRecord.tsx) ----------

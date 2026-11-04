@@ -10,9 +10,9 @@ const buttonVariants = cva(
       variant: {
         // Rubric: flat warm black, no shadow, like ink on paper; it lifts to brown-black under the pointer and goes to true black when held
         default: 'bg-primary text-primary-foreground hover-device:hover:bg-[var(--ink-soft)] active:bg-[var(--ink-press)]',
-        secondary: 'bg-secondary text-secondary-foreground hover-device:hover:bg-accent',
+        secondary: 'bg-secondary text-secondary-foreground hover-device:hover:bg-accent active:bg-[var(--st-press)]',
         outline: 'border border-border bg-[var(--field)] text-foreground hover-device:hover:bg-[var(--st-hover)] active:bg-[var(--st-press)]',
-        ghost: 'text-foreground hover-device:hover:bg-accent',
+        ghost: 'text-foreground hover-device:hover:bg-accent active:bg-[var(--st-press)]',
         link: 'h-auto px-0 text-muted-foreground underline-offset-4 hover-device:hover:text-foreground hover-device:hover:underline active:scale-100',
       },
       size: {
