@@ -28,7 +28,7 @@ import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
 import { FONT_PACKAGE, canShareLinks, copyText, exportFont, exportFontPackage, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
-import { EditLog, type Edit } from '@/lib/edits';
+import { EditLog, UndoHistory, diffEdit, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib/roll';
@@ -83,6 +83,8 @@ function writePref(key: string, v: string) {
 
 /** Every edit to the note, in order: the seed of the ink log (see lib/edits.ts). */
 const editLog = new EditLog();
+/** the letter's undo and redo (the browser's are cancelled: lib/edits.ts) */
+const undoHistory = new UndoHistory();
 /** the Reading Room's desk, skipped when nothing it shows changed (its props are stable: useStableProps) */
 const ReadingDeskMemo = memo(ReadingDesk);
 /** this tab's typed-but-not-yet-inked text (sessionStorage) */
@@ -567,6 +569,14 @@ export default function App() {
         });
       }
     }
+    // what the letter's field showed before this edit, for the undo history (a found letter answered: a blank sheet)
+    const shownBefore = (() => {
+      const s = stateNow.current;
+      if (s.sample && !s.inkLog && SAMPLE_FIRST_KEY === 'reply') return '';
+      const li = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+      return li ? li.text() : s.text;
+    })();
+    const remember = (after: string) => { if (e.kind !== 'undo') undoHistory.record(shownBefore, after, e); };
     // most of the letter cut at once (select all, then Delete or a key): a note to bring it back
     const was = stateNow.current;
     const liveInk = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
@@ -597,6 +607,7 @@ export default function App() {
       const reply = onSample && SAMPLE_FIRST_KEY === 'reply';
       const ink = !onSample ? inkSession() : inkSession(reply ? newInkDoc(s.seed, s.style) : inkFromText(s.seed, s.style, s.text));
       ink.edit(reply ? { ...e, at: 0, del: 0 } : e);
+      remember(ink.text());
       // a long paste or dictation: written down now (minutes at the pen's pace, and the page busy all the while)
       if (e.ins.length >= WRITE_AT_ONCE) ink.flush();
       if (reply) { replyArrive.current = true; keepTheirs(s); update({ replyTo: replyOf(s) }); }
@@ -610,14 +621,61 @@ export default function App() {
       replyArrive.current = true;
       keepTheirs(s0);
       update({ text: e.ins, marks: [], sample: null, replyTo: replyOf(s0) });
+      remember(e.ins);
       return;
     }
+    remember(shownBefore.slice(0, e.at) + e.ins + shownBefore.slice(e.at + e.del));
     update((s) => {
       const doc = applyEdit({ text: s.text, marks: s.marks, signed: s.signed }, e);
       // the first edit makes a sample letter the writer's own text
       return { text: doc.text, marks: doc.marks, sample: null };
     });
   }, [update, posture.onTyped, inkMode, inkSession, syncInk, keepTail, inkLook, offerBack]);
+  /**
+   * Undo and redo, one step each (a word, a run of Backspaces, a paste: lib/edits.ts UndoHistory), never more than
+   * the last edit. In ink, typing the pen hasn't reached is taken back, and wet ink (the last 3 s) is lifted; dry ink
+   * stays, and says so. A step that would take most of the letter offers it back, as any big cut does.
+   */
+  const onHistory = useCallback((dir: 'undo' | 'redo') => {
+    const s = stateNow.current;
+    if (s.sample && !s.inkLog && SAMPLE_FIRST_KEY === 'reply') return;
+    const ink = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+    const cur = ink ? ink.text() : s.text;
+    const e = dir === 'undo' ? undoHistory.undo(cur) : undoHistory.redo(cur);
+    if (!e) return;
+    lastEditAt.current = performance.now();
+    setKeyedSinceFocus(true);
+    if (e.del >= 30 && e.del >= cur.length * 0.5 && e.ins.length * 4 < e.del) {
+      ink?.flush();
+      offerBack({ text: ink ? ink.text() : s.text, inkLog: ink ? encodeInk(ink.doc) : s.inkLog, marks: s.marks, signed: s.signed }, 'Most of the letter is gone');
+    }
+    const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
+    if (ink) {
+      if (want.length < cur.length && !ink.waiting) {
+        // written: lift wet ink back to what the step asks for, and no further
+        let lifted = 0;
+        while (ink.text().length > want.length && lifted < 2000 && ink.undo()) lifted++;
+        if (!lifted) {
+          undoHistory.keep(dir);
+          toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
+          return;
+        }
+        // a lifted stroke that took a letter too many: the pen writes it again
+        const fix = diffEdit(ink.text(), want, 'type', 'paper');
+        if (fix) ink.edit(fix);
+      } else {
+        ink.edit({ ...e, kind: e.ins ? 'replace' : 'delete' });
+      }
+      if (ink.text() !== want) undoHistory.clear();
+      syncInk();
+    } else {
+      update((st) => {
+        const doc = applyEdit({ text: st.text, marks: st.marks, signed: st.signed }, e);
+        return { text: doc.text, marks: doc.marks, sample: null };
+      });
+    }
+    requestAnimationFrame(() => editor.current?.setSelection(e.at + e.ins.length));
+  }, [update, inkMode, inkLook, syncInk, offerBack]);
 
   // ---------- pen-only formatting: underline by hand, press harder, sign ----------
   const editor = useRef<PaperEditorApi>(null);
@@ -1296,6 +1354,7 @@ export default function App() {
                   blank={replyPending}
                   hovering={inkActive && inkRef.current!.hovering}
                   onEdit={onEdit}
+                  onHistory={onHistory}
                   onFormat={onFormat}
                   writerName={name}
                   geometry={geometry}
@@ -1405,7 +1464,7 @@ export default function App() {
             onSign={toggleSigned}
             onDone={() => editor.current?.blur()}
             ink={inkMode}
-            onUndo={inkMode ? () => onEdit({ at: 0, del: 0, ins: '', kind: 'undo', t: Date.now(), source: 'paper' }) : undefined}
+            onUndo={inkMode ? () => onHistory('undo') : undefined}
             mode={panelProps.ink ? (state.pen === 'pencil' ? 'pencil' : state.mode) : undefined}
             onMode={panelProps.ink?.onMode}
             onFairCopy={inkMode && state.inkLog ? () => panelProps.ink?.onFairCopy() : undefined}
