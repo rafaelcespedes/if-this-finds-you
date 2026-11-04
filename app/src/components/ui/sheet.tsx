@@ -47,6 +47,19 @@ export type SheetEntry =
 
 // ---------- the phone sheet ----------
 
+/**
+ * The grabber on every phone sheet (these, and the desk's control sheet): the same room above it and below it, so it
+ * never sits on a rule or a first line (Rafael, launch day: "it's touching the divider rule"). What comes next starts
+ * at its bottom edge; a title is drawn up by its line's leading, so its words sit there too.
+ */
+export function SheetGrabber({ onClick, className, barClassName }: { onClick?: () => void; className?: string; barClassName?: string }) {
+  return (
+    <div aria-hidden onClick={onClick} className={cn('flex shrink-0 cursor-grab justify-center pt-3 pb-3', className)}>
+      <span className={cn('h-[5px] w-9 rounded-full', barClassName)} />
+    </div>
+  );
+}
+
 /** The sheet's surface: the page's panel colour, a grabber, room for the home indicator. */
 const sheetSurface =
   'sheet-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] max-w-[640px] flex-col rounded-t-[20px] border-t border-border bg-panel pb-[max(12px,env(safe-area-inset-bottom,0px))] shadow-[0_-1px_2px_rgba(60,45,20,0.05),0_-16px_44px_-16px_rgba(40,30,10,0.35)] outline-none';
@@ -74,10 +87,8 @@ function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, chil
           }}
           onEscapeKeyDown={onEscapeKeyDown}
         >
-          <div aria-hidden className="flex h-6 shrink-0 cursor-grab items-end justify-center">
-            <span className="h-[5px] w-9 rounded-full bg-[color-mix(in_oklab,var(--foreground)_18%,transparent)]" />
-          </div>
-          <Drawer.Title className={cn('sheet-title shrink-0 px-5 pt-2 pb-2 text-[0.8125rem] font-medium text-muted-foreground', !showTitle && 'sr-only')}>{title}</Drawer.Title>
+          <SheetGrabber barClassName="bg-[color-mix(in_oklab,var(--foreground)_18%,transparent)]" />
+          <Drawer.Title className={cn('sheet-title -mt-1 shrink-0 px-5 pt-0 pb-2 text-[0.8125rem] font-medium text-muted-foreground', !showTitle && 'sr-only')}>{title}</Drawer.Title>
           {describe && <Drawer.Description className="sr-only">{describe}</Drawer.Description>}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2">{children}</div>
         </Drawer.Content>
