@@ -74,6 +74,9 @@ const GIVE_ALSO = {
   kept: <>Not one of our sources. It still carries messages between families separated by war.</>,
 };
 
+/** The project's code, public under the MIT licence (the fonts stay OFL, the letters public domain). */
+const REPO_URL = 'https://github.com/rafaelcespedes/if-this-finds-you';
+
 const SECTIONS = [
   { id: 'what', title: 'What this is' },
   { id: 'letters', title: 'The letters' },
@@ -196,8 +199,8 @@ export function AboutApp() {
           </p>
           <p>
             It’s a free lab experiment with nothing to sell. He wanted to use AI in ways he finds clever. Drawing
-            hundreds of handwriting fonts, for one, used to take too many resources to try. The fonts are open source
-            now, and the code will follow once it’s polished.
+            hundreds of handwriting fonts, for one, used to take too many resources to try. The fonts and{' '}
+            <Out href={REPO_URL}>the code</Out> are open source.
           </p>
           <p className="about-credit-line">
             Designed by Rafael Cespedes and built with Claude.
@@ -224,6 +227,7 @@ export function AboutApp() {
           <dl className="about-contact">
             <div><dt>Site</dt><dd><Out href="https://rafaelcespedes.com">rafaelcespedes.com</Out></dd></div>
             <div><dt>X</dt><dd><Out href="https://x.com/rafcespedes">@rafcespedes</Out></dd></div>
+            <div><dt>GitHub</dt><dd><Out href={REPO_URL}>if-this-finds-you</Out></dd></div>
           </dl>
         </Section>
 
@@ -270,16 +274,17 @@ export function AboutApp() {
               were traced and redrawn, and their words aren’t used. Neither project endorses this one.
             </p>
 
-            <h3 className="about-subhead">Fonts and type</h3>
+            <h3 className="about-subhead">Fonts, type and code</h3>
             <p>
               The downloadable fonts are under the <Out href="https://openfontlicense.org">SIL Open Font License 1.1</Out>.
-              This site is set in typefaces under the same licence.
+              This site is set in typefaces under the same licence. <Out href={REPO_URL}>The code</Out> is under the MIT
+              licence.
             </p>
 
             <h3 className="about-subhead">Everything else</h3>
             <p>
-              Every source the project used, 484 so far, is listed with what it decided in a reference library, to be
-              published with the code.
+              Every source the project used, 484 so far, is listed with what it decided in a reference library, still
+              to be published.
             </p>
           </div>
         </details>
@@ -287,7 +292,10 @@ export function AboutApp() {
 
         <footer className="about-colophon">
           <p className="about-colophon-name">{NAME_WITH_DESCRIPTOR}</p>
-          <p>A lab experiment by Rafael Cespedes. Letters in the public domain; fonts under the SIL Open Font License.</p>
+          <p>
+            A lab experiment by Rafael Cespedes. Letters in the public domain; fonts under the SIL Open Font License; code
+            under the MIT licence.
+          </p>
         </footer>
       </main>
     </div>
