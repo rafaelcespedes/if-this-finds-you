@@ -21,7 +21,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useNoteState } from '@/hooks/useNoteState';
+import { rememberOpen, useNoteState } from '@/hooks/useNoteState';
 import { useStableProps } from '@/hooks/useStableProps';
 import { useWideScale } from '@/hooks/useWideScale';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
@@ -35,7 +35,7 @@ import { rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib
 import type { RollAsk, RollReply } from '@/lib/roll-protocol';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
-import { DRAFTS_KEY, drafts, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
+import { DRAFTS_KEY, drafts, forgetOpen, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
@@ -163,7 +163,8 @@ export default function App() {
   useEffect(() => { sawLetter(state.sample); }, [state.sample]);
 
   // ---------- found letters and your own: always a way to each ----------
-  const [kept, setKept] = useState<Draft[]>(() => drafts());
+  // the letter on the desk now, if it was kept on leaving (back from another page, a reload): not listed twice
+  const [kept, setKept] = useState<Draft[]>(() => { forgetOpen(state); return drafts(); });
   // another tab kept or took a letter: the list follows
   useEffect(() => {
     const on = (e: StorageEvent) => { if (e.key === DRAFTS_KEY || e.key == null) setKept(drafts()); };
@@ -309,20 +310,35 @@ export default function App() {
   // the link saved at once, without waiting for the pen or the debounce
   useEffect(() => {
     const leave = () => {
-      if (holdLinkRef.current) return;
+      if (holdLinkRef.current) return null;
       const ink = inkRef.current;
       if (ink && inkFor.current === inkLook && ink.waiting) {
         ink.flush();
-        saveNow({ text: ink.text(), inkLog: encodeInk(ink.doc), sample: null, marks: [] });
+        const patch = { text: ink.text(), inkLog: encodeInk(ink.doc), sample: null, marks: [] };
+        saveNow(patch);
         setInkTick((n) => n + 1);
-      } else saveNow();
+        return { ...stateNow.current, ...patch };
+      }
+      saveNow();
+      return stateNow.current;
     };
     const onVis = () => { if (document.visibilityState === 'hidden') leave(); };
+    // leaving the page itself (the site's menu, the wordmark, another site, closing the tab): a letter of your own is
+    // kept in My letters too, and this tab's desk comes back to it (launch QA: it was lost to a found letter)
+    const onHide = () => {
+      const s = leave();
+      if (s && !s.reader && !s.sample) keepDraft(s);
+      rememberOpen(s);
+    };
+    // back on the same page from the browser's cache (Back): it's open again, so it's not kept twice
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) { forgetOpen(stateNow.current); rememberOpen(null); setKept(drafts()); } };
     document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('pagehide', leave);
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('pageshow', onShow);
     return () => {
       document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('pagehide', leave);
+      window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('pageshow', onShow);
     };
   }, [inkLook, saveNow]);
   // and while typing, what the pen hasn't reached yet is kept for this tab, so even a crash keeps it: on the
