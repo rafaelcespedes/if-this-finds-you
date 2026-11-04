@@ -295,7 +295,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
           <LetterStatus {...props} compact className="min-w-0 justify-center pb-1" />
         )}
         {/* the look, as a pull-up: as wide as Find another above it, quieter; its chevron says which way it goes */}
-        <div className="pb-2">
+        <div className="sheet-pill-row pb-2">
           <button
             ref={pillRef}
             type="button"
