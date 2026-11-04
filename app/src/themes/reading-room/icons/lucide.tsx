@@ -54,16 +54,18 @@ export * from 'lucide-react/icons';
 type P = SVGProps<SVGSVGElement> & { size?: number | string; strokeWidth?: number | string; absoluteStrokeWidth?: boolean };
 const PEN = LOOK === 'reading-room';
 
-/** What the words beside an icon are set in: 'book' (Junicode, its capitals higher than its line box's centre), 'ui'
- * (the controls' face, or Junicode's small capitals, which already centre), or nothing when it stands alone. */
+/** What the words beside an icon are set in: 'book' (the look's serif, --rr-book, whose capitals sit off its line box's
+ * centre by --rr-book-cap-lift), 'ui' (the sans, or the serif's small capitals, which already centre), or nothing
+ * when it stands alone. The serif is read from the token, so a new pairing needs no change here. */
 function besideFace(el: SVGSVGElement): 'book' | 'ui' | null {
   const parent = el.parentElement;
   if (!parent) return null;
+  const book = getComputedStyle(document.documentElement).getPropertyValue('--rr-book').split(',')[0].trim().replace(/^['"]|['"]$/g, '');
   const walk = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
   for (let n = walk.nextNode(); n; n = walk.nextNode()) {
     if (!n.textContent?.trim() || !n.parentElement) continue;
     const cs = getComputedStyle(n.parentElement);
-    return /Junicode/.test(cs.fontFamily) && cs.fontVariantCaps === 'normal' ? 'book' : 'ui';
+    return !!book && cs.fontFamily.includes(book) && cs.fontVariantCaps === 'normal' ? 'book' : 'ui';
   }
   return null;
 }
