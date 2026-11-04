@@ -584,8 +584,10 @@ html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring {
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-bring-label {
   text-decoration: none;
-  /* Junicode's capitals sit above its line box's centre (see "icons beside words"): down onto the button's centre */
-  translate: 0 0.16em;
+  /* Junicode's capitals sit above its line box's centre (see "icons beside words"): down onto the button's centre, so
+     the space above the capitals matches the space below the baseline. Measured in the ink in real Chrome and
+     WebKit windows at 1×, 2× and 4× (headless Chromium sets text a little higher and misleads) */
+  translate: 0 0.105em;
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-key {
   background: color-mix(in oklab, var(--rr-red) 10%, transparent);
