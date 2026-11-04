@@ -137,7 +137,7 @@ style, size and reset.
   line fading at the right), and the actions (icons only when the list is narrower than 76rem). On phones and in the
   grid: the writing first, then the name and icons. The whole row opens the hand's record; under the pointer it takes
   the faint wash, pressed the press wash, never an underline.
-- **Grid** (`?layout=grid`, or the toolbar's list/grid control): cards of three lines, about 24rem wide.
+- **Grid** (`?grid=1`, or the toolbar's list/grid control): cards of three lines, about 24rem wide.
 - **Width:** no 1440 cap; the writing may run to 1920 with the header's own margins (16 / 32 / 40 px).
 - **Shared pieces only:** SiteHeader, Sheet and ActionSheet, Segmented, Slider, Button, Tooltip, the dock, the filter
   groups and the record. Colours, rules and states come from the `--rr-*` and `--st-*` tokens.
@@ -148,7 +148,7 @@ style, size and reset.
 
 - `?fonts=new` shows the redesign (kept for the tab); `?fonts=old` returns to today's page.
 - `?theme=dark`, or the page's sun/moon control, gives the night room.
-- `?layout=grid` shows cards instead of the list.
+- `?grid=1` shows cards instead of the list.
 
 ## Not done, or for later
 
