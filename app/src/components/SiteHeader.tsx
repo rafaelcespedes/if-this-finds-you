@@ -40,9 +40,6 @@ type Props = {
   beside?: string;
   /** writing on a phone: everything but the wordmark steps aside */
   quiet?: boolean;
-  /** pinned within its container rather than the window (the desk, where it can be narrower than the window): the
-   * container must be positioned and as tall as the page */
-  within?: boolean;
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
@@ -62,7 +59,7 @@ const link =
 const away = 'invisible absolute top-0 right-0';
 
 export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
-  { current, inside, hrefs, kept, action, centre: centreProp, beside, quiet, within, className, style, children },
+  { current, inside, hrefs, kept, action, centre: centreProp, beside, quiet, className, style, children },
   ref,
 ) {
   const device = useDeviceKept();
@@ -87,10 +84,10 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
         // Pinned to the top while the page scrolls (Rafael: "keep the nav sticky"), on any screen at least 32rem
         // tall; a shorter one (a phone on its side, or very large text) lets it scroll away rather than lose the
         // page to it. Print keeps it where it was. Its height is --site-head (index.css).
-        within
-          ? 'relative top-0 [@media(min-height:32rem)]:sticky print:relative'
-          : 'absolute inset-x-0 top-0 z-30 [@media(min-height:32rem)]:fixed print:absolute',
-        'pointer-events-none overflow-x-clip pt-[max(1rem,env(safe-area-inset-top,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground sm:pr-[max(2rem,env(safe-area-inset-right,0px))] sm:pl-[max(2rem,env(safe-area-inset-left,0px))] lg:pt-5 lg:pr-[max(2.5rem,env(safe-area-inset-right,0px))] lg:pl-[max(2.5rem,env(safe-area-inset-left,0px))]',
+        // One treatment on every page (Rafael: "make all of them full width"): the window's full width, its side margins
+        // from --site-margin (index.css), the same on every page, so the wordmark and the last place never move.
+        'absolute inset-x-0 top-0 z-30 [@media(min-height:32rem)]:fixed print:absolute',
+        'pointer-events-none overflow-x-clip pt-[max(1rem,env(safe-area-inset-top,0px))] pr-[max(var(--site-margin),env(safe-area-inset-right,0px))] pl-[max(var(--site-margin),env(safe-area-inset-left,0px))] text-[0.78125rem] text-muted-foreground lg:pt-5',
         // a band of the page's own ground from the top of the window, so nothing scrolling under it shows through,
         // fading out over 12 px below it
         "bg-background after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-3 after:bg-gradient-to-b after:from-background after:to-transparent after:content-['']",
@@ -167,8 +164,7 @@ export const SiteHeader = forwardRef<HTMLElement, Props>(function SiteHeader(
       </div>
     </header>
   );
-  // the desk: a track as tall as its column, for the header to stick in (the layer is the track's)
-  return within ? <div className="pointer-events-none absolute inset-0 z-30 print:static">{header}</div> : header;
+  return header;
 });
 
 /**
