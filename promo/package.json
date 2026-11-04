@@ -1,0 +1,22 @@
+{
+  "name": "if-this-finds-you-promo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The launch video for If This Finds You, drawn frame by frame with the site's own engine (../engine) and app code (../app/src) in Remotion. Not part of the site build.",
+  "scripts": {
+    "studio": "node scripts/click.mjs && remotion studio src/index.ts",
+    "render": "node scripts/click.mjs && remotion render src/index.ts Promo out/promo-x-30fps.mp4",
+    "render:60": "node scripts/click.mjs && remotion render src/index.ts Promo out/promo-60fps.mp4 --props='{\"fps\":60}'",
+    "render:timing": "node scripts/click.mjs && remotion render src/index.ts Promo out/promo-timing.mp4 --props='{\"grid\":true}'",
+    "still": "remotion still src/index.ts Promo out/still.png",
+    "hands": "node scripts/sample-hands.mjs 600"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.540",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.540",
+    "zod": "4.6.7"
+  }
+}
