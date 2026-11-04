@@ -283,8 +283,8 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
               </span>
             </button>
           </AboutHand>
-          {/* look C (?look=postmarked): Find another is a round stamp; look A: Bring another, in words */}
-          {LOOK === 'postmarked' ? <PhoneStamp {...props} /> : LOOK === 'reading-room' ? <BringAnother onClick={props.onNewHand} label={props.letter?.found ? 'Bring another' : 'Change writer'} shortcut="" /> : (
+          {/* look C (?look=postmarked): Find another is a round stamp; look A: Bring another, the desk's light-red button */}
+          {LOOK === 'postmarked' ? <PhoneStamp {...props} /> : LOOK === 'reading-room' ? <BringAnother onClick={props.onNewHand} label={props.letter?.found ? 'Bring another' : 'Change writer'} shortcut="" className="rr-bring-button" /> : (
           <Button onClick={props.onNewHand} className="h-11 px-3.5">
             <Shuffle aria-hidden /> Find another
           </Button>
