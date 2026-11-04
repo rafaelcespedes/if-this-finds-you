@@ -277,8 +277,13 @@ html:root[data-layout='ruler'] .rr-drawer {
 
 /* =====================================================================================================================
    THE LETTER PAGE (archive/ReadingSpread.tsx: .sp, .sp-head, .sp-plate, .sp-body)
-   The title across the whole page, huge; under it the page on the left (columns 1–5) and the plate on the right
-   (7–12), one rule between them, as the desk keeps its record on the left and the paper on the right
+   Streamlined for launch (Rafael: "there's some streamlining that can be done in the letter view, or we could just get
+   better at the hierarchy. Maybe some of these CTAs are actually sticky… next in the collection, maybe you give that
+   slightly different background"). Laid out like the desk: the letter itself is the first and biggest thing, on the
+   right, staying put; the record is a rail on the left (the title, who to whom, the facts as the desk's ruled rows,
+   the words of the letter), one rule between them. The actions stay in view at the rail's foot (Write a reply in the
+   desk's own button, the rest quiet); Next in the collection is a card of the room's own, a zone apart; the notes and
+   the citation are quieter
    ===================================================================================================================== */
 /* the spread's labels and small lines: the small sans (the same list as library.css's label role) */
 html:root[data-layout='ruler'] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
@@ -296,83 +301,175 @@ html:root[data-layout='ruler'] .sp .sp-head {
 html:root[data-layout='ruler'] .sp .sp-title {
   margin-top: 0.75rem;
   font-family: var(--ed-display-face);
-  font-size: clamp(2.5rem, 1rem + 6vw, 4rem);
+  font-size: clamp(2.25rem, 1rem + 5vw, 3rem);
   font-weight: var(--ed-display-weight);
   font-stretch: var(--ed-display-stretch);
-  letter-spacing: var(--ed-display-tracking);
-  line-height: var(--ed-display-leading);
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 html:root[data-layout='ruler'] .sp .sp-writer {
   margin-top: 0.75rem;
 }
+/* the facts as the desk's record: one ruled row each, the label at the left */
 html:root[data-layout='ruler'] .sp .sp-facts {
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 1.25rem;
   border-top-color: var(--ed-rule-strong);
 }
 html:root[data-layout='ruler'] .sp .sp-fact {
+  display: grid;
+  grid-template-columns: 5.375rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0 8px;
   border-bottom-color: var(--ed-rule);
 }
-html:root[data-layout='ruler'] .sp .sp-next-title {
-  font-family: var(--ed-display-face);
-  font-size: var(--ed-display-5);
-  letter-spacing: -0.015em;
-  line-height: 1.05;
+html:root[data-layout='ruler'] .sp .sp-fact dd {
+  margin-top: 0;
+}
+/* the notes and the citation: quieter (they're there for whoever looks) */
+html:root[data-layout='ruler'] .sp :is(.sp-notes, .sp-cite) {
+  border-top-color: var(--ed-rule);
+}
+html:root[data-layout='ruler'] .sp :is(.sp-notes li, .sp-cite p) {
+  color: var(--rr-faint);
 }
 html:root[data-layout='ruler'] .sp :is(.sp-no, .sp-note-no) {
   font-family: var(--ed-figure-face);
   font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
+/* Next in the collection: a zone of its own, on the room's card, not more of the letter */
+html:root[data-layout='ruler'] .sp .sp-next {
+  margin-top: 2.5rem;
+  padding: 1rem 1.125rem 0.75rem;
+  border-top: 0;
+  border-radius: var(--radius);
+  background: var(--rr-card);
+}
+html:root[data-layout='ruler'] .sp .sp-next .sp-label {
+  color: var(--rr-muted);
+}
+html:root[data-layout='ruler'] .sp .sp-next-link {
+  margin: 0.5rem -0.5rem 0;
+  padding: 0.5rem;
+  border-radius: var(--radius);
+}
+html:root[data-layout='ruler'] .sp .sp-next-title {
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-5);
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+/* the actions: Write a reply in the desk's own button (Bring another letter's tokens), the others quiet */
+html:root[data-layout='ruler'] .sp .sp-actions {
+  align-items: center;
+  gap: 0.25rem 0.375rem;
+  margin-inline: 0;
+  border-top-color: var(--ed-rule-strong);
+}
+html:root[data-layout='ruler'] .sp .sp-actions :is(.sp-reply, button) {
+  min-height: 2.25rem;
+  border-radius: var(--radius);
+  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
+}
+html:root[data-layout='ruler'] .sp .sp-actions button {
+  padding: 0 0.625rem;
+  font-family: var(--rr-control-face);
+  font-size: var(--rr-control-size);
+  letter-spacing: var(--rr-control-tracking);
+  color: var(--rr-ink);
+}
+html:root[data-layout='ruler'] .sp .sp-actions button:active {
+  background: var(--st-press);
+  scale: var(--st-scale-row);
+  transition-duration: var(--dur-press);
+}
+html:root[data-layout='ruler'] .sp .sp-reply {
+  margin-right: 0.375rem;
+  padding: 0 0.875rem 0 0.75rem;
+  background: var(--st-accent);
+  color: var(--rr-red);
+}
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-layout='ruler'] .sp .sp-reply:hover {
+    background: var(--st-accent-hover);
+    color: var(--rr-red-deep);
+  }
+}
+html:root[data-layout='ruler'] .sp .sp-reply:active {
+  background: var(--st-accent-press);
+  color: var(--rr-red-deep);
+  scale: var(--st-scale-row);
+  transition-duration: var(--dur-press);
+}
+html:root[data-layout='ruler'] .sp .sp-reply:focus-visible {
+  outline-color: var(--rr-red);
+}
+@media (pointer: coarse) {
+  html:root[data-layout='ruler'] .sp .sp-actions :is(.sp-reply, button) {
+    min-height: 2.75rem;
+  }
+}
+
+/* a wide screen: the rail (columns 1–5; 1–4 from 80em) and the letter on the rest, staying put */
 @media (min-width: 64em) {
   html:root[data-layout='ruler'] .sp {
-    grid-template-rows: auto auto 1fr;
+    --sp-rail: 5;
+    position: relative;
+    grid-template-rows: auto 1fr;
     max-width: var(--ed-max);
-    padding: calc(var(--site-head) + 2.5rem) var(--ed-margin) 1.25rem;
+    padding: calc(var(--site-head) + 1.75rem) var(--ed-margin) 0;
   }
   html:root[data-layout='ruler'] .sp .sp-head {
-    grid-column: 1 / -1;
+    grid-column: 1 / span 5;
     grid-row: 1;
-    display: grid;
-    grid-template-columns: subgrid;
     border-top: 0;
-    padding: 0 0 2.25rem;
-    margin-bottom: 2.5rem;
-    border-bottom: 1px solid var(--ed-rule-strong);
-  }
-  html:root[data-layout='ruler'] .sp .sp-head > * {
-    grid-column: 1 / -1;
-  }
-  html:root[data-layout='ruler'] .sp .sp-kicker {
-    grid-column: 1 / span 4;
-  }
-  html:root[data-layout='ruler'] .sp .sp-title {
-    margin-top: 1.25rem;
-    max-width: 14ch;
-    font-size: var(--ed-display-1);
-  }
-  html:root[data-layout='ruler'] .sp .sp-writer {
-    grid-column: 7 / -1;
-    margin-top: 1.25rem;
-    font-size: var(--rr-reading-size);
-  }
-  html:root[data-layout='ruler'] .sp .sp-plate {
-    grid-column: 7 / -1;
-    grid-row: 2 / span 2;
-    top: calc(var(--site-head) + 1.5rem);
+    padding: 0 0 0.25rem;
   }
   html:root[data-layout='ruler'] .sp .sp-body {
-    position: relative;
     grid-column: 1 / span 5;
-    grid-row: 2 / span 2;
+    grid-row: 2;
+    padding-bottom: 0;
   }
-  /* the one rule between the page and the plate: the empty sixth column's far edge, half a gutter before the plate */
-  html:root[data-layout='ruler'] .sp .sp-body::after {
+  html:root[data-layout='ruler'] .sp .sp-plate {
+    grid-column: 6 / -1;
+    grid-row: 1 / span 2;
+    top: calc(var(--site-head) + 1.75rem);
+  }
+  /* the one rule between the rail and the letter, in the gutter's middle, from the head to the foot */
+  html:root[data-layout='ruler'] .sp::before {
     content: '';
     position: absolute;
-    top: 0;
+    top: calc(var(--site-head) + 1.75rem);
     bottom: 0;
-    right: calc(-1 * (var(--ed-col) + var(--ed-gutter) * 1.5));
+    left: calc(var(--ed-margin) + var(--sp-rail) * var(--ed-col) + (var(--sp-rail) - 0.5) * var(--ed-gutter));
     width: 1px;
     background: var(--ed-rule-strong);
+  }
+  /* whatever the keyboard focuses scrolls clear of the actions' bar */
+  html:root[data-layout='ruler'][data-layout-page='letters']:has(.sp) {
+    scroll-padding-bottom: 4.5rem;
+  }
+  /* the actions stay in view at the rail's foot while the record scrolls, and settle at its end */
+  html:root[data-layout='ruler'] .sp .sp-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-top: 2rem;
+    padding: 0.75rem 0;
+    background: var(--rr-room);
+  }
+}
+@media (min-width: 80em) {
+  html:root[data-layout='ruler'] .sp {
+    --sp-rail: 4;
+  }
+  html:root[data-layout='ruler'] .sp :is(.sp-head, .sp-body) {
+    grid-column: 1 / span 4;
+  }
+  html:root[data-layout='ruler'] .sp .sp-plate {
+    grid-column: 5 / -1;
   }
 }
 
@@ -524,7 +621,13 @@ html:root[data-layout='ruler'] .fa .fa-head::after {
   }
 }
 
-/* the table (the canvas view): its heading in type like the list's, its dock in the small sans with a crisp edge */
+/* the table (the canvas view): each letter's name only (Rafael: "only have the name of the letter for the canvas view…
+   if they really want to see more details, they can go into the list view"); the place, year and why it survives
+   stay in the list, the card's tooltip and its words for screen readers */
+html:root[data-layout='ruler'] .table-card .table-meta {
+  display: none;
+}
+/* its heading in type like the list's */
 html:root[data-layout='ruler'] .canvas-heading svg {
   display: none;
 }
