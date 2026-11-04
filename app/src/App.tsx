@@ -46,7 +46,7 @@ import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
 import { mapGeometry } from '@/lib/geometry';
-import { LIVE, engineGeometry, liveExtras, liveLayout } from '@/lib/live';
+import { LIVE, engineGeometry, liveExtras, liveLayout, pageSetup } from '@/lib/live';
 import { LiveSheets } from '@/components/LiveSheets';
 import { INK, InkSession, decodeInk, encodeInk, inkExtras, inkFromText, inkGeometry, inkLive, inkOpts, inkPage, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
 import { inkOn } from '@/lib/request';
@@ -250,6 +250,11 @@ export default function App() {
   // the session belongs to one look (hand, paper, size): a new look replays the log in the new hand
   const inkLook = JSON.stringify([state.seed, state.style, lookKey, state.paper]);
   const inkLayout = useMemo(() => inkOpts(p, paper, eff.size, eff.lineSpacing).layout, [p, paper, eff.size, eff.lineSpacing]);
+  /** where the first letter goes on an empty sheet (the first line, at the margin), for the caret before the first key */
+  const startCaret = useMemo(() => {
+    const { opts } = pageSetup(p, paper, eff.size, eff.lineSpacing);
+    return { sheet: 0, x: opts.marginLeft as number, y: opts.firstBaseline as number, line: 0 };
+  }, [p, paper, eff.size, eff.lineSpacing]);
   const inkSession = useCallback((doc?: InkDoc): InkSession => {
     if (!doc && inkRef.current && inkFor.current === inkLook) return inkRef.current;
     const s = stateNow.current;
@@ -1371,6 +1376,7 @@ export default function App() {
                   hovering={inkActive && inkRef.current!.hovering}
                   onEdit={onEdit}
                   onHistory={onHistory}
+                  start={startCaret}
                   onFormat={onFormat}
                   writerName={name}
                   geometry={geometry}
