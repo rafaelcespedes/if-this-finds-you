@@ -78,7 +78,7 @@ export function ReadingDesk(props: PanelProps) {
               <p className="rr-card-no"><span className="rr-sc">{replyTo ? 'A reply' : 'Your letter'}</span></p>
               <div className="rr-card-actions">{share}</div>
             </div>
-            <h1 className="rr-card-title">{replyTo ? <>To {replyTo.from}</> : 'A letter of your own'}</h1>
+            <h1 className="rr-card-title">{replyTo ? <>To {midSentence(replyTo.from)}</> : 'A letter of your own'}</h1>
             {bring}
             <dl className="rr-facts">
               {replyTo?.no != null && (
@@ -100,6 +100,14 @@ export function ReadingDesk(props: PanelProps) {
       <WritingDrawer {...props} crack={crack} />
     </div>
   );
+}
+
+/** A writer's name as it reads after "To": "A Frenchman aged 53" becomes "a Frenchman aged 53" (the article only),
+ * and a writer with no name is "the unsigned writer". */
+function midSentence(name: string) {
+  if (name === 'Unsigned') return 'the unsigned writer';
+  if (name === 'Unknown writer') return 'the unknown writer';
+  return name.replace(/^(A|An|The)(?=\s)/, (w) => w.toLowerCase());
 }
 
 /** The writing materials: a drawer pinned to the foot of the column (closed or open remembered on this device). What
@@ -141,7 +149,8 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
-      if (!t?.closest(`#${CSS.escape(id)}-b`)) return;
+      // inside the drawer, or on its handle
+      if (!t?.closest(`#${CSS.escape(id)}-b, #${CSS.escape(id)}-h`)) return;
       put('closed');
       document.getElementById(`${id}-h`)?.querySelector('button')?.focus();
     };

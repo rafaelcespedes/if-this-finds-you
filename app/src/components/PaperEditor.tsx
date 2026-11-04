@@ -10,7 +10,7 @@ import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayo
 import { across, type Geometry, type Side } from '@/lib/geometry';
 import type { Edit } from '@/lib/edits';
 import { wordAt } from '@/lib/doc';
-import { isComposingKey, isMac, useEditInput, type Composition } from '@/hooks/useEditInput';
+import { historyKey, isComposingKey, isMac, useEditInput, type Composition } from '@/hooks/useEditInput';
 import { keepInView } from '@/hooks/useVisualViewport';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +31,8 @@ interface Props {
   text: string;
   /** every change, as one Edit (see lib/edits.ts) */
   onEdit: (e: Edit) => void;
+  /** undo and redo, the page's own (the browser's are cancelled) */
+  onHistory?: (dir: 'undo' | 'redo') => void;
   /** pen-only formatting on a range (or the word at the caret) */
   onFormat: (cmd: FormatCommand, from: number, to: number) => void;
   writerName: string;
@@ -68,7 +70,7 @@ interface Sel {
 const AMBER = '#f3d27a';
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
+  { text, onEdit, onHistory, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -84,7 +86,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     setComposition(c);
     onComposingChange?.(c != null);
   }, [onComposingChange]);
-  const input = useEditInput(ta, text, onEdit, 'paper', onComposition);
+  const input = useEditInput(ta, text, onEdit, 'paper', onComposition, onHistory);
   const descId = useId();
   // the shortcuts' key by its name on this keyboard (Command on Apple's, Ctrl elsewhere), as the keys themselves follow isMac
   const modKey = isMac() ? 'Command' : 'Ctrl';
@@ -309,6 +311,12 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       el.blur();
       wrap.current?.focus({ preventScroll: true });
       sync();
+      return;
+    }
+    const hist = onHistory ? historyKey(e) : null;
+    if (hist) {
+      e.preventDefault();
+      onHistory!(hist);
       return;
     }
     const mod = isMac() ? e.metaKey : e.ctrlKey;
