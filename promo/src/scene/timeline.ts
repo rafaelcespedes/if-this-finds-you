@@ -22,7 +22,8 @@ export interface Settings {
   size: number;
   /** where beat 1 of the music falls, seconds after the first frame */
   offset: number;
-  /** 1. the title, already written, before the first cut (beats) */
+  /** 1. the title, already written, before the first cut (beats). Two beats: a lead-in, so the music's first
+   *  downbeat falls on the first cut and every section after it starts on a bar. */
   titleBeats: number;
   /** 2. the flip: beats at one hand a beat */
   slowBeats: number;
@@ -47,6 +48,8 @@ export interface Settings {
   swapEvery: number;
   /** 5. the end card (beats) */
   endBeats: number;
+  /** 3→4: frames of dissolve from the card into the letter (0 = a cut on the bar) */
+  handoffFrames: number;
 }
 
 export const DEFAULTS: Settings = {
@@ -54,7 +57,7 @@ export const DEFAULTS: Settings = {
   fps: 30,
   size: 1080,
   offset: 0,
-  titleBeats: 4,
+  titleBeats: 2,
   slowBeats: 4,
   rampBeats: 10,
   peakBeats: 2,
@@ -67,11 +70,11 @@ export const DEFAULTS: Settings = {
   letterWriteBeats: 4,
   letters: [
     { ch: 'e', beats: 6 },
-    { ch: 'a', beats: 3 },
-    { ch: 'r', beats: 3 },
+    { ch: 'a', beats: 2 },
   ],
   swapEvery: 0.5,
   endBeats: 8,
+  handoffFrames: 0,
 };
 
 export type SectionId = 'title' | 'flip' | 'land' | 'zoom' | 'letter' | 'end';

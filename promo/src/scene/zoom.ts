@@ -2,10 +2,10 @@
 // cards, each "If this / finds you" in another writer's hand, on that writer's paper in that writer's ink. It keeps
 // pulling back until every card is a speck.
 //
-// 4096 writers (scripts/canvas-hands.mjs, the site's sampler) are drawn once into atlas pages (the Atlas composition:
-// 16 pages of 16 × 16 cards at 128 px, public/atlas/). Big cards are drawn live by the engine at the size they're
-// seen; mid-size ones come from the atlas; once cards are only a few pixels, blocks of 64 × 64 cards (every writer
-// once, in one of four orders) are composed from the atlas and laid like tiles.
+// The writers (scripts/canvas-hands.mjs, the site's sampler; as many as make the count end on 5,000) are drawn once
+// into atlas pages (the Atlas composition: pages of 16 × 16 cards at 128 px, public/atlas/). Big cards are drawn live
+// by the engine at the size they're seen; mid-size ones come from the atlas; once cards are only a few pixels, blocks
+// of about 70 × 70 cards (every writer once, in one of four orders) are composed from the atlas and laid like tiles.
 import { continueRender, delayRender, staticFile } from 'remotion';
 import { getPaper } from '@/lib/papers';
 import { drawInk, FLIP_INK, ground, RR } from './ink';
@@ -13,12 +13,10 @@ import type { Look } from './hands';
 import { geometry, phrase } from './phrase';
 import canvasHands from '../data/canvas-hands.json';
 
-export const ATLAS = { tile: 128, per: 16, pages: 16 };
-export const N = ATLAS.per * ATLAS.per * ATLAS.pages; // 4096
 export const hands = canvasHands as Look[];
+export const ATLAS = { tile: 128, per: 16, pages: Math.ceil(hands.length / 256) };
 /** the gap between cards, as a share of a card */
 const GAP = 0.06;
-const BLOCK = 64; // cards a side in a block (64² = 4096: every writer once)
 const BLOCK_CARD = 12; // px per card in a block's picture
 
 // ---------- one card ----------
@@ -49,26 +47,37 @@ function mix(a: number, b: number) {
   h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12;
   return h >>> 0;
 }
-// four orders of the 4096 writers (a block uses one, chosen by where it lies)
-const ORDERS = [0, 1, 2, 3].map((k) => {
-  const a = Array.from({ length: N }, (_, i) => i);
-  for (let i = N - 1; i > 0; i--) { const j = mix(i, k + 7) % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-});
+// How many writers the canvas has (the first n of the list), the blocks' size (BW × BH ≥ n cells: every writer
+// once, a few twice) and four orders of them (a block uses one, chosen by where it lies).
+interface CanvasState { n: number; BW: number; BH: number; orders: number[][]; blocks: (HTMLCanvasElement | null)[] }
+function canvasState(n: number): CanvasState {
+  n = Math.max(1, Math.min(hands.length, Math.round(n)));
+  const BW = Math.ceil(Math.sqrt(n)), BH = Math.ceil(n / BW);
+  const orders = [0, 1, 2, 3].map((k) => {
+    const a = Array.from({ length: n }, (_, i) => i);
+    for (let i = n - 1; i > 0; i--) { const j = mix(i, k + 7) % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  });
+  return { n, BW, BH, orders, blocks: [null, null, null, null] };
+}
+let C = canvasState(hands.length);
+/** Use the first n writers (the scene picks n so the counter ends on 5,000). */
+export function useWriters(n: number) { if (Math.round(n) !== C.n) C = canvasState(n); }
+export const writers = () => C.n;
 const mod = (a: number, m: number) => ((a % m) + m) % m;
 const orderOf = (bi: number, bj: number) => mix(bi + 101, bj - 57) & 3;
+const cell = (order: number, ci: number, cj: number) => C.orders[order][(cj * C.BW + ci) % C.n];
 /** the writer at card (i, j); card (0, 0) is the hand the flip landed on (-1) */
 export function handAt(i: number, j: number) {
   if (i === 0 && j === 0) return -1;
-  const bi = Math.floor(i / BLOCK), bj = Math.floor(j / BLOCK);
-  return ORDERS[orderOf(bi, bj)][mod(j, BLOCK) * BLOCK + mod(i, BLOCK)];
+  const bi = Math.floor(i / C.BW), bj = Math.floor(j / C.BH);
+  return cell(orderOf(bi, bj), mod(i, C.BW), mod(j, C.BH));
 }
 
 // ---------- the atlas and the blocks ----------
 
 let atlas: HTMLImageElement[] | null = null;
 let loading: Promise<void> | null = null;
-const blocks: (HTMLCanvasElement | null)[] = [null, null, null, null];
 
 export function loadAtlas(): Promise<void> | null {
   if (atlas) return null;
@@ -91,19 +100,20 @@ function drawFromAtlas(ctx: CanvasRenderingContext2D, h: number, x: number, y: n
 }
 
 function block(order: number) {
-  let c = blocks[order];
+  let c = C.blocks[order];
   if (!c && atlas) {
     const pitch = BLOCK_CARD * (1 + GAP);
     c = document.createElement('canvas');
-    c.width = c.height = Math.ceil(BLOCK * pitch);
+    c.width = Math.ceil(C.BW * pitch);
+    c.height = Math.ceil(C.BH * pitch);
     const ctx = c.getContext('2d')!;
     ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = RR.room;
     ctx.fillRect(0, 0, c.width, c.height);
-    for (let j = 0; j < BLOCK; j++) for (let i = 0; i < BLOCK; i++) {
-      drawFromAtlas(ctx, ORDERS[order][j * BLOCK + i], i * pitch, j * pitch, BLOCK_CARD);
+    for (let j = 0; j < C.BH; j++) for (let i = 0; i < C.BW; i++) {
+      drawFromAtlas(ctx, cell(order, i, j), i * pitch, j * pitch, BLOCK_CARD);
     }
-    blocks[order] = c;
+    C.blocks[order] = c;
   }
   return c;
 }
@@ -148,12 +158,13 @@ export const landedFrame = (look: Look, S: number) => landedCard(look, S);
  * The card we stopped on keeps a light red plate under it, so the eye can follow it all the way out: a red frame
  * round the card while it's big, a red dot once it's a speck (the plate never gets smaller than ~14 px at 1080).
  */
-function trackPlate(ctx: CanvasRenderingContext2D, S: number, s: number) {
+function trackPlate(ctx: CanvasRenderingContext2D, S: number, s: number, pulse = 0) {
   const k = S / 1080;
-  const pad = Math.max(0.03 * s, 6 * k);
+  // never smaller than ~22 px across at 1080, and it swells once (pulse 1 → 0) on the still beat
+  const pad = Math.max(0.03 * s, 8 * k) * (1 + 1.2 * pulse);
   const c0 = S / 2 - s / 2;
-  // stronger as the card gets small, so the dot still finds the eye among the specks
-  const small = Math.min(1, Math.max(0, Math.log2(S / s) / Math.log2(400)));
+  // stronger as the card gets small, so the dot still finds the eye among the cards
+  const small = Math.min(1, Math.max(0, Math.log2(S / s) / Math.log2(150)));
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(c0 - pad, c0 - pad, s + 2 * pad, s + 2 * pad, Math.max(3 * k, 0.04 * s));
@@ -168,7 +179,7 @@ function trackPlate(ctx: CanvasRenderingContext2D, S: number, s: number) {
  * Paint the canvas with the landing card filling `s` px (s = S: the landing frame exactly), centred.
  * Returns how many different writers are on screen (for the counter).
  */
-export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, landing: Look): number {
+export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, landing: Look, pulse = 0): number {
   ctx.fillStyle = RR.room;
   ctx.fillRect(0, 0, S, S);
   const pitch = s * (1 + GAP);
@@ -185,23 +196,24 @@ export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, 
         if (s > ATLAS.tile) ctx.drawImage(liveCard(h, landing, () => landedCard(landing, S), s), x, y, s, s);
         else drawFromAtlas(ctx, h, x, y, s);
       }
-      if (seen.size < N + 1) seen.add(h);
+      if (seen.size < C.n + 1) seen.add(h);
     }
-    trackPlate(ctx, S, s);
+    trackPlate(ctx, S, s, pulse);
     ctx.drawImage(landedCard(landing, S), c0, c0, s, s);
     return seen.size;
   }
-  // specks: blocks of 64 × 64 cards, each block one of the four orders
-  const bp = BLOCK * pitch;
-  const bMin = Math.floor((iMin * pitch) / bp) - 1, bMax = Math.ceil((iMax * pitch) / bp) + 1;
-  for (let bj = bMin; bj <= bMax; bj++) for (let bi = bMin; bi <= bMax; bi++) {
-    const x = c0 + bi * bp, y = c0 + bj * bp;
-    if (x > S || y > S || x + bp < 0 || y + bp < 0) continue;
+  // specks: blocks of BW × BH cards, each block one of the four orders
+  const bw = C.BW * pitch, bh = C.BH * pitch;
+  const biMin = Math.floor(-c0 / bw) - 1, biMax = Math.ceil((S - c0) / bw);
+  const bjMin = Math.floor(-c0 / bh) - 1, bjMax = Math.ceil((S - c0) / bh);
+  for (let bj = bjMin; bj <= bjMax; bj++) for (let bi = biMin; bi <= biMax; bi++) {
+    const x = c0 + bi * bw, y = c0 + bj * bh;
+    if (x > S || y > S || x + bw < 0 || y + bh < 0) continue;
     const c = block(orderOf(bi, bj));
-    if (c) ctx.drawImage(c, x, y, bp, bp);
+    if (c) ctx.drawImage(c, x, y, bw, bh);
   }
   // the landing card stays itself, on its plate
-  trackPlate(ctx, S, s);
+  trackPlate(ctx, S, s, pulse);
   ctx.drawImage(landedCard(landing, S), c0, c0, s, s);
-  return Math.min(N + 1, cards);
+  return Math.min(C.n + 1, cards);
 }

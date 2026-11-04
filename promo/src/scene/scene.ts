@@ -4,7 +4,7 @@ import { drawCaption, drawCounter, drawFlip, type FlipOpts } from './flip';
 import { handList, type Look } from './hands';
 import { clamp, easeInOutQuint, easeOutQuint, RR, text } from './ink';
 import { drawLetter, letterCam, letterModel, type LetterState } from './letter';
-import { drawCanvas, landedFrame, loadAtlas, N } from './zoom';
+import { drawCanvas, landedFrame, loadAtlas, useWriters, writers } from './zoom';
 import { drawEnd } from './endcard';
 import { plan, type Plan, type Settings } from './timeline';
 
@@ -23,13 +23,17 @@ export interface Scene {
   prepare(frame: number): Promise<void> | null;
 }
 
-/** how small a card gets by the end of the pull back, as a share of the frame (1/400: a speck) */
-const ZOOM_END = 1 / 400;
+/** the counter ends here: the flip's hands plus the canvas's writers (the canvas takes as many as that needs) */
+const TOTAL = 5000;
+/** how small a card gets at the farthest point, as a share of the frame (1/150: small coloured squares, still cards;
+ *  much further and they turn to a fine grey noise that X's re-encoding would break into blocks) */
+const ZOOM_END = 1 / 150;
 
 export function makeScene(s: Settings, o: SceneOpts): Scene {
   const P = plan(s);
   const hands = handList(P.handsNeeded, o.landing);
   const landing = hands[P.landHand];
+  useWriters(TOTAL - P.handsShown);
   const S = s.size;
   const fps = s.fps;
   const sec = (id: string) => P.sections.find((x) => x.id === id)!;
@@ -79,11 +83,13 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
       if (id === 'title' || id === 'flip' || id === 'land') drawFlip(ctx, P, hands, frame, o);
       else if (id === 'zoom') {
         const Z = P.zoom;
-        const onScreen = drawCanvas(ctx, S, cardSize(frame), landing);
+        // the red dot swells once on the still beat, then eases back over half a beat
+        const pulse = frame >= Z.out && frame < Z.hold ? 1 - easeOutQuint((frame - Z.out) / Math.max(1, P.fpb / 2)) : 0;
+        const onScreen = drawCanvas(ctx, S, cardSize(frame), landing, pulse);
         if (o.labels) {
           // the counter keeps going: the hands of the flip, then every writer on the canvas (it never counts down:
           // on the way back in it stays at the most it reached), and it fades over the dive's second beat
-          const most = frame < Z.out ? onScreen : N + 1;
+          const most = frame < Z.out ? onScreen : writers() + 1;
           const fade = 1 - clamp((frame - (Z.hold + (Z.to - Z.hold) / 2)) / ((Z.to - Z.hold) / 2), 0, 1);
           drawCounter(ctx, S, P.handsShown + Math.max(0, most - 1), fade);
           // the landed writer's name goes as the card shrinks
@@ -97,7 +103,8 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
         drawLetter(ctx, m, letterCam(m, S), letterState(frame), S, undefined);
         credit(ctx, m.credit);
         // the hand-off: the card we dived into dissolves over half a beat as the same hand starts the letter
-        const a = 1 - easeOutQuint((frame - P.letter.from) / Math.max(1, P.fpb / 2));
+        // (s.handoffFrames = 0: a cut on the bar)
+        const a = s.handoffFrames > 0 ? 1 - easeOutQuint((frame - P.letter.from) / s.handoffFrames) : 0;
         if (a > 0) { ctx.globalAlpha = a; ctx.drawImage(landedFrame(landing, S), 0, 0, S, S); ctx.globalAlpha = 1; }
       } else if (id === 'end') drawEnd(ctx, P, frame, sec('end').from, { writeOn: true });
       if (o.grid) beatGrid(ctx, frame);
@@ -110,7 +117,8 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
     const k = S / 1080;
     const beat = Math.floor((frame - Math.round(s.offset * fps)) / P.fpb + 1e-6);
     const inBeat = frame - P.beatFrame(beat);
-    const bar = Math.floor(beat / 4) + 1, b = (beat % 4) + 1;
+    const fromCut = beat - s.titleBeats; // bars count from the first cut; the title is a lead-in
+    const bar = Math.floor(fromCut / 4) + 1, b = ((fromCut % 4) + 4) % 4 + 1;
     ctx.save();
     ctx.fillStyle = 'rgba(30,39,51,0.82)';
     ctx.fillRect(S - 300 * k, S - 56 * k, 300 * k, 56 * k);
@@ -118,7 +126,7 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
     ctx.fillStyle = b === 1 ? `rgba(230,120,90,${lit})` : `rgba(255,255,255,${lit})`;
     ctx.beginPath(); ctx.arc(S - 272 * k, S - 28 * k, 11 * k, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    text(ctx, `bar ${bar} · beat ${b}`, S - 248 * k, S - 34 * k, { size: 20 * k, color: '#fff' });
+    text(ctx, fromCut < 0 ? `lead-in · beat ${b}` : `bar ${bar} · beat ${b}`, S - 248 * k, S - 34 * k, { size: 20 * k, color: '#fff' });
     text(ctx, `${P.sectionAt(frame).label} · ${(frame / fps).toFixed(2)} s`, S - 248 * k, S - 12 * k, { size: 15 * k, color: '#cfd3da' });
   }
 

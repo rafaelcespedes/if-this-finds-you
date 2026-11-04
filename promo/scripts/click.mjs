@@ -1,14 +1,15 @@
 // click.mjs: a placeholder click track to judge the timing (a short tick on every beat, a higher one on each bar's
-// first beat). Writes public/click-<bpm>.wav. node scripts/click.mjs [bpm=112.5] [seconds=40]
+// first beat; bars count from the first cut, after the title's two-beat lead-in). Writes public/click-<bpm>.wav.
+//   node scripts/click.mjs [bpm=112.5] [seconds=40] [lead-in beats=2]
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
-const bpm = Number(process.argv[2] || 112.5), secs = Number(process.argv[3] || 40), rate = 48000;
+const bpm = Number(process.argv[2] || 112.5), secs = Number(process.argv[3] || 40), lead = Number(process.argv[4] ?? 2), rate = 48000;
 const n = Math.round(secs * rate), data = new Int16Array(n);
 const beat = 60 / bpm;
 for (let b = 0; b * beat < secs; b++) {
-  const t0 = Math.round(b * beat * rate), down = b % 4 === 0, f = down ? 1760 : 1175, len = Math.round(0.035 * rate);
+  const t0 = Math.round(b * beat * rate), down = (((b - lead) % 4) + 4) % 4 === 0, f = down ? 1760 : 1175, len = Math.round(0.035 * rate);
   for (let i = 0; i < len && t0 + i < n; i++) {
     const env = Math.exp(-i / (0.008 * rate));
     data[t0 + i] = Math.round(Math.sin((2 * Math.PI * f * i) / rate) * env * (down ? 0.8 : 0.5) * 32767);

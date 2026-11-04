@@ -1,4 +1,4 @@
-// canvas-hands.mjs: the hands of the canvas the camera pulls back into: 4096 different writers, each with the look
+// canvas-hands.mjs: the hands of the canvas the camera pulls back into: 4908 different writers (enough for the counter to end on 5,000 at 30 fps), each with the look
 // the site's sampler gives that seed (lookOf: school, pen, tip, ink, paper, values), Neat only, print and joined
 // at random. Writes src/data/canvas-hands.json (gitignored; `npm run canvas` makes it and the atlas pages).
 //   node scripts/canvas-hands.mjs [count=4096]
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import * as E from '../../engine/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const N = Number(process.argv[2] || 4096);
+const N = Number(process.argv[2] || 4908);
 const r = E.rng('promo-canvas');
 const seen = new Set();
 const out = [];

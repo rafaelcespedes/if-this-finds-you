@@ -40,15 +40,20 @@ export interface LetterModel {
 
 const cache = new Map<string, LetterModel>();
 
-/** The letter's opening, as far as fits the video (whole sentences). */
-export function excerpt(text: string) {
-  const lines = text.split('\n');
-  // the greeting and the first paragraph, and the signature when the letter is that short
-  return lines.length <= 4 ? text : lines.slice(0, 2).join('\n');
+/** The passage the video shows: one sentence of the letter, big enough that every e can be seen changing on a
+ *  phone. Falls back to the letter's first sentence when the passage isn't in it. */
+export const PASSAGE = 'Papa did not have time to write, so I wrote for him.';
+export function excerpt(text: string, passage = PASSAGE) {
+  if (passage && text.includes(passage)) return passage;
+  const body = text.split('\n').slice(1).join(' ') || text;
+  return (body.match(/^[^.!?]*[.!?]/) || [body])[0].trim();
 }
 
+/** The column, as a share of the sheet's own measure: about 13 letters a line, four lines. */
+const MEASURE = 0.5;
+
 export function letterModel(id: string, landing: Look): LetterModel {
-  const key = `${id}|${landing.seed}~${landing.style}`;
+  const key = `${id}|${landing.seed}~${landing.style}|${MEASURE}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const L = (letters as any[]).find((l) => l.id === id) ?? (letters as any[])[0];
@@ -57,10 +62,9 @@ export function letterModel(id: string, landing: Look): LetterModel {
   const paper = getPaper(own.paper);
   const p = { ...handOf(landing), mistakes: 0 };
   const text = excerpt(L.text);
-  // a narrower column than the sheet's own measure (as the site's video export does for close framing): more,
-  // shorter lines, so the writing can be shown big in a square frame
-  const measure = 0.6;
-  const lay = { ...paper, text: { ...paper.text, right: paper.text.left + (paper.text.right - paper.text.left) * measure } } as PaperSpec;
+  // a much narrower column than the sheet's own measure (as the site's video export does for close framing): short
+  // lines, so the writing can be shown big in a square frame
+  const lay = { ...paper, text: { ...paper.text, right: paper.text.left + (paper.text.right - paper.text.left) * MEASURE } } as PaperSpec;
   const setup = pageSetup(p, lay, own.size > 0 ? own.size : 1, 1);
   const page = engine.layout(p, text, setup.opts);
   const items = (page.items as any[]).filter((it) => it.kind === 'glyph');

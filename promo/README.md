@@ -13,7 +13,7 @@ four or more needs a company licence ($25 per seat a month at the time of writin
 ```sh
 cd promo
 npm install
-npm run canvas          # once: the 4096 writers of the canvas and their atlas pages (public/atlas, ~15 s)
+npm run canvas          # once: the 4908 writers of the canvas and their atlas pages (public/atlas, ~20 s)
 npm run studio          # Remotion Studio: scrub the timeline, change the settings on the right
 npm run render          # out/draft-540.mp4       (the working draft: 540 × 540, 30 fps, click track; ~30 s)
 npm run render:timing   # out/timing-540.mp4      (the same with a bar.beat counter, to try tracks against)
@@ -33,7 +33,7 @@ The first render downloads Remotion's headless browser (~140 MB). Drafts render 
 | `src/scene/flip.ts`, `phrase.ts` | The title and the flip: "If this / finds you" in each hand on fixed baselines, the Hand No. counter, the writer's name. |
 | `src/scene/hands.ts` | The hand list: the wordmark hand first, then the sampled hands (`src/data/hands.json`), the landing hand last. |
 | `src/scene/letter.ts` | The letter: laid out on its paper, written out live, and each highlighted letter's other forms (its allographs, pinned, in a few takes). |
-| `src/scene/zoom.ts`, `src/Atlas.tsx` | The pull back into the canvas of 4096 hands: live cards when big, atlas pages when small, 64 × 64 blocks when they're specks. |
+| `src/scene/zoom.ts`, `src/Atlas.tsx` | The pull back into the canvas of hands and the dive back: live cards when big, atlas pages when small, ~70 × 70 blocks when they're specks. |
 | `scripts/canvas-hands.mjs` | The canvas's writers, from the site's sampler (`lookOf`). |
 | `src/scene/endcard.ts` | The end card: the title written again where it began, then the stamped lines. |
 | `src/Promo.tsx`, `src/Root.tsx` | The Remotion composition and its settings panel (zod schema). |

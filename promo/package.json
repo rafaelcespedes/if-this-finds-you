@@ -6,7 +6,7 @@
   "description": "The launch video for If This Finds You, drawn frame by frame with the site's own engine (../engine) and app code (../app/src) in Remotion. Not part of the site build.",
   "scripts": {
     "studio": "node scripts/click.mjs && remotion studio src/index.ts",
-    "canvas": "node scripts/canvas-hands.mjs 4096 && remotion render src/index.ts Atlas public/atlas --sequence --image-format=png --image-sequence-pattern='page-[frame].[ext]'",
+    "canvas": "node scripts/canvas-hands.mjs 4908 && remotion render src/index.ts Atlas public/atlas --sequence --image-format=png --image-sequence-pattern='page-[frame].[ext]'",
     "render": "node scripts/click.mjs && remotion render src/index.ts Promo out/draft-540.mp4 --crf=22",
     "render:final": "node scripts/click.mjs && remotion render src/index.ts Promo out/promo-x-30fps.mp4 --props='{\"size\":1080}'",
     "render:60": "remotion render src/index.ts Promo out/promo-60fps.mp4 --props='{\"size\":1080,\"fps\":60,\"click\":false}'",

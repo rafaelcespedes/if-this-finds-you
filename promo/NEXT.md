@@ -12,7 +12,16 @@
   (tracked by a light red plate that becomes a red dot among the specks); the card dissolves over half a beat as the
   same hand starts the letter.
 
+## Done in draft 4 (3 Nov)
+- The letter shows one sentence ("Papa did not have time to write, so I wrote for him.") in a narrow column (half
+  the sheet's measure), framed close: each e is about 2.5× bigger than in draft 3.
+- The pull back stops at cards 1/150 of the frame (small coloured squares, not grey noise); the red dot is at least
+  ~22 px at 1080 and swells once on the still beat.
+- A cut on the bar into the letter (`handoffFrames: 0`).
+- Title is a two-beat lead-in (the music's first downbeat goes on the first cut, 1.07 s); r's dropped (e 6, a 2
+  beats); every section from the first cut starts on a bar. 26.7 s.
+- The canvas takes 5000 − the flip's hands (4908 at 30 fps, 4841 at 60), so the counter ends on 5000 in both.
+
 ## Open
 - Dive into the same card (now) or a different one ("one writer picked from thousands")?
-- Hand-off: half-beat dissolve (now) or a hard cut on the bar?
 - The wordmark hand's writer name on frame 1?
