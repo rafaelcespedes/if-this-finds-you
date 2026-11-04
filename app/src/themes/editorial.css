@@ -41,7 +41,8 @@ html:root[data-layout] {
      · 128 px), fluid between a phone and 1440. Face, weight and stretch follow the title role, so a pairing that sets
      --rr-title-face sets these too; a pairing can give display its own cut with --rr-display-face. */
   --rr-display-face: var(--rr-title-face);
-  --rr-display-weight: 480;
+  /* never heavier than the title role's own weight (a pairing's 400 stays 400) */
+  --rr-display-weight: min(var(--rr-title-weight, 480), 480);
   --rr-display-stretch: var(--rr-title-stretch, 100%);
   --rr-display-leading: 0.94;
   --rr-display-tracking: -0.025em;
@@ -83,7 +84,7 @@ html:root[data-layout='editorial-2'] {
   --ed-head-size: 0.75rem;
   --ed-head-tracking: 0.01em;
   --rr-figure-face: var(--rr-ui);
-  --rr-display-weight: 440;
+  --rr-display-weight: min(var(--rr-title-weight, 440), 440);
   --rr-display-tracking: -0.035em;
   --rr-display-leading: 0.9;
 }
