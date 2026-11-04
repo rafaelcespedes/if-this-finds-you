@@ -1,12 +1,14 @@
 // The first thing on the page: one hand, the set's first, writing the line at poster size, the way a foundry's
 // typeface page opens on its face. Under it, a soft rule and the caption: who wrote it (it opens the hand's record),
-// a few plain words about the hand, where the line comes from, and its actions: Download the font (the one filled
-// button on the page), Write with it, Save.
+// a few plain words about the hand, and its actions as icons: Download the font (the desk's main action, its Bring
+// another letter button), Write with it, Save. Where the line comes from opens with the record.
 import { memo, useEffect, useRef, useState } from 'react';
 import { Download, Heart, LoaderCircle, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { withLogo } from '@/lib/brand';
 import { cn } from '@/lib/utils';
+import { BringAnother } from '@/themes/reading-room/BringAnother';
 import { ARCHIVE_URL, toolHref } from '@/archive/SiteHeader';
 import { penWords } from '../filters';
 import type { FontEntry, LiveSpec, Opening } from '../protocol';
@@ -26,6 +28,16 @@ interface Props {
   open: boolean;
   onOpen: (id: string | null) => void;
   live: Omit<LiveSpec, 'text'>;
+}
+
+/** An icon's name, shown under the pointer and on keyboard focus. */
+function Tip({ label, children }: { label: string; children: React.ReactElement }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export const Hero = memo(function Hero({ entry, text, em, lines, opening, saved, open, onOpen, live }: Props) {
@@ -55,7 +67,7 @@ export const Hero = memo(function Hero({ entry, text, em, lines, opening, saved,
                 </button>
               </h2>
               <p className="fx-meta">
-                {[entry.family === 'script' ? 'Joined' : 'Print', entry.tradition, penWords(entry.pen), entry.kind].filter(Boolean).join(' · ')}
+                {[entry.family === 'script' ? 'Joined' : 'Print', entry.tradition, penWords(entry.pen)].filter(Boolean).join(' · ')}
                 {!entry.matches && <span className="fx-near"> · close match</span>}
               </p>
             </>
@@ -65,30 +77,34 @@ export const Hero = memo(function Hero({ entry, text, em, lines, opening, saved,
               <span aria-hidden className="fx-skeleton fx-skeleton-meta" />
             </>
           )}
-          {opening && (
-            <p className="fx-credit">
-              From a letter by {opening.by}{opening.year ? `, ${opening.year}` : ''}.{' '}
-              <a className="fx-quiet-link" href={withLogo(`${ARCHIVE_URL}#/letter/${encodeURIComponent(opening.id)}`)}>Read the letter</a>
-            </p>
-          )}
         </div>
-        <div className={cn('fx-hero-act', !entry && 'invisible')}>
-        <div className="fx-hero-actions">
-          <Button onClick={download} disabled={building || !entry} className="fx-download">
-            {building ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
-            {building ? 'Making the font…' : 'Download font'}
-          </Button>
-          <Button asChild variant="ghost" className="fx-quiet fx-write-with">
-            <a href={tool} aria-label="Write with it"><PenLine aria-hidden /> <span className="fx-words">Write with it</span></a>
-          </Button>
-          <Button variant="ghost" size="icon" className="fx-quiet fx-save" aria-pressed={saved} aria-label={saved ? 'Saved. Remove it' : 'Save this hand'} onClick={() => entry && toggleSaved(entry)}>
-            <Heart aria-hidden className={cn(saved && 'fill-current')} />
-          </Button>
-        </div>
-        {/* the promise, said once beside the action (where a foundry puts its price) */}
-        <p className="fx-promise">Free and open source · .otf and .ttf · SIL Open Font License</p>
+        <div className={cn('fx-hero-actions', !entry && 'invisible')}>
+          {/* icons only, so the hand is what you read (Rafael: "download font, again, could be just an icon"); each
+              names itself in a tooltip and to screen readers. Download is the desk's main action, its button's red. */}
+          <Tip label={building ? 'Making the font…' : 'Download font'}>
+            <BringAnother onClick={download} disabled={building || !entry} label={building ? 'Making the font…' : 'Download font'} shortcut=""
+              icon={building ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />} aria-busy={building || undefined}
+              className="rr-bring-button fx-download" />
+          </Tip>
+          <Tip label="Write with it">
+            <Button asChild variant="ghost" size="icon" className="fx-quiet fx-icon">
+              <a href={tool} aria-label="Write with it"><PenLine aria-hidden /></a>
+            </Button>
+          </Tip>
+          <Tip label={saved ? 'Saved' : 'Save'}>
+            <Button variant="ghost" size="icon" className="fx-quiet fx-icon fx-save" aria-pressed={saved} aria-label="Save" onClick={() => entry && toggleSaved(entry)}>
+              <Heart aria-hidden className={cn(saved && 'fill-current')} />
+            </Button>
+          </Tip>
         </div>
       </div>
+      {/* where the line comes from: with the hand's record, not on the page */}
+      {open && opening && (
+        <p className="fx-credit">
+          The line is from a letter by {opening.by}{opening.year ? `, ${opening.year}` : ''}.{' '}
+          <a className="fx-quiet-link" href={withLogo(`${ARCHIVE_URL}#/letter/${encodeURIComponent(opening.id)}`)}>Read the letter</a>
+        </p>
+      )}
       {open && entry && (
         <HandRecordView entry={entry} id="record-hero" family={font?.family ?? null} allLoaded={allLoaded} onShowAll={setAllChars} live={live} text={text}
           onClose={close} toolHref={tool!} saved={saved} onSave={() => toggleSaved(entry)} onDownload={download} building={building} />

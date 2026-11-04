@@ -1,5 +1,5 @@
 // One hand in the list (or a card in the grid): the writing, always the biggest thing, with the writer's name, a few
-// plain words about the hand, and its three actions. The whole row opens the hand's record (its name is the button; the
+// plain words about the hand, and its three actions as icons. The whole row opens the hand's record (its name is the button; the
 // row is its target), and answers the pointer with the faint wash, never an underline. Its height is fixed before
 // anything arrives, so rows never move when their writing does.
 import { memo, useEffect, useRef, useState } from 'react';
@@ -26,9 +26,9 @@ interface Props {
   open: boolean;
   onOpen: (id: string | null) => void;
   live: Omit<LiveSpec, 'text'>;
-  /** a card in the grid: the words under the writing, icons only */
+  /** a card in the grid: the words under the writing */
   card: boolean;
-  /** phones: the actions as icons, two words about the hand */
+  /** phones: two words about the hand */
   compact: boolean;
 }
 
@@ -57,7 +57,6 @@ export const Row = memo(function Row({ entry, index, text, em, lines, saved, ope
   const close = () => { onOpen(null); requestAnimationFrame(() => nameRef.current?.focus({ preventScroll: true })); };
   const tool = entry ? `${toolHref}#${entry.tool}` : undefined;
   const words = entry ? [entry.family === 'script' ? 'Joined' : 'Print', entry.tradition, !compact && penWords(entry.pen)].filter(Boolean).join(' · ') : '';
-  const iconsOnly = card || compact;
   // under a resting pointer (a quarter second) the hand writes its line again over a faint trace of it, the way a
   // foundry's specimen moves on hover; never on touch, never with reduced motion
   const dwell = useRef(0);
@@ -73,37 +72,25 @@ export const Row = memo(function Row({ entry, index, text, em, lines, saved, ope
   };
   useEffect(() => () => window.clearTimeout(dwell.current), []);
 
+  // icons only, on every row (Rafael: "maybe those don't have copy"): each names itself in a tooltip and to screen readers
   const actions = entry && (open ? (
-    <Button variant="ghost" className="fx-quiet" onClick={close} aria-controls={`record-${index}`}>
-      Close <X aria-hidden />
-    </Button>
+    <IconAction label="Close" onClick={close} aria-controls={`record-${index}`}>
+      <X aria-hidden />
+    </IconAction>
   ) : (
     <>
-      <IconAction label={saved ? 'Saved. Remove it' : 'Save this hand'} aria-pressed={saved} onClick={() => toggleSaved(entry)} className="fx-quiet fx-icon fx-save">
+      <IconAction label={saved ? 'Saved' : 'Save'} aria-label="Save" aria-pressed={saved} onClick={() => toggleSaved(entry)} className="fx-quiet fx-icon fx-save">
         <Heart aria-hidden className={cn(saved && 'fill-current')} />
       </IconAction>
-      {iconsOnly ? (
-        <>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button asChild variant="ghost" size="icon" className="fx-quiet fx-icon"><a href={tool} aria-label="Write with it"><PenLine aria-hidden /></a></Button>
-            </TooltipTrigger>
-            <TooltipContent>Write with it</TooltipContent>
-          </Tooltip>
-          <IconAction label={building ? 'Making the font…' : 'Download font'} onClick={download} disabled={building} aria-busy={building || undefined}>
-            {building ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
-          </IconAction>
-        </>
-      ) : (
-        <>
-          <Button asChild variant="ghost" className="fx-quiet"><a href={tool} aria-label="Write with it" title="Write with it"><PenLine aria-hidden /> <span className="fx-words">Write with it</span></a></Button>
-          <Button variant="ghost" className="fx-quiet fx-row-download" onClick={download} disabled={building} aria-busy={building || undefined}
-            aria-label={building ? 'Making the font…' : 'Download font'} title="Download font">
-            {building ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
-            <span className="fx-words">{building ? 'Making…' : 'Download'}</span>
-          </Button>
-        </>
-      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button asChild variant="ghost" size="icon" className="fx-quiet fx-icon"><a href={tool} aria-label="Write with it"><PenLine aria-hidden /></a></Button>
+        </TooltipTrigger>
+        <TooltipContent>Write with it</TooltipContent>
+      </Tooltip>
+      <IconAction label={building ? 'Making the font…' : 'Download font'} onClick={download} disabled={building} aria-busy={building || undefined}>
+        {building ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
+      </IconAction>
     </>
   ));
 

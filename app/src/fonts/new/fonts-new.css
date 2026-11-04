@@ -20,7 +20,6 @@ html[data-fonts='new'] {
   --fx-faint: var(--rr-faint, var(--text-faint));
   --fx-red: var(--rr-red, var(--mark));
   --fx-red-deep: var(--rr-red-deep, var(--mark));
-  --fx-on-red: var(--rr-slip, #fff);
   --fx-rule: var(--rr-rule, var(--hairline));
   --fx-hair: var(--rr-hair, var(--hairline));
   --fx-ground: var(--background);
@@ -68,7 +67,6 @@ html[data-fonts='new'][data-theme='dark'][data-look='reading-room'] {
   --rule-link: color-mix(in oklab, var(--rr-ink) 34%, transparent);
   --rr-rule: color-mix(in oklab, var(--rr-ink) 13%, transparent);
   --rr-hair: color-mix(in oklab, var(--rr-ink) 18%, transparent);
-  --fx-on-red: #14171c;
   --sheet-shadow: none;
   --lib-surface-shadow: 0 0 0 1px var(--rr-edge), 0 10px 24px -14px rgba(0, 0, 0, 0.6);
   --lib-menu-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 34px -14px rgba(0, 0, 0, 0.7);
@@ -298,40 +296,17 @@ html[data-fonts='new'] .fx-open:focus-visible {
   outline: none;
 }
 
-/* ---------- the buttons: one filled (Download), red words (New set), quiet words and icons ---------- */
-html[data-fonts='new'][data-look] .fx-download.fx-download,
-html[data-fonts='new'][data-look] .font-record .record-actions .dock-primary.dock-primary.dock-primary {
-  height: 2.75rem;
-  padding-inline: 1.125rem 1.25rem;
-  border-radius: 999px;
-  background: var(--fx-red);
-  color: var(--fx-on-red);
-  box-shadow: none;
-  text-decoration: none;
-  font-family: var(--fx-ui);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-@media (hover: hover) and (pointer: fine) {
-  html[data-fonts='new'][data-look] .fx-download.fx-download:hover,
-  html[data-fonts='new'][data-look] .font-record .record-actions .dock-primary.dock-primary.dock-primary:hover {
-    background: var(--fx-red-deep);
-    color: var(--fx-on-red);
-    text-decoration: none;
-  }
-}
-html[data-fonts='new'][data-look] .fx-download.fx-download:active,
-html[data-fonts='new'][data-look] .font-record .record-actions .dock-primary.dock-primary.dock-primary:active {
-  background: var(--fx-red-deep);
-  color: var(--fx-on-red);
-  scale: var(--st-scale, 0.97);
-}
-html[data-fonts='new'][data-look] :is(.fx-quiet, .fx-done, .fx-more):is([class]):not(.fx-toolbar *) {
-  font-family: var(--fx-ui);
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0;
+/* ---------- the buttons: every one is the desk's own (Rafael: "Just use one of the buttons we already have").
+   Download font and New set are the desk's main action, its Bring another letter button (BringAnother with
+   rr-bring-button, reading-room.css); Show more is the room's secondary button; Done and the record's Download are
+   the room's red words (dock-primary), as in the phone dock; the filters' count is the dock's badge. What's left here
+   is the quiet words and icons, the room's ghost buttons, in the control face. ---------- */
+/* (in the room's control role, as the tester line's buttons are) */
+html[data-fonts='new'][data-look] .fx-quiet:is([class]):not(.fx-toolbar *) {
+  font-family: var(--rr-control-face);
+  font-size: var(--rr-control-size);
+  font-weight: var(--rr-control-weight);
+  letter-spacing: var(--rr-control-tracking);
   text-decoration: none;
 }
 html[data-fonts='new'] .fx-quiet {
@@ -348,73 +323,6 @@ html[data-fonts='new'] .fx-quiet {
 html[data-fonts='new'] .fx-quiet:active { background: var(--st-press); }
 html[data-fonts='new'] .fx-quiet[aria-pressed='true'] { color: var(--fx-ink); }
 html[data-fonts='new'] .fx-save[aria-pressed='true'] { color: var(--fx-red); }
-/* New set: the desk's main action, Bring another letter (reading-room.css, .rr-desk .rr-ledger .rr-bring), value for
-   value: a light archival-red tint with no edge, the controls' corners, 2.25rem tall, its words in the action role
-   (the book face) nudged onto the button's centre, its key at the end; the deeper tint under the pointer, the
-   deepest pressed with the deeper red. (Kept in step by hand: a shared class for it would be better; see the note
-   to the Reading Room session.) */
-html[data-fonts='new'][data-look] .fx-newset.fx-newset {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 2.25rem;
-  padding: 0 0.375rem 0 0.75rem;
-  border: 0;
-  border-radius: var(--radius);
-  background: var(--st-accent);
-  color: var(--rr-red);
-  font-family: var(--rr-action-face);
-  font-size: var(--rr-action-size);
-  font-weight: var(--rr-action-weight);
-  line-height: var(--rr-action-leading);
-  letter-spacing: var(--rr-action-tracking);
-  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
-}
-html[data-fonts='new'] .fx-newset .fx-newset-label {
-  translate: 0 var(--rr-book-cap-drop, 0);
-}
-html[data-fonts='new'] .fx-newset .rr-key {
-  background: color-mix(in oklab, var(--rr-red) 10%, transparent);
-  color: color-mix(in oklab, var(--rr-red) 75%, var(--rr-ink));
-}
-@media (hover: hover) and (pointer: fine) {
-  html[data-fonts='new'][data-look] .fx-newset.fx-newset:hover { background: var(--st-accent-hover); }
-}
-html[data-fonts='new'][data-look] .fx-newset.fx-newset:active {
-  background: var(--st-accent-press);
-  color: var(--rr-red-deep);
-  scale: var(--st-scale);
-}
-html[data-fonts='new'] .fx-newset:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-html[data-fonts='new'] .fx-done {
-  background: var(--fx-ink);
-  color: var(--fx-ground);
-}
-@media (hover: hover) and (pointer: fine) {
-  html[data-fonts='new'] .fx-done:hover { background: var(--ink-soft); }
-}
-html[data-fonts='new'] .fx-more {
-  border: 1px solid var(--rc-ctl-edge, var(--border));
-  background: transparent;
-  color: var(--fx-ink);
-}
-@media (hover: hover) and (pointer: fine) {
-  html[data-fonts='new'] .fx-more:hover { background: var(--st-hover); }
-}
-html[data-fonts='new'] .fx-more:active { background: var(--st-press); }
-html[data-fonts='new'] .fx-count {
-  display: inline-grid;
-  min-width: 1.25rem;
-  height: 1.25rem;
-  place-items: center;
-  padding-inline: 0.3rem;
-  border-radius: 999px;
-  background: var(--fx-red);
-  color: var(--fx-on-red);
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
 
 /* ---------- the hero: one hand at poster size ---------- */
 html[data-fonts='new'] .fx-hero {
@@ -458,8 +366,9 @@ html[data-fonts='new'] .fx-hero-name {
   html[data-fonts='new'] .fx-hero-name { font-size: 1.75rem; }
 }
 html[data-fonts='new'] .fx-hero-who .fx-meta { font-size: 0.9375rem; }
+/* where the line comes from: said with the hand's record, when it's open */
 html[data-fonts='new'] .fx-credit {
-  margin: 0.25rem 0 0;
+  margin: 1.5rem 0 0;
   font-family: var(--fx-book);
   font-size: 0.9375rem;
   font-style: italic;
@@ -476,41 +385,14 @@ html[data-fonts='new'] .fx-hero-name .fx-open {
 }
 html[data-fonts='new'] .fx-hero-name .fx-open:active { background: var(--st-press); }
 html[data-fonts='new'] .fx-hero-name .fx-open:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-html[data-fonts='new'] .fx-hero-act {
-  display: grid;
-  gap: 0.5rem;
-  justify-items: start;
-}
-@media (min-width: 48rem) {
-  html[data-fonts='new'] .fx-hero-act { justify-items: end; }
-}
-html[data-fonts='new'] .fx-promise {
-  margin: 0;
-  font-family: var(--fx-ui);
-  font-size: 0.8125rem;
-  color: var(--fx-faint);
-}
-@media (max-width: 47.99rem) {
-  html[data-fonts='new'] .fx-hero-act { justify-items: stretch; }
-}
+/* its actions, three icons: Download in the desk's red first, then Write with it and Save */
 html[data-fonts='new'] .fx-hero-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-}
-html[data-fonts='new'] .fx-hero-actions .fx-quiet { height: 2.75rem; }
-html[data-fonts='new'] .fx-hero-actions .fx-save { width: 2.75rem; }
-@media (max-width: 47.99rem) {
-  html[data-fonts='new'] .fx-hero-actions { flex-wrap: nowrap; }
-  html[data-fonts='new'] .fx-hero-actions .fx-download { flex: 1 1 auto; min-width: 0; }
-}
-/* the narrowest phones: Write with it keeps its pen (its name stays for screen readers and in its tooltip) */
-@media (max-width: 23.99rem) {
-  html[data-fonts='new'] .fx-write-with { width: 2.75rem; padding: 0; }
-  html[data-fonts='new'] .fx-write-with .fx-words { display: none; }
+  gap: 0.375rem;
 }
 html[data-fonts='new'] .fx-hero .font-record { margin-top: 1.5rem; }
+html[data-fonts='new'] .fx-hero .fx-credit + .font-record { margin-top: 1rem; }
 
 /* ---------- the tester line: one control surface, under the header as you scroll ---------- */
 html[data-fonts='new'] .fx-toolbar-wrap {
@@ -651,15 +533,6 @@ html[data-fonts='new'] .fx-row-body:has(.fx-open:focus-visible) {
 }
 html[data-fonts='new'] .fx-row.is-open .fx-row-body { background: transparent; }
 html[data-fonts='new'] .fx-icon { color: var(--fx-muted); }
-html[data-fonts='new'] .fx-row-actions .fx-quiet:not(.fx-icon) { padding-inline: 0.625rem; }
-/* a list not wide enough for the actions' words: their icons alone, so the writing keeps the width */
-@container fx-list (width < 76rem) {
-  html[data-fonts='new'] .fx-row-actions .fx-quiet:not(.fx-icon) { width: 2.25rem; padding: 0; }
-  html[data-fonts='new'] .fx-row-actions .fx-words { display: none; }
-}
-@media (pointer: coarse) {
-  html[data-fonts='new'] .fx-row-actions .fx-quiet:not(.fx-icon) { min-width: 2.75rem; }
-}
 
 /* a wide list reads as a register: who on the left, their writing, then what you can do */
 @container fx-list (width >= 56rem) {
@@ -703,15 +576,10 @@ html[data-fonts='new'][data-look] .font-record .record-folds button[aria-expande
   letter-spacing: 0;
   color: var(--fx-muted);
 }
+/* the record's other actions (Write with it, Save) are the room's quiet word buttons, as on the earlier page; under
+   the pointer the wash, never an underline */
 html[data-fonts='new'][data-look] .font-record .record-actions [data-slot='button']:not(.dock-primary) {
-  height: 2.75rem;
-  padding-inline: 0.875rem;
-  border-radius: 999px;
-  font-family: var(--fx-ui);
-  font-size: 0.9375rem;
-  font-weight: 500;
   text-decoration: none;
-  color: var(--fx-ink);
 }
 @media (hover: hover) and (pointer: fine) {
   html[data-fonts='new'][data-look] .font-record .record-actions [data-slot='button']:not(.dock-primary):not(.x):hover {
@@ -744,9 +612,6 @@ html[data-fonts='new'] .fx-end-actions {
   align-items: center;
   gap: 0.5rem 0.75rem;
 }
-html[data-fonts='new'] .fx-more { height: 2.75rem; padding-inline: 1.25rem; border-radius: 999px; }
-html[data-fonts='new'] .fx-end .fx-quiet { height: 2.75rem; }
-html[data-fonts='new'] .fx-end-or { color: var(--fx-faint); }
 html[data-fonts='new'] .fx-about {
   max-width: 40rem;
   margin: 0;
