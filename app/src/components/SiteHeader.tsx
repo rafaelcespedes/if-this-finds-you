@@ -54,9 +54,10 @@ export const headerChip =
   "pointer-events-auto relative grid cursor-pointer size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-[background-color,scale] duration-[var(--dur-press,100ms)] ease-out after:absolute after:-inset-2 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-[var(--st-press,var(--accent))] [&_svg]:size-[16px]";
 const CHIP = 32;
 
-// a place in the header: a big enough target without making the line taller
+// a place in the header: a big enough target without making the line taller. Its padding is in em, so the light-red
+// fill and the hover wash keep their shape around whichever face and size a look sets for the places (and large text)
 const link =
-  "pointer-events-auto relative inline-flex cursor-pointer shrink-0 items-baseline gap-1 rounded-[3px] px-1.5 py-0.5 font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground";
+  "pointer-events-auto relative inline-flex cursor-pointer shrink-0 items-baseline gap-1 rounded-[3px] px-[0.5em] py-[0.25em] font-medium text-foreground/80 transition-colors duration-150 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring data-[state=open]:text-foreground";
 // a piece that isn't shown right now: still laid out (so it can be measured), out of sight and out of reach
 const away = 'invisible absolute top-0 right-0';
 
