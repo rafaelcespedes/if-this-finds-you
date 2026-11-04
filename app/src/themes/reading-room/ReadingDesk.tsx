@@ -50,7 +50,7 @@ export function ReadingDesk(props: PanelProps) {
   );
   const share = <ShareMenu {...props} size="lg" />;
   // the desk's main action, a button at the foot of the record's head (under its number and two-line title)
-  const bring = <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Bring another hand'} />;
+  const bring = <BringAnother onClick={props.onNewHand} label={found ? 'Bring another letter' : 'Change writer'} />;
   const status = props.letter && (!props.letter.found || props.letter.drafts > 0);
   // the click that starts writing on the letter cracks the writing materials open, once a visit (materials.ts)
   const crack = useMaterialsCrack();

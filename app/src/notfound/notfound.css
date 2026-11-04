@@ -172,19 +172,17 @@ html[data-look='reading-room'] .nf .nf-ways .rr-bring.rr-bring-button.rr-bring.r
 }
 
 /* ---------- the Ruler (lib/layout.ts, themes/editorial.css): About's head, on the twelve columns ---------- */
-html:root[data-layout='ruler'][data-layout-page='notfound'] {
-  /* About's quieter grid line */
-  --ed-grid-line: color-mix(in oklab, var(--rr-ink) 7%, transparent);
+/* no grid behind it: only All letters' list shows the grid (Rafael, at launch; themes/editorial.css) */
+html:root[data-layout='ruler'][data-layout-page='notfound'] .ed-grid {
+  display: none;
 }
 html:root[data-layout='ruler'] .nf {
   max-width: var(--ed-max);
   padding-inline: var(--ed-margin);
 }
-/* the words keep the grid's lines out from under them, as About's head does */
 html:root[data-layout='ruler'] .nf-head {
   max-width: none;
   padding-bottom: 1rem;
-  background: var(--rr-room);
 }
 html:root[data-layout='ruler'] .nf-kicker {
   font-family: var(--ed-head-face);

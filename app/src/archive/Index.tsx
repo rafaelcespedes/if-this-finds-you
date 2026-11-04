@@ -189,11 +189,11 @@ export function Index({ letters, error, onRetry, filters, onFilters, onOpen, act
 
         <div ref={panelRef}>
           {error ? (
-            <Empty title="The letters didn’t load" action={<Button variant="outline" onClick={onRetry}>Try again</Button>}>
+            <Empty title="The letters didn’t load" action={<Button variant="secondary" onClick={onRetry}>Try again</Button>}>
               Check your connection, then try again.
             </Empty>
           ) : letters && !shown.length ? (
-            <Empty title={filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} action={<Button variant="outline" onClick={clear}>Clear filters</Button>}>
+            <Empty title={filters.q ? `No letters match “${filters.q}”.` : 'No letters match these filters.'} action={<Button variant="secondary" onClick={clear}>Clear filters</Button>}>
               Try fewer words, or another era or language.
             </Empty>
           ) : letters && LOOK === 'reading-room' ? (

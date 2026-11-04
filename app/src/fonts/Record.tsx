@@ -7,7 +7,9 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Download, Heart, LoaderCircle, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MoreButton } from '@/components/ui/group';
+import { LOOK } from '@/lib/look';
 import { cn } from '@/lib/utils';
+import { BringAnother } from '@/themes/reading-room/BringAnother';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { boxHeight, type FontEntry, type HandRecord, type LiveSpec } from './protocol';
 import { useRowLive } from './store';
@@ -131,10 +133,17 @@ export function HandRecordView(p: Props) {
             </Fold>
           </div>
           <div className="record-actions">
-            <Button onClick={p.onDownload} disabled={p.building} className="dock-primary">
-              {p.building ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
-              {p.building ? 'Making the font…' : 'Download the font'}
-            </Button>
+            {/* the desk's main action, its Bring another letter button, in words (the Fonts page's hero holds its icon);
+                the earlier look (?look=classic) keeps its own button */}
+            {LOOK === 'reading-room' ? (
+              <BringAnother onClick={p.onDownload} disabled={p.building} aria-busy={p.building || undefined}
+                label={p.building ? 'Making the font…' : 'Download font'} shortcut="" className="rr-bring-button" />
+            ) : (
+              <Button onClick={p.onDownload} disabled={p.building} className="dock-primary">
+                {p.building ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
+                {p.building ? 'Making the font…' : 'Download font'}
+              </Button>
+            )}
             <Button asChild variant="outline">
               <a href={p.toolHref}><PenLine aria-hidden /> Write with it</a>
             </Button>

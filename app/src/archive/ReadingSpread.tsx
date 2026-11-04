@@ -129,14 +129,15 @@ export function ReadingSpread(p: Props) {
   const citation = `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDateRaw ? `, ${placeDateRaw}` : ''}.`;
   const cite = async () => {
     const ok = await copyText(citation);
-    toast(ok ? 'Citation copied' : 'Couldn’t copy the citation', { id: 'cite', description: ok ? undefined : citation });
+    if (ok) toast.success('Citation copied', { id: 'cite' });
+    else toast.error('Couldn’t copy the citation', { id: 'cite', description: citation });
   };
 
   const handMenu = (
     <HandMenu
       name={p.name} keep={p.keep} onKeep={p.onKeep} onNewHand={p.onNewHand} onReplay={p.onReplay} canReplay={p.canReplay} align="start"
       trigger={
-        <button type="button" className="sp-hand group" aria-label={`In ${p.name}’s hand: change the hand`}>
+        <button type="button" className="sp-hand group" aria-label={`In ${p.name}’s hand: change writer`}>
           {p.name}
           <ChevronDown aria-hidden className="sp-hand-chev" />
         </button>
@@ -175,8 +176,8 @@ export function ReadingSpread(p: Props) {
               Full record <span aria-hidden>{recordOpen ? '−' : '+'}</span>
             </button>
             <span className="sp-quiet">
+              {/* Share is the actions' row's, once on the page */}
               <button type="button" onClick={cite}>Cite</button><span aria-hidden> · </span>
-              <button type="button" onClick={p.onShare}>Share</button><span aria-hidden> · </span>
               <button type="button" onClick={p.onImage} disabled={!p.imageReady}>Download image</button>
             </span>
           </div>
@@ -231,7 +232,7 @@ export function ReadingSpread(p: Props) {
         <div className="sp-actions" role="group" aria-label="What you can do with this letter">
           <a href={p.reply} className="sp-reply"><PenLine aria-hidden /> Write a reply</a>
           <button type="button" onClick={p.onRandom}>Bring another</button>
-          <button type="button" onClick={p.onNewHand}>Another hand</button>
+          <button type="button" onClick={p.onNewHand}>Change writer</button>
           <button type="button" onClick={p.onShare}>Share</button>
         </div>
       </div>

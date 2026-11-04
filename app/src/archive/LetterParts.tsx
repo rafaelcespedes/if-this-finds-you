@@ -49,7 +49,7 @@ export function HandMenu({ name, keep, onKeep, onNewHand, onReplay, canReplay, t
         </button>
       )}
       entries={[
-        { id: 'new', label: 'Another hand', icon: <Shuffle />, onSelect: onNewHand },
+        { id: 'new', label: 'Change writer', icon: <Shuffle />, onSelect: onNewHand },
         { id: 'replay', label: 'Write it out again', icon: <RotateCcw />, onSelect: onReplay, disabled: !canReplay },
         { kind: 'separator', id: 'sep' },
         { id: 'keep', label: 'Keep this hand', hint: 'for the next letters you open', checked: keep, onSelect: () => onKeep(!keep) },
@@ -97,7 +97,7 @@ export function LetterDock(a: DockActions) {
             <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />
           </>
         )}
-        <IconButton label="Another hand" onClick={a.onNewHand}><Shuffle aria-hidden /></IconButton>
+        <IconButton label="Change writer" onClick={a.onNewHand}><Shuffle aria-hidden /></IconButton>
         <IconButton label="Copy a link to this letter" onClick={a.onShare}><Link2 aria-hidden /></IconButton>
         <ActionSheet
           title="More"
