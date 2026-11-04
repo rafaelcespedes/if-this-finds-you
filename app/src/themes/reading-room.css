@@ -1,80 +1,97 @@
 /* Concept A, "The Reading Room" (?look=reading-room). Everything here is scoped to html[data-look="reading-room"]. */
 /*
-   A letter is brought to your desk, with its catalogue card. The interface steps back into a book face with real
-   small capitals and old-style figures, on a paper-grey room with one archival ink colour; archival red is kept for
-   numbers and the main action. The new pieces (card, request slips, the desk) live in themes/reading-room/.
+   A letter is brought to your desk, with its catalogue card. The paper, the stamps and the handwriting carry the
+   past; the type pulls toward now. On a paper-grey room with one archival ink colour; archival red is kept for numbers
+   and the main action. The new pieces (card, request slips, the desk) live in themes/reading-room/.
 
    Type: two faces, both only ever named in the tokens (--rr-book, --rr-ui), so a pairing swaps by token values.
-   Junicode 2 (Peter S. Baker; Rafael, 3 Nov) for everything archival: reading, titles, the record's values, the
-   catalogue numbers in its small capitals and old-style figures. Self-hosted from fontTools subsets of the upstream
-   release (reading-room/fonts/, OFL.txt there): Fontsource has no Junicode, and its subsets drop small capitals and
-   old-style figures. Enlarged 115% (size-adjust): its x-height is small (0.415 em) for the roles' sizes.
-   Source Sans 3 (Paul D. Hunt; Rafael, 4 Nov: "Let's give Source Sans 3 a chance") for everything you operate and
-   every label, in sentence case: the small-capital labels are retired. Self-hosted too (OFL-SourceSans3.txt).
+   Rafael, 4 Nov, from the type study (?type, retired): "too old" for Junicode, then Newsreader + Schibsted Grotesk,
+   both free (SIL OFL), both born in news. Newsreader (Production Type) for everything archival: titles, reading,
+   the record's values. Schibsted Grotesk (Bakken & Bæck) for everything you operate, every label in sentence case,
+   the main actions and the catalogue numbers in lining, tabular figures. Both self-hosted in reading-room/fonts/
+   with their OFL files.
    The faces are declared under their own names, so the classic look never downloads them.
    Text sizes are in rem, so the room follows the browser's text size as the tool does.
 */
 
 /* ---------- type ---------- */
+/* the serif for everything archival: Newsreader (Production Type, 2020; SIL OFL 1.1, OFL-Newsreader.txt beside it),
+   self-hosted from Fontsource's variable subsets with its optical sizes (opsz 6-72: the titles get the display cut,
+   the reading the text cut, by font-optical-sizing), enlarged 110% so its x-height matches the roles' sizes */
 @font-face {
-  font-family: 'RR Junicode';
+  font-family: 'RR Newsreader';
   font-style: normal;
   font-display: swap;
-  font-weight: 400 600;
-  font-stretch: 100% 112%;
-  size-adjust: 115%;
-  src: url('./reading-room/fonts/junicode-latin-ext-roman.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('./reading-room/fonts/newsreader-latin-ext-roman.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Junicode';
+  font-family: 'RR Newsreader';
   font-style: normal;
   font-display: swap;
-  font-weight: 400 600;
-  font-stretch: 100% 112%;
-  size-adjust: 115%;
-  src: url('./reading-room/fonts/junicode-latin-roman.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('./reading-room/fonts/newsreader-latin-roman.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'RR Junicode';
+  font-family: 'RR Newsreader';
   font-style: italic;
   font-display: swap;
-  font-weight: 400 600;
-  font-stretch: 100% 112%;
-  size-adjust: 115%;
-  src: url('./reading-room/fonts/junicode-latin-ext-italic.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('./reading-room/fonts/newsreader-latin-ext-italic.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Junicode';
+  font-family: 'RR Newsreader';
   font-style: italic;
   font-display: swap;
-  font-weight: 400 600;
-  font-stretch: 100% 112%;
-  size-adjust: 115%;
-  src: url('./reading-room/fonts/junicode-latin-italic.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  size-adjust: 110%;
+  src: url('./reading-room/fonts/newsreader-latin-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-/* the sans for everything you operate and every label: Source Sans 3 (Paul D. Hunt, Adobe; SIL OFL 1.1, OFL-SourceSans3.txt
-   beside it), self-hosted from Fontsource's variable subsets (one file a script carries every weight), sized so its
-   x-height matches the control size the roles were tuned for */
+/* the sans for everything you operate, every label and the catalogue numbers: Schibsted Grotesk (Bakken & Bæck for
+   Schibsted, 2023; SIL OFL 1.1, OFL-SchibstedGrotesk.txt), self-hosted from Fontsource's subsets with one change:
+   its tabular figures (tnum) no longer swap the full stop and other punctuation for wide tabular forms, so
+   "No. 0004" keeps its full stop close. Sized 86% so its x-height matches the control size */
 @font-face {
-  font-family: 'RR Source Sans';
+  font-family: 'RR Schibsted';
   font-style: normal;
   font-display: swap;
-  font-weight: 200 900;
-  size-adjust: 95%;
-  src: url('./reading-room/fonts/source-sans-3-latin-ext.woff2') format('woff2-variations');
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('./reading-room/fonts/schibsted-grotesk-latin-ext.woff2') format('woff2-variations');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'RR Source Sans';
+  font-family: 'RR Schibsted';
   font-style: normal;
   font-display: swap;
-  font-weight: 200 900;
-  size-adjust: 95%;
-  src: url('./reading-room/fonts/source-sans-3-latin.woff2') format('woff2-variations');
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('./reading-room/fonts/schibsted-grotesk-latin.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'RR Schibsted';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('./reading-room/fonts/schibsted-grotesk-latin-ext-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'RR Schibsted';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 86%;
+  src: url('./reading-room/fonts/schibsted-grotesk-latin-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -127,24 +144,25 @@ html[data-look='reading-room'] {
      them, the 20rem panel (density.css --panel-w) */
   --rr-margin: 2.5rem;
   --rr-gutter: 2rem;
-  --rr-book: 'RR Junicode', 'Iowan Old Style', Georgia, serif;
-  /* small capitals are the book face's own (Junicode keeps smcp and c2sc), switched on by the roles that use them */
-  --rr-caps: var(--rr-book);
-  --rr-ui: 'RR Source Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --rr-book: 'RR Newsreader', 'Iowan Old Style', Georgia, serif;
+  /* the catalogue numbers' face (the number role, and the fallback for labels): the sans, no small capitals */
+  --rr-caps: var(--rr-ui);
+  --rr-ui: 'RR Schibsted', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
   /* the serif's own vertical habits, set with the face (a pairing swaps them with it): where its capitals sit against
      its line box's centre. An icon beside its words lifts by --rr-book-cap-lift (icons/lucide.tsx); the desk's Bring
-     another label drops by --rr-book-cap-drop onto its button's centre. Junicode's, measured in real windows */
-  --rr-book-cap-lift: -0.123em;
-  --rr-book-cap-drop: 0.105em;
+     another label drops by --rr-book-cap-drop onto its button's centre (that label is in the sans now, so the drop is
+     Schibsted's). Estimated from Newsreader's and Schibsted's vertical metrics; measure in real windows to refine */
+  --rr-book-cap-lift: -0.11em;
+  --rr-book-cap-drop: -0.006em;
 
   /* the type roles (TYPE, at the end of this file): each a face, a size, a weight, a leading and a tracking. A font
      pairing swaps one face variable per role; the sizes are the scale 13 · 15 · 17 · 22 px, in rem */
   --rr-title-face: var(--rr-book);
   --rr-title-size: 1.375rem;
-  --rr-title-weight: 560;
-  --rr-title-stretch: 112%;
+  --rr-title-weight: 480;
+  --rr-title-stretch: 100%;
   --rr-title-leading: 1.15;
-  --rr-title-tracking: -0.005em;
+  --rr-title-tracking: -0.015em;
   --rr-reading-face: var(--rr-book);
   --rr-reading-size: 1.0625rem;
   --rr-reading-weight: 400;
@@ -169,12 +187,12 @@ html[data-look='reading-room'] {
   --rr-label-caps: normal;
   --rr-number-face: var(--rr-caps);
   --rr-number-size: 0.9375rem;
-  --rr-number-weight: 400;
+  --rr-number-weight: 500;
   --rr-number-leading: 1.2;
-  --rr-number-tracking: 0.04em;
-  --rr-number-caps: small-caps;
-  --rr-action-face: var(--rr-book);
-  --rr-action-size: 1.0625rem;
+  --rr-number-tracking: 0;
+  --rr-number-caps: normal;
+  --rr-action-face: var(--rr-ui);
+  --rr-action-size: 1rem;
   --rr-action-weight: 600;
   --rr-action-leading: 1.2;
   --rr-action-tracking: 0;
@@ -237,11 +255,12 @@ html[data-look='reading-room'] body {
   font-family: var(--rr-text-face);
   font-size: var(--rr-text-size);
   line-height: var(--rr-text-leading);
-  font-variant-numeric: oldstyle-nums proportional-nums;
+  /* lining figures: the old-style ones were part of the "old" */
+  font-variant-numeric: lining-nums proportional-nums;
   font-feature-settings: normal;
 }
 html[data-look='reading-room'] .tabular {
-  font-variant-numeric: oldstyle-nums tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* ---------- small pieces ---------- */
