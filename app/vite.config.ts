@@ -63,14 +63,16 @@ export default defineConfig({
   // the main chunk is React + the engine's letter data; opentype.js and the writer worker load separately
   build: {
     chunkSizeWarningLimit: 800,
-    // four pages: the tool (index.html), the Letters library (letters.html, src/archive/), Fonts (fonts.html,
-    // src/fonts/) and About (about.html, src/about/), split apart
+    // five pages: the tool (index.html), the Letters library (letters.html, src/archive/), Fonts (fonts.html,
+    // src/fonts/), About (about.html, src/about/) and the 404 (404.html, src/notfound/: Vercel serves dist/404.html
+    // for any address that isn't here), split apart
     rollupOptions: {
       input: {
         main: path.resolve(import.meta.dirname, 'index.html'),
         letters: path.resolve(import.meta.dirname, 'letters.html'),
         fonts: path.resolve(import.meta.dirname, 'fonts.html'),
         about: path.resolve(import.meta.dirname, 'about.html'),
+        notfound: path.resolve(import.meta.dirname, '404.html'),
       },
     },
   },

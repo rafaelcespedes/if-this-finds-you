@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-look="reading-room">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#e6e4de" />
+    <meta name="robots" content="noindex" />
+    <title>Not found · If This Finds You</title>
+    <meta name="description" content="If This Finds You · Real letters, written out by hand." />
+    <link rel="icon" href="/brand/favicon-5.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/favicon-5.ico" sizes="32x32" />
+    <!-- An address that isn't here (Vercel serves this page, built as dist/404.html, for any unknown path). Like every
+         page: the look and the layout before anything paints (lib/look.ts and lib/layout.ts read the same), then
+         src/notfound/main.tsx adds the shared header. The words and the two ways on are in the page itself, so they
+         show even if the script can't load. -->
+    <script>
+      (function () {
+        var id = 'reading-room';
+        try {
+          var names = { classic: 'classic', original: 'classic', before: 'classic', today: 'classic', current: 'classic', 'reading-room': 'reading-room', reading: 'reading-room', a: 'reading-room', postmarked: 'postmarked', postmark: 'postmarked', c: 'postmarked', 'default': 'reading-room' };
+          var asked = new URLSearchParams(location.search).get('look');
+          var kept = sessionStorage.getItem('seedhand:look');
+          id = (asked && names[asked.toLowerCase()]) || (kept && names[kept]) || id;
+        } catch (e) {}
+        var html = document.documentElement;
+        if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
+        var lay = 'ruler';
+        try {
+          var al = (new URLSearchParams(location.search).get('layout') || '').toLowerCase();
+          var kl = sessionStorage.getItem('seedhand:layout');
+          lay = /^(off|none|0|reading-room)$/.test(al) ? 'none' : al ? 'ruler' : kl === 'none' ? 'none' : 'ruler';
+        } catch (e) {}
+        if (id === 'reading-room' && lay !== 'none') html.setAttribute('data-layout', lay);
+        var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
+      })();
+    </script>
+    <!-- the desk's colour from the first frame, for each look (classic: no data-look) -->
+    <style>
+      html { background: #e6e4de; }
+      html:not([data-look]) { background: #eeeae2; }
+      html[data-look='postmarked'] { background: #f1ebdc; }
+    </style>
+    <!-- the Reading Room's two faces, fetched with the page so nothing reflows when they arrive -->
+    <link rel="preload" href="/src/themes/reading-room/fonts/newsreader-latin-roman.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/themes/reading-room/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <!-- the shared header (components/SiteHeader.tsx) -->
+    <div id="root"></div>
+    <main class="nf">
+      <div class="nf-head">
+        <p class="nf-kicker">Not found</p>
+        <h1 class="nf-title">This page isn’t here</h1>
+        <p class="nf-lede">The address may be mistyped, or the page has moved.</p>
+        <p class="nf-ways">
+          <a class="rr-bring rr-bring-button nf-write" href="/" data-nf-way="write"><span class="rr-bring-label">Write a letter</span></a>
+          <a class="nf-quiet" href="/letters" data-nf-way="letters">All letters</a>
+        </p>
+      </div>
+    </main>
+    <script type="module" src="/src/notfound/main.tsx"></script>
+  </body>
+</html>

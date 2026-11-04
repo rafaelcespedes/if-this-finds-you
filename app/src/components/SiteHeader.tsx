@@ -45,10 +45,12 @@ type Props = {
   children?: ReactNode;
 };
 
-/** The phone header's small chips (Menu here, Share in the tool): drawn 32 px, a 48 px target (44 at the least
- * beside another chip, 12 px away). */
+/** The phone header's small chips (Menu here, Share in the tool): quiet icon buttons, only their drawn icon at rest
+ * (no box, no shadow), a wash under the pointer and while pressed or open, in 4 px corners like the controls. Drawn
+ * 32 px, a 48 px target (44 at the least beside another chip, 12 px away). The edge is transparent so a Windows
+ * contrast theme still draws one. */
 export const headerChip =
-  "pointer-events-auto relative grid cursor-pointer size-[32px] shrink-0 place-items-center rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel text-foreground/85 shadow-[0_1px_2px_rgba(60,45,20,0.10)] transition-[background-color,scale] duration-[var(--dur-press,100ms)] ease-out after:absolute after:-inset-2 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-[var(--st-press,var(--accent))] [&_svg]:size-[16px]";
+  "pointer-events-auto relative grid cursor-pointer size-[32px] shrink-0 place-items-center rounded-[4px] border border-transparent bg-transparent text-foreground/85 transition-[background-color,scale] duration-[var(--dur-press,100ms)] ease-out after:absolute after:-inset-2 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:scale-[var(--st-scale,0.97)] active:bg-[var(--st-press,var(--accent))] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[state=open]:bg-[var(--st-press,var(--accent))] [&_svg]:size-[16px]";
 const CHIP = 32;
 
 // a place in the header: a big enough target without making the line taller. Its padding is in em, so the light-red

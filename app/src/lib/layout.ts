@@ -46,11 +46,11 @@ export const EDITORIAL = LAYOUT !== 'none';
  * ?rules=hand. */
 export const CRISP = LAYOUT === 'ruler';
 
-export type LayoutPage = 'desk' | 'letters' | 'about' | 'fonts';
+export type LayoutPage = 'desk' | 'letters' | 'about' | 'fonts' | 'notfound';
 
 /**
  * Call once in each page's entry, after applyLook(). Only on top of the Reading Room. Sets html[data-layout] and
- * html[data-layout-page] (desk | letters | about | fonts), and for the Ruler lays its grid behind the page (twelve
+ * html[data-layout-page] (desk | letters | about | fonts | notfound, the 404), and for the Ruler lays its grid behind the page (twelve
  * columns, a line in each gutter; themes/editorial.css draws them, and leaves them off on the Fonts page and the table).
  */
 export function applyLayout(page: LayoutPage) {

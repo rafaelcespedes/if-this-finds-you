@@ -1,0 +1,238 @@
+/* The 404 (404.html): an address that isn't here. The same page as About's head: a red kicker, the title, one line,
+   then the two ways on. Write a letter is the desk's main action (the Reading Room's BringAnother button,
+   rr-bring-button), All letters a quiet control beside it. Soft rules only, no small capitals, no underlines.
+   Under the Ruler (the default) the title runs across the page at display size and the line and the ways sit in
+   columns 5–10, as About's head does. Sizes in rem, so the page follows the browser's text size. */
+
+.nf {
+  --nf-text: var(--text);
+  --nf-muted: var(--text-muted);
+  --nf-mark: var(--mark);
+  --nf-book: var(--font-letter, Georgia, serif);
+  --nf-title-face: var(--nf-book);
+  --nf-title-weight: 500;
+  --nf-label-face: var(--font-sans);
+  --nf-label-weight: 500;
+  --nf-control-face: var(--font-sans);
+  --nf-control-size: 0.8125rem;
+  --nf-control-weight: 500;
+  --nf-control-tracking: normal;
+  box-sizing: border-box;
+  max-width: 1180px;
+  margin: 0 auto;
+  /* under the header's own height and its fade (index.css --site-head-box: the header, pinned or not), at its margins */
+  padding: calc(var(--site-head-box) + 12px + 2rem) var(--site-margin) 6rem;
+  color: var(--nf-text);
+  font-family: var(--nf-book);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+@media (min-width: 40rem) {
+  .nf {
+    padding-top: calc(var(--site-head-box) + 12px + 3.5rem);
+  }
+}
+.nf-head {
+  max-width: 40rem;
+}
+.nf-head > * {
+  margin: 0;
+}
+.nf-kicker {
+  color: var(--nf-mark);
+  font-family: var(--nf-label-face);
+  font-size: 0.75rem;
+  font-weight: var(--nf-label-weight);
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+}
+.nf-title {
+  margin-top: 0.5rem;
+  font-family: var(--nf-title-face);
+  font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
+  font-weight: var(--nf-title-weight);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.nf-lede {
+  margin-top: 0.875rem;
+  max-width: 32em;
+  color: var(--nf-muted);
+  font-size: 1.1875rem;
+  line-height: 1.42;
+  text-wrap: pretty;
+}
+@media (min-width: 40rem) {
+  .nf-lede {
+    font-size: 1.3125rem;
+  }
+}
+.nf-ways {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 1.75rem;
+}
+
+/* All letters: a quiet control, as tall as the main action beside it; under the pointer a wash, pressed a deeper one */
+.nf-quiet {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  /* (transparent, so a Windows contrast theme still draws its edge) */
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--nf-muted);
+  font-family: var(--nf-control-face);
+  font-size: var(--nf-control-size);
+  font-weight: var(--nf-control-weight);
+  letter-spacing: var(--nf-control-tracking);
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color var(--dur-press, 100ms) var(--ease-out, ease-out), color 150ms var(--ease-out, ease-out), scale var(--dur-press, 100ms) var(--ease-out, ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .nf-quiet:hover {
+    background: var(--st-hover, var(--accent));
+    color: var(--nf-text);
+  }
+}
+.nf-quiet:active {
+  background: var(--st-press, var(--accent));
+  color: var(--nf-text);
+  scale: var(--st-scale, 0.97);
+}
+.nf-quiet:focus-visible,
+.nf-write:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .nf-quiet {
+    min-height: 2.75rem;
+  }
+}
+
+/* ---------- the earlier design (?look=classic): the app's primary button, ink on the desk ---------- */
+html:not([data-look='reading-room']) .nf-write {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color 150ms var(--ease-out, ease-out), scale var(--dur-press, 100ms) var(--ease-out, ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  html:not([data-look='reading-room']) .nf-write:hover {
+    background: var(--ink-soft, var(--primary));
+  }
+}
+html:not([data-look='reading-room']) .nf-write:active {
+  background: var(--ink-press, var(--primary));
+  scale: 0.97;
+}
+@media (pointer: coarse) {
+  html:not([data-look='reading-room']) .nf-write {
+    min-height: 2.75rem;
+  }
+}
+
+/* ---------- the Reading Room (the default): its book face, its label and control roles, archival red ---------- */
+html[data-look='reading-room'] .nf {
+  --nf-text: var(--rr-ink);
+  --nf-muted: var(--rr-muted);
+  --nf-mark: var(--rr-red);
+  --nf-book: var(--rr-book);
+  --nf-title-face: var(--rr-title-face, var(--rr-book));
+  --nf-title-weight: var(--rr-title-weight, 500);
+  --nf-label-face: var(--rr-label-face, var(--rr-ui));
+  --nf-label-weight: 400;
+  --nf-control-face: var(--rr-control-face, var(--rr-ui));
+  --nf-control-size: var(--rr-control-size, 0.8125rem);
+  --nf-control-weight: var(--rr-control-weight, 500);
+  --nf-control-tracking: var(--rr-control-tracking, normal);
+  font-variant-numeric: oldstyle-nums proportional-nums;
+}
+/* Write a letter: the desk's button as it is anywhere (reading-room.css, .rr-bring-button), with no key at its end,
+   so its words sit in the middle (its own rule pads the right less, for the key; this outweighs it) */
+html[data-look='reading-room'] .nf .nf-ways .rr-bring.rr-bring-button.rr-bring.rr-bring.nf-write {
+  padding-inline: 0.75rem;
+  text-decoration: none;
+}
+
+/* ---------- the Ruler (lib/layout.ts, themes/editorial.css): About's head, on the twelve columns ---------- */
+html:root[data-layout='ruler'][data-layout-page='notfound'] {
+  /* About's quieter grid line */
+  --ed-grid-line: color-mix(in oklab, var(--rr-ink) 7%, transparent);
+}
+html:root[data-layout='ruler'] .nf {
+  max-width: var(--ed-max);
+  padding-inline: var(--ed-margin);
+}
+/* the words keep the grid's lines out from under them, as About's head does */
+html:root[data-layout='ruler'] .nf-head {
+  max-width: none;
+  padding-bottom: 1rem;
+  background: var(--rr-room);
+}
+html:root[data-layout='ruler'] .nf-kicker {
+  font-family: var(--ed-head-face);
+  font-size: var(--ed-head-size);
+  letter-spacing: var(--ed-head-tracking);
+}
+html:root[data-layout='ruler'] .nf-title {
+  margin-top: 1rem;
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-1);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
+}
+html:root[data-layout='ruler'] .nf-lede {
+  margin-top: 1.5rem;
+  max-width: none;
+  color: var(--rr-ink);
+  font-size: var(--ed-display-5);
+  line-height: 1.25;
+}
+@media (min-width: 56rem) {
+  html:root[data-layout='ruler'] .nf-head {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--ed-gutter);
+  }
+  html:root[data-layout='ruler'] .nf-head > * {
+    grid-column: 5 / span 6;
+  }
+  html:root[data-layout='ruler'] .nf-head > .nf-kicker {
+    grid-column: 1 / span 3;
+  }
+  html:root[data-layout='ruler'] .nf-head > .nf-title {
+    grid-column: 1 / -1;
+  }
+  html:root[data-layout='ruler'] .nf-lede {
+    margin-top: 2rem;
+  }
+  html:root[data-layout='ruler'] .nf-ways {
+    margin-top: 2rem;
+  }
+}
+
+/* Windows contrast themes: the main action keeps an edge in the classic look too (the room's own rule draws it there) */
+@media (forced-colors: active) {
+  html:not([data-look='reading-room']) .nf-write {
+    border: 1px solid ButtonText;
+  }
+}
