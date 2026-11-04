@@ -1,6 +1,6 @@
 // The whole video as a pure function of the frame number: draw(ctx, frame) paints that frame and nothing else.
 // Remotion renders frames in parallel and out of order, so nothing here keeps state between frames except caches.
-import { drawCaption, drawCounter, drawFlip, type FlipOpts } from './flip';
+import { drawCaption, drawCounter, drawFlip, styleOf, type FlipOpts } from './flip';
 import { handList, type Look } from './hands';
 import { clamp, easeInOutQuint, easeOutQuint, RR, text } from './ink';
 import { drawLetter, letterCam, letterModel, type LetterState } from './letter';
@@ -53,7 +53,7 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
     for (let i = 0; i < span.swaps.length; i++) if (frame >= span.swaps[i]) step = i;
     // the rest dims when the first letter lights up (a short ease, about a third of a beat), then stays dim
     const first = L.spans[0];
-    const dim = span === first ? easeOutQuint((frame - first.from) / Math.max(1, P.fpb / 3)) : 1;
+    const dim = span.ch === '*' ? 0 : span === first ? easeOutQuint((frame - first.from) / Math.max(1, P.fpb / 3)) : 1;
     return { inkT: Infinity, ch: span.ch, step, dim };
   }
 
@@ -83,9 +83,7 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
       if (id === 'title' || id === 'flip' || id === 'land') drawFlip(ctx, P, hands, frame, o);
       else if (id === 'zoom') {
         const Z = P.zoom;
-        // the red dot swells once on the still beat, then eases back over half a beat
-        const pulse = frame >= Z.out && frame < Z.hold ? 1 - easeOutQuint((frame - Z.out) / Math.max(1, P.fpb / 2)) : 0;
-        const onScreen = drawCanvas(ctx, S, cardSize(frame), landing, pulse);
+        const onScreen = drawCanvas(ctx, S, cardSize(frame), landing, styleOf(landing, o));
         if (o.labels) {
           // the counter keeps going: the hands of the flip, then every writer on the canvas (it never counts down:
           // on the way back in it stays at the most it reached), and it fades over the dive's second beat
@@ -105,7 +103,7 @@ export function makeScene(s: Settings, o: SceneOpts): Scene {
         // the hand-off: the card we dived into dissolves over half a beat as the same hand starts the letter
         // (s.handoffFrames = 0: a cut on the bar)
         const a = s.handoffFrames > 0 ? 1 - easeOutQuint((frame - P.letter.from) / s.handoffFrames) : 0;
-        if (a > 0) { ctx.globalAlpha = a; ctx.drawImage(landedFrame(landing, S), 0, 0, S, S); ctx.globalAlpha = 1; }
+        if (a > 0) { ctx.globalAlpha = a; ctx.drawImage(landedFrame(landing, S, styleOf(landing, o)), 0, 0, S, S); ctx.globalAlpha = 1; }
       } else if (id === 'end') drawEnd(ctx, P, frame, sec('end').from, { writeOn: true });
       if (o.grid) beatGrid(ctx, frame);
       ctx.restore();

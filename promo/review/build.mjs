@@ -50,12 +50,12 @@ function chart(P) {
 
 const img = (f, alt) => `<img src="img/f${String(f).padStart(4, '0')}.jpg" alt="${alt}" loading="lazy" width="540" height="540">`;
 const board = [
-  { s: S.title, frames: [0], title: 'Title', what: 'The phrase, already written, in the site’s wordmark hand, with “Hand no. 0001” on its plate above it: the wordmark’s hand is the first hand. Every frame is one centred stack (plate, phrase, writer’s name), with the same gap above the phrase as below it. Held two beats, a lead-in: the music’s first downbeat falls on the first cut.', term: 'Hold (lead-in)' },
-  { s: S.flip, frames: [32, 100, 200, 270], title: 'The flip', what: 'One hand a beat for four beats, then a smooth speed-up over ten beats: the rate doubles about every two and a half beats, from one hand a beat to one a frame, each cut snapped to the beat’s eighths, sixteenths and so on. Two beats at a new hand every frame, then a dead stop on the bar. “Hand no.” is set exactly as wide as the number, and the digits sit at a fixed spacing so the plate never shifts; the writer’s name shows while the cuts are slow enough to read.', term: 'Hard cuts, speed ramp (exponential), dead stop' },
-  { s: S.land, frames: [300], title: 'Stop', what: `Hand no. ${String(P30.handsShown).padStart(4, '0')}: lunar-willow-41, Québec school print, fountain pen. Lands on a bar’s first beat and holds two beats.`, term: 'Hold' },
-  { s: S.zoom, frames: [330, 380, 420, 436, 460, 475], title: 'All the hands, and back', what: `The camera pulls back from that card into a canvas of ${canvasWriters.toLocaleString('en')} writers, each “If this / finds you” in another hand, on that writer’s own paper in their own ink, gathering speed for seven beats until the cards are small coloured squares. The card we stopped on keeps a light red plate under it: a red frame while it is big, a red dot among the cards, which swells once on the still beat. Then the camera dives back into the dot over two beats and lands on the bar with the card filling the frame. The counter climbs to 5000 (the flip’s ${P30.handsShown} hands and the canvas’s ${canvasWriters.toLocaleString('en')} writers) and fades during the dive.`, term: 'Pull back and return (Powers of Ten), tracking plate' },
-  { s: S.letter, frames: [481, 520, 560, 600, 650], title: 'The letter', what: 'A cut on the bar to one sentence of Maybelle’s 1908 letter to Santa Claus (undelivered), written out live by the same hand: “Papa did not have time to write, so I wrote for him.” Four lines, framed close, so each letter is big enough to watch on a phone. Then the rest dims and every e turns archival red on a light red highlight; on each half beat every e takes another form (no two neighbours show the same one at once). Six beats of e, then two of a.', term: 'Cut, write-on, rubrication with a highlight, hard swaps' },
-  { s: S.end, frames: [700, 760], title: 'End card', what: 'The title writes itself again in the wordmark hand, exactly where the video began, so the loop back to the first frame is seamless (X loops videos under a minute). It uses the same three places as every frame: “Open source” and “Thousands of handwritten fonts” where the writer’s name sits, and the address on the plate where the counter sits. They arrive half a beat apart, each pressed in like a stamp, then everything holds still.', term: 'Write-on, staggered stamp reveal, hold' },
+  { s: S.title, frames: [0], title: 'Title', what: 'The phrase, already written, in the site’s wordmark hand, with “Hand no. 0001” on its plate above it: the wordmark’s hand is the first hand. Every frame is one centred stack (plate, phrase, writer’s name). Held two beats, a lead-in: the music’s first downbeat falls on the first cut.', term: 'Hold (lead-in)' },
+  { s: S.flip, frames: [60, 140, 180, 250], title: 'The flip', what: 'Each hand on its own paper in its own ink (white, cream, legal yellow, airmail blue; black, blue, sepia, pencil, red), as on the canvas, to show how far apart the hands are. One hand a beat for four beats, then a smooth speed-up over ten beats to one a frame, two beats at full speed, then a dead stop on the bar. The one-ink version is a switch (a second file came with this draft).', term: 'Hard cuts, speed ramp (exponential), dead stop' },
+  { s: S.land, frames: [300], title: 'Stop', what: `Hand no. ${String(P30.handsShown).padStart(4, '0')}: lunar-willow-41, Québec school print, fountain pen, on its own laid cotton paper. Lands on a bar’s first beat and holds two beats.`, term: 'Hold' },
+  { s: S.zoom, frames: [330, 380, 420, 440, 470], title: 'All the hands, and back', what: `The camera pulls back from that card into a canvas of ${canvasWriters.toLocaleString('en')} writers, each “If this / finds you” on that writer’s own paper in their own ink, gathering speed for seven beats until the cards are small coloured squares; one still beat; then it dives back into the same card over two beats and lands on the bar with it filling the frame. No red frame round the card any more. The counter climbs to 5000 and fades during the dive.`, term: 'Pull back and return (Powers of Ten)' },
+  { s: S.letter, frames: [481, 520, 600, 700, 760, 785], title: 'The letter', what: 'A cut on the bar to one sentence of Maybelle’s 1908 letter to Santa Claus, written out live by the same hand: “Papa did not have time to write, so I wrote for him.” Then the rest dims and every e turns archival red on a light red highlight, and on each half beat every e takes another form (the school’s forms of e, each in six of the hand’s own takes; no two neighbours alike) for eight beats; then the a’s for four. Then, for the last four beats, nothing is marked and every letter in the sentence changes on each half beat: what makes a hand feel handwritten.', term: 'Rubrication with a highlight, hard swaps, then every letter at once' },
+  { s: S.end, frames: [820, 880], title: 'End card', what: 'The title writes itself again in the wordmark hand, exactly where the video began, and holds. Nothing else.', term: 'Write-on, hold' },
 ];
 
 const rows = board.map((r) => `
@@ -70,7 +70,7 @@ const beatTable = P30.sections.map((s) => `<tr><td>${s.label}</td><td>${bars(s)}
 
 const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Launch video, draft 4</title>
+<title>Launch video, draft 5</title>
 <style>
 @font-face { font-family: 'Junicode'; font-style: normal; font-weight: 400 600; font-stretch: 100% 112%; src: url(data:font/woff2;base64,${font('junicode-latin-roman.woff2')}) format('woff2'); }
 @font-face { font-family: 'Junicode'; font-style: italic; font-weight: 400 600; font-stretch: 100% 112%; src: url(data:font/woff2;base64,${font('junicode-latin-italic.woff2')}) format('woff2'); }
@@ -126,9 +126,9 @@ a { color: var(--red); }
 <body><main>
 <header class="lede">
   <p class="caps">If This Finds You · launch video</p>
-  <h1>Launch video, draft 4</h1>
+  <h1>Launch video, draft 5</h1>
   <p>A square video for X and Instagram, drawn frame by frame by the site’s own engine: every hand in it is generated, and Maybelle’s letter is written out by the same code the site uses. No music yet; the cuts sit on a 112.5 BPM grid so any track at that tempo drops in.</p>
-  <p><b>Changed since draft 3:</b> the letter shows one sentence, framed close, so the changing e’s read on a phone; the pull back stops while the cards are still small coloured squares, and the red dot is bigger and swells once on the still beat; a cut on the bar into the letter instead of the dissolve; the title is a two-beat lead-in and the r’s are gone (26.7 s); the counter ends on 5000.</p>
+  <p><b>Changed since draft 4:</b> twice as long on the changing letters (e for eight beats, a for four, then every letter at once for four); the flip in colour, each hand on its own paper in its own ink; no red frame on the card through the canvas; the end card is the title alone. 29.9 s.</p>
   <p class="specs"><span><b>${P30.seconds.toFixed(1)}</b> seconds</span><span><b>1080 × 1080</b></span><span><b>112.5</b> BPM, a two-beat lead-in and <b>12</b> bars</span><span><b>${P30.handsShown}</b> hands in the flip, <b>${canvasWriters.toLocaleString('en')}</b> on the canvas</span></p>
 </header>
 
@@ -180,12 +180,12 @@ a { color: var(--red); }
 <section class="card">
   <h2>Decisions for you</h2>
   <ol class="q">
-    <li><b>Music.</b> Which track? Anything near 112.5 BPM fits as it is; another tempo works too. Its first downbeat goes on the first cut, 1.07 s in. Tell me the BPM and where that downbeat falls in the track.</li>
-    <li><b>The dive.</b> Back into the same card we stopped on. The other way is a different card, “one writer picked from thousands”, with the letter in that card’s hand.</li>
-    <li><b>The first frame.</b> “Hand no. 0001” over the title, without a writer’s name. Add the wordmark hand’s name too?</li>
-    <li><b>Colours on the canvas.</b> Each writer’s own paper and ink, or all one ink like the flip?</li>
-    <li><b>Frame rate.</b> X’s help pages cap uploads at 40 fps, so the X version is 30 fps. Also a 60 fps version for Instagram? (The counter ends on 5000 in both.)</li>
-    <li><b>Flashing.</b> The fastest two beats change the ink 30 times a second. The paper stays still and the heaviest and faintest pens are out of the flip. Before posting, run the final file through a free flash checker such as PEAT.</li>
+    <li><b>Colour or one ink in the flip.</b> This draft is in colour; the one-ink version came with it to compare.</li>
+    <li><b>Music.</b> Which track? Anything near 112.5 BPM fits as it is. Its first downbeat goes on the first cut, 1.07 s in.</li>
+    <li><b>Length.</b> 29.9 s with the longer letter section. If it should be shorter, the canvas (ten beats) is where I’d take time from.</li>
+    <li><b>The loop.</b> The video ends on the title alone and starts on the title with “Hand no. 0001”, so the plate appears as it loops. Drop the plate from the first frame for an exact loop?</li>
+    <li><b>Frame rate.</b> X’s help pages cap uploads at 40 fps, so the X version is 30 fps. Also a 60 fps version for Instagram?</li>
+    <li><b>Flashing.</b> The fastest two beats change the hand 30 times a second, and in colour the paper too (all light papers, so small changes in brightness). Before posting, run the final file through a free flash checker such as PEAT.</li>
   </ol>
 </section>
 

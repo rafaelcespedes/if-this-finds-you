@@ -10,8 +10,26 @@ import { WORDS } from './timeline';
 export interface FlipOpts {
   /** every hand in its own ink (true) or all in one ink (false) */
   ownInk: boolean;
+  /** every hand on its own paper's colour (true) or all on one paper (false) */
+  ownPaper: boolean;
   /** the "Hand No." counter and the writer's name */
   labels: boolean;
+}
+
+export interface FrameStyle {
+  /** the tool's paper id for the ground */
+  paper: string;
+  /** the ink to write in; undefined = the hand's own */
+  ink: string | undefined;
+}
+/** The paper and ink a hand's frame is drawn in. The wordmark's hand (no look of its own) is always on the laid
+ *  ground in the flip's ink, so the title and the end card never change. */
+export function styleOf(look: Look, o: { ownInk: boolean; ownPaper: boolean }): FrameStyle {
+  const l = look as Look & { paper?: string };
+  return {
+    paper: o.ownPaper && l.paper ? String(l.paper) : 'laid',
+    ink: o.ownInk && l.ink ? undefined : FLIP_INK,
+  };
 }
 
 const NUM = 52; // the number's size at 1080 px
@@ -102,11 +120,11 @@ export function looksAt(P: Plan, hands: Look[], frame: number): { looks: Look[];
 
 export function drawFlip(ctx: CanvasRenderingContext2D, P: Plan, hands: Look[], frame: number, o: FlipOpts) {
   const S = P.s.size;
-  ctx.drawImage(ground(S), 0, 0, S, S);
   const g = geometry(S);
   const { looks, count, gap } = looksAt(P, hands, frame);
-  const ink = o.ownInk ? undefined : FLIP_INK;
-  for (const gr of phrase(looks, g, ink)) drawInk(ctx, gr.p, gr.items, { emPx: gr.emPx, width: S, height: S, ink: ink ?? undefined });
+  const st = styleOf(looks[0], o);
+  ctx.drawImage(ground(S, st.paper), 0, 0, S, S);
+  for (const gr of phrase(looks, g, st.ink)) drawInk(ctx, gr.p, gr.items, { emPx: gr.emPx, width: S, height: S, ink: st.ink });
   if (!o.labels) return;
   // the counter, from the first frame: the wordmark's hand is hand no. 0001
   drawCounter(ctx, S, count);

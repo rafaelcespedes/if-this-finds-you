@@ -86,19 +86,33 @@ export function letterModel(id: string, landing: Look): LetterModel {
     forms(ch) {
       let f = formCache.get(ch);
       if (f) return f;
-      // the forms this hand's school has for the letter (its allographs), each in a few of the hand's own takes
       const st = p.style;
-      const names = [...new Set((engine.variants(st, ch) as any[]).map((v) => engine.allographOf(v)))];
-      if (!getStyle(st)) names.length = 0;
-      const salts = ['a', 'b', 'c'];
+      const namesOf = (c: string) => (getStyle(st) ? [...new Set((engine.variants(st, c) as any[]).map((v) => engine.allographOf(v)))] : []);
       f = [];
-      for (const salt of salts) {
-        for (const name of names.length ? names : [null]) {
-          const pp = name ? { ...p, pins: { ...(p.pins || {}), [ch]: name } } : p;
-          const pg = engine.layout(pp, text, { ...setup.opts, salt: `form-${salt}` });
+      if (ch === '*') {
+        // every letter at once: each take re-draws every letter in the hand's own way, and every letter the school
+        // has more than one form for takes another of them
+        const chars = [...new Set(text.replace(/[^\p{L}]/gu, ''))];
+        const forms = Object.fromEntries(chars.map((c) => [c, namesOf(c)]).filter(([, n]) => (n as string[]).length > 1));
+        for (let v = 0; v < 12; v++) {
+          const pins: Record<string, string> = {};
+          for (const [c, n] of Object.entries(forms) as [string, string[]][]) pins[c] = n[(v + c.charCodeAt(0)) % n.length];
+          const pg = engine.layout({ ...p, pins: { ...(p.pins || {}), ...pins } }, text, { ...setup.opts, salt: `all-${v}` });
           const by = new Map<number, any>();
-          for (const it of pg.items as any[]) if (it.kind === 'glyph' && it.ch === ch) by.set(it.charIndex, it);
+          for (const it of pg.items as any[]) if (it.kind === 'glyph') by.set(it.charIndex, it);
           f.push(by);
+        }
+      } else {
+        // the forms this hand's school has for the letter (its allographs), each in several of the hand's own takes
+        const names = namesOf(ch);
+        for (const salt of ['a', 'b', 'c', 'd', 'e', 'f']) {
+          for (const name of names.length ? names : [null]) {
+            const pp = name ? { ...p, pins: { ...(p.pins || {}), [ch]: name } } : p;
+            const pg = engine.layout(pp, text, { ...setup.opts, salt: `form-${salt}` });
+            const by = new Map<number, any>();
+            for (const it of pg.items as any[]) if (it.kind === 'glyph' && it.ch === ch) by.set(it.charIndex, it);
+            f.push(by);
+          }
         }
       }
       formCache.set(ch, f);
@@ -169,6 +183,18 @@ export function drawLetter(ctx: CanvasRenderingContext2D, m: LetterModel, c: Cam
   const all = m.items.map((it, i) => moved(it, dx, dy, { __i: i }));
   if (!st.ch) {
     drawInk(ctx, m.p, all, { emPx, width: S, height: S, ink, reveal });
+    return;
+  }
+  if (st.ch === '*') {
+    // every letter changes at once, in the hand's own ink, nothing marked
+    const forms = st.step > 0 ? m.forms('*') : [];
+    const take = forms.length ? forms[(st.step - 1) % forms.length] : null;
+    const drawn = take ? all.map((it) => {
+      const base = m.items[it.__i];
+      const f = take.get(base.charIndex);
+      return f ? moved(placeLike(base, f), dx, dy, { __i: it.__i }) : it;
+    }) : all;
+    drawInk(ctx, m.p, drawn, { emPx, width: S, height: S, ink });
     return;
   }
   const rest = all.filter((it) => it.ch !== st.ch);

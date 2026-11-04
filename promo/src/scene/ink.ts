@@ -77,7 +77,8 @@ export function ground(size: number, id = 'laid', mm = 210): HTMLCanvasElement {
   let c = papers.get(key);
   if (!c) {
     const base = getPaper(id) as any;
-    const spec = { ...base, w: mm, h: mm, laid: undefined, edges: undefined, rules: undefined, margin: undefined, holes: undefined, marks: undefined, print: undefined, folds: undefined, guide: undefined, border: undefined, ticks: undefined, lines: undefined };
+    // only the paper itself: its tint and finish (grain, mottle), nothing printed, cut or folded into it
+    const spec = { id: base.id, family: base.family, name: base.name, variant: base.variant, hint: '', w: mm, h: mm, tint: base.tint, finish: base.finish, text: base.text, pitch: 0, xh: base.xh };
     c = document.createElement('canvas');
     c.width = c.height = size;
     const ctx = c.getContext('2d')!;

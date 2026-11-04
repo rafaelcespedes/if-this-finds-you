@@ -12,8 +12,10 @@ export const promoSchema = z.object({
   offset: z.number().min(0).max(4).step(0.01),
   /** the click track (a placeholder to judge the timing; off for the music) */
   click: z.boolean(),
-  /** each hand in its own ink, or all in one ink */
+  /** in the flip, each hand in its own ink, or all in one ink */
   ownInk: z.boolean(),
+  /** in the flip, each hand on its own paper's colour, or all on one paper */
+  ownPaper: z.boolean(),
   /** the "Hand No." counter and the writer's name under the slow cuts */
   labels: z.boolean(),
   /** beats of the every-frame stretch where each word takes its own hand */
@@ -34,7 +36,8 @@ export const defaultProps: PromoProps = {
   bpm: DEFAULTS.bpm,
   offset: 0,
   click: true,
-  ownInk: false,
+  ownInk: true,
+  ownPaper: true,
   labels: true,
   perWordBeats: DEFAULTS.perWordBeats,
   landingSeed: 'lunar-willow-41',
@@ -52,10 +55,10 @@ export const Promo: React.FC<PromoProps & { fpsNow: number }> = (props) => {
   const frame = useCurrentFrame();
   const ref = useRef<HTMLCanvasElement>(null);
   const scene = useMemo(() => makeScene(settingsOf(props, props.fpsNow), {
-    ownInk: props.ownInk, labels: props.labels,
+    ownInk: props.ownInk, ownPaper: props.ownPaper, labels: props.labels,
     landing: { seed: props.landingSeed, style: props.landingStyle },
     letterId: props.letterId, grid: props.grid,
-  }), [props.bpm, props.offset, props.fpsNow, props.ownInk, props.labels, props.perWordBeats, props.landingSeed, props.landingStyle, props.letterId, props.grid, props.size]);
+  }), [props.bpm, props.offset, props.fpsNow, props.ownInk, props.ownPaper, props.labels, props.perWordBeats, props.landingSeed, props.landingStyle, props.letterId, props.grid, props.size]);
   // each frame: fonts, then any slow work it needs (the table's sheets), then draw; the render waits for all of it
   useLayoutEffect(() => {
     const handle = delayRender(`frame ${frame}`, { timeoutInMilliseconds: 240000 });

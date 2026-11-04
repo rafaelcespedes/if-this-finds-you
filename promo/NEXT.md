@@ -22,6 +22,16 @@
   beats); every section from the first cut starts on a bar. 26.7 s.
 - The canvas takes 5000 − the flip's hands (4908 at 30 fps, 4841 at 60), so the counter ends on 5000 in both.
 
+## Done in draft 5 (3 Nov)
+- Twice the time on the changing letters: e 8 beats, a 4, then 4 beats where every letter in the sentence changes on
+  each half beat, unmarked ('*' in `letters`; 12 takes, every multi-form letter pinned to another form each take).
+  The e's and a's now cycle six of the hand's own takes of each school form.
+- The flip in colour: each hand on its own paper's tint in its own ink (`ownPaper`, `ownInk`, both on); the
+  wordmark's hand stays on the laid ground in the flip's ink. The one-ink version is a switch.
+- Backgrounds are only the paper's tint and finish (no postcard lines, rules or stamp boxes).
+- No red tracking plate on the card through the canvas.
+- The end card is the title alone (6 beats; with the 2-beat lead-in the loop is whole bars). 29.9 s.
+
 ## Open
-- Dive into the same card (now) or a different one ("one writer picked from thousands")?
-- The wordmark hand's writer name on frame 1?
+- Colour or one ink in the flip?
+- The plate on frame 1 makes the loop not exact (the end card has none): drop it from frame 1?

@@ -8,7 +8,8 @@
 // of about 70 × 70 cards (every writer once, in one of four orders) are composed from the atlas and laid like tiles.
 import { continueRender, delayRender, staticFile } from 'remotion';
 import { getPaper } from '@/lib/papers';
-import { drawInk, FLIP_INK, ground, RR } from './ink';
+import { drawInk, ground, RR } from './ink';
+import type { FrameStyle } from './flip';
 import type { Look } from './hands';
 import { geometry, phrase } from './phrase';
 import canvasHands from '../data/canvas-hands.json';
@@ -121,7 +122,7 @@ function block(order: number) {
 // ---------- live cards (big on screen) ----------
 
 const live = new Map<string, HTMLCanvasElement>();
-function liveCard(h: number, landing: Look, landedFrame: () => HTMLCanvasElement, px: number) {
+function liveCard(h: number, landedFrame: () => HTMLCanvasElement, px: number) {
   if (h < 0) return landedFrame();
   const b = 2 ** Math.ceil(Math.log2(px));
   const key = `${h}@${b}`;
@@ -137,49 +138,28 @@ function liveCard(h: number, landing: Look, landedFrame: () => HTMLCanvasElement
 }
 
 let landed: { key: string; c: HTMLCanvasElement } | null = null;
-/** The landing frame itself (paper and the landed hand, as the flip drew it), kept to be shrunk. */
-function landedCard(look: Look, S: number) {
-  const key = `${look.seed}~${look.style}@${S}`;
+/** The landing frame itself (its paper and the landed hand, as the flip drew it), kept to be shrunk. */
+function landedCard(look: Look, S: number, st: FrameStyle) {
+  const key = `${look.seed}~${look.style}@${S}|${st.paper}|${st.ink}`;
   if (landed?.key !== key) {
     const c = document.createElement('canvas');
     c.width = c.height = S;
     const ctx = c.getContext('2d')!;
-    ctx.drawImage(ground(S), 0, 0, S, S);
-    for (const gr of phrase([look], geometry(S), FLIP_INK)) drawInk(ctx, gr.p, gr.items, { emPx: gr.emPx, width: S, height: S, ink: FLIP_INK });
+    ctx.drawImage(ground(S, st.paper), 0, 0, S, S);
+    for (const gr of phrase([look], geometry(S), st.ink)) drawInk(ctx, gr.p, gr.items, { emPx: gr.emPx, width: S, height: S, ink: st.ink });
     landed = { key, c };
   }
   return landed.c;
 }
 
 /** The card we stopped on, as it was when the flip stopped (paper and ink, no labels), S px. */
-export const landedFrame = (look: Look, S: number) => landedCard(look, S);
-
-/**
- * The card we stopped on keeps a light red plate under it, so the eye can follow it all the way out: a red frame
- * round the card while it's big, a red dot once it's a speck (the plate never gets smaller than ~14 px at 1080).
- */
-function trackPlate(ctx: CanvasRenderingContext2D, S: number, s: number, pulse = 0) {
-  const k = S / 1080;
-  // never smaller than ~22 px across at 1080, and it swells once (pulse 1 → 0) on the still beat
-  const pad = Math.max(0.03 * s, 8 * k) * (1 + 1.2 * pulse);
-  const c0 = S / 2 - s / 2;
-  // stronger as the card gets small, so the dot still finds the eye among the cards
-  const small = Math.min(1, Math.max(0, Math.log2(S / s) / Math.log2(150)));
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(c0 - pad, c0 - pad, s + 2 * pad, s + 2 * pad, Math.max(3 * k, 0.04 * s));
-  ctx.fillStyle = RR.card;
-  ctx.fill();
-  ctx.fillStyle = `rgba(155, 59, 42, ${0.13 + 0.67 * small})`;
-  ctx.fill();
-  ctx.restore();
-}
+export const landedFrame = (look: Look, S: number, st: FrameStyle) => landedCard(look, S, st);
 
 /**
  * Paint the canvas with the landing card filling `s` px (s = S: the landing frame exactly), centred.
  * Returns how many different writers are on screen (for the counter).
  */
-export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, landing: Look, pulse = 0): number {
+export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, landing: Look, st: FrameStyle): number {
   ctx.fillStyle = RR.room;
   ctx.fillRect(0, 0, S, S);
   const pitch = s * (1 + GAP);
@@ -193,13 +173,12 @@ export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, 
       if (x > S || y > S || x + s < 0 || y + s < 0) continue;
       const h = handAt(i, j);
       if (h >= 0) {
-        if (s > ATLAS.tile) ctx.drawImage(liveCard(h, landing, () => landedCard(landing, S), s), x, y, s, s);
+        if (s > ATLAS.tile) ctx.drawImage(liveCard(h, () => landedCard(landing, S, st), s), x, y, s, s);
         else drawFromAtlas(ctx, h, x, y, s);
       }
       if (seen.size < C.n + 1) seen.add(h);
     }
-    trackPlate(ctx, S, s, pulse);
-    ctx.drawImage(landedCard(landing, S), c0, c0, s, s);
+    ctx.drawImage(landedCard(landing, S, st), c0, c0, s, s);
     return seen.size;
   }
   // specks: blocks of BW × BH cards, each block one of the four orders
@@ -212,8 +191,7 @@ export function drawCanvas(ctx: CanvasRenderingContext2D, S: number, s: number, 
     const c = block(orderOf(bi, bj));
     if (c) ctx.drawImage(c, x, y, bw, bh);
   }
-  // the landing card stays itself, on its plate
-  trackPlate(ctx, S, s, pulse);
-  ctx.drawImage(landedCard(landing, S), c0, c0, s, s);
+  // the landing card stays itself
+  ctx.drawImage(landedCard(landing, S, st), c0, c0, s, s);
   return Math.min(C.n + 1, cards);
 }

@@ -11,6 +11,7 @@
 // speed-up stays on the music.
 
 export interface LetterBeat {
+  /** the letter that's marked and changing form, or '*' for every letter at once (unmarked) */
   ch: string;
   /** beats this letter is highlighted and changing form */
   beats: number;
@@ -69,11 +70,12 @@ export const DEFAULTS: Settings = {
   zoomInBeats: 2,
   letterWriteBeats: 4,
   letters: [
-    { ch: 'e', beats: 6 },
-    { ch: 'a', beats: 2 },
+    { ch: 'e', beats: 8 },
+    { ch: 'a', beats: 4 },
+    { ch: '*', beats: 4 },
   ],
   swapEvery: 0.5,
-  endBeats: 8,
+  endBeats: 6,
   handoffFrames: 0,
 };
 
