@@ -263,9 +263,10 @@ export function ShareMenu({ busy, onShare, onDownload, onExportFont, onExportVid
           data-chip={size === 'chip' ? '' : undefined}
           className={cn(
             'size-11',
-            // the phone header's small chip: drawn 32 px, still a 44 px target
-            // (a lighter fill, a hairline and a soft shadow, so it reads as a button on the warm desk)
-            size === 'chip' && "relative size-[32px] rounded-[9px] border border-[color-mix(in_oklab,var(--foreground)_14%,transparent)] bg-panel shadow-[0_1px_2px_rgba(60,45,20,0.10)] text-foreground/85 after:absolute after:-inset-1.5 after:content-[''] pointer-coarse:size-[32px] [&_svg]:size-[16px]",
+            // the phone header's small chip, the same quiet icon button as the Menu beside it (SiteHeader's
+            // headerChip): only its icon at rest, a wash under the pointer and while pressed or open, 4 px corners;
+            // drawn 32 px, still a 44 px target
+            size === 'chip' && "relative size-[32px] rounded-[4px] border border-transparent bg-transparent shadow-none text-foreground/85 after:absolute after:-inset-1.5 after:content-[''] hover-device:hover:bg-[var(--st-hover,var(--accent))] active:bg-[var(--st-press,var(--accent))] data-[state=open]:bg-[var(--st-press,var(--accent))] pointer-coarse:size-[32px] [&_svg]:size-[16px]",
           )}
         >
           {working ? <Loader2 className="animate-spin" aria-hidden /> : <Share aria-hidden />}
