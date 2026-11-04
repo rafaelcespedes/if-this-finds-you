@@ -35,9 +35,9 @@ class LetterFailed extends Component<{ id: string; back: string; children: React
             title="This letter couldn’t open"
             action={
               offline ? (
-                <Button variant="outline" asChild><a href={this.props.back}>See all letters</a></Button>
+                <Button variant="secondary" asChild><a href={this.props.back}>See all letters</a></Button>
               ) : (
-                <Button variant="outline" onClick={() => location.reload()}>Try again</Button>
+                <Button variant="secondary" onClick={() => location.reload()}>Try again</Button>
               )
             }
           >
