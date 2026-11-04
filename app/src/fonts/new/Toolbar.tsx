@@ -1,15 +1,19 @@
 // Wide screens: the page's one control surface, a single ruled line that stays under the header as you scroll, the
 // way a foundry's tester bar does. Left, what to show (Joined or print, the filters in the shared Sheet); middle, what
 // every hand writes (the line's menu and your own words) and how big; right, list or grid, your saved hands and New
-// set. Every control is a shared one. Phones and tablets keep the floating dock (../Dock.tsx) instead.
+// set. Phones and tablets keep the floating dock (../Dock.tsx) instead.
+// Every control is the desk's own, as in its writing materials drawer (Rafael: "make sure the controls in the fonts
+// page match what we're doing in the main page"): the sliding segmented face, the room's edged secondary buttons, the
+// ink-bar SliderRow, the shared field and menu, and New set as the desk's main action (Bring another letter: a light
+// red tint, its words in the action role, its key at the end). The row carries the drawer's control surface class
+// (rr-slip-inner), so the room gives it the same control type role and sizes.
 import { useState } from 'react';
-import { Heart, LayoutGrid, LayoutList, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { Heart, LayoutGrid, LayoutList, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
-import { Slider } from '@/components/ui/slider';
+import { SliderRow } from '@/components/ui/slider-row';
 import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 import { FilterGroups, withFamily } from '../Dock';
 import { filterCount, NO_FILTERS, type Catalogue, type Filters } from '../filters';
 import type { Line } from '../route';
@@ -45,7 +49,7 @@ export function Toolbar(p: Props) {
   const n = filterCount({ ...p.filters, family: [] }) + (p.neatOnly ? 0 : 1);
   const saved = p.view === 'saved';
   return (
-    <div role="toolbar" aria-label="Choose the fonts and what they write" className="fx-toolbar">
+    <div role="toolbar" aria-label="Choose the fonts and what they write" className="fx-toolbar rr-slip-inner">
       <div className="fx-tool-group">
         <Segmented slide type="single" aria-label="Joined or print" value={saved ? '' : p.filters.family[0] ?? 'any'}
           onValueChange={(v) => v && p.onFilters(withFamily(p.filters, v, p.catalogue))} className="fx-family">
@@ -55,7 +59,7 @@ export function Toolbar(p: Props) {
         </Segmented>
         <Sheet title="Filters" open={open} onOpenChange={setOpen} side="bottom" align="start" className="w-[440px] overflow-hidden p-0"
           trigger={
-            <Button variant="outline" className={cn('fx-tool-btn', open && 'is-open')} aria-label={n ? `Filters, ${n} on` : 'Filters'} disabled={saved}>
+            <Button variant="secondary" className="data-[state=open]:bg-[var(--st-press)]" aria-label={n ? `Filters, ${n} on` : 'Filters'} disabled={saved}>
               <SlidersHorizontal aria-hidden /> Filters
               {n > 0 && <span aria-hidden className="fx-count">{n}</span>}
             </Button>
@@ -75,18 +79,15 @@ export function Toolbar(p: Props) {
       </div>
 
       <div className="fx-tool-group fx-tester">
-        <LinePicker line={p.line} onLine={p.onLine} />
+        <LinePicker line={p.line} onLine={p.onLine} variant="secondary" />
         <WordsField text={p.text} onText={p.onText} placeholder={p.placeholder} escapeClears />
-        <label className="fx-size">
-          <span className="fx-size-label">Size</span>
-          <Slider aria-label="Size of the writing" aria-valuetext={`${p.size} pixels`} value={[p.size]} min={SIZE.min} max={SIZE.max} step={SIZE.step}
-            onValueChange={(v) => p.onSize(v[0])} className="fx-size-slider" />
-          <span className="fx-size-value tabular" aria-hidden>{p.size}</span>
-        </label>
+        <div className="fx-size">
+          <SliderRow label="Size" value={p.size} min={SIZE.min} max={SIZE.max} step={SIZE.step} describe={(v) => `${v} px`} onChange={p.onSize} />
+        </div>
       </div>
 
       <div className="fx-tool-group fx-tool-end">
-        <Segmented type="single" aria-label="List or grid" value={p.layout} onValueChange={(v) => v && p.onLayout(v as Layout)} className="fx-layout">
+        <Segmented slide type="single" aria-label="List or grid" value={p.layout} onValueChange={(v) => v && p.onLayout(v as Layout)} className="fx-layout">
           <Tooltip><TooltipTrigger asChild><SegmentedItem value="list" aria-label="List"><LayoutList aria-hidden className="size-4" /></SegmentedItem></TooltipTrigger><TooltipContent>List</TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><SegmentedItem value="grid" aria-label="Grid"><LayoutGrid aria-hidden className="size-4" /></SegmentedItem></TooltipTrigger><TooltipContent>Grid</TooltipContent></Tooltip>
         </Segmented>
@@ -97,9 +98,11 @@ export function Toolbar(p: Props) {
             <span className="tabular">{saved ? 'Back to the set' : p.savedCount}</span>
           </Button>
         )}
-        <Button onClick={p.onNewSet} className="fx-newset" title="New set (Space)">
-          <RefreshCw aria-hidden /> New set
-        </Button>
+        {/* the desk's main action, Bring another letter: words alone, its key at the end */}
+        <button type="button" onClick={p.onNewSet} className="fx-newset" aria-keyshortcuts="Space">
+          <span className="fx-newset-label">New set</span>
+          <kbd className="rr-key" aria-hidden>Space</kbd>
+        </button>
       </div>
     </div>
   );
