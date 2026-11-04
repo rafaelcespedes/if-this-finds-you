@@ -419,8 +419,9 @@ textarea {
 /* ---------- the site header (components/SiteHeader.tsx), pinned at the top ----------
    How much of the top it covers while pinned: its top padding and its 32 / 36 px line (a look adds its rule through
    --site-head-rule), and with its 12 px fade. Anything else that sticks to the top sits under it
-   (top: var(--site-head-clear)), and jumps to an anchor stop below it. A screen under 32rem tall doesn't pin the
-   header, so there it covers nothing. */
+   (top: var(--site-head-clear)), and jumps to an anchor stop below it. Pages start below it with these too
+   (padding-top: var(--site-head-clear)), so they hold on every screen, a short one included (it's pinned there as
+   well), and in print (where it sits at the top of the first page). */
 :root {
   /* the header's side margins, the one source for every page: 16 px on a phone, 32 px from 40rem, 40 px from 64rem
      (the Reading Room's --rr-margin, the editorial grid's --ed-margin); the safe-area inset wins when it's wider */
@@ -436,9 +437,6 @@ textarea {
 }
 @media (min-width: 64rem) {
   :root { --site-margin: 2.5rem; --site-head-box: calc(1.25rem + 2.25rem + var(--site-head-rule)); }
-}
-@media (max-height: 31.99rem), print {
-  :root { --site-head: 0px; --site-head-clear: 0px; }
 }
 html { scroll-padding-top: var(--site-head-clear); }
 /* a page's chip in the header (Share on the desk) gets the same 48 px target as the Menu chip beside it */
