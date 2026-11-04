@@ -1,6 +1,7 @@
 # The Fonts page, redesigned: how leading foundries present type, and what that means for live handwriting
 
-_Research and reasoning for the new Fonts page (`/fonts?fonts=new`), 3 November 2026._
+_Research and reasoning for the new Fonts page, 3 November 2026. It became the page at `/fonts` the same day (Rafael:
+"I like this new fonts page a lot better"); `?fonts=old` shows the earlier one for now._
 
 Rafael on the current page: "looks like an old fonts page from like 2010s. I can't tell where to look. The hierarchy
 is completely messed up. I don't like the way that we're using this font right now… the fonts page is probably the
@@ -22,7 +23,7 @@ holds the screenshots.
 
 ---
 
-## What the current page gets wrong
+## What the earlier page got wrong
 
 - **Nothing leads.** The first screen is a hand-drawn "Fonts" heading, a sentence, a rail of about 40 boxed chips and,
   far right, rows whose writing hasn't arrived yet. The specimens are 60 px. No single thing is clearly first.
@@ -127,6 +128,42 @@ style, size and reset.
 
 ---
 
+## What makes the balance work: old and new on one page
+
+Rafael, on the new page: "we're clearly having a lot of different older techniques and styles, but something about
+this modern grid just kind of balances everything really well. That's the type of balance that we should try to
+maintain everywhere." These are the moves behind it, with the values, so other pages can use the same ones.
+
+1. **A modern frame around old material.** The structure is a current foundry's: full width (no 1440 cap) inside the
+   header's own margins (16 / 32 / 40 px at phone / tablet / desktop), a sticky tester line, a register whose columns
+   never move (name 15rem | writing | actions), a grid of equal cards (min 24rem, 2.5rem gaps). What fills it is
+   archival: a real letter's opening, its credit, a writer's name in the book face. Keep the frame strict so the old
+   material can be as old as it likes.
+2. **Three sizes of voice, far apart.** The handwriting is 64–150 px, the book face 18–44 px, the sans 13–15 px. Nothing
+   sits between the tiers, so the eye always knows what's first. The specimen is at least five times the interface
+   text, as on every foundry site we studied. Old faces look intended, not dusty, when everything around them is
+   small, crisp and calm.
+3. **Each face has one job.** The book face (today Junicode, `--rr-book`) is only for what belongs to the archive: the
+   page title, writers' names, the intro, the letter's credit (italic). The sans (today Source Sans 3, `--rr-ui`) is
+   for everything you operate or scan: controls, labels, the few words about a hand, buttons, counts. Sentence case, no
+   small capitals in the interface, no face named outside the tokens. The two never share a line.
+4. **Soft rules, no boxes.** Rows are divided by hairlines at 12–16% ink (`--rr-rule`, `--rr-hair`; the hand-drawn
+   rules sit on them unchanged), never by cards or fills. Only things that float over the page get an edge or a shadow
+   (popovers, the dock, sheets). The room's grey is the one ground; the paper is the letters'.
+5. **One colour, one job.** Archival red (`--rr-red`) is for the main action and nothing else: the one filled button
+   (Download font), the red words of New set, a count. Everything else is ink and two greys (`--rr-muted`,
+   `--rr-faint`). At night the same roles are re-valued (a lighter red, paper-white ink), never re-assigned.
+6. **Rhythm from repetition.** Every row has the same height, padding and column edges, so the list reads like a
+   ledger: about 128 px a row for 64 px writing, 1.125rem above and below, the actions in the same place on every line.
+   Air goes where the hierarchy changes (above the first hand, before the tester line), not between equals.
+7. **Modern behaviour, kept quiet; old motion, given room.** Hover is the faint ink wash (`--st-hover`), press the
+   deeper one with a slight scale (`--st-press`, `--st-scale-row` 0.985), 150 ms or less, never an underline. The one
+   expressive motion is the old medium's own: the pen writing each line in, left to right, at a writing pace (0.9 s a
+   row, 1.6 s for the first hand). Reduced motion keeps the writing and drops the movement.
+8. **Plain words for the controls, the archive's voice for the content.** Controls say what happens ("Download font",
+   "Write with it", "New set", "Clear filters") with 44 px targets and the hand cursor. The content keeps its own
+   register: "From a letter by Elizabeth Watson, 1823."
+
 ## How the new page applies them
 
 - **Order:** header → "Fonts" and its one sentence (Junicode 44 px; light/dark at the right) → the hero hand (88–150 px
@@ -141,12 +178,14 @@ style, size and reset.
 - **Width:** no 1440 cap; the writing may run to 1920 with the header's own margins (16 / 32 / 40 px).
 - **Shared pieces only:** SiteHeader, Sheet and ActionSheet, Segmented, Slider, Button, Tooltip, the dock, the filter
   groups and the record. Colours, rules and states come from the `--rr-*` and `--st-*` tokens.
-- **Speed:** the page is a separate file loaded only behind `?fonts=new`, so the page that's live today loads what it
-  did. The store and workers are unchanged; the hero is the first font built.
+- **Speed:** the page is in the main file (1.4 KB more script and 3.5 KB more styles, compressed, than the earlier
+  page); the earlier page loads as its own file only for `?fonts=old`. The store and workers are unchanged; the hero
+  is the first font built.
 
 ## Switches
 
-- `?fonts=new` shows the redesign (kept for the tab); `?fonts=old` returns to today's page.
+- The redesign is the page at `/fonts`; `?fonts=old` shows the earlier page for now (kept for the tab), `?fonts=new`
+  comes back.
 - `?theme=dark`, or the page's sun/moon control, gives the night room.
 - `?grid=1` shows cards instead of the list.
 

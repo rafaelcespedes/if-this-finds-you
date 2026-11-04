@@ -18,12 +18,13 @@
         var html = document.documentElement;
         if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
         var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
-        // the redesigned page and its night colours (fonts/new/switch.ts reads the same), so a dark page never flashes light
+        // the page (the redesign unless ?fonts=old) and its night colours (fonts/new/switch.ts reads the same), so a
+        // dark page never flashes light
         try {
           var q = new URLSearchParams(location.search);
           var page = q.get('fonts') || sessionStorage.getItem('seedhand:fonts');
           var theme = q.get('theme') || sessionStorage.getItem('seedhand:fonts-theme');
-          if (page === 'new') {
+          if (page !== 'old') {
             html.setAttribute('data-fonts', 'new');
             if (theme === 'dark') { html.setAttribute('data-theme', 'dark'); desk = '#14171c'; }
           }

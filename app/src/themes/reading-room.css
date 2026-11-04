@@ -131,6 +131,11 @@ html[data-look='reading-room'] {
   /* small capitals are the book face's own (Junicode keeps smcp and c2sc), switched on by the roles that use them */
   --rr-caps: var(--rr-book);
   --rr-ui: 'RR Source Sans', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  /* the serif's own vertical habits, set with the face (a pairing swaps them with it): where its capitals sit against
+     its line box's centre. An icon beside its words lifts by --rr-book-cap-lift (icons/lucide.tsx); the desk's Bring
+     another label drops by --rr-book-cap-drop onto its button's centre. Junicode's, measured in real windows */
+  --rr-book-cap-lift: -0.123em;
+  --rr-book-cap-drop: 0.105em;
 
   /* the type roles (TYPE, at the end of this file): each a face, a size, a weight, a leading and a tracking. A font
      pairing swaps one face variable per role; the sizes are the scale 13 · 15 · 17 · 22 px, in rem */
@@ -290,7 +295,7 @@ html[data-look='reading-room'] .rr-icon svg {
    Junicode's small capitals the centres already agree. Each icon reads what its words are set in and marks itself
    [data-beside-text='book' | 'ui'] (icons/lucide.tsx). */
 html[data-look='reading-room'] .rr-pen-icon[data-beside-text='book'] {
-  translate: 0 -0.123em;
+  translate: 0 var(--rr-book-cap-lift);
 }
 
 /* ---------- the site header (components/SiteHeader.tsx) as a running head (layouts, house rule 2): the wordmark,
@@ -597,7 +602,7 @@ html[data-look='reading-room'] .rr-desk .rr-bring .rr-bring-label {
   /* Junicode's capitals sit above its line box's centre (see "icons beside words"): down onto the button's centre, so
      the space above the capitals matches the space below the baseline. Measured in the ink in real Chrome and
      WebKit windows at 1×, 2× and 4× (headless Chromium sets text a little higher and misleads) */
-  translate: 0 0.105em;
+  translate: 0 var(--rr-book-cap-drop);
 }
 html[data-look='reading-room'] .rr-desk .rr-bring .rr-key {
   background: color-mix(in oklab, var(--rr-red) 10%, transparent);

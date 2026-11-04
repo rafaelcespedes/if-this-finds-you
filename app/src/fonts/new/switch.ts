@@ -1,7 +1,8 @@
-// The redesigned Fonts page sits behind a switch until Rafael picks: ?fonts=new shows it, ?fonts=old the page that's
-// live today. ?theme=dark (or the page's own Light/Dark control) gives it the night reading room. Both are read once
-// at load and kept for the tab, like ?look=, so moving between pages keeps them; neither goes into share links.
-// fonts.html runs the same reading before anything paints, so a dark page never flashes light.
+// The Fonts page is the redesign (Rafael, 3 Nov: "I like this new fonts page a lot better"); ?fonts=old shows the
+// earlier page for now, ?fonts=new comes back to this one. ?theme=dark (or the page's sun/moon) gives it the night
+// reading room; light is the default. Both are read once at load and kept for the tab, like ?look=, so moving between
+// pages keeps them; neither goes into share links. fonts.html runs the same reading before anything paints, so a dark
+// page never flashes light.
 
 export type FontsTheme = 'light' | 'dark';
 
@@ -15,8 +16,8 @@ function read(param: string, key: string, values: string[], fallback: string) {
   return fallback;
 }
 
-/** The new page, or the one that's live today. */
-export const FONTS_NEW = typeof location !== 'undefined' && read('fonts', 'seedhand:fonts', ['new', 'old'], 'old') === 'new';
+/** The redesigned page (the default), or the earlier one (?fonts=old). */
+export const FONTS_NEW = typeof location === 'undefined' || read('fonts', 'seedhand:fonts', ['new', 'old'], 'new') === 'new';
 
 /** The room's colours by day or by night (the new page only). */
 export const initialTheme = (): FontsTheme => (read('theme', 'seedhand:fonts-theme', ['light', 'dark'], 'light') as FontsTheme);

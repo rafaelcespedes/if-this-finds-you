@@ -1,5 +1,5 @@
-/* The redesigned Fonts page (FontsNew.tsx), behind ?fonts=new: everything here is scoped to html[data-fonts='new'],
-   so the page that's live today is untouched. On top of index.css and the Reading Room's tokens (reading-room.css):
+/* The Fonts page (FontsNew.tsx), the default since 3 Nov 2026: everything here is scoped to html[data-fonts='new'],
+   so the earlier page (?fonts=old) is untouched. On top of index.css and the Reading Room's tokens (reading-room.css):
    colours, rules and states come from --rr-* and --st-*; this file only sets the page's type scale, its layout and
    its night colours (?theme=dark). docs/research/fonts-redesign.md has the reasoning.
 

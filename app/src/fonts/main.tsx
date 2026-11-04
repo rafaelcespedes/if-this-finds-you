@@ -1,6 +1,6 @@
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import { FontsApp } from './FontsApp';
+import { FontsNew } from './new/FontsNew';
 import { applyFontsSwitch, FONTS_NEW } from './new/switch';
 import { fonts } from './store';
 import { applyLook } from '../lib/look';
@@ -17,18 +17,18 @@ import './fonts.css';
 
 // the look being compared (?look=…), kept for the tab like the tool and the library
 applyLook();
-// the redesigned page and its night colours, while Rafael compares (?fonts=new, ?theme=dark)
+// the page (the redesign; ?fonts=old the earlier one for now) and its night colours (?theme=dark)
 applyFontsSwitch();
 
 // the workers load the engine while the page lays out its rows
 fonts.warm();
 
-// the redesign comes in its own small file (with its stylesheet), so the page that's live today loads exactly what
-// it did; fetched at once, alongside the workers' warm-up
-const FontsNew = lazy(() => import('./new/FontsNew').then((m) => ({ default: m.FontsNew })));
+// the earlier page comes in its own small file, only when it's asked for (?fonts=old), so the page everyone gets
+// loads nothing it doesn't show
+const FontsApp = lazy(() => import('./FontsApp').then((m) => ({ default: m.FontsApp })));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {FONTS_NEW ? <Suspense fallback={null}><FontsNew /></Suspense> : <FontsApp />}
+    {FONTS_NEW ? <FontsNew /> : <Suspense fallback={null}><FontsApp /></Suspense>}
   </StrictMode>,
 );

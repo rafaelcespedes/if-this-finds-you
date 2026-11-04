@@ -1,5 +1,5 @@
-// The Fonts page, redesigned (behind ?fonts=new until Rafael picks; docs/research/fonts-redesign.md has the research
-// and the reasoning). One thing to look at first: a single hand writing a real letter's opening at poster size, with
+// The Fonts page, redesigned and the default since 3 Nov 2026 (?fonts=old shows the earlier page for now;
+// docs/research/fonts-redesign.md has the research, the reasoning and what makes its balance work). One thing to look at first: a single hand writing a real letter's opening at poster size, with
 // its name and its one filled action, Download font. Then one control surface (a ruled tester line that stays under
 // the header on wide screens, the floating dock on phones and tablets), and the rest of the set as a calm list (or a
 // grid), the writing always the biggest thing in each row. Junicode for the archive's words, Source Sans 3 for every
@@ -18,7 +18,7 @@ import { APP_NAME } from '@/lib/brand';
 import { cn } from '@/lib/utils';
 import { SiteHeader } from '@/archive/SiteHeader';
 import { FontsDock } from '../Dock';
-import { ABOUT, INTRO, useDevicePixelRatio, useRootRem, useRoute, useSettled, useViewportWidth } from '../FontsApp';
+import { ABOUT, INTRO, useDevicePixelRatio, useRootRem, useRoute, useSettled, useViewportWidth } from '../page';
 import { useSaved } from '../favourites';
 import { describeFilters, filterCount, filterKey, NO_FILTERS, type Filters } from '../filters';
 import type { FontEntry, LiveSpec } from '../protocol';

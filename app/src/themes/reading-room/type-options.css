@@ -4,8 +4,12 @@
    now. The six run from closest to today (1, only the serif changes) to furthest (6, no serif at all).
 
    Each pairing only overrides the room's type tokens (reading-room.css: --rr-book, --rr-ui and the --rr-<role>-face,
-   -size, -weight, -stretch, -tracking variables). Every pairing also shares two things: lining figures (the old-style
-   figures are part of the "old"), and Bring another's optical nudge, which was measured for Junicode.
+   -size, -weight, -stretch, -tracking variables) and lining figures (the old-style figures are part of the "old").
+   Each also sets the two vertical habits of its faces (reading-room.css, 4f8a583): --rr-book-cap-lift, how far an icon
+   beside the book face's words moves to centre on its capitals (Junicode: -0.123em), and --rr-book-cap-drop, how far
+   Bring another's label drops onto its button's centre (Junicode: 0.105em). Both are estimated from each face's
+   vertical metrics (lift = -offset × size-adjust; drop ≈ 0.85 × that of the action face), not measured in real
+   windows yet.
 
    Every face is declared under its own name ('TT …'), so nothing downloads unless that pairing is chosen. Each is
    sized (size-adjust) so its x-height matches today's roles: the serif to Junicode at 115% (0.477 em), the sans to
@@ -30,6 +34,9 @@
      letter text and every control in Geist, the serif only for titles, catalogue numbers in Geist Mono.
    6 Mona Sans alone (GitHub, free, OFL). The wildcard: no serif. A grotesk after the industrial-era grotesques with
      a width axis; titles set wide, everything else at normal width. The handwriting is the only old voice.
+   7 Alegreya + IBM Plex Mono (free, OFL), after timecapsule.co.in (Rafael's reference, 4 Nov): a warm humanist book
+     serif for titles and reading against a digital mono for labels, numbers, dates and the actions; Source Sans 3
+     stays for the controls. The tension comes from the mono, not from the serif.
 */
 
 /* ---------- 1 Literata (opsz 7-72, wght 200-900) ---------- */
@@ -363,6 +370,80 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ---------- 7 Alegreya (wght 400-900) + IBM Plex Mono (400, 500; both Fontsource) ---------- */
+@font-face {
+  font-family: 'TT Alegreya';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Alegreya';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Alegreya';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-ext-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Alegreya';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400 900;
+  size-adjust: 105%;
+  src: url('@fontsource-variable/alegreya/files/alegreya-latin-wght-italic.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 88%;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  size-adjust: 88%;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'TT Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  size-adjust: 88%;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'TT Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  size-adjust: 88%;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* ---------- what every pairing shares ---------- */
 html[data-look='reading-room'][data-rrtype] {
   /* Junicode's titles were widened to 112%; the new faces keep their own width */
@@ -375,11 +456,6 @@ html[data-look='reading-room'][data-rrtype] {
 html[data-look='reading-room'][data-rrtype] body {
   font-feature-settings: 'lnum' 1, 'onum' 0;
 }
-/* Bring another's label sat 0.105 em low to centre Junicode's capitals; each pairing sets its own, about 0.85 × the
-   face's metric offset (the share the Junicode measurement came to) */
-html[data-look='reading-room'][data-rrtype] .rr-desk .rr-bring .rr-bring-label {
-  translate: 0 var(--tt-bring-nudge, 0em);
-}
 
 /* ---------- 1 Literata + Source Sans 3 ---------- */
 html[data-look='reading-room'][data-rrtype='1'] {
@@ -390,7 +466,8 @@ html[data-look='reading-room'][data-rrtype='1'] {
   --rr-number-face: var(--rr-ui);
   --rr-number-weight: 500;
   --rr-action-weight: 580;
-  --tt-bring-nudge: -0.07em;
+  --rr-book-cap-lift: 0.08em;
+  --rr-book-cap-drop: -0.07em;
 }
 
 /* ---------- 2 Newsreader + Schibsted Grotesk ---------- */
@@ -405,7 +482,8 @@ html[data-look='reading-room'][data-rrtype='2'] {
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 600;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: -0.006em;
+  --rr-book-cap-lift: -0.11em;
+  --rr-book-cap-drop: -0.006em;
 }
 
 /* ---------- 3 GT Alpina + GT America, numbers in GT America Mono ---------- */
@@ -416,12 +494,15 @@ html[data-look='reading-room'][data-rrtype='3'] {
   --rr-title-weight: 400;
   --rr-title-tracking: -0.015em;
   --rr-number-face: 'TT GT America Mono', 'TT GT America', ui-monospace, monospace;
+  /* big numerals in the editorial layouts (claude/editorial-layout) take the sans, not the mono */
+  --rr-figure-face: var(--rr-ui);
   --rr-number-size: 0.875rem;
   --rr-number-weight: 400;
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 500;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: -0.012em;
+  --rr-book-cap-lift: -0.013em;
+  --rr-book-cap-drop: -0.012em;
 }
 
 /* ---------- 4 ABC Arizona Mix + ABC Diatype ---------- */
@@ -436,7 +517,8 @@ html[data-look='reading-room'][data-rrtype='4'] {
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 500;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: 0.06em;
+  --rr-book-cap-lift: 0em;
+  --rr-book-cap-drop: 0.06em;
 }
 /* Diatype's capital I and lowercase l are the same shape; its ss08 gives the I serifs (Arizona has no ss08) */
 html[data-look='reading-room'][data-rrtype='4'] body {
@@ -454,12 +536,14 @@ html[data-look='reading-room'][data-rrtype='5'] {
   --rr-title-tracking: -0.01em;
   --rr-reading-leading: 1.55;
   --rr-number-face: 'TT Geist Mono', ui-monospace, monospace;
+  --rr-figure-face: var(--rr-ui);
   --rr-number-size: 0.875rem;
   --rr-number-weight: 400;
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 500;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: 0em;
+  --rr-book-cap-lift: 0em;
+  --rr-book-cap-drop: 0em;
 }
 /* About's big title takes the display serif too (its text follows the book face) */
 html[data-look='reading-room'][data-rrtype='5'] .about-title {
@@ -483,9 +567,29 @@ html[data-look='reading-room'][data-rrtype='6'] {
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 600;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: -0.016em;
+  --rr-book-cap-lift: 0.019em;
+  --rr-book-cap-drop: -0.016em;
 }
 html[data-look='reading-room'][data-rrtype='6'] .about-title {
   font-stretch: 118%;
   font-weight: 560;
+}
+
+/* ---------- 7 Alegreya + IBM Plex Mono for labels, numbers and actions; Source Sans 3 for the controls ---------- */
+html[data-look='reading-room'][data-rrtype='7'] {
+  --rr-book: 'TT Alegreya', Georgia, serif;
+  --rr-caps: 'TT Plex Mono', ui-monospace, monospace;
+  --rr-title-weight: 500;
+  --rr-title-tracking: -0.01em;
+  --rr-label-face: 'TT Plex Mono', ui-monospace, monospace;
+  --rr-label-weight: 400;
+  --rr-label-tracking: 0;
+  --rr-number-face: 'TT Plex Mono', ui-monospace, monospace;
+  --rr-number-size: 0.875rem;
+  --rr-number-weight: 500;
+  --rr-action-face: 'TT Plex Mono', ui-monospace, monospace;
+  --rr-action-weight: 500;
+  --rr-action-size: 0.9375rem;
+  --rr-book-cap-lift: 0.014em;
+  --rr-book-cap-drop: -0.02em;
 }
