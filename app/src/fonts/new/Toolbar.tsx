@@ -4,8 +4,8 @@
 // set. Phones and tablets keep the floating dock (../Dock.tsx) instead.
 // Every control is the desk's own, as in its writing materials drawer (Rafael: "make sure the controls in the fonts
 // page match what we're doing in the main page"): the sliding segmented face, the room's edged secondary buttons, the
-// ink-bar SliderRow, the shared field and menu, and New set as the desk's main action (Bring another letter: a light
-// red tint, its words in the action role, its key at the end). The row carries the drawer's control surface class
+// ink-bar SliderRow, the shared field and menu, and New set as the desk's main action (its own BringAnother button: a
+// light red tint, its words in the action role, its key at the end). The row carries the drawer's control surface class
 // (rr-slip-inner), so the room gives it the same control type role and sizes.
 import { useState } from 'react';
 import { Heart, LayoutGrid, LayoutList, SlidersHorizontal } from 'lucide-react';
@@ -14,6 +14,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { SliderRow } from '@/components/ui/slider-row';
 import { Segmented, SegmentedItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { BringAnother } from '@/themes/reading-room/BringAnother';
 import { FilterGroups, withFamily } from '../Dock';
 import { filterCount, NO_FILTERS, type Catalogue, type Filters } from '../filters';
 import type { Line } from '../route';
@@ -61,7 +62,7 @@ export function Toolbar(p: Props) {
           trigger={
             <Button variant="secondary" className="data-[state=open]:bg-[var(--st-press)]" aria-label={n ? `Filters, ${n} on` : 'Filters'} disabled={saved}>
               <SlidersHorizontal aria-hidden /> Filters
-              {n > 0 && <span aria-hidden className="fx-count">{n}</span>}
+              {n > 0 && <span aria-hidden className="dock-badge tabular">{n}</span>}
             </Button>
           }>
           {(close) => (
@@ -71,7 +72,7 @@ export function Toolbar(p: Props) {
               </div>
               <div className="filter-panel-foot flex shrink-0 items-center justify-between gap-2 px-3 py-2">
                 <Button variant="ghost" disabled={!n} onClick={() => p.onFilters({ ...NO_FILTERS, family: p.filters.family }, true)} className="fx-quiet">Clear filters</Button>
-                <Button onClick={close} className="fx-done">Done</Button>
+                <Button size="sm" onClick={close} className="dock-primary">Done</Button>
               </div>
             </div>
           )}
@@ -98,11 +99,8 @@ export function Toolbar(p: Props) {
             <span className="tabular">{saved ? 'Back to the set' : p.savedCount}</span>
           </Button>
         )}
-        {/* the desk's main action, Bring another letter: words alone, its key at the end */}
-        <button type="button" onClick={p.onNewSet} className="fx-newset" aria-keyshortcuts="Space">
-          <span className="fx-newset-label">New set</span>
-          <kbd className="rr-key" aria-hidden>Space</kbd>
-        </button>
+        {/* the desk's main action, its Bring another letter button: words alone, its key at the end */}
+        <BringAnother onClick={p.onNewSet} label="New set" shortcut="Space" className="rr-bring-button" />
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
 // The first thing on the page: one hand, the set's first, writing the line at poster size, the way a foundry's
 // typeface page opens on its face. Under it, a soft rule and the caption: who wrote it (it opens the hand's record),
-// a few plain words about the hand, where the line comes from, and its actions: Download the font (the one filled
-// button on the page), Write with it, Save.
+// a few plain words about the hand, where the line comes from, and its actions: Download the font (the desk's main
+// action, its Bring another letter button), Write with it, Save.
 import { memo, useEffect, useRef, useState } from 'react';
-import { Download, Heart, LoaderCircle, PenLine } from 'lucide-react';
+import { Heart, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { withLogo } from '@/lib/brand';
 import { cn } from '@/lib/utils';
+import { BringAnother } from '@/themes/reading-room/BringAnother';
 import { ARCHIVE_URL, toolHref } from '@/archive/SiteHeader';
 import { penWords } from '../filters';
 import type { FontEntry, LiveSpec, Opening } from '../protocol';
@@ -74,10 +75,8 @@ export const Hero = memo(function Hero({ entry, text, em, lines, opening, saved,
         </div>
         <div className={cn('fx-hero-act', !entry && 'invisible')}>
         <div className="fx-hero-actions">
-          <Button onClick={download} disabled={building || !entry} className="fx-download">
-            {building ? <LoaderCircle aria-hidden className="animate-spin" /> : <Download aria-hidden />}
-            {building ? 'Making the font…' : 'Download font'}
-          </Button>
+          {/* the desk's main action, its Bring another letter button: words alone, a light red tint */}
+          <BringAnother onClick={download} disabled={building || !entry} label={building ? 'Making the font…' : 'Download font'} shortcut="" className="rr-bring-button fx-download" />
           <Button asChild variant="ghost" className="fx-quiet fx-write-with">
             <a href={tool} aria-label="Write with it"><PenLine aria-hidden /> <span className="fx-words">Write with it</span></a>
           </Button>

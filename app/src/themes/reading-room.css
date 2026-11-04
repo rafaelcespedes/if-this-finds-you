@@ -605,11 +605,15 @@ html[data-look='reading-room'] .rr-desk .rr-ledger-record:first-child {
    edge, the controls' height and corners, its words in the action role like the phone's peek (the book face, 17 px,
    in red), its key at the end. It sits under the two-line title, so it never moves on Bring another or on reload.
    (Phones keep it in words, in the sheet's peek.) */
-/* (its class thrice: the action role's rule, at the end, carries a long :is() and the weight that comes with it) */
+/* (its class thrice: the action role's rule, at the end, carries a long :is() and the weight that comes with it)
+   The same button anywhere else: BringAnother with the class rr-bring-button (the Fonts page's Download font and New
+   set), at its words' width; the desk's selectors keep their weight, so nothing on the desk changes. */
 html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring {
+  margin: 0 0 1.25rem;
+}
+html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring, .rr-bring.rr-bring-button).rr-bring.rr-bring {
   align-items: center;
   min-height: 2.25rem;
-  margin: 0 0 1.25rem;
   padding: 0 0.375rem 0 0.75rem;
   border: 0;
   border-radius: var(--radius);
@@ -617,34 +621,49 @@ html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring {
   color: var(--rr-red);
   transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
 }
-html[data-look='reading-room'] .rr-desk .rr-bring .rr-bring-label {
+html[data-look='reading-room'] :is(.rr-desk .rr-bring, .rr-bring-button) .rr-bring-label {
   text-decoration: none;
   /* onto the button's centre (--rr-book-cap-drop, set with the faces), so the space above the capitals matches the
      space below the baseline. Measured in the ink in real Chrome and WebKit windows at 1×, 2× and 4× (headless
      Chromium sets text a little higher and misleads): 13.5 px and 13.5 px at 2× in both */
   translate: 0 var(--rr-book-cap-drop);
 }
-html[data-look='reading-room'] .rr-desk .rr-bring .rr-key {
+html[data-look='reading-room'] :is(.rr-desk .rr-bring, .rr-bring-button) .rr-key {
   background: color-mix(in oklab, var(--rr-red) 10%, transparent);
   color: color-mix(in oklab, var(--rr-red) 75%, var(--rr-ink));
 }
 /* (hover and press at the resting rule's weight, or it outranks them) pressed, the deeper red: red on its press wash
    would be 4.3:1 */
 @media (hover: hover) and (pointer: fine) {
-  html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring:hover {
+  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring, .rr-bring.rr-bring-button).rr-bring.rr-bring:hover {
     background: var(--st-accent-hover);
     color: var(--rr-red-deep);
   }
 }
-html[data-look='reading-room'] .rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring:active {
+html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring, .rr-bring.rr-bring-button).rr-bring.rr-bring:active {
   background: var(--st-accent-press);
   color: var(--rr-red-deep);
   scale: var(--st-scale-row);
   transition-duration: var(--dur-press);
 }
-html[data-look='reading-room'] .rr-desk .rr-bring:focus-visible {
+html[data-look='reading-room'] :is(.rr-desk .rr-bring, .rr-bring-button):focus-visible {
   outline: 2px solid var(--rr-red);
   outline-offset: 2px;
+}
+/* away from the desk: as wide as its words, a finger's height on touch screens (as every button is), and quiet while
+   it can't be pressed */
+html[data-look='reading-room'] .rr-bring.rr-bring-button {
+  width: auto;
+  flex: none;
+}
+@media (pointer: coarse) {
+  html[data-look='reading-room'] .rr-bring.rr-bring-button.rr-bring.rr-bring.rr-bring {
+    min-height: 2.75rem;
+  }
+}
+html[data-look='reading-room'] .rr-bring:disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 html[data-look='reading-room'] .rr-ledger-head {
   display: flex;
@@ -1545,10 +1564,10 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded]:active > spa
     border: 1px solid CanvasText;
   }
   /* (at the desk button's own weight, which a plainer selector loses to) */
-  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring, .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary.bg-secondary) {
+  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring, .rr-bring.rr-bring-button.rr-bring.rr-bring, .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary.bg-secondary) {
     border: 1px solid ButtonText;
   }
-  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring, .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary.bg-secondary):hover {
+  html[data-look='reading-room'] :is(.rr-desk .rr-ledger .rr-bring.rr-bring.rr-bring, .rr-bring.rr-bring-button.rr-bring.rr-bring, .rr-card-actions.rr-card-actions [data-slot='button'].bg-secondary.bg-secondary):hover {
     outline: 1px solid Highlight;
   }
 }

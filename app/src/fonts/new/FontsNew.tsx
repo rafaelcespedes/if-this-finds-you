@@ -205,7 +205,7 @@ export function FontsNew() {
               <p>{set.note ?? 'No hands match these filters.'} <button type="button" className="fx-quiet-link" onClick={() => setFilters({ ...NO_FILTERS, family: route.filters.family }, true)}>Clear the filters</button></p>
             ) : set.done && !set.exhausted ? (
               <div className="fx-end-actions">
-                <Button variant="outline" onClick={() => fonts.more()} className="fx-more">Show {SET_COUNT} more</Button>
+                <Button variant="secondary" onClick={() => fonts.more()}>Show {SET_COUNT} more</Button>
                 <span className="fx-end-or">or</span>
                 <Button variant="ghost" onClick={newSet} className="fx-quiet">Draw a new set</Button>
               </div>
