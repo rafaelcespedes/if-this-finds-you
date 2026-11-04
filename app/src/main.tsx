@@ -9,7 +9,7 @@ import './themes/reading-room/type-switch'; // temporary: the ?type pairing comp
 import './themes/postmarked.css';
 // the controls' feel (ink-bar sliders, sliding faces, locks, pressed cards), after the looks it builds on
 import './components/ui/controls.css';
-// the editorial layout being explored (?layout=editorial-1/2): a frame on top of the Reading Room (its sheet comes with lib/layout.ts)
+// the site's layout, the Ruler (lib/layout.ts; ?layout=off goes back): a frame on top of the Reading Room
 import { applyLayout } from './lib/layout';
 
 // the look being compared (?look=…); today's design when none

@@ -1,26 +1,29 @@
-// ---------- the layout: an editorial frame around the Reading Room (an exploration, Nov 2026) ----------
-//   ?layout=editorial-1 (e1, 1, broadsheet): Broadsheet, a newspaper's frame on a visible grid (crisp ruled columns,
-//     a thick-and-thin rule under the running head, big figures).
-//   ?layout=editorial-2 (e2, 2, register): Register, the new Fonts page's balance on every page (Rafael, 4 Nov: "that's
-//     the type of balance that we should try to maintain everywhere"): a strict modern frame, three sizes of voice far
-//     apart, the handwriting the only big thing, soft rules, one red action.
-//   ?layout=editorial-3 (e3, 3, ruler): Ruler, a measured asymmetric page (numbered columns, a baseline ruler, a rail).
-// ?layout=off (0, none, reading-room) goes back. Read once at load and kept for the tab, like the look (lib/look.ts);
-// never put into share links.
+// ---------- the layout: the Ruler, an editorial frame around the Reading Room (Rafael picked it, 4 Nov 2026) ----------
+// The Reading Room's pages sit on a measured, asymmetric grid: one rule divides a margin rail (the record, the groups'
+// names, the sections' numbers) from the page, the running head's rule carries a tick at each column, a few light
+// ticks measure the baseline down the left margin, and titles are big. The grid is meant to be felt more than shown
+// (Rafael: "I don't think we need to emphasize the ruler so much"); his detailed edits are to come.
+//   no ?layout          the Ruler (the default)
+//   ?layout=off         the Reading Room without it (0, none, reading-room), an escape hatch for now
+//   ?layout=register    Register, the earlier study of the Fonts page's balance (editorial-2), kept to compare
+// Read once at load and kept for the tab, like the look (lib/look.ts); never put into share links.
 // Only the frame changes: html[data-layout] is read by themes/editorial.css, which styles the shared components through
 // the Reading Room's own classes, data hooks and --rr-* type tokens. Without the Reading Room it does nothing.
-// The Fonts page doesn't call applyLayout (it has its own redesign).
+// The page shells (index.html, letters.html, about.html, fonts.html) set the same attribute before anything paints,
+// so the desk's first frame already has the rail on the left.
 // The stylesheet comes with this module, which every page already loads (lib/look.ts → lib/rules.ts), so it rides in
 // the pages' shared stylesheet rather than adding a request of its own. Its selectors carry one more type than the
 // Reading Room's (html:root[data-layout] against html[data-look]), so their order in that sheet doesn't matter.
 import '@/themes/editorial.css';
 
-export type LayoutId = 'none' | 'editorial-1' | 'editorial-2' | 'editorial-3';
+export type LayoutId = 'none' | 'ruler' | 'register';
+export const DEFAULT_LAYOUT: LayoutId = 'ruler';
 const ALIASES: Record<string, LayoutId> = {
-  'editorial-1': 'editorial-1', e1: 'editorial-1', '1': 'editorial-1', broadsheet: 'editorial-1',
-  'editorial-2': 'editorial-2', e2: 'editorial-2', '2': 'editorial-2', register: 'editorial-2',
-  'editorial-3': 'editorial-3', e3: 'editorial-3', '3': 'editorial-3', ruler: 'editorial-3',
-  off: 'none', none: 'none', '0': 'none', 'reading-room': 'none', default: 'none',
+  ruler: 'ruler', 'editorial-3': 'ruler', e3: 'ruler', '3': 'ruler', default: DEFAULT_LAYOUT,
+  // the retired Broadsheet's addresses land on the default
+  'editorial-1': DEFAULT_LAYOUT, e1: DEFAULT_LAYOUT, '1': DEFAULT_LAYOUT, broadsheet: DEFAULT_LAYOUT,
+  register: 'register', 'editorial-2': 'register', e2: 'register', '2': 'register',
+  off: 'none', none: 'none', '0': 'none', 'reading-room': 'none',
 };
 const KEY = 'seedhand:layout';
 
@@ -29,28 +32,28 @@ function readLayout(): LayoutId {
     const asked = new URLSearchParams(location.search).get('layout');
     const id = asked ? ALIASES[asked.toLowerCase()] : undefined;
     if (id) {
-      if (id === 'none') sessionStorage.removeItem(KEY);
+      if (id === DEFAULT_LAYOUT) sessionStorage.removeItem(KEY);
       else sessionStorage.setItem(KEY, id);
       return id;
     }
     const kept = sessionStorage.getItem(KEY);
-    if (kept === 'editorial-1' || kept === 'editorial-2' || kept === 'editorial-3') return kept;
-  } catch { /* storage off: no layout */ }
-  return 'none';
+    if (kept === 'none' || kept === 'register') return kept;
+  } catch { /* storage off: the default */ }
+  return DEFAULT_LAYOUT;
 }
-export const LAYOUT: LayoutId = typeof location !== 'undefined' ? readLayout() : 'none';
+export const LAYOUT: LayoutId = typeof location !== 'undefined' ? readLayout() : DEFAULT_LAYOUT;
 /** An editorial layout is on. */
 export const EDITORIAL = LAYOUT !== 'none';
-/** A layout whose rules are crisp and whose grid is drawn (Broadsheet, Ruler): lib/rules.ts keeps the hand-drawn rules
- * off there unless ?rules=hand. Register keeps them, as the Fonts page does. */
-export const CRISP = LAYOUT === 'editorial-1' || LAYOUT === 'editorial-3';
+/** The Ruler: its rules are crisp and its grid is drawn, so lib/rules.ts keeps the hand-drawn rules off unless
+ * ?rules=hand. Register keeps them, as the Fonts page does. */
+export const CRISP = LAYOUT === 'ruler';
 
-export type LayoutPage = 'desk' | 'letters' | 'about';
+export type LayoutPage = 'desk' | 'letters' | 'about' | 'fonts';
 
 /**
  * Call once in each page's entry, after applyLook(). Only on top of the Reading Room. Sets html[data-layout] and
- * html[data-layout-page], and (Broadsheet, Ruler) lays the grid itself over the page: twelve columns (four on a phone, eight on a tablet)
- * with their index numbers, behind everything and out of reach (themes/editorial.css draws it per layout).
+ * html[data-layout-page] (desk | letters | about | fonts), and for the Ruler lays its two quiet layers over the page:
+ * the baseline's ticks behind it, the column ticks in the running head's band (themes/editorial.css draws them).
  */
 export function applyLayout(page: LayoutPage) {
   if (typeof document === 'undefined') return;
@@ -63,18 +66,13 @@ export function applyLayout(page: LayoutPage) {
   html.dataset.layout = LAYOUT;
   html.dataset.layoutPage = page;
   if (!CRISP || document.querySelector('.ed-grid')) return;
-  // two layers with the same twelve columns: the lines behind the page, and the ruler in the running head's band
+  // two layers with the same twelve columns (four on a phone, eight on a tablet): the baseline behind the page, the
+  // column ticks in the running head's band
   for (const name of ['ed-grid', 'ed-ruler']) {
     const layer = document.createElement('div');
     layer.className = name;
     layer.setAttribute('aria-hidden', 'true');
-    for (let i = 1; i <= 12; i++) {
-      const col = document.createElement('i');
-      const n = document.createElement('b');
-      n.textContent = String(i).padStart(2, '0');
-      col.append(n);
-      layer.append(col);
-    }
+    for (let i = 0; i < 12; i++) layer.append(document.createElement('i'));
     document.body.prepend(layer);
   }
 }

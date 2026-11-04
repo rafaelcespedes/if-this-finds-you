@@ -17,6 +17,15 @@
         } catch (e) {}
         var html = document.documentElement;
         if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
+        // the layout (lib/layout.ts reads the same): the Ruler on the Reading Room unless ?layout=off (or this tab chose
+        // off, or Register), so the first frame already has its frame
+        var lay = 'ruler';
+        try {
+          var al = (new URLSearchParams(location.search).get('layout') || '').toLowerCase();
+          var kl = sessionStorage.getItem('seedhand:layout');
+          lay = /^(off|none|0|reading-room)$/.test(al) ? 'none' : /^(register|editorial-2|e2|2)$/.test(al) ? 'register' : al ? 'ruler' : kl === 'none' || kl === 'register' ? kl : 'ruler';
+        } catch (e) {}
+        if (id === 'reading-room' && lay !== 'none') html.setAttribute('data-layout', lay);
         var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
         document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
       })();
@@ -70,6 +79,15 @@
         .boot-panel div { width: 336px; height: 100%; border-radius: var(--boot-panel-r); background: var(--boot-panel); box-shadow: 0 1px 2px rgba(60, 45, 20, 0.07), 0 10px 30px -14px rgba(60, 45, 20, 0.22); }
         .boot-read .boot-panel { display: none; }
         html[data-look='reading-room'] .boot-panel div { box-shadow: none; }
+        /* the Ruler: the record's rail on the left (3 columns from 1280, 4 below; 40 px margin, 32 px gutters) */
+        html[data-layout='ruler'] .boot { flex-direction: row-reverse; }
+        html[data-layout='ruler'] .boot-main { padding-left: 0; }
+        html[data-layout='ruler'] .boot-logo { position: fixed; }
+        html[data-layout='ruler'] .boot-panel { padding: 0 32px 0 40px; }
+        html[data-layout='ruler'] .boot-panel div { width: calc((100vw - 432px) / 12 * 4 + 96px); }
+      }
+      @media (min-width: 1280px) {
+        html[data-layout='ruler'] .boot-panel div { width: calc((100vw - 432px) / 12 * 3 + 64px); }
       }
     </style>
   </head>

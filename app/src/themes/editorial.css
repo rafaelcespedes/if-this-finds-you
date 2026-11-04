@@ -1,24 +1,25 @@
 /* =====================================================================================================================
-   THE EDITORIAL LAYOUTS (an exploration, Nov 2026): a modern editorial frame around the Reading Room's archival
-   content. ?layout=editorial-1 or ?layout=editorial-2 (lib/layout.ts) sets html[data-layout] on top of
-   html[data-look='reading-room'], and html[data-layout-page] = desk | letters | about.
+   THE RULER: the site's layout (Rafael picked it, 4 Nov 2026), an editorial frame around the Reading Room's archival
+   content. lib/layout.ts sets html[data-layout='ruler'] on top of html[data-look='reading-room'] by default
+   (?layout=off goes back), and html[data-layout-page] = desk | letters | about | fonts.
    Only the frame changes: the grid, the rules, the type scale and the placement. The handwriting, the paper, the
    shared components (SiteHeader, Sheet, the controls, the --st-* states) and the Reading Room's tokens stay as they
-   are; this file never names a face, only the --rr-* roles, so any type pairing (?type=) drops in.
+   are; this file never names a face, only the --rr-* roles.
 
-   1  Broadsheet (editorial-1): a newspaper's frame. Every column ruled, full height; a thick-and-thin rule under
-      the running head; caps running heads and folios; big serif numerals as design (the catalogue number set like a
-      magazine's page number); the list a dense ruled index with column rules; text in two columns.
-   2  Register (editorial-2): the new Fonts page's balance carried to every page (at the end of this file).
-   3  Ruler (editorial-3): a measured, asymmetric page. A ruler under the running head numbers the twelve columns;
-      a tick rule measures the baseline down the left margin; one strong rule divides a margin rail (labels,
-      numbers, the record) from the page; huge titles hang off the grid; numbers in the sans, tabular.
+   A measured, asymmetric page: one rule divides a margin rail (the record, the groups' names, the sections' numbers)
+   from the page; the running head's rule carries a short tick at each column's start; a few light ticks measure the
+   baseline down the left margin; titles are big and hang across the grid; numbers in the sans, tabular.
+   First restraint pass (Rafael: "the ruler idea is kind of overdone… we don't need to emphasize the ruler so much"):
+   no column numbers, no full-height column lines, sparser and lighter ticks, rules only where they divide. The grid
+   is meant to be felt more than shown, nearer the Fonts page's balance; his detailed edits are to come.
 
-   The grid (both): 12 columns, 40 px margins, 32 px gutters from 64 rem (the Reading Room's own --rr-margin and
-   --rr-gutter); 8 columns, 32 px margins, 24 px gutters from 40 rem; 4 columns, 16 px margins and gutters on a
-   phone. The desk's grid runs the window's width; the library's and About's stop at 90 rem, centred.
-   Rules here are crisp on purpose (the hand-drawn rules stay off: lib/rules.ts), and the grid's lines are drawn by
-   one fixed layer behind the page (.ed-grid) and one in front of it, in the running head's band (.ed-ruler).
+   The grid: 12 columns, 40 px margins, 32 px gutters from 64 rem (the Reading Room's own --rr-margin and --rr-gutter);
+   8 columns, 32 px margins, 24 px gutters from 40 rem; 4 columns, 16 px margins and gutters on a phone. It runs the
+   window's width on every page (as the Fonts page does; no 1440 cap, up to 120 rem). Rules are crisp (the hand-drawn
+   ones stay off under the Ruler: lib/rules.ts). Its two quiet layers are built by lib/layout.ts: .ed-grid behind the
+   page (the baseline's ticks) and .ed-ruler in the running head's band (the column ticks).
+
+   At the end: REGISTER (?layout=register), the earlier study of the Fonts page's balance, kept to compare.
    ===================================================================================================================== */
 
 /* ---------- tokens ---------- */
@@ -27,42 +28,37 @@ html:root[data-layout] {
   --ed-cols: 4;
   --ed-margin: 1rem;
   --ed-gutter: 1rem;
-  --ed-max: 100vw;
+  --ed-max: 120rem;
   /* one column's width, for placing things on it: (the grid's width less its margins and gutters) / columns */
   --ed-w: min(100vw, var(--ed-max));
   --ed-col: calc((var(--ed-w) - 2 * var(--ed-margin) - (var(--ed-cols) - 1) * var(--ed-gutter)) / var(--ed-cols));
-  /* rules: crisp, in ink. A column line, a rule between rows, a structural rule, the heavy rule */
+  /* rules: crisp. A faint tick, a rule between rows, a rule that divides, ink */
   --ed-ink: var(--rr-ink);
-  --ed-line: color-mix(in oklab, var(--rr-ink) 9%, transparent);
-  --ed-rule: color-mix(in oklab, var(--rr-ink) 22%, transparent);
-  --ed-rule-strong: color-mix(in oklab, var(--rr-ink) 72%, transparent);
-  --ed-heavy: 2px;
+  --ed-line: color-mix(in oklab, var(--rr-ink) 12%, transparent);
+  --ed-rule: color-mix(in oklab, var(--rr-ink) 20%, transparent);
+  --ed-rule-strong: color-mix(in oklab, var(--rr-ink) 55%, transparent);
 
-  /* every --rr-display-* and --rr-figure-* below is read with this file's value as the fallback (--ed-…: var(--rr-…,
-     default)), so a type pairing that sets any of them wins, whatever order the sheets load in.
-     the display scale (proposed): above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96
-     · 128 px), fluid between a phone and 1440. Face, weight and stretch follow the title role, so a pairing that sets
-     --rr-title-face sets these too; a pairing can give display its own cut with --rr-display-face. */
+  /* the display scale: above the room's 13 · 15 · 17 · 22, a step of about √2 at 1440 (31 · 44 · 64 · 96 · 128 px),
+     fluid between a phone and 1440. Each is read with this file's value as the fallback (--ed-…: var(--rr-…,
+     default)), so the type tokens can set any of them. Face, weight and width follow the title role (never heavier
+     than its own weight); big figures follow the number role, lining and tabular */
   --ed-display-face: var(--rr-display-face, var(--rr-title-face));
-  /* never heavier than the title role's own weight (a pairing's 400 stays 400) */
-  --ed-display-weight: var(--rr-display-weight, min(var(--rr-title-weight, 480), 480));
+  --ed-display-weight: var(--rr-display-weight, min(var(--rr-title-weight, 440), 440));
   --ed-display-stretch: var(--rr-display-stretch, var(--rr-title-stretch, 100%));
-  --ed-display-leading: var(--rr-display-leading, 0.94);
-  --ed-display-tracking: var(--rr-display-tracking, -0.025em);
+  --ed-display-leading: var(--rr-display-leading, 0.9);
+  --ed-display-tracking: var(--rr-display-tracking, -0.035em);
   --ed-display-1: var(--rr-display-1, clamp(3.25rem, 1.6rem + 6.6vw, 8rem)); /* the page's one title: About, All letters, a letter */
-  --ed-display-2: var(--rr-display-2, clamp(2.5rem, 1.5rem + 4vw, 6rem)); /* a hero number, a big title beside a sheet */
-  --ed-display-3: var(--rr-display-3, clamp(2rem, 1.35rem + 2.6vw, 4rem)); /* a section's title, a figure */
-  --ed-display-4: var(--rr-display-4, clamp(1.625rem, 1.25rem + 1.5vw, 2.75rem)); /* a sub-title, a stat */
-  --ed-display-5: var(--rr-display-5, clamp(1.375rem, 1.2rem + 0.7vw, 1.9375rem)); /* a lede, a row's title at size */
-  /* big figures: the number role's face at display size, lining and tabular */
-  --ed-figure-face: var(--rr-figure-face, var(--rr-number-face));
+  --ed-display-2: var(--rr-display-2, clamp(2.5rem, 1.5rem + 4vw, 6rem)); /* a hero number */
+  --ed-display-3: var(--rr-display-3, clamp(2rem, 1.35rem + 2.6vw, 4rem)); /* a group's name in the rail */
+  --ed-display-4: var(--rr-display-4, clamp(1.625rem, 1.25rem + 1.5vw, 2.75rem)); /* a title beside a sheet */
+  --ed-display-5: var(--rr-display-5, clamp(1.375rem, 1.2rem + 0.7vw, 1.9375rem)); /* a lede, a year at size */
+  --ed-figure-face: var(--rr-figure-face, var(--rr-ui));
   --ed-figure-numeric: var(--rr-figure-numeric, lining-nums tabular-nums);
-  /* running heads, folios, column indices: the controls' sans, small */
+  /* running heads, labels, the small lines: the controls' sans, sentence case */
   --ed-head-face: var(--rr-ui);
-  --ed-head-size: 0.6875rem;
+  --ed-head-size: 0.75rem;
   --ed-head-weight: 500;
-  --ed-head-tracking: 0.08em;
-  --ed-head-case: uppercase;
+  --ed-head-tracking: 0.01em;
 }
 @media (min-width: 40rem) {
   html:root[data-layout] {
@@ -78,40 +74,20 @@ html:root[data-layout] {
     --ed-gutter: var(--rr-gutter, 2rem);
   }
 }
-html:root[data-layout]:is([data-layout-page='letters'], [data-layout-page='about']) {
-  --ed-max: 90rem;
-}
-/* Ruler: sentence case, a little wider, its numbers in the sans */
-html:root[data-layout='editorial-3'] {
-  --ed-head-case: none;
-  --ed-head-size: 0.75rem;
-  --ed-head-tracking: 0.01em;
-  --ed-figure-face: var(--rr-figure-face, var(--rr-ui));
-  --ed-display-weight: var(--rr-display-weight, min(var(--rr-title-weight, 440), 440));
-  --ed-display-tracking: var(--rr-display-tracking, -0.035em);
-  --ed-display-leading: var(--rr-display-leading, 0.9);
-}
-
-/* a running head's words: the small sans, tracked (caps in Broadsheet) */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-head, .ed-grid b, .ed-ruler b) {
-  font-family: var(--ed-head-face);
-  font-size: var(--ed-head-size);
-  font-weight: var(--ed-head-weight);
-  letter-spacing: var(--ed-head-tracking);
-  text-transform: var(--ed-head-case);
-  font-variant-caps: normal;
-  font-variant-numeric: lining-nums tabular-nums;
-  line-height: 1;
-}
 
 /* =====================================================================================================================
-   THE GRID, drawn
+   THE GRID, felt: the column ticks under the running head's rule, the baseline's ticks in the left margin
    ===================================================================================================================== */
 .ed-grid,
 .ed-ruler {
   display: none;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-grid, .ed-ruler) {
+html:root[data-layout='ruler'] {
+  /* the ticks' band, under the running head's rule; the header grows by it (index.css --site-head) */
+  --ed-ruler-h: 0.5rem;
+  --site-head-rule: calc(0.5rem + 1px + var(--ed-ruler-h));
+}
+html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) {
   position: fixed;
   inset: 0;
   display: grid;
@@ -123,154 +99,100 @@ html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-g
   pointer-events: none;
   contain: strict;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .ed-grid {
-  z-index: -1;
-}
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-grid, .ed-ruler) > i {
-  position: relative;
+html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) > i {
   display: block;
   min-width: 0;
-  font-style: normal;
 }
 @media (max-width: 39.99rem) {
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-grid, .ed-ruler) > i:nth-child(n + 5) { display: none; }
+  html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) > i:nth-child(n + 5) { display: none; }
 }
 @media (max-width: 63.99rem) {
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.ed-grid, .ed-ruler) > i:nth-child(n + 9) { display: none; }
+  html:root[data-layout='ruler'] :is(.ed-grid, .ed-ruler) > i:nth-child(n + 9) { display: none; }
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .ed-grid b,
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .ed-ruler b {
-  display: none;
-}
-/* the page's ground is the root's (the same room colour): the body and About's wrapper let the grid show through */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) body,
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about {
-  background-color: transparent;
-}
-
-/* ---------- Broadsheet: every column ruled, full height (a line in each gutter's middle, and the frame's edges) ---- */
-html:root[data-layout='editorial-1'] .ed-grid > i::before,
-html:root[data-layout='editorial-1'] .ed-grid::before,
-html:root[data-layout='editorial-1'] .ed-grid::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--ed-line);
-}
-html:root[data-layout='editorial-1'] .ed-grid > i::before {
-  left: calc(var(--ed-gutter) / -2);
-}
-html:root[data-layout='editorial-1'] .ed-grid > i:first-child::before {
-  display: none;
-}
-html:root[data-layout='editorial-1'] .ed-grid::before {
-  left: var(--ed-margin);
-}
-html:root[data-layout='editorial-1'] .ed-grid::after {
-  right: var(--ed-margin);
-}
-
-/* ---------- Ruler: the columns numbered under the running head, a tick at each column's start and end; the baseline
-   measured down the left margin (a tick every 8 px, a longer one every 24 px) ---------- */
-html:root[data-layout='editorial-3'] {
-  /* the ruler's band, under the running head's rule; the header grows by it (index.css --site-head) */
-  --ed-ruler-h: 1.125rem;
-  --site-head-rule: calc(0.5rem + 1px + var(--ed-ruler-h));
-}
-html:root[data-layout='editorial-3'] .ed-ruler {
+/* the column ticks: a short line at each column's start, hanging from the running head's rule */
+html:root[data-layout='ruler'] .ed-ruler {
   z-index: 31;
   bottom: auto;
   top: calc(var(--site-head) - var(--ed-ruler-h));
   height: var(--ed-ruler-h);
 }
-html:root[data-layout='editorial-3'] .ed-ruler > i {
-  border-left: 1px solid var(--ed-rule-strong);
+html:root[data-layout='ruler'] .ed-ruler > i {
+  height: 4px;
+  border-left: 1px solid var(--ed-rule);
+}
+html:root[data-layout='ruler'] .ed-ruler > i:last-child,
+html:root[data-layout='ruler'] .ed-ruler > i:nth-child(8):nth-last-child(n + 5) {
+  /* the last column closes the run: a tick at its end too (on 8 columns, the 8th is the last shown) */
   border-right: 1px solid var(--ed-rule);
-  height: 5px;
 }
-html:root[data-layout='editorial-3'] .ed-ruler b {
-  display: block;
-  position: absolute;
-  top: 7px;
-  left: 4px;
-  color: var(--rr-muted);
-  font-size: 0.625rem;
-  letter-spacing: 0.02em;
+@media (max-width: 63.99rem) {
+  html:root[data-layout='ruler'] .ed-ruler > i:last-child { border-right: 0; }
+  html:root[data-layout='ruler'] .ed-ruler > i:nth-child(8) { border-right: 1px solid var(--ed-rule); }
 }
-/* the baseline, measured in the left margin (a tick every 8 px, a longer one every 24 px), from under the ruler */
-html:root[data-layout='editorial-3'] .ed-grid::before {
+@media (max-width: 39.99rem) {
+  html:root[data-layout='ruler'] .ed-ruler > i:nth-child(8) { border-right: 0; }
+  html:root[data-layout='ruler'] .ed-ruler > i:nth-child(4) { border-right: 1px solid var(--ed-rule); }
+}
+/* the baseline, measured in the left margin: a light tick every 24 px, a longer one every 120 px (five lines) */
+html:root[data-layout='ruler'] .ed-grid {
+  z-index: -1;
+}
+html:root[data-layout='ruler'] .ed-grid::before {
   content: '';
   position: absolute;
   top: calc(var(--site-head) + 0.5rem);
   bottom: 0;
-  left: calc(var(--ed-margin) / 2 - 4px);
-  width: 9px;
+  left: calc(var(--ed-margin) / 2 - 3px);
+  width: 7px;
   background:
-    repeating-linear-gradient(to bottom, var(--ed-rule) 0 1px, transparent 1px 8px) 0 0 / 4px 100% no-repeat,
-    repeating-linear-gradient(to bottom, var(--ed-rule-strong) 0 1px, transparent 1px 24px) 0 0 / 9px 100% no-repeat;
+    repeating-linear-gradient(to bottom, var(--ed-line) 0 1px, transparent 1px 24px) 0 0 / 3px 100% no-repeat,
+    repeating-linear-gradient(to bottom, var(--ed-rule) 0 1px, transparent 1px 120px) 0 0 / 7px 100% no-repeat;
 }
-/* the columns themselves: only their edges, very faint, full height */
-html:root[data-layout='editorial-3'] .ed-grid > i {
-  box-shadow: inset 1px 0 var(--ed-line), inset -1px 0 var(--ed-line);
+@media (max-width: 39.99rem) {
+  /* a phone: the margin is 16 px, so the ticks are shorter and only the long ones stay */
+  html:root[data-layout='ruler'] .ed-grid::before {
+    left: 4px;
+    width: 4px;
+    background: repeating-linear-gradient(to bottom, var(--ed-rule) 0 1px, transparent 1px 120px) 0 0 / 4px 100% no-repeat;
+  }
 }
 @media (max-height: 32rem) {
-  /* the running head scrolls away on a short screen: the ruler goes with it */
-  html:root[data-layout='editorial-3'] .ed-ruler { display: none; }
+  /* the running head scrolls away on a short screen: the ticks go with it */
+  html:root[data-layout='ruler'] .ed-ruler { display: none; }
+}
+/* the page's ground is the root's (the same room colour), so the baseline's ticks behind the page show */
+html:root[data-layout='ruler'] body,
+html:root[data-layout='ruler'] .about {
+  background-color: transparent;
 }
 
 /* =====================================================================================================================
-   THE RUNNING HEAD (components/SiteHeader.tsx, through its data hooks)
+   THE RUNNING HEAD (components/SiteHeader.tsx, through its data hooks), on every page, the Fonts page too
    ===================================================================================================================== */
-/* on the library and About the head keeps to the page's 90 rem grid */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']):is([data-layout-page='letters'], [data-layout-page='about']) [data-site-row] {
-  max-width: calc(var(--ed-max) - 2 * var(--ed-margin));
-  margin-inline: auto;
+html:root[data-layout='ruler'] [data-site-row] {
+  border-bottom: 1px solid var(--ed-rule-strong);
+  margin-bottom: var(--ed-ruler-h);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button) {
+html:root[data-layout='ruler'] [data-site-header] :is([data-site-link], [data-site-kept], [data-site-centre], [data-site-action] button) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
   letter-spacing: var(--ed-head-tracking);
-  text-transform: var(--ed-head-case);
+  text-transform: none;
   font-variant-caps: normal;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) [data-site-number] {
+html:root[data-layout='ruler'] [data-site-number] {
   font-family: var(--ed-figure-face);
   font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
 
-/* Broadsheet: the thick-and-thin rule, a newspaper's masthead (2 px ink, 3 px of room, 1 px ink) */
-html:root[data-layout='editorial-1'] {
-  --site-head-rule: calc(0.5rem + var(--ed-heavy) + 4px);
-}
-html:root[data-layout='editorial-1'] [data-site-row] {
-  border-bottom: var(--ed-heavy) solid var(--ed-ink);
-  margin-bottom: 4px;
-}
-html:root[data-layout='editorial-1'] [data-site-row]::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(-1 * var(--ed-heavy) - 4px);
-  height: 1px;
-  background: var(--ed-ink);
-}
-/* Ruler: one crisp rule in ink, the ruler hangs from it */
-html:root[data-layout='editorial-3'] [data-site-row] {
-  border-bottom: 1px solid var(--ed-ink);
-  margin-bottom: var(--ed-ruler-h);
-}
-
 /* =====================================================================================================================
    THE DESK (App.tsx; the record is themes/reading-room/ReadingDesk.tsx + LedgerRecord.tsx)
    ===================================================================================================================== */
-/* the record, on any screen (the desk's column, the phone's slip under the sheet): the number as a figure, the
-   title at display size, the facts as a ruled table under a heavy rule, the labels as running-head words */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-card-no {
+/* the record, on any screen (the desk's rail, the phone's slip under the sheet): the number as a big figure in the
+   sans, the title at display size, the facts as a ruled table, the labels in the small sans */
+html:root[data-layout='ruler'] .rr-ledger-record .rr-card-no {
   font-family: var(--ed-figure-face);
   font-size: var(--ed-display-2);
   font-weight: 400;
@@ -280,21 +202,21 @@ html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledge
   font-variant-numeric: var(--ed-figure-numeric);
   color: var(--rr-red);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-card-no .rr-sc {
+html:root[data-layout='ruler'] .rr-ledger-record .rr-card-no .rr-sc {
   display: block;
   margin-bottom: 0.625rem;
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
   letter-spacing: var(--ed-head-tracking);
-  text-transform: var(--ed-head-case);
+  text-transform: none;
   line-height: 1;
   color: var(--rr-ink);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-ledger-head {
+html:root[data-layout='ruler'] .rr-ledger-record .rr-ledger-head {
   align-items: flex-start;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-card-title {
+html:root[data-layout='ruler'] .rr-ledger-record .rr-card-title {
   --rr-title-leading: 1;
   margin: 1rem 0 1.25rem;
   font-family: var(--ed-display-face);
@@ -303,245 +225,135 @@ html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledge
   font-stretch: var(--ed-display-stretch);
   letter-spacing: -0.02em;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-fact {
+html:root[data-layout='ruler'] .rr-ledger-record .rr-fact {
   border-top-color: var(--ed-rule);
   padding: 7px 0 8px;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record > .rr-facts > .rr-fact:first-child {
-  border-top: var(--ed-heavy) solid var(--ed-ink);
+html:root[data-layout='ruler'] .rr-ledger-record > .rr-facts > .rr-fact:first-child {
+  border-top-color: var(--ed-rule-strong);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record :is(.rr-fact dt, .rr-full-head .rr-sc),
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.rr-drawer-head, .rr-drawer-head .rr-sc) {
+html:root[data-layout='ruler'] .rr-ledger-record :is(.rr-fact dt, .rr-full-head .rr-sc),
+html:root[data-layout='ruler'] :is(.rr-drawer-head, .rr-drawer-head .rr-sc) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
   letter-spacing: var(--ed-head-tracking);
-  text-transform: var(--ed-head-case);
+  text-transform: none;
   font-variant-caps: normal;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-ledger-record .rr-full {
+html:root[data-layout='ruler'] .rr-drawer {
   border-top-color: var(--ed-rule-strong);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-drawer {
-  border-top: 1px solid var(--ed-ink);
-}
-/* the record's column is a panel of the room's ground: the grid's lines stop at its rule, never run through its words */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .rr-desk {
-  background: var(--rr-room);
-}
 
+/* the desk on a wide screen: asymmetric. The record moves into a margin rail on the left (3 columns at 1280 and up,
+   4 below), one rule divides it from the page, the sheet takes the rest; the running head's middle stays over the
+   sheet */
 @media (min-width: 64rem) {
-  /* the page's columns run up to the record's gutter: the main column's own right margin goes (the record's column
-     brings the gutter) */
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3'])[data-layout-page='desk'] div:has(> main + aside) > main {
-    padding-right: 0;
-  }
-  /* the record column's own rule, from the running head to the foot, in the gutter's middle */
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3'])[data-layout-page='desk'] aside:has(> .rr-desk)::before {
-    content: '';
-    position: absolute;
-    top: calc(var(--site-head) + 0.75rem);
-    bottom: 0;
-    width: 1px;
-    background: var(--ed-ink);
-  }
-}
-
-/* ---------- Broadsheet desk: the sheet on columns 1–8, the record on 9–12 (four columns: the title has room at
-   display size), the rule between them in ink ---------- */
-@media (min-width: 64rem) {
-  html:root[data-layout='editorial-1'][data-layout-page='desk'] {
-    --panel-w: calc(var(--ed-col) * 5 + var(--ed-gutter) * 4);
-  }
-  html:root[data-layout='editorial-1'][data-layout-page='desk'] aside:has(> .rr-desk)::before {
-    left: calc(var(--ed-gutter) / 2);
-  }
-}
-@media (min-width: 80rem) {
-  html:root[data-layout='editorial-1'][data-layout-page='desk'] {
+  html:root[data-layout='ruler'][data-layout-page='desk'] {
     --panel-w: calc(var(--ed-col) * 4 + var(--ed-gutter) * 3);
   }
-}
-
-/* ---------- Ruler desk: asymmetric. The record moves into a margin rail on the left (columns 1–3), one ink rule
-   divides it from the page, the sheet takes columns 4–12; the running head's middle stays over the sheet ---------- */
-@media (min-width: 64rem) {
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] {
-    --panel-w: calc(var(--ed-col) * 4 + var(--ed-gutter) * 3);
-  }
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] div:has(> main + aside) {
+  html:root[data-layout='ruler'][data-layout-page='desk'] div:has(> main + aside) {
     grid-template-columns: auto minmax(0, 1fr);
   }
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] div:has(> main + aside) > aside {
+  html:root[data-layout='ruler'][data-layout-page='desk'] div:has(> main + aside) > aside {
     grid-column: 1;
     grid-row: 1;
   }
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] div:has(> main + aside) > main {
+  html:root[data-layout='ruler'][data-layout-page='desk'] div:has(> main + aside) > main {
     grid-column: 2;
     grid-row: 1;
     padding-left: 0;
     padding-right: var(--ed-margin);
   }
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] aside:has(> .rr-desk) {
+  html:root[data-layout='ruler'][data-layout-page='desk'] aside:has(> .rr-desk) {
     padding: 0 var(--ed-gutter) 0 var(--ed-margin);
   }
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] aside:has(> .rr-desk)::before {
+  /* the rule between the rail and the page, from under the running head to the foot, in the gutter's middle */
+  html:root[data-layout='ruler'][data-layout-page='desk'] aside:has(> .rr-desk)::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--site-head) + 0.75rem);
+    bottom: 0;
     right: calc(var(--ed-gutter) / 2);
+    width: 1px;
+    background: var(--ed-rule-strong);
   }
   /* while writing the record steps aside to the left, not the right */
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] aside.translate-x-3 {
+  html:root[data-layout='ruler'][data-layout-page='desk'] aside.translate-x-3 {
     translate: -0.75rem 0;
   }
-  /* the running head over the window: the wordmark over the rail, the middle over the sheet, the places at the right */
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid {
-    /* the places' column never narrower than the places: on a narrow desk the middle gives way to the left */
+  /* the running head over the window: the wordmark over the rail, the middle over the sheet, the places at the right
+     (the places' column never narrower than the places: on a narrow desk the middle gives way to the left) */
+  html:root[data-layout='ruler'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid {
     grid-template-columns: calc(var(--panel-w) + var(--ed-gutter) - 1rem) minmax(0, 1fr) auto minmax(max-content, 1fr);
   }
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > [data-site-centre] {
+  html:root[data-layout='ruler'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > [data-site-centre] {
     grid-column: 3;
   }
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > div:last-child {
+  html:root[data-layout='ruler'][data-layout-page='desk'] [data-site-header][style*='--site-beside'] [data-site-row].grid > div:last-child {
     grid-column: 4 / -1;
   }
 }
 @media (min-width: 80rem) {
-  html:root[data-layout='editorial-3'][data-layout-page='desk'] {
+  html:root[data-layout='ruler'][data-layout-page='desk'] {
     --panel-w: calc(var(--ed-col) * 3 + var(--ed-gutter) * 2);
   }
 }
 
 /* =====================================================================================================================
    THE LETTER PAGE (archive/ReadingSpread.tsx: .sp, .sp-head, .sp-plate, .sp-body)
+   The title across the whole page, huge; under it the page on the left (columns 1–5) and the plate on the right
+   (7–12), one rule between them, as the desk keeps its record on the left and the paper on the right
    ===================================================================================================================== */
-/* blocks of words keep the grid's lines out from under them (the lines show in margins, gutters, empty columns) */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.sp-head, .sp-body, .lib-main > section, .fa, .about-main > *) {
-  position: relative;
-  background: var(--rr-room);
-}
-/* the spread's labels and small lines: running-head words (the same list as library.css's label role) */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
+/* the spread's labels and small lines: the small sans (the same list as library.css's label role) */
+html:root[data-layout='ruler'] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
   letter-spacing: var(--ed-head-tracking);
-  text-transform: var(--ed-head-case);
+  text-transform: none;
   font-variant-caps: normal;
   line-height: 1.3;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-title {
+html:root[data-layout='ruler'] .sp .sp-head {
+  text-align: left;
+}
+html:root[data-layout='ruler'] .sp .sp-title {
+  margin-top: 0.75rem;
   font-family: var(--ed-display-face);
+  font-size: clamp(2.5rem, 1rem + 6vw, 4rem);
   font-weight: var(--ed-display-weight);
   font-stretch: var(--ed-display-stretch);
   letter-spacing: var(--ed-display-tracking);
   line-height: var(--ed-display-leading);
-  font-size: var(--ed-display-4);
+}
+html:root[data-layout='ruler'] .sp .sp-writer {
   margin-top: 0.75rem;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-quiet button {
-  text-transform: inherit;
-  letter-spacing: inherit;
-}
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-writer {
-  margin-top: 0.75rem;
-}
-/* the facts: a ruled table, a heavy rule over it, a column rule between its cells */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-facts {
-  border-top: var(--ed-heavy) solid var(--ed-ink);
-  column-gap: 0;
-}
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact {
-  border-bottom-color: var(--ed-rule);
-  padding-inline: 0.75rem;
-}
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact:nth-child(2n + 1) {
-  padding-left: 0;
-}
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact:nth-child(2n) {
-  box-shadow: inset 1px 0 var(--ed-rule);
-}
-@media (min-width: 640px) {
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact:nth-child(n) {
-    padding-left: 0.75rem;
-    box-shadow: inset 1px 0 var(--ed-rule);
-  }
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-fact:nth-child(3n + 1) {
-    padding-left: 0;
-    box-shadow: none;
-  }
-}
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp :is(.sp-notes, .sp-cite, .sp-next, .sp-actions) {
+html:root[data-layout='ruler'] .sp .sp-facts {
   border-top-color: var(--ed-rule-strong);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-next-title {
+html:root[data-layout='ruler'] .sp .sp-fact {
+  border-bottom-color: var(--ed-rule);
+}
+html:root[data-layout='ruler'] .sp .sp-next-title {
   font-family: var(--ed-display-face);
   font-size: var(--ed-display-5);
   letter-spacing: -0.015em;
   line-height: 1.05;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-no,
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-note-no {
+html:root[data-layout='ruler'] .sp :is(.sp-no, .sp-note-no) {
   font-family: var(--ed-figure-face);
   font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
 @media (min-width: 64em) {
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp {
-    max-width: var(--ed-max);
-    padding-inline: var(--ed-margin);
-  }
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-title {
-    font-size: var(--ed-display-3);
-  }
-}
-
-/* ---------- Broadsheet letter: plate on 1–7, the page on 8–12 under a heavy rule; the plate's column ruled off in
-   ink; the letter's words set in two columns with a column rule ---------- */
-@media (min-width: 64em) {
-  html:root[data-layout='editorial-1'] .sp .sp-head {
-    border-top: var(--ed-heavy) solid var(--ed-ink);
-    padding-top: 1rem;
-  }
-  html:root[data-layout='editorial-1'][data-layout-page='letters'] .ed-grid > i:nth-child(7)::before {
-    background: var(--ed-ink);
-    top: calc(var(--site-head) + 0.75rem);
-  }
-}
-@media (min-width: 80em) {
-  html:root[data-layout='editorial-1'][data-layout-page='letters'] .ed-grid > i:nth-child(7)::before {
-    background: var(--ed-line);
-    top: 0;
-  }
-  html:root[data-layout='editorial-1'][data-layout-page='letters'] .ed-grid > i:nth-child(8)::before {
-    background: var(--ed-ink);
-    top: calc(var(--site-head) + 0.75rem);
-  }
-  html:root[data-layout='editorial-1'] .sp .sp-reading {
-    column-count: 2;
-    column-gap: var(--ed-gutter);
-    column-rule: 1px solid var(--ed-rule);
-    font-size: var(--rr-text-size);
-    line-height: 1.5;
-  }
-  html:root[data-layout='editorial-1'] .sp .sp-reading p {
-    break-inside: auto;
-  }
-}
-
-/* ---------- Ruler letter: the title across the whole page, huge; under it the page on the left (1–5) and the plate
-   on the right (7–12), divided by one ink rule, as the desk keeps its record on the left and the paper on the right
-   ---------- */
-html:root[data-layout='editorial-3'] .sp .sp-head {
-  text-align: left;
-}
-html:root[data-layout='editorial-3'] .sp .sp-title {
-  font-size: clamp(2.5rem, 1rem + 6vw, 4rem);
-}
-@media (min-width: 64em) {
-  html:root[data-layout='editorial-3'] .sp {
+  html:root[data-layout='ruler'] .sp {
     grid-template-rows: auto auto 1fr;
-    padding-top: calc(var(--site-head) + 2.5rem);
+    max-width: var(--ed-max);
+    padding: calc(var(--site-head) + 2.5rem) var(--ed-margin) 1.25rem;
   }
-  html:root[data-layout='editorial-3'] .sp .sp-head {
+  html:root[data-layout='ruler'] .sp .sp-head {
     grid-column: 1 / -1;
     grid-row: 1;
     display: grid;
@@ -549,51 +361,60 @@ html:root[data-layout='editorial-3'] .sp .sp-title {
     border-top: 0;
     padding: 0 0 2.25rem;
     margin-bottom: 2.5rem;
-    border-bottom: 1px solid var(--ed-ink);
+    border-bottom: 1px solid var(--ed-rule-strong);
   }
-  html:root[data-layout='editorial-3'] .sp .sp-head > * {
+  html:root[data-layout='ruler'] .sp .sp-head > * {
     grid-column: 1 / -1;
   }
-  html:root[data-layout='editorial-3'] .sp .sp-kicker {
+  html:root[data-layout='ruler'] .sp .sp-kicker {
     grid-column: 1 / span 4;
   }
-  html:root[data-layout='editorial-3'] .sp .sp-title {
-    font-size: var(--ed-display-1);
+  html:root[data-layout='ruler'] .sp .sp-title {
     margin-top: 1.25rem;
     max-width: 14ch;
+    font-size: var(--ed-display-1);
   }
-  html:root[data-layout='editorial-3'] .sp .sp-writer {
+  html:root[data-layout='ruler'] .sp .sp-writer {
     grid-column: 7 / -1;
     margin-top: 1.25rem;
     font-size: var(--rr-reading-size);
   }
-  html:root[data-layout='editorial-3'] .sp .sp-plate {
+  html:root[data-layout='ruler'] .sp .sp-plate {
     grid-column: 7 / -1;
     grid-row: 2 / span 2;
     top: calc(var(--site-head) + 1.5rem);
   }
-  html:root[data-layout='editorial-3'] .sp .sp-body {
+  html:root[data-layout='ruler'] .sp .sp-body {
+    position: relative;
     grid-column: 1 / span 5;
     grid-row: 2 / span 2;
   }
-  html:root[data-layout='editorial-3'][data-layout-page='letters'] .ed-grid > i:nth-child(7) {
-    box-shadow: inset 1px 0 var(--ed-ink), inset -1px 0 var(--ed-line);
+  /* the one rule between the page and the plate: the empty sixth column's far edge, half a gutter before the plate */
+  html:root[data-layout='ruler'] .sp .sp-body::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc(-1 * (var(--ed-col) + var(--ed-gutter) * 1.5));
+    width: 1px;
+    background: var(--ed-rule-strong);
   }
 }
 
 /* =====================================================================================================================
-   ALL LETTERS, the list (archive/Index.tsx grid view + archive/FindingList.tsx)
+   ALL LETTERS: the list (archive/Index.tsx grid view + archive/FindingList.tsx) and the table's frame (Canvas.tsx)
    ===================================================================================================================== */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main {
+html:root[data-layout='ruler'] .lib-main {
   max-width: var(--ed-max);
   padding-inline: var(--ed-margin);
 }
 /* the heading in type, at display size (the hand-drawn "All letters" steps aside; its words were already there) */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main h1 > [aria-hidden] {
+html:root[data-layout='ruler'] .lib-main h1 > [aria-hidden] {
   display: none;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main h1 > .sr-only {
+html:root[data-layout='ruler'] .lib-main h1 > .sr-only {
   position: static;
+  display: block;
   width: auto;
   height: auto;
   margin: 0;
@@ -601,7 +422,6 @@ html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main
   clip: auto;
   clip-path: none;
   white-space: normal;
-  display: block;
   font-family: var(--ed-display-face);
   font-size: var(--ed-display-1);
   font-weight: var(--ed-display-weight);
@@ -609,189 +429,163 @@ html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main
   letter-spacing: var(--ed-display-tracking);
   line-height: var(--ed-display-leading);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main > section > p:not(.rr-aid) {
+html:root[data-layout='ruler'] .lib-main > section {
+  padding-top: calc(var(--site-head-clear) + 1.5rem);
+}
+html:root[data-layout='ruler'] .lib-main > section > p:not(.rr-aid) {
+  max-width: 30ch;
   margin-top: 1.5rem;
   font-size: var(--ed-display-5);
   line-height: 1.25;
   color: var(--rr-ink);
-  max-width: 30ch;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main .rr-aid {
-  margin: 1.25rem 0 0;
-  padding: 0;
-  border: 0;
-  max-width: none;
-  color: var(--rr-muted);
+html:root[data-layout='ruler'] :is(.lib-main .rr-aid, .fa .fa-sort, .fa .fa-sort-by) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
   letter-spacing: var(--ed-head-tracking);
-  text-transform: var(--ed-head-case);
+  text-transform: none;
   font-variant-caps: normal;
   font-variant-numeric: lining-nums tabular-nums;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort,
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort-by {
-  font-family: var(--ed-head-face);
-  font-size: var(--ed-head-size);
-  font-weight: var(--ed-head-weight);
-  letter-spacing: var(--ed-head-tracking);
-  text-transform: var(--ed-head-case);
-  font-variant-caps: normal;
+html:root[data-layout='ruler'] .lib-main .rr-aid {
+  max-width: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border: 0;
+  color: var(--rr-muted);
 }
-/* the sort chosen: the room's selected state (light red), not an underline */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort-by {
+/* the sort chosen: the room's selected state (light red), not an underline; 44 px targets */
+html:root[data-layout='ruler'] .fa .fa-sort-by {
   min-height: 44px;
   padding: 0 0.5rem;
   border-radius: 3px;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort-by.is-on {
+html:root[data-layout='ruler'] .fa .fa-sort-by.is-on {
   text-decoration: none;
   color: var(--rr-red);
   background: var(--st-accent);
 }
 @media (hover: hover) and (pointer: fine) {
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-sort-by:not(.is-on):hover {
+  html:root[data-layout='ruler'] .fa .fa-sort-by:not(.is-on):hover {
     background: var(--st-hover);
   }
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-rows > li {
+html:root[data-layout='ruler'] .fa .fa-rows > li {
   border-bottom-color: var(--ed-rule);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-no {
+html:root[data-layout='ruler'] .fa :is(.fa-no, .fa-year) {
   font-family: var(--ed-figure-face);
   font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-year {
-  font-family: var(--ed-figure-face);
-  font-variant-numeric: var(--ed-figure-numeric);
-  font-variant-caps: normal;
+html:root[data-layout='ruler'] .fa .fa-year {
   font-size: var(--ed-display-5);
   line-height: 1;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-title {
+html:root[data-layout='ruler'] .fa .fa-title {
   font-size: var(--rr-reading-size);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .fa .fa-place {
+html:root[data-layout='ruler'] .fa .fa-place {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   letter-spacing: var(--ed-head-tracking);
-  text-transform: var(--ed-head-case);
+  text-transform: none;
   font-variant-caps: normal;
 }
-
-/* ---------- Broadsheet list: a dense index. Heavy rule over each group, its name at the left; the cells divided by
-   column rules ---------- */
-html:root[data-layout='editorial-1'] .lib-main > section {
-  border-bottom: var(--ed-heavy) solid var(--ed-ink);
-}
-html:root[data-layout='editorial-1'] .lib-main > section::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(-1 * var(--ed-heavy) - 4px);
-  height: 1px;
-  background: var(--ed-ink);
-}
-html:root[data-layout='editorial-1'] .fa .fa-head {
-  font-stretch: var(--ed-display-stretch);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin: 0;
-  padding: 0.625rem 0 0.5rem;
-  border-top: var(--ed-heavy) solid var(--ed-ink);
-  border-bottom: 1px solid var(--ed-ink);
+/* a group: its name over its rows, left-set at display size, one rule over it */
+html:root[data-layout='ruler'] .fa .fa-head {
+  display: block;
+  margin: 0 0 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ed-rule-strong);
   font-family: var(--ed-display-face);
-  font-size: var(--ed-display-5);
+  font-size: var(--ed-display-4);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: 1;
   font-variant-caps: normal;
-  letter-spacing: -0.01em;
   text-transform: none;
 }
-html:root[data-layout='editorial-1'] .fa .fa-head::before,
-html:root[data-layout='editorial-1'] .fa .fa-head::after {
+html:root[data-layout='ruler'] .fa .fa-head::before,
+html:root[data-layout='ruler'] .fa .fa-head::after {
   display: none;
 }
-@media (min-width: 720px) {
-  html:root[data-layout='editorial-1'] .fa .fa-row {
-    grid-template-columns: 6.25rem minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr) 5.75rem;
-    column-gap: 0;
-    padding-block: 0;
-  }
-  html:root[data-layout='editorial-1'] .fa .fa-row > .fa-year {
-    padding-right: 0;
-  }
-  html:root[data-layout='editorial-1'] .fa .fa-row > span {
-    padding: 0.75rem 0.875rem;
-  }
-  html:root[data-layout='editorial-1'] .fa .fa-row > span:first-child {
-    padding-left: 0;
-  }
-  html:root[data-layout='editorial-1'] .fa .fa-row > span + span {
-    box-shadow: inset 1px 0 var(--ed-rule);
-  }
-}
-
-/* ---------- Ruler list: asymmetric. Each group's name hangs in the margin rail (columns 1–3) at display size and
-   stays as its rows pass; the rows take columns 4–12 ---------- */
+/* a wide list: each group's name hangs in the margin rail (columns 1–3) and stays as its rows pass (4–12) */
 @media (min-width: 64rem) {
-  html:root[data-layout='editorial-3'] .fa .fa-group {
+  html:root[data-layout='ruler'] .fa .fa-group {
     display: grid;
     grid-template-columns: calc(var(--ed-col) * 3 + var(--ed-gutter) * 2) minmax(0, 1fr);
     column-gap: var(--ed-gutter);
     align-items: start;
     margin-top: 0;
     padding-top: 1.25rem;
-    border-top: 1px solid var(--ed-ink);
+    border-top: 1px solid var(--ed-rule-strong);
   }
-  html:root[data-layout='editorial-3'] .fa .fa-group + .fa-group {
+  html:root[data-layout='ruler'] .fa .fa-group + .fa-group {
     margin-top: 3rem;
   }
-  html:root[data-layout='editorial-3'] .fa .fa-head {
+  html:root[data-layout='ruler'] .fa .fa-head {
     position: sticky;
     top: calc(var(--site-head-clear) + 1rem);
-    display: block;
     margin: 0;
-    font-stretch: var(--ed-display-stretch);
-    font-family: var(--ed-display-face);
+    padding: 0;
+    border: 0;
     font-size: var(--ed-display-3);
-    font-weight: var(--ed-display-weight);
-    letter-spacing: var(--ed-display-tracking);
     line-height: var(--ed-display-leading);
-    font-variant-caps: normal;
-    text-transform: none;
   }
-  html:root[data-layout='editorial-3'] .fa .fa-head::before,
-  html:root[data-layout='editorial-3'] .fa .fa-head::after {
-    display: none;
-  }
-  html:root[data-layout='editorial-3'] .fa .fa-rows > li:first-child .fa-row {
+  html:root[data-layout='ruler'] .fa .fa-rows > li:first-child .fa-row {
     padding-top: 0.25rem;
   }
-  html:root[data-layout='editorial-3'] .fa .fa-row {
+  html:root[data-layout='ruler'] .fa .fa-row {
     grid-template-columns: 5.5rem minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.7fr) 4.5rem;
   }
 }
 
+/* the table (the canvas view): its heading in type like the list's, its dock in the small sans with a crisp edge */
+html:root[data-layout='ruler'] .canvas-heading svg {
+  display: none;
+}
+html:root[data-layout='ruler'] .canvas-heading .canvas-heading-art::before {
+  content: 'All letters';
+  display: block;
+  font-family: var(--ed-display-face);
+  font-size: var(--ed-display-2);
+  font-weight: var(--ed-display-weight);
+  font-stretch: var(--ed-display-stretch);
+  letter-spacing: var(--ed-display-tracking);
+  line-height: var(--ed-display-leading);
+  color: var(--rr-ink);
+}
+html:root[data-layout='ruler'] .canvas-heading .canvas-heading-art {
+  height: auto;
+}
+
 /* =====================================================================================================================
-   ABOUT (about/AboutApp.tsx, about/about.css)
+   ABOUT (about/AboutApp.tsx, about/about.css): the title across the page, huge; each section's number a big figure in
+   the margin rail, its words in columns 5–10, one rule over each
    ===================================================================================================================== */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about {
+html:root[data-layout='ruler'] .about {
   --about-label-font: var(--ed-head-face);
   --about-label-size: var(--ed-head-size);
   --about-label-spacing: var(--ed-head-tracking);
-  --about-label-case: var(--ed-head-case);
+  --about-label-case: none;
   --about-label-caps: normal;
   --about-rule: var(--ed-rule);
   --about-gap: var(--ed-gutter);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main {
+html:root[data-layout='ruler'] .about-main {
   max-width: var(--ed-max);
   padding-inline: var(--ed-margin);
+  padding-top: calc(var(--site-head-clear) + 1.5rem);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-title {
+@media (min-width: 40rem) {
+  html:root[data-layout='ruler'] .about-main {
+    padding-top: calc(var(--site-head-clear) + 2.5rem);
+  }
+}
+html:root[data-layout='ruler'] .about-title {
   font-family: var(--ed-display-face);
   font-size: var(--ed-display-1);
   font-weight: var(--ed-display-weight);
@@ -800,181 +594,76 @@ html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-ti
   line-height: var(--ed-display-leading);
   text-wrap: balance;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-lede {
+html:root[data-layout='ruler'] .about-lede {
   font-size: var(--ed-display-5);
   line-height: 1.25;
   color: var(--rr-ink);
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-line {
-  border-color: var(--ed-ink);
-  border-radius: 0;
+html:root[data-layout='ruler'] .about-head {
+  padding-bottom: 1rem;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-facts dd {
+html:root[data-layout='ruler'] .about-section {
+  border-top: 1px solid var(--ed-rule-strong);
+}
+html:root[data-layout='ruler'] .about-facts dd {
   font-family: var(--ed-figure-face);
   font-size: clamp(1.625rem, 1.2rem + 0.9vw, 2.125rem);
   font-variant-numeric: var(--ed-figure-numeric);
   letter-spacing: -0.02em;
   line-height: 1;
 }
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-section-no {
+html:root[data-layout='ruler'] .about-section-no {
   font-family: var(--ed-figure-face);
+  font-size: var(--ed-display-2);
   font-variant-numeric: var(--ed-figure-numeric);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
   color: var(--rr-red);
 }
 @media (min-width: 56rem) {
-  /* the page on the whole grid: labels in 1–3, the words in 4–10, rules across all twelve */
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main > * {
+  html:root[data-layout='ruler'] .about-main > * {
     grid-column: 1 / -1;
   }
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main > * > * {
-    grid-column: 4 / span 7;
+  html:root[data-layout='ruler'] .about-main > * > * {
+    grid-column: 5 / span 6;
   }
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-head > .about-title {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    margin-top: 1rem;
-  }
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-head > .about-kicker {
-    grid-row: 1;
+  html:root[data-layout='ruler'] .about-main > * > .about-section-title {
     grid-column: 1 / span 3;
   }
   /* the head in order: the kicker, the title across the page, then the lede and the line written live */
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-head > .about-lede {
-    grid-row: 3;
-  }
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-head > :not(.about-kicker, .about-title, .about-lede) {
-    grid-row: 4;
-  }
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main > * > .about-section-title {
+  html:root[data-layout='ruler'] .about-head > .about-kicker {
+    grid-row: 1;
     grid-column: 1 / span 3;
   }
-}
-
-/* ---------- Broadsheet About: the title over a thick-and-thin rule, each section under a heavy rule with its number
-   as a big red figure, the facts as a ruled row of figures with column rules ---------- */
-html:root[data-layout='editorial-1'] .about-head {
-  padding-bottom: 2.5rem;
-  border-bottom: var(--ed-heavy) solid var(--ed-ink);
-}
-html:root[data-layout='editorial-1'] .about-head::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(-1 * var(--ed-heavy) - 4px);
-  height: 1px;
-  background: var(--ed-ink);
-}
-html:root[data-layout='editorial-1'] .about-section {
-  border-top: var(--ed-heavy) solid var(--ed-ink);
-}
-html:root[data-layout='editorial-1'] .about-section-no {
-  font-stretch: var(--ed-display-stretch);
-  font-family: var(--ed-display-face);
-  font-size: var(--ed-display-3);
-  line-height: 0.9;
-}
-html:root[data-layout='editorial-1'] .about-facts > div {
-  border-top: 1px solid var(--ed-ink);
-}
-@container about-body (min-width: 37rem) {
-  html:root[data-layout='editorial-1'] .about-facts > div {
-    padding-inline: 0.75rem;
-    box-shadow: inset 1px 0 var(--ed-rule);
-  }
-  html:root[data-layout='editorial-1'] .about-facts > div:nth-child(4n + 1) {
-    padding-left: 0;
-    box-shadow: none;
-  }
-}
-@media (min-width: 80rem) {
-  /* the long reads set in two columns, ruled */
-  html:root[data-layout='editorial-1'] :is(#what, #hands, #made) .about-section-body {
-    column-count: 2;
-    column-gap: var(--ed-gutter);
-    column-rule: 1px solid var(--ed-rule);
-    font-size: var(--rr-reading-size);
-  }
-}
-
-/* ---------- Ruler About: the title huge across the page; each section's number a huge figure in the margin rail,
-   its words in 5–10, one ink rule over each ---------- */
-html:root[data-layout='editorial-3'] .about-head {
-  padding-bottom: 2.5rem;
-  border-bottom: 1px solid var(--ed-ink);
-}
-html:root[data-layout='editorial-3'] .about-section {
-  border-top: 1px solid var(--ed-ink);
-}
-html:root[data-layout='editorial-3'] .about-section-no {
-  font-size: var(--ed-display-2);
-  line-height: 0.85;
-  letter-spacing: -0.04em;
-}
-@media (min-width: 56rem) {
-  html:root[data-layout='editorial-3'] .about-main > * > * {
-    grid-column: 5 / span 6;
-  }
-  html:root[data-layout='editorial-3'] .about-head > .about-title {
+  html:root[data-layout='ruler'] .about-head > .about-title {
+    grid-row: 2;
     grid-column: 1 / -1;
+    margin-top: 1rem;
   }
-  html:root[data-layout='editorial-3'] .about-head > :is(.about-lede, .about-line) {
-    grid-column: 5 / span 6;
+  html:root[data-layout='ruler'] .about-head > .about-lede {
+    grid-row: 3;
+  }
+  html:root[data-layout='ruler'] .about-head > :not(.about-kicker, .about-title, .about-lede) {
+    grid-row: 4;
   }
 }
 
 /* =====================================================================================================================
-   ROOM UNDER THE RUNNING HEAD: both layouts' heads are a little taller (Broadsheet's double rule, Ruler's ruler), so
-   each page starts from the head's own height (index.css --site-head-clear) instead of a fixed offset
+   ROOM UNDER THE RUNNING HEAD: the head is a little taller (the ticks' band), so the pages start from the head's own
+   height (index.css --site-head-clear) instead of a fixed offset
    ===================================================================================================================== */
 @media (max-width: 63.99rem) {
   /* the desk on a phone or tablet: the letter starts 3 px under the head's fade, as the Reading Room's does */
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3'])[data-layout-page='desk'] main[class*='pt-[calc(4.5rem'] {
+  html:root[data-layout='ruler'][data-layout-page='desk'] main[class*='pt-[calc(4.5rem'] {
     padding-top: calc(var(--site-head-clear) + 3px);
   }
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp {
+  html:root[data-layout='ruler'] .sp {
     padding-top: calc(var(--site-head-clear) + 0.75rem);
-  }
-}
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .lib-main > section {
-  padding-top: calc(var(--site-head-clear) + 1.5rem);
-}
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main {
-  padding-top: calc(var(--site-head-clear) + 1.5rem);
-}
-@media (min-width: 40rem) {
-  html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .about-main {
-    padding-top: calc(var(--site-head-clear) + 2.5rem);
-  }
-}
-
-/* ---------- phones: the letter's head flush left (both); the list's groups as a left-set head (Ruler; the rail
-   needs the desktop's width) ---------- */
-html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-head {
-  text-align: left;
-}
-@media (max-width: 63.99rem) {
-  html:root[data-layout='editorial-3'] .fa .fa-head {
-    display: block;
-    margin: 0 0 0.25rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--ed-ink);
-    font-family: var(--ed-display-face);
-    font-size: var(--ed-display-4);
-    font-weight: var(--ed-display-weight);
-    letter-spacing: var(--ed-display-tracking);
-    line-height: 1;
-    font-variant-caps: normal;
-    text-transform: none;
-  }
-  html:root[data-layout='editorial-3'] .fa .fa-head::before,
-  html:root[data-layout='editorial-3'] .fa .fa-head::after {
-    display: none;
   }
 }
 
 /* =====================================================================================================================
-   REGISTER (editorial-2): the new Fonts page's balance on every page (fonts/new/fonts-new.css, and "What makes the
+   REGISTER (?layout=register, kept to compare): the new Fonts page's balance on every page (fonts/new/fonts-new.css, and "What makes the
    balance work" in docs/research/fonts-redesign.md). Rafael, 4 Nov: "something about this modern grid just kind of
    balances everything really well. That's the type of balance that we should try to maintain everywhere."
    The moves, with the Fonts page's own values:
@@ -989,7 +678,7 @@ html:root:is([data-layout='editorial-1'], [data-layout='editorial-3']) .sp .sp-h
    - rhythm from repetition: every row the same padding and column edges; air only where the hierarchy changes.
    No grid is drawn: it is felt in the edges.
    ===================================================================================================================== */
-html:root[data-layout='editorial-2'] {
+html:root[data-layout='register'] {
   --ed-max: 120rem;
   --ed-who: 15rem;
   --ed-title-size: 2.125rem;
@@ -1000,14 +689,14 @@ html:root[data-layout='editorial-2'] {
   --ed-title-weight: min(var(--rr-title-weight, 540), 540);
 }
 @media (min-width: 64rem) {
-  html:root[data-layout='editorial-2'] {
+  html:root[data-layout='register'] {
     --ed-title-size: 2.75rem;
     --ed-lede-size: 1.1875rem;
     --ed-name-size: 1.75rem;
   }
 }
 /* the three voices, as classes of their own job */
-html:root[data-layout='editorial-2'] :is(.lib-main h1 > .sr-only, .about-title, .sp .sp-title) {
+html:root[data-layout='register'] :is(.lib-main h1 > .sr-only, .about-title, .sp .sp-title) {
   font-family: var(--rr-title-face);
   font-size: var(--ed-title-size);
   font-weight: var(--ed-title-weight);
@@ -1017,7 +706,7 @@ html:root[data-layout='editorial-2'] :is(.lib-main h1 > .sr-only, .about-title, 
   color: var(--rr-ink);
   text-wrap: balance;
 }
-html:root[data-layout='editorial-2'] :is(.lib-main > section > p:not(.rr-aid), .about-lede, .sp .sp-writer) {
+html:root[data-layout='register'] :is(.lib-main > section > p:not(.rr-aid), .about-lede, .sp .sp-writer) {
   max-width: 34rem;
   font-family: var(--rr-reading-face, var(--rr-book));
   font-size: var(--ed-lede-size);
@@ -1029,13 +718,13 @@ html:root[data-layout='editorial-2'] :is(.lib-main > section > p:not(.rr-aid), .
 
 /* ---------- the desk: already the Fonts page's arrangement (the paper is the big thing, the record a quiet column);
    the record's title takes the name size, its number the sans, the plate line under the sheet a credit ---------- */
-html:root[data-layout='editorial-2'] .rr-ledger-record .rr-card-title {
+html:root[data-layout='register'] .rr-ledger-record .rr-card-title {
   --rr-title-leading: 1.15;
   font-size: var(--ed-name-size);
   font-weight: min(var(--rr-title-weight, 500), 500);
   letter-spacing: -0.008em;
 }
-html:root[data-layout='editorial-2'] .rr-ledger-record .rr-card-no {
+html:root[data-layout='register'] .rr-ledger-record .rr-card-no {
   font-family: var(--rr-ui);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -1043,7 +732,7 @@ html:root[data-layout='editorial-2'] .rr-ledger-record .rr-card-no {
   font-variant-caps: normal;
   font-variant-numeric: lining-nums tabular-nums;
 }
-html:root[data-layout='editorial-2'] .rr-plate-title {
+html:root[data-layout='register'] .rr-plate-title {
   font-family: var(--rr-book);
   font-size: 0.9375rem;
   font-style: italic;
@@ -1053,31 +742,31 @@ html:root[data-layout='editorial-2'] .rr-plate-title {
 /* ---------- the letter page: the window's width, the title at the page-title size, the writer's line as the lede,
    one filled red action (Write a reply), the rest quiet ---------- */
 @media (min-width: 64em) {
-  html:root[data-layout='editorial-2'] .sp {
+  html:root[data-layout='register'] .sp {
     max-width: var(--ed-max);
   }
 }
-html:root[data-layout='editorial-2'] .sp .sp-head {
+html:root[data-layout='register'] .sp .sp-head {
   text-align: left;
 }
-html:root[data-layout='editorial-2'] .sp .sp-writer {
+html:root[data-layout='register'] .sp .sp-writer {
   margin-top: 0.625rem;
 }
-html:root[data-layout='editorial-2'] .sp .sp-actions {
+html:root[data-layout='register'] .sp .sp-actions {
   align-items: center;
   gap: 0.25rem 0.5rem;
   margin-inline: 0;
 }
-html:root[data-layout='editorial-2'] .sp .sp-actions :is(.sp-reply, button) {
+html:root[data-layout='register'] .sp .sp-actions :is(.sp-reply, button) {
   min-height: 44px;
   font-family: var(--rr-ui);
   font-size: 0.9375rem;
   font-weight: 500;
 }
-html:root[data-layout='editorial-2'] .sp .sp-actions button {
+html:root[data-layout='register'] .sp .sp-actions button {
   padding: 0 0.75rem;
 }
-html:root[data-layout='editorial-2'] .sp .sp-reply {
+html:root[data-layout='register'] .sp .sp-reply {
   padding: 0 1.25rem 0 1.125rem;
   margin-right: 0.5rem;
   border-radius: 999px;
@@ -1086,24 +775,24 @@ html:root[data-layout='editorial-2'] .sp .sp-reply {
   transition: background-color var(--st-dur, 150ms) var(--ease-out), scale var(--dur-press, 100ms) var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
-  html:root[data-layout='editorial-2'] .sp .sp-reply:hover {
+  html:root[data-layout='register'] .sp .sp-reply:hover {
     background: var(--rr-red-deep, color-mix(in oklab, var(--rr-red) 82%, black));
   }
 }
-html:root[data-layout='editorial-2'] .sp .sp-reply:active {
+html:root[data-layout='register'] .sp .sp-reply:active {
   scale: var(--st-scale, 0.97);
 }
 
 /* ---------- All letters: the page title in type ("Fonts" is typed too), its one sentence, then the list as a register:
    the catalogue number and year in the name column, the title at the name size, who wrote to whom as a credit ---------- */
-html:root[data-layout='editorial-2'] .lib-main {
+html:root[data-layout='register'] .lib-main {
   max-width: var(--ed-max);
   padding-inline: var(--ed-margin);
 }
-html:root[data-layout='editorial-2'] .lib-main h1 > [aria-hidden] {
+html:root[data-layout='register'] .lib-main h1 > [aria-hidden] {
   display: none;
 }
-html:root[data-layout='editorial-2'] .lib-main h1 > .sr-only {
+html:root[data-layout='register'] .lib-main h1 > .sr-only {
   position: static;
   display: block;
   width: auto;
@@ -1114,10 +803,10 @@ html:root[data-layout='editorial-2'] .lib-main h1 > .sr-only {
   clip-path: none;
   white-space: normal;
 }
-html:root[data-layout='editorial-2'] .lib-main > section > p:not(.rr-aid) {
+html:root[data-layout='register'] .lib-main > section > p:not(.rr-aid) {
   margin-top: 0.5rem;
 }
-html:root[data-layout='editorial-2'] .lib-main .rr-aid {
+html:root[data-layout='register'] .lib-main .rr-aid {
   margin: 0.875rem 0 0;
   padding: 0;
   border: 0;
@@ -1129,10 +818,10 @@ html:root[data-layout='editorial-2'] .lib-main .rr-aid {
   color: var(--rr-muted);
 }
 /* a group: its name at the name size, flush left over a soft rule; air above it, where the list changes */
-html:root[data-layout='editorial-2'] .fa .fa-group {
+html:root[data-layout='register'] .fa .fa-group {
   margin-top: 3rem;
 }
-html:root[data-layout='editorial-2'] .fa .fa-head {
+html:root[data-layout='register'] .fa .fa-head {
   display: block;
   margin: 0;
   padding-bottom: 0.625rem;
@@ -1146,12 +835,12 @@ html:root[data-layout='editorial-2'] .fa .fa-head {
   line-height: 1.15;
   text-transform: none;
 }
-html:root[data-layout='editorial-2'] .fa .fa-head::before,
-html:root[data-layout='editorial-2'] .fa .fa-head::after {
+html:root[data-layout='register'] .fa .fa-head::before,
+html:root[data-layout='register'] .fa .fa-head::after {
   display: none;
 }
-html:root[data-layout='editorial-2'] .fa .fa-no,
-html:root[data-layout='editorial-2'] .fa .fa-year {
+html:root[data-layout='register'] .fa .fa-no,
+html:root[data-layout='register'] .fa .fa-year {
   font-family: var(--rr-ui);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -1159,12 +848,12 @@ html:root[data-layout='editorial-2'] .fa .fa-year {
   font-variant-caps: normal;
   font-variant-numeric: lining-nums tabular-nums;
 }
-html:root[data-layout='editorial-2'] .fa .fa-year {
+html:root[data-layout='register'] .fa .fa-year {
   text-align: left;
   font-weight: 400;
   color: var(--rr-muted);
 }
-html:root[data-layout='editorial-2'] .fa .fa-title {
+html:root[data-layout='register'] .fa .fa-title {
   font-family: var(--rr-title-face);
   font-size: 1.375rem;
   font-weight: min(var(--rr-title-weight, 500), 500);
@@ -1172,14 +861,14 @@ html:root[data-layout='editorial-2'] .fa .fa-title {
   line-height: 1.2;
   letter-spacing: -0.006em;
 }
-html:root[data-layout='editorial-2'] .fa .fa-writer {
+html:root[data-layout='register'] .fa .fa-writer {
   font-family: var(--rr-book);
   font-size: 0.9375rem;
   font-style: italic;
   line-height: 1.45;
   color: var(--rr-muted);
 }
-html:root[data-layout='editorial-2'] .fa .fa-place {
+html:root[data-layout='register'] .fa .fa-place {
   font-family: var(--rr-ui);
   font-size: var(--ed-meta-size);
   letter-spacing: 0;
@@ -1188,7 +877,7 @@ html:root[data-layout='editorial-2'] .fa .fa-place {
   color: var(--rr-faint);
 }
 @media (min-width: 720px) {
-  html:root[data-layout='editorial-2'] .fa .fa-row {
+  html:root[data-layout='register'] .fa .fa-row {
     grid-template-columns: var(--ed-who) minmax(0, 1fr) minmax(0, 26rem);
     grid-template-areas: 'no title writer' 'year title place';
     align-items: baseline;
@@ -1198,19 +887,19 @@ html:root[data-layout='editorial-2'] .fa .fa-place {
     padding: 1.125rem 0.75rem;
     border-radius: 6px;
   }
-  html:root[data-layout='editorial-2'] .fa .fa-no { grid-area: no; }
-  html:root[data-layout='editorial-2'] .fa .fa-year { grid-area: year; }
-  html:root[data-layout='editorial-2'] .fa .fa-title { grid-area: title; align-self: center; font-size: var(--ed-name-size); }
-  html:root[data-layout='editorial-2'] .fa .fa-writer { grid-area: writer; }
-  html:root[data-layout='editorial-2'] .fa .fa-place { grid-area: place; }
+  html:root[data-layout='register'] .fa .fa-no { grid-area: no; }
+  html:root[data-layout='register'] .fa .fa-year { grid-area: year; }
+  html:root[data-layout='register'] .fa .fa-title { grid-area: title; align-self: center; font-size: var(--ed-name-size); }
+  html:root[data-layout='register'] .fa .fa-writer { grid-area: writer; }
+  html:root[data-layout='register'] .fa .fa-place { grid-area: place; }
 }
 @media (min-width: 720px) and (max-width: 63.99rem) {
-  html:root[data-layout='editorial-2'] .fa .fa-row {
+  html:root[data-layout='register'] .fa .fa-row {
     grid-template-columns: 9rem minmax(0, 1fr) minmax(0, 16rem);
   }
 }
 @media (hover: hover) and (pointer: fine) {
-  html:root[data-layout='editorial-2'] .fa .fa-row:active {
+  html:root[data-layout='register'] .fa .fa-row:active {
     background: var(--st-press);
     scale: var(--st-scale-row, 0.985);
   }
@@ -1219,85 +908,85 @@ html:root[data-layout='editorial-2'] .fa .fa-place {
 /* ---------- About: the page title and its sentence where the Fonts page has them; the line written just now as the
    page's one big thing, poster-size, on the room with no box; the sections as a register (the name column holds each
    section's number and name) ---------- */
-html:root[data-layout='editorial-2'] .about {
+html:root[data-layout='register'] .about {
   --about-gap: 2rem;
 }
-html:root[data-layout='editorial-2'] .about-main {
+html:root[data-layout='register'] .about-main {
   max-width: var(--ed-max);
   padding-inline: var(--ed-margin);
 }
-html:root[data-layout='editorial-2'] .about-kicker {
+html:root[data-layout='register'] .about-kicker {
   display: none;
 }
-html:root[data-layout='editorial-2'] .about-title {
+html:root[data-layout='register'] .about-title {
   margin-top: 0;
 }
-html:root[data-layout='editorial-2'] .about-lede {
+html:root[data-layout='register'] .about-lede {
   margin-top: 0.5rem !important;
 }
 /* the line: poster-size (LiveLine reads --about-line-em-max), on the room, a soft rule before its caption */
-html:root[data-layout='editorial-2'] .about-line {
+html:root[data-layout='register'] .about-line {
   margin-top: 3rem;
   padding: 0;
   background: transparent;
   border: 0;
   border-radius: 0;
 }
-html:root[data-layout='editorial-2'] .about-line-ink {
+html:root[data-layout='register'] .about-line-ink {
   --about-line-em-max: 128;
 }
-html:root[data-layout='editorial-2'] .about-line-caption {
+html:root[data-layout='register'] .about-line-caption {
   margin-top: 1.25rem;
   padding-top: 1rem;
   border-top: 1px solid var(--rr-hair);
 }
-html:root[data-layout='editorial-2'] .about-line-by {
+html:root[data-layout='register'] .about-line-by {
   font-size: 1.125rem;
 }
-html:root[data-layout='editorial-2'] .about-line-name {
+html:root[data-layout='register'] .about-line-name {
   font-family: var(--rr-title-face);
   font-size: var(--ed-name-size);
   font-weight: min(var(--rr-title-weight, 500), 500);
 }
-html:root[data-layout='editorial-2'] .about-section-title {
+html:root[data-layout='register'] .about-section-title {
   font-family: var(--rr-title-face);
   font-size: var(--ed-name-size);
   font-weight: min(var(--rr-title-weight, 500), 500);
   font-stretch: var(--rr-title-stretch, normal);
   letter-spacing: -0.008em;
 }
-html:root[data-layout='editorial-2'] .about-section-no {
+html:root[data-layout='register'] .about-section-no {
   font-family: var(--rr-ui);
   font-size: 0.8125rem;
   font-weight: 500;
   font-variant-numeric: lining-nums tabular-nums;
   color: var(--rr-red);
 }
-html:root[data-layout='editorial-2'] .about-facts dd {
+html:root[data-layout='register'] .about-facts dd {
   font-family: var(--rr-title-face);
   font-size: var(--ed-name-size);
   line-height: 1.1;
 }
 @media (min-width: 56rem) {
   /* the register: the name column (15 rem), then the words at a reading measure; the head and the line run wider */
-  html:root[data-layout='editorial-2'] .about-main {
+  html:root[data-layout='register'] .about-main {
     grid-template-columns: var(--ed-who) minmax(0, 46rem) minmax(0, 1fr);
     column-gap: var(--about-gap);
   }
-  html:root[data-layout='editorial-2'] .about-main > * {
+  html:root[data-layout='register'] .about-main > * {
     grid-column: 1 / -1;
   }
-  html:root[data-layout='editorial-2'] .about-main > * > * {
+  html:root[data-layout='register'] .about-main > * > * {
     grid-column: 2;
   }
-  html:root[data-layout='editorial-2'] .about-main > * > .about-section-title {
+  html:root[data-layout='register'] .about-main > * > .about-section-title {
     grid-column: 1;
   }
-  html:root[data-layout='editorial-2'] .about-head > :is(.about-title, .about-lede) {
+  html:root[data-layout='register'] .about-head > :is(.about-title, .about-lede) {
     grid-column: 1 / span 2;
     grid-row: auto;
   }
-  html:root[data-layout='editorial-2'] .about-head > .about-line {
+  html:root[data-layout='register'] .about-head > .about-line {
     grid-column: 1 / -1;
   }
 }

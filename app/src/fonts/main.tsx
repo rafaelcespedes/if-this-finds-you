@@ -4,6 +4,7 @@ import { FontsNew } from './new/FontsNew';
 import { applyFontsSwitch, FONTS_NEW } from './new/switch';
 import { fonts } from './store';
 import { applyLook } from '../lib/look';
+import { applyLayout } from '../lib/layout';
 // the tool's stylesheets in the tool's order (its compact control sizes, the looks, the controls' feel), so the
 // shared controls here are the home page's, size for size
 import '../index.css';
@@ -17,6 +18,8 @@ import './fonts.css';
 
 // the look being compared (?look=…), kept for the tab like the tool and the library
 applyLook();
+// the site's layout (the Ruler): its running head and quiet grid here too; the page's own content isn't restyled
+applyLayout('fonts');
 // the page (the redesign; ?fonts=old the earlier one for now) and its night colours (?theme=dark)
 applyFontsSwitch();
 

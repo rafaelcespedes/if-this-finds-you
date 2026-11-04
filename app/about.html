@@ -17,6 +17,15 @@
         } catch (e) {}
         var html = document.documentElement;
         if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
+        // the layout (lib/layout.ts reads the same): the Ruler on the Reading Room unless ?layout=off (or this tab chose
+        // off, or Register), so the first frame already has its frame
+        var lay = 'ruler';
+        try {
+          var al = (new URLSearchParams(location.search).get('layout') || '').toLowerCase();
+          var kl = sessionStorage.getItem('seedhand:layout');
+          lay = /^(off|none|0|reading-room)$/.test(al) ? 'none' : /^(register|editorial-2|e2|2)$/.test(al) ? 'register' : al ? 'ruler' : kl === 'none' || kl === 'register' ? kl : 'ruler';
+        } catch (e) {}
+        if (id === 'reading-room' && lay !== 'none') html.setAttribute('data-layout', lay);
         var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
         document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
       })();
