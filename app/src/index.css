@@ -142,6 +142,9 @@
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    /* no web font on the root: Safari downloads the root element's font even though no text uses it (the words all
+       sit in body, which names its own face), so Atkinson was fetched on every page in the Reading Room */
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
