@@ -19,6 +19,8 @@ interface Props {
   actions?: ReactNode;
   /** the head's last line, under the title (the desk: Bring another) */
   headAction?: ReactNode;
+  /** the tool's page has no other main heading: there the letter's title is its h1 */
+  titleAs?: 'h1' | 'h2';
   /** "laid paper · dip pen · blue-black ink" */
   physical?: string;
   className?: string;
@@ -26,7 +28,7 @@ interface Props {
 
 type NoteKey = 'story' | 'hand' | 'source';
 
-export function LedgerRecord({ record: r, hand, handAction, handName, actions, headAction, physical, className }: Props) {
+export function LedgerRecord({ record: r, hand, handAction, handName, actions, headAction, titleAs: Title = 'h2', physical, className }: Props) {
   const id = useId();
   const [open, setOpen] = useState<NoteKey | null>(null);
   const [full, setFull] = useState(false);
@@ -103,9 +105,16 @@ export function LedgerRecord({ record: r, hand, handAction, handName, actions, h
         </p>
         {actions && <div className="rr-card-actions">{actions}</div>}
       </div>
-      <h2 ref={titleRef} id={`${id}-t`} title={cut ? r.title : undefined} aria-label={cut ? r.title : undefined} className="rr-card-title text-balance">{cut ?? r.title}</h2>
+      <Title ref={titleRef} id={`${id}-t`} title={cut ? r.title : undefined} aria-label={cut ? r.title : undefined} className="rr-card-title text-balance">{cut ?? r.title}</Title>
       <span ref={measureRef} aria-hidden className="rr-card-title rr-title-measure text-balance" />
       {headAction}
+      {/* the letter as text, for screen readers (the sheet is drawn, so it has no words of its own to read) */}
+      {r.text?.trim() && (
+        <section aria-labelledby={`${id}-w`} className="sr-only">
+          <h2 id={`${id}-w`}>The letter</h2>
+          {r.text.split(/\n\s*\n/).map((p, i) => <p key={i}>{p.trim()}</p>)}
+        </section>
+      )}
       <dl className="rr-facts">
         {rows.map((row) => (
           <div key={row.term} className="rr-fact">
