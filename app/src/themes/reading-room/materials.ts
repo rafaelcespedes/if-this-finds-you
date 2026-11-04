@@ -1,11 +1,13 @@
-// The Reading Room's writing materials, cracked open while you write (desktop; Rafael, 4 Nov). When a visitor starts
-// a letter of their own, the desk's drawer opens partway on paper, pen and ink, and the column it lives in stays
-// beside the sheet while they write (App.tsx reads this to keep the aside shown; ReadingDesk.tsx sets it). Once a
-// visit: closing the drawer puts it away for the rest of the session, and writing hides the column again as before.
+// The Reading Room's writing materials, cracked open as you start to write (desktop; Rafael, 4 Nov). The click that
+// starts writing on the letter (App.tsx calls crack()) opens the desk's drawer partway on paper, pen and ink, and the
+// column it lives in stays beside the sheet while you write (App.tsx reads useMaterialsOpen to keep the aside shown;
+// ReadingDesk.tsx opens the drawer). Once a visit: closing the drawer puts it away for the rest of the session, and
+// writing hides the column again as before.
 import { useSyncExternalStore } from 'react';
 
 const KEY = 'seedhand:rr-materials'; // 'shown' once it has cracked open this visit, 'closed' once put away
 let open = false;
+let cracks = 0;
 const subs = new Set<() => void>();
 const notify = () => subs.forEach((f) => f());
 
@@ -19,6 +21,12 @@ function writeSession(v: string) {
 export const materials = {
   /** May they crack open now? Only once a visit. */
   canOpen: () => readSession() == null,
+  /** Writing has started: crack the drawer open partway, if it hasn't been this visit (ReadingDesk listens). */
+  crack() {
+    if (readSession() != null) return;
+    cracks++;
+    notify();
+  },
   /** The drawer is open partway or fully beside a letter being written: keep the column shown. */
   open() {
     writeSession('shown');
@@ -33,6 +41,12 @@ export const materials = {
 
 const subscribe = (f: () => void) => { subs.add(f); return () => { subs.delete(f); }; };
 const get = () => open;
+const getCracks = () => cracks;
+
+/** How many times writing has asked the drawer to crack open (it does, once a visit). */
+export function useMaterialsCrack() {
+  return useSyncExternalStore(subscribe, getCracks, getCracks);
+}
 
 /** Whether the writing materials are keeping the desk's column beside the sheet. */
 export function useMaterialsOpen() {

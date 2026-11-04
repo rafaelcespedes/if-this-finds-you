@@ -61,7 +61,7 @@ import type { NoteState } from '@/lib/state';
 import { LOOK } from '@/lib/look';
 import { CatalogueSlip, ReadingDesk } from '@/themes/reading-room/ReadingDesk';
 import { LetterMarks } from '@/themes/reading-room/SheetMarks';
-import { useMaterialsOpen } from '@/themes/reading-room/materials';
+import { materials, useMaterialsOpen } from '@/themes/reading-room/materials';
 import { PlateTitle } from '@/themes/reading-room/PlateLine';
 import { PostSheetMarks, ToolArrival } from '@/themes/postmarked/tool';
 
@@ -1012,6 +1012,10 @@ export default function App() {
   // the Reading Room's writing materials, cracked open as you start a letter of your own, keep the desk's column
   // beside the sheet while you write (themes/reading-room/materials.ts); the header and the footer still step back
   const materialsOpen = useMaterialsOpen();
+  // the click that starts writing on the letter cracks them open (once a visit; focus stays in the letter)
+  useEffect(() => {
+    if (editing && LOOK === 'reading-room' && isDesktop) materials.crack();
+  }, [editing, isDesktop]);
   const deskColumn = desk || (LOOK === 'reading-room' && isDesktop && materialsOpen);
   const reader = state.reader;
   const brokenLink = linkTrouble === 'incomplete';
