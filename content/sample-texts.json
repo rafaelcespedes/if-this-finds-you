@@ -20,7 +20,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by the first name 'Maybelle'; no surname or address), so not identifiable; anonymous work published before 1956. Transcription made by me from the 1908 page image (LOC IIIF), not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Signature printed in capitals ('MAYBELLE'), rendered here as 'Maybelle'.",
+      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by the first name 'Maybelle'; no surname or address), so not identifiable; anonymous work published before 1956. Transcribed from the 1908 page image at the Library of Congress, not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Signature printed in capitals ('MAYBELLE'), rendered here as 'Maybelle'.",
       "firstPublished": 1908,
       "anonymous": true
     },
@@ -41,7 +41,7 @@
     "layout": "source",
     "kind": "letter",
     "lang": "en-US",
-    "title": "As fat as pigs, and butter in the churn",
+    "title": "Butter in the churn",
     "author": "Rosebell Burke (Rosabella Burke)",
     "writer": {
       "gender": "f",
@@ -52,7 +52,7 @@
     "place": "Mount Rest, Clay-Ashland, Liberia",
     "year": 1859,
     "origin": "emigrant",
-    "story": "Sent from Clay-Ashland with her husband’s letter of 20 February 1859 to Mary Custis Lee, who let the Colonization Society print both that July.",
+    "story": "Sent from Clay-Ashland with her husband’s letter of 20 February 1859 to Mary Custis Lee, whose family had freed the Burkes before they emigrated; she let the Colonization Society print both that July.",
     "source": {
       "name": "The African Repository (American Colonization Society, Washington), vol. 35 (July 1859), p. 216; Internet Archive scan, page image read",
       "url": "https://archive.org/details/sim_african-repository_1859-07_35_7/page/n23/mode/1up",
@@ -62,7 +62,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1859 (US: before 1931). The Society's printed emigrant roll (African Repository, vol. 30, Jan. 1854) lists 'Rosabella [Burke], wife, 34', so she was born about 1819; authorDiedBy 1939 is a 120-year upper bound (EU: dead before 1956).",
+      "basis": "Printed 1859 (US: before 1931). The Society's printed emigrant roll (African Repository, vol. 30, Jan. 1854) lists 'Rosabella [Burke], wife, 34', so she was born about 1819 and, even after a life of 120 years, dead by 1939: more than 70 years ago.",
       "firstPublished": 1859,
       "authorDiedBy": 1939
     },
@@ -104,7 +104,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed 1923, before 1931. EU: printed anonymously before 1956: signed only with a nickname and first names ('Pochi Mari Elena'), no surname, so the writer is not identifiable (brief: first name only counts as anonymous). Note: the printed letter also gives a street address ('Treinta y tres 2277'); that sentence is cut from our excerpt. Transcription is ours, read from the 1923 page image (pre-1931 printed text).",
+      "basis": "US: first printed 1923, before 1931. EU: printed anonymously before 1956: signed only with a nickname and first names ('Pochi Mari Elena'), no surname, so the writer is not identifiable. The printed letter also gives a street address ('Treinta y tres 2277'); that sentence is cut from our excerpt. Transcription is ours, read from the 1923 page image (pre-1931 printed text).",
       "firstPublished": 1923,
       "anonymous": true
     },
@@ -145,7 +145,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "First printed 1799 in London (Copies of Original Letters from the Army of General Bonaparte in Egypt, Part the Second, J. Wright, French text with English translation; IA copy https://archive.org/details/bim_eighteenth-century_copies-of-original-lette_1799_1) and the same year in Paris (Correspondance de l'armee francaise en Egypte, Garnery, an VII; https://archive.org/details/32882019067670-correspondanced); text quoted from Larchey's 1866 Paris reprint (public domain). US: printed before 1931 (U1). EU: the writer was an adult serving in Egypt in 1798, so born before c.1780 and certainly dead long before 1956 (E1). No modern transcription used, so no publication right arises. The 1799 printing adds an editor's footnote marker after 'bastide' (explaining the word); it is not part of the letter and is omitted.",
+      "basis": "First printed 1799 in London (Copies of Original Letters from the Army of General Bonaparte in Egypt, Part the Second, J. Wright, French text with English translation; IA copy https://archive.org/details/bim_eighteenth-century_copies-of-original-lette_1799_1) and the same year in Paris (Correspondance de l'armee francaise en Egypte, Garnery, an VII; https://archive.org/details/32882019067670-correspondanced); text quoted from Larchey's 1866 Paris reprint (public domain). US: printed before 1931. EU: the writer was an adult serving in Egypt in 1798, so born before c.1780 and certainly dead long before 1956. No modern transcription used, so no publication right arises. The 1799 printing adds an editor's footnote marker after 'bastide' (explaining the word); it is not part of the letter and is omitted.",
       "firstPublished": 1799,
       "authorDiedBy": 1900
     },
@@ -186,7 +186,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1884 (before 1931). Published before 1956 with the writer identified only by first name(s) and initial(s), so the writer is not identifiable: anonymous publication (E2). The child's own death year is unknown.",
+      "basis": "Printed 1884 (before 1931). Published before 1956 with the writer identified only by first name(s) and initial(s), so the writer is not identifiable and the letter counts as published anonymously. The child's own death year is unknown.",
       "firstPublished": 1884,
       "anonymous": true
     },
@@ -229,7 +229,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: printed 1834. EU: a married woman with a son, teaching Sunday school in Monrovia in 1834, so born before about 1816; dead long before 1956 (authorDiedBy 1926). Text checked against the page image (the OCR garbles 'Abram' and runs words together).",
+      "basis": "US: printed 1834. EU: a married woman with a son, teaching Sunday school in Monrovia in 1834, so born before about 1816; dead long before 1956. Text checked against the page image (the OCR garbles 'Abram' and runs words together).",
       "firstPublished": 1834,
       "authorDiedBy": 1926
     },
@@ -269,7 +269,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed at Petworth in 1833 (before 1931). Ann Thomas was writing in 1832, so was born before 1836 (a married woman with a child, so born before c.1815); death year unknown but certainly before 1956 (authorDiedBy 1935 assumes a lifespan of at most 120 years). The editors say the letters are 'faithfully given in the very words of the writers', with only the spelling corrected.",
+      "basis": "Printed at Petworth in 1833 (before 1931). Ann Thomas was writing in 1832, so was born before 1836 (a married woman with a child, so born before c.1815); death year unknown but certainly before 1956 (allowing a life of 120 years). The editors say the letters are 'faithfully given in the very words of the writers', with only the spelling corrected.",
       "firstPublished": 1833,
       "authorDiedBy": 1935
     },
@@ -310,7 +310,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "First printed 1924 (before 1931), in a US Government Printing Office volume. EU: she married Erasmo Seguín and was the mother of Juan N. Seguín, born 1806 (Wikipedia, 'Erasmo Seguín' and 'Juan Seguín'), so she was born before about 1790 and was dead long before 1956 (authorDiedBy 1900 is a safe upper bound). Spelling is the edition's literal transcription; the superscript abbreviation 'Dⁿ' is expanded to 'Don' (charset rule), nothing else changed.",
+      "basis": "First printed 1924 (before 1931), in a US Government Printing Office volume. EU: she married Erasmo Seguín and was the mother of Juan N. Seguín, born 1806 (Wikipedia, 'Erasmo Seguín' and 'Juan Seguín'), so she was born before about 1790 and was dead long before 1956. Spelling is the edition's literal transcription; the superscript abbreviation 'Dⁿ' is expanded to 'Don', nothing else changed.",
       "firstPublished": 1924,
       "authorDiedBy": 1900
     },
@@ -351,7 +351,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Written 5 Aug 1892. Privately printed c.1914–15 (foreword dated Nov 1914; no printed date seen): US passes under U1 as a pre-1931 printing; if that private printing were held not to be a general publication, it passes under U2 instead (made public online by the Royal Danish Library, writer died 1902). EU: writer died 1902 (E1); the KB release carries a public-domain statement, which also covers the publication-right question. Long passages on illness and a child's death are left out; the last paragraph is her own postscript.",
+      "basis": "Written 5 Aug 1892. Privately printed c.1914–15 (foreword dated Nov 1914; no printed date seen), so in the US it passes as a printing before 1931; if that private printing doesn't count as publication, it still passes, as a letter first made public online by the Royal Danish Library by a writer who died in 1902. EU: the writer died in 1902; the KB release carries a public-domain statement, which also covers the publication-right question. Long passages on illness and a child's death are left out; the last paragraph is her own postscript.",
       "firstPublished": 1915,
       "authorDied": 1902
     },
@@ -394,7 +394,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed January 1926 and in the 1926 book. EU: an adult courting by letter in 1850 who writes of 'me and my family', so born before about 1832; dead long before 1956 (authorDiedBy 1942). Text checked against the 1926 page images ('christmas Gift', 'christman Gifts.' as printed).",
+      "basis": "US: first printed January 1926 and in the 1926 book. EU: an adult courting by letter in 1850 who writes of 'me and my family', so born before about 1832; dead long before 1956. Text checked against the 1926 page images ('christmas Gift', 'christman Gifts.' as printed).",
       "firstPublished": 1926,
       "authorDiedBy": 1942
     },
@@ -599,7 +599,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed 1925 (JNH vol. X; the April 1925 issue text on the Internet Archive contains it), reprinted 1926; both before 1931. EU: an adult corresponding with Liberia in 1849, so born before about 1831; dead long before 1956 (authorDiedBy 1941). Published 1925, so any EU publication right (25 years) ended long ago. Text checked against the 1926 page images.",
+      "basis": "US: first printed 1925 (JNH vol. X; the April 1925 issue text on the Internet Archive contains it), reprinted 1926; both before 1931. EU: an adult corresponding with Liberia in 1849, so born before about 1831; dead long before 1956. Published 1925, so any EU publication right (25 years) ended long ago. Text checked against the 1926 page images.",
       "firstPublished": 1925,
       "authorDiedBy": 1941
     },
@@ -746,7 +746,7 @@
     "place": "Liberia",
     "year": 1832,
     "origin": "emigrant",
-    "story": "Eliza Hatter, who had emigrated to Liberia from near Shepherdstown, Virginia, wrote this to her sister; the American Colonization Society printed the extract in its African Repository in November 1832 under ‘Letters from Colonists’.",
+    "story": "Eliza Hatter, who had been enslaved by the Blackburn sisters near Shepherdstown, Virginia, before she emigrated to Liberia, wrote this to her sister; the American Colonization Society printed the extract in its African Repository in November 1832 under ‘Letters from Colonists’.",
     "source": {
       "name": "The African Repository and Colonial Journal, vol. VIII, no. 9 (November 1832), pp. 280–281; Internet Archive (Serials in Microfilm) scan, page image read",
       "url": "https://archive.org/details/sim_african-repository_1832-11_8_9",
@@ -756,7 +756,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: printed 1832. EU: a married woman who had already emigrated and kept house in Liberia by 1832, so born before about 1813 and certainly dead long before 1956 (authorDiedBy 1923 = birth bound + 110). Published 1832, so no publication right. Text checked against the page image (the OCR misreads 'I' as 'T' and 'is long' as 'islong').",
+      "basis": "US: printed 1832. EU: a married woman who had already emigrated and kept house in Liberia by 1832, so born before about 1813 and certainly dead long before 1956. Published 1832, so no publication right. Text checked against the page image (the OCR misreads 'I' as 'T' and 'is long' as 'islong').",
       "firstPublished": 1832,
       "authorDiedBy": 1923
     },
@@ -797,7 +797,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "First printed 1799 in London (Copies of Original Letters from the Army of General Bonaparte in Egypt, Part the Second, J. Wright, French text with English translation; IA copy https://archive.org/details/bim_eighteenth-century_copies-of-original-lette_1799_1) and the same year in Paris (Correspondance de l'armee francaise en Egypte, Garnery, an VII; https://archive.org/details/32882019067670-correspondanced); text quoted from Larchey's 1866 Paris reprint (public domain). US: printed before 1931 (U1). EU: the writer was an adult serving in Egypt in 1798, so born before c.1780 and certainly dead long before 1956 (E1). No modern transcription used, so no publication right arises. OCR slip 't'aimejr' in the 1866 scan corrected to 't'aimer', as printed in the 1799 Paris edition.",
+      "basis": "First printed 1799 in London (Copies of Original Letters from the Army of General Bonaparte in Egypt, Part the Second, J. Wright, French text with English translation; IA copy https://archive.org/details/bim_eighteenth-century_copies-of-original-lette_1799_1) and the same year in Paris (Correspondance de l'armee francaise en Egypte, Garnery, an VII; https://archive.org/details/32882019067670-correspondanced); text quoted from Larchey's 1866 Paris reprint (public domain). US: printed before 1931. EU: the writer was an adult serving in Egypt in 1798, so born before c.1780 and certainly dead long before 1956. No modern transcription used, so no publication right arises. OCR slip 't'aimejr' in the 1866 scan corrected to 't'aimer', as printed in the 1799 Paris edition.",
       "firstPublished": 1799,
       "authorDiedBy": 1900
     },
@@ -836,7 +836,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by nothing at all (the signature is printed as a dash); no surname or address), so not identifiable; anonymous work published before 1956. Transcription made by me from the 1908 page image (LOC IIIF), not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Layout: dateline and greeting set on their own lines; 'wheel-barrow' is broken across a line in the print and written here as 'wheelbarrow'.",
+      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the letter is signed only with a dash; no name or address), so not identifiable; anonymous work published before 1956. Transcribed from the 1908 page image at the Library of Congress, not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Layout: dateline and greeting set on their own lines; 'wheel-barrow' is broken across a line in the print and written here as 'wheelbarrow'.",
       "firstPublished": 1908,
       "anonymous": true
     },
@@ -996,7 +996,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1838 (US: before 1931). Writer was an established farmer with a family when he emigrated in 1835, so born before about 1815; dead long before 1956 (authorDiedBy is a 110-year bound). Text from the 1838 printing.",
+      "basis": "Printed 1838 (US: before 1931). Writer was an established farmer with a family when he emigrated in 1835, so born before about 1815; dead long before 1956. Text from the 1838 printing.",
       "firstPublished": 1838,
       "authorDiedBy": 1925
     },
@@ -1195,7 +1195,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed at Petworth in 1833 (before 1931). John Stedman was writing in 1832, so was born before 1836 (a hired farm hand, so born before c.1816); death year unknown but certainly before 1956 (authorDiedBy 1936 assumes a lifespan of at most 120 years). The editors say the letters are 'faithfully given in the very words of the writers', with only the spelling corrected.",
+      "basis": "Printed at Petworth in 1833 (before 1931). John Stedman was writing in 1832, so was born before 1836 (a hired farm hand, so born before c.1816); death year unknown but certainly before 1956 (allowing a life of 120 years). The editors say the letters are 'faithfully given in the very words of the writers', with only the spelling corrected.",
       "firstPublished": 1833,
       "authorDiedBy": 1936
     },
@@ -1275,7 +1275,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Written c.1643 (editor's estimate); first printed 1869 (US: before 1931). An adult letter-writer around 1643 was born before c.1630, so certainly dead long before 1956 (authorDiedBy 1750 is a safe bound). Text follows the 1869 printing ('buď'; the MKP e-book drops the háček: 'bud').",
+      "basis": "Written c.1643 (editor's estimate); first printed 1869 (US: before 1931). An adult letter-writer around 1643 was born before c.1630, so certainly dead long before 1956. Text follows the 1869 printing ('buď'; the MKP e-book drops the háček: 'bud').",
       "firstPublished": 1869,
       "authorDiedBy": 1750
     },
@@ -1358,7 +1358,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1839 (US: before 1931). Published under initials only (M. L. H.), so the writer is not identifiable: E2. Also E1 in substance: an adult canal labourer in 1838, so born before about 1822. The editors state they kept his spelling unchanged. Our transcription is from the 1839 printing; the NoC-NC statement covers BSB's images, not the text.",
+      "basis": "Printed 1839 (US: before 1931). Published under initials only (M. L. H.), so the writer is not identifiable: anonymous publication before 1956. He was also an adult canal labourer in 1838, so born before about 1822. The editors state they kept his spelling unchanged. Our transcription is from the 1839 printing; the NoC-NC statement covers BSB's images, not the text.",
       "firstPublished": 1839,
       "authorDiedBy": 1932,
       "anonymous": true
@@ -1397,7 +1397,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by the initials 'C. B.'; no surname or address), so not identifiable; anonymous work published before 1956. Transcription made by me from the 1908 page image (LOC IIIF), not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Confidence medium only because the article introduces this letter with 'And another:' after saying the batch was rescued at the dead letter office; it does not repeat that for each letter.",
+      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by the initials 'C. B.'; no surname or address), so not identifiable; anonymous work published before 1956. Transcribed from the 1908 page image at the Library of Congress, not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). One doubt: the article introduces this letter with 'And another:' after saying the batch was rescued at the dead letter office; it does not repeat that for each letter.",
       "firstPublished": 1908,
       "anonymous": true
     },
@@ -1439,7 +1439,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: printed 1834. EU: an adult who emigrated to Liberia about 1830–31, ran a school of seventy children and mentions 'my present husband', so born before about 1813; dead long before 1956 (authorDiedBy 1923). Text checked against the page image (the OCR reads 'w riling' and 'thei').",
+      "basis": "US: printed 1834. EU: an adult who emigrated to Liberia about 1830–31, ran a school of seventy children and mentions 'my present husband', so born before about 1813; dead long before 1956. Text checked against the page image (the OCR reads 'w riling' and 'thei').",
       "firstPublished": 1834,
       "authorDiedBy": 1923
     },
@@ -1558,7 +1558,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed at Petworth in 1833 (before 1931). Mary Holden was writing in 1832, so was born before 1836 (she wrote for the family in 1832, so was born before c.1822); death year unknown but certainly before 1956 (authorDiedBy 1942 assumes a lifespan of at most 120 years). The editors say the letters are 'faithfully given in the very words of the writers', with only the spelling corrected.",
+      "basis": "Printed at Petworth in 1833 (before 1931). Mary Holden was writing in 1832, so was born before 1836 (she wrote for the family in 1832, so was born before c.1822); death year unknown but certainly before 1956 (allowing a life of 120 years). The editors say the letters are 'faithfully given in the very words of the writers', with only the spelling corrected.",
       "firstPublished": 1833,
       "authorDiedBy": 1942
     },
@@ -1652,7 +1652,8 @@
     "traditions": [
       "english-roundhand"
     ],
-    "enabled": true
+    "enabled": false,
+    "disabledReason": "Retired at launch (Rafael, 4 Nov 2026): a single sentence, known from a podcast reading; kept as a reserve."
   },
   {
     "id": "sor-juana-1691",
@@ -1722,7 +1723,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1887 (US: before 1931). Published with a first name only and the rest withheld ('Mathea . . .'), so the writer is not identifiable: E2 (anonymous publication before 1956). Text transcribed from the 1887 Samhold printing (Fraktur), which NB marks public domain.",
+      "basis": "Printed 1887 (US: before 1931). Published with a first name only and the rest withheld ('Mathea . . .'), so the writer is not identifiable: anonymous publication before 1956. Text transcribed from the 1887 Samhold printing (Fraktur), which NB marks public domain.",
       "firstPublished": 1887,
       "anonymous": true
     },
@@ -1807,7 +1808,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed 1872 (Still; Project Gutenberg #15263 has the same text). EU: Still gives her age as about twenty-two in 1854, so born about 1832, before 1836; dead long before 1956 (authorDiedBy 1945 = c.1832 + 113). Text checked against Woodson's 1926 page image and Still's text.",
+      "basis": "US: first printed 1872 (Still; Project Gutenberg #15263 has the same text). EU: Still gives her age as about twenty-two in 1854, so born about 1832, before 1836; dead long before 1956. Text checked against Woodson's 1926 page image and Still's text.",
       "firstPublished": 1872,
       "authorDiedBy": 1945
     },
@@ -2038,7 +2039,7 @@
     "place": "Monrovia, Liberia",
     "year": 1838,
     "origin": "emigrant",
-    "story": "Eunice Moore, born Eunice Sharp, a colored teacher who had sailed for Liberia about 1834, wrote this from Monrovia on 12 January 1838; the African Repository printed it that March ‘from the original, without any alteration’.",
+    "story": "Eunice Moore, born Eunice Sharp, an African American teacher who had sailed for Liberia about 1834, wrote this from Monrovia on 12 January 1838; the African Repository printed it that March ‘from the original, without any alteration’.",
     "source": {
       "name": "The African Repository and Colonial Journal, vol. XIV, no. 3 (March 1838), pp. 73–74; Internet Archive (Serials in Microfilm) scan, page image read",
       "url": "https://archive.org/details/sim_african-repository_1838-03_14_3",
@@ -2048,7 +2049,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: printed 1838. EU: she sailed to Liberia as a teacher about 1834 (the 1834 African Repository lists gifts for 'Eunice Sharp, who is bound to the colony of Liberia'), so born before about 1816; dead long before 1956 (authorDiedBy 1926). Text checked against the page images: the OCR blanks the word 'point' and reads 'eannot'.",
+      "basis": "US: printed 1838. EU: she sailed to Liberia as a teacher about 1834 (the 1834 African Repository lists gifts for 'Eunice Sharp, who is bound to the colony of Liberia'), so born before about 1816; dead long before 1956. Text checked against the page images: the OCR blanks the word 'point' and reads 'eannot'.",
       "firstPublished": 1838,
       "authorDiedBy": 1926
     },
@@ -2088,7 +2089,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed at Petworth in 1836-37 (before 1931). Lydia Hilton was writing in 1836, so was born before 1836 (a married mother of several children, so born before c.1815); death year unknown but certainly before 1956 (authorDiedBy 1935 assumes a lifespan of at most 120 years).",
+      "basis": "Printed at Petworth in 1836-37 (before 1931). Lydia Hilton was writing in 1836, so was born before 1836 (a married mother of several children, so born before c.1815); death year unknown but certainly before 1956 (allowing a life of 120 years).",
       "firstPublished": 1837,
       "authorDiedBy": 1935
     },
@@ -2129,7 +2130,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1908 (US: before 1931). Written c. 1907 in reply to the Swedish Emigration Commission, which printed the writers by initials only ('Fru E. C.'), so she is not identifiable: E2 (anonymous publication before 1956). Born 1879, so E1 cannot be shown. Text from the 1908 printing.",
+      "basis": "Printed 1908 (US: before 1931). Written c. 1907 in reply to the Swedish Emigration Commission, which printed the writers by initials only ('Fru E. C.'), so she is not identifiable: anonymous publication before 1956. She was born in 1879, so it is the anonymous printing, not her death, that makes it free to use. Text from the 1908 printing.",
       "firstPublished": 1908,
       "anonymous": true
     },
@@ -2352,7 +2353,7 @@
     "kind": "letter",
     "lang": "en",
     "title": "Any kind of seed you plant will grow",
-    "author": "Unknown (a colored woman who emigrated in the Saluda)",
+    "author": "Unknown (a woman who emigrated in the Saluda)",
     "writer": {
       "gender": "f",
       "heritage": "Liberian settler (African American emigrant)",
@@ -2372,7 +2373,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: printed 1839. EU: printed in 1839 without any name ('a colored woman who emigrated in February last in the Saluda'), so published anonymously before 1956 (E2). She was also an adult emigrant in 1839, so born before about 1821 (E1 in substance). Text checked against the page images.",
+      "basis": "US: printed 1839. EU: printed in 1839 without any name ('a colored woman who emigrated in February last in the Saluda'), so published anonymously before 1956. She was also an adult emigrant in 1839, so born before about 1821. Text checked against the page images.",
       "firstPublished": 1839,
       "authorDiedBy": 1931,
       "anonymous": true
@@ -2413,7 +2414,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed at Petworth in 1836-37 (before 1931). Alexander Hilton was writing in 1836, so was born before 1836 (an apprentice who had worked two years at his trade, so born before c.1820); death year unknown but certainly before 1956 (authorDiedBy 1940 assumes a lifespan of at most 120 years).",
+      "basis": "Printed at Petworth in 1836-37 (before 1931). Alexander Hilton was writing in 1836, so was born before 1836 (an apprentice who had worked two years at his trade, so born before c.1820); death year unknown but certainly before 1956 (allowing a life of 120 years).",
       "firstPublished": 1837,
       "authorDiedBy": 1940
     },
@@ -2504,7 +2505,8 @@
     "traditions": [
       "french-school"
     ],
-    "enabled": true
+    "enabled": false,
+    "disabledReason": "Retired at launch (Rafael, 4 Nov 2026): one line, and its source wording is unverified; kept as a reserve."
   },
   {
     "id": "tagore-1914",
@@ -2573,7 +2575,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed January 1926 and in the 1926 book. EU: father of a grown son serving with the navy in 1850, so born before about 1815; dead long before 1956 (authorDiedBy 1925). Text checked against the 1926 page image.",
+      "basis": "US: first printed January 1926 and in the 1926 book. EU: father of a grown son serving with the navy in 1850, so born before about 1815; dead long before 1956. Text checked against the 1926 page image.",
       "firstPublished": 1926,
       "authorDiedBy": 1925
     },
@@ -2654,7 +2656,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed in London in 1829 (before 1931). Elizabeth Watson was a mother of several children in 1823, so born before c.1800 and certainly dead long before 1956 (authorDiedBy 1920 assumes at most 120 years). Cobbett printed the family's letters as sent to him by their relations; his italics for emphasis are dropped.",
+      "basis": "Printed in London in 1829 (before 1931). Elizabeth Watson was a mother of several children in 1823, so born before c.1800 and certainly dead long before 1956 (allowing a life of 120 years). Cobbett printed the family's letters as sent to him by their relations; his italics for emphasis are dropped.",
       "firstPublished": 1829,
       "authorDiedBy": 1920
     },
@@ -2732,7 +2734,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed text: James Gairdner (ed.), The Paston Letters 1422-1509, Library Edition, London: Chatto & Windus / Exeter: Commin, 1904 (read in the Project Gutenberg e-text, a page-faithful transcription of that printing; Gairdner prints yogh as z, so no ȝ appears). US: printed in the 1904 edition at the latest (before 1931). EU: Gairdner's note says he was born in 1459, so he was dead long before 1956 (authorDiedBy is a conservative bound).",
+      "basis": "Printed text: James Gairdner (ed.), The Paston Letters 1422-1509, Library Edition, London: Chatto & Windus / Exeter: Commin, 1904 (read in the Project Gutenberg e-text, a page-faithful transcription of that printing; Gairdner prints yogh as z, so no ȝ appears). US: printed in the 1904 edition at the latest (before 1931). EU: Gairdner's note says he was born in 1459, so he was dead long before 1956.",
       "firstPublished": 1904,
       "authorDiedBy": 1580
     },
@@ -2890,7 +2892,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed in London in 1829 (before 1931). Mary Jane Watson was already earning wages in service in 1825 and had spent two years away from home, so she was born before c.1815 and certainly dead long before 1956 (authorDiedBy 1935 assumes at most 120 years). Cobbett's italics for emphasis are dropped.",
+      "basis": "Printed in London in 1829 (before 1931). Mary Jane Watson was already earning wages in service in 1825 and had spent two years away from home, so she was born before c.1815 and certainly dead long before 1956 (allowing a life of 120 years). Cobbett's italics for emphasis are dropped.",
       "firstPublished": 1829,
       "authorDiedBy": 1935
     },
@@ -2933,7 +2935,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: printed 1919. EU: printed with the surname cut ('MARY B——') and no other identifying detail, so published anonymously before 1956 (E2); anonymous-work term (70 years from 1919) long over. The dashes in the signature are the journal's.",
+      "basis": "US: printed 1919. EU: printed with the surname cut ('MARY B——') and no other identifying detail, so published anonymously before 1956; the 70 years from 1919 ran out long ago. The dashes in the signature are the journal's.",
       "firstPublished": 1919,
       "anonymous": true
     },
@@ -3013,7 +3015,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1835 (US: before 1931). Writer was an established farmer with a family when he emigrated in 1835, so born before about 1815; dead long before 1956 (authorDiedBy is a 110-year bound). Text from the 1835 printing.",
+      "basis": "Printed 1835 (US: before 1931). Writer was an established farmer with a family when he emigrated in 1835, so born before about 1815; dead long before 1956. Text from the 1835 printing.",
       "firstPublished": 1835,
       "authorDiedBy": 1925
     },
@@ -3090,7 +3092,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by the first name 'Helen'; no surname or address), so not identifiable; anonymous work published before 1956. Transcription made by me from the 1908 page image (LOC IIIF), not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Cut: part of the list ('and a silk petticoat, and a powder rag, and pair of fancy stockings, and a new bow and a music cabinet,') replaced by ' … '. Letter as printed is c.95 words.",
+      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by the first name 'Helen'; no surname or address), so not identifiable; anonymous work published before 1956. Transcribed from the 1908 page image at the Library of Congress, not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Cut: part of the list ('and a silk petticoat, and a powder rag, and pair of fancy stockings, and a new bow and a music cabinet,') replaced by ' … '.",
       "firstPublished": 1908,
       "anonymous": true
     },
@@ -3132,7 +3134,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: printed 1919. EU: printed without any name, so published anonymously before 1956 (E2). The letter is undated; the journal prints it among letters of 1916–1918, so the year is approximate.",
+      "basis": "US: printed 1919. EU: printed without any name, so published anonymously before 1956. The letter is undated; the journal prints it among letters of 1916–1918, so the year is approximate.",
       "firstPublished": 1919,
       "anonymous": true
     },
@@ -3329,7 +3331,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1836 (US: before 1931). Writer was a married mother of four in 1836, so born before about 1818; dead long before 1956 (authorDiedBy is a 110-year bound). Text from the 1836 printing.",
+      "basis": "Printed 1836 (US: before 1931). Writer was a married mother of four in 1836, so born before about 1818; dead long before 1956. Text from the 1836 printing.",
       "firstPublished": 1836,
       "authorDiedBy": 1927
     },
@@ -3373,7 +3375,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1882 (before 1931). Published before 1956 with the writer identified only by first name(s) and initial(s), so the writer is not identifiable: anonymous publication (E2). The child's own death year is unknown.",
+      "basis": "Printed 1882 (before 1931). Published before 1956 with the writer identified only by first name(s) and initial(s), so the writer is not identifiable and the letter counts as published anonymously. The child's own death year is unknown.",
       "firstPublished": 1882,
       "anonymous": true
     },
@@ -3469,7 +3471,8 @@
       "dutch-running"
     ],
     "olderHandsOnly": true,
-    "enabled": true
+    "enabled": false,
+    "disabledReason": "Retired at launch (Rafael, 4 Nov 2026): the recipient, Katherine Ryche, was about thirteen; kept as a reserve."
   },
   {
     "id": "migrant-1917-white-sox",
@@ -3497,7 +3500,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: printed 1919. EU: printed without a name, so published anonymously before 1956 (E2). Undated; the journal prints it among letters of 1916–1918.",
+      "basis": "US: printed 1919. EU: printed without a name, so published anonymously before 1956. Undated; the journal prints it among letters of 1916–1918.",
       "firstPublished": 1919,
       "anonymous": true
     },
@@ -3617,7 +3620,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1882 (before 1931). Published before 1956 with the writer identified only by first name(s) and initial(s), so the writer is not identifiable: anonymous publication (E2). The child's own death year is unknown.",
+      "basis": "Printed 1882 (before 1931). Published before 1956 with the writer identified only by first name(s) and initial(s), so the writer is not identifiable and the letter counts as published anonymously. The child's own death year is unknown.",
       "firstPublished": 1882,
       "anonymous": true
     },
@@ -3728,7 +3731,7 @@
     "recipient": "her husband, Adam Plummer, at Riversdale, Maryland",
     "year": 1860,
     "origin": "family",
-    "story": "Emily Plummer, who lived apart from her husband Adam in Maryland and could not write herself, sent him news of their twins in September 1860; Carter G. Woodson printed the family’s letters in 1926.",
+    "story": "Emily Plummer and her husband Adam were both enslaved, on different estates in Maryland, so they lived apart. She could not write herself, but sent him news of their twins in September 1860; Carter G. Woodson printed the family’s letters in 1926.",
     "source": {
       "name": "Carter G. Woodson (ed.), The Mind of the Negro as Reflected in Letters Written During the Crisis, 1800–1860 (Washington: Association for the Study of Negro Life and History, 1926); Internet Archive scan of the State Library of Pennsylvania copy, page images read",
       "url": "https://archive.org/details/mindofnegroasref00wood",
@@ -3778,7 +3781,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by the first name 'myra' and the state of Maine; no surname or address), so not identifiable; anonymous work published before 1956. Transcription made by me from the 1908 page image (LOC IIIF), not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Cut: 'there are lots of things i would like to have but the one i would like the most is a uoll i shall be oftle (awful) glad when Christmas time comes' replaced by ' … ' (the print has a typesetting slip 'uoll' and an editor's gloss '(awful)'). 'Har-per's' is broken across a line in the print. The word after 'thought' is printed indistinctly; read as 'i', matching her other lowercase i's.",
+      "basis": "US: first printed in a US newspaper in 1908 (before 1931). EU/UK: printed anonymously in 1908 (the child is identified only by the first name 'myra' and the state of Maine; no surname or address), so not identifiable; anonymous work published before 1956. Transcribed from the 1908 page image at the Library of Congress, not from a modern edition. The feature carries the line 'Text and Illustrations Copyright, 1908, by Frederic Bulkeley Hyde'; that US copyright has long expired and his prose is not quoted. Letter year: written for Christmas 1908 or shortly before (the article is dated 20 Dec 1908). Cut: 'there are lots of things i would like to have but the one i would like the most is a uoll i shall be oftle (awful) glad when Christmas time comes' replaced by ' … ' (the print has a typesetting slip 'uoll' and an editor's gloss '(awful)'). 'Har-per's' is broken across a line in the print. The word after 'thought' is printed indistinctly; read as 'i', matching her other lowercase i's.",
       "firstPublished": 1908,
       "anonymous": true
     },
@@ -3860,7 +3863,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1883 (before 1931). Published before 1956 with the writer identified only by first name(s) and initial(s), so the writer is not identifiable: anonymous publication (E2). The child's own death year is unknown.",
+      "basis": "Printed 1883 (before 1931). Published before 1956 with the writer identified only by first name(s) and initial(s), so the writer is not identifiable and the letter counts as published anonymously. The child's own death year is unknown.",
       "firstPublished": 1883,
       "anonymous": true
     },
@@ -3897,7 +3900,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1833 (US: before 1931). Writer was a married mother in 1833, so born before about 1815; dead long before 1956 (authorDiedBy is a 110-year bound). Text from the 1833 printing.",
+      "basis": "Printed 1833 (US: before 1931). Writer was a married mother in 1833, so born before about 1815; dead long before 1956. Text from the 1833 printing.",
       "firstPublished": 1833,
       "authorDiedBy": 1928
     },
@@ -3941,7 +3944,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1833 (US: before 1931). Writing a letter in 1833 (and speaking of her class-mates) she was born before about 1825; authorDiedBy 1945 is a 120-year upper bound (EU: dead before 1956). Printed 'verbatim et literatim', so her own spelling is kept.",
+      "basis": "Printed 1833 (US: before 1931). Writing a letter in 1833 (and speaking of her class-mates) she was born before about 1825 and, even after a life of 120 years, dead by 1945: more than 70 years ago. Printed 'verbatim et literatim', so her own spelling is kept.",
       "firstPublished": 1833,
       "authorDiedBy": 1945
     },
@@ -4063,7 +4066,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Undated; printed just before Ampère's reply dated Lyon, 13 March 1799. First printed 1869 (US: before 1931). She had grown daughters by 1799, so was born before c.1760 and certainly died before 1956 (authorDiedBy 1860 is a safe bound).",
+      "basis": "Undated; printed just before Ampère's reply dated Lyon, 13 March 1799. First printed 1869 (US: before 1931). She had grown daughters by 1799, so was born before c.1760 and certainly died before 1956.",
       "firstPublished": 1869,
       "authorDiedBy": 1860
     },
@@ -4104,7 +4107,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1847 (US: before 1931). A married woman ('My husband unites me in love') farming in 1844, so born before about 1828; authorDiedBy 1948 is a 120-year upper bound (EU: dead before 1956). She opens 'I sit with emotions of much joy, to have these lines written unto you', so she may have dictated it.",
+      "basis": "Printed 1847 (US: before 1931). A married woman ('My husband unites me in love') farming in 1844, so born before about 1828 and, even after a life of 120 years, dead by 1948: more than 70 years ago. She opens 'I sit with emotions of much joy, to have these lines written unto you', so she may have dictated it.",
       "firstPublished": 1847,
       "authorDiedBy": 1948
     },
@@ -4308,7 +4311,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1837 (US: before 1931). Writer was a carpenter with grown sons in 1835, so born before about 1815; dead long before 1956 (authorDiedBy is a 110-year bound). Text from the 1837 printing.",
+      "basis": "Printed 1837 (US: before 1931). Writer was a carpenter with grown sons in 1835, so born before about 1815; dead long before 1956. Text from the 1837 printing.",
       "firstPublished": 1837,
       "authorDiedBy": 1925
     },
@@ -4349,7 +4352,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Written 11 Jan 1794; first printed 1907 (US: before 1931). A married adult in 1794, so born before c.1776 and certainly dead before 1956 (authorDiedBy 1876 is a safe bound). The letter has no greeting; the excerpt opens mid-letter with her address to him, and her headache, the Tunis plans and theatre gossip are left out.",
+      "basis": "Written 11 Jan 1794; first printed 1907 (US: before 1931). A married adult in 1794, so born before c.1776 and certainly dead before 1956. The letter has no greeting; the excerpt opens mid-letter with her address to him, and her headache, the Tunis plans and theatre gossip are left out.",
       "firstPublished": 1907,
       "authorDiedBy": 1876
     },
@@ -4380,7 +4383,7 @@
     "place": "Kew",
     "year": 1789,
     "origin": "notable",
-    "story": "Written at Kew in April 1789 by the novelist Fanny Burney, then Keeper of the Robes to Queen Charlotte, to her friends the Lockes; printed in 1842–46.",
+    "story": "Written at Kew in April 1789 by the novelist Fanny Burney, then Second Keeper of the Robes to Queen Charlotte, to her friends the Lockes; printed in 1842–46.",
     "source": {
       "name": "The Diary and Letters of Madame d'Arblay, notes by W. C. Ward, vol. 2 (London: Vizetelly, 1891-92), via Project Gutenberg #6042",
       "url": "https://www.gutenberg.org/cache/epub/6042/pg6042.txt"
@@ -4427,7 +4430,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "First printed 1799 in London (Copies of Original Letters from the Army of General Bonaparte in Egypt, Part the Second, J. Wright, French text with English translation; IA copy https://archive.org/details/bim_eighteenth-century_copies-of-original-lette_1799_1) and the same year in Paris (Correspondance de l'armee francaise en Egypte, Garnery, an VII; https://archive.org/details/32882019067670-correspondanced); text quoted from Larchey's 1866 Paris reprint (public domain). US: printed before 1931 (U1). EU: the writer was an adult serving in Egypt in 1798, so born before c.1780 and certainly dead long before 1956 (E1). No modern transcription used, so no publication right arises. Spelling follows the 1866 reprint; the 1799 Paris edition reads 'je t'ai écris' and 'sur la terre :', so the 1866 text may be lightly normalised.",
+      "basis": "First printed 1799 in London (Copies of Original Letters from the Army of General Bonaparte in Egypt, Part the Second, J. Wright, French text with English translation; IA copy https://archive.org/details/bim_eighteenth-century_copies-of-original-lette_1799_1) and the same year in Paris (Correspondance de l'armee francaise en Egypte, Garnery, an VII; https://archive.org/details/32882019067670-correspondanced); text quoted from Larchey's 1866 Paris reprint (public domain). US: printed before 1931. EU: the writer was an adult serving in Egypt in 1798, so born before c.1780 and certainly dead long before 1956. No modern transcription used, so no publication right arises. Spelling follows the 1866 reprint; the 1799 Paris edition reads 'je t'ai écris' and 'sur la terre :', so the 1866 text may be lightly normalised.",
       "firstPublished": 1799,
       "authorDiedBy": 1900
     },
@@ -4469,7 +4472,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1886 (before 1931). Signed only with the pet name 'Chiquitita', so published anonymously before 1956 (E2); the writer's death year is unknown.",
+      "basis": "Printed 1886 (before 1931). Signed only with the pet name 'Chiquitita', so published anonymously before 1956; the writer's death year is unknown.",
       "firstPublished": 1886,
       "anonymous": true
     },
@@ -4624,7 +4627,7 @@
     "place": "Millsburg, Liberia",
     "year": 1838,
     "origin": "emigrant",
-    "story": "Written from Millsburg in May 1838, a few months after the ship Emperor landed, and printed that September.",
+    "story": "Written from Millsburg in May 1838 by one of the people freed by the late Mr. Stockdell of Madison County, Virginia, a few months after they landed from the ship Emperor; printed that September.",
     "source": {
       "name": "The African Repository and Colonial Journal (American Colonization Society, Washington), vol. 14 (Sept. 1838), p. 278; Internet Archive scan, page image read",
       "url": "https://archive.org/details/sim_african-repository_1838-09_14_9/page/n27/mode/1up",
@@ -4634,7 +4637,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1838 (US: before 1931). A parent writing of 'our children' in 1838, so born before about 1815; authorDiedBy 1935 is a 120-year upper bound (EU: dead before 1956). Text transcribed from the 1838 printing.",
+      "basis": "Printed 1838 (US: before 1931). A parent writing of 'our children' in 1838, so born before about 1815 and, even after a life of 120 years, dead by 1935: more than 70 years ago. Text transcribed from the 1838 printing.",
       "firstPublished": 1838,
       "authorDiedBy": 1935
     },
@@ -4731,7 +4734,8 @@
     "traditions": [
       "english-roundhand"
     ],
-    "enabled": true
+    "enabled": false,
+    "disabledReason": "Retired at launch (Rafael, 4 Nov 2026): too short (88 characters); kept as a reserve."
   },
   {
     "id": "st-nicholas-1892-burros",
@@ -4760,7 +4764,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1892 (before 1931). Signed with first names and a surname initial followed by a dash ('F——'), the editors withholding the surname: anonymous publication before 1956 (E2). Death years unknown.",
+      "basis": "Printed 1892 (before 1931). Signed with first names and a surname initial followed by a dash ('F——'), the editors withholding the surname: anonymous publication before 1956. Death years unknown.",
       "firstPublished": 1892,
       "anonymous": true
     },
@@ -4987,10 +4991,10 @@
     "kind": "letter",
     "lang": "en",
     "title": "A hut on the hill",
-    "author": "Unknown (a pupil of Aibonito, Porto Rico; unnamed)",
+    "author": "Unknown (a pupil of Aibonito, Puerto Rico; unnamed)",
     "writer": {
       "heritage": "Puerto Rican",
-      "basis": "Part of an album from the Junior Red Cross pupils of Aibonito, Porto Rico; the writer calls the island 'my beloved island'. The magazine does not name the writer or say whether a boy or girl wrote it, so gender is left out."
+      "basis": "Part of an album from the Junior Red Cross pupils of Aibonito, Puerto Rico; the writer calls the island 'my beloved island'. The magazine does not name the writer or say whether a boy or girl wrote it, so gender is left out."
     },
     "recipient": "'American friends': the Junior Red Cross pupils of Prince George's County, Maryland",
     "place": "Aibonito, Puerto Rico",
@@ -5006,7 +5010,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1929 (before 1931). The magazine quotes it as 'another letter of the Aibonito album' without naming the writer: published anonymously before 1956 (E2).",
+      "basis": "Printed 1929 (before 1931). The magazine quotes it as 'another letter of the Aibonito album' without naming the writer: published anonymously before 1956.",
       "firstPublished": 1929,
       "anonymous": true
     },
@@ -5048,7 +5052,7 @@
     "rights": {
       "us": true,
       "eu": true,
-      "basis": "Printed 1833 (US: before 1931). An adult emigrant in 1833 who has 'travelled a great deal' and offers to 'prepare a place' for Miss Mitchel, so born before about 1815; authorDiedBy 1935 is a 120-year upper bound (EU: dead before 1956). Printed 'verbatim et literatim' ('I brace' is his).",
+      "basis": "Printed 1833 (US: before 1931). An adult emigrant in 1833 who has 'travelled a great deal' and offers to 'prepare a place' for Miss Mitchel, so born before about 1815 and, even after a life of 120 years, dead by 1935: more than 70 years ago. Printed 'verbatim et literatim' ('I brace' is his).",
       "firstPublished": 1833,
       "authorDiedBy": 1935
     },

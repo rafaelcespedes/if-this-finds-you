@@ -1,0 +1,29 @@
+name: Something's broken
+description: A page, a letter, a hand or a font that doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: The page's address, or the link from Share. It brings back the same letter, hand and settings.
+      placeholder: https://ifthisfindsyou.app/…
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Safari on an iPhone 15, Chrome on Windows 11…
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: A screenshot or a downloaded font file helps, if you have one.

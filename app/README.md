@@ -15,7 +15,7 @@ cd app && npm start
 ```
 
 That installs the pinned dependencies (first run only takes a few seconds) and starts the dev server at
-**http://127.0.0.1:5173**. Node 20 or newer.
+**http://127.0.0.1:5173**. Node 24 (as in `package.json` and the checks).
 
 Other scripts: `npm run dev` (server only), `npm run build` (typecheck + production build into `dist/`),
 `npm run preview` (serve the build at http://127.0.0.1:4173), `npm run typecheck`.

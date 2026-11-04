@@ -8,6 +8,7 @@ import { rasterizeWriting } from './writing';
 import { write } from './write-core';
 import { sheetSVG, type Live } from './live';
 import type { WriteRequest } from './write-protocol';
+import { fileWasGone, reloadForNewVersion, workerDidNotLoad } from './stale-build';
 import { fileSafe, saveBlob } from './utils';
 
 /** Copy text to the clipboard, with a fallback for browsers that block the async API. */
@@ -148,11 +149,21 @@ export function exportFontPackage(req: import('@/workers/font.worker').FontReque
     w.onmessage = (e: MessageEvent<import('@/workers/font.worker').FontReply>) => {
       w.terminate();
       const r = e.data;
-      if (!r.ok) { reject(new Error(r.error)); return; }
+      if (!r.ok) {
+        // a part the worker loads on demand is gone (a new version of the site arrived): the page reloads onto it
+        if (fileWasGone(r.error) && reloadForNewVersion()) return;
+        reject(new Error(r.error));
+        return;
+      }
       saveBlob(new Blob([r.zip], { type: 'application/zip' }), r.filename);
       resolve({ filename: r.filename, family: r.info.family, glyphs: r.info.glyphs, bytes: r.zip.byteLength });
     };
-    w.onerror = (e) => { w.terminate(); reject(new Error(e.message || 'The font couldn’t be built')); };
+    w.onerror = (e) => {
+      w.terminate();
+      // its script gone (the site was updated since this tab opened): the page reloads onto the new version
+      if (workerDidNotLoad(e) && reloadForNewVersion()) return;
+      reject(new Error(e.message || 'The font couldn’t be built'));
+    };
     w.postMessage(req);
   });
 }

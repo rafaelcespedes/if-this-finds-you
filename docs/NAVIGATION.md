@@ -49,13 +49,14 @@ The header is the site's running head (the Reading Room layouts, house rule 2): 
 the label role's small capitals; the letter's number is archival red. Other looks keep the plain header.
 
 - **The middle** says what this page holds, on desktops and tablets. Pages pass it as `centre`:
-  - the desk, on a found letter (Reading Room): "No. 0115 · Millsburg · 1838"
-    (`components/Folio.tsx`, from the Reading Room's catalogue, the same source as the marks printed on the sheet);
   - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›" (the library builds it);
   - All letters: where you are on the canvas, the decade under the middle of the screen (the library builds it).
   Mark the number with `data-site-number` so the looks can colour it.
-- It's centred over the page, or, on the desk in the Reading Room, over the letter's side: there the header runs
-  the width of the window (its places reach the desk's right edge) and keeps the desk's width aside (`beside`).
+- **The desk has no middle** (Rafael, launch day: "I don't think we need it. And I think it's just weirdly
+  centered"): its found letter's number, place and year are the record's, beside the letter. (It had them as
+  "No. 0115 · Millsburg · 1838", centred over the letter's side with `beside`.)
+- It's centred over the page; `beside` (a column's width kept aside, the middle centred over the rest) is there for a
+  page that needs it, and no page passes it now.
 - **Phones (under 40rem) have no middle** (Rafael, 3 Nov: "keep the navigation on mobile minimal"): the wordmark,
   the page's action (Share on the desk) and the Menu. The number, place and year stay on the page itself.
 - When the line gets tight on a larger screen, the header gives way in this order: the middle moves off-centre, then

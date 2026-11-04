@@ -7,6 +7,7 @@ import { applySerif } from './serif';
 import '../index.css';
 import './archive.css';
 import { applyLook } from '../lib/look';
+import { reloadOnNewVersion } from '../lib/stale-build';
 import '../themes/reading-room.css';
 import '../themes/postmarked.css';
 // the library in the Reading Room (the layout study's proposals 2 and 3), after the look's own sheet
@@ -26,6 +27,9 @@ applyLayout('letters');
 
 // opened once online, the library opens again offline (public/letters-sw.js)
 keepForOffline();
+
+// a tab left open across a new version reloads onto it when a file it asks for is gone
+reloadOnNewVersion();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -670,8 +670,8 @@ html:root[data-layout='ruler'] .canvas-heading .canvas-heading-art {
 }
 
 /* =====================================================================================================================
-   ABOUT (about/AboutApp.tsx, about/about.css): the title across the page, huge; each section's number a big figure in
-   the margin rail, its words in columns 5–10, one rule over each
+   ABOUT (about/AboutApp.tsx, about/about.css): the title across the page, huge; each section's name in the margin
+   rail, its words in columns 5–10, one rule over each
    ===================================================================================================================== */
 html:root[data-layout='ruler'] .about {
   --about-label-font: var(--ed-head-face);
@@ -718,14 +718,6 @@ html:root[data-layout='ruler'] .about-facts dd {
   font-variant-numeric: var(--ed-figure-numeric);
   letter-spacing: -0.02em;
   line-height: 1;
-}
-html:root[data-layout='ruler'] .about-section-no {
-  font-family: var(--ed-figure-face);
-  font-size: var(--ed-display-2);
-  font-variant-numeric: var(--ed-figure-numeric);
-  line-height: 0.85;
-  letter-spacing: -0.04em;
-  color: var(--rr-red);
 }
 @media (min-width: 56rem) {
   html:root[data-layout='ruler'] .about-main > * {

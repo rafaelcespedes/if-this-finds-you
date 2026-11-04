@@ -1,0 +1,23 @@
+name: A mistake in a letter
+description: A wrong word, date, name or story on one of the letters.
+labels: [letters]
+body:
+  - type: input
+    id: letter
+    attributes:
+      label: The letter
+      description: Its link, or its title and year.
+    validations:
+      required: true
+  - type: textarea
+    id: mistake
+    attributes:
+      label: The mistake
+      description: What it says now, and what it should say.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Where it's shown
+      description: The page of the source that backs the correction, if you have it. The letters' texts follow their sources, old spellings included.

@@ -152,13 +152,10 @@
   font-style: italic;
 }
 
-/* phones (the page's one-column layout, under 56rem): no small "About" over the title and no section numbers. On a
-   wide screen they set the margin rail; on a phone the title and each section's name say enough (Rafael, 4 Nov 2026).
-   The numbers are aria-hidden anyway, and the title already names the page. Nor the footer, which says again what the
-   page has just said (Rafael, phone redundancy sweep) */
+/* phones (the page's one-column layout, under 56rem): no small "About" over the title, which already names the page
+   (Rafael, 4 Nov 2026), nor the footer, which says again what the page has just said (Rafael, phone redundancy sweep) */
 @media (max-width: 55.99rem) {
   .about-kicker,
-  .about-section-no,
   /* the footer's lines restate the opening and sections 2, 4 and 5 just above it */
   .about-colophon {
     display: none;
@@ -286,9 +283,6 @@
   scroll-margin-top: 1.5rem;
 }
 .about-section-title {
-  display: flex;
-  align-items: baseline;
-  gap: 0.625rem;
   margin: 0 0 1.25rem;
   font-family: var(--about-book);
   font-size: 1.5em;
@@ -309,8 +303,6 @@
     position: sticky;
     top: calc(var(--site-head-clear, 0px) + 1.5rem); /* under the pinned site header */
     align-self: start;
-    flex-direction: column;
-    gap: 0.125rem;
     margin: 0;
     font-size: 1.25em;
   }
@@ -597,8 +589,7 @@ html[data-look='reading-room'] .about-give-link {
   font-weight: 400;
 }
 html[data-look='reading-room'] .about-facts dd,
-html[data-look='reading-room'] .about-ledger-year,
-html[data-look='reading-room'] .about-section-no {
+html[data-look='reading-room'] .about-ledger-year {
   font-variant-numeric: oldstyle-nums tabular-nums;
 }
 /* an index card's one red rule under the head, soft like every divider in the room */

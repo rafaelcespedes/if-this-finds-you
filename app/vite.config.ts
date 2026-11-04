@@ -17,6 +17,22 @@ const engineDir = process.env.SEEDHAND_ENGINE
 // first load carries 38 kB of letters instead of 113 kB (gzip). The library reads the whole file itself.
 const LETTERS_FILE = path.resolve(import.meta.dirname, '../content/sample-texts.json');
 const TOOL_FIELDS = ['id', 'text', 'kind', 'lang', 'title', 'author', 'year', 'translator', 'traditions', 'recipient', 'origin', 'place', 'writer', 'olderHandsOnly'];
+// A page from one version of the site whose files are already gone (a deploy moved on in between) reloads once, or
+// says so, instead of staying empty: src/lib/stale-guard.inline.js, inlined as the first script of every page so it
+// is listening before the page's own files are asked for.
+// (right after the charset, which must stay in the page's first 1024 bytes; its comments left out)
+const STALE_GUARD = fs.readFileSync(path.resolve(import.meta.dirname, 'src/lib/stale-guard.inline.js'), 'utf8')
+  .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n').trim();
+function staleGuard(): Plugin {
+  return {
+    name: 'stale-guard',
+    transformIndexHtml: {
+      order: 'pre',
+      handler: (html) => html.replace(/(<meta charset="[^"]*"\s*\/?>)/i, `$1\n    <script>${STALE_GUARD}</script>`),
+    },
+  };
+}
+
 function toolLetters(): Plugin {
   const id = 'virtual:tool-letters';
   return {
@@ -41,7 +57,7 @@ function toolLetters(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), toolLetters()],
+  plugins: [react(), tailwindcss(), toolLetters(), staleGuard()],
   // the writing, roll and font workers read the letters too
   worker: { format: 'es', plugins: () => [toolLetters()] },
   resolve: {

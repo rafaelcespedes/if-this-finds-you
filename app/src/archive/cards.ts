@@ -5,6 +5,7 @@ import workerSrc from './card.worker.ts?worker&url';
 import type { Look } from './model';
 import type { CardLetter, CardRequest, CardResult } from './card-protocol';
 import { wearLevel } from '@/lib/paper/wear';
+import { reloadForNewVersion, workerDidNotLoad } from '@/lib/stale-build';
 
 export interface CardImage {
   url: string;
@@ -139,7 +140,12 @@ class CardStore {
       const worker = new Worker(workerSrc, { type: 'module', name: 'lost-letters-cards' });
       const slot = { worker, job: null as number | null, key: null as string | null };
       worker.onmessage = (e: MessageEvent<CardResult>) => this.finished(slot, e.data);
-      worker.onerror = () => { if (slot.job != null) this.inflight.delete(slot.job); if (slot.key) this.fail(slot.key); slot.job = null; slot.key = null; this.pump(); };
+      worker.onerror = (e) => {
+        // its script gone (a new version of the site arrived): the page reloads onto it
+        if (workerDidNotLoad(e) && reloadForNewVersion()) return;
+        if (slot.job != null) this.inflight.delete(slot.job);
+        if (slot.key) this.fail(slot.key); slot.job = null; slot.key = null; this.pump();
+      };
       worker.postMessage({ warm: true });
       this.pool.push(slot);
     }

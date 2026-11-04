@@ -1,18 +1,16 @@
-/* The 404 (404.html): an address that isn't here. The same page as About's head: a red kicker, the title, one line,
-   then the two ways on. Write a letter is the desk's main action (the Reading Room's BringAnother button,
-   rr-bring-button), All letters a quiet control beside it. Soft rules only, no small capitals, no underlines.
-   Under the Ruler (the default) the title runs across the page at display size and the line and the ways sit in
-   columns 5–10, as About's head does. Sizes in rem, so the page follows the browser's text size. */
+/* The 404 (404.html): an address that isn't here. The same page as About's head: the title, one line, then the two
+   ways on (no kicker over the title: "Not found" only said the title again). Write a letter is the desk's main
+   action (the Reading Room's BringAnother button, rr-bring-button), All letters a quiet control beside it. Soft
+   rules only, no small capitals, no underlines. Under the Ruler (the default) the title runs across the page at
+   display size and the line and the ways sit in columns 5–10, as About's head does. Sizes in rem, so the page
+   follows the browser's text size. */
 
 .nf {
   --nf-text: var(--text);
   --nf-muted: var(--text-muted);
-  --nf-mark: var(--mark);
   --nf-book: var(--font-letter, Georgia, serif);
   --nf-title-face: var(--nf-book);
   --nf-title-weight: 500;
-  --nf-label-face: var(--font-sans);
-  --nf-label-weight: 500;
   --nf-control-face: var(--font-sans);
   --nf-control-size: 0.8125rem;
   --nf-control-weight: 500;
@@ -39,16 +37,7 @@
 .nf-head > * {
   margin: 0;
 }
-.nf-kicker {
-  color: var(--nf-mark);
-  font-family: var(--nf-label-face);
-  font-size: 0.75rem;
-  font-weight: var(--nf-label-weight);
-  letter-spacing: 0.01em;
-  line-height: 1.4;
-}
 .nf-title {
-  margin-top: 0.5rem;
   font-family: var(--nf-title-face);
   font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
   font-weight: var(--nf-title-weight);
@@ -148,16 +137,13 @@ html:not([data-look='reading-room']) .nf-write:active {
   }
 }
 
-/* ---------- the Reading Room (the default): its book face, its label and control roles, archival red ---------- */
+/* ---------- the Reading Room (the default): its book face and its control role ---------- */
 html[data-look='reading-room'] .nf {
   --nf-text: var(--rr-ink);
   --nf-muted: var(--rr-muted);
-  --nf-mark: var(--rr-red);
   --nf-book: var(--rr-book);
   --nf-title-face: var(--rr-title-face, var(--rr-book));
   --nf-title-weight: var(--rr-title-weight, 500);
-  --nf-label-face: var(--rr-label-face, var(--rr-ui));
-  --nf-label-weight: 400;
   --nf-control-face: var(--rr-control-face, var(--rr-ui));
   --nf-control-size: var(--rr-control-size, 0.8125rem);
   --nf-control-weight: var(--rr-control-weight, 500);
@@ -184,13 +170,7 @@ html:root[data-layout='ruler'] .nf-head {
   max-width: none;
   padding-bottom: 1rem;
 }
-html:root[data-layout='ruler'] .nf-kicker {
-  font-family: var(--ed-head-face);
-  font-size: var(--ed-head-size);
-  letter-spacing: var(--ed-head-tracking);
-}
 html:root[data-layout='ruler'] .nf-title {
-  margin-top: 1rem;
   font-family: var(--ed-display-face);
   font-size: var(--ed-display-1);
   font-weight: var(--ed-display-weight);
@@ -213,9 +193,6 @@ html:root[data-layout='ruler'] .nf-lede {
   }
   html:root[data-layout='ruler'] .nf-head > * {
     grid-column: 5 / span 6;
-  }
-  html:root[data-layout='ruler'] .nf-head > .nf-kicker {
-    grid-column: 1 / span 3;
   }
   html:root[data-layout='ruler'] .nf-head > .nf-title {
     grid-column: 1 / -1;

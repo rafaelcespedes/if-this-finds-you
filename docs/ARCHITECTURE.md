@@ -31,7 +31,7 @@ docs/              status, research, decisions
 references/        the open reference library (every source we used)
 ```
 
-Run the lab: `python3 tools/serve.py 8765`, then open http://127.0.0.1:8765/lab/index.html.
+Run the lab: `python3 tools/serve.py 8765`, then open `http://127.0.0.1:8765/lab/index.html`.
 Share a hand: `#seed=quiet-heron-17&style=script`.
 
 ## Data flow
