@@ -1,7 +1,7 @@
 # The share picture
 
 `app/public/brand/share.jpg` (1200 × 630, about 100 kB) is the picture every page's link preview shows (`og:image`
-and `twitter:image` in `app/index.html`, `letters.html`, `fonts.html`, `about.html` and `public/404.html`).
+and `twitter:image` in `app/index.html`, `letters.html`, `fonts.html`, `about.html` and `404.html`, the page for unknown addresses).
 
 It's a loose pile of eight real letters from the collection, each on its own paper, in its own hand, worn and stamped
 as the Reading Room shows it. Nothing is faked: `pile.ts` asks the site's own code for each sheet (the letter's own
