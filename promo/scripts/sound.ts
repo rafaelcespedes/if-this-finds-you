@@ -23,8 +23,10 @@ const out = process.argv[2] || path.join(process.cwd(), 'public/sound.wav');
 const letterId = process.argv[3] || 'santa-1908-papa';
 const landingSeed = process.argv[4] || 'lunar-willow-41';
 const landingStyle = process.argv[5] || 'quebec-print';
+// the frame rate the video is rendered at: the cuts (one tap each) fall on its frames
+const FPS = Number(process.argv[6] || 30);
 
-const P = plan({ ...DEFAULTS, fps: 30 });
+const P = plan({ ...DEFAULTS, fps: FPS });
 const fps = P.s.fps;
 const T = (frame: number) => frame / fps;
 const beat = 60 / P.s.bpm;

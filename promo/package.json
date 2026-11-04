@@ -10,7 +10,7 @@
     "sound": "node scripts/node-ts.mjs scripts/sound.ts",
     "render": "node scripts/node-ts.mjs scripts/sound.ts && remotion render src/index.ts Promo out/draft-540.mp4 --crf=22",
     "render:final": "node scripts/node-ts.mjs scripts/sound.ts && remotion render src/index.ts Promo out/promo-x-30fps.mp4 --props='{\"size\":1080}'",
-    "render:60": "node scripts/node-ts.mjs scripts/sound.ts && remotion render src/index.ts Promo out/promo-60fps.mp4 --props='{\"size\":1080,\"fps\":60}'",
+    "render:60": "node scripts/node-ts.mjs scripts/sound.ts public/sound.wav santa-1908-papa lunar-willow-41 quebec-print 60 && remotion render src/index.ts Promo out/if-this-finds-you-instagram-1080-60fps.mp4 --props='{\"size\":1080,\"fps\":60}' && node scripts/node-ts.mjs scripts/sound.ts",
     "render:timing": "node scripts/click.mjs && remotion render src/index.ts Promo out/timing-540.mp4 --crf=22 --props='{\"grid\":true,\"audio\":\"click\"}'",
     "still": "remotion still src/index.ts Promo out/still.png",
     "hands": "node scripts/sample-hands.mjs 600",
