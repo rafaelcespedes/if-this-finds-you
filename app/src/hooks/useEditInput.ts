@@ -14,6 +14,8 @@ export interface Composition {
  * The native `beforeinput` event supplies the hint (inputType); the diff of old and new value is the truth.
  * While an IME composes, `onComposition` gets the composing range (worked out from the value, since
  * Android's composition `data` is unreliable), and nothing should touch the textarea.
+ * Given `onHistory`, undo and redo are the page's own (lib/edits.ts UndoHistory): the browser's are cancelled, from
+ * the keys (see `historyKey`), the Edit menu or a shake, so it never rewrites the field behind the letter's back.
  */
 export function useEditInput(
   ref: RefObject<HTMLTextAreaElement | null>,
@@ -21,9 +23,10 @@ export function useEditInput(
   onEdit: (e: Edit) => void,
   source: Edit['source'],
   onComposition?: (c: Composition | null) => void,
+  onHistory?: (dir: 'undo' | 'redo') => void,
 ) {
-  const latest = useRef({ value, onEdit, onComposition });
-  latest.current = { value, onEdit, onComposition };
+  const latest = useRef({ value, onEdit, onComposition, onHistory });
+  latest.current = { value, onEdit, onComposition, onHistory };
   const hint = useRef<string | undefined>(undefined);
   // where the composition started, and the text length outside it
   const comp = useRef<{ from: number; outside: number } | null>(null);
@@ -31,7 +34,16 @@ export function useEditInput(
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const onBefore = (e: InputEvent) => { hint.current = e.inputType; };
+    const onBefore = (e: InputEvent) => {
+      const h = latest.current.onHistory;
+      if (h && (e.inputType === 'historyUndo' || e.inputType === 'historyRedo')) {
+        e.preventDefault();
+        h(e.inputType === 'historyUndo' ? 'undo' : 'redo');
+        hint.current = 'history-handled';
+        return;
+      }
+      hint.current = e.inputType;
+    };
     el.addEventListener('beforeinput', onBefore);
     return () => el.removeEventListener('beforeinput', onBefore);
   }, [ref]);
@@ -52,6 +64,12 @@ export function useEditInput(
         const composing = comp.current != null || nativeComposing;
         const inputType = hint.current ?? (e.nativeEvent as InputEvent).inputType;
         const next = e.target.value;
+        // the browser undid anyway (a cancel it ignored): the field goes back to the letter, the page's undo stands
+        if (latest.current.onHistory && inputType?.startsWith('history')) {
+          hint.current = undefined;
+          e.target.value = latest.current.value;
+          return;
+        }
         const edit = diffEdit(latest.current.value, next, kindOf(inputType, composing), source);
         hint.current = undefined;
         if (edit) latest.current.onEdit(edit);
@@ -63,6 +81,16 @@ export function useEditInput(
     }),
     [source],
   );
+}
+
+/** Undo and redo from the keys: ⌘Z / ⌘⇧Z on Apple keyboards, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y elsewhere. */
+export function historyKey(e: React.KeyboardEvent): 'undo' | 'redo' | null {
+  const mod = isMac() ? e.metaKey : e.ctrlKey;
+  if (!mod || e.altKey) return null;
+  const k = e.key.toLowerCase();
+  if (k === 'z') return e.shiftKey ? 'redo' : 'undo';
+  if (k === 'y' && !isMac()) return 'redo';
+  return null;
 }
 
 /** True when a key event belongs to an IME composition (Safari sends keyCode 229 around commits). */
