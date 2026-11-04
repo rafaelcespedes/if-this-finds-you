@@ -603,12 +603,15 @@ function rimLayer(ctx: Ctx2D, rim: Rim, k: number, holeFill: string) {
     // a worn edge: a little grubbier right at the edge, its fibres rubbed up into a faint lighter fuzz
     ctx.globalCompositeOperation = 'multiply';
     ctx.strokeStyle = 'rgb(150, 125, 90)';
-    ctx.globalAlpha = 0.12;
-    ctx.lineWidth = 0.9 * k;
-    ctx.stroke(path);
+    // two widths, faint, so it shades off inward instead of ending in a line
+    for (const [wMm, a] of [[2, 0.045], [0.9, 0.05]] as const) {
+      ctx.globalAlpha = a;
+      ctx.lineWidth = wMm * k;
+      ctx.stroke(path);
+    }
     ctx.globalCompositeOperation = 'source-over';
     ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = 0.22;
+    ctx.globalAlpha = 0.14;
     ctx.lineWidth = 0.22 * k;
     ctx.stroke(path);
   } else {

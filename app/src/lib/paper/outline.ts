@@ -151,7 +151,8 @@ function edgeOutline(p: PaperSpec, seed: string): Outline {
     if (wear && (!e || e.kind === 'perforated')) {
       const worn = wornProfile(wear, `${seed}:${s}`, len[s]);
       const own = raw[s];
-      raw[s] = own ? (t) => own(t) + worn(t) : worn;
+      // a perforation keeps its little teeth: it only wears a little
+      raw[s] = own ? (t) => own(t) + worn(t) * 0.3 : worn;
     }
   }
   // and its corners rub round (the same radius on both sides of a corner)
@@ -174,7 +175,8 @@ function edgeOutline(p: PaperSpec, seed: string): Outline {
       if (rough(next[s]) && L - t < R) c += e.depth * 0.7 * (1 - (L - t) / R) ** 2;
       return c;
     };
-    const rub = corners ? (t: number) => cornerInset(t, corners[ends[s][0]]) + cornerInset(L - t, corners[ends[s][1]]) : null;
+    // each corner is rounded once, by the side that starts there (both sides rounding it would fold the edge back)
+    const rub = corners ? (t: number) => cornerInset(t, corners[ends[s][0]]) : null;
     inset[s] = f ? (rub ? (t) => f(t) + round(t) + rub(t) : (t) => f(t) + round(t)) : rub ?? (() => 0);
   }
   // a worn sheet's sides are read many times over (walking, and keeping corners inside each other): look them up
@@ -201,8 +203,11 @@ function edgeOutline(p: PaperSpec, seed: string): Outline {
     const L = len[s];
     const st = step(s);
     const n = st ? Math.ceil(L / st) : 1;
+    // a rubbed corner is drawn by the side that starts there: this side stops short of the one it ends at
+    const cut = corners ? corners[ends[s][1]] + 0.6 : 0;
     for (let j = 0; j <= n; j++) {
       const t = (j / n) * L;
+      if (cut && t > L - cut) break;
       const d = inset[s](t);
       if (s === 'top') out.push(t, d);
       else if (s === 'right') out.push(w - d, t);
@@ -217,21 +222,60 @@ function edgeOutline(p: PaperSpec, seed: string): Outline {
     y = clamp(y, inset.top(x), h - inset.bottom(w - x));
     return [x, y];
   };
-  const pts: number[] = [];
-  const rims: Rim[] = [];
-  for (const s of sides) {
+  const runs = sides.map((s) => {
     const seg = walk(s);
     const clamped: number[] = [];
     for (let i = 0; i < seg.length; i += 2) {
       const [x, y] = clampPt(seg[i], seg[i + 1]);
       clamped.push(x, y);
     }
+    return clamped;
+  });
+  // sides can overlap where they meet (two rough edges, a rubbed corner): each side ends where it crosses the next
+  for (let c = 0; c < 4; c++) for (let k = 0; k < 6 && meet(runs, c, (c + 1) % 4); k++);
+  const pts: number[] = [];
+  const rims: Rim[] = [];
+  sides.forEach((s, i) => {
+    const clamped = runs[i];
     pts.push(...clamped);
     const e = p.edges?.[s];
-    if (e && !(wear && e.kind === 'perforated')) rims.push({ kind: e.kind, side: s, pts: clamped });
+    if (e) rims.push({ kind: e.kind, side: s, pts: clamped });
     else if (wear) rims.push({ kind: 'worn', side: s, pts: clamped });
-  }
+  });
   return { pts, holes: [], rims };
+}
+
+/**
+ * Where side a's end and side b's start cross near their corner, cut both there (a's tail and b's head each loop
+ * past the other otherwise, and the sheet fills with a hole in its corner).
+ */
+function meet(runs: number[][], ai: number, bi: number): boolean {
+  const A = runs[ai], B = runs[bi];
+  const na = A.length / 2, nb = B.length / 2;
+  if (na < 2 || nb < 2) return false;
+  // look at the last and first 18 mm of the two
+  const cx = B[0], cy = B[1];
+  let a0 = na - 1;
+  while (a0 > 0 && Math.hypot(A[2 * a0] - cx, A[2 * a0 + 1] - cy) < 18) a0--;
+  let b1 = 0;
+  while (b1 < nb - 1 && Math.hypot(B[2 * b1] - cx, B[2 * b1 + 1] - cy) < 18) b1++;
+  for (let i = a0; i < na - 1; i++) {
+    const p0x = A[2 * i], p0y = A[2 * i + 1], p1x = A[2 * i + 2], p1y = A[2 * i + 3];
+    for (let j = b1 - 1; j >= 0; j--) {
+      const q0x = B[2 * j], q0y = B[2 * j + 1], q1x = B[2 * j + 2], q1y = B[2 * j + 3];
+      const d = (p1x - p0x) * (q1y - q0y) - (p1y - p0y) * (q1x - q0x);
+      if (!d) continue;
+      const t = ((q0x - p0x) * (q1y - q0y) - (q0y - p0y) * (q1x - q0x)) / d;
+      const u = ((q0x - p0x) * (p1y - p0y) - (q0y - p0y) * (p1x - p0x)) / d;
+      if (t < 0 || t > 1 || u < 0 || u > 1) continue;
+      const x = p0x + t * (p1x - p0x), y = p0y + t * (p1y - p0y);
+      runs[ai] = [...A.slice(0, 2 * i + 2), x, y];
+      runs[bi] = [x, y, ...B.slice(2 * j + 2)];
+      // a cut exactly at a shared point isn't a crossing: stop there
+      return !(i === na - 2 && j === 0);
+    }
+  }
+  return false;
 }
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));

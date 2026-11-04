@@ -25,6 +25,12 @@ setNoteWriter(writeNote);
  */
 export const PaperMarks = createContext<MarkInput | null>(null);
 
+/**
+ * Which letter these sheets are (a found letter's id, or the writer's seed for your own) and its year: the sheets
+ * wear as that letter does (lib/paper/wear.ts), the same wherever it's shown. Without it, the marks' letter, if any.
+ */
+export const PaperLetter = createContext<{ id: string; year?: number | null } | null>(null);
+
 interface Props {
   paper: PaperSpec;
   /** CSS px per mm */
@@ -121,12 +127,15 @@ export const PaperCanvas = memo(function PaperCanvas({ paper, pxPerMm, crop, fad
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
   // this letter's sheet of the paper, aged as its letter is (lib/paper/wear.ts); a swatch shows the paper new
-  const sheetOf = useMemo(() => (crop ? paper : wornPaper(paper, markInput?.id ?? '', markInput?.year, wear ?? wearLevel())), [paper, crop, markInput?.id, markInput?.year, wear]);
+  const letter = useContext(PaperLetter);
+  const wearId = letter?.id ?? markInput?.id ?? '';
+  const wearYear = letter ? letter.year : markInput?.year;
+  const sheetOf = useMemo(() => (crop ? paper : wornPaper(paper, wearId, wearYear, wear ?? wearLevel())), [paper, crop, wearId, wearYear, wear]);
   // a download or a video of this letter is printed on the same worn sheet
   useEffect(() => {
     if (crop || sheet !== 0 || !sheetOf.wear) return;
     const owner = {};
-    showWear(paper.id, sheetOf.wear.seed, markInput?.year, owner);
+    showWear(paper.id, sheetOf.wear.seed, wearYear, owner);
     return () => hideWear(owner);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheetOf]);

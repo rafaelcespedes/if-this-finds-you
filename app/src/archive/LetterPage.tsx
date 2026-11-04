@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { PaperCanvas, PaperGuide } from '@/components/PaperCanvas';
+import { PaperCanvas, PaperGuide, PaperLetter } from '@/components/PaperCanvas';
 import { ReaderSheets } from '@/components/ReaderSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -281,6 +281,8 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     >
       {/* a sent letter: no guide sheet under the paper */}
       <PaperGuide value={false}>
+        {/* worn as this letter is everywhere (its card, the desk) */}
+        <PaperLetter value={letter ? { id: letter.id, year: letter.year } : null}>
         {pxPerMm > 0 && (ready ? (
           <ReaderSheets live={ready.live} extras={ready.extras} inkKey={r.inkKey} ink={r.inkColor} pxPerMm={pxPerMm} gapPx={SHEET_GAP} token={token} finishToken={finish} />
         ) : (
@@ -288,6 +290,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
             <PaperCanvas paper={r.paper} pxPerMm={pxPerMm} className="absolute inset-0 rounded-[1.5px]" />
           </div>
         ))}
+        </PaperLetter>
       </PaperGuide>
     </div>
   );

@@ -55,7 +55,7 @@ export function wornPaper(paper: PaperSpec, seed: string, year?: number | null, 
   const age = year == null ? 0.1 : Math.max(0, Math.min(1, (1935 - year) / 545));
   // a seeded minority of sheets have had a harder life
   const older = r() < 0.2 ? 1.55 : 0.85 + r() * 0.3;
-  const amount = (level === 2 ? 1 : 0.62) * (0.65 + 0.7 * age) * older;
+  const amount = (level === 2 ? 1.2 : 0.62) * (0.65 + 0.7 * age) * older;
   const worn: PaperSpec = { ...paper, wear: { level, seed, amount } };
   kept.set(key, worn);
   if (kept.size > 400) kept.delete(kept.keys().next().value!);

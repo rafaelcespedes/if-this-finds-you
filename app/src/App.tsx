@@ -10,6 +10,7 @@ import { CAP, EXTRAS, GF_LATIN_CORE } from '@engine';
 import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
 import { ControlSheet, type Detent, type SheetMetrics } from '@/components/ControlSheet';
 import { SheetView } from '@/components/SheetView';
+import { PaperLetter } from '@/components/PaperCanvas';
 import { DraftSlip } from '@/components/DraftSlip';
 import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
 import { PenTray } from '@/components/PenTray';
@@ -1189,6 +1190,8 @@ export default function App() {
           >
             {/* look C (?look=postmarked): a found letter's marks printed into its first sheet (passes through otherwise) */}
             <PostSheetMarks sampleId={state.sample} hand={state.seed}>
+            {/* the sheets wear as this letter does (a found letter by its id and year; your own by the writer's seed) */}
+            <PaperLetter value={{ id: state.sample ?? state.seed, year: sampleById(state.sample)?.year }}>
             {/* a link cut short on its way: no letter to show, and the one thing to do about it */}
             {brokenLink && (
               <Notice
@@ -1351,6 +1354,7 @@ export default function App() {
                 )}
               </div>
             )}
+            </PaperLetter>
             </PostSheetMarks>
           </div>
           </div>

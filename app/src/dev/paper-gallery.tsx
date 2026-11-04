@@ -7,7 +7,6 @@ import { PaperCanvas, PaperGuide, PaperMarks } from '@/components/PaperCanvas';
 import { liveLayout, sheetSVG } from '@/lib/live';
 import { SAMPLES } from '@/lib/samples';
 import { planMarks, printMarks, type MarkLook, type MarkMode } from '@/lib/paper/marks';
-import { EDGE_TONE } from '@/lib/papers';
 import { paintPatina, wornPaper, type WearLevel } from '@/lib/paper/wear';
 import { outlineOf, outlinePath } from '@/lib/paper/outline';
 import { ALL_PAPERS, getPaper, paintPaper, sheetShadow, type PaperSpec } from '@/lib/papers';
@@ -94,7 +93,7 @@ function Compared({ id, paperId, look, mode, i, wear }: { id: string; paperId: s
   const cancel = look === 'postmarked' && raw.origin === 'undelivered' ? 'Undelivered' : null;
   return (
     <PaperMarks value={{ id: letter.id, hand: seed, place: raw.place ?? null, year: raw.year ?? null, number: look === 'reading-room' ? 12 + i * 37 : null, cancel, look, origin: raw.origin, kind: letter.kind, mode }}>
-      <div className="relative isolate shrink-0" style={{ width: paper.w * K, height: paper.h * K, boxShadow: wear === undefined ? sheetShadow(paper) : wear ? 'none' : `0 0 0 1px ${EDGE_TONE}` }}>
+      <div className="relative isolate shrink-0" style={{ width: paper.w * K, height: paper.h * K, boxShadow: wear ? 'none' : sheetShadow(paper) }}>
         <PaperCanvas paper={paper} pxPerMm={K} wear={wear} className="absolute inset-0" />
         <div className="writing writing-fill pointer-events-none absolute inset-0 overflow-hidden" style={{ color: '#1f2a44' }} dangerouslySetInnerHTML={{ __html: svg }} />
       </div>
