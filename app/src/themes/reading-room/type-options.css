@@ -4,8 +4,12 @@
    now. The six run from closest to today (1, only the serif changes) to furthest (6, no serif at all).
 
    Each pairing only overrides the room's type tokens (reading-room.css: --rr-book, --rr-ui and the --rr-<role>-face,
-   -size, -weight, -stretch, -tracking variables). Every pairing also shares two things: lining figures (the old-style
-   figures are part of the "old"), and Bring another's optical nudge, which was measured for Junicode.
+   -size, -weight, -stretch, -tracking variables) and lining figures (the old-style figures are part of the "old").
+   Each also sets the two vertical habits of its faces (reading-room.css, 4f8a583): --rr-book-cap-lift, how far an icon
+   beside the book face's words moves to centre on its capitals (Junicode: -0.123em), and --rr-book-cap-drop, how far
+   Bring another's label drops onto its button's centre (Junicode: 0.105em). Both are estimated from each face's
+   vertical metrics (lift = -offset × size-adjust; drop ≈ 0.85 × that of the action face), not measured in real
+   windows yet.
 
    Every face is declared under its own name ('TT …'), so nothing downloads unless that pairing is chosen. Each is
    sized (size-adjust) so its x-height matches today's roles: the serif to Junicode at 115% (0.477 em), the sans to
@@ -452,11 +456,6 @@ html[data-look='reading-room'][data-rrtype] {
 html[data-look='reading-room'][data-rrtype] body {
   font-feature-settings: 'lnum' 1, 'onum' 0;
 }
-/* Bring another's label sat 0.105 em low to centre Junicode's capitals; each pairing sets its own, about 0.85 × the
-   face's metric offset (the share the Junicode measurement came to) */
-html[data-look='reading-room'][data-rrtype] .rr-desk .rr-bring .rr-bring-label {
-  translate: 0 var(--tt-bring-nudge, 0em);
-}
 
 /* ---------- 1 Literata + Source Sans 3 ---------- */
 html[data-look='reading-room'][data-rrtype='1'] {
@@ -467,7 +466,8 @@ html[data-look='reading-room'][data-rrtype='1'] {
   --rr-number-face: var(--rr-ui);
   --rr-number-weight: 500;
   --rr-action-weight: 580;
-  --tt-bring-nudge: -0.07em;
+  --rr-book-cap-lift: 0.08em;
+  --rr-book-cap-drop: -0.07em;
 }
 
 /* ---------- 2 Newsreader + Schibsted Grotesk ---------- */
@@ -482,7 +482,8 @@ html[data-look='reading-room'][data-rrtype='2'] {
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 600;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: -0.006em;
+  --rr-book-cap-lift: -0.11em;
+  --rr-book-cap-drop: -0.006em;
 }
 
 /* ---------- 3 GT Alpina + GT America, numbers in GT America Mono ---------- */
@@ -500,7 +501,8 @@ html[data-look='reading-room'][data-rrtype='3'] {
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 500;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: -0.012em;
+  --rr-book-cap-lift: -0.013em;
+  --rr-book-cap-drop: -0.012em;
 }
 
 /* ---------- 4 ABC Arizona Mix + ABC Diatype ---------- */
@@ -515,7 +517,8 @@ html[data-look='reading-room'][data-rrtype='4'] {
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 500;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: 0.06em;
+  --rr-book-cap-lift: 0em;
+  --rr-book-cap-drop: 0.06em;
 }
 /* Diatype's capital I and lowercase l are the same shape; its ss08 gives the I serifs (Arizona has no ss08) */
 html[data-look='reading-room'][data-rrtype='4'] body {
@@ -539,7 +542,8 @@ html[data-look='reading-room'][data-rrtype='5'] {
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 500;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: 0em;
+  --rr-book-cap-lift: 0em;
+  --rr-book-cap-drop: 0em;
 }
 /* About's big title takes the display serif too (its text follows the book face) */
 html[data-look='reading-room'][data-rrtype='5'] .about-title {
@@ -563,7 +567,8 @@ html[data-look='reading-room'][data-rrtype='6'] {
   --rr-action-face: var(--rr-ui);
   --rr-action-weight: 600;
   --rr-action-size: 1rem;
-  --tt-bring-nudge: -0.016em;
+  --rr-book-cap-lift: 0.019em;
+  --rr-book-cap-drop: -0.016em;
 }
 html[data-look='reading-room'][data-rrtype='6'] .about-title {
   font-stretch: 118%;
@@ -585,5 +590,6 @@ html[data-look='reading-room'][data-rrtype='7'] {
   --rr-action-face: 'TT Plex Mono', ui-monospace, monospace;
   --rr-action-weight: 500;
   --rr-action-size: 0.9375rem;
-  --tt-bring-nudge: -0.02em;
+  --rr-book-cap-lift: 0.014em;
+  --rr-book-cap-drop: -0.02em;
 }
