@@ -27,9 +27,9 @@ The earlier "The hope is to bring letters, people and handwriting traditions…"
 1. "Designed by Rafael Cespedes and built with Claude." (How it started)
 2. "It's a free lab experiment with nothing to sell. He wanted to use AI in ways he finds clever. Drawing hundreds of
    handwriting fonts, for one, used to take too many resources to try."
-3. "The fonts are open source now, and the code will follow once it's polished."
-4. "Every source the project used, 484 so far, is listed with what it decided in a reference library, to be published
-   with the code." (Full credits, folded)
+3. "The fonts and the code are open source." ("the code" links to github.com/rafaelcespedes/if-this-finds-you, public under MIT since 4 Nov 2026)
+4. "Every source the project used, 484 so far, is listed with what it decided in a reference library, still to be
+   published." (Full credits, folded; the library isn't in the public repo)
 5. "Spotted a mistake in a letter or its story? Rafael would like to know." (Contact)
 6. Give back: the intro, the five sources and the Red Cross, each with one short line, and "Each link opens the
    organisation's own donation page. We get nothing from it." Links checked on each organisation's own site on
