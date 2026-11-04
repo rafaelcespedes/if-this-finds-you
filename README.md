@@ -4,7 +4,7 @@ Real letters by ordinary people, written out by hand by writers who never existe
 
 **[ifthisfindsyou.app](https://ifthisfindsyou.app)**
 
-![A pile of letters from the collection, each written out in a different hand](app/public/brand/share.jpg)
+![Letters from the collection spread across a table, each written out in a different hand](app/public/brand/share-2.jpg)
 
 ## What it is
 

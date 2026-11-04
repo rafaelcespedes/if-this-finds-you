@@ -3,7 +3,7 @@
 //
 //   (cd app && npm install) && (cd tools/smoke && npm ci)      once: the app's Vite and the smoke test's Chrome
 //   node tools/share-image/render.mjs                           every composition → tools/share-image/out/
-//   node tools/share-image/render.mjs pile --publish            the site's picture → app/public/brand/share.jpg (Rafael's pick, 4 Nov)
+//   node tools/share-image/render.mjs fan --publish             the site's picture → app/public/brand/share-2.jpg (Rafael's pick, 4 Nov)
 //   node tools/share-image/render.mjs --contact                 the candidate letters side by side → out/contact.png
 //   node tools/share-image/render.mjs --crops                   also the crops link previews make → out/<name>-crops.png
 //   node tools/share-image/render.mjs pile fan close --compare  the named ones side by side, to choose → out/compare.png
@@ -24,6 +24,9 @@ const BRAND = path.join(APP, 'public', 'brand');
 const args = process.argv.slice(2);
 const flag = (f) => args.includes(f);
 const names = args.filter((a) => !a.startsWith('--'));
+// The picture's file. A changed picture gets a new name (share-3.jpg, …) and the pages' og:image / twitter:image follow:
+// link previews keep a picture by its address for days. share.jpg ("A tight pile") was live for a few hours on 4 Nov.
+const PUBLISHED = 'share-2.jpg';
 const COMPARE_TITLES = { pile: 'A tight pile', fan: 'A scattered fan', close: 'Close up' };
 const JPEG_Q = Number((args.find((a) => a.startsWith('--q=')) ?? '--q=0.86').slice(4));
 
@@ -72,7 +75,7 @@ try {
       if (flag('--publish')) {
         // the one every page's og:image and twitter:image name (app/*.html); a new picture under a new name busts
         // the link-preview caches (X, Slack, WhatsApp keep a picture for days)
-        const file = path.join(BRAND, 'share.jpg');
+        const file = path.join(BRAND, PUBLISHED);
         fs.writeFileSync(file, jpg);
         console.log('  published →', path.relative(ROOT, file));
       }
