@@ -14,6 +14,7 @@ import { shortAuthor } from '@/lib/names';
 
 interface Raw {
   id: string;
+  text?: string;
   kind?: string;
   lang?: string;
   title?: string;
@@ -33,6 +34,8 @@ interface Raw {
 /** What the card shows, already in the card's words. */
 export interface CardRecord {
   id: string;
+  /** the letter's words, for those who can't see the drawn sheet */
+  text?: string;
   /** the permanent number (unknown for a moment while the collection loads) */
   no?: number;
   title: string;
@@ -121,6 +124,7 @@ function toRecord(r: Raw, no: number): CardRecord {
   const rightsLine = rights?.us && rights?.eu ? 'Public domain in the US and the EU' : rights?.us ? 'Public domain in the US' : rights?.eu ? 'Public domain in the EU' : r.source?.licence;
   return {
     id: r.id,
+    text: r.text,
     no,
     title: r.title ?? 'A letter',
     from: shortAuthor(r.author ?? '') || 'Unknown',

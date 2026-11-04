@@ -200,7 +200,7 @@ export function AboutApp() {
             now, and the code will follow once it’s polished.
           </p>
           <p className="about-credit-line">
-            Designed by Rafael Cespedes and built with Claude, an AI model made by Anthropic.
+            Designed by Rafael Cespedes and built with Claude.
           </p>
         </Section>
 

@@ -31,7 +31,16 @@ interface Want {
   el: Element;
 }
 
-const PERSIST = !import.meta.env.DEV && typeof caches !== 'undefined';
+/** The Cache API, or null where it's missing or blocked: with site data blocked (Firefox), even reading `caches`
+ * throws a SecurityError ("The operation is insecure"), so the cards simply aren't kept between visits. */
+function cacheStorage(): CacheStorage | null {
+  try {
+    return typeof caches !== 'undefined' ? caches : null;
+  } catch {
+    return null;
+  }
+}
+const PERSIST = !import.meta.env.DEV && cacheStorage() !== null;
 const CACHE_NAME = 'lost-letters-cards';
 // a new worker build (engine or renderer changed) gets new keys; old entries are cleared below
 const BUILD = workerSrc.split('/').pop()?.replace(/\W+/g, '-') ?? 'dev';
@@ -101,8 +110,15 @@ class CardStore {
   }
 
   private persistent() {
-    if (!PERSIST) return Promise.resolve(null);
-    this.cache ??= caches.open(CACHE_NAME).then(async (c) => {
+    const store = PERSIST ? cacheStorage() : null;
+    if (!store) return Promise.resolve(null);
+    let opened: Promise<Cache>;
+    try {
+      opened = store.open(CACHE_NAME);
+    } catch {
+      return Promise.resolve(null);
+    }
+    this.cache ??= opened.then(async (c) => {
       // entries from older builds can go
       try {
         for (const req of await c.keys()) if (!new URL(req.url).pathname.includes(`/${BUILD}/`)) c.delete(req);

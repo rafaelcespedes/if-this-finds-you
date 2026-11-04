@@ -52,6 +52,9 @@ interface Placed {
   aspect: number;
   /** the table: the sheet at its paper's size (px) and its own tilt, standing on the cell's shelf */
   sheet?: { w: number; h: number; tilt: number };
+  /** the table: a letter laid again in a spare cell, so the table never shows an empty band as it wraps (hidden from
+   * screen readers and Tab; the original is the one in the list) */
+  copy?: boolean;
 }
 interface Field {
   items: Placed[];
@@ -175,15 +178,25 @@ function layTable(letters: ArchiveLetter[], papers: Map<string, { w: number; h: 
   // nearest first, rows read left to right within a ring (a little give, so the order is felt more than seen)
   for (const c of cells) c.d += r() * 0.35;
   cells.sort((a, b) => a.d - b.d);
-  const items: Placed[] = letters.map((l, k) => {
-    const c = cells[k];
+  const lay = (l: ArchiveLetter, c: { cx: number; cy: number }, id: string, copy?: boolean): Placed => {
     const p = papers.get(l.id) ?? { w: 148, h: 210 };
     return {
-      id: l.id, letter: l, aspect: p.h / p.w,
+      id, letter: l, aspect: p.h / p.w, copy,
       x: c.cx, y: c.cy, w: t.cellInner, h: itemH, tilt: 0,
       sheet: { w: Math.round(p.w * t.k), h: Math.round(p.h * t.k), tilt: (r() - 0.5) * 1.4 },
     };
-  });
+  };
+  const items: Placed[] = letters.map((l, k) => lay(l, cells[k], l.id));
+  // the table is at least a screen wide, so it has more cells than letters, the spare ones at its edges; as it wraps
+  // they'd show as an empty band. Lay letters again in them, from the nearest letter out (the nearest sit by the
+  // heading, so a copy at the edge is never beside its original), unless the letters are a handful (a search's few
+  // matches stay gathered on their own)
+  if (n >= 12) {
+    for (let k = n; k < cells.length; k++) {
+      const l = letters[(k - n) % n];
+      items.push(lay(l, cells[k], `${l.id}~${k}`, true));
+    }
+  }
   items.push({ id: 'heading', x: 0, y: 0, w: o.head.w, h: o.head.h, tilt: 0, aspect: 0 });
   return { items, tileW: cols * cellW, tileH: rows * cellH };
 }
@@ -540,7 +553,7 @@ export function LetterCanvas({ letters, shown, heading, empty, onOpen, active, o
             );
           }
           // the Reading Room: on the table, at its paper's size
-          if (table && it.sheet) return <TableCard key={id} letter={it.letter!} sheet={it.sheet} shelfH={table.shelfH} cellInner={table.cellInner} style={style} itemRef={ref} onOpen={onOpen} />;
+          if (table && it.sheet) return <TableCard key={id} placeId={id} copy={it.copy} letter={it.letter!} sheet={it.sheet} shelfH={table.shelfH} cellInner={table.cellInner} style={style} itemRef={ref} onOpen={onOpen} />;
           // look C (?look=postmarked): each letter in its addressed envelope
           const Card = LOOK === 'postmarked' ? EnvelopeCard : CanvasCard;
           return <Card key={id} letter={it.letter!} aspect={it.aspect} size={size} style={style} itemRef={ref} onOpen={onOpen} />;
@@ -616,7 +629,8 @@ function labelPlace(place: string | undefined) {
  * (library.css); no number on the sheet and nothing added to the label, so the table stays clean (the list keeps the
  * numbers).
  */
-const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, style, itemRef, onOpen }: {
+const TableCard = memo(function TableCard({ placeId, copy, letter, sheet, shelfH, cellInner, style, itemRef, onOpen }: {
+  placeId: string; copy?: boolean;
   letter: ArchiveLetter; sheet: { w: number; h: number; tilt: number }; shelfH: number; cellInner: number;
   style: CSSProperties; itemRef: (el: HTMLElement | null) => void; onOpen: () => void;
 }) {
@@ -636,11 +650,12 @@ const TableCard = memo(function TableCard({ letter, sheet, shelfH, cellInner, st
   const inset = Math.max(0, (cellInner - sheet.w) / 2);
   const place = labelPlace(letter.place);
   return (
-    <li ref={itemRef} data-place={letter.id} className="canvas-item table-item absolute top-0 left-0" style={style}>
+    <li ref={itemRef} data-place={placeId} aria-hidden={copy || undefined} className="canvas-item table-item absolute top-0 left-0" style={style}>
       <a
         href={letterHash(letter.id)}
         onClick={onOpen}
         draggable={false}
+        tabIndex={copy ? -1 : undefined}
         title={`${fromTo(letter)}\n${whereWhen(letter)}`}
         className="archive-card table-card group block outline-none"
       >

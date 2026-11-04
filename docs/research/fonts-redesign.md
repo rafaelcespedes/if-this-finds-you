@@ -115,7 +115,7 @@ style, size and reset.
    right at a writing pace (the hero more slowly); under a resting pointer a row writes its line again over a faint
    trace of itself, so it never vanishes. Every other change takes 150 ms or less. With reduced motion, lines simply
    appear.
-6. **The catalogue is endless, so shuffle, don't paginate.** "New set" (or Space) draws another 24; "Show 24 more"
+6. **The catalogue is endless, so shuffle, don't paginate.** "New set" (or N) draws another 24; "Show 24 more"
    continues the same set; a set is a link. Nothing pretends to be a finite list.
 7. **What you see is what you download.** Every line is set in the hand's real generated font, never a fallback. Until a
    font can set new words, the line keeps the last words it could. The live hand, which varies more, sits in the

@@ -826,15 +826,37 @@ function licenceOf(src) {
   return 'other';
 }
 
+// A short code for the hand itself, so two hands that share a writer's name (the name comes from the seed alone: the
+// same writer in print and in a joined hand, or with another pen) never install as the same font. It is read from
+// every value the hand is made of, so the same hand always gets the same code, and any other hand another one.
+// Four characters from 31 (no 0/O, 1/I/L): about 920,000 codes for each name.
+const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+function stable(v) {
+  if (typeof v === 'number') return Number.isFinite(v) ? String(Math.round(v * 1e4) / 1e4) : String(v);
+  if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map((k) => k + ':' + stable(v[k])).join(',') + '}';
+  return JSON.stringify(v ?? null);
+}
+export function handCode(p) {
+  const s = stable(p);
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  h >>>= 0;
+  let out = '';
+  for (let i = 0; i < 4; i++) { out += CODE_ALPHABET[h % CODE_ALPHABET.length]; h = Math.floor(h / CODE_ALPHABET.length); }
+  return out;
+}
+
 export function fontNames(p, opts = {}) {
   const writer = opts.name ? String(opts.name).trim() : null;
-  const fullFamily = opts.family || `${FAMILY_PREFIX} ${writer || ascii(String(p.seed)).replace(/[^A-Za-z0-9]+/g, ' ').trim()}`;
+  const code = handCode(p);
+  const fullFamily = opts.family || `${FAMILY_PREFIX} ${writer || ascii(String(p.seed)).replace(/[^A-Za-z0-9]+/g, ' ').trim()} ${code}`;
   // Windows menus want name ID 1 within 31 characters; the full name goes into the typographic family (16)
   let family = fullFamily;
   if (family.length > 31) family = ('ITFY ' + fullFamily.replace(new RegExp('^' + FAMILY_PREFIX + '\\s*'), '')).slice(0, 31).trim();
   const ps = (ascii(fullFamily).replace(/[^A-Za-z0-9]/g, '') || 'IfThisFindsYouHand').slice(0, 54) + '-Regular';
   const file = ascii(fullFamily).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'IfThisFindsYou';
-  return { writer, fullFamily, family, ps, file };
+  return { writer, code, fullFamily, family, ps, file };
 }
 
 function buildCredits(p, sources) {

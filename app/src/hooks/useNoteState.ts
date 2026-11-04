@@ -3,6 +3,18 @@ import { decodeState, encodeState, firstVisitState, type NoteState } from '@/lib
 
 /** The link saved on leaving the page, for this tab: a reload goes to the address as it was before. */
 const LEFT_KEY = 'seedhand:left';
+/** The letter of your own this tab was writing when it left the page (the site's menu, the wordmark, a link): the
+ *  desk's bare address brings it back, rather than a found letter in its place (launch QA). */
+const OPEN_KEY = 'seedhand:open';
+const OPEN_FOR = 12 * 3600_000;
+
+/** Leaving the page with a letter of your own on the desk: this tab will come back to it. Anything else: it won't. */
+export function rememberOpen(s: NoteState | null) {
+  try {
+    if (!s || s.reader || s.sample || (!s.text.trim() && !s.inkLog)) sessionStorage.removeItem(OPEN_KEY);
+    else sessionStorage.setItem(OPEN_KEY, JSON.stringify({ hash: encodeState(s), t: Date.now() }));
+  } catch { /* the draft is kept */ }
+}
 
 /** The hash to start from: the link, or what was saved on leaving it (a reload straight after typing). */
 function startHash(): string {
@@ -15,6 +27,17 @@ function startHash(): string {
       return left.to;
     }
   } catch { /* nothing saved */ }
+  // the desk's bare address (Write a letter, the wordmark): the letter this tab left, if it left one
+  if (!h) {
+    try {
+      const open = JSON.parse(sessionStorage.getItem(OPEN_KEY) ?? 'null') as { hash: string; t: number } | null;
+      sessionStorage.removeItem(OPEN_KEY);
+      if (open?.hash && Date.now() - open.t < OPEN_FOR) {
+        history.replaceState(null, '', location.pathname + location.search + '#' + open.hash);
+        return open.hash;
+      }
+    } catch { /* a letter of this visit's own */ }
+  }
   return h;
 }
 
