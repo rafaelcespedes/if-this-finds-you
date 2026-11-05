@@ -32,6 +32,14 @@ const SES = session as any;
 const INK_BLUE = inkColor(HAND.ink);
 /** the room's ink grey at an alpha (the bar is grayscale) */
 const GREY = (a: number) => `rgba(30, 39, 51, ${a})`;
+/** the bar's grey as a solid colour (6% of the ink grey over the paper's tint): the goo needs an opaque fill */
+const BAR_FILL = (() => {
+  const tint = String((getPaper(PAPER) as any).tint ?? '#f8f6f0');
+  const m = tint.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i);
+  const [r, g, b] = m ? [1, 2, 3].map((i) => parseInt(m[i], 16)) : [248, 246, 240];
+  const mix = (c: number, d: number) => Math.round(c * 0.94 + d * 0.06);
+  return `rgb(${mix(r, 30)}, ${mix(g, 39)}, ${mix(b, 51)})`;
+})();
 const blueA = (a: number) => {
   const m = INK_BLUE.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i);
   return m ? `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${a})` : `rgba(44, 79, 163, ${a})`;
@@ -324,31 +332,55 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   return (
     <AbsoluteFill style={{ background: (paper as any).tint ?? '#f8f6f0' }}>
       <canvas ref={ref} width={S} height={S} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      {/* the hint and the wet-ink timer, together on one grey bar with the keyboard plate's corners (the writing is the
-          only thing on the paper itself): what this moment shows on the left, how long the ink stays wet on the
-          right; the bar's fill drains with the timer */}
-      <div style={{
-        position: 'absolute', left: KB.plate.x, width: KB.plate.w, top: KB.plate.y - (72 + 14) * k0, height: 72 * k0, borderRadius: PLATE.radius * k0,
-        background: GREY(0.06), overflow: 'hidden', fontFamily: '"RR Schibsted", system-ui, sans-serif',
-      }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${showChip && wet ? 100 * (1 - since / wetFor) : 0}%`, background: GREY(0.05) }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${26 * k0}px 0 ${30 * k0}px` }}>
-          <div style={{ fontSize: 24 * k0, fontWeight: 400, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11 * k0, opacity: showChip ? 1 : 0 }}>
-            <div style={{ textAlign: 'right', lineHeight: 1.1 }}>
-              <div style={{ fontSize: 23 * k0, fontWeight: 400, color: wet ? C.ink : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
-              <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? C.muted : C.faint }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
-            </div>
-            <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
-              <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? C.ink : C.faint} strokeOpacity={0.16} strokeWidth={2.6} />
-              <circle cx={17} cy={17} r={13} fill="none" stroke={C.ink} strokeWidth={2.6} strokeLinecap="round" opacity={wet ? 1 : 0}
-                strokeDasharray={`${2 * Math.PI * 13}`} strokeDashoffset={`${2 * Math.PI * 13 * (wet ? since / wetFor : 1)}`} transform="rotate(-90 17 17)" />
-              {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={C.ink} strokeWidth={1.8} strokeLinecap="round" />}
-              <circle cx={17} cy={17} r={1.6} fill={wet ? C.ink : C.faint} />
+      {/* the hint and the wet-ink timer: two grey capsules with the keyboard plate's corners, joined by a gooey neck
+          (the goo technique liquid-gooey is built on: an SVG blur and a sharp alpha threshold, so touching shapes merge
+          into one surface while the words stay crisp on top). The neck swells a moment each time ink goes down. */}
+      {(() => {
+        const H = 72 * k0, R = PLATE.radius * k0, top = KB.plate.y - (72 + 14) * k0;
+        const TW = 262 * k0, G = 18 * k0;
+        const left = { x: KB.plate.x, w: KB.plate.w - TW - G };
+        const right = { x: KB.plate.x + KB.plate.w - TW, w: TW };
+        const M = 24 * k0; // the SVG's margin for the blur
+        const swell = wet ? Math.exp(-since * 5) : 0;
+        const neckRy = (13 + 9 * swell) * k0;
+        return (
+          <>
+            <svg width={KB.plate.w + 2 * M} height={H + 2 * M} style={{ position: 'absolute', left: KB.plate.x - M, top: top - M, overflow: 'visible' }}>
+              <defs>
+                <filter id="goo" x="-10%" y="-40%" width="120%" height="180%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation={7 * k0} result="blur" />
+                  <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9" />
+                </filter>
+              </defs>
+              <g filter="url(#goo)" fill={BAR_FILL}>
+                <rect x={M} y={M} width={left.w} height={H} rx={R} />
+                <rect x={M + KB.plate.w - TW} y={M} width={TW} height={H} rx={R} />
+                <ellipse cx={M + left.w + G / 2} cy={M + H / 2} rx={G / 2 + 10 * k0} ry={neckRy} />
+              </g>
             </svg>
-          </div>
-        </div>
-      </div>
+            {/* the timer's capsule fills a shade darker as the ink stays wet, draining with it */}
+            <div style={{ position: 'absolute', left: right.x, top, width: right.w, height: H, borderRadius: R, overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${showChip && wet ? 100 * (1 - since / wetFor) : 0}%`, background: GREY(0.05) }} />
+            </div>
+            <div style={{ position: 'absolute', left: left.x, top, width: left.w, height: H, display: 'flex', alignItems: 'center', padding: `0 ${30 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif' }}>
+              <div style={{ fontSize: 24 * k0, fontWeight: 400, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
+            </div>
+            <div style={{ position: 'absolute', left: right.x, top, width: right.w, height: H, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${20 * k0}px 0 ${24 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif', opacity: showChip ? 1 : 0 }}>
+              <div style={{ textAlign: 'left', lineHeight: 1.12 }}>
+                <div style={{ fontSize: 23 * k0, fontWeight: 400, color: wet ? C.ink : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
+                <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? C.muted : C.faint }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
+              </div>
+              <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
+                <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? C.ink : C.faint} strokeOpacity={0.16} strokeWidth={2.6} />
+                <circle cx={17} cy={17} r={13} fill="none" stroke={C.ink} strokeWidth={2.6} strokeLinecap="round" opacity={wet ? 1 : 0}
+                  strokeDasharray={`${2 * Math.PI * 13}`} strokeDashoffset={`${2 * Math.PI * 13 * (wet ? since / wetFor : 1)}`} transform="rotate(-90 17 17)" />
+                {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={C.ink} strokeWidth={1.8} strokeLinecap="round" />}
+                <circle cx={17} cy={17} r={1.6} fill={wet ? C.ink : C.faint} />
+              </svg>
+            </div>
+          </>
+        );
+      })()}
       {/* the keyboard: a frosted glass plate floating over the room, quiet keys on it, the pressed one sinking */}
       <div style={{
         position: 'absolute', left: KB.plate.x, top: KB.plate.y, width: KB.plate.w, height: KB.plate.h, borderRadius: PLATE.radius * k0,
