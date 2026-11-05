@@ -386,6 +386,7 @@ export function WriteApp() {
             ref={editor}
             text={text}
             hovering={hovering}
+            mode="ink"
             onEdit={onEdit}
             onHistory={onHistory}
             start={startCaret}

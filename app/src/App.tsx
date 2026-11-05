@@ -1380,7 +1380,7 @@ export default function App() {
                   text={replyPending ? '' : inkActive ? inkRef.current!.text() : state.text}
                   blank={replyPending}
                   hovering={inkActive && inkRef.current!.hovering}
-                  inkMode={inkMode}
+                  mode={INK ? (state.pen === 'pencil' ? 'pencil' : state.mode) : 'fair'}
                   onEdit={onEdit}
                   onHistory={onHistory}
                   start={startCaret}
