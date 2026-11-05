@@ -1103,7 +1103,15 @@ export default function App() {
         else update({ mode, pen, ink: inkColorId });
       },
       onFairCopy: () => { inkSession().fairCopy(); syncInk(); },
-      onFreshSheet: () => { inkSession().freshSheet(); syncInk(); },
+      onFreshSheet: () => {
+        const ink = inkSession();
+        ink.flush();
+        // a letter set aside in one click: a note to bring it back, as any big cut has (writing-experience.md §3.4)
+        const s = stateNow.current;
+        if (ink.text().trim()) offerBack({ text: ink.text(), inkLog: encodeInk(ink.doc), marks: s.marks, signed: s.signed }, 'A fresh sheet');
+        ink.freshSheet();
+        syncInk();
+      },
     } : undefined,
   };
 
