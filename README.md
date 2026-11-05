@@ -22,6 +22,20 @@ Every hand can be downloaded as a font, free, under the SIL Open Font License.
 
 It's a lab experiment by Rafael Cespedes, a designer. It's free, and there's nothing to sell.
 
+## The writing interaction
+
+Type on the paper and it behaves like ink. The pen writes a few letters behind you, so a typo you catch in time
+disappears cleanly. Once it's written, Backspace crosses it out instead, and pressing again crosses it out harder,
+down to a scribble. A retyped letter goes over the old one, and an afterthought goes above the line with a caret.
+Nothing is ever erased.
+
+![The word "terribly" crossed out four times, each harder: struck once, struck heavily, scribbled over, inked out](docs/writing/crossing-out-again.png)
+
+Try it on **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a sheet and a pen and nothing else (a work in
+progress). How it works, where each piece lives, the numbers to play with, and what's still open:
+**[docs/WRITING.md](docs/WRITING.md)**. To make a video of it for a post, there's an
+**[X post template](x-post-template/)**. Design engineers, take a stab at it.
+
 ## Run it on your computer
 
 You need [Node.js](https://nodejs.org) 24.
@@ -88,6 +102,7 @@ rules and the collection's targets. The full notes are in [content/SAMPLE-TEXTS.
 | `tools/` | Engine QA, the smoke test, the tracing pipeline and the font pack builder |
 | `brand/` | The wordmark, written by the engine |
 | `docs/` | Principles, decisions, voice, architecture and research |
+| `x-post-template/` | A video of the writing for a post on X, made with Remotion |
 
 Every push to `preview` runs two checks on GitHub: the site is built and opened in a browser, and the engine's output
 is compared with the version before. [docs/CHECKS.md](docs/CHECKS.md) explains both.

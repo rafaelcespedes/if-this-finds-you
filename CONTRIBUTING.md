@@ -18,6 +18,12 @@ included, so a correction needs the source to back it.
 The collection doesn't take new letters for now. Every letter has to pass the rights rules in
 [content/SAMPLE-TEXTS.md](content/SAMPLE-TEXTS.md), and the collection keeps its own balance of writers.
 
+## Experiments with the writing
+
+The way typing behaves like ink is the part most worth playing with, and it's all here:
+[docs/WRITING.md](docs/WRITING.md) explains how it works and lists what's still open. Fork it and try things. If you
+make something that feels more like writing, open a pull request or an issue with a video of it.
+
 ## Changes to the code
 
 For a small fix, a pull request is welcome. For anything bigger, open an issue first, so we can talk before you spend

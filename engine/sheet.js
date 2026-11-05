@@ -183,7 +183,8 @@ function applyOne(st, e, ev) {
       const struck = placedRun(s, e.from, e.to);
       if (!struck.length) break;
       const r = R0(st, ev);
-      const { items, start, ref } = strikeItems(p, st.firm, H, struck, e.how || H.strike, r, { seed: 311 + ev * 0.77, key: 'e' + ev, lines: s.lines });
+      // crossed out again (again()): harder each time, with a heavier pen
+      const { items, start, ref } = strikeItems(p, (e.lv || 1) >= 2 ? st.heavy : st.firm, H, struck, e.how || H.strike, r, { seed: 311 + ev * 0.77, key: 'e' + ev, lines: s.lines });
       for (const it of items) pushItem(st, s, Object.assign(it, { ev }));
       if (e.blot && start) { const b = blotItem(p, start[0] - 0.02 * UPM, start[1] + 0.25 * xhOf(st), ref, r, ev, { key: 'e' + ev + ':blot' }); if (b) pushItem(st, s, Object.assign(b, { ev })); }
       break;
@@ -219,13 +220,17 @@ function applyOne(st, e, ev) {
       break;
     }
     case 'underline': {
+      // a second underline under the same words is a double underline; a third adds nothing
+      let k = 0;
+      for (let i = e.from; i <= e.to; i++) { const rec = R.byId.get(i); if (rec && rec.under) k = Math.max(k, rec.under - 1); }
+      if (k >= 2) break;
       const byLine = new Map();
       for (const it of placedRun(s, e.from, e.to)) { if (!byLine.has(it.line)) byLine.set(it.line, []); byLine.get(it.line).push(it); }
       let n = 0;
       for (const ln of byLine.values()) {
         const r = R0(st, ev, ':' + n);
         const sp = spanOf(ln), xh = xhOf(st) * scaleOf(ln);
-        const mi = markItem(st.firm, 'underline', underlineStrokes(H, sp.x0, sp.x1, baselineFor(p, ln, s.lines), xh, r), ln[ln.length - 1], { seed: 733 + ev, delayed: true, tempo: 1.3, key: 'e' + ev + ':' + n++ });
+        const mi = markItem(st.firm, 'underline', underlineStrokes(H, sp.x0, sp.x1, baselineFor(p, ln, s.lines), xh, r, k), ln[ln.length - 1], { seed: 733 + ev, delayed: true, tempo: 1.3, key: 'e' + ev + ':' + n++ });
         if (mi) pushItem(st, s, Object.assign(mi, { ev }));
       }
       break;
@@ -358,9 +363,10 @@ function penEvent(st, s, e, ev) {
       s.placed.set(it.id, nu);
     });
   } else if (e.kind === 'retrace') {
+    // gone over again, harder: a heavier pen, a hair to the right and up, so the word visibly thickens
     const r = R0(st, ev);
-    const jx = r.gauss() * 0.01 * UPM, jy = r.gauss() * 0.01 * UPM;
-    run.forEach((it, k) => pushItem(st, s, Object.assign({}, it, { g: repen(p, it.g, (q) => [q[0] + jx, q[1] + jy], 811 + k), role: 'retrace', key: 'r' + ev + ':' + it.key, ev, wk: 'r' + ev, tempo: (it.tempo || 1) * 1.15 })));
+    const jx = (0.025 + r.gauss() * 0.008) * UPM, jy = (0.02 + r.gauss() * 0.008) * UPM;
+    run.forEach((it, k) => pushItem(st, s, Object.assign({}, it, { g: repen(st.heavy, it.g, (q) => [q[0] + jx, q[1] + jy], 811 + k), role: 'retrace', key: 'r' + ev + ':' + it.key, ev, wk: 'r' + ev, tempo: (it.tempo || 1) * 1.15 })));
   }
 }
 
@@ -680,6 +686,51 @@ function resolvePending(st, R, v, emit) {
     for (const [a, b] of idRuns(sorted)) emit({ t: 'strike', from: a, to: b, how, why: 'rewritten' });
     emit({ t: 'write', text: rep });
   }
+}
+
+// ---------- crossing out again ----------
+// Rafael: "when you click delete multiple times or when you hold delete, you get more of a scribble in that
+// area. The same way that in real life, when you cross something out, you spend a lot of time scribbling it out."
+// Backspace or Delete at a struck run (the caret is where it was: struck words aren't in the view text) goes
+// over it again, harder each time: level 2 a second, heavier strike; 3 a scribble; 4 inked out. Each pass is
+// its own strike event { lv, why: 'again' }, so it's seeded by its event index (different every time, the same
+// on replay) and lifts like any wet ink. Pure, like plan(): returns { events, view, level } (the run's new
+// level), no events and level AGAIN_MAX when it's already inked out, or null when no struck run sits at `at`
+// or something is in flight there (a fix the pen is hovering over, an insertion being typed).
+export const AGAIN_MAX = 4;
+export function again(st, view, at) {
+  const v = copyView(view || newView());
+  if (v.pending || v.mid) return null;
+  const R = st.reader, m = viewMap(R, v), recs = R.recs;
+  const prev = at > 0 ? m.units[at - 1] : null, next = m.units[at] || null;
+  if ((prev && prev.k !== 'ink') || (next && next.k === 'mid')) return null;
+  const i0 = prev ? recs.indexOf(R.byId.get(prev.id)) + 1 : 0;
+  const i1 = next && next.k === 'ink' ? recs.indexOf(R.byId.get(next.id)) : recs.length;
+  if (i0 < 0 || i1 < 0) return null;
+  const run = [];
+  for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) run.push(recs[i]);
+  if (!run.length) return null;
+  const level = Math.max(...run.map((r) => r.lv || 1));
+  if (level >= AGAIN_MAX) return { events: [], view: v, level };
+  const lv = level + 1, was = run[run.length - 1].struck;
+  const scribbled = was === 'scribble' || was === 'blackout';
+  // each level the same person, more annoyed: a heavier strike, then their own scribble (the word still shows
+  // through), then inked out. A word already scribbled goes to a scrawl, then a blackout, then inked out
+  const scrawled = scribbled || was === 'scrawl';
+  const how = lv >= 4 ? 'inkout' : lv === 3 ? (scrawled ? 'blackout' : 'scrawl') : scrawled ? 'scrawl' : was === 'double' ? 'wave' : 'double';
+  const events = idRuns(run.map((r) => r.id)).map(([a, b]) => ({ t: 'strike', from: a, to: b, how, why: 'again', lv }));
+  return { events, view: v, level: lv };
+}
+// The glyph ids written in [from, to) of the view text (what the textarea shows), for a mark made on a
+// selection: an underline, or the words gone over again. Spaces at either end are left out.
+export function inkIdsIn(st, view, from, to) {
+  const m = viewMap(st.reader, view || newView());
+  const ids = [];
+  for (let i = Math.max(0, from); i < Math.min(to, m.units.length); i++) { const u = m.units[i]; if (u.k === 'ink' && !u.half) ids.push(u.id); }
+  const blank = (id) => /\s/.test((st.reader.byId.get(id) || {}).ch || '');
+  while (ids.length && blank(ids[0])) ids.shift();
+  while (ids.length && blank(ids[ids.length - 1])) ids.pop();
+  return idRuns(ids);
 }
 
 // ---------- the pen (§3.2): what can be written now ----------

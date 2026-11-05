@@ -208,8 +208,14 @@ export class InkSession {
    * Pen-only formatting on what's written, by hand: an underline drawn under the letters (again for a double), or the
    * letters gone over again (pressed harder). `from`/`to` are textarea offsets; everything typed is written first.
    */
-  format(kind: 'underline' | 'press', from: number, to: number) {
+  format(kind: 'underline' | 'press', from: number, to: number): boolean {
     this.flush();
+    if (typeof engine.inkIdsIn === 'function') {
+      const runs = engine.inkIdsIn(this.sheet, this.view, from, to) as [number, number][];
+      if (!runs.length) return false;
+      this.inked(runs.map(([a, b]) => (kind === 'underline' ? { t: 'underline', from: a, to: b } : { t: 'pen', kind: 'retrace', from: a, to: b })));
+      return true;
+    }
     const ids: number[] = [];
     const chars: string[] = [];
     for (const r of this.sheet.reader?.recs ?? []) {
@@ -220,7 +226,7 @@ export class InkSession {
     let a = Math.max(0, from), b = Math.min(ids.length, to);
     while (a < b && /\s/.test(chars[a])) a++;
     while (b > a && /\s/.test(chars[b - 1])) b--;
-    if (b <= a) return;
+    if (b <= a) return false;
     // one event per run of consecutive ids (an insertion above the line, or a P.S., has ids of its own)
     const sorted = [...new Set(ids.slice(a, b))].sort((x, y) => x - y);
     const events: unknown[] = [];
@@ -229,10 +235,25 @@ export class InkSession {
     for (const id of sorted.slice(1)) { if (id === e + 1) e = id; else { push(); s = e = id; } }
     push();
     this.inked(events);
+    return true;
   }
   fairCopy() { this.flush(); this.inked(engine.fairCopy(this.sheet)); }
   postScript() { this.flush(); this.inked(engine.postScript(this.sheet)); }
   freshSheet() { this.flush(); this.inked([{ t: 'sheet', why: 'fresh' }]); }
+  /**
+   * Backspace or Delete at a struck word (the caret at `at` sits where it was): the writer goes over it again,
+   * harder: a heavier strike, a scribble, then inked out (engine again()). null: no struck word there, or the
+   * engine can't. `level` is the word's level now; `max` when it was already inked out and nothing was drawn.
+   */
+  again(at: number): { level: number; max: boolean } | null {
+    if (typeof engine.again !== 'function') return null;
+    const r = engine.again(this.sheet, this.view, at);
+    if (!r) return null;
+    this.view = r.view;
+    if (r.events.length) this.inked(r.events);
+    this.lastKey = performance.now();
+    return { level: r.level, max: !r.events.length };
+  }
   /** the newest event is still wet: put down in the last 3 s (each event dries on its own) */
   get wet(): boolean {
     const n = this.doc.log.length;
@@ -388,4 +409,22 @@ export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
     edges: (o, side) => { const e = g.edges(toP(o), side); return { start: fromP(e.start), end: fromP(e.end, 'right') }; },
     ribbons: (from, to) => g.ribbons(toP(from), toP(to)),
   };
+}
+
+/**
+ * One undo step in ink: typing the pen hasn't reached is taken back freely; anything on the paper (or a fix still in
+ * hand at the pen head) is written down now, then its wet ink is lifted until the letter reads as it did before the
+ * step. false: that ink is dry (nothing on the paper is lifted).
+ */
+export function undoInk(ink: InkSession, e: Edit): boolean {
+  const cur = ink.text();
+  const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
+  const tailFrom = cur.length - String(ink.view?.tail ?? '').length;
+  // (letters put back where the pen hovers over a fix are the fix itself, not unwritten typing)
+  if (ink.waiting && (e.at > tailFrom || (e.at === tailFrom && !(ink.view?.pending && e.ins)))) {
+    ink.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
+    return true;
+  }
+  ink.flush();
+  return ink.liftTo(want);
 }

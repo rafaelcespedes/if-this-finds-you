@@ -47,7 +47,7 @@ import { getPaper } from '@/lib/papers';
 import { mapGeometry } from '@/lib/geometry';
 import { LIVE, engineGeometry, liveExtras, liveLayout, pageSetup } from '@/lib/live';
 import { LiveSheets } from '@/components/LiveSheets';
-import { INK, InkSession, decodeInk, encodeInk, inkExtras, inkFromText, inkGeometry, inkLive, inkOpts, inkPage, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
+import { INK, InkSession, undoInk, decodeInk, encodeInk, inkExtras, inkFromText, inkGeometry, inkLive, inkOpts, inkPage, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
 import { inkOn } from '@/lib/request';
 import { renderLiveNote } from '@/lib/actions';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
@@ -1552,24 +1552,6 @@ function wordAround(text: string, at: number): [number, number] {
   while (a > 0 && /\S/.test(text[a - 1])) a--;
   while (b < text.length && /\S/.test(text[b])) b++;
   return [a, b];
-}
-
-/**
- * One undo step in ink: typing the pen hasn't reached is taken back freely; anything on the paper (or a fix still in
- * hand at the pen head) is written down now, then its wet ink is lifted until the letter reads as it did before the
- * step. false: that ink is dry (nothing on the paper is lifted).
- */
-function undoInk(ink: InkSession, e: Edit): boolean {
-  const cur = ink.text();
-  const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
-  const tailFrom = cur.length - String(ink.view?.tail ?? '').length;
-  // (letters put back where the pen hovers over a fix are the fix itself, not unwritten typing)
-  if (ink.waiting && (e.at > tailFrom || (e.at === tailFrom && !(ink.view?.pending && e.ins)))) {
-    ink.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
-    return true;
-  }
-  ink.flush();
-  return ink.liftTo(want);
 }
 
 /** P.S. from the tray: the same edit ⌘↩ makes, then the caret at its end. */
