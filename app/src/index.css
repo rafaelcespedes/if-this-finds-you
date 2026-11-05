@@ -480,6 +480,19 @@ html { scroll-padding-top: var(--site-head-clear); }
 :root [data-site-header] :is(a[data-site-link]:not([aria-current]), [data-site-kept]):active {
   scale: var(--st-scale, 0.97);
 }
+/* on a desktop the places (and My letters) read a size up, 14 px (Rafael, launch: "feel really small on desktop, so
+   let's just go a little bigger"), at the same weight; their fill and wash grow with them (their padding is in em).
+   Set on the places themselves, through the size each look reads (the Ruler's --ed-head-size, the Reading Room's
+   --rr-label-size) as well as directly (the earlier design), so the page's middle, the phone's header and the Menu
+   keep theirs. The line's height and the wordmark don't move. */
+@media (min-width: 64rem) {
+  [data-site-header] :is([data-site-link], [data-site-kept]) {
+    --site-place-size: 0.875rem;
+    --ed-head-size: var(--site-place-size);
+    --rr-label-size: var(--site-place-size);
+    font-size: var(--site-place-size);
+  }
+}
 @media (forced-colors: active) {
   [data-site-link][aria-current] [data-site-words] { text-decoration: underline; text-underline-offset: 4px; }
 }
