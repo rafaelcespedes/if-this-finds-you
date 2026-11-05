@@ -4,13 +4,14 @@
 // Each keystroke patches the sheets' DOM by word run (runChanges: add / move / remove), so only the edited
 // word is drawn again. The pen catches up with the typing: letters appear first as faint graphite
 // "thoughts", then the writer's pen inks over them (createPen + paintPen), a word behind in fair copy.
-import { memo, useEffect, useLayoutEffect, useRef } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, type MutableRefObject } from 'react';
 import * as E from '@engine';
 import { PaperCanvas } from '@/components/PaperCanvas';
 import { sheetPaper, sheetShadow } from '@/lib/papers';
 import { SheetMarks } from '@/components/SheetView';
 import { sheetFrame, sheetOfLine, type Live } from '@/lib/live';
 import { scopeIds } from '@/lib/writing';
+import { INK_THOUGHT } from '@/lib/ink';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
@@ -31,9 +32,19 @@ interface Props {
   writeOut?: boolean;
   /** hold back the unfinished word (fair copy), a few letters, or nothing (ink: the pen already paces it) */
   hold: number | 'word';
+  /**
+   * Ink mode: letters typed but not yet handed to the pen (shown as thought letters). The drawn pen counts them as
+   * waiting and speeds up with the whole backlog, and its own letters never blink out between thought and ink.
+   */
+  trail?: number;
+  /** keys of letters shown faded (Ink mode: letters Backspaced at the pen head while the writer considers the fix) */
+  dim?: string[];
+  /** the drawn pen, for whoever paces what's handed to it (Ink mode: the next word goes when this one is drawn) */
+  penRef?: MutableRefObject<{ at(now: number): { letters: number } } | null>;
 }
 
-export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold }: Props) {
+
+export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold, trail, penRef, dim }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const svgs = useRef<SVGSVGElement[]>([]);
   const prev = useRef<{ page: any; key: string } | null>(null);
@@ -41,7 +52,8 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
   const raf = useRef(0);
   const sheets = live.sheets.length;
   const renderInk = inkKey && inkKey !== 'auto' ? inkKey : inkKey === 'auto' ? undefined : 'currentColor';
-  const drawKey = `${handKey}|${live.emPx.toFixed(3)}|${live.paper.id}|${renderInk ?? 'own'}`;
+  // (Ink mode's pen is paced differently: a switch between the two starts a fresh pen)
+  const drawKey = `${handKey}|${live.emPx.toFixed(3)}|${live.paper.id}|${renderInk ?? 'own'}|${trail != null ? 'ink' : 'fair'}`;
 
   // ---------- the DOM: one svg per sheet, runs patched by id ----------
   useLayoutEffect(() => {
@@ -70,7 +82,9 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
     if (fresh) {
       for (const run of page.runs) inkGroup(sheetOfLine(live, run.line))?.insertAdjacentHTML('beforeend', engine.renderRun(p, page, run, opts));
       // a new writer, paper or size: no re-writing of the whole letter, unless it's the first visit
-      pen.current = engine.createPen({ hold, fast: 12 });
+      // Ink mode (a trail): what the pen is handed already showed as thought letters, so it shows at once (no fade
+      // from nothing), and the pen speeds up gently with the whole backlog: 1.5x at 6 letters, 3.5x at 12
+      pen.current = engine.createPen(trail != null ? { hold, speed: 1.5, fast: 3.5, behind: 6, fadeIn: 0 } : { hold, fast: 12 });
       pen.current.sync(page, now());
       if (!writeOut || prev.current) pen.current.finish(now());
     } else {
@@ -91,6 +105,8 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
     // a copy of the runs as they are now: an engine may keep updating the same runs list (Ink mode's sheet
     // does), so the next diff must compare against what was drawn, not against a live array
     prev.current = { page: { ...page, runs: (page.runs as any[]).map((r) => ({ ...r })) }, key: drawKey };
+    if (pen.current) pen.current.trail = trail ?? 0;
+    if (penRef) penRef.current = pen.current;
     // for debugging and QA: the live pen and page
     (window as unknown as { __seedhandLive: unknown }).__seedhandLive = { pen: pen.current, page, svgs: svgs.current };
     tick();
@@ -105,6 +121,7 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
   });
 
   // ---------- the pen: paint while it has letters to ink ----------
+  const dimSet = dim?.length ? new Set(dim) : undefined;
   const tick = () => {
     cancelAnimationFrame(raf.current);
     const step = () => {
@@ -112,10 +129,12 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
       const page = prev.current?.page;
       if (!p || !page) return;
       const state = p.at(now());
-      for (const svg of svgs.current) if (svg) engine.paintPen(svg, page, state, { emPx: live.emPx });
+      for (const svg of svgs.current) if (svg) engine.paintPen(svg, page, state, { emPx: live.emPx, thought: trail != null ? INK_THOUGHT : undefined, dim: dimSet });
       if (state.busy || state.writing) raf.current = requestAnimationFrame(step);
     };
-    raf.current = requestAnimationFrame(step);
+    // painted now, before this frame shows: a run just added would otherwise show in full ink for one frame (a
+    // word, or a strike, flashing before the pen writes it)
+    step();
   };
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 

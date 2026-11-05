@@ -12,8 +12,8 @@ import { LiveSheets } from '@/components/LiveSheets';
 import { Toaster } from '@/components/ui/sonner';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { UndoHistory, diffEdit, type Edit } from '@/lib/edits';
-import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, type InkDoc } from '@/lib/ink';
+import { UndoHistory, type Edit } from '@/lib/edits';
+import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, undoInk, type InkDoc } from '@/lib/ink';
 import { pageSetup } from '@/lib/live';
 import { getPaper } from '@/lib/papers';
 import { inkColor } from '@/lib/inks';
@@ -127,7 +127,8 @@ export function WriteApp() {
     return () => { window.removeEventListener('pagehide', leave); document.removeEventListener('visibilitychange', hidden); };
   }, []);
 
-  // the pen catches up with the typing, at handwriting speed
+  // the pen catches up with the typing: the drawn pen (LiveSheets) is the clock, the typing handed to it a word at a time
+  const drawnPen = useRef<{ at(now: number): { letters: number } } | null>(null);
   useEffect(() => {
     let last = performance.now();
     const id = window.setInterval(() => {
@@ -135,7 +136,7 @@ export function WriteApp() {
       const now = performance.now();
       const dt = now - last;
       last = now;
-      if (s.waiting && s.step(dt)) sync();
+      if (s.waiting && s.step(dt, false, drawnPen.current?.at(now / 1000).letters)) sync();
     }, 130);
     return () => window.clearInterval(id);
   }, [session, sync]);
@@ -145,7 +146,7 @@ export function WriteApp() {
     const live = inkLive(p, session.page, paper, eff.size, eff.lineSpacing, draft);
     const extras = inkExtras(live, { draft, signed: false, writerName: '' });
     const text = session.text();
-    return { live, extras, geometry: inkGeometry(live, p, draft, text), text, hovering: session.hovering };
+    return { live, extras, geometry: inkGeometry(live, p, session), text, hovering: session.hovering };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, tick, p, paper, eff.size, eff.lineSpacing]);
 
@@ -198,7 +199,8 @@ export function WriteApp() {
     const lastEv = s.doc.log[s.doc.log.length - 1] as { t?: string; why?: string; kind?: string } | undefined;
     const markOnTop = !!lastEv && ((lastEv.t === 'strike' && lastEv.why === 'again') || lastEv.t === 'underline' || (lastEv.t === 'pen' && lastEv.kind === 'retrace'));
     if (dir === 'undo' && !s.waiting && markOnTop) {
-      if (s.undo()) { sync(); return; }
+      // (an underline or words gone over again: every run the command marked, together)
+      if (s.liftFormat() || s.undo()) { sync(); return; }
     }
     const e = dir === 'undo' ? undoHistory.undo(cur) : undoHistory.redo(cur);
     if (!e) {
@@ -209,18 +211,14 @@ export function WriteApp() {
       return;
     }
     const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
-    if (want.length < cur.length && !s.waiting) {
-      let lifted = 0;
-      while (s.text().length > want.length && lifted < 2000 && s.undo()) lifted++;
-      if (!lifted) {
-        undoHistory.keep(dir);
-        toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' });
-        return;
-      }
-      const fix = diffEdit(s.text(), want, 'type', 'paper');
-      if (fix) s.edit(fix);
-    } else {
-      s.edit({ ...e, kind: e.ins ? 'replace' : 'delete' });
+    // redo: the step written again as it was made (typed, or deleted: struck); never as autocorrect's whole-word
+    // replacement, which struck the word next to it. Undo: unwritten typing taken back, wet ink lifted (lib/ink.ts)
+    if (dir === 'redo') s.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
+    else if (!undoInk(s, e)) {
+      undoHistory.keep(dir);
+      sync();
+      toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' });
+      return;
     }
     if (s.text() !== want) undoHistory.clear();
     sync();
@@ -233,7 +231,7 @@ export function WriteApp() {
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     const s = sessionRef.current;
     if (cmd === 'ps') { s.postScript(); sync(); return; }
-    if (s.mark(cmd === 'underline' ? 'underline' : 'retrace', from, to)) {
+    if (s.format(cmd === 'underline' ? 'underline' : 'press', from, to)) {
       sync();
       // the marked words stand clear of the selection's tint, the caret after them
       requestAnimationFrame(() => editor.current?.setSelection(to));
@@ -388,6 +386,7 @@ export function WriteApp() {
             ref={editor}
             text={text}
             hovering={hovering}
+            mode="ink"
             onEdit={onEdit}
             onHistory={onHistory}
             start={startCaret}
@@ -413,6 +412,9 @@ export function WriteApp() {
               // each sheet is drawn as it is (one from the pile isn't written out again), and so is a new writer
               handKey={cur.id + ':' + state.seed + ':' + state.style}
               hold={0}
+              trail={session.trail}
+              penRef={drawnPen}
+              dim={session.pendingKeys}
             />
           </PaperEditor>
         )}

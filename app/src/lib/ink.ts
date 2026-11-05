@@ -14,7 +14,7 @@
 import * as E from '@engine';
 import { UPM, type Hand } from '@engine';
 import type { Edit } from './edits';
-import type { Geometry } from './geometry';
+import type { Geometry, Side } from './geometry';
 import { LIVE, engineGeometry, liveExtras, pageSetup, type Live } from './live';
 import { frameFor } from './paginate';
 import type { PaperSpec } from './papers';
@@ -98,6 +98,8 @@ export function inkLive(p: Hand, page: any, paper: PaperSpec, size: number, line
 }
 
 const GRAPHITE = '#6f6f78';
+/** how strongly the thought letters show (faint graphite); the drawn pen's waiting letters match it (LiveSheets) */
+export const INK_THOUGHT = 0.24;
 
 /** Contours of a posed item (letter or mark) in page units, y up, ready for contoursToD. */
 function itemContours(it: any): number[][][] {
@@ -121,7 +123,8 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
   const inRun = new Set<number>();
   for (const r of (live.page.runs ?? []) as any[]) for (let i = r.from; i < r.to; i++) inRun.add(i);
   for (const [i, it] of (live.page.items as any[]).entries()) {
-    if (it.kind !== 'mark' || inRun.has(i)) continue;
+    // marks outside every run, and letters gone over again (pressed harder: drawn over the letter, in no run)
+    if (inRun.has(i) || !(it.kind === 'mark' || it.role === 'retrace')) continue;
     const cs = itemContours(it);
     if (cs.length) out[sheetAtY(it.y ?? 0, sheetU, n)] += `<path data-key="${String(it.key).replace(/"/g, '')}" d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
   }
@@ -131,7 +134,7 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
       const cs = itemContours(it);
       if (cs.length) thoughts[sheetAtY(it.y, sheetU, n)] += `<path d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
     }
-    thoughts.forEach((t, s) => { if (t) out[s] += `<g fill="${GRAPHITE}" fill-opacity="0.24" class="thoughts">${t}</g>`; });
+    thoughts.forEach((t, s) => { if (t) out[s] += `<g fill="${GRAPHITE}" fill-opacity="${INK_THOUGHT}" class="thoughts">${t}</g>`; });
   }
   if (x.signed && x.writerName) {
     const sig = liveExtras(live, { marks: [], signed: true, writerName: x.writerName, text: live.page.text });
@@ -140,16 +143,25 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
   return out;
 }
 
+/** how long ink stays wet (writing-experience.md §4.5): an event can be lifted this long after it went down */
+const WET_MS = 3000;
+/** the most letters the planner's fix at the pen head takes on (sheet.js plan: a longer run is struck instead) */
+const LONG_FIX = 24;
+const NO_KEYS: string[] = [];
+
 /** The live sheet while someone writes in ink. Plain object state; the caller re-renders after changes. */
 export class InkSession {
   sheet: any;
   view: any;
-  /** when the last key landed, and when ink last went down (for the wet-tail undo) */
+  /** when the last key landed, and when ink last went down */
   lastKey = 0;
   lastInk = 0;
+  /** when each event of the log went down (the log's own order); events from before this session are long dry */
+  private inkedAt: number[];
   constructor(readonly p: Hand, doc: InkDoc, readonly opts: Record<string, unknown>, readonly touch = false) {
     this.sheet = engine.replay(p, doc, opts);
     this.view = engine.newView();
+    this.inkedAt = doc.log.map(() => -Infinity);
   }
   get doc(): InkDoc { return this.sheet.doc; }
   get page() { return this.sheet.page; }
@@ -163,21 +175,114 @@ export class InkSession {
   draft() { return this.view.tail ? engine.draftPage(this.sheet, this.view) : null; }
 
   edit(e: Edit) {
+    // Typing over a long selection that runs to the pen head (select all, then type): the planner struck it and wrote
+    // the first letter above it as a substitution, but the next keys landed at the pen head, after the struck text:
+    // the new words came apart. A writer strikes it and carries on where the pen is (most of the sheet: a fresh sheet,
+    // as select all + Delete does). So it's planned as what it is, a delete, then typing at that spot.
+    const tailFrom = this.text().length - String(this.view.tail ?? '').length;
+    if (e.ins && e.del && !this.view.mid && e.at + e.del >= tailFrom && tailFrom - e.at > LONG_FIX) {
+      this.edit({ ...e, ins: '' });
+      // struck right up to the pen: a space first, so the new words start clear of the struck ones (as the planner
+      // leaves one when it rewrites a word: "~teh~ the"). It's joined away: the text reads on, and no extra crossing-out
+      const recs = (this.sheet.reader?.recs ?? []) as { id: number; ch: string; struck?: unknown }[];
+      const last = recs[recs.length - 1];
+      if (last?.struck && !/\s/.test(last.ch) && !this.view.pending) {
+        this.inked([{ t: 'write', text: ' ' }, { t: 'mark', after: last.id, kind: 'join' }]);
+      }
+      this.edit({ ...e, del: 0 });
+      return;
+    }
     const r = engine.plan(this.sheet, this.view, { at: e.at, del: e.del, ins: e.ins, kind: e.kind });
     this.view = r.view;
     if (r.events.length) this.inked(r.events);
     this.lastKey = performance.now();
   }
-  /** the pen catches up; true when anything changed */
-  step(dt: number, final = false): boolean {
-    const r = engine.penStep(this.sheet, this.view, { dt, idle: performance.now() - this.lastKey, forgiving: true, touch: this.touch, final });
+  /**
+   * The pen catches up; true when anything changed. `drawing`: the letters the drawn pen (LiveSheets) still has to
+   * draw. Given, the drawn pen is the clock: the typing is handed to it a word at a time, the next only once this one
+   * is drawn (a letter to go at most), so what still shows as thought letters is never ink yet and a Backspace there
+   * deletes it cleanly; and once you stop, the rest is written as fast as the pen draws, not a letter every half
+   * second. (Without it, penStep paces itself at ~2 letters a second, and the two clocks drifted apart.)
+   */
+  step(dt: number, final = false, drawing?: number): boolean {
+    const now = performance.now();
+    const idle = now - this.lastKey;
+    const v = this.view;
+    let r: { events: unknown[]; view: any };
+    if (drawing != null && !final && !v.pending && !v.mid?.text && v.tail) {
+      // a word handed over a moment ago may not have reached the drawn pen yet
+      if (drawing > 1 || now - this.handedAt < 120) return false;
+      const tail = String(v.tail);
+      const m = /^\s*\S+[ \t]*/.exec(tail);
+      const chunk = m ? m[0] : tail;
+      const rest = tail.slice(chunk.length);
+      // a finished word goes once two more letters are typed after it, or after 700 ms (the forgiving grace)
+      const finished = !!m && (/\s$/.test(chunk) || /^\s/.test(rest));
+      if (finished) {
+        if (rest.length < 2 && idle < 700) return false;
+        r = engine.penStep(this.sheet, { ...v, tail: chunk }, { idle: Infinity, forgiving: false, touch: false });
+      } else {
+        // the word being typed (or only spaces): the usual grace, and on phones the unfinished word waits for autocorrect
+        r = engine.penStep(this.sheet, { ...v, tail: chunk }, { idle, forgiving: true, touch: this.touch });
+      }
+      r.view = { ...r.view, tail: String(r.view.tail ?? '') + rest };
+    } else {
+      r = engine.penStep(this.sheet, v, { dt, idle, forgiving: true, touch: this.touch, final });
+    }
     const moved = r.events.length > 0 || (r.view.tail !== this.view.tail) || !!r.view.pending !== !!this.view.pending;
     this.view = r.view;
-    if (r.events.length) this.inked(r.events);
+    if (r.events.length) { this.inked(r.events); this.handedAt = now; }
     return moved;
   }
+  /** when typing was last handed to the pen */
+  private handedAt = -Infinity;
+  /** the letters Backspaced at the pen head while the writer considers the fix (still on the paper), by item key */
+  get pendingKeys(): string[] {
+    const ids = new Set<number>(this.view?.pending?.ids ?? []);
+    if (!ids.size) return NO_KEYS;
+    const keys = ((this.page?.items ?? []) as { id?: number; key: string; kind: string }[]).filter((it) => it.kind === 'glyph' && it.id != null && ids.has(it.id)).map((it) => it.key);
+    // the same list while it's the same letters (the sheet it's handed to is memoised)
+    if (keys.join('|') !== this.pendingCache.join('|')) this.pendingCache = keys;
+    return this.pendingCache;
+  }
+  private pendingCache: string[] = NO_KEYS;
+  /** letters typed and not yet handed to the pen (the thought letters at the end) */
+  get trail(): number { return Array.from(String(this.view?.tail ?? '')).filter((c) => /\S/.test(c)).length; }
   /** everything typed, written now (before leaving, a fair copy, a P.S.) */
   flush() { this.step(0, true); }
+  /**
+   * Pen-only formatting on what's written, by hand: an underline drawn under the letters (again for a double), or the
+   * letters gone over again (pressed harder). `from`/`to` are textarea offsets; everything typed is written first.
+   */
+  format(kind: 'underline' | 'press', from: number, to: number): boolean {
+    this.flush();
+    if (typeof engine.inkIdsIn === 'function') {
+      const runs = engine.inkIdsIn(this.sheet, this.view, from, to) as [number, number][];
+      if (!runs.length) return false;
+      this.inked(runs.map(([a, b]) => (kind === 'underline' ? { t: 'underline', from: a, to: b } : { t: 'pen', kind: 'retrace', from: a, to: b })));
+      return true;
+    }
+    const ids: number[] = [];
+    const chars: string[] = [];
+    for (const r of this.sheet.reader?.recs ?? []) {
+      if (r.struck || r.joined) continue;
+      const c = String(r.over || r.ch);
+      for (let j = 0; j < c.length; j++) { ids.push(r.id); chars.push(c[j]); }
+    }
+    let a = Math.max(0, from), b = Math.min(ids.length, to);
+    while (a < b && /\s/.test(chars[a])) a++;
+    while (b > a && /\s/.test(chars[b - 1])) b--;
+    if (b <= a) return false;
+    // one event per run of consecutive ids (an insertion above the line, or a P.S., has ids of its own)
+    const sorted = [...new Set(ids.slice(a, b))].sort((x, y) => x - y);
+    const events: unknown[] = [];
+    let s = sorted[0], e = s;
+    const push = () => events.push(kind === 'underline' ? { t: 'underline', from: s, to: e } : { t: 'pen', kind: 'retrace', from: s, to: e });
+    for (const id of sorted.slice(1)) { if (id === e + 1) e = id; else { push(); s = e = id; } }
+    push();
+    this.inked(events);
+    return true;
+  }
   fairCopy() { this.flush(); this.inked(engine.fairCopy(this.sheet)); }
   postScript() { this.flush(); this.inked(engine.postScript(this.sheet)); }
   freshSheet() { this.flush(); this.inked([{ t: 'sheet', why: 'fresh' }]); }
@@ -195,26 +300,66 @@ export class InkSession {
     this.lastKey = performance.now();
     return { level: r.level, max: !r.events.length };
   }
-  /** A mark on what's written in [from, to) of the text: an underline, or the words gone over again (bolder). */
-  mark(kind: 'underline' | 'retrace', from: number, to: number): boolean {
-    if (typeof engine.inkIdsIn !== 'function') return false;
-    this.flush();
-    const runs = engine.inkIdsIn(this.sheet, this.view, from, to) as [number, number][];
-    if (!runs.length) return false;
-    this.inked(runs.map(([a, b]) => (kind === 'underline' ? { t: 'underline', from: a, to: b } : { t: 'pen', kind: 'retrace', from: a, to: b })));
+  /** the newest event is still wet: put down in the last 3 s (each event dries on its own) */
+  get wet(): boolean {
+    const n = this.doc.log.length;
+    return n > 0 && performance.now() - (this.inkedAt[n - 1] ?? -Infinity) <= WET_MS;
+  }
+  /** Undo lifts only wet ink: the newest event, while it's wet. false: the ink is dry. */
+  undo(): boolean {
+    if (this.view.tail || !this.wet) return false;
+    this.sheet = engine.dropLast(this.sheet);
+    this.inkedAt.length = this.doc.log.length;
     return true;
   }
-  /** Undo lifts only wet ink: the newest event, within 3 s. false: the ink is dry. */
-  undo(): boolean {
-    if (this.view.tail) return false;
-    if (!this.doc.log.length || performance.now() - this.lastInk > 3000) return false;
-    this.sheet = engine.dropLast(this.sheet);
-    return true;
+  /** Undo an underline or letters gone over again, while wet: they change no words, so they're a step of their own. */
+  liftFormat(): boolean {
+    if (this.waiting || !this.wet) return false;
+    const last = this.doc.log[this.doc.log.length - 1] as { t?: string; kind?: string };
+    if (!(last?.t === 'underline' || (last?.t === 'pen' && last.kind === 'retrace'))) return false;
+    // (one command makes one event per run of letters, all put down at once: lifted together)
+    const at = this.inkedAt[this.doc.log.length - 1];
+    let n = 0;
+    while (n < 64 && this.doc.log.length && this.inkedAt[this.doc.log.length - 1] === at) {
+      const e = this.doc.log[this.doc.log.length - 1] as { t?: string; kind?: string };
+      if (!(e?.t === last.t && e.kind === last.kind)) break;
+      this.sheet = engine.dropLast(this.sheet);
+      this.inkedAt.length = this.doc.log.length;
+      n++;
+    }
+    return n > 0;
+  }
+  /**
+   * Undo a step that's on the paper: lift wet ink, newest first, until the letter reads `want`, or until what's left
+   * leads into it (a lifted piece took a word too many: the rest is typed again, and the pen writes it). Never lifts
+   * dry ink. false, with nothing changed: the ink is dry, or lifting doesn't get there.
+   */
+  liftTo(want: string): boolean {
+    if (this.waiting) return false;
+    const lifted: { e: unknown; at: number }[] = [];
+    while (lifted.length < 64 && this.wet) {
+      const n = this.doc.log.length;
+      lifted.push({ e: this.doc.log[n - 1], at: this.inkedAt[n - 1] });
+      this.sheet = engine.dropLast(this.sheet);
+      this.inkedAt.length = this.doc.log.length;
+      const t = this.text();
+      if (t === want) return true;
+      if (want.startsWith(t) && t.length < want.length) {
+        this.edit({ at: t.length, del: 0, ins: want.slice(t.length), kind: 'type', t: Date.now(), source: 'paper' });
+        return true;
+      }
+    }
+    if (!lifted.length) return false;
+    // lifting doesn't get there: everything goes back as it was
+    for (const { e, at } of lifted.reverse()) { this.doc.log.push(e); this.inkedAt.push(at); }
+    this.sheet = engine.replay(this.p, this.doc, this.opts);
+    return false;
   }
   private inked(events: unknown[]) {
     if (!events.length) return;
     engine.apply(this.sheet, events);
     this.lastInk = performance.now();
+    for (let i = this.inkedAt.length; i < this.doc.log.length; i++) this.inkedAt.push(this.lastInk);
   }
 }
 
@@ -225,12 +370,107 @@ export function inkPage(p: Hand, doc: InkDoc, paper: PaperSpec, size: number, li
 }
 
 /**
+ * Where each offset of what's typed (the textarea) is on the paper: the written letter's text, then the thought
+ * letters (page.text + view.tail, the offsets the caret geometry knows). The two differ while the pen is busy
+ * elsewhere than the end:
+ *   - an insertion being typed mid-text (view.mid) isn't on the paper yet: its letters sit at the insertion point
+ *   - letters Backspaced at the pen head (view.pending) are still on the paper while the writer decides how to fix
+ *     them: the textarea has dropped them, and the thought letters are written after them
+ * `toPaper[i]` is the paper offset for textarea offset i (0..length); it never decreases.
+ */
+export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen: number } {
+  const recs = (sheet.reader?.recs ?? []) as { id: number; ch: string; over?: string; struck?: unknown; joined?: boolean }[];
+  const pending = new Set<number>(view?.pending?.ids ?? []);
+  const mid = view?.mid?.text ? (view.mid as { after: number; text: string }) : null;
+  const tail = String(view?.tail ?? '');
+  const toPaper: number[] = [];
+  let g = 0, midDone = false, pendAt = -1;
+  const putMid = () => { if (mid && !midDone) { for (let j = 0; j < mid.text.length; j++) toPaper.push(g); midDone = true; } };
+  if (mid && mid.after < 0) putMid();
+  for (const r of recs) {
+    if (!r.struck && !r.joined) {
+      const c = r.over || r.ch;
+      if (pending.has(r.id)) { if (pendAt < 0) pendAt = g; }
+      else for (let j = 0; j < c.length; j++) toPaper.push(g + j);
+      g += c.length;
+    }
+    if (mid && mid.after === r.id) putMid();
+  }
+  putMid(); // its anchor isn't in this sheet's text: where it was typed (the end)
+  for (let j = 0; j < tail.length; j++) toPaper.push(g + j);
+  // the end: after the thought letters; with only a pending fix, where the Backspaces reached
+  toPaper.push(tail.length ? g + tail.length : pendAt >= 0 ? pendAt : g);
+  return { toPaper, paperLen: g + tail.length };
+}
+
+/**
  * The caret over an ink sheet: the written letter and the thought letters the pen hasn't reached (draftPage) as one
  * geometry, so every offset of what's typed has a caret, both sides of every wrap, and Home, End, selection and
- * hit-testing work across both alike.
+ * hit-testing work across both alike. Its offsets are the textarea's (inkOffsets maps them onto the paper).
  */
-export function inkGeometry(live: Live, p: Hand, draft: any, viewText: string): Geometry {
+export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
+  const draft = ink.draft();
   const written = String(live.page.text ?? '').length;
   const geo = draft ? engine.geometry(p, [live.page, engine.offsetStops(draft, written - (draft.from || 0))]) : live.geo;
-  return engineGeometry(live, { geo, text: viewText });
+  const viewText = ink.text();
+  const { toPaper, paperLen } = inkOffsets(ink.sheet, ink.view);
+  const g = engineGeometry(live, { geo, text: String(live.page.text ?? '') + String(ink.view?.tail ?? '') });
+  if (toPaper.length !== viewText.length + 1 || paperLen !== g.text.length) return { ...g, text: viewText }; // (never: a safe fallback)
+  const toP = (o: number) => toPaper[Math.max(0, Math.min(toPaper.length - 1, o))];
+  // paper -> textarea: the first offset at or after it (left), or the last at or before it (right: a line's end)
+  const fromP = (x: number, bias: 'left' | 'right' = 'left') => {
+    let lo = 0, hi = toPaper.length - 1;
+    if (bias === 'left') {
+      while (lo < hi) { const m = (lo + hi) >> 1; if (toPaper[m] >= x) hi = m; else lo = m + 1; }
+      return lo;
+    }
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (toPaper[m] <= x) lo = m; else hi = m - 1; }
+    return lo;
+  };
+  // an insertion above the line: its stops sit on the line's own number, so the engine puts the caret on that line's
+  // baseline at the insertion's x (inside the next word). The caret goes where the insertion is written, up there
+  const stopsAt = new Map<number, { x: number; y: number; aff?: string }[]>();
+  for (const s of (live.page.stops ?? []) as { o: number; x: number; y: number; aff?: string }[]) {
+    if (!stopsAt.has(s.o)) stopsAt.set(s.o, []);
+    stopsAt.get(s.o)!.push(s);
+  }
+  const lift = 0.3 * (g.ascU || 600);
+  const caret = (o: number, side?: Side) => {
+    const po = toP(o);
+    const c = g.caret(po, side);
+    const list = stopsAt.get(po);
+    if (!c || !list) return c;
+    const s = list.filter((x) => (x.aff ?? '') === (side === 'before' ? 'before' : '')).pop() ?? list[list.length - 1];
+    const shift = live.sheets[c.sheet]?.shiftU ?? 0;
+    const dy = s.y - shift - c.y;
+    if (!(dy < -lift) || Math.abs(s.x - c.x) > 1) return c;
+    return { ...c, y: c.y + dy, top: c.top ? [c.top[0], c.top[1] + dy] as [number, number] : undefined };
+  };
+  return {
+    ...g,
+    text: viewText,
+    caret,
+    hit: (sheet, x, y) => fromP(g.hit(sheet, x, y)),
+    vertical: (o, dir, goalX, side) => { const v = g.vertical(toP(o), dir, goalX, side); return { o: fromP(v.o), goalX: v.goalX }; },
+    edges: (o, side) => { const e = g.edges(toP(o), side); return { start: fromP(e.start), end: fromP(e.end, 'right') }; },
+    ribbons: (from, to) => g.ribbons(toP(from), toP(to)),
+  };
+}
+
+/**
+ * One undo step in ink: typing the pen hasn't reached is taken back freely; anything on the paper (or a fix still in
+ * hand at the pen head) is written down now, then its wet ink is lifted until the letter reads as it did before the
+ * step. false: that ink is dry (nothing on the paper is lifted).
+ */
+export function undoInk(ink: InkSession, e: Edit): boolean {
+  const cur = ink.text();
+  const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
+  const tailFrom = cur.length - String(ink.view?.tail ?? '').length;
+  // (letters put back where the pen hovers over a fix are the fix itself, not unwritten typing)
+  if (ink.waiting && (e.at > tailFrom || (e.at === tailFrom && !(ink.view?.pending && e.ins)))) {
+    ink.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
+    return true;
+  }
+  ink.flush();
+  return ink.liftTo(want);
 }
