@@ -143,6 +143,8 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
 
 /** how long ink stays wet (writing-experience.md §4.5): an event can be lifted this long after it went down */
 const WET_MS = 3000;
+/** the most letters the planner's fix at the pen head takes on (sheet.js plan: a longer run is struck instead) */
+const LONG_FIX = 24;
 
 /** The live sheet while someone writes in ink. Plain object state; the caller re-renders after changes. */
 export class InkSession {
@@ -170,6 +172,23 @@ export class InkSession {
   draft() { return this.view.tail ? engine.draftPage(this.sheet, this.view) : null; }
 
   edit(e: Edit) {
+    // Typing over a long selection that runs to the pen head (select all, then type): the planner struck it and wrote
+    // the first letter above it as a substitution, but the next keys landed at the pen head, after the struck text:
+    // the new words came apart. A writer strikes it and carries on where the pen is (most of the sheet: a fresh sheet,
+    // as select all + Delete does). So it's planned as what it is, a delete, then typing at that spot.
+    const tailFrom = this.text().length - String(this.view.tail ?? '').length;
+    if (e.ins && e.del && !this.view.mid && e.at + e.del >= tailFrom && tailFrom - e.at > LONG_FIX) {
+      this.edit({ ...e, ins: '' });
+      // struck right up to the pen: a space first, so the new words start clear of the struck ones (as the planner
+      // leaves one when it rewrites a word: "~teh~ the"). It's joined away: the text reads on, and no extra crossing-out
+      const recs = (this.sheet.reader?.recs ?? []) as { id: number; ch: string; struck?: unknown }[];
+      const last = recs[recs.length - 1];
+      if (last?.struck && !/\s/.test(last.ch) && !this.view.pending) {
+        this.inked([{ t: 'write', text: ' ' }, { t: 'mark', after: last.id, kind: 'join' }]);
+      }
+      this.edit({ ...e, del: 0 });
+      return;
+    }
     const r = engine.plan(this.sheet, this.view, { at: e.at, del: e.del, ins: e.ins, kind: e.kind });
     this.view = r.view;
     if (r.events.length) this.inked(r.events);
