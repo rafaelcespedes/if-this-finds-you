@@ -11,7 +11,7 @@ import { z } from 'zod';
 import data from './data/list-fonts.json';
 import openFonts from './data/open-fonts.json';
 import page from './data/fonts-page.json';
-import { LINE, LIST_TOP, ROW, T, VIEW, rowsAt, rowsPerSecond } from './scene/fontlist-plan';
+import { LINE, LIST_TOP, ROW, T, VIEW, rowsAt, rowsPerSecond, typeTimes } from './scene/fontlist-plan';
 
 export const fontListSchema = z.object({
   /** the hand the video opens on: one of Rafael's favourites (src/data/open-fonts.json, 1-based), or 0 for the list's own */
@@ -21,7 +21,7 @@ export const fontListSchema = z.object({
 });
 export type FontListProps = z.infer<typeof fontListSchema>;
 const OPEN = openFonts as { n: number; file: string; name: string; seed: string; words: string }[];
-import { clamp, easeInOutQuint } from './scene/ink';
+import { bezier, clamp, easeInOutQuint } from './scene/ink';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const HANDS = (data as any).hands as { n: number; file: string; name: string; words: string; seed: string }[];
@@ -58,15 +58,16 @@ const loadUi = () => (uiFonts ??= new FontFace('RR Schibsted', `url(${staticFile
 // ---------- the camera ----------
 interface Cam { x: number; y: number; z: number }
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
-/** between two cameras: the zoom eased in log space, the frame's left and top edges moved straight (so the start of
- *  every line stays in frame while the camera pulls back from the cursor) */
-function mix(a: Cam, b: Cam, u: number, W: number, H: number): Cam {
+/** between two cameras: a zoom about one point of the page (the anchor), the zoom eased in log space and the anchor's
+ *  place on the screen moved on the same curve, so everything in the frame moves together, radially, as one zoom */
+function mix(a: Cam, b: Cam, u: number, A: { x: number; y: number }, W: number, H: number): Cam {
   const z = Math.exp(lerp(Math.log(a.z), Math.log(b.z), u));
-  const left = lerp(a.x - W / a.z / 2, b.x - W / b.z / 2, u);
-  const top = lerp(a.y - H / a.z / 2, b.y - H / b.z / 2, u);
-  return { x: left + W / z / 2, y: top + H / z / 2, z };
+  const sx = lerp((A.x - a.x) * a.z, (A.x - b.x) * b.z, u), sy = lerp((A.y - a.y) * a.z, (A.y - b.y) * b.z, u);
+  return { x: A.x - sx / z, y: A.y - sy / z, z };
 }
-const span = (t: number, [a, b]: number[]) => easeInOutQuint(clamp((t - a) / (b - a), 0, 1));
+const span = (t: number, [a, b]: number[], ease = easeInOutQuint) => ease(clamp((t - a) / (b - a), 0, 1));
+// the pull backs: a gentle start, a long settle (a cubic-like in-out, softer than the quint)
+const zoomEase = bezier(0.55, 0, 0.25, 1);
 function cams(W: number) {
   const s = W / 1920;
   // close: one row's writing, the cursor a little in from the left edge; its neighbours out of frame
@@ -83,23 +84,33 @@ function cams(W: number) {
 function camAt(t: number, W: number, H: number): Cam {
   const { close, list, pageCam } = cams(W);
   if (t < T.ease[0]) return close;
-  if (t < T.pull[0]) return mix(close, list, span(t, T.ease), W, H);
-  return mix(list, pageCam, span(t, T.pull), W, H);
+  // anchors: the start of the opening line (the cursor's place), then the list's top-left corner
+  if (t < T.pull[0]) return mix(close, list, span(t, T.ease, zoomEase), { x: MARGIN, y: LIST_TOP + CLOSE_ROW * ROW + 62 }, W, H);
+  return mix(list, pageCam, span(t, T.pull, zoomEase), { x: MARGIN, y: LIST_TOP }, W, H);
 }
 
 // ---------- typing ----------
-const typedOf = (text: string, t: number, [a, b]: number[]) => text.slice(0, Math.floor(clamp((t - a) / (b - a), 0, 1) * text.length + 1e-6));
+const timesCache = new Map<string, number[]>();
+function typedOf(text: string, t: number, win: number[]) {
+  const key = `${text}|${win.join()}`;
+  let times = timesCache.get(key);
+  if (!times) { times = typeTimes(text, win, text.length); timesCache.set(key, times); }
+  let n = 0;
+  while (n < times.length && times[n] <= t) n++;
+  return text.slice(0, n);
+}
 const blinkOn = (t: number, from: number) => Math.floor((t - from) * 2.4) % 2 === 0;
 const INPUT = page.input as { x: number; y: number; width: number; height: number };
 const CLEAR = { x: INPUT.x + INPUT.width - 18, y: INPUT.y + INPUT.height / 2 };
 const testerText = (t: number, end: string) => (t < T.click ? LINE : typedOf(end, t, T.type));
 function pointerAt(t: number) {
-  // in from the lower right of the page to the tester's clear button, a small press on the click
-  const from = { x: VIEW.w - 220, y: 640 };
-  const u = span(t, T.move);
+  // in from beyond the frame's lower right, along a slight curve, slowing onto the tester's clear button; a press
+  const from = { x: VIEW.w + 60, y: 820 }, ctrl = { x: CLEAR.x + 420, y: CLEAR.y + 260 };
+  const u = span(t, T.move, bezier(0.3, 0.1, 0.2, 1));
+  const x = (1 - u) * (1 - u) * from.x + 2 * (1 - u) * u * ctrl.x + u * u * CLEAR.x;
+  const y = (1 - u) * (1 - u) * from.y + 2 * (1 - u) * u * ctrl.y + u * u * CLEAR.y;
   const press = t >= T.click && t < T.click + 0.12 ? 0.86 : 1;
-  const show = clamp((t - (T.move[0] - 0.2)) / 0.2, 0, 1);
-  return { x: lerp(from.x, CLEAR.x, u), y: lerp(from.y, CLEAR.y, u), press, show };
+  return { x, y, press, show: t >= T.move[0] ? 1 : 0 };
 }
 const Pointer: React.FC<{ x: number; y: number; press: number; show: number }> = ({ x, y, press, show }) => (
   <svg width={22} height={30} viewBox="0 0 22 30" style={{ position: 'absolute', left: x - 2, top: y - 2, opacity: show, transform: `scale(${press})`, transformOrigin: '2px 2px', filter: 'drop-shadow(0 1px 1.5px rgba(0,0,0,0.25))' }}>

@@ -72,3 +72,13 @@
 - Sound alone, or a licensed track under it?
 - The final renders (1080, 30 fps for X; 60 fps for Instagram?).
 - The plate on frame 1 makes the loop not exact (the end card has none): drop it from frame 1?
+
+## The fonts video (5 Nov, for the second post)
+- src/FontList.tsx, timing in src/scene/fontlist-plan.ts; 1920 × 1080, 30 fps, 12.8 s, no sound (Rafael: "it's for
+  Twitter"). `npm run fonts` builds the fonts and renders out/fonts-x-1080.mp4.
+- Opens close on one row with a serif text cursor flush with the rule; "The quick brown fox…" typed in Rafael's #13
+  (Hana Hartmann, joined, fountain pen) while every row types with it; the camera zooms out from the line's start to
+  the list (1600-wide page, edge to edge); scroll picks up from rest, doubles every 0.65 s to ~2.5 rows a frame, stops
+  dead on row 110; pulls back to the live page's header and tester bar in a browser window (no shadow); the pointer
+  glides in, clears the tester, types "Over a million handwritten fonts" (true: 1,432,080), every row following.
+- Every row is set in its hand's real font (buildFont, as the page's worker), 120 list hands + Rafael's 15 favourites.

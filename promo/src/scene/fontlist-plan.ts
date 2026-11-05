@@ -1,8 +1,8 @@
 // The fonts video's timing (every time in seconds, so another frame rate keeps it):
 //   0.0  close on one row: a blinking cursor
 //   0.5–2.2  "The quick brown fox jumps over the lazy dog" typed, quickly; the camera holds, the line runs off the frame
-//   1.2–2.4  the camera pulls back: it's one row of a long list, every row in its own hand's font
-//   2.3–6.0  the list scrolls, faster and faster, to a blur (speed doubling every 0.62 s, to about 2.5 rows a frame)
+//   1.1–2.6  the camera pulls back, zooming out from the start of the line: it's one row of a long list
+//   2.1–6.0  the list scrolls (picking up from rest under the end of the pull back), faster and faster, to a blur
 //   6.0–7.6  slowing down, to a dead stop on a row
 //   8.0–9.4  pulling back again: the page's header and tester bar, the browser window, the address
 //   9.6–10.2 the pointer goes to the tester; a click clears it; "If this finds you" is typed, every row following
@@ -15,18 +15,20 @@ export const ROW = 128; // a row at the page's 64 px
 export const LINE = 'The quick brown fox jumps over the lazy dog';
 export const TYPED = 'If this finds you';
 export const T = {
-  caret: 0.5, rowType: [0.5, 2.2], ease: [1.2, 2.4], scroll: [2.3, 7.6], peak: 6.0, pull: [8.0, 9.4],
-  move: [9.6, 10.2], click: 10.25, type: [10.5, 11.9], end: 12.8,
+  caret: 0.5, rowType: [0.5, 2.2], ease: [1.1, 2.6], scroll: [2.1, 7.6], peak: 6.0, pull: [8.0, 9.4],
+  move: [9.45, 10.2], click: 10.25, type: [10.5, 11.9], end: 12.8,
 };
 export const SECONDS = T.end;
 
-const DOUBLE = 0.62;
+const DOUBLE = 0.65;
 /** speed (rows a second, before scaling): slow start, doubling every DOUBLE seconds to the peak, then easing to rest */
 function speed(t: number) {
   const [a, b] = T.scroll;
   if (t <= a || t >= b) return 0;
   const start = 1.2;
-  if (t <= T.peak) return start * Math.pow(2, (t - a) / DOUBLE);
+  // from rest: the first 0.7 s fade the speed in (smoothstep), so the scroll never jumps into motion
+  const r = Math.min(1, (t - a) / 0.7), fadeIn = r * r * (3 - 2 * r);
+  if (t <= T.peak) return start * Math.pow(2, (t - a) / DOUBLE) * fadeIn;
   const x = (t - T.peak) / (b - T.peak);
   return start * Math.pow(2, (T.peak - a) / DOUBLE) * Math.pow(1 - x, 2.2);
 }
@@ -51,3 +53,14 @@ export function rowsAt(t: number) {
 }
 /** rows a second at t (scaled), for the blur */
 export const rowsPerSecond = (t: number) => k * speed(t);
+
+/** when each character of a typed text appears: a person's rhythm (a deterministic jitter, a beat longer at spaces),
+ *  fitted to the window [a, b] */
+export function typeTimes(text: string, [a, b]: number[], salt = 1) {
+  let x = 0x9e3779b9 ^ (salt * 2654435761);
+  const rnd = () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 10000) / 10000; };
+  const gaps = [...text].map((ch, i) => (i === 0 ? 0.6 : 1) * (ch === ' ' ? 1.35 : 1) * (0.65 + 0.7 * rnd()));
+  const total = gaps.reduce((s, g) => s + g, 0);
+  let acc = 0;
+  return gaps.map((g) => { acc += g; return a + ((b - a) * acc) / total; });
+}
