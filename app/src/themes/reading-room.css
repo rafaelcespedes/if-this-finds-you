@@ -1163,6 +1163,10 @@ html[data-look='reading-room'] .rr-plate-title {
   font-style: italic;
   line-height: var(--rr-text-leading);
   color: var(--rr-ink);
+  /* one line, cut short with an ellipsis (truncate), so it clips: room for an italic capital's lean past its start,
+     and the words stay where they were */
+  padding-left: 0.1em;
+  margin-left: -0.1em;
 }
 /* the catalogue slip under the sheet (phones) */
 html[data-look='reading-room'] .rr-under-sheet {
