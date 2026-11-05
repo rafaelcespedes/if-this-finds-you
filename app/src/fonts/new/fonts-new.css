@@ -161,13 +161,26 @@ html[data-fonts='new'] .fx-theme {
 }
 
 /* ---------- a line of handwriting, set in the hand's own font ---------- */
+/* The box bleeds past the writing on the left (--fx-bleed) by as much as it pads back, so a first letter's lead-in
+   stroke, which a hand starts left of the letter's own edge, is never cut (the overflow clip and the masks stop at the
+   box); the words don't move. Wrapped lines get a little room on the right for a closing swash (--fx-bleed-r). The
+   vertical clip stays: it hides the lines beyond --lines. */
 html[data-fonts='new'] .fx-specimen {
+  --fx-bleed: 0.25em;
+  --fx-bleed-r: 0px; /* (a length: calc(0 * -1) is a number, and would void the margin) */
+  /* (a whole number of pixels where the browser can round: the box then starts on the same fraction of a pixel as the
+     words did, so WebKit, which snaps text to half pixels, sets them exactly where it did) */
   position: relative;
   min-width: 0;
+  margin-inline: calc(var(--fx-bleed) * -1) calc(var(--fx-bleed-r) * -1);
+  padding-inline: var(--fx-bleed) var(--fx-bleed-r);
   overflow: hidden;
   /* the font's line box (Specimen.tsx LINE) */
   line-height: 1.42;
   color: var(--fx-ink);
+}
+@supports (width: round(1em, 1px)) {
+  html[data-fonts='new'] .fx-specimen { --fx-bleed: round(0.25em, 1px); }
 }
 /* one line runs off the right edge and fades; several wrap, and the last fades where the words run on */
 html[data-fonts='new'] .fx-specimen.is-single {
@@ -175,14 +188,17 @@ html[data-fonts='new'] .fx-specimen.is-single {
   mask-image: linear-gradient(to right, #000 calc(100% - 5rem), transparent);
 }
 html[data-fonts='new'] .fx-specimen.is-multi {
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem), transparent);
+  --fx-bleed-r: 0.08em;
+  /* (the last line's fade ends where it did, at the words' own right edge, not the bleed's) */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem - var(--fx-bleed-r)), transparent calc(100% - var(--fx-bleed-r)));
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem - var(--fx-bleed-r)), transparent calc(100% - var(--fx-bleed-r)));
   -webkit-mask-composite: source-over;
   mask-composite: add;
 }
+/* the line bleeds into the box's room too, since the write-in mask stops at the line's own box */
 html[data-fonts='new'] .fx-line {
-  margin: 0;
-  padding-left: 0.04em;
+  margin: 0 calc(var(--fx-bleed-r) * -1) 0 calc(var(--fx-bleed) * -1);
+  padding: 0 var(--fx-bleed-r) 0 calc(0.04em + var(--fx-bleed));
   white-space: nowrap;
   font-kerning: normal;
   font-feature-settings: 'calt' 1, 'kern' 1;
@@ -207,7 +223,7 @@ html[data-fonts='new'] .fx-failed {
 /* waiting: the line's space already there, faintly ruled where the writing will sit (a breath, not a spinner) */
 html[data-fonts='new'] .fx-rules {
   position: absolute;
-  inset: 0 0 0 0.04em;
+  inset: 0 var(--fx-bleed-r) 0 calc(0.04em + var(--fx-bleed));
   background-image: linear-gradient(to bottom, transparent calc(1.06em - 1px), var(--fx-hair) calc(1.06em - 1px), var(--fx-hair) 1.06em, transparent 1.06em);
   background-size: 100% 1.42em;
   background-repeat: repeat-y;
@@ -340,7 +356,7 @@ html[data-fonts='new'] .fx-hero {
 }
 html[data-fonts='new'] .fx-hero > .fx-specimen {
   /* the writing's own left edge sits a hair left of the words under it, as a pen's first stroke does */
-  margin-left: -0.04em;
+  margin-left: calc(-0.04em - var(--fx-bleed));
 }
 html[data-fonts='new'] .fx-hero-caption {
   display: grid;
