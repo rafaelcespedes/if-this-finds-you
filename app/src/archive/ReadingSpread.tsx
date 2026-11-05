@@ -101,7 +101,6 @@ interface Props {
 export function ReadingSpread(p: Props) {
   const { letter: l } = p;
   const no = useMarks(l.id)?.no;
-  const nextNo = useMarks(p.turn.next?.id)?.no;
   const id = useId();
   const lost = lostInTransit(l);
   const why = circumstanceLabel(l);
@@ -228,7 +227,7 @@ export function ReadingSpread(p: Props) {
           <section className="sp-next" aria-labelledby={`${id}-next`}>
             <h2 id={`${id}-next`} className="sp-label">Next in the collection</h2>
             <a href={letterHash(p.turn.next.id)} onClick={(e) => { e.preventDefault(); p.turn.onNext(); }} className="sp-next-link">
-              {nextNo != null && <span className="sp-no">No. {callNo(nextNo)}</span>}
+              {/* no catalogue number: the title and where it's from are enough (Rafael: "just remove it") */}
               <span className="sp-next-title">{p.turn.next.title ?? 'A letter'} <span aria-hidden>→</span></span>
               <span className="sp-next-meta">
                 {capFirst([p.turn.next.place, p.turn.next.year != null ? String(p.turn.next.year) : '', shortRecipient(p.turn.next) ? `to ${shortRecipient(p.turn.next)}` : ''].filter(Boolean).join(' · '))}

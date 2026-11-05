@@ -350,7 +350,7 @@ html:root[data-layout='ruler'] .sp .sp-ref {
   font-size: 0.703125rem;
   font-weight: 500;
 }
-html:root[data-layout='ruler'] .sp :is(.sp-no, .sp-note-no) {
+html:root[data-layout='ruler'] .sp .sp-note-no {
   font-family: var(--ed-figure-face);
   font-variant-numeric: var(--ed-figure-numeric);
   font-variant-caps: normal;
