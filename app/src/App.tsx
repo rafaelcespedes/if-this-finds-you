@@ -1479,8 +1479,10 @@ export default function App() {
             onUnderline={() => formatFromTray('underline')}
             onPress={() => formatFromTray('press')}
             onPS={() => {
-              if (inkMode) { inkSession().postScript(); syncInk(); return; }
-              if (editor.current) insertPS(editor.current, state.text, onEdit);
+              // the same edit as ⌘↩, in ink too: "P.S." after a blank line, then the caret after it (the engine's own
+              // P.S. stream wrote the next words small under the letter with no "P.S." on the paper or in the text)
+              const shown = inkMode && inkRef.current && inkFor.current === inkLook ? inkRef.current.text() : state.text;
+              if (editor.current) insertPS(editor.current, shown, onEdit);
             }}
             onSign={toggleSigned}
             onDone={() => editor.current?.blur()}
