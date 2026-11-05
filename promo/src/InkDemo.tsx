@@ -359,19 +359,15 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
                 <ellipse cx={M + left.w + G / 2} cy={M + H / 2} rx={G / 2 + 10 * k0} ry={neckRy} />
               </g>
             </svg>
-            {/* the timer's fill: a pill of its own, 3 px inside the capsule, a shade darker, draining as the ink dries */}
+            {/* the timer's fill: a pill of its own, 4 px inside the capsule, a shade darker, draining as the ink dries */}
             {showChip && wet && (() => {
-              const inset = 3 * k0, w = (right.w - 2 * inset) * (1 - since / wetFor), h = H - 2 * inset;
+              const inset = 4 * k0, w = (right.w - 2 * inset) * (1 - since / wetFor), h = H - 2 * inset;
               return <div style={{ position: 'absolute', left: right.x + inset, top: top + inset, width: w, height: h, borderRadius: Math.min(R - inset, w / 2), background: GREY(0.055) }} />;
             })()}
             <div style={{ position: 'absolute', left: left.x, top, width: left.w, height: H, display: 'flex', alignItems: 'center', padding: `0 ${30 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif' }}>
               <div style={{ fontSize: TEXT * k0, fontWeight: 400, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
             </div>
-            <div style={{ position: 'absolute', left: right.x, top, width: right.w, height: H, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${20 * k0}px 0 ${24 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif', opacity: showChip ? 1 : 0 }}>
-              <div style={{ textAlign: 'left', lineHeight: 1.12 }}>
-                <div style={{ fontSize: TEXT * k0, fontWeight: 400, color: wet ? C.ink : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
-                <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? C.muted : C.faint }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
-              </div>
+            <div style={{ position: 'absolute', left: right.x, top, width: right.w, height: H, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 14 * k0, padding: `0 ${20 * k0}px 0 ${18 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif', opacity: showChip ? 1 : 0 }}>
               <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
                 <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? C.ink : C.faint} strokeOpacity={0.16} strokeWidth={2.6} />
                 <circle cx={17} cy={17} r={13} fill="none" stroke={C.ink} strokeWidth={2.6} strokeLinecap="round" opacity={wet ? 1 : 0}
@@ -379,6 +375,10 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
                 {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={C.ink} strokeWidth={1.8} strokeLinecap="round" />}
                 <circle cx={17} cy={17} r={1.6} fill={wet ? C.ink : C.faint} />
               </svg>
+              <div style={{ textAlign: 'left', lineHeight: 1.12 }}>
+                <div style={{ fontSize: TEXT * k0, fontWeight: 400, color: wet ? C.ink : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
+                <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? C.muted : C.faint }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
+              </div>
             </div>
           </>
         );
