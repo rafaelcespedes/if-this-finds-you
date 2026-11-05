@@ -14,7 +14,7 @@
 import * as E from '@engine';
 import { UPM, type Hand } from '@engine';
 import type { Edit } from './edits';
-import type { Geometry } from './geometry';
+import type { Geometry, Side } from './geometry';
 import { LIVE, engineGeometry, liveExtras, pageSetup, type Live } from './live';
 import { frameFor } from './paginate';
 import type { PaperSpec } from './papers';
@@ -341,10 +341,29 @@ export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
     while (lo < hi) { const m = (lo + hi + 1) >> 1; if (toPaper[m] <= x) lo = m; else hi = m - 1; }
     return lo;
   };
+  // an insertion above the line: its stops sit on the line's own number, so the engine puts the caret on that line's
+  // baseline at the insertion's x (inside the next word). The caret goes where the insertion is written, up there
+  const stopsAt = new Map<number, { x: number; y: number; aff?: string }[]>();
+  for (const s of (live.page.stops ?? []) as { o: number; x: number; y: number; aff?: string }[]) {
+    if (!stopsAt.has(s.o)) stopsAt.set(s.o, []);
+    stopsAt.get(s.o)!.push(s);
+  }
+  const lift = 0.3 * (g.ascU || 600);
+  const caret = (o: number, side?: Side) => {
+    const po = toP(o);
+    const c = g.caret(po, side);
+    const list = stopsAt.get(po);
+    if (!c || !list) return c;
+    const s = list.filter((x) => (x.aff ?? '') === (side === 'before' ? 'before' : '')).pop() ?? list[list.length - 1];
+    const shift = live.sheets[c.sheet]?.shiftU ?? 0;
+    const dy = s.y - shift - c.y;
+    if (!(dy < -lift) || Math.abs(s.x - c.x) > 1) return c;
+    return { ...c, y: c.y + dy, top: c.top ? [c.top[0], c.top[1] + dy] as [number, number] : undefined };
+  };
   return {
     ...g,
     text: viewText,
-    caret: (o, side) => g.caret(toP(o), side),
+    caret,
     hit: (sheet, x, y) => fromP(g.hit(sheet, x, y)),
     vertical: (o, dir, goalX, side) => { const v = g.vertical(toP(o), dir, goalX, side); return { o: fromP(v.o), goalX: v.goalX }; },
     edges: (o, side) => { const e = g.edges(toP(o), side); return { start: fromP(e.start), end: fromP(e.end, 'right') }; },
