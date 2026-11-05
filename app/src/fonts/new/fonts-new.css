@@ -412,18 +412,69 @@ html[data-fonts='new'] .fx-toolbar-wrap {
   background: var(--fx-ground);
   border-bottom: 1px solid var(--fx-hair);
 }
+/* one family (Rafael: "the height of all the controls is the same… make sure that those all line up and look like
+   they're part of a family"): every control on the line is --fx-ctl-h tall (the desk's control and button height),
+   with the room's 4 px corners, the controls' hairline edge, 0.75rem inside its ends and the control type role (13 px).
+   Controls that belong together sit --fx-ctl-gap apart, the three groups (what to show; what they write; how to see
+   them and New set) --fx-group-gap apart, and the line runs from margin to margin. */
 html[data-fonts='new'] .fx-toolbar {
+  --fx-ctl-h: 2.25rem;
+  --fx-ctl-pad: 0.75rem;
+  --fx-ctl-gap: 0.5rem;
+  --fx-group-gap: 1.5rem;
+  /* the segmented tracks are the height; their faces sit 2 px inside (density.css reads these) */
+  --seg-h: calc(var(--fx-ctl-h) - 4px);
+  --m-seg-h: calc(var(--fx-ctl-h) - 4px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.625rem 1.5rem;
+  gap: var(--fx-ctl-gap) var(--fx-group-gap);
   padding-block: 0.75rem;
 }
 html[data-fonts='new'] .fx-tool-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--fx-ctl-gap);
   min-width: 0;
+}
+/* the buttons, the line's menu, Saved, the field: the one height, the one inner rhythm */
+html[data-fonts='new'] .fx-toolbar [data-slot='button'] {
+  height: var(--fx-ctl-h);
+}
+html[data-fonts='new'] .fx-toolbar [data-slot='button']:not([class~='size-9']) {
+  padding-inline: var(--fx-ctl-pad);
+}
+html[data-fonts='new'] .fx-toolbar .fx-tester input {
+  height: var(--fx-ctl-h);
+  padding-left: var(--fx-ctl-pad);
+  /* the field's edge is the controls' edge (the shared field's own is half as dark) */
+  border-color: var(--rc-ctl-edge);
+}
+/* the size: the desk's ink-bar slider at the one height, its name and value as far in as every label */
+html[data-fonts='new'][data-look] .fx-toolbar .fx-size [data-row] > [data-slot='slider'][data-orientation] {
+  height: var(--fx-ctl-h);
+}
+html[data-fonts='new'][data-look] .fx-toolbar .fx-size [data-row] > div:first-child {
+  padding-inline: var(--fx-ctl-pad);
+}
+/* New set: the desk's red action button, at the one height (its touch height comes from the margin below) */
+html[data-fonts='new'][data-look] .fx-toolbar .rr-bring.rr-bring-button.rr-bring.rr-bring {
+  min-height: var(--fx-ctl-h);
+  height: var(--fx-ctl-h);
+  padding-left: var(--fx-ctl-pad);
+}
+/* touch screens: the controls keep their drawn height, and an invisible margin makes each a 44 px target (as the
+   phone's control sheet does, density.css) */
+@media (pointer: coarse) {
+  html[data-fonts='new'] .fx-toolbar :is([data-slot='button'], .rr-bring, [data-slot='segmented-item'], .fx-tester > label, [data-slot='slider']) {
+    position: relative;
+  }
+  html[data-fonts='new'] .fx-toolbar :is([data-slot='button'], .rr-bring, [data-slot='segmented-item'], .fx-tester > label, [data-slot='slider'])::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: min(0px, calc((100% - 44px) / 2)) 0;
+  }
 }
 html[data-fonts='new'] .fx-tester {
   flex: 1 1 26rem;
