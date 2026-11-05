@@ -94,7 +94,8 @@ function cameraFor(S: number) {
 }
 
 /** the top of the hint bar (just above the keyboard's plate), px */
-const barTop = (S: number) => keyboard(S).plate.y - (72 + 14) * (S / S0);
+const BAR_GAP = 22; // between the bar and the keyboard's plate, at 1080
+const barTop = (S: number) => keyboard(S).plate.y - (72 + BAR_GAP) * (S / S0);
 
 // ---------- the pen's clock: every letter and mark drawn in writing order, stroke by stroke ----------
 interface Timed { it: any; start: number; dur: number }
@@ -336,7 +337,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
           (the goo technique liquid-gooey is built on: an SVG blur and a sharp alpha threshold, so touching shapes merge
           into one surface while the words stay crisp on top). The neck swells a moment each time ink goes down. */}
       {(() => {
-        const H = 72 * k0, R = PLATE.radius * k0, top = KB.plate.y - (72 + 14) * k0;
+        const H = 72 * k0, R = PLATE.radius * k0, top = KB.plate.y - (72 + BAR_GAP) * k0;
         const TW = 262 * k0, G = 18 * k0;
         const left = { x: KB.plate.x, w: KB.plate.w - TW - G };
         const right = { x: KB.plate.x + KB.plate.w - TW, w: TW };
@@ -375,9 +376,9 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
                 {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={C.ink} strokeWidth={1.8} strokeLinecap="round" />}
                 <circle cx={17} cy={17} r={1.6} fill={wet ? C.ink : C.faint} />
               </svg>
-              <div style={{ textAlign: 'left', lineHeight: 1.12 }}>
+              <div style={{ textAlign: 'left', lineHeight: 1 }}>
                 <div style={{ fontSize: TEXT * k0, fontWeight: 400, color: wet ? C.ink : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
-                <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? C.muted : C.faint }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
+                <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? C.muted : C.faint, marginTop: 1 * k0 }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
               </div>
             </div>
           </>
