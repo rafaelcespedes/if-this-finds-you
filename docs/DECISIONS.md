@@ -6,7 +6,10 @@ Rafael's calls, newest first. Builders follow these. If one conflicts with a res
 
 - **Buttons match across the site:** the site's own corners (`--radius`, about 4px) everywhere, no pills (the Reading
   Room's "slips, not pills"). Round shapes only for badges, swatches and switches.
-- **A writing page, `/write`** (unlinked, kept out of search): a sheet and a pen, a minimal editor that builds on
+- **The writing interaction is open for design engineers:** docs/WRITING.md and a README section explain it, and
+  link the live `/write` page as a work in progress. Not linked from the site or posted about yet; still kept out of
+  search.
+- **A writing page, `/write`** (not linked from the site, kept out of search): a sheet and a pen, a minimal editor that builds on
   typing that behaves like ink. Micro-interactions and intuition first; a blank desk, not a word processor.
   - Pressing Backspace or Delete again on a crossed-out word (or holding it) crosses it out harder: a heavier strike,
     a scribble, then inked out. Nothing is ever deleted.
