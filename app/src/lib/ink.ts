@@ -121,7 +121,8 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
   const inRun = new Set<number>();
   for (const r of (live.page.runs ?? []) as any[]) for (let i = r.from; i < r.to; i++) inRun.add(i);
   for (const [i, it] of (live.page.items as any[]).entries()) {
-    if (it.kind !== 'mark' || inRun.has(i)) continue;
+    // marks outside every run, and letters gone over again (pressed harder: drawn over the letter, in no run)
+    if (inRun.has(i) || !(it.kind === 'mark' || it.role === 'retrace')) continue;
     const cs = itemContours(it);
     if (cs.length) out[sheetAtY(it.y ?? 0, sheetU, n)] += `<path data-key="${String(it.key).replace(/"/g, '')}" d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
   }
@@ -184,6 +185,32 @@ export class InkSession {
   }
   /** everything typed, written now (before leaving, a fair copy, a P.S.) */
   flush() { this.step(0, true); }
+  /**
+   * Pen-only formatting on what's written, by hand: an underline drawn under the letters (again for a double), or the
+   * letters gone over again (pressed harder). `from`/`to` are textarea offsets; everything typed is written first.
+   */
+  format(kind: 'underline' | 'press', from: number, to: number) {
+    this.flush();
+    const ids: number[] = [];
+    const chars: string[] = [];
+    for (const r of this.sheet.reader?.recs ?? []) {
+      if (r.struck || r.joined) continue;
+      const c = String(r.over || r.ch);
+      for (let j = 0; j < c.length; j++) { ids.push(r.id); chars.push(c[j]); }
+    }
+    let a = Math.max(0, from), b = Math.min(ids.length, to);
+    while (a < b && /\s/.test(chars[a])) a++;
+    while (b > a && /\s/.test(chars[b - 1])) b--;
+    if (b <= a) return;
+    // one event per run of consecutive ids (an insertion above the line, or a P.S., has ids of its own)
+    const sorted = [...new Set(ids.slice(a, b))].sort((x, y) => x - y);
+    const events: unknown[] = [];
+    let s = sorted[0], e = s;
+    const push = () => events.push(kind === 'underline' ? { t: 'underline', from: s, to: e } : { t: 'pen', kind: 'retrace', from: s, to: e });
+    for (const id of sorted.slice(1)) { if (id === e + 1) e = id; else { push(); s = e = id; } }
+    push();
+    this.inked(events);
+  }
   fairCopy() { this.flush(); this.inked(engine.fairCopy(this.sheet)); }
   postScript() { this.flush(); this.inked(engine.postScript(this.sheet)); }
   freshSheet() { this.flush(); this.inked([{ t: 'sheet', why: 'fresh' }]); }
@@ -198,6 +225,23 @@ export class InkSession {
     this.sheet = engine.dropLast(this.sheet);
     this.inkedAt.length = this.doc.log.length;
     return true;
+  }
+  /** Undo an underline or letters gone over again, while wet: they change no words, so they're a step of their own. */
+  liftFormat(): boolean {
+    if (this.waiting || !this.wet) return false;
+    const last = this.doc.log[this.doc.log.length - 1] as { t?: string; kind?: string };
+    if (!(last?.t === 'underline' || (last?.t === 'pen' && last.kind === 'retrace'))) return false;
+    // (one command makes one event per run of letters, all put down at once: lifted together)
+    const at = this.inkedAt[this.doc.log.length - 1];
+    let n = 0;
+    while (n < 64 && this.doc.log.length && this.inkedAt[this.doc.log.length - 1] === at) {
+      const e = this.doc.log[this.doc.log.length - 1] as { t?: string; kind?: string };
+      if (!(e?.t === last.t && e.kind === last.kind)) break;
+      this.sheet = engine.dropLast(this.sheet);
+      this.inkedAt.length = this.doc.log.length;
+      n++;
+    }
+    return n > 0;
   }
   /**
    * Undo a step that's on the paper: lift wet ink, newest first, until the letter reads `want`, or until what's left

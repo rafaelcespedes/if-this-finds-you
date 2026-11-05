@@ -656,6 +656,8 @@ export default function App() {
     const s = stateNow.current;
     if (s.sample && !s.inkLog && SAMPLE_FIRST_KEY === 'reply') return;
     const ink = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+    // a wet underline (or letters gone over again) is lifted on its own: it changed no words
+    if (ink && dir === 'undo' && ink.liftFormat()) { lastEditAt.current = performance.now(); syncInk(); return; }
     const cur = ink ? ink.text() : s.text;
     const e = dir === 'undo' ? undoHistory.undo(cur) : undoHistory.redo(cur);
     if (!e) return;
@@ -697,11 +699,21 @@ export default function App() {
   }, []);
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     if (cmd === 'ps') return;
+    if (inkMode) {
+      // in ink, by hand: an underline drawn under the words, or the letters gone over again (a found letter not
+      // yet answered has nothing of yours to format)
+      const s = stateNow.current;
+      if (s.sample && !s.inkLog) return;
+      inkSession().format(cmd, from, to);
+      syncInk();
+      return;
+    }
     update((s) => ({ marks: toggleMark({ text: s.text, marks: s.marks, signed: s.signed }, cmd, from, to).marks, sample: null }));
-  }, [update]);
+  }, [update, inkMode, inkSession, syncInk]);
   const formatFromTray = (cmd: 'underline' | 'press') => {
     const [a, b] = editor.current?.selection() ?? [0, 0];
-    const [from, to] = a === b ? wordAround(state.text, a) : [a, b];
+    const shown = inkMode && inkRef.current && inkFor.current === inkLook ? inkRef.current.text() : state.text;
+    const [from, to] = a === b ? wordAround(shown, a) : [a, b];
     onFormat(cmd, from, to);
   };
   const toggleSigned = () => update((s) => ({ signed: !s.signed }));
