@@ -3,6 +3,7 @@ import { Promo, defaultProps, promoSchema, settingsOf, type PromoProps } from '.
 import { Atlas } from './Atlas';
 import { Specimen } from './Specimen';
 import { Carousel } from './Carousel';
+import { FontList, fontListSchema } from './FontList';
 import { CAROUSEL } from './scene/carousel';
 import { SPECIMENS } from './scene/specimen';
 import { ATLAS } from './scene/zoom';
@@ -35,6 +36,8 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="SpecimenCard" component={Specimen} width={1080} height={1350} fps={1} durationInFrames={Math.max(1, SPECIMENS.length)} />
     {/* the launch thread's carousel: real letters in their own hands, 1080 × 1350 */}
     <Composition id="Carousel" component={Carousel} width={1080} height={1350} fps={1} durationInFrames={CAROUSEL.length} />
+    {/* the fonts video: the Fonts page's list scrolling, every row in its real font (16:9 for X) */}
+    <Composition id="FontList" component={FontList as any} schema={fontListSchema} defaultProps={{ pageWidth: 1024 }} width={1920} height={1080} fps={30} durationInFrames={30 * 12} />
     <Composition id="Atlas" component={Atlas} width={ATLAS.tile * ATLAS.per} height={ATLAS.tile * ATLAS.per} fps={1} durationInFrames={ATLAS.pages} />
   </>
 );
