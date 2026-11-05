@@ -1,31 +1,34 @@
-// The fonts video's timing (30 fps; every time in seconds, so another frame rate keeps it):
-//   0.0  close on the first row, its line writing itself in (the page's fx-write: 0.9 s, its ease)
-//   1.3  the camera eases out to the list as it starts to scroll
-//   1.3–5.0  faster and faster, to a blur (speed doubling every 0.62 s, to about 2.5 rows a frame)
-//   5.0–6.6  slowing down, to a dead stop on a row
-//   7.0–8.4  pulling back: the page's header and tester bar, then the browser window around it
-//   8.6–9.2  the pointer goes to the tester; a click clears it; the words are typed in, every row following
-//   12.0 end (the first frame follows: it loops)
-export const ROW = 128; // the page's row at 64 px (measured on the live page, 1024 wide)
-export const LIST_TOP = 170; // under the sticky header (65) and tester bar (105)
-export const VIEW = { w: 1024, h: 720 };
+// The fonts video's timing (every time in seconds, so another frame rate keeps it):
+//   0.0  close on one row: a blinking cursor
+//   0.5–2.2  "The quick brown fox jumps over the lazy dog" typed, quickly; the camera holds, the line runs off the frame
+//   1.2–2.4  the camera pulls back: it's one row of a long list, every row in its own hand's font
+//   2.3–6.0  the list scrolls, faster and faster, to a blur (speed doubling every 0.62 s, to about 2.5 rows a frame)
+//   6.0–7.6  slowing down, to a dead stop on a row
+//   8.0–9.4  pulling back again: the page's header and tester bar, the browser window, the address
+//   9.6–10.2 the pointer goes to the tester; a click clears it; "If this finds you" is typed, every row following
+//   12.8 end (the first frame follows: it loops)
+import page from '../data/fonts-page.json';
+
+export const VIEW = { w: page.width, h: page.height }; // the browser's page, CSS px (1600 × 1000)
+export const LIST_TOP = page.bar.bottom; // under the sticky header and tester bar (126)
+export const ROW = 128; // a row at the page's 64 px
+export const LINE = 'The quick brown fox jumps over the lazy dog';
 export const TYPED = 'If this finds you';
 export const T = {
-  write: [0.0, 0.9], ease: [1.3, 2.1], scroll: [1.3, 6.6], peak: 5.0, pull: [7.0, 8.4],
-  move: [8.6, 9.2], click: 9.25, type: [9.5, 10.9], end: 12.0,
+  caret: 0.5, rowType: [0.5, 2.2], ease: [1.2, 2.4], scroll: [2.3, 7.6], peak: 6.0, pull: [8.0, 9.4],
+  move: [9.6, 10.2], click: 10.25, type: [10.5, 11.9], end: 12.8,
 };
 export const SECONDS = T.end;
 
 const DOUBLE = 0.62;
-/** speed (rows a second, before scaling): slow start, doubling every half second to the peak, then easing to rest */
+/** speed (rows a second, before scaling): slow start, doubling every DOUBLE seconds to the peak, then easing to rest */
 function speed(t: number) {
   const [a, b] = T.scroll;
   if (t <= a || t >= b) return 0;
-  const start = 1.2; // rows a second as it starts
+  const start = 1.2;
   if (t <= T.peak) return start * Math.pow(2, (t - a) / DOUBLE);
   const x = (t - T.peak) / (b - T.peak);
-  const top = start * Math.pow(2, (T.peak - a) / DOUBLE);
-  return top * Math.pow(1 - x, 2.2);
+  return start * Math.pow(2, (T.peak - a) / DOUBLE) * Math.pow(1 - x, 2.2);
 }
 // the scroll, integrated finely, and scaled so it comes to rest exactly on a row
 const STEPS = 4000;
@@ -46,5 +49,5 @@ export function rowsAt(t: number) {
   const i = Math.floor(f);
   return k * (cum[i] + (cum[Math.min(STEPS, i + 1)] - cum[i]) * (f - i));
 }
-/** rows a second at t (scaled), for the blur and the sound */
+/** rows a second at t (scaled), for the blur */
 export const rowsPerSecond = (t: number) => k * speed(t);
