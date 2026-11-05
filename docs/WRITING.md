@@ -11,7 +11,9 @@ take it further, or take it somewhere else, this page is the way in.
 
 ## Try it
 
-On the site: open [ifthisfindsyou.app](https://ifthisfindsyou.app), click the letter and start typing.
+On the site: **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a sheet and a pen and nothing else. It's a
+work in progress, where new ideas land first. The home page, [ifthisfindsyou.app](https://ifthisfindsyou.app), has the
+same writing on the letter desk: click the letter and start typing.
 
 On your computer (you need [Node.js](https://nodejs.org) 24):
 
@@ -19,8 +21,7 @@ On your computer (you need [Node.js](https://nodejs.org) 24):
 cd app && npm install && npm run dev
 ```
 
-Then open `http://127.0.0.1:5173/write`, a minimal writing page with nothing but a sheet and a pen. The home page,
-`http://127.0.0.1:5173/`, has the same writing on the letter desk.
+Then open `http://127.0.0.1:5173/write` for the writing page, or `http://127.0.0.1:5173/` for the letter desk.
 
 ## What it does
 
@@ -29,7 +30,7 @@ Then open `http://127.0.0.1:5173/write`, a minimal writing page with nothing but
 | Type | Writes it out by hand, a few letters behind you. No two letters come out the same. |
 | Backspace before the pen gets there | It's gone, cleanly. You changed your mind before the ink touched the paper. |
 | Backspace once it's ink | The pen hovers for a moment, then crosses the word out, or writes the right letter over the wrong one. |
-| Backspace again on a crossed-out word, or hold it down | Crosses it out harder: a heavier line, then a scribble, then inked out (`/write`). |
+| Backspace again on a crossed-out word, or hold it down | Crosses it out harder: a heavier line, then a scribble, then inked out (on `/write` for now). |
 | Select and delete | Strikes it through, in this writer's own way (a line, two lines, a wave, loops or a scribble). |
 | Select and type | Strikes the old words and writes the new ones above them. |
 | Type in the middle of a line | Adds it above the line, with a caret. |

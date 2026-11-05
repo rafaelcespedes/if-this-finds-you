@@ -31,7 +31,8 @@ Nothing is ever erased.
 
 ![The word "terribly" crossed out four times, each harder: struck once, struck heavily, scribbled over, inked out](docs/writing/crossing-out-again.png)
 
-How it works, where each piece lives, the numbers to play with, and what's still open:
+Try it on **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a sheet and a pen and nothing else (a work in
+progress). How it works, where each piece lives, the numbers to play with, and what's still open:
 **[docs/WRITING.md](docs/WRITING.md)**. Design engineers, take a stab at it.
 
 ## Run it on your computer
