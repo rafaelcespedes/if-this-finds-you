@@ -74,7 +74,7 @@
 - The plate on frame 1 makes the loop not exact (the end card has none): drop it from frame 1?
 
 ## The fonts video (5 Nov, for the second post)
-- src/FontList.tsx, timing in src/scene/fontlist-plan.ts; 1920 × 1080, 30 fps, 12.8 s, no sound (Rafael: "it's for
+- src/FontList.tsx, timing in src/scene/fontlist-plan.ts; 1920 × 1080, 30 fps, 14.0 s (a 0.7 s pause in the list before it scrolls), no sound (Rafael: "it's for
   Twitter"). `npm run fonts` builds the fonts and renders out/fonts-x-1080.mp4.
 - Opens close on one row with a serif text cursor flush with the rule; "The quick brown fox…" typed in Rafael's #13
   (Hana Hartmann, joined, fountain pen) while every row types with it; the camera zooms out from the line's start to

@@ -2,11 +2,12 @@
 //   0.0  close on one row: a blinking cursor
 //   0.5–2.2  "The quick brown fox jumps over the lazy dog" typed, quickly; the camera holds, the line runs off the frame
 //   1.1–2.6  the camera pulls back, zooming out from the start of the line: it's one row of a long list
-//   2.1–6.0  the list scrolls (picking up from rest under the end of the pull back), faster and faster, to a blur
-//   6.0–7.6  slowing down, to a dead stop on a row
-//   8.0–9.4  pulling back again: the page's header and tester bar, the browser window, the address
-//   9.6–10.2 the pointer goes to the tester; a click clears it; "If this finds you" is typed, every row following
-//   12.8 end (the first frame follows: it loops)
+//   2.6–3.3  it sits: a moment to take in the list (Rafael: it started scrolling too soon)
+//   3.3–7.2  the list scrolls, picking up from rest, faster and faster, to a blur
+//   7.2–8.8  slowing down, to a dead stop on a row
+//   9.2–10.6 pulling back again: the page's header and tester bar, the browser window, the address
+//   10.65–11.4 the pointer glides to the tester; a click clears it; the ending words are typed, every row following
+//   14.0 end (the first frame follows: it loops)
 import page from '../data/fonts-page.json';
 
 export const VIEW = { w: page.width, h: page.height }; // the browser's page, CSS px (1600 × 1000)
@@ -15,8 +16,8 @@ export const ROW = 128; // a row at the page's 64 px
 export const LINE = 'The quick brown fox jumps over the lazy dog';
 export const TYPED = 'If this finds you';
 export const T = {
-  caret: 0.5, rowType: [0.5, 2.2], ease: [1.1, 2.6], scroll: [2.1, 7.6], peak: 6.0, pull: [8.0, 9.4],
-  move: [9.45, 10.2], click: 10.25, type: [10.5, 11.9], end: 12.8,
+  caret: 0.5, rowType: [0.5, 2.2], ease: [1.1, 2.6], scroll: [3.3, 8.8], peak: 7.2, pull: [9.2, 10.6],
+  move: [10.65, 11.4], click: 11.45, type: [11.7, 13.1], end: 14.0,
 };
 export const SECONDS = T.end;
 
