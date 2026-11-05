@@ -211,12 +211,16 @@ html:root[data-layout='ruler'] .rr-ledger-record .rr-card-title {
   font-stretch: var(--ed-display-stretch);
   letter-spacing: -0.02em;
 }
+/* the record's facts are ruled under each row, none over the first (Rafael: "a bottom border instead of a top one, I
+   think the top border competes with the divider lines"): the block starts in space, under the head's own rule and
+   beside the rail's; the last fact's rule is where Full record's was, so that one goes. The letter page's facts match */
 html:root[data-layout='ruler'] .rr-ledger-record .rr-fact {
-  border-top-color: var(--ed-rule);
+  border-top: 0;
+  border-bottom: 1px solid var(--ed-rule);
   padding: 7px 0 8px;
 }
-html:root[data-layout='ruler'] .rr-ledger-record > .rr-facts > .rr-fact:first-child {
-  border-top-color: var(--ed-rule-strong);
+html:root[data-layout='ruler'] .rr-ledger-record .rr-full {
+  border-top: 0;
 }
 html:root[data-layout='ruler'] .rr-ledger-record :is(.rr-fact dt, .rr-full-head .rr-sc),
 html:root[data-layout='ruler'] :is(.rr-drawer-head, .rr-drawer-head .rr-sc) {
@@ -321,11 +325,12 @@ html:root[data-layout='ruler'] .sp .sp-title {
 html:root[data-layout='ruler'] .sp .sp-writer {
   margin-top: 0.75rem;
 }
-/* the facts as the desk's record: one ruled row each, the label at the left */
+/* the facts as the desk's record: one row each, the label at the left, ruled under each row and none over the first
+   (as the desk's: the stronger rule over the block competed with the rail's dividers) */
 html:root[data-layout='ruler'] .sp .sp-facts {
   grid-template-columns: minmax(0, 1fr);
   margin-top: 1.25rem;
-  border-top-color: var(--ed-rule-strong);
+  border-top: 0;
 }
 html:root[data-layout='ruler'] .sp .sp-fact {
   display: grid;
