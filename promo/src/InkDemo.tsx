@@ -159,11 +159,10 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   useLayoutEffect(() => {
     const h = delayRender(`ink ${frame}`);
     const ctx = ref.current!.getContext('2d', { alpha: false })!;
-    ctx.fillStyle = C.room;
+    // the sheet fills the frame; the keyboard sits on it (Rafael: no band of its own, no divider)
+    ctx.fillStyle = (paper as any).tint ?? '#f8f6f0';
     ctx.fillRect(0, 0, S, S);
-    // the sheet, in its window
     ctx.save();
-    ctx.beginPath(); ctx.rect(0, 0, S, PAPER_H * k0); ctx.clip();
     ctx.drawImage(sheetCanvas, cam.x, cam.y);
     const sc = cam.k / cam.u, emPx = sc * UPM;
     const shift = (it: any) => ({ ...it, x: it.x + cam.x / sc, y: it.y + cam.y / sc, box: it.box && [it.box[0] + cam.x / sc, it.box[1] + cam.y / sc, it.box[2] + cam.x / sc, it.box[3] + cam.y / sc] });
@@ -217,9 +216,6 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
       }
     }
     ctx.restore();
-    // a hairline where the sheet's window ends
-    ctx.fillStyle = 'rgba(30, 39, 51, 0.10)';
-    ctx.fillRect(0, PAPER_H * k0, S, Math.max(1, k0));
     continueRender(h);
     continueRender(handle);
   }, [frame]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -280,7 +276,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   const capO = note ? clamp((t - note.t + 0.1) / 0.25, 0, 1) : 0;
 
   return (
-    <AbsoluteFill style={{ background: C.room }}>
+    <AbsoluteFill style={{ background: (paper as any).tint ?? '#f8f6f0' }}>
       <canvas ref={ref} width={S} height={S} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
       {/* the line between the sheet and the keyboard: what this moment shows, and the ink's wetness */}
       <div style={{ position: 'absolute', left: 0, right: 0, top: STRIP.y * k0, height: STRIP.h * k0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${56 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif' }}>
