@@ -10,6 +10,7 @@ import { AbsoluteFill, continueRender, delayRender, staticFile, useCurrentFrame,
 import { z } from 'zod';
 import { getPaper, paintPaper, type PaperSpec } from '@/lib/papers';
 import { inkOpts } from '@/lib/ink';
+import { inkColor } from '@/lib/inks';
 import session from './data/ink-session.json';
 import { HAND, MEASURE, PAPER, PEN_SPEED } from './scene/ink-demo-setup';
 import { engine, drawInk, UPM, clamp, easeInOutQuint, easeOutQuint } from './scene/ink';
@@ -27,17 +28,19 @@ const STRIP = { y: 612, h: 84 }; // the line between sheet and keyboard
 const KB_TOP = 704;
 const C = { room: '#e6e4de', ink: '#1e2733', muted: '#575146', faint: '#8b857a', red: '#9b3b2a', key: 'rgba(255, 255, 255, 0.62)', keyEdge: 'rgba(30, 39, 51, 0.10)' };
 const SES = session as any;
+/** the hand's ink (royal blue): the wet-ink timer is drawn in it, so it reads as the ink's own */
+const INK_BLUE = inkColor(HAND.ink);
 const CAPTIONS: Record<string, string> = {
   clean: 'A typo the pen hasn’t reached yet: gone',
-  strike: 'Backspace on ink: crossed out',
-  over: 'One letter written over another',
+  strike: 'A beat later, Backspace crosses it out',
+  again: 'Hold Delete: crossed out harder, then inked out',
+  replace: 'Select and retype: the new word goes above',
   insert: 'A word added above the line',
-  again: 'Keep pressing: crossed out harder, then inked out',
   underline: '⌘U: underlined by hand',
   retrace: '⌘B: gone over again',
   undo: 'Undo lifts the ink while it’s wet',
+  over: 'One letter written over another',
   dry: 'Dry ink stays',
-  ps: '⌘↩: a P.S. under the signature',
 };
 
 // ---------- the hand, the paper, the replay ----------
@@ -171,8 +174,8 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
     const sc = cam.k / cam.u, emPx = sc * UPM;
     // a selection (dragged across, held until its command), as the system draws one: a soft blue behind the words
     for (const sel of (SES.selections as any[])) {
-      if (t < sel.t - 0.75 || t > sel.until + 0.25) continue;
-      const frac = clamp((t - (sel.t - 0.75)) / 0.7, 0, 1);
+      if (t < sel.t || t > sel.until + 0.25) continue;
+      const frac = clamp((t - sel.t) / 0.7, 0, 1);
       const o = t > sel.until ? 1 - (t - sel.until) / 0.25 : 1;
       ctx.fillStyle = `rgba(44, 99, 214, ${0.16 * o})`;
       for (const b of selectionBoxes(sel, cam, easeInOutQuint(frac))) { ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 6 * k0); ctx.fill(); }
@@ -269,18 +272,18 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   const pointer = (() => {
     // a drag across words for a selection: in from the side, then across them
     for (const sel of (SES.selections as any[])) {
-      if (t < sel.t - 1.4 || t > sel.t + 0.9) continue;
+      if (t < sel.t - 0.6 || t > sel.t + 1.5) continue;
       const boxes = selectionBoxes(sel, cam);
       if (!boxes.length) return null;
       const a = boxes[0], b = boxes[boxes.length - 1];
       const start = { x: a.x + 4, y: a.y + a.h * 0.6 }, end = { x: b.x + b.w - 4, y: b.y + b.h * 0.6 };
       const from = { x: S * 0.82, y: PAPER_H * k0 * 0.95 };
-      if (t < sel.t - 0.75) {
-        const u = easeOutQuint(clamp((t - (sel.t - 1.4)) / 0.6, 0, 1));
-        return { x: from.x + (start.x - from.x) * u, y: from.y + (start.y - from.y) * u, press: 1, o: clamp((t - (sel.t - 1.4)) / 0.15, 0, 1) };
+      if (t < sel.t) {
+        const u = easeOutQuint(clamp((t - (sel.t - 0.6)) / 0.55, 0, 1));
+        return { x: from.x + (start.x - from.x) * u, y: from.y + (start.y - from.y) * u, press: 1, o: clamp((t - (sel.t - 0.6)) / 0.15, 0, 1) };
       }
-      const u = easeInOutQuint(clamp((t - (sel.t - 0.75)) / 0.7, 0, 1));
-      return { x: start.x + (end.x - start.x) * u, y: start.y + (end.y - start.y) * u, press: t < sel.t ? 0.9 : 1, o: t > sel.t + 0.5 ? 1 - (t - sel.t - 0.5) / 0.4 : 1 };
+      const u = easeInOutQuint(clamp((t - sel.t) / 0.7, 0, 1));
+      return { x: start.x + (end.x - start.x) * u, y: start.y + (end.y - start.y) * u, press: t < sel.t + 0.7 ? 0.9 : 1, o: t > sel.t + 1.1 ? 1 - (t - sel.t - 1.1) / 0.4 : 1 };
     }
     for (const c of clicks) {
       if (t < c.t - 0.75 || t > c.t + 0.6) continue;
@@ -301,8 +304,9 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   // the dry-ink note (the site's own words)
   const toast = (SES.toasts as any[]).find((x) => t >= x.t && t < x.t + 2.2);
   // the caption for this moment
-  const note = [...(SES.notes as any[])].reverse().find((n) => n.t <= t + 0.1 && CAPTIONS[n.note]);
-  const capO = note ? clamp((t - note.t + 0.1) / 0.25, 0, 1) : 0;
+  const LEAD = 0.6; // each hint comes in a little before its moment, so it's read as it happens
+  const note = [...(SES.notes as any[])].reverse().find((n) => n.t <= t + LEAD && CAPTIONS[n.note]);
+  const capO = note ? clamp((t - note.t + LEAD) / 0.25, 0, 1) : 0;
 
   return (
     <AbsoluteFill style={{ background: (paper as any).tint ?? '#f8f6f0' }}>
@@ -310,13 +314,21 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
       {/* the line between the sheet and the keyboard: what this moment shows, and the ink's wetness */}
       <div style={{ position: 'absolute', left: 0, right: 0, top: STRIP.y * k0, height: STRIP.h * k0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${56 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif' }}>
         <div style={{ fontSize: 25 * k0, fontWeight: 500, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 * k0, fontSize: 19 * k0, color: wet ? C.ink : C.faint, opacity: showChip ? 1 : 0 }}>
-          <svg width={22 * k0} height={22 * k0} viewBox="0 0 22 22">
-            <circle cx={11} cy={11} r={8.5} fill="none" stroke="rgba(30,39,51,0.15)" strokeWidth={2.5} />
-            <circle cx={11} cy={11} r={8.5} fill="none" stroke="#2c4fa3" strokeWidth={2.5} strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 8.5}`} strokeDashoffset={`${2 * Math.PI * 8.5 * (wet ? since / wetFor : 1)}`} transform="rotate(-90 11 11)" />
+        {/* the wet-ink timer, in the ink's blue: a ring draining like a stopwatch and the seconds counting down; grey
+            and "dry" once it runs out (undo can lift ink only while it's wet) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 * k0, opacity: showChip ? 1 : 0 }}>
+          <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
+            <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? INK_BLUE : C.faint} strokeOpacity={0.18} strokeWidth={3.2} />
+            <circle cx={17} cy={17} r={13} fill="none" stroke={INK_BLUE} strokeWidth={3.2} strokeLinecap="round" opacity={wet ? 1 : 0}
+              strokeDasharray={`${2 * Math.PI * 13}`} strokeDashoffset={`${2 * Math.PI * 13 * (wet ? since / wetFor : 1)}`} transform="rotate(-90 17 17)" />
+            {/* the stopwatch hand, sweeping with the ring */}
+            {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={INK_BLUE} strokeWidth={2} strokeLinecap="round" />}
+            <circle cx={17} cy={17} r={1.8} fill={wet ? INK_BLUE : C.faint} />
           </svg>
-          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{wet ? `Wet ink · ${Math.max(0, wetFor - since).toFixed(1)} s` : 'Dry'}</span>
+          <div style={{ lineHeight: 1.05 }}>
+            <div style={{ fontSize: 26 * k0, fontWeight: 600, color: wet ? INK_BLUE : C.faint, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
+            <div style={{ fontSize: 15 * k0, fontWeight: 500, color: wet ? INK_BLUE : C.faint, opacity: 0.75 }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
+          </div>
         </div>
       </div>
       {/* the keyboard: a frosted glass plate floating over the room, quiet keys on it, the pressed one sinking */}
@@ -326,6 +338,11 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
         boxShadow: `0 ${18 * k0}px ${44 * k0}px rgba(30, 39, 51, 0.13), 0 ${2 * k0}px ${6 * k0}px rgba(30, 39, 51, 0.06), inset 0 ${k0}px 0 rgba(255,255,255,0.9), inset 0 0 0 ${k0}px rgba(255,255,255,0.55)`,
         backdropFilter: `blur(${16 * k0}px)`,
       }} />
+      {/* the fuse: a thin line of the ink's blue along the plate's top edge, burning down over the 3 s the ink is wet
+          (it refills each time the pen puts ink down) */}
+      {showChip && wet && (
+        <div style={{ position: 'absolute', left: KB.plate.x + PLATE.radius * k0, top: KB.plate.y + 1.5 * k0, width: (KB.plate.w - 2 * PLATE.radius * k0) * (1 - since / wetFor), height: 3 * k0, borderRadius: 2 * k0, background: INK_BLUE, opacity: 0.85, boxShadow: `0 0 ${8 * k0}px ${INK_BLUE}` }} />
+      )}
       {KEYS.map((kk) => {
         const d = down.get(kk.id) ?? 0;
         return (

@@ -97,6 +97,11 @@
   through the site's own Ink mode (engine plan/penStep/apply/dropLast, the calls lib/ink.ts InkSession makes; pen at
   4.5 letters a second, the site's is 2) and replayed frame by frame; letters drawn stroke by stroke in writing
   order; the letters the pen hasn't reached faint graphite, as on the site.
+- Draft 5 (5 Nov, 40.4 s): ordered as the coordinator suggested (the clean fix, the same Backspace a beat later, the
+  held Delete, select and retype "green" to "wild" above it, "really" with a caret, ⌘U "miss you", ⌘B "Mara", undo
+  wet, "lovc" to "love" with the e over the c, undo dry: "The ink is dry. Cross it out instead."); no P.S.; the
+  wet-ink timer in the ink's blue (a draining ring with a sweeping hand, the seconds counting down) and a blue fuse
+  along the keyboard's top edge, refilled each time ink goes down.
 - Draft 4 (5 Nov, 42.5 s): the writing page's own moves added (merged from preview): Delete held on the crossed-out
   "quite" (engine again(), a pass every 280 ms: heavier, scribbled, inked out), ⌘U underlines "so green", ⌘B goes over
   "miss you", ⌘↩ a P.S. ("P.S. Bring the dog."); a drag-to-select with the system's soft blue highlight.

@@ -38,64 +38,65 @@ const select = (from: string, to: string) => { acts.push({ t: clock, key: 'selec
 const beat = (note: string) => acts.push({ t: clock, key: 'note', note });
 
 beat('start');
-// 1. one letter written over another: "Mora", the o already in ink, written over with an a
-beat('over');
-type('Dear Mo');
-wait(1.3); // the pen writes "Mo"
-press('Backspace', 0.3);
-type('a');
-wait(1.3); // the pen considers, then writes the a over the o
-type('ra,');
+type('Dear Mara,');
 press('Enter', 0.3);
-// 2. a typo the pen hasn't reached: gone cleanly
+// 1. a typo the pen hasn't reached: gone cleanly
 beat('clean');
 type('The gardne', 9);
 wait(0.08);
 press('Backspace', 0.12); press('Backspace', 0.2);
 type('en is quite');
-// 3. Backspace on ink: the pen crosses it out and writes the word again
+// 2. a beat later, the same Backspace on ink: crossed out, and the pen writes on
 beat('strike');
 wait(1.9); // the pen writes "quite"
 press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.3);
 type('so green. I miss you.');
 wait(1.6);
-// 4. back to the crossed-out word: Delete held, crossed out harder, scribbled, inked out
+// 3. back to the crossed-out word: Delete held, crossed out harder, scribbled, inked out
 beat('again');
 click('at:so green', 'again', 'quite');
 wait(0.2);
 holdDelete(3);
 wait(0.9);
+// 4. select and retype: the old word struck, the new one written above it
+beat('replace');
+select('green', 'green');
+type('wild', 7);
+wait(2.0);
 // 5. a word added above the line, with a caret
 beat('insert');
 click('before:miss', 'insert');
 type('really ', 7);
 wait(1.9);
-// 6. underlined by hand (⌘U), then words gone over again (⌘B)
+// 6. underlined by hand (⌘U), then a word gone over again (⌘B)
 beat('underline');
-select('so', 'green');
+select('miss', 'you');
 press('Meta+u', 0.4);
 wait(1.6);
 beat('retrace');
-select('miss', 'you');
+select('Mara', 'Mara');
 press('Meta+b', 0.4);
 wait(1.6);
-// 7. undo lifts wet ink only
+// 7. undo lifts wet ink
 beat('undo');
 click('end');
 press('Enter', 0.3);
 type('Love,');
 wait(1.1); // written, still wet
 press('Meta+z', 0.6);
+// 8. a slip at the pen: "lovc", the c already in ink, written over with an e
+beat('over');
+type('All my lovc');
+wait(1.3); // the pen writes "lovc"
+press('Backspace', 0.3);
+type('e');
+wait(1.3); // the pen considers, then writes the e over the c
+type(',');
+// 9. undo on dry ink: it stays
 beat('dry');
-type('All my love,');
-wait(3.8); // written, and dry
+wait(3.6);
 press('Meta+z', 0.4);
-wait(1.4);
-// 8. a P.S., below the signature (⌘↩)
-beat('ps');
-press('Meta+Enter', 0.5);
-type('P.S. Bring the dog.', 8);
-wait(2.6);
+wait(2.0);
 const END = clock;
 
 // ---------- the session ----------
@@ -191,7 +192,7 @@ function act(a: Act) {
   if (a.key === 'Meta+z') {
     // the site's undo (InkSession.undo): only the newest ink, within 3 s; typing the pen hasn't reached first
     const wet = t - lastInk <= 3 && !view.tail;
-    if (!wet) { toasts.push({ t, title: 'The ink is dry', body: 'Cross it out, or start a fresh sheet.' }); return; }
+    if (!wet) { toasts.push({ t, title: 'The ink is dry', body: 'Cross it out instead.' }); return; }
     // lift the last word (and the line it started), as the app's undo history asks
     const want = text.replace(/[^\s]+\s*$/, '');
     let n = 0;
@@ -200,6 +201,14 @@ function act(a: Act) {
     }
     states.push({ t, ids });
     lifts.push({ t, n });
+    return;
+  }
+  if (selection && a.key.length === 1) {
+    // select + type: the planner strikes the selection and writes the new word above it, smaller
+    const sel = selections[selections.length - 1]; if (sel) sel.until = t;
+    edit(t, { at: selection.from, del: selection.to - selection.from, ins: a.key, kind: 'type' });
+    cursor = selection.from + 1;
+    selection = null;
     return;
   }
   const at = cursor ?? text.length;
