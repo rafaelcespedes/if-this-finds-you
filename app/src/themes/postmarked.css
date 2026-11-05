@@ -200,10 +200,6 @@ html[data-look='postmarked'] section[data-row][aria-labelledby] h3 {
   color: var(--text);
 }
 
-/* the default's ¶ before each group is a scribe's mark; post has its own */
-html[data-look='postmarked'] section[data-row][aria-labelledby] h3 > span[aria-hidden]:first-child {
-  display: none;
-}
 html[data-look='postmarked'] section[data-row][aria-labelledby] h3 > span {
   font-family: var(--font-sans);
   font-size: 0.78125rem;

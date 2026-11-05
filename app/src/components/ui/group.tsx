@@ -1,4 +1,4 @@
-// One group of the tool's controls: its ¶ label (and what's chosen), an optional small extra on the right, a hairline
+// One group of the tool's controls: its label (and what's chosen), an optional small extra on the right, a hairline
 // above. Shared by the tool's panel and the Fonts page.
 import { useId } from 'react';
 import { ChevronDown, Lock, LockOpen } from 'lucide-react';
@@ -12,8 +12,6 @@ export function Group({ label, value, aside, children, className, first, lock }:
     <section data-row aria-labelledby={id} className={cn('grid grid-cols-[minmax(0,1fr)] gap-2 py-3.5', !first && 'border-t border-border/70', className)}>
       <div className="flex min-h-7 items-center justify-between gap-3">
         <h3 id={id} className="flex min-w-0 items-baseline gap-2 text-[0.8125rem] font-medium">
-          {/* the rubric: a vermilion paragraph mark, the way scribes marked where each part begins */}
-          <span aria-hidden className="-mr-1.5 text-[var(--mark)]">¶</span>
           {label}
           {value && <span className="truncate font-normal text-muted-foreground"><span className="sr-only">: </span>{value}</span>}
           {lock && (
