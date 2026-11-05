@@ -22,6 +22,19 @@ Every hand can be downloaded as a font, free, under the SIL Open Font License.
 
 It's a lab experiment by Rafael Cespedes, a designer. It's free, and there's nothing to sell.
 
+## The writing interaction
+
+Type on the paper and it behaves like ink. The pen writes a few letters behind you, so a typo you catch in time
+disappears cleanly. Once it's written, Backspace crosses it out instead, and pressing again crosses it out harder,
+down to a scribble. A retyped letter goes over the old one, and an afterthought goes above the line with a caret.
+Nothing is ever erased.
+
+![The word "terribly" crossed out four times, each harder: struck once, struck heavily, scribbled over, inked out](docs/writing/crossing-out-again.png)
+
+Try it on **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a sheet and a pen and nothing else (a work in
+progress). How it works, where each piece lives, the numbers to play with, and what's still open:
+**[docs/WRITING.md](docs/WRITING.md)**. Design engineers, take a stab at it.
+
 ## Run it on your computer
 
 You need [Node.js](https://nodejs.org) 24.
