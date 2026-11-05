@@ -337,8 +337,9 @@
   flex-direction: column-reverse;
   justify-content: flex-end;
   gap: 0.125rem;
-  padding: 0.625rem 0 0.75rem;
-  border-top: 1px solid var(--about-rule);
+  /* the rule under each figure, not over it (a rule on top competed with the section's own divider) */
+  padding: 0.75rem 0 0.625rem;
+  border-bottom: 1px solid var(--about-rule);
 }
 .about-facts dt {
   color: var(--about-muted);
