@@ -403,7 +403,7 @@ export default function App() {
   // paper and writing switch together when the result arrives
   const shownPaper = shownLive ? shownLive.live.paper : writing ? getPaper(writing.paper) : paper;
   const geometry = useMemo(() => {
-    if (inkActive && live) return inkGeometry(live, p, inkRef.current!.draft(), inkRef.current!.text());
+    if (inkActive && live) return inkGeometry(live, p, inkRef.current!);
     return shownLive ? engineGeometry(shownLive.live) : writing ? mapGeometry(writing) : null;
   }, [shownLive?.live, writing, inkActive, live, inkTick]);
 

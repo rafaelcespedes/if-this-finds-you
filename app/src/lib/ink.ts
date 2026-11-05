@@ -202,12 +202,70 @@ export function inkPage(p: Hand, doc: InkDoc, paper: PaperSpec, size: number, li
 }
 
 /**
+ * Where each offset of what's typed (the textarea) is on the paper: the written letter's text, then the thought
+ * letters (page.text + view.tail, the offsets the caret geometry knows). The two differ while the pen is busy
+ * elsewhere than the end:
+ *   - an insertion being typed mid-text (view.mid) isn't on the paper yet: its letters sit at the insertion point
+ *   - letters Backspaced at the pen head (view.pending) are still on the paper while the writer decides how to fix
+ *     them: the textarea has dropped them, and the thought letters are written after them
+ * `toPaper[i]` is the paper offset for textarea offset i (0..length); it never decreases.
+ */
+export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen: number } {
+  const recs = (sheet.reader?.recs ?? []) as { id: number; ch: string; over?: string; struck?: unknown; joined?: boolean }[];
+  const pending = new Set<number>(view?.pending?.ids ?? []);
+  const mid = view?.mid?.text ? (view.mid as { after: number; text: string }) : null;
+  const tail = String(view?.tail ?? '');
+  const toPaper: number[] = [];
+  let g = 0, midDone = false, pendAt = -1;
+  const putMid = () => { if (mid && !midDone) { for (let j = 0; j < mid.text.length; j++) toPaper.push(g); midDone = true; } };
+  if (mid && mid.after < 0) putMid();
+  for (const r of recs) {
+    if (!r.struck && !r.joined) {
+      const c = r.over || r.ch;
+      if (pending.has(r.id)) { if (pendAt < 0) pendAt = g; }
+      else for (let j = 0; j < c.length; j++) toPaper.push(g + j);
+      g += c.length;
+    }
+    if (mid && mid.after === r.id) putMid();
+  }
+  putMid(); // its anchor isn't in this sheet's text: where it was typed (the end)
+  for (let j = 0; j < tail.length; j++) toPaper.push(g + j);
+  // the end: after the thought letters; with only a pending fix, where the Backspaces reached
+  toPaper.push(tail.length ? g + tail.length : pendAt >= 0 ? pendAt : g);
+  return { toPaper, paperLen: g + tail.length };
+}
+
+/**
  * The caret over an ink sheet: the written letter and the thought letters the pen hasn't reached (draftPage) as one
  * geometry, so every offset of what's typed has a caret, both sides of every wrap, and Home, End, selection and
- * hit-testing work across both alike.
+ * hit-testing work across both alike. Its offsets are the textarea's (inkOffsets maps them onto the paper).
  */
-export function inkGeometry(live: Live, p: Hand, draft: any, viewText: string): Geometry {
+export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
+  const draft = ink.draft();
   const written = String(live.page.text ?? '').length;
   const geo = draft ? engine.geometry(p, [live.page, engine.offsetStops(draft, written - (draft.from || 0))]) : live.geo;
-  return engineGeometry(live, { geo, text: viewText });
+  const viewText = ink.text();
+  const { toPaper, paperLen } = inkOffsets(ink.sheet, ink.view);
+  const g = engineGeometry(live, { geo, text: String(live.page.text ?? '') + String(ink.view?.tail ?? '') });
+  if (toPaper.length !== viewText.length + 1 || paperLen !== g.text.length) return { ...g, text: viewText }; // (never: a safe fallback)
+  const toP = (o: number) => toPaper[Math.max(0, Math.min(toPaper.length - 1, o))];
+  // paper -> textarea: the first offset at or after it (left), or the last at or before it (right: a line's end)
+  const fromP = (x: number, bias: 'left' | 'right' = 'left') => {
+    let lo = 0, hi = toPaper.length - 1;
+    if (bias === 'left') {
+      while (lo < hi) { const m = (lo + hi) >> 1; if (toPaper[m] >= x) hi = m; else lo = m + 1; }
+      return lo;
+    }
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (toPaper[m] <= x) lo = m; else hi = m - 1; }
+    return lo;
+  };
+  return {
+    ...g,
+    text: viewText,
+    caret: (o, side) => g.caret(toP(o), side),
+    hit: (sheet, x, y) => fromP(g.hit(sheet, x, y)),
+    vertical: (o, dir, goalX, side) => { const v = g.vertical(toP(o), dir, goalX, side); return { o: fromP(v.o), goalX: v.goalX }; },
+    edges: (o, side) => { const e = g.edges(toP(o), side); return { start: fromP(e.start), end: fromP(e.end, 'right') }; },
+    ribbons: (from, to) => g.ribbons(toP(from), toP(to)),
+  };
 }
