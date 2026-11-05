@@ -29,7 +29,9 @@ export interface CardWarm {
 }
 
 export type CardResult =
-  | { job: number; id: string; blob: Blob; look: Look; width: number; height: number; bleed: number; shaped: boolean; ms: number }
+  // the image as bytes (transferred), not a Blob: a Blob made in the worker is loaded again by WebKit whenever the page
+  // reads or stores it, and if the page goes meanwhile that load fails as an error no catch reaches (cards.ts keep())
+  | { job: number; id: string; bytes: ArrayBuffer; type: string; look: Look; width: number; height: number; bleed: number; shaped: boolean; ms: number }
   | { job: number; id: string; error: string };
 
 /**

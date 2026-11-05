@@ -295,7 +295,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
           <LetterStatus {...props} compact className="min-w-0 justify-center pb-1" />
         )}
         {/* the look, as a pull-up: as wide as Find another above it, quieter; its chevron says which way it goes */}
-        <div className="pb-2">
+        <div className="sheet-pill-row pb-2">
           <button
             ref={pillRef}
             type="button"
@@ -319,21 +319,23 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
       >
         {/* the writer: who they are in words, and the ways to another writer and to what's known about the hand */}
         <section aria-label="Writer" className="sheet-writer border-b border-border/70 py-4">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-[0.8125rem] font-medium">{props.name}</h3>
-              <p className="mt-0.5 text-[0.75rem] leading-snug text-muted-foreground">{describeHand(props.p)}</p>
+              {/* the peek above already shows the name in their hand: here it's for screen readers only */}
+              <h3 className="sr-only">{props.name}</h3>
+              <p className="text-[0.75rem] leading-snug text-muted-foreground">{describeHand(props.p)}</p>
             </div>
             <AboutHand {...props}>
               <button
                 type="button"
-                className="-mr-1.5 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-md px-1.5 text-[0.78rem] text-muted-foreground transition-[color,transform] duration-100 active:scale-[0.97] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                // a full 44 px to tap, reaching into the block's padding, so the row is only as tall as its line of text
+                className="-mr-1.5 -my-2.5 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-md px-1.5 text-[0.78rem] text-muted-foreground transition-[color,transform] duration-100 active:scale-[0.97] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
               >
                 About this hand <ChevronRight aria-hidden className="size-3.5" />
               </button>
             </AboutHand>
           </div>
-          <Button variant="secondary" onClick={props.onChangeWriter} className="mt-2 h-11 w-full">
+          <Button variant="secondary" onClick={props.onChangeWriter} className="mt-3 h-11 w-full">
             <Shuffle aria-hidden /> Change writer
           </Button>
         </section>

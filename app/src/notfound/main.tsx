@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { SiteHeader } from '../components/SiteHeader';
 import { applySerif } from '../archive/serif';
 import { applyLook } from '../lib/look';
+import { reloadOnNewVersion } from '../lib/stale-build';
 import { withLogo } from '../lib/brand';
 import { ARCHIVE_URL, TOOL_URL } from '../lib/places';
 import '../index.css';
@@ -26,6 +27,9 @@ for (const a of document.querySelectorAll<HTMLAnchorElement>('a[data-nf-way]')) 
   const to = WAYS[a.dataset.nfWay ?? ''];
   if (to) a.href = withLogo(to);
 }
+
+// a tab left open across a new version reloads onto it when a file it asks for is gone
+reloadOnNewVersion();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

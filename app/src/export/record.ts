@@ -6,6 +6,7 @@
 // The page stays responsive: frames are drawn in short slices with yields between them, and the encoders
 // themselves run off the main thread.
 import type { Scene } from './scene';
+import { reloadForNewVersion, workerDidNotLoad } from '@/lib/stale-build';
 
 export interface RecordHooks {
   onFrame(i: number, frames: number): void;
@@ -202,7 +203,11 @@ export async function recordGif(scene: Scene, paletteAt: number, hooks: RecordHo
       else if (m.type === 'done') done!(m.bytes!);
     };
   });
-  worker.onerror = (e) => fail!(new Error(e.message || 'The GIF encoder stopped.'));
+  worker.onerror = (e) => {
+    // its script gone (the site was updated since this tab opened): the page reloads onto the new version
+    if (workerDidNotLoad(e) && reloadForNewVersion()) return;
+    fail!(new Error(e.message || 'The GIF encoder stopped.'));
+  };
   const { ctx } = frameCanvas(scene, true);
   const pause = yielder();
   const delay = 1000 / fps;

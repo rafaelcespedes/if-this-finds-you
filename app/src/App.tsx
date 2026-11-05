@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { cn, fileSafe, saveBlob } from '@/lib/utils';
 import { APP_NAME, NAME_WITH_DESCRIPTOR } from '@/lib/brand';
 import { SiteHeader, type Kept } from '@/components/SiteHeader';
-import { useFolio } from '@/components/Folio';
 import { styleCard } from '@/lib/styles';
 import { CAP, EXTRAS, GF_LATIN_CORE } from '@engine';
 import { AboutHand, Panel, ShareMenu, type PanelProps } from '@/components/Panel';
@@ -21,7 +20,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useNoteState } from '@/hooks/useNoteState';
+import { rememberOpen, useNoteState } from '@/hooks/useNoteState';
 import { useStableProps } from '@/hooks/useStableProps';
 import { useWideScale } from '@/hooks/useWideScale';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
@@ -35,7 +34,7 @@ import { rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib
 import type { RollAsk, RollReply } from '@/lib/roll-protocol';
 import { handOpts } from '@/lib/engine-features';
 import { SAMPLE_FIRST_KEY, recentLetters, sampleById, sampleForSeed, sawLetter, shortAuthor } from '@/lib/samples';
-import { DRAFTS_KEY, drafts, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
+import { DRAFTS_KEY, drafts, forgetOpen, keepDraft, mineIndex, takeDraft, type Draft } from '@/lib/drafts';
 import { TheirLetterDesk, TheirLetterPull, deskLayout } from '@/components/TheirLetter';
 import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
@@ -46,7 +45,7 @@ import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
 import { getPaper } from '@/lib/papers';
 import { mapGeometry } from '@/lib/geometry';
-import { LIVE, engineGeometry, liveExtras, liveLayout } from '@/lib/live';
+import { LIVE, engineGeometry, liveExtras, liveLayout, pageSetup } from '@/lib/live';
 import { LiveSheets } from '@/components/LiveSheets';
 import { INK, InkSession, decodeInk, encodeInk, inkExtras, inkFromText, inkGeometry, inkLive, inkOpts, inkPage, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
 import { inkOn } from '@/lib/request';
@@ -163,7 +162,8 @@ export default function App() {
   useEffect(() => { sawLetter(state.sample); }, [state.sample]);
 
   // ---------- found letters and your own: always a way to each ----------
-  const [kept, setKept] = useState<Draft[]>(() => drafts());
+  // the letter on the desk now, if it was kept on leaving (back from another page, a reload): not listed twice
+  const [kept, setKept] = useState<Draft[]>(() => { forgetOpen(state); return drafts(); });
   // another tab kept or took a letter: the list follows
   useEffect(() => {
     const on = (e: StorageEvent) => { if (e.key === DRAFTS_KEY || e.key == null) setKept(drafts()); };
@@ -249,6 +249,11 @@ export default function App() {
   // the session belongs to one look (hand, paper, size): a new look replays the log in the new hand
   const inkLook = JSON.stringify([state.seed, state.style, lookKey, state.paper]);
   const inkLayout = useMemo(() => inkOpts(p, paper, eff.size, eff.lineSpacing).layout, [p, paper, eff.size, eff.lineSpacing]);
+  /** where the first letter goes on an empty sheet (the first line, at the margin), for the caret before the first key */
+  const startCaret = useMemo(() => {
+    const { opts } = pageSetup(p, paper, eff.size, eff.lineSpacing);
+    return { sheet: 0, x: opts.marginLeft as number, y: opts.firstBaseline as number, line: 0 };
+  }, [p, paper, eff.size, eff.lineSpacing]);
   const inkSession = useCallback((doc?: InkDoc): InkSession => {
     if (!doc && inkRef.current && inkFor.current === inkLook) return inkRef.current;
     const s = stateNow.current;
@@ -309,20 +314,35 @@ export default function App() {
   // the link saved at once, without waiting for the pen or the debounce
   useEffect(() => {
     const leave = () => {
-      if (holdLinkRef.current) return;
+      if (holdLinkRef.current) return null;
       const ink = inkRef.current;
       if (ink && inkFor.current === inkLook && ink.waiting) {
         ink.flush();
-        saveNow({ text: ink.text(), inkLog: encodeInk(ink.doc), sample: null, marks: [] });
+        const patch = { text: ink.text(), inkLog: encodeInk(ink.doc), sample: null, marks: [] };
+        saveNow(patch);
         setInkTick((n) => n + 1);
-      } else saveNow();
+        return { ...stateNow.current, ...patch };
+      }
+      saveNow();
+      return stateNow.current;
     };
     const onVis = () => { if (document.visibilityState === 'hidden') leave(); };
+    // leaving the page itself (the site's menu, the wordmark, another site, closing the tab): a letter of your own is
+    // kept in My letters too, and this tab's desk comes back to it (launch QA: it was lost to a found letter)
+    const onHide = () => {
+      const s = leave();
+      if (s && !s.reader && !s.sample) keepDraft(s);
+      rememberOpen(s);
+    };
+    // back on the same page from the browser's cache (Back): it's open again, so it's not kept twice
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) { forgetOpen(stateNow.current); rememberOpen(null); setKept(drafts()); } };
     document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('pagehide', leave);
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('pageshow', onShow);
     return () => {
       document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('pagehide', leave);
+      window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('pageshow', onShow);
     };
   }, [inkLook, saveNow]);
   // and while typing, what the pen hasn't reached yet is kept for this tab, so even a crash keeps it: on the
@@ -974,10 +994,14 @@ export default function App() {
   }, [p, name, state.seed, state.style, eff.overrides]);
 
   // R for a new hand, Shift R for a similar one, when not typing; ⌘\\ shows or hides the desk while writing.
-  // While the letter is in use (focus on it after Esc, or a key within the last while, say after Sign it or a
-  // toast's button), a letter key carries on the writing instead: the editor takes the focus and the key
+  // While the letter is in use (a key within the last while, say after Sign it or a toast's button), a letter key
+  // carries on the writing instead: the editor takes the focus and the key. Not after Esc: that's the writer
+  // stopping, so R is a new hand again (launch QA: "Hi", Esc, R gave "Hir")
+  const stoppedWriting = useRef(false);
+  useEffect(() => { if (editing) stoppedWriting.current = false; }, [editing]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && (e.target as HTMLElement | null)?.closest?.('[data-paper]')) stoppedWriting.current = true;
       if (e.key === '\\' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); posture.toggle(); return; }
       if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
       const t = e.target as HTMLElement | null;
@@ -985,7 +1009,7 @@ export default function App() {
       // menus and dialogs keep their own keys (type-ahead, Escape)
       if (t?.closest?.('[role="menu"],[role="listbox"],[role="dialog"]')) return;
       const typed = e.key.length === 1 && e.key !== ' ';
-      if (typed && editor.current && (t?.closest?.('[data-paper]') || performance.now() - lastEditAt.current < WRITING_LATELY_MS)) {
+      if (typed && editor.current && !stoppedWriting.current && (t?.closest?.('[data-paper]') || performance.now() - lastEditAt.current < WRITING_LATELY_MS)) {
         editor.current.focus();
         return;
       }
@@ -1193,10 +1217,9 @@ export default function App() {
     />
   );
 
-  // the running head (the Reading Room layouts, house rule 2) runs the width of the window on every page; with the
-  // Reading Room's desk column beside the letter, its middle centres over the letter's side (`beside`)
-  const headSpansDesk = LOOK === 'reading-room' && isDesktop && !reader;
-  const folio = useFolio(LOOK === 'reading-room' ? sample?.id : null);
+  // the running head runs the width of the window on every page: the wordmark and the places, nothing in the middle
+  // (the found letter's number, place and year are the record's, beside the letter: Rafael, launch day, "I don't
+  // think we need it. And I think it's just weirdly centered")
   const siteHeader = (
     <SiteHeader
       ref={headerRef}
@@ -1207,11 +1230,6 @@ export default function App() {
       kept={reader ? NO_KEPT : { list: kept, found: letterActions.found, onOpen: letterActions.onBackToMine }}
       // no panel here: Share comes up to the header
       action={!reader && !isDesktop ? <ShareMenu {...panelProps} size="chip" /> : null}
-      // the running head's middle: a found letter's number, place and year (the Reading Room's catalogue)
-      centre={folio.centre}
-      // over the whole window, the middle centred over the letter's side: the aside (the Reading Room's desk, with the
-      // grid's gutter before it and its margin after, reading-room.css), less the header row's own gap (gap-x-4)
-      beside={headSpansDesk ? 'calc(var(--panel-w, 20rem) + var(--rr-gutter, 0rem) + var(--rr-margin, 0.75rem) - 1rem)' : undefined}
       quiet={editing && !isDesktop}
       // never zoomed with a wide desk: the same size and margins as on every other page
       className={cn('transition-opacity duration-200 ease-out', !desk && 'opacity-0')}
@@ -1355,6 +1373,7 @@ export default function App() {
                   hovering={inkActive && inkRef.current!.hovering}
                   onEdit={onEdit}
                   onHistory={onHistory}
+                  start={startCaret}
                   onFormat={onFormat}
                   writerName={name}
                   geometry={geometry}

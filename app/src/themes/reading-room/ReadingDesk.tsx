@@ -4,7 +4,7 @@
 // column's foot. Opened, the drawer rises over the record, so the column never needs a scroll bar of its own. The
 // controls inside are the tool's own (Panel.tsx), so everything they do is unchanged.
 import { useEffect, useId, useRef, useState } from 'react';
-import { ChevronRight, ChevronUp } from 'lucide-react';
+import { ChevronUp } from 'lucide-react';
 import { AboutHand, LetterStatus, LookControls, MoreControls, ShareMenu, type PanelProps } from '@/components/Panel';
 import { Signature } from '@/components/Signature';
 import { inkColor, inkName } from '@/lib/inks';
@@ -78,7 +78,7 @@ export function ReadingDesk(props: PanelProps) {
               <p className="rr-card-no"><span className="rr-sc">{replyTo ? 'A reply' : 'Your letter'}</span></p>
               <div className="rr-card-actions">{share}</div>
             </div>
-            <h1 className="rr-card-title">{replyTo ? <>To {replyTo.from}</> : 'A letter of your own'}</h1>
+            <h1 className="rr-card-title">{replyTo ? <>To {midSentence(replyTo.from)}</> : 'A letter of your own'}</h1>
             {bring}
             <dl className="rr-facts">
               {replyTo?.no != null && (
@@ -100,6 +100,14 @@ export function ReadingDesk(props: PanelProps) {
       <WritingDrawer {...props} crack={crack} />
     </div>
   );
+}
+
+/** A writer's name as it reads after "To": "A Frenchman aged 53" becomes "a Frenchman aged 53" (the article only),
+ * and a writer with no name is "the unsigned writer". */
+function midSentence(name: string) {
+  if (name === 'Unsigned') return 'the unsigned writer';
+  if (name === 'Unknown writer') return 'the unknown writer';
+  return name.replace(/^(A|An|The)(?=\s)/, (w) => w.toLowerCase());
 }
 
 /** The writing materials: a drawer pinned to the foot of the column (closed or open remembered on this device). What
@@ -141,7 +149,8 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
-      if (!t?.closest(`#${CSS.escape(id)}-b`)) return;
+      // inside the drawer, or on its handle
+      if (!t?.closest(`#${CSS.escape(id)}-b, #${CSS.escape(id)}-h`)) return;
       put('closed');
       document.getElementById(`${id}-h`)?.querySelector('button')?.focus();
     };
@@ -193,20 +202,16 @@ function showAboveSheet(e: React.FocusEvent) {
   if (t.getBoundingClientRect().bottom > sheet.getBoundingClientRect().top) t.scrollIntoView({ block: 'center' });
 }
 
-/** Phones: the same record as ruled rows under the sheet (found letters only). Its Hand row is the clear way into
- * what's known about the writer: "About this hand ›" under their name. */
-export function CatalogueSlip({ id, name, panel }: { id: string | null | undefined; name: string; panel?: PanelProps }) {
+/** Phones: the same record as ruled rows under the sheet (found letters only). The way into what's known about the
+ * writer is the sheet's own "About this hand ›", beside their name in its Writer block, so the record's Hand row is
+ * just the name (`panel` is kept for callers). */
+export function CatalogueSlip({ id, name }: { id: string | null | undefined; name: string; panel?: PanelProps }) {
   const record = useRecord(id);
   if (!record) return null;
-  const about = panel && (
-    <AboutHand {...panel}>
-      <button type="button" className="rr-hand-link">About this hand<ChevronRight aria-hidden /></button>
-    </AboutHand>
-  );
   return (
     // a piece of the record reached with the keyboard that the resting sheet covers scrolls up into sight
     <div style={{ display: 'contents' }} onFocusCapture={showAboveSheet}>
-      <LedgerRecord record={record} hand={name} handAction={about} handName={name} titleAs="h1" className="rr-under-sheet" />
+      <LedgerRecord record={record} hand={name} handName={name} titleAs="h1" className="rr-under-sheet" />
     </div>
   );
 }

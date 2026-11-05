@@ -1,9 +1,10 @@
 // The letter page in the Reading Room, as a book spread (the layout study, proposal 3). On the left, the plate: the
-// whole sheet fitted to the window's height, staying put while the right page scrolls, with which sheet and whose hand
-// under it. On the right, a page that reads like a recto: why the letter survives and where (red small capitals), the
-// title, who wrote to whom, six facts on two ruled rows ("Full record +" holds the rest), the letter as text from the
-// start, closing as a printed letter does (the signature set right, the place and date under it), the notes, how to
-// cite it, the next letter named, and what you can do with it. Small red numbers open their note in place; every note
+// whole sheet fitted to the window's height, staying put while the right page scrolls, with which sheet under it. On
+// the right, a page that reads like a recto: why the letter survives and where (red small capitals), the title, who
+// wrote to whom, six facts on two ruled rows ("Full record +" holds the rest; Cite copies the citation), the letter as
+// text from the start, closing as a printed letter does (the signature set right), the notes, the next letter named,
+// and what you can do with it. Each thing is said once (Rafael: "Remove those three": the place and date under the
+// words, the sheet's "Hand: …" credit, the citation written out). Small red numbers open their note in place; every note
 // is listed again at the end. On phones: the title first, then the sheet edge to edge, then the record (the slip dock
 // stays in the thumb zone). On desktop there is no dock: "‹ No. 0004 · 4 of 127 ›" is the running head's middle.
 // House rules: one grid, hairlines never boxes, notes beside facts.
@@ -43,6 +44,20 @@ export function closingOf(text: string): { paras: string[]; signature: string | 
 
 /** When, as the record gives it: the curator's date ("August 1798") or the year. */
 const whenOf = (l: ArchiveLetter) => l.found?.dateNote ?? (l.year != null ? String(l.year) : '');
+
+/** The line to cite a letter by (the page's quiet Cite, and the phone dock's "Copy citation"). */
+export function citationOf(l: ArchiveLetter, no: number | undefined) {
+  const placeDateRaw = [l.place ?? '', whenOf(l)].filter(Boolean).join(', ');
+  const writerLine = l.recipient ? `${shortAuthor(l)} to ${l.recipient.split(/;\s*/)[0]}` : shortAuthor(l);
+  return `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDateRaw ? `, ${placeDateRaw}` : ''}.`;
+}
+/** Copies it, with the desk's toasts. */
+export async function copyCitation(l: ArchiveLetter, no: number | undefined) {
+  const citation = citationOf(l, no);
+  const ok = await copyText(citation);
+  if (ok) toast.success('Citation copied', { id: 'cite' });
+  else toast.error('Couldn’t copy the citation', { id: 'cite', description: citation });
+}
 
 export interface Turn {
   at: number;
@@ -92,7 +107,7 @@ export function ReadingSpread(p: Props) {
   const why = circumstanceLabel(l);
   const where = l.place ?? '';
   const when = whenOf(l);
-  // as a label (the kicker, the dateline) a place starts with a capital; in the citation it stays as recorded
+  // as a label (the kicker) a place starts with a capital; in the citation it stays as recorded
   const placeDateRaw = [where, when].filter(Boolean).join(', ');
   const placeDate = capFirst(placeDateRaw);
   const writerLine = l.recipient ? `${shortAuthor(l)} to ${l.recipient.split(/;\s*/)[0]}` : shortAuthor(l);
@@ -127,12 +142,7 @@ export function ReadingSpread(p: Props) {
     <p id={`${id}-n-${key}`} className="sp-note-open"><span className="sp-note-no" aria-hidden>{n(key)}</span>{notes[n(key) - 1].body}</p>
   );
 
-  const citation = `${APP_NAME}, ${no != null ? `No. ${callNo(no)}` : l.title ?? 'a letter'}: ${writerLine}${placeDateRaw ? `, ${placeDateRaw}` : ''}.`;
-  const cite = async () => {
-    const ok = await copyText(citation);
-    if (ok) toast.success('Citation copied', { id: 'cite' });
-    else toast.error('Couldn’t copy the citation', { id: 'cite', description: citation });
-  };
+  const cite = () => copyCitation(l, no);
 
   const handMenu = (
     <HandMenu
@@ -171,7 +181,9 @@ export function ReadingSpread(p: Props) {
           <Fact term="Hand"><span className="inline-flex items-baseline">{handMenu}{ref('hand')}</span></Fact>
         </dl>
         {inline('hand')}
-        <div className="sp-record">
+        {/* brief: none of the record's rows but the ones a phone leaves out (why it survives is the kicker; the source
+            and rights are the last note), so a phone drops Full record altogether (themes/editorial.css) */}
+        <div className="sp-record" data-brief={!(l.recipient && l.recipient !== shortRecipient(l)) && !f?.heritage && !f?.translator && !f?.rights?.basis ? '' : undefined}>
           <div className="sp-record-bar">
             <button type="button" aria-expanded={recordOpen} aria-controls={recordOpen ? `${id}-record` : undefined} onClick={() => setRecordOpen((o) => !o)} className="sp-record-open">
               Full record <span aria-hidden>{recordOpen ? '−' : '+'}</span>
@@ -202,7 +214,6 @@ export function ReadingSpread(p: Props) {
             {paras.map((para, i) => <p key={i}>{para}</p>)}
             {signature && <p className="sp-signature">{signature}</p>}
           </div>
-          {placeDate && <p className="sp-dateline">{placeDate}</p>}
         </section>
 
         <section className="sp-notes" aria-labelledby={`${id}-notes`}>
@@ -210,11 +221,6 @@ export function ReadingSpread(p: Props) {
           <ol>
             {notes.map((x, i) => <li key={x.key}><span className="sp-note-no" aria-hidden>{i + 1}</span><span>{x.body}</span></li>)}
           </ol>
-        </section>
-
-        <section className="sp-cite" aria-labelledby={`${id}-cite`}>
-          <h2 id={`${id}-cite`} className="sp-label">Cite this letter</h2>
-          <p>{citation}</p>
         </section>
 
         {p.turn.next && (
@@ -243,7 +249,7 @@ export function ReadingSpread(p: Props) {
 
 function Fact({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <div className="sp-fact">
+    <div className="sp-fact" data-term={term.toLowerCase()}>
       <dt className="sp-label">{term}</dt>
       <dd>{children}</dd>
     </div>
@@ -251,7 +257,7 @@ function Fact({ term, children }: { term: string; children: ReactNode }) {
 }
 function Row({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <div className="sp-row">
+    <div className="sp-row" data-term={term.toLowerCase()}>
       <dt className="sp-label">{term}</dt>
       <dd>{children}</dd>
     </div>
@@ -281,7 +287,7 @@ export function LetterCounter({ id, turn: t }: { id: string; turn: Turn }) {
 /**
  * The plate: the sheet on the room. On desktop it stays put beside the page and holds one sheet at a time, fitted to
  * the window (a letter of several sheets scrolls inside it, and "Sheet 1 · 2" turns them); on phones the sheets
- * stack, edge to edge. Under it, which sheet and whose hand.
+ * stack, edge to edge. Under it, which sheet (the hand is the Hand fact's).
  */
 function Plate(p: Props) {
   const frame = useRef<HTMLDivElement>(null);
@@ -307,7 +313,7 @@ function Plate(p: Props) {
           </div>
         </div>
       </div>
-      <figcaption className="sp-caption" style={{ width: p.paper.w * p.pxPerMm || undefined }}>
+      <figcaption className="sp-caption" data-sheets={p.sheets} style={{ width: p.paper.w * p.pxPerMm || undefined }}>
         <span className="sp-label">
           {many && p.frameH != null ? (
             <span role="group" aria-label="Sheets">
@@ -323,7 +329,6 @@ function Plate(p: Props) {
             `${p.sheets === 1 ? 'One sheet' : `${p.sheets} sheets`}`
           )}
         </span>
-        <span className="sp-credit">Hand: {p.name}, a fictional writer</span>
       </figcaption>
     </figure>
   );

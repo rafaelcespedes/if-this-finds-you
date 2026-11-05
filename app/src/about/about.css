@@ -152,16 +152,21 @@
   font-style: italic;
 }
 
-/* phones (the page's one-column layout, under 56rem): no small "About" over the title and no section numbers. On a
-   wide screen they set the margin rail; on a phone the title and each section's name say enough (Rafael, 4 Nov 2026).
-   The numbers are aria-hidden anyway, and the title already names the page */
+/* phones (the page's one-column layout, under 56rem): no small "About" over the title, which already names the page
+   (Rafael, 4 Nov 2026), nor the footer, which says again what the page has just said (Rafael, phone redundancy sweep) */
 @media (max-width: 55.99rem) {
   .about-kicker,
-  .about-section-no {
+  /* the footer's lines restate the opening and sections 2, 4 and 5 just above it */
+  .about-colophon {
     display: none;
   }
   .about-title {
     margin-top: 0;
+  }
+  /* the line starts at the top of its slip, as writing does, rather than floating in the room kept for two lines
+     (one class more than the base rule further down, which centres it) */
+  .about-line .about-line-ink {
+    align-items: flex-start;
   }
 }
 
@@ -193,7 +198,8 @@
 /* the line written live: a slip of paper, flat, with a hairline edge */
 .about-line {
   margin: 2rem 0 0;
-  padding: 1rem 1.125rem 0.875rem;
+  /* as much room under Change writer as at the sides */
+  padding: 1rem 1.125rem 1.125rem;
   background: var(--about-slip);
   border: 1px solid var(--about-slip-edge);
   border-radius: 2px;
@@ -277,9 +283,6 @@
   scroll-margin-top: 1.5rem;
 }
 .about-section-title {
-  display: flex;
-  align-items: baseline;
-  gap: 0.625rem;
   margin: 0 0 1.25rem;
   font-family: var(--about-book);
   font-size: 1.5em;
@@ -300,8 +303,6 @@
     position: sticky;
     top: calc(var(--site-head-clear, 0px) + 1.5rem); /* under the pinned site header */
     align-self: start;
-    flex-direction: column;
-    gap: 0.125rem;
     margin: 0;
     font-size: 1.25em;
   }
@@ -351,8 +352,8 @@
 
 /* contact, as a card's two ruled lines: the label in small capitals, the address beside it */
 .about-contact {
+  /* no closing rule: the credits' own rule comes next, so the page ends on one line, not two */
   margin: 1.25rem 0 0;
-  border-bottom: 1px solid var(--about-rule);
 }
 .about-contact > div {
   display: grid;
@@ -495,7 +496,8 @@
   align-items: center;
   gap: 0.5rem;
   min-height: 2.75rem;
-  padding: 0.5rem 0;
+  /* the same room above and below the words, between the rule and what follows */
+  padding: 0.875rem 0;
   color: var(--about-muted);
   cursor: pointer;
   list-style: none;
@@ -587,8 +589,7 @@ html[data-look='reading-room'] .about-give-link {
   font-weight: 400;
 }
 html[data-look='reading-room'] .about-facts dd,
-html[data-look='reading-room'] .about-ledger-year,
-html[data-look='reading-room'] .about-section-no {
+html[data-look='reading-room'] .about-ledger-year {
   font-variant-numeric: oldstyle-nums tabular-nums;
 }
 /* an index card's one red rule under the head, soft like every divider in the room */

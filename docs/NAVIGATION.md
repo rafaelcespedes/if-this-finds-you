@@ -49,13 +49,14 @@ The header is the site's running head (the Reading Room layouts, house rule 2): 
 the label role's small capitals; the letter's number is archival red. Other looks keep the plain header.
 
 - **The middle** says what this page holds, on desktops and tablets. Pages pass it as `centre`:
-  - the desk, on a found letter (Reading Room): "No. 0115 · Millsburg · 1838"
-    (`components/Folio.tsx`, from the Reading Room's catalogue, the same source as the marks printed on the sheet);
   - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›" (the library builds it);
   - All letters: where you are on the canvas, the decade under the middle of the screen (the library builds it).
   Mark the number with `data-site-number` so the looks can colour it.
-- It's centred over the page, or, on the desk in the Reading Room, over the letter's side: there the header runs
-  the width of the window (its places reach the desk's right edge) and keeps the desk's width aside (`beside`).
+- **The desk has no middle** (Rafael, launch day: "I don't think we need it. And I think it's just weirdly
+  centered"): its found letter's number, place and year are the record's, beside the letter. (It had them as
+  "No. 0115 · Millsburg · 1838", centred over the letter's side with `beside`.)
+- It's centred over the page; `beside` (a column's width kept aside, the middle centred over the rest) is there for a
+  page that needs it, and no page passes it now.
 - **Phones (under 40rem) have no middle** (Rafael, 3 Nov: "keep the navigation on mobile minimal"): the wordmark,
   the page's action (Share on the desk) and the Menu. The number, place and year stay on the page itself.
 - When the line gets tight on a larger screen, the header gives way in this order: the middle moves off-centre, then
@@ -79,12 +80,14 @@ the label role's small capitals; the letter's number is archival red. Other look
   64rem (the safe-area inset wins when wider). So the wordmark and the last place sit at the same x on every page
   (40 and 1400 at 1440; 40 and 1880 at 1920). The Reading Room's --rr-margin and the editorial grid's --ed-margin
   carry the same values; the header never takes a max-width.
-- It pins only on a screen at least 32rem tall. A phone on its side, or a phone with very large browser text (the rem
-  grows, so the screen counts as shorter), lets it scroll away rather than give it the screen. Print is unchanged.
+- It pins on every screen, a short one too: a phone on its side, a window under 32rem tall, a laptop at 200%. (It used
+  to scroll away there, but it still drew over the page's top, which kept no room for it: launch-day phone QA.) Print
+  is unchanged: at the top of the first page.
 - It floats over the page (nothing moves on first paint; pages keep their own top space). Its height is
-  `--site-head-box`; while pinned it covers `--site-head`, and with its fade `--site-head-clear` (both 0 when it
-  isn't pinned). `html` has `scroll-padding-top: var(--site-head-clear)`, so a jump to an anchor stops below it, and
-  anything else that sticks to the top uses `top: var(--site-head-clear)` (the Fonts bar and rail, About's titles).
+  `--site-head-box`; it covers `--site-head`, and with its fade `--site-head-clear`, on every screen and in print.
+  Pages start below it with them (`padding-top: calc(var(--site-head-clear) + …)`). `html` has
+  `scroll-padding-top: var(--site-head-clear)`, so a jump to an anchor stops below it, and anything else that sticks
+  to the top uses `top: var(--site-head-clear)` (the Fonts bar and rail, About's titles).
 
 ## When the words fit (desktops, tablets)
 

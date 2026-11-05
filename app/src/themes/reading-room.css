@@ -147,7 +147,7 @@ html[data-look='reading-room'] {
   --rr-book: 'RR Newsreader', 'Iowan Old Style', Georgia, serif;
   /* the catalogue numbers' face (the number role, and the fallback for labels): the sans, no small capitals */
   --rr-caps: var(--rr-ui);
-  --rr-ui: 'RR Schibsted', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+  --rr-ui: 'RR Schibsted', system-ui, sans-serif;
   /* the serif's own vertical habits, set with the face (a pairing swaps them with it): where its capitals sit against
      its line box's centre. An icon beside its words lifts by --rr-book-cap-lift (icons/lucide.tsx); the desk's Bring
      another label drops by --rr-book-cap-drop onto its button's centre (that label is in the sans now, so the drop is
@@ -1027,6 +1027,15 @@ html[data-look='reading-room'] .control-sheet button[aria-expanded] > span[data-
   border-top: 1px solid var(--rr-hair);
   background: transparent;
   white-space: nowrap;
+}
+/* …and its words midway between its rule and the body's: the 8 px the row kept under the 44 px button is the button's
+   own, so the row is one 52 px band (the same height as before, so the peek doesn't move) */
+html[data-look='reading-room'] .control-sheet .sheet-pill-row {
+  padding-bottom: 0;
+}
+html[data-look='reading-room'] .control-sheet .sheet-pill-row > button[aria-expanded],
+html[data-look='reading-room'] .control-sheet .sheet-pill-row > button[aria-expanded] > span[data-pill] {
+  height: 3.25rem;
 }
 /* the shared sheet (components/ui/sheet.tsx: Share and the other action sheets on phones), cut like the control sheet:
    square-cut, a soft rule along its top, its title a label in small capitals, its rows ruled lines rather than tiles */

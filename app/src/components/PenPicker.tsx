@@ -82,9 +82,9 @@ export const PenSwatches = memo(function PenSwatches({ seed, style, pen, penSize
 });
 
 /** Fine / Medium / Bold as three short strokes of growing weight. */
-export const TipChoice = memo(function TipChoice({ value, ink, onChange }: { value: PenSize; ink: string; onChange: (v: PenSize) => void }) {
+export const TipChoice = memo(function TipChoice({ value, ink, onChange, className }: { value: PenSize; ink: string; onChange: (v: PenSize) => void; className?: string }) {
   return (
-    <div role="radiogroup" aria-label="Tip" className="flex gap-1">
+    <div role="radiogroup" aria-label="Tip" className={cn('flex gap-1', className)}>
       {PEN_SIZES.map((s, i) => {
         const on = s.id === value;
         return (

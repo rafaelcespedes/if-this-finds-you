@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import type { WriteRequest, WriteResult } from '@/lib/write-protocol';
 import { lookOf, type Req } from '@/lib/request';
 import { perf } from '@/lib/perf';
+import { reloadForNewVersion, workerDidNotLoad } from '@/lib/stale-build';
 
 /** Results kept by request, so a hand fetched ahead (or seen a moment ago) shows the instant it's asked for. */
 const CACHE_SIZE = 12;
@@ -72,6 +73,8 @@ export function useWriting(req: Req, paused = false) {
       setResult(data);
     };
     w.onerror = (e) => {
+      // its script gone (a new version of the site arrived): the page reloads onto it
+      if (workerDidNotLoad(e) && reloadForNewVersion()) return;
       console.error('[seedhand] writer worker failed to start:', e.message || e);
       setFailed(true);
     };

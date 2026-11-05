@@ -5,7 +5,7 @@
 //   FindRow     the panel's "Find another": a round stamp, with "4 of 127 in the bag" beside it
 //   PhoneStamp  the same stamp in the phone's control sheet
 //   ToolArrival a shared link's envelope, before the letter writes itself
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { PaperMarks } from '@/components/PaperCanvas';
 import { LOOK } from '@/lib/look';
 import { SAMPLES, sampleById, type SampleText } from '@/lib/samples';
@@ -24,7 +24,9 @@ const asPost = (s: Sample) => ({ town: postTown(s.place), year: s.year, cancel: 
  */
 export function PostSheetMarks({ sampleId, hand, children }: { sampleId?: string | null; hand: string; children: ReactNode }) {
   const s = LOOK === 'postmarked' ? (sampleById(sampleId) as Sample | undefined) : undefined;
-  if (!s) return <>{children}</>;
+  const outer = useContext(PaperMarks);
+  // always the same wrapper (a bare fragment instead rebuilt the letter's field when a found letter became a reply)
+  if (!s) return <PaperMarks value={outer}>{children}</PaperMarks>;
   const { town, year, cancel } = asPost(s);
   return <PaperMarks value={{ id: s.id, hand, place: town, year, cancel, look: 'postmarked' }}>{children}</PaperMarks>;
 }

@@ -297,7 +297,7 @@ html:root[data-layout='ruler'] .rr-drawer {
    the citation are quieter
    ===================================================================================================================== */
 /* the spread's labels and small lines: the small sans (the same list as library.css's label role) */
-html:root[data-layout='ruler'] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-dateline, .sp .sp-next-meta) {
+html:root[data-layout='ruler'] :is(.sp .sp-label, .sp .sp-kicker, .sp .sp-caption .sp-label, .sp .sp-record-open, .sp .sp-quiet, .sp .sp-next-meta) {
   font-family: var(--ed-head-face);
   font-size: var(--ed-head-size);
   font-weight: var(--ed-head-weight);
@@ -338,11 +338,11 @@ html:root[data-layout='ruler'] .sp .sp-fact {
 html:root[data-layout='ruler'] .sp .sp-fact dd {
   margin-top: 0;
 }
-/* the notes and the citation: quieter (they're there for whoever looks) */
-html:root[data-layout='ruler'] .sp :is(.sp-notes, .sp-cite) {
+/* the notes: quieter (they're there for whoever looks) */
+html:root[data-layout='ruler'] .sp .sp-notes {
   border-top-color: var(--ed-rule);
 }
-html:root[data-layout='ruler'] .sp :is(.sp-notes li, .sp-cite p) {
+html:root[data-layout='ruler'] .sp .sp-notes li {
   color: var(--rr-faint);
 }
 /* a note's mark: the desk's size and weight (the record's marks, 11.25 px, 500), wherever it sits */
@@ -670,8 +670,8 @@ html:root[data-layout='ruler'] .canvas-heading .canvas-heading-art {
 }
 
 /* =====================================================================================================================
-   ABOUT (about/AboutApp.tsx, about/about.css): the title across the page, huge; each section's number a big figure in
-   the margin rail, its words in columns 5–10, one rule over each
+   ABOUT (about/AboutApp.tsx, about/about.css): the title across the page, huge; each section's name in the margin
+   rail, its words in columns 5–10, one rule over each
    ===================================================================================================================== */
 html:root[data-layout='ruler'] .about {
   --about-label-font: var(--ed-head-face);
@@ -719,14 +719,6 @@ html:root[data-layout='ruler'] .about-facts dd {
   letter-spacing: -0.02em;
   line-height: 1;
 }
-html:root[data-layout='ruler'] .about-section-no {
-  font-family: var(--ed-figure-face);
-  font-size: var(--ed-display-2);
-  font-variant-numeric: var(--ed-figure-numeric);
-  line-height: 0.85;
-  letter-spacing: -0.04em;
-  color: var(--rr-red);
-}
 @media (min-width: 56rem) {
   html:root[data-layout='ruler'] .about-main > * {
     grid-column: 1 / -1;
@@ -763,8 +755,18 @@ html:root[data-layout='ruler'] .about-section-no {
   html:root[data-layout='ruler'][data-layout-page='desk'] main[class*='pt-[calc(4.5rem'] {
     padding-top: calc(var(--site-head-clear) + 3px);
   }
+  /* the letter page and All letters' list start where About and the 404 do: 101 px on a phone, 45 px under the head's
+     rule (the desk keeps its own, tighter start) */
   html:root[data-layout='ruler'] .sp {
-    padding-top: calc(var(--site-head-clear) + 0.75rem);
+    padding-top: calc(var(--site-head-clear) + 2rem);
+  }
+  html:root[data-layout='ruler'] .lib-main > section {
+    padding-top: calc(var(--site-head-clear) + 2rem);
+  }
+  /* All letters' list: a group's last row has no rule of its own, so the gap before the next group reads as space and
+     that group's rule closes it (two hairlines at every break before); the list's last row keeps its rule */
+  html:root[data-layout='ruler'] .fa .fa-group:not(:last-child) .fa-rows > li:last-child {
+    border-bottom: 0;
   }
 }
 
@@ -801,5 +803,42 @@ html:root[data-layout='ruler'] .sp .sp-ref::after {
   html:root[data-look='reading-room'] .archive-dock-box::before {
     inset: -0.5rem 0 calc(-14px - env(safe-area-inset-bottom, 0px));
     background: Canvas;
+  }
+}
+
+/* =====================================================================================================================
+   THE LETTER PAGE WHERE THE DOCK SHOWS (phones, tablets: below the spread's 64em): nothing said twice (Rafael: "very
+   little redundancy… it should be like a breeze to get through"). The floating dock carries the actions (‹ No. ›,
+   Bring another, ⋯: Download image, Copy link, Copy citation; Write a reply) and the Hand fact's menu changes the writer,
+   so the page drops its own actions' row, its Cite · Download image line and Next in the collection (the dock's ›).
+   What the page already says goes too: the sheet's caption when there's one sheet, "The letter" over the words (kept
+   for screen readers), and the record's Why it survives (the kicker), Source and Rights (the last note); Full record
+   goes when nothing else is in it. The head, its kicker and writer's line, and the facts stay. (The place and date
+   under the words, the sheet's "Hand: …" credit and the citation written out are gone at every width: ReadingSpread.)
+   ===================================================================================================================== */
+@media (max-width: 63.99em) {
+  html:root[data-layout='ruler'] .sp :is(.sp-actions, .sp-quiet, .sp-next) {
+    display: none;
+  }
+  html:root[data-layout='ruler'] .sp .sp-caption[data-sheets='1'],
+  html:root[data-layout='ruler'] .sp .sp-record[data-brief],
+  html:root[data-layout='ruler'] .sp .sp-row:is([data-term='why it survives'], [data-term='source'], [data-term='rights']) {
+    display: none;
+  }
+  /* the words start under the record's rule at the notes' rhythm (17 px to the line's top; was 40 to a label) */
+  html:root[data-layout='ruler'] .sp .sp-text {
+    margin-top: 1rem;
+  }
+  html:root[data-layout='ruler'] .sp .sp-text > .sp-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  html:root[data-layout='ruler'] .sp .sp-reading {
+    margin-top: 0;
   }
 }

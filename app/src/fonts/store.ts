@@ -7,6 +7,7 @@
 // adds it to document.fonts and sets the line in it. Live hand, it's an image of the engine's live writing.
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import workerSrc from './fonts.worker.ts?worker&url';
+import { fileWasGone, reloadForNewVersion, workerDidNotLoad } from '../lib/stale-build';
 import { constraintsOf, filterKey, STATIC_CATALOGUE, type Catalogue, type Filters } from './filters';
 import type { FontEntry, FromWorker, HandRecord, LiveSpec, Opening, ToWorker } from './protocol';
 
@@ -90,7 +91,9 @@ class FontStore {
       const worker = new Worker(workerSrc, { type: 'module', name: 'fonts' });
       const slot: Slot = { worker, job: null, key: null };
       worker.onmessage = (e: MessageEvent<FromWorker>) => this.receive(slot, e.data);
-      worker.onerror = () => {
+      worker.onerror = (e) => {
+        // its script gone (a new version of the site arrived): the page reloads onto it
+        if (workerDidNotLoad(e) && reloadForNewVersion()) return;
         if (slot.key) this.fail(slot.key);
         if (i === 0 && !this.set.done) this.updateSet({ ...this.set, done: true, failed: true, pending: 0 });
         slot.job = null; slot.key = null; this.pump();
@@ -276,6 +279,8 @@ class FontStore {
         return;
       }
       case 'failed': {
+        // a part the worker loads on demand is gone (a new version of the site arrived): the page reloads onto it
+        if (fileWasGone(m.message) && reloadForNewVersion()) return;
         if (m.req != null) {
           if (m.req === this.setReq) this.updateSet({ ...this.set, done: true, failed: true, pending: 0 });
           return;
@@ -332,9 +337,9 @@ class FontStore {
       w.onmessage = (e: MessageEvent<FromWorker>) => {
         const m = e.data;
         if (m.type === 'package') { w.terminate(); resolve({ zip: m.zip, filename: m.filename }); }
-        else if (m.type === 'failed') { w.terminate(); reject(new Error(m.message)); }
+        else if (m.type === 'failed') { w.terminate(); if (fileWasGone(m.message) && reloadForNewVersion()) return; reject(new Error(m.message)); }
       };
-      w.onerror = (e) => { w.terminate(); reject(new Error(e.message || 'The font couldn’t be made')); };
+      w.onerror = (e) => { w.terminate(); if (workerDidNotLoad(e) && reloadForNewVersion()) return; reject(new Error(e.message || 'The font couldn’t be made')); };
       w.postMessage({ type: 'package', job: 1, entry } satisfies ToWorker);
     });
   }

@@ -82,7 +82,7 @@ export function LiveLine() {
         {/* holds the room of the longest caption from the first frame (the longest name, hand and pen there are), so
             the page doesn't move when the writer's own caption replaces the waiting line */}
         <span className="about-line-cap about-line-sizer" aria-hidden>
-          <span className="about-line-by">Written just now by Dorothea Achterberg, who never existed.</span>
+          <span className="about-line-by">Written just now by Dorothea Achterberg.</span>
           <span className="about-line-meta">
             <span><span className="about-label">Hand</span> Norwegian school 1849</span>
             <span><span className="about-label">Pen</span> Broad / italic nib</span>
@@ -95,7 +95,7 @@ export function LiveLine() {
           {writer ? (
             <>
               <span className="about-line-by">
-                Written just now by <span className="about-line-name">{writer.name}</span>, who never existed.
+                Written just now by <span className="about-line-name">{writer.name}</span>.
               </span>
               <span className="about-line-meta">
                 <span><span className="about-label">Hand</span> {writer.tradition}</span>
