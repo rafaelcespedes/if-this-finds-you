@@ -33,36 +33,32 @@ const click = (at: number | 'end', note?: string) => { acts.push({ t: clock, key
 const beat = (note: string) => acts.push({ t: clock, key: 'note', note });
 
 beat('start');
-type('Dear Mara,');
-press('Enter', 0.3);
-// 1. a typo the pen hasn't reached: gone cleanly
-beat('clean');
-type('I miss yuo', 9);
-wait(0.1);
-press('Backspace', 0.12); press('Backspace', 0.2);
-type('ou terribly.');
-wait(0.5);
-// 2. Backspace on ink: the pen crosses it out and writes the word again
-beat('strike');
-type(' The garden is quite');
-wait(2.0); // the pen writes "quite"
-press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.3);
-type('so green.');
-wait(1.2);
-// 3. one letter written over another
+// 1. one letter written over another: "Mora", the o already in ink, written over with an a
 beat('over');
-type(' See you on the 13');
-wait(1.8); // the pen writes "13"
+type('Dear Mo');
+wait(1.3); // the pen writes "Mo"
 press('Backspace', 0.3);
-type('8');
-wait(1.4); // the pen considers, then writes the 8 over the 3
-type('th.');
-wait(1.0);
+type('a');
+wait(1.3); // the pen considers, then writes the a over the o
+type('ra,');
+press('Enter', 0.3);
+// 2. a typo the pen hasn't reached: gone cleanly
+beat('clean');
+type('The gardne', 9);
+wait(0.08);
+press('Backspace', 0.12); press('Backspace', 0.2);
+type('en is quite');
+// 3. Backspace on ink: the pen crosses it out and writes the word again
+beat('strike');
+wait(1.9); // the pen writes "quite"
+press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.3);
+type('so green. I miss you.');
+wait(1.4);
 // 4. a word added above the line, with a caret
 beat('insert');
-click('before:terribly', 'insert');
-type('all ', 7);
-wait(1.8);
+click('before:miss', 'insert');
+type('really ', 7);
+wait(1.9);
 // 5. undo lifts wet ink only
 beat('undo');
 click('end');

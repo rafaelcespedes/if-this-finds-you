@@ -97,34 +97,43 @@ function penClock(sh: any, ids: number[]): Timed[] {
   return out;
 }
 
-// ---------- the keyboard ----------
-interface Key { id: string; label: string; x: number; y: number; w: number; h: number; small?: boolean }
-function keyboard(S: number): Key[] {
+// ---------- the keyboard: only the keys a short letter needs, on a floating glass plate ----------
+interface Key { id: string; label: string; x: number; y: number; w: number; h: number; small?: boolean; align?: 'left' | 'right' }
+const PLATE = { pad: 22, radius: 30 };
+function keyboard(S: number): { keys: Key[]; plate: { x: number; y: number; w: number; h: number } } {
   const k0 = S / S0;
-  const U = 64 * k0, G = 7 * k0, H = 58 * k0;
-  const rows: [string, string, number][][] = [
-    [['`', '`', 1], ['1', '1', 1], ['2', '2', 1], ['3', '3', 1], ['4', '4', 1], ['5', '5', 1], ['6', '6', 1], ['7', '7', 1], ['8', '8', 1], ['9', '9', 1], ['0', '0', 1], ['-', '-', 1], ['=', '=', 1], ['Backspace', 'delete', 1.5]],
-    [['Tab', 'tab', 1.5], ['q', 'Q', 1], ['w', 'W', 1], ['e', 'E', 1], ['r', 'R', 1], ['t', 'T', 1], ['y', 'Y', 1], ['u', 'U', 1], ['i', 'I', 1], ['o', 'O', 1], ['p', 'P', 1], ['[', '[', 1], [']', ']', 1], ['\\', '\\', 1]],
-    [['Caps', 'caps lock', 1.8], ['a', 'A', 1], ['s', 'S', 1], ['d', 'D', 1], ['f', 'F', 1], ['g', 'G', 1], ['h', 'H', 1], ['j', 'J', 1], ['k', 'K', 1], ['l', 'L', 1], [';', ';', 1], ["'", "'", 1], ['Enter', 'return', 1.7]],
-    [['ShiftL', 'shift', 2.3], ['z', 'Z', 1], ['x', 'X', 1], ['c', 'C', 1], ['v', 'V', 1], ['b', 'B', 1], ['n', 'N', 1], ['m', 'M', 1], [',', ',', 1], ['.', '.', 1], ['/', '/', 1], ['ShiftR', 'shift', 2.2]],
-    [['fn', 'fn', 1], ['ctrl', 'control', 1], ['alt', 'option', 1], ['Meta', 'command', 1.25], [' ', '', 5.6], ['MetaR', 'command', 1.25], ['altR', 'option', 1], ['left', '←', 1], ['updown', '↑↓', 1], ['right', '→', 1]],
+  const U = 72 * k0, G = 8 * k0, H = 64 * k0;
+  // the letters as they sit on any keyboard (each row a little further in), with the few keys the letter uses
+  const rows: { offset: number; keys: [string, string, number, ('left' | 'right')?][] }[] = [
+    { offset: 0, keys: [['q', 'Q', 1], ['w', 'W', 1], ['e', 'E', 1], ['r', 'R', 1], ['t', 'T', 1], ['y', 'Y', 1], ['u', 'U', 1], ['i', 'I', 1], ['o', 'O', 1], ['p', 'P', 1], ['Backspace', 'delete', 1.45, 'right']] },
+    { offset: 0.3, keys: [['a', 'A', 1], ['s', 'S', 1], ['d', 'D', 1], ['f', 'F', 1], ['g', 'G', 1], ['h', 'H', 1], ['j', 'J', 1], ['k', 'K', 1], ['l', 'L', 1], ['Enter', 'return', 1.6, 'right']] },
+    { offset: -0.55, keys: [['Shift', 'shift', 1.55, 'left'], ['z', 'Z', 1], ['x', 'X', 1], ['c', 'C', 1], ['v', 'V', 1], ['b', 'B', 1], ['n', 'N', 1], ['m', 'M', 1], [',', ',', 1], ['.', '.', 1]] },
+    { offset: 0, keys: [['Meta', '⌘', 1.3], [' ', '', 5.2]] },
   ];
-  const out: Key[] = [];
+  const rowW = (r: (typeof rows)[number]) => r.keys.reduce((a, [, , w]) => a + w * U, 0) + G * (r.keys.length - 1);
+  const W = Math.max(...rows.slice(0, 3).map((r) => rowW(r) + Math.abs(r.offset) * U));
+  const x0 = (S - W) / 2;
+  const top = KB_TOP * k0 + PLATE.pad * k0;
+  const keys: Key[] = [];
   rows.forEach((row, r) => {
-    const width = row.reduce((a, [, , w]) => a + w * U, 0) + G * (row.length - 1);
-    let x = (S - width) / 2;
-    for (const [id, label, w] of row) {
-      out.push({ id, label, x, y: KB_TOP * k0 + r * (H + G), w: w * U, h: H, small: label.length > 1 });
+    // the letter rows staggered as on a keyboard; the bottom row centred under the space between them
+    let x = r === 3 ? (S - rowW(row)) / 2 : x0 + (row.offset > 0 ? row.offset * U : 0) + (r === 2 ? 0 : 0);
+    if (r === 2) x = x0;
+    for (const [id, label, w, align] of row.keys) {
+      keys.push({ id, label, x, y: top + r * (H + G), w: w * U, h: H, small: label.length > 1, align });
       x += w * U + G;
     }
   });
-  return out;
+  const pad = PLATE.pad * k0;
+  const minX = Math.min(...keys.map((kk) => kk.x)), maxX = Math.max(...keys.map((kk) => kk.x + kk.w));
+  const maxY = Math.max(...keys.map((kk) => kk.y + kk.h));
+  return { keys, plate: { x: minX - pad, y: top - pad, w: maxX - minX + 2 * pad, h: maxY - top + 2 * pad } };
 }
 /** a recorded key as the keys it presses */
 function keysOf(key: string): string[] {
   if (key === 'Meta+z') return ['Meta', 'z'];
   if (key === 'click') return [];
-  if (/^[A-Z]$/.test(key)) return ['ShiftR', key.toLowerCase()];
+  if (/^[A-Z]$/.test(key)) return ['Shift', key.toLowerCase()];
   return [key];
 }
 
@@ -137,7 +146,8 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   const t = frame / fps;
   const F = SES.frames[Math.min(SES.frames.length - 1, frame)];
   const cam = useMemo(() => cameraFor(S), [S]);
-  const KEYS = useMemo(() => keyboard(S), [S]);
+  const KB = useMemo(() => keyboard(S), [S]);
+  const KEYS = KB.keys;
   const ref = useRef<HTMLCanvasElement>(null);
   const [handle] = useState(() => delayRender('ink demo'));
   const sheetCanvas = useMemo(() => {
@@ -284,17 +294,23 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
           <span style={{ fontVariantNumeric: 'tabular-nums' }}>{wet ? `Wet ink · ${Math.max(0, wetFor - since).toFixed(1)} s` : 'Dry'}</span>
         </div>
       </div>
-      {/* the keyboard: quiet keys, the pressed one sinking and darkening */}
+      {/* the keyboard: a frosted glass plate floating over the room, quiet keys on it, the pressed one sinking */}
+      <div style={{
+        position: 'absolute', left: KB.plate.x, top: KB.plate.y, width: KB.plate.w, height: KB.plate.h, borderRadius: PLATE.radius * k0,
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0.38))',
+        boxShadow: `0 ${18 * k0}px ${44 * k0}px rgba(30, 39, 51, 0.13), 0 ${2 * k0}px ${6 * k0}px rgba(30, 39, 51, 0.06), inset 0 ${k0}px 0 rgba(255,255,255,0.9), inset 0 0 0 ${k0}px rgba(255,255,255,0.55)`,
+        backdropFilter: `blur(${16 * k0}px)`,
+      }} />
       {KEYS.map((kk) => {
         const d = down.get(kk.id) ?? 0;
         return (
           <div key={kk.id} style={{
-            position: 'absolute', left: kk.x, top: kk.y + d * 2 * k0, width: kk.w, height: kk.h, borderRadius: 10 * k0,
-            background: d > 0 ? `rgba(${255 - 40 * d}, ${255 - 38 * d}, ${255 - 34 * d}, ${0.62 + 0.2 * d})` : C.key,
-            boxShadow: `0 ${(1 - d) * 1.5 * k0}px 0 rgba(30, 39, 51, ${0.10 * (1 - d)}), inset 0 0 0 ${k0}px ${C.keyEdge}`,
-            display: 'flex', alignItems: kk.small ? 'flex-end' : 'center', justifyContent: kk.small ? (kk.id.startsWith('Shift') || kk.id === 'Enter' || kk.id === 'Backspace' ? (kk.id === 'ShiftL' || kk.id === 'Tab' || kk.id === 'Caps' ? 'flex-start' : 'flex-end') : 'center') : 'center',
-            padding: kk.small ? `0 ${9 * k0}px ${7 * k0}px` : 0,
-            fontFamily: '"RR Schibsted", system-ui, sans-serif', fontSize: (kk.small ? 13 : 21) * k0, color: d > 0.3 ? C.ink : C.muted, fontWeight: 450,
+            position: 'absolute', left: kk.x, top: kk.y + d * 2 * k0, width: kk.w, height: kk.h, borderRadius: 12 * k0,
+            background: `rgba(${255 - 34 * d}, ${255 - 32 * d}, ${255 - 28 * d}, ${0.78 + 0.12 * d})`,
+            boxShadow: `0 ${(1 - d) * 2 * k0}px ${(1 - d) * 3 * k0}px rgba(30, 39, 51, ${0.12 * (1 - d)}), inset 0 0 0 ${k0}px rgba(30, 39, 51, 0.06)`,
+            display: 'flex', alignItems: kk.small ? 'flex-end' : 'center', justifyContent: kk.align === 'left' ? 'flex-start' : kk.align === 'right' ? 'flex-end' : 'center',
+            padding: kk.small ? `0 ${11 * k0}px ${9 * k0}px` : 0,
+            fontFamily: '"RR Schibsted", system-ui, sans-serif', fontSize: (kk.small ? 15 : kk.id === 'Meta' ? 24 : 23) * k0, color: d > 0.3 ? C.ink : C.muted, fontWeight: 450,
           }}>{kk.label}</div>
         );
       })}
