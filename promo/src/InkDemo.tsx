@@ -30,6 +30,10 @@ const C = { room: '#e6e4de', ink: '#1e2733', muted: '#575146', faint: '#8b857a',
 const SES = session as any;
 /** the hand's ink (royal blue): the wet-ink timer is drawn in it, so it reads as the ink's own */
 const INK_BLUE = inkColor(HAND.ink);
+const blueA = (a: number) => {
+  const m = INK_BLUE.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i);
+  return m ? `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${a})` : `rgba(44, 79, 163, ${a})`;
+};
 const CAPTIONS: Record<string, string> = {
   clean: 'A typo the pen hasn’t reached yet: gone',
   strike: 'A beat later, Backspace crosses it out',
@@ -311,23 +315,28 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   return (
     <AbsoluteFill style={{ background: (paper as any).tint ?? '#f8f6f0' }}>
       <canvas ref={ref} width={S} height={S} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      {/* the line between the sheet and the keyboard: what this moment shows, and the ink's wetness */}
-      <div style={{ position: 'absolute', left: 0, right: 0, top: STRIP.y * k0, height: STRIP.h * k0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${56 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif' }}>
-        <div style={{ fontSize: 25 * k0, fontWeight: 500, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
-        {/* the wet-ink timer, in the ink's blue: a ring draining like a stopwatch and the seconds counting down; grey
-            and "dry" once it runs out (undo can lift ink only while it's wet) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 * k0, opacity: showChip ? 1 : 0 }}>
-          <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
-            <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? INK_BLUE : C.faint} strokeOpacity={0.18} strokeWidth={3.2} />
-            <circle cx={17} cy={17} r={13} fill="none" stroke={INK_BLUE} strokeWidth={3.2} strokeLinecap="round" opacity={wet ? 1 : 0}
-              strokeDasharray={`${2 * Math.PI * 13}`} strokeDashoffset={`${2 * Math.PI * 13 * (wet ? since / wetFor : 1)}`} transform="rotate(-90 17 17)" />
-            {/* the stopwatch hand, sweeping with the ring */}
-            {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={INK_BLUE} strokeWidth={2} strokeLinecap="round" />}
-            <circle cx={17} cy={17} r={1.8} fill={wet ? INK_BLUE : C.faint} />
-          </svg>
-          <div style={{ lineHeight: 1.05 }}>
-            <div style={{ fontSize: 26 * k0, fontWeight: 600, color: wet ? INK_BLUE : C.faint, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.01em' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
-            <div style={{ fontSize: 15 * k0, fontWeight: 500, color: wet ? INK_BLUE : C.faint, opacity: 0.75 }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
+      {/* the hint and the wet-ink timer, together on one bar in the ink's blue (the writing is the only thing on the
+          paper itself): what this moment shows on the left, how long the ink stays wet on the right; the bar's fill
+          drains with the timer */}
+      <div style={{
+        position: 'absolute', left: KB.plate.x, width: KB.plate.w, top: (STRIP.y + 10) * k0, height: 64 * k0, borderRadius: 32 * k0,
+        background: blueA(0.10), overflow: 'hidden', fontFamily: '"RR Schibsted", system-ui, sans-serif',
+      }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${showChip && wet ? 100 * (1 - since / wetFor) : 0}%`, background: blueA(0.08) }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${26 * k0}px 0 ${30 * k0}px` }}>
+          <div style={{ fontSize: 24 * k0, fontWeight: 400, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11 * k0, opacity: showChip ? 1 : 0 }}>
+            <div style={{ textAlign: 'right', lineHeight: 1.1 }}>
+              <div style={{ fontSize: 23 * k0, fontWeight: 400, color: wet ? INK_BLUE : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
+              <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? INK_BLUE : C.faint, opacity: 0.8 }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
+            </div>
+            <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
+              <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? INK_BLUE : C.faint} strokeOpacity={0.22} strokeWidth={2.6} />
+              <circle cx={17} cy={17} r={13} fill="none" stroke={INK_BLUE} strokeWidth={2.6} strokeLinecap="round" opacity={wet ? 1 : 0}
+                strokeDasharray={`${2 * Math.PI * 13}`} strokeDashoffset={`${2 * Math.PI * 13 * (wet ? since / wetFor : 1)}`} transform="rotate(-90 17 17)" />
+              {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={INK_BLUE} strokeWidth={1.8} strokeLinecap="round" />}
+              <circle cx={17} cy={17} r={1.6} fill={wet ? INK_BLUE : C.faint} />
+            </svg>
           </div>
         </div>
       </div>
@@ -338,11 +347,6 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
         boxShadow: `0 ${18 * k0}px ${44 * k0}px rgba(30, 39, 51, 0.13), 0 ${2 * k0}px ${6 * k0}px rgba(30, 39, 51, 0.06), inset 0 ${k0}px 0 rgba(255,255,255,0.9), inset 0 0 0 ${k0}px rgba(255,255,255,0.55)`,
         backdropFilter: `blur(${16 * k0}px)`,
       }} />
-      {/* the fuse: a thin line of the ink's blue along the plate's top edge, burning down over the 3 s the ink is wet
-          (it refills each time the pen puts ink down) */}
-      {showChip && wet && (
-        <div style={{ position: 'absolute', left: KB.plate.x + PLATE.radius * k0, top: KB.plate.y + 1.5 * k0, width: (KB.plate.w - 2 * PLATE.radius * k0) * (1 - since / wetFor), height: 3 * k0, borderRadius: 2 * k0, background: INK_BLUE, opacity: 0.85, boxShadow: `0 0 ${8 * k0}px ${INK_BLUE}` }} />
-      )}
       {KEYS.map((kk) => {
         const d = down.get(kk.id) ?? 0;
         return (
