@@ -43,6 +43,8 @@ const SWIPE = {
   engage: 8, axis: 1.6,
   /** it turns past this (px), or at a flick faster than this (px/ms) */
   turn: 56, flick: 0.11,
+  /** a flick must also travel this far (px), so a drifting tap never turns the letter */
+  flickMin: 24,
   /** touches starting this near the screen's edges are the browser's back and forward */
   edge: 20,
 };
@@ -266,7 +268,7 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     const recent = a && b && b.t > a.t ? (b.x - a.x) / (b.t - a.t) : dx / ms;
     const takenBack = Math.sign(recent) === -Math.sign(dx) && Math.abs(recent) > SWIPE.flick;
     const d: 1 | -1 = dx < 0 ? 1 : -1;
-    const turns = !takenBack && (Math.abs(dx) > SWIPE.turn || Math.abs(dx) / ms > SWIPE.flick)
+    const turns = !takenBack && (Math.abs(dx) > SWIPE.turn || (Math.abs(dx) > SWIPE.flickMin && Math.abs(dx) / ms > SWIPE.flick))
       && (window.visualViewport?.scale ?? 1) <= 1.01 && !!neighbour(d);
     if (!turns) { settle(el); return; }
     arrive.current = d;

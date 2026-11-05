@@ -18,6 +18,9 @@ import { onWriteStart } from '@/lib/write-start';
 import { materials, useMaterialsCrack } from './materials';
 import { useRecord } from './useCatalogue';
 
+/** a CSS time token in ms, whether it is written in ms or s (the build minifies 130ms to .13s) */
+const msOf = (v: string): number => { const t = v.trim(); const n = parseFloat(t); return Number.isFinite(n) ? (t.endsWith('ms') ? n : n * 1000) : 0; };
+
 const DRAWER_KEY = 'seedhand:rr-slip';
 function readDrawer() {
   try { return localStorage.getItem(DRAWER_KEY) === '1'; } catch { return false; }
@@ -141,7 +144,8 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
     const from: Keyframe | null = was ? (reduce ? { opacity: cs.opacity } : { opacity: cs.opacity, transform: cs.transform }) : null;
     was?.cancel();
     const a = el.animate(from ? [from, end] : [end], {
-      duration: reduce ? 120 : parseFloat(cs.getPropertyValue('--dur-out')) || 130,
+      // the token minifies to seconds (--dur-out:.13s) in the built site, so read its unit
+      duration: reduce ? 120 : msOf(cs.getPropertyValue('--dur-out')) || 130,
       easing: cs.getPropertyValue('--ease-out').trim() || 'ease-out',
       fill: 'forwards',
     });
