@@ -937,6 +937,11 @@ html[data-look='reading-room'] .rr-slip-inner section[data-row] {
 html[data-look='reading-room'] .rr-slip-inner :is(section[data-row], .px-5) {
   padding-inline: 0;
 }
+/* …so nothing in a group's header may hang past its edge: Handwriting's Similar is drawn to reach into the panel's
+   padding (-mr-2), and here that made the drawer 8 px wider than itself, scrolling sideways (Rafael, 4 Nov) */
+html[data-look='reading-room'] .rr-slip-inner section[data-row] > div:first-child > [data-slot='button'] {
+  margin-inline-end: 0;
+}
 
 /* the tool's controls, in the room: hairline tiles, square corners, ink for what's chosen */
 html[data-look='reading-room'] [data-slot='button'] {
