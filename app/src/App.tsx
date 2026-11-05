@@ -27,7 +27,7 @@ import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
 import { FONT_PACKAGE, canShareLinks, copyText, exportFont, exportFontPackage, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
-import { EditLog, UndoHistory, diffEdit, type Edit } from '@/lib/edits';
+import { EditLog, UndoHistory, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib/roll';
@@ -612,13 +612,9 @@ export default function App() {
       if (e.kind === 'undo') {
         const ink = inkRef.current;
         if (!ink) return;
-        if (ink.waiting) { ink.edit({ ...e, kind: e.ins ? 'replace' : 'delete' }); syncInk(); return; }
-        const now = ink.text();
-        const want = now.slice(0, e.at) + e.ins + now.slice(e.at + e.del);
-        let lifted = false;
-        while (ink.text().length > want.length && ink.undo()) lifted = true;
-        if (lifted) syncInk();
-        else toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
+        const ok = undoInk(ink, e);
+        syncInk();
+        if (!ok) toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
         return;
       }
       // the first key on an untouched sample letter: a reply on a fresh sheet (or, 'onto', the found letter
@@ -671,20 +667,14 @@ export default function App() {
     }
     const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
     if (ink) {
-      if (want.length < cur.length && !ink.waiting) {
-        // written: lift wet ink back to what the step asks for, and no further
-        let lifted = 0;
-        while (ink.text().length > want.length && lifted < 2000 && ink.undo()) lifted++;
-        if (!lifted) {
-          undoHistory.keep(dir);
-          toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
-          return;
-        }
-        // a lifted stroke that took a letter too many: the pen writes it again
-        const fix = diffEdit(ink.text(), want, 'type', 'paper');
-        if (fix) ink.edit(fix);
-      } else {
-        ink.edit({ ...e, kind: e.ins ? 'replace' : 'delete' });
+      // a step taken again is written again as it was first made: typed (mid-text: above the line), or deleted
+      // (struck); never as an autocorrect's whole-word replacement, which would strike the word next to it
+      if (dir === 'redo') ink.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
+      else if (!undoInk(ink, e)) {
+        undoHistory.keep(dir);
+        syncInk();
+        toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
+        return;
       }
       if (ink.text() !== want) undoHistory.clear();
       syncInk();
@@ -1542,6 +1532,24 @@ function wordAround(text: string, at: number): [number, number] {
   while (a > 0 && /\S/.test(text[a - 1])) a--;
   while (b < text.length && /\S/.test(text[b])) b++;
   return [a, b];
+}
+
+/**
+ * One undo step in ink: typing the pen hasn't reached is taken back freely; anything on the paper (or a fix still in
+ * hand at the pen head) is written down now, then its wet ink is lifted until the letter reads as it did before the
+ * step. false: that ink is dry (nothing on the paper is lifted).
+ */
+function undoInk(ink: InkSession, e: Edit): boolean {
+  const cur = ink.text();
+  const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
+  const tailFrom = cur.length - String(ink.view?.tail ?? '').length;
+  // (letters put back where the pen hovers over a fix are the fix itself, not unwritten typing)
+  if (ink.waiting && (e.at > tailFrom || (e.at === tailFrom && !(ink.view?.pending && e.ins)))) {
+    ink.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
+    return true;
+  }
+  ink.flush();
+  return ink.liftTo(want);
 }
 
 /** P.S. from the tray: the same edit ⌘↩ makes, then the caret at its end. */

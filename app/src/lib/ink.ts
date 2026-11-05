@@ -140,16 +140,22 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
   return out;
 }
 
+/** how long ink stays wet (writing-experience.md §4.5): an event can be lifted this long after it went down */
+const WET_MS = 3000;
+
 /** The live sheet while someone writes in ink. Plain object state; the caller re-renders after changes. */
 export class InkSession {
   sheet: any;
   view: any;
-  /** when the last key landed, and when ink last went down (for the wet-tail undo) */
+  /** when the last key landed, and when ink last went down */
   lastKey = 0;
   lastInk = 0;
+  /** when each event of the log went down (the log's own order); events from before this session are long dry */
+  private inkedAt: number[];
   constructor(readonly p: Hand, doc: InkDoc, readonly opts: Record<string, unknown>, readonly touch = false) {
     this.sheet = engine.replay(p, doc, opts);
     this.view = engine.newView();
+    this.inkedAt = doc.log.map(() => -Infinity);
   }
   get doc(): InkDoc { return this.sheet.doc; }
   get page() { return this.sheet.page; }
@@ -181,17 +187,49 @@ export class InkSession {
   fairCopy() { this.flush(); this.inked(engine.fairCopy(this.sheet)); }
   postScript() { this.flush(); this.inked(engine.postScript(this.sheet)); }
   freshSheet() { this.flush(); this.inked([{ t: 'sheet', why: 'fresh' }]); }
-  /** Undo lifts only wet ink: the newest event, within 3 s. false: the ink is dry. */
+  /** the newest event is still wet: put down in the last 3 s (each event dries on its own) */
+  get wet(): boolean {
+    const n = this.doc.log.length;
+    return n > 0 && performance.now() - (this.inkedAt[n - 1] ?? -Infinity) <= WET_MS;
+  }
+  /** Undo lifts only wet ink: the newest event, while it's wet. false: the ink is dry. */
   undo(): boolean {
-    if (this.view.tail) return false;
-    if (!this.doc.log.length || performance.now() - this.lastInk > 3000) return false;
+    if (this.view.tail || !this.wet) return false;
     this.sheet = engine.dropLast(this.sheet);
+    this.inkedAt.length = this.doc.log.length;
     return true;
+  }
+  /**
+   * Undo a step that's on the paper: lift wet ink, newest first, until the letter reads `want`, or until what's left
+   * leads into it (a lifted piece took a word too many: the rest is typed again, and the pen writes it). Never lifts
+   * dry ink. false, with nothing changed: the ink is dry, or lifting doesn't get there.
+   */
+  liftTo(want: string): boolean {
+    if (this.waiting) return false;
+    const lifted: { e: unknown; at: number }[] = [];
+    while (lifted.length < 64 && this.wet) {
+      const n = this.doc.log.length;
+      lifted.push({ e: this.doc.log[n - 1], at: this.inkedAt[n - 1] });
+      this.sheet = engine.dropLast(this.sheet);
+      this.inkedAt.length = this.doc.log.length;
+      const t = this.text();
+      if (t === want) return true;
+      if (want.startsWith(t) && t.length < want.length) {
+        this.edit({ at: t.length, del: 0, ins: want.slice(t.length), kind: 'type', t: Date.now(), source: 'paper' });
+        return true;
+      }
+    }
+    if (!lifted.length) return false;
+    // lifting doesn't get there: everything goes back as it was
+    for (const { e, at } of lifted.reverse()) { this.doc.log.push(e); this.inkedAt.push(at); }
+    this.sheet = engine.replay(this.p, this.doc, this.opts);
+    return false;
   }
   private inked(events: unknown[]) {
     if (!events.length) return;
     engine.apply(this.sheet, events);
     this.lastInk = performance.now();
+    for (let i = this.inkedAt.length; i < this.doc.log.length; i++) this.inkedAt.push(this.lastInk);
   }
 }
 
