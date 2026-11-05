@@ -330,8 +330,8 @@ export function WriteApp() {
         <div className="write-tools">
           <span className="write-writer" title="The writer of this page">{name}</span>
           {/* a new sheet: words on a computer, a page with a plus on a phone */}
-          <button type="button" className="write-tool write-new" onClick={newSheet} disabled={!session.doc.log.length} aria-label="New sheet" title="New sheet">
-            <FilePlus aria-hidden className="write-new-icon" />
+          <button type="button" className="write-new" onClick={newSheet} disabled={!session.doc.log.length} aria-label="New sheet" title="New sheet">
+            <FilePlus aria-hidden />
             <span className="write-new-word">New sheet</span>
           </button>
           <button type="button" className="write-cta" onClick={changeWriter}>

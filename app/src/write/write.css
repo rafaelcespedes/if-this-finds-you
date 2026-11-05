@@ -84,33 +84,45 @@
 }
 
 /* ---------- the header's actions ---------- */
-.write-tools { gap: 0.375rem; }
-.write-new { display: inline-flex; align-items: center; justify-content: center; }
-.write-new-icon { display: none; width: 20px; height: 20px; }
-/* Change writer, the page's main action: the red words of the desk's actions, on a white pill */
-.write-cta {
+/* two framed buttons of one family: Change writer, the main action, a warm blush with the room's red words;
+   New sheet in warm paper with ink. Soft rings, not hard lines. */
+.write-tools { gap: 0.5rem; }
+.write-cta,
+.write-new {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.375rem;
   height: 34px;
-  padding: 0 0.875rem 0 0.75rem;
   border-radius: 999px;
-  background: #fff;
-  color: var(--rr-red, #b3261e);
   font-weight: 500;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 4px 12px -6px rgba(60, 45, 20, 0.28);
-  transition: box-shadow var(--st-dur, 150ms) var(--ease-out, ease-out), transform var(--dur-press, 100ms) var(--ease-out, ease-out);
+  transition: background-color var(--st-dur, 150ms) var(--ease-out, ease-out), box-shadow var(--st-dur, 150ms) var(--ease-out, ease-out), transform var(--dur-press, 100ms) var(--ease-out, ease-out);
 }
-.write-cta svg { width: 15px; height: 15px; }
+.write-cta svg, .write-new svg { width: 15px; height: 15px; flex: none; }
+.write-cta {
+  padding: 0 0.875rem 0 0.75rem;
+  background: color-mix(in oklab, var(--rr-red, #9b3b2a) 11%, #fffaf5);
+  color: var(--rr-red, #9b3b2a);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--rr-red, #9b3b2a) 16%, transparent), 0 1px 2px rgba(155, 59, 42, 0.12), 0 6px 14px -8px rgba(155, 59, 42, 0.35);
+}
+.write-new {
+  padding: 0 0.875rem 0 0.75rem;
+  background: #fbf8f2;
+  color: var(--foreground);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 11%, transparent), 0 1px 2px rgba(60, 45, 20, 0.08), 0 6px 14px -8px rgba(60, 45, 20, 0.28);
+}
+.write-new:disabled { opacity: 0.45; box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 9%, transparent); }
 @media (hover: hover) and (pointer: fine) {
-  .write-cta:hover { box-shadow: 0 1px 2px rgba(60, 45, 20, 0.1), 0 6px 16px -6px rgba(60, 45, 20, 0.34); }
+  .write-cta:hover { background: color-mix(in oklab, var(--rr-red, #9b3b2a) 16%, #fffaf5); color: var(--rr-red-deep, #7e2f21); }
+  .write-new:hover:not(:disabled) { background: #fffdf9; }
 }
-.write-cta:active { transform: scale(var(--st-scale, 0.97)); }
-/* a phone: the new sheet is a page with a plus, the main action the pill */
+.write-cta:active { transform: scale(var(--st-scale, 0.97)); background: color-mix(in oklab, var(--rr-red, #9b3b2a) 20%, #fffaf5); }
+.write-new:active:not(:disabled) { transform: scale(var(--st-scale, 0.97)); background: #f3eee4; }
+/* a phone: New sheet is the page-with-a-plus alone, in a round frame; the main action a touch larger */
 @media (max-width: 640px) {
-  .write-new { width: 40px; height: 40px; padding: 0; border-radius: 999px; }
-  .write-new-icon { display: block; }
+  .write-new { width: 40px; height: 40px; padding: 0; }
+  .write-new svg { width: 19px; height: 19px; }
   .write-new-word { display: none; }
   .write-cta { height: 40px; padding: 0 1rem 0 0.875rem; font-size: 0.875rem; }
 }
