@@ -123,7 +123,8 @@ Some things we know aren't right yet, and ideas we haven't built. Each has an is
 - **Running out of room.** The last lines squeeze, then "over" and a new sheet; on a postcard, up the margin
   ([#7](https://github.com/rafaelcespedes/if-this-finds-you/issues/7)).
 - **Moving text** with a loop and an arrow instead of cut and paste ([#8](https://github.com/rafaelcespedes/if-this-finds-you/issues/8)).
-- **Pencil.** Erasing that leaves ghosts ([#9](https://github.com/rafaelcespedes/if-this-finds-you/issues/9)).
+- **Pencil ghosts.** *In pencil* already rubs out; a real eraser never takes everything, and leaves a ghost
+  ([#9](https://github.com/rafaelcespedes/if-this-finds-you/issues/9)).
 
 If you make something with it, I'd love to see it: open an issue or a pull request, or find me on X,
 [@rafcespedes](https://x.com/rafcespedes). For anything big, open an issue first so we can talk before you spend the

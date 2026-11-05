@@ -1,5 +1,8 @@
 # Character set
 
+> **Kept for the record.** This page is from the project's first days (when it was called Seedhand) and is out of date.
+> For the project as it is now, see the [README](../README.md).
+
 Which characters every hand must be able to write, in the order we build them.
 
 Benchmark: Google Fonts' official Latin glyph sets ([googlefonts/glyphsets](https://github.com/googlefonts/glyphsets)).

@@ -14,6 +14,7 @@ which part, and what each one asks of you. It's a careful reading of the licence
 | Letter forms traced from present-day volunteers | `engine/sources/quebec-print.js`, `engine/sources/adult-fr-2023.js` and their files in `tools/trace/` | Adapted from material under CC BY 4.0: keep the credits (below) |
 | The Hershey fonts data | `engine/sources/data/`, `engine/sources/hershey-data.js` | The Hershey distribution's own terms (below) |
 | Typefaces the site sets its own words in | npm packages from Fontsource, and `app/src/themes/reading-room/fonts/` | SIL Open Font License 1.1, with the licence text beside the files or in each package |
+| The X post template | `x-post-template/` | MIT, like the code; it runs on [Remotion](https://www.remotion.dev), whose own licence is free for individuals and companies of up to three people (larger companies need a company licence) |
 | Code packages the site is built with | `app/package.json`, `tools/*/package.json` | Their own licences: MIT, ISC, Apache-2.0, BSD, Boost (`clipper-lib`) and MPL-2.0 (`lightningcss`, a build tool) |
 
 ## The code: MIT

@@ -1,5 +1,8 @@
 # Dynamic Font: status and plan
 
+> **Kept for the record.** This page is from the project's first days (when it was called Dynamic Font) and is out of date.
+> For the project as it is now, see the [README](../README.md).
+
 _Last updated 2026-11-02_
 
 ## The idea

@@ -51,7 +51,7 @@ desktop (from 64rem) the places and My letters are a size up, 14 px (Rafael, lau
 `--site-place-size` in index.css); the middle, the phone's header and the Menu keep their own sizes.
 
 - **The middle** says what this page holds, on desktops and tablets. Pages pass it as `centre`:
-  - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›" (the library builds it);
+  - a letter's page: the counter "‹ No. 0004 · 4 of 123 ›" (the library builds it);
   - All letters: where you are on the canvas, the decade under the middle of the screen (the library builds it).
   Mark the number with `data-site-number` so the looks can colour it.
 - **The desk has no middle** (Rafael, launch day: "I don't think we need it. And I think it's just weirdly

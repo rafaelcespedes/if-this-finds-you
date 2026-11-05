@@ -1,5 +1,8 @@
 # Seedhand spike: a seed becomes a handwriting font
 
+> **Kept for the record.** This page is from the project's first days (when it was called Seedhand) and is out of date.
+> For the project as it is now, see the [README](../README.md).
+
 A technical proof of concept with no machine learning. You type a seed such as `maple-river-42` and get one
 consistent "writer". Every letter in the live preview is drawn fresh, so no two `e`s are identical. You can also
 export an installable `.otf` that carries three samples of every letter and swaps between them as you type.
