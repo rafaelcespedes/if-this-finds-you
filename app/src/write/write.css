@@ -82,3 +82,157 @@
   background: color-mix(in srgb, var(--foreground) 7%, transparent);
   color: var(--foreground);
 }
+
+/* ---------- the header's actions ---------- */
+.write-tools { gap: 0.375rem; }
+.write-new { display: inline-flex; align-items: center; justify-content: center; }
+.write-new-icon { display: none; width: 20px; height: 20px; }
+/* Change writer, the page's main action: the red words of the desk's actions, on a white pill */
+.write-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 34px;
+  padding: 0 0.875rem 0 0.75rem;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--rr-red, #b3261e);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.08), 0 4px 12px -6px rgba(60, 45, 20, 0.28);
+  transition: box-shadow var(--st-dur, 150ms) var(--ease-out, ease-out), transform var(--dur-press, 100ms) var(--ease-out, ease-out);
+}
+.write-cta svg { width: 15px; height: 15px; }
+@media (hover: hover) and (pointer: fine) {
+  .write-cta:hover { box-shadow: 0 1px 2px rgba(60, 45, 20, 0.1), 0 6px 16px -6px rgba(60, 45, 20, 0.34); }
+}
+.write-cta:active { transform: scale(var(--st-scale, 0.97)); }
+/* a phone: the new sheet is a page with a plus, the main action the pill */
+@media (max-width: 640px) {
+  .write-new { width: 40px; height: 40px; padding: 0; border-radius: 999px; }
+  .write-new-icon { display: block; }
+  .write-new-word { display: none; }
+  .write-cta { height: 40px; padding: 0 1rem 0 0.875rem; font-size: 0.875rem; }
+}
+
+/* ---------- the pile of earlier sheets ---------- */
+.write-pile {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 30;
+  width: var(--card-w);
+  height: 0;
+  translate: -50% 0;
+  transition: opacity 200ms var(--ease-out, ease-out);
+}
+.write-pile[data-hidden] { opacity: 0; pointer-events: none; }
+.write-pile-card {
+  --peek: 58px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--card-w);
+  z-index: calc(20 - var(--i));
+  transform-origin: 50% 0;
+  /* at rest: the top sheet's head above the desk's edge, the others as edges behind it, each turned a little */
+  transform: translateY(calc(-1 * var(--peek) - var(--i) * 7px)) scale(calc(1 - var(--i) * 0.045)) rotate(var(--r));
+  transition: transform 420ms var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)), opacity 200ms var(--ease-out, ease-out);
+  filter: drop-shadow(0 -1px 6px rgba(60, 45, 20, 0.12));
+}
+/* lifted apart: each sheet's first lines readable above the one in front of it, standing clear of the sheet below */
+.write-pile[data-open] .write-pile-card {
+  transform: translateY(calc(-96px - var(--i) * 68px)) rotate(calc(var(--r) * 0.5));
+  filter: drop-shadow(0 -2px 10px rgba(60, 45, 20, 0.2)) drop-shadow(0 0 1px rgba(60, 45, 20, 0.25));
+}
+/* someone is writing: it steps back to its edges */
+.write-pile[data-tucked] .write-pile-card {
+  transform: translateY(calc(-14px - var(--i) * 4px)) scale(calc(1 - var(--i) * 0.045)) rotate(var(--r));
+}
+.write-pile-card[data-leaving] {
+  opacity: 0;
+  transform: translateY(calc(-96px - var(--i) * 68px + 36px)) translateX(28px) rotate(8deg);
+  transition-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  transition-duration: 200ms;
+}
+.write-pile-sheet {
+  display: block;
+  padding: 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.write-pile-sheet:focus-visible { outline: 2px solid var(--ring, #333); outline-offset: 3px; }
+.write-pile-throw {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card, #fff) 92%, transparent);
+  color: var(--muted-foreground);
+  box-shadow: 0 1px 3px rgba(60, 45, 20, 0.18);
+  opacity: 0;
+  transition: opacity 150ms var(--ease-out, ease-out), color 150ms var(--ease-out, ease-out);
+}
+.write-pile-throw svg { width: 14px; height: 14px; }
+@media (hover: hover) and (pointer: fine) {
+  .write-pile-card:hover .write-pile-throw { opacity: 1; }
+  .write-pile-throw:hover { color: var(--rr-red, #b3261e); }
+}
+.write-pile-throw:focus-visible { opacity: 1; }
+@media (pointer: coarse) { .write-pile-throw { opacity: 1; width: 32px; height: 32px; } }
+.write-pile-count {
+  position: absolute;
+  right: -10px;
+  top: calc(-58px - 2 * 7px - 10px);
+  z-index: 25;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--foreground);
+  color: var(--background);
+  font-family: var(--rr-ui, ui-sans-serif, system-ui);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+  transition: opacity 200ms var(--ease-out, ease-out);
+}
+.write-pile[data-tucked] .write-pile-count { opacity: 0; }
+.write-pile-more {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(-96px - var(--i) * 68px - 22px);
+  text-align: center;
+  font-family: var(--rr-ui, ui-sans-serif, system-ui);
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.write-pile-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+  background: linear-gradient(to top, color-mix(in srgb, var(--background, #e6e4de) 88%, transparent) 0, transparent 60%);
+  animation: write-scrim-in 200ms var(--ease-out, ease-out) both;
+}
+@media (hover: hover) and (pointer: fine) { .write-pile-scrim { pointer-events: none; } }
+.write-pile-scrim { background: linear-gradient(to top, color-mix(in srgb, var(--background, #e6e4de) 92%, transparent) 0, color-mix(in srgb, var(--background, #e6e4de) 70%, transparent) 40%, transparent 75%); }
+@keyframes write-scrim-in { from { opacity: 0; } }
+
+/* ---------- sheets moving (moveSheets: View Transitions) ---------- */
+/* each sheet moves as itself; the rest of the page doesn't cross-fade */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-group(*) { animation-duration: 460ms; animation-timing-function: var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)); }
+/* a fresh sheet is laid on the desk from above */
+::view-transition-new(*):only-child { animation: write-sheet-in 460ms var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)) both; }
+::view-transition-old(*):only-child { animation: write-sheet-out 200ms var(--ease-out, ease-out) both; }
+@keyframes write-sheet-in { from { opacity: 0; transform: translateY(-36px); } }
+@keyframes write-sheet-out { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .write-pile-card { transition-duration: 1ms; }
+}

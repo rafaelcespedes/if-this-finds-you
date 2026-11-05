@@ -4,6 +4,7 @@
 // out (engine again()). ⌘B goes over the words again, ⌘U underlines them, and Undo lifts only wet ink.
 // Nothing is ever deleted. Not linked from the site yet: a place to try what writing on a computer could feel like.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { CAP } from '@engine';
 import { toast } from 'sonner';
 import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
@@ -14,7 +15,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { UndoHistory, diffEdit, type Edit } from '@/lib/edits';
 import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, type InkDoc } from '@/lib/ink';
 import { pageSetup } from '@/lib/live';
-import { getPaper, type PaperId } from '@/lib/papers';
+import { getPaper } from '@/lib/papers';
 import { inkColor } from '@/lib/inks';
 import { effective, effectiveHand } from '@/lib/params';
 import { handFor } from '@/lib/request';
@@ -22,49 +23,34 @@ import { handOpts } from '@/lib/engine-features';
 import { writerName } from '@/lib/hands';
 import { APP_NAME, withLogo } from '@/lib/brand';
 import { Wordmark } from '@/components/Wordmark';
-import type { NoteState } from '@/lib/state';
-import LOOKS from '@/lib/first-looks.json';
+import { FilePlus } from 'lucide-react';
+import { Shuffle } from 'lucide-react';
+import { SheetPile } from './SheetPile';
+import { blankSheet, isBlank, keep, newId, pickLook, readKept, stateOf, type Look, type Sheet } from './sheets';
 
 /** the sheet's largest size (px per mm), as on the desk */
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
 /** a held Backspace on a struck word: one more pass this often (the pen needs a moment to scribble) */
 const AGAIN_EVERY = 280;
-const KEY = 'seedhand:write';
 
-type Look = { seed: string; style: string; pen: string; penSize: string; ink: string; paper: string; size: number; offsets: Record<string, number> };
-/** the hands the site opens on (the curated first looks), less pencil: pencil doesn't write in ink */
-const WRITABLE = (LOOKS as Look[]).filter((l) => l.pen !== 'pencil');
-const pickLook = (not?: string) => {
-  const pool = WRITABLE.filter((l) => l.seed !== not);
-  return pool[Math.floor(Math.random() * pool.length)];
-};
-
-/** what this page keeps between visits (its own key: the desk's drafts are separate) */
-interface Kept { v: 1; look: Look; ink: string | null }
-function readKept(): Kept | null {
-  try {
-    const o = JSON.parse(localStorage.getItem(KEY) || 'null');
-    return o && o.v === 1 && o.look?.seed ? o : null;
-  } catch { return null; }
-}
-function keep(k: Kept) {
-  try { localStorage.setItem(KEY, JSON.stringify(k)); } catch { /* private mode: the page still works */ }
-}
-
-function stateOf(l: Look): NoteState {
-  return {
-    seed: l.seed, style: l.style, offsets: l.offsets, pen: l.pen, penSize: l.penSize as NoteState['penSize'], ink: l.ink,
-    size: l.size, paper: l.paper as PaperId, occasion: null, amount: 1, text: '', sample: null, mode: 'ink', inkLog: null,
-    replyTo: null, marks: [], signed: false, reader: false, neatOnly: true,
-  };
+/** A change of sheets, as the sheets themselves moving (View Transitions: each sheet is named by its id, so the one
+ * on the desk shrinks down into the pile and a sheet from the pile grows back up). Instant without the API or with
+ * reduced motion. */
+function moveSheets(change: () => void) {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+  if (!doc.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { change(); return; }
+  doc.startViewTransition(() => flushSync(change));
 }
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 export function WriteApp() {
   const [kept0] = useState(readKept);
-  const [look, setLook] = useState<Look>(() => kept0?.look ?? pickLook());
+  // the sheet on the desk (its writer; its ink lives in the session) and the pile of earlier ones, newest first
+  const [cur, setCur] = useState<{ id: string; look: Look }>(() => { const c = kept0?.cur ?? blankSheet(pickLook()); return { id: c.id, look: c.look }; });
+  const [pile, setPile] = useState<Sheet[]>(() => kept0?.pile ?? []);
+  const look = cur.look;
   const state = useMemo(() => stateOf(look), [look]);
   const natural = useMemo(() => handFor(state.seed, state.style, handOpts(state)), [state]);
   const eff = useMemo(() => effective(natural, state), [natural, state]);
@@ -81,34 +67,51 @@ export function WriteApp() {
 
   // ---------- the ink ----------
   // one session per hand: a new hand writes the same log again in its own writing
-  const docRef = useRef<InkDoc | null>(null);
+  const docFor = useRef<{ id: string; doc: InkDoc } | null>(null);
   const session = useMemo(() => {
-    const doc = docRef.current ?? decodeInk(kept0?.ink) ?? newInkDoc(look.seed, look.style);
+    const kept = kept0?.cur.id === cur.id ? kept0.cur.ink : null;
+    const doc = docFor.current?.id === cur.id ? docFor.current.doc : decodeInk(kept) ?? newInkDoc(look.seed, look.style);
     const s = new InkSession(p, doc, layout, coarse);
-    docRef.current = s.doc;
+    docFor.current = { id: cur.id, doc: s.doc };
     return s;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p, layout, coarse]);
+  }, [p, layout, coarse, cur.id]);
   const sessionRef = useRef(session);
   sessionRef.current = session;
   const undoHistory = useMemo(() => new UndoHistory(), [session]);
   const [tick, setTick] = useState(0);
-  const [used, setUsed] = useState(() => !!kept0?.ink);
+  const [used, setUsed] = useState(() => !!kept0?.cur.ink || !!kept0?.pile.length);
 
   // kept as you go (what the pen has written; the rest is written down when you leave)
-  const lookRef = useRef(look);
-  lookRef.current = look;
+  const curRef = useRef(cur);
+  curRef.current = cur;
+  const pileRef = useRef(pile);
+  pileRef.current = pile;
+  /** the desk as it is now, as kept (the pen's unwritten tail is written first only when leaving) */
+  const deskNow = (): Sheet => {
+    const doc = sessionRef.current.doc;
+    return { id: curRef.current.id, look: curRef.current.look, ink: doc.log.length ? encodeInk(doc) : null, at: Date.now() };
+  };
   const saveTimer = useRef(0);
+  const saveNow = () => { window.clearTimeout(saveTimer.current); keep({ v: 2, cur: deskNow(), pile: pileRef.current }); };
   const save = useCallback(() => {
     window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => keep({ v: 1, look: lookRef.current, ink: encodeInk(sessionRef.current.doc) }), 400);
+    saveTimer.current = window.setTimeout(() => keep({ v: 2, cur: deskNow(), pile: pileRef.current }), 400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const sync = useCallback(() => { setTick((n) => n + 1); save(); }, [save]);
+  // a sheet moved (new, back from the pile, thrown away) or a new writer: kept at once, once the page shows it
+  const settled = useRef(false);
+  useEffect(() => {
+    if (!settled.current) { settled.current = true; return; }
+    saveNow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pile, cur]);
   useEffect(() => {
     const leave = () => {
       const s = sessionRef.current;
       if (s.waiting) s.flush();
-      keep({ v: 1, look: lookRef.current, ink: encodeInk(s.doc) });
+      keep({ v: 2, cur: deskNow(), pile: pileRef.current });
     };
     const hidden = () => { if (document.visibilityState === 'hidden') leave(); };
     window.addEventListener('pagehide', leave);
@@ -140,6 +143,15 @@ export function WriteApp() {
 
   // ---------- typing ----------
   const editor = useRef<PaperEditorApi>(null);
+  // writing: the pile steps back for a moment after each key
+  const [writing, setWriting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const typedTimer = useRef(0);
+  const typed = useCallback(() => {
+    setWriting(true);
+    window.clearTimeout(typedTimer.current);
+    typedTimer.current = window.setTimeout(() => setWriting(false), 1800);
+  }, []);
   const onEdit = useCallback((e: Edit) => {
     const s = sessionRef.current;
     setUsed(true);
@@ -149,6 +161,7 @@ export function WriteApp() {
       return;
     }
     const before = s.text();
+    typed();
     s.edit(e);
     undoHistory.record(before, s.text(), e);
     sync();
@@ -211,7 +224,7 @@ export function WriteApp() {
       e.preventDefault();
       const s = sessionRef.current;
       if (s.waiting) { s.flush(); sync(); }
-      keep({ v: 1, look: lookRef.current, ink: encodeInk(s.doc) });
+      saveNow();
       toast('Kept on this device', { id: 'kept', duration: 1600 });
       return;
     }
@@ -249,18 +262,53 @@ export function WriteApp() {
   const changeWriter = () => {
     const s = sessionRef.current;
     if (s.waiting) s.flush();
-    docRef.current = s.doc;
-    const next = pickLook(look.seed);
-    setLook(next);
-    keep({ v: 1, look: next, ink: encodeInk(s.doc) });
-    requestAnimationFrame(() => editor.current?.focus());
+    docFor.current = { id: cur.id, doc: s.doc };
+    setCur({ id: cur.id, look: pickLook(look.seed) });
+    // back to writing on a computer; on a phone the keyboard waits for the next tap
+    if (!coarse) requestAnimationFrame(() => editor.current?.focus());
   };
-  const freshSheet = () => {
+  /** the sheet on the desk goes down onto the pile; a fresh one, by the same writer, takes its place */
+  const newSheet = () => {
     const s = sessionRef.current;
-    s.freshSheet();
+    if (s.waiting) s.flush();
+    if (!s.doc.log.length) return;
+    const down = deskNow();
+    const next = { id: newId(), look };
+    moveSheets(() => {
+      setPile((p) => [down, ...p]);
+      setCur(next);
+    });
     undoHistory.clear();
-    sync();
-    requestAnimationFrame(() => editor.current?.focus());
+    // back to writing on a computer; on a phone the keyboard waits for the next tap
+    if (!coarse) requestAnimationFrame(() => editor.current?.focus());
+  };
+  /** a sheet from the pile comes back up to the desk; the one there (if anything's on it) goes down in its place */
+  const bringBack = (id: string) => {
+    const picked = pile.find((x) => x.id === id);
+    if (!picked) return;
+    const s = sessionRef.current;
+    if (s.waiting) s.flush();
+    const down = deskNow();
+    const rest = pile.filter((x) => x.id !== id);
+    docFor.current = { id: picked.id, doc: decodeInk(picked.ink) ?? newInkDoc(picked.look.seed, picked.look.style) };
+    moveSheets(() => {
+      setPile(isBlank(down) ? rest : [down, ...rest]);
+      setCur({ id: picked.id, look: picked.look });
+    });
+    // back to writing on a computer; on a phone the keyboard waits for the next tap
+    if (!coarse) requestAnimationFrame(() => editor.current?.focus());
+  };
+  /** thrown away, with a moment to take it back */
+  const throwAway = (id: string) => {
+    const at = pile.findIndex((x) => x.id === id);
+    if (at < 0) return;
+    const gone = pile[at];
+    setPile((p) => p.filter((x) => x.id !== id));
+    toast('Sheet thrown away', {
+      id: 'thrown',
+      duration: 6000,
+      action: { label: 'Undo', onClick: () => { setPile((p) => [...p.slice(0, at), gone, ...p.slice(at)]); } },
+    });
   };
   const mod = isMac() ? '⌘' : 'Ctrl+';
 
@@ -272,7 +320,7 @@ export function WriteApp() {
       onClick={(e) => {
         if (!coarse) return;
         const t = e.target as HTMLElement;
-        if (t.closest('[data-paper], button, a, input, textarea, select, [role="dialog"], [data-sonner-toaster]')) return;
+        if (t.closest('[data-paper], button, a, input, textarea, select, nav, [role="dialog"], [data-sonner-toaster], .write-pile-scrim')) return;
         const at = text.length;
         editor.current?.setSelection(at);
       }}
@@ -281,11 +329,20 @@ export function WriteApp() {
         <a href={withLogo('/')} aria-label={`${APP_NAME}: home`} className="write-home"><Wordmark /></a>
         <div className="write-tools">
           <span className="write-writer" title="The writer of this page">{name}</span>
-          <button type="button" className="write-tool" onClick={changeWriter}>Change writer</button>
-          <button type="button" className="write-tool" onClick={freshSheet} disabled={!text.trim() && !session.doc.log.length}>Fresh sheet</button>
+          {/* a new sheet: words on a computer, a page with a plus on a phone */}
+          <button type="button" className="write-tool write-new" onClick={newSheet} disabled={!session.doc.log.length} aria-label="New sheet" title="New sheet">
+            <FilePlus aria-hidden className="write-new-icon" />
+            <span className="write-new-word">New sheet</span>
+          </button>
+          <button type="button" className="write-cta" onClick={changeWriter}>
+            <Shuffle aria-hidden />
+            Change writer
+          </button>
         </div>
       </header>
       <main className="write-desk" ref={deskRef} onKeyDownCapture={onKeyDownCapture} onKeyUpCapture={onKeyUpCapture}>
+        {/* named by the sheet's id: a new sheet or one from the pile moves as itself (moveSheets) */}
+        <div style={{ viewTransitionName: `sheet-${cur.id}` }}>
         {pxPerMm > 0 && (
           <PaperEditor
             ref={editor}
@@ -304,6 +361,7 @@ export function WriteApp() {
             ink={ink}
             penWidthU={p.penWidth as number}
             xHeightU={(p.xHeight as number) * CAP}
+            onEditingChange={setEditing}
           >
             <LiveSheets
               live={live}
@@ -312,12 +370,22 @@ export function WriteApp() {
               ink={ink}
               inkKey={eff.inkKey}
               extras={extras}
-              handKey={state.seed + ':' + state.style}
+              // each sheet is drawn as it is (one from the pile isn't written out again), and so is a new writer
+              handKey={cur.id + ':' + state.seed + ':' + state.style}
               hold={0}
             />
           </PaperEditor>
         )}
+        </div>
       </main>
+      <SheetPile
+        sheets={pile}
+        width={Math.round(Math.min(240, Math.max(150, deskW * 0.46)))}
+        tucked={writing}
+        hidden={coarse && editing}
+        onBring={bringBack}
+        onThrow={throwAway}
+      />
       {coarse && !used && <p className="write-keys write-tap" aria-hidden>Tap anywhere to write</p>}
       {!coarse && (
         <p className="write-keys" data-used={used || undefined} aria-hidden>
@@ -327,7 +395,8 @@ export function WriteApp() {
           <span><kbd>{mod}U</kbd> underlines</span>
         </p>
       )}
-      <Toaster position="bottom-center" />
+      {/* the bottom of the desk is the pile's */}
+      <Toaster position="top-center" />
     </div>
   );
 }
