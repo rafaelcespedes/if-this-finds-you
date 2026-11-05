@@ -342,6 +342,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
         const right = { x: KB.plate.x + KB.plate.w - TW, w: TW };
         const M = 24 * k0; // the SVG's margin for the blur
         const swell = wet ? Math.exp(-since * 5) : 0;
+        const TEXT = 21; // the hint and the timer's seconds, the same size (at 1080)
         const neckRy = (13 + 9 * swell) * k0;
         return (
           <>
@@ -358,16 +359,17 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
                 <ellipse cx={M + left.w + G / 2} cy={M + H / 2} rx={G / 2 + 10 * k0} ry={neckRy} />
               </g>
             </svg>
-            {/* the timer's capsule fills a shade darker as the ink stays wet, draining with it */}
-            <div style={{ position: 'absolute', left: right.x, top, width: right.w, height: H, borderRadius: R, overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${showChip && wet ? 100 * (1 - since / wetFor) : 0}%`, background: GREY(0.05) }} />
-            </div>
+            {/* the timer's fill: a pill of its own, 3 px inside the capsule, a shade darker, draining as the ink dries */}
+            {showChip && wet && (() => {
+              const inset = 3 * k0, w = (right.w - 2 * inset) * (1 - since / wetFor), h = H - 2 * inset;
+              return <div style={{ position: 'absolute', left: right.x + inset, top: top + inset, width: w, height: h, borderRadius: Math.min(R - inset, w / 2), background: GREY(0.055) }} />;
+            })()}
             <div style={{ position: 'absolute', left: left.x, top, width: left.w, height: H, display: 'flex', alignItems: 'center', padding: `0 ${30 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif' }}>
-              <div style={{ fontSize: 24 * k0, fontWeight: 400, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
+              <div style={{ fontSize: TEXT * k0, fontWeight: 400, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
             </div>
             <div style={{ position: 'absolute', left: right.x, top, width: right.w, height: H, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${20 * k0}px 0 ${24 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif', opacity: showChip ? 1 : 0 }}>
               <div style={{ textAlign: 'left', lineHeight: 1.12 }}>
-                <div style={{ fontSize: 23 * k0, fontWeight: 400, color: wet ? C.ink : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
+                <div style={{ fontSize: TEXT * k0, fontWeight: 400, color: wet ? C.ink : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
                 <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? C.muted : C.faint }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
               </div>
               <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
