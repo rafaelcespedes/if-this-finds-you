@@ -9,7 +9,8 @@
 //                                            rest: a piece that stopped mid-word: the rest of that word as typed
 //                                            so far (layout measures the whole word for the line end)
 //   break  { }                              Enter at the pen head: a new paragraph; takes an id ('\n')
-//   strike { from, to, how?, why?, blot? }  ids inclusive. how: line | double | wave | loops | scribble
+//   strike { from, to, how?, why?, blot?, lv? }  ids inclusive. how: line | double | wave | loops | scribble, and
+//                                            for why 'again' (crossed out again, lv 2–4) blackout | inkout
 //   over   { at, ch, blot? }                a new letter drawn on top of glyph `at`
 //   insert { after, text, over? }           text added above the line, right after glyph `after` (-1 = the
 //                                            very start); its characters take new ids. over: [from, to] = a
@@ -65,6 +66,10 @@ function applyEvent(R, e) {
     case 'write': for (const ch of e.text || '') R.recs.push(add(R, ch)); break;
     case 'break': R.recs.push(add(R, '\n')); break;
     case 'strike': {
+      if (e.why === 'again') { // crossed out again (sheet.js again()): the same words, harder; nothing new is struck
+        for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r && r.struck) { r.struck = e.how || r.struck; r.lv = Math.max(r.lv || 1, e.lv || 2); } }
+        break;
+      }
       for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r && !r.struck) { r.struck = e.how || 'line'; r.why = e.why; } }
       R.counts[e.how === 'scribble' ? 'scribbled' : 'struck']++;
       break;
@@ -118,7 +123,7 @@ export function logicalText(x) { return textOf(asReader(x).recs); }
 export function transcription(x) {
   const R = asReader(x);
   const recs = R.recs;
-  const kindOf = (q) => (q.joined ? 'joined' : q.struck ? (q.struck === 'scribble' ? 'scribbled out' : 'struck') : q.ins ? 'inserted' : q.under ? 'underlined' : null);
+  const kindOf = (q) => (q.joined ? 'joined' : q.struck ? (q.struck === 'inkout' ? 'inked out' : q.struck === 'scribble' || q.struck === 'blackout' ? 'scribbled out' : 'struck') : q.ins ? 'inserted' : q.under ? 'underlined' : null);
   let out = '';
   for (let i = 0; i < recs.length;) {
     const r = recs[i], kind = kindOf(r);
@@ -128,7 +133,7 @@ export function transcription(x) {
     if (j === i) { out += kind === 'joined' ? '' : r.ch; i++; continue; } // a struck paragraph break: the paragraphs join
     // a struck or inserted run carries its own space: keep it outside the brackets
     const lead = s.match(/^ */)[0], trail = s.slice(lead.length).match(/ *$/)[0], core = s.trim();
-    out += kind === 'joined' ? '' : core ? lead + `[${kind}: ${core}]` + trail : (kind === 'struck' || kind === 'scribbled out' ? '' : s);
+    out += kind === 'joined' ? '' : core ? lead + `[${kind}: ${core}]` + trail : (kind === 'struck' || kind === 'scribbled out' || kind === 'inked out' ? '' : s);
     i = j;
   }
   return out;
@@ -149,7 +154,7 @@ export function summary(x) {
 // empty fields are dropped; anything unknown is kept as its object.
 const ENC = {
   write: (e) => ['w', e.text, e.cont ? 1 : 0, e.rest], break: () => ['b'],
-  strike: (e) => ['x', e.from, e.to, e.how, e.why, e.blot ? 1 : 0],
+  strike: (e) => ['x', e.from, e.to, e.how, e.why, e.blot ? 1 : 0, e.lv],
   over: (e) => ['o', e.at, e.ch, e.blot ? 1 : 0],
   insert: (e) => ['i', e.after, e.text, e.over ? e.over[0] : null, e.over ? e.over[1] : null],
   mark: (e) => ['m', e.after, e.kind], underline: (e) => ['u', e.from, e.to],
@@ -157,7 +162,7 @@ const ENC = {
 };
 const DEC = {
   w: (a) => clean({ t: 'write', text: a[1], cont: a[2] ? true : undefined, rest: a[3] }), b: () => ({ t: 'break' }),
-  x: (a) => clean({ t: 'strike', from: a[1], to: a[2], how: a[3], why: a[4], blot: a[5] ? true : undefined }),
+  x: (a) => clean({ t: 'strike', from: a[1], to: a[2], how: a[3], why: a[4], blot: a[5] ? true : undefined, lv: a[6] || undefined }),
   o: (a) => clean({ t: 'over', at: a[1], ch: a[2], blot: a[3] ? true : undefined }),
   i: (a) => clean({ t: 'insert', after: a[1], text: a[2], over: a[3] != null ? [a[3], a[4]] : undefined }),
   m: (a) => ({ t: 'mark', after: a[1], kind: a[2] }), u: (a) => ({ t: 'underline', from: a[1], to: a[2] }),
