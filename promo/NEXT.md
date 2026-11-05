@@ -90,3 +90,14 @@
   forms ("Real letters, written out by writers who never existed"), the fonts video reframed square on a 1024 × 1150
   photo of the live page ("Every hand is a font you can download"), the title ("Free and open source ·
   ifthisfindsyou.app"). The canvas of hands is cut. FontList now takes a frame size and a page variant.
+
+## The ink demo (5 Nov, first cut for the coordinator)
+- src/InkDemo.tsx, 1080 × 1080, 34.3 s, no sound. The sheet (the site's letter pad, Rafael's #13 Hana Hartmann in
+  royal blue) above a minimal keyboard with ghost fingertips. The typing is recorded by scripts/ink-session.ts
+  through the site's own Ink mode (engine plan/penStep/apply/dropLast, the calls lib/ink.ts InkSession makes; pen at
+  4.5 letters a second, the site's is 2) and replayed frame by frame; letters drawn stroke by stroke in writing
+  order; the letters the pen hasn't reached faint graphite, as on the site.
+- Beats: "yuo" fixed before the pen gets there (clean); "quite" struck and "so green" written after it; the 8 written
+  over the 3 (salt 'a' gives this writer the overwrite); "all" above the line with a caret; "Love," lifted by undo
+  while wet (a 3 s ring); undo on dry ink gets the site's toast ("The ink is dry · Cross it out, or start a fresh
+  sheet."). A caption per beat (prop `captions`).
