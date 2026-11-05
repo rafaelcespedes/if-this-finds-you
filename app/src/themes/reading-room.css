@@ -769,6 +769,17 @@ html[data-look='reading-room'] .rr-row-note {
 html[data-look='reading-room'] .rr-full {
   border-top: 1px solid var(--rr-rule);
 }
+/* a note or the full record arriving fades in where it opens, at the Fonts record's pace (fonts.css, .font-record):
+   opacity only, the rows below make room at once. It plays each time it opens (a note mounts; the full record's
+   display leaves none) and closing is instant. Reduced motion: the same fade, shorter, as .hand-in does */
+html[data-look='reading-room'] :is(.rr-row-note, .rr-full > [id]) {
+  animation: rr-fade 220ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] :is(.rr-row-note, .rr-full > [id]) {
+    animation-duration: 160ms;
+  }
+}
 html[data-look='reading-room'] .rr-full-head {
   display: flex;
   align-items: baseline;
@@ -886,8 +897,9 @@ html[data-look='reading-room'] .rr-drawer-all svg {
   color: var(--rr-muted);
 }
 /* under the open drawer the record is covered, so it's hidden: nothing of it (Share, in the column's gutter) shows past
-   the drawer's edge, and focus and screen readers don't wander into it */
-html[data-look='reading-room'] .rr-desk:has(> .rr-drawer.is-open) > .rr-ledger {
+   the drawer's edge, and focus and screen readers don't wander into it. As the drawer leaves (is-closing,
+   ReadingDesk.tsx), the record is there from the start of the exit */
+html[data-look='reading-room'] .rr-desk:has(> .rr-drawer.is-open:not(.is-closing)) > .rr-ledger {
   visibility: hidden;
 }
 html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-body {
