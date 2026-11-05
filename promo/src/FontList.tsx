@@ -10,14 +10,20 @@ import { AbsoluteFill, Img, continueRender, delayRender, staticFile, useCurrentF
 import { z } from 'zod';
 import data from './data/list-fonts.json';
 import openFonts from './data/open-fonts.json';
-import page from './data/fonts-page.json';
-import { LINE, LIST_TOP, ROW, T, VIEW, rowsAt, rowsPerSecond, typeTimes } from './scene/fontlist-plan';
+import pageWide from './data/fonts-page.json';
+import pageSquare from './data/fonts-page-1024.json';
+import { LINE, ROW, T, rowsAt, rowsPerSecond, typeTimes } from './scene/fontlist-plan';
 
 export const fontListSchema = z.object({
   /** the hand the video opens on: one of Rafael's favourites (src/data/open-fonts.json, 1-based), or 0 for the list's own */
   openHand: z.number().default(0),
   /** what the pointer types into the tester at the end */
   endText: z.string().default('Over a million handwritten fonts'),
+  /** the page it's set in: 'wide' (1600 × 1000, for 16:9) or 'square' (1024 × 1150, for a square frame) */
+  variant: z.enum(['wide', 'square']).default('wide'),
+  /** the frame it draws into, px (0: the composition's own; set when it's placed inside another composition) */
+  w: z.number().default(0),
+  h: z.number().default(0),
 });
 export type FontListProps = z.infer<typeof fontListSchema>;
 const OPEN = openFonts as { n: number; file: string; name: string; seed: string; words: string }[];
@@ -27,10 +33,31 @@ import { bezier, clamp, easeInOutQuint } from './scene/ink';
 const HANDS = (data as any).hands as { n: number; file: string; name: string; words: string; seed: string }[];
 const C = { room: '#e6e4de', ink: '#1e2733', muted: '#575146', rule: 'rgba(30, 39, 51, 0.12)', desk: '#d3d0c8', chrome: '#eceae4', slip: '#f8f5ec' };
 const MARGIN = 40, ICONS_W = 112, ICONS_H = 34;
-const LIST_W = VIEW.w - 2 * MARGIN;
-const LINE_W = LIST_W - ICONS_W - 32; // the writing, up to the actions
 const TITLE = 38; // the browser window's title bar, CSS px
 const CLOSE_ROW = 2; // the row the video opens on
+
+// ---------- the page: photographed at two sizes (scripts/capture-page.mjs) ----------
+interface Layout {
+  view: { w: number; h: number };
+  /** under the sticky header and tester bar */
+  listTop: number;
+  input: { x: number; y: number; width: number; height: number };
+  /** the photo of the header and tester bar */
+  top: string;
+  listW: number;
+  /** the writing, up to the actions */
+  lineW: number;
+  /** how tall a slice of the page the close frame shows (one row's writing, its neighbours out of frame) */
+  closeH: number;
+}
+function layoutOf(page: any, top: string, closeH: number): Layout {
+  const listW = page.width - 2 * MARGIN;
+  return { view: { w: page.width, h: page.height }, listTop: page.bar.bottom, input: page.input, top, listW, lineW: listW - ICONS_W - 32, closeH };
+}
+const LAYOUTS: Record<'wide' | 'square', Layout> = {
+  wide: layoutOf(pageWide, 'fonts-page-top.png', 169),
+  square: layoutOf(pageSquare, 'fonts-page-1024-top.png', 160),
+};
 
 // ---------- fonts ----------
 const loaded = new Map<number, Promise<void>>();
@@ -68,25 +95,24 @@ function mix(a: Cam, b: Cam, u: number, A: { x: number; y: number }, W: number, 
 const span = (t: number, [a, b]: number[], ease = easeInOutQuint) => ease(clamp((t - a) / (b - a), 0, 1));
 // the pull backs: a gentle start, a long settle (a cubic-like in-out, softer than the quint)
 const zoomEase = bezier(0.55, 0, 0.25, 1);
-function cams(W: number) {
-  const s = W / 1920;
+function cams(W: number, H: number, L: Layout) {
   // close: one row's writing, the cursor a little in from the left edge; its neighbours out of frame
-  const zc = 6.4;
-  const close: Cam = { x: MARGIN - 0.1 * (1920 / zc) + (1920 / zc) / 2, y: LIST_TOP + CLOSE_ROW * ROW + 62, z: zc * s };
+  const zc = H / L.closeH, vw = W / zc;
+  const close: Cam = { x: MARGIN - 0.1 * vw + vw / 2, y: L.listTop + CLOSE_ROW * ROW + 62, z: zc };
   // the list: edge to edge, the tester bar just above the frame
-  const zl = 1920 / (LIST_W + 34);
-  const list: Cam = { x: VIEW.w / 2, y: LIST_TOP + (1080 / zl) / 2, z: zl * s };
+  const zl = W / (L.listW + 34);
+  const list: Cam = { x: L.view.w / 2, y: L.listTop + H / zl / 2, z: zl };
   // the page: the browser window across the frame, its top 50 px down, its foot running off the bottom
-  const zp = 1820 / VIEW.w;
-  const pageCam: Cam = { x: VIEW.w / 2, y: -TITLE - 50 / zp + (1080 / zp) / 2, z: zp * s };
+  const zp = (W - 100) / L.view.w;
+  const pageCam: Cam = { x: L.view.w / 2, y: -TITLE - 50 / zp + H / zp / 2, z: zp };
   return { close, list, pageCam };
 }
-function camAt(t: number, W: number, H: number): Cam {
-  const { close, list, pageCam } = cams(W);
+function camAt(t: number, W: number, H: number, L: Layout): Cam {
+  const { close, list, pageCam } = cams(W, H, L);
   if (t < T.ease[0]) return close;
   // anchors: the start of the opening line (the cursor's place), then the list's top-left corner
-  if (t < T.pull[0]) return mix(close, list, span(t, T.ease, zoomEase), { x: MARGIN, y: LIST_TOP + CLOSE_ROW * ROW + 62 }, W, H);
-  return mix(list, pageCam, span(t, T.pull, zoomEase), { x: MARGIN, y: LIST_TOP }, W, H);
+  if (t < T.pull[0]) return mix(close, list, span(t, T.ease, zoomEase), { x: MARGIN, y: L.listTop + CLOSE_ROW * ROW + 62 }, W, H);
+  return mix(list, pageCam, span(t, T.pull, zoomEase), { x: MARGIN, y: L.listTop }, W, H);
 }
 
 // ---------- typing ----------
@@ -100,12 +126,11 @@ function typedOf(text: string, t: number, win: number[]) {
   return text.slice(0, n);
 }
 const blinkOn = (t: number, from: number) => Math.floor((t - from) * 2.4) % 2 === 0;
-const INPUT = page.input as { x: number; y: number; width: number; height: number };
-const CLEAR = { x: INPUT.x + INPUT.width - 18, y: INPUT.y + INPUT.height / 2 };
 const testerText = (t: number, end: string) => (t < T.click ? LINE : typedOf(end, t, T.type));
-function pointerAt(t: number) {
+function pointerAt(t: number, L: Layout) {
   // in from beyond the frame's lower right, along a slight curve, slowing onto the tester's clear button; a press
-  const from = { x: VIEW.w + 60, y: 820 }, ctrl = { x: CLEAR.x + 420, y: CLEAR.y + 260 };
+  const CLEAR = { x: L.input.x + L.input.width - 18, y: L.input.y + L.input.height / 2 };
+  const from = { x: L.view.w + 60, y: Math.min(820, L.view.h * 0.75) }, ctrl = { x: CLEAR.x + 420, y: CLEAR.y + 260 };
   const u = span(t, T.move, bezier(0.3, 0.1, 0.2, 1));
   const x = (1 - u) * (1 - u) * from.x + 2 * (1 - u) * u * ctrl.x + u * u * CLEAR.x;
   const y = (1 - u) * (1 - u) * from.y + 2 * (1 - u) * u * ctrl.y + u * u * CLEAR.y;
@@ -125,10 +150,10 @@ const Caret: React.FC = () => (
     <path d="M1.4 2.2 Q7 2.2 7 6.5 Q7 2.2 12.6 2.2 M7 6.5 L7 55.5 M1.4 59.8 Q7 59.8 7 55.5 Q7 59.8 12.6 59.8" fill="none" stroke={C.ink} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-const Row: React.FC<{ i: number; top: number; text: string; caret?: boolean; wide?: boolean; family?: string }> = ({ i, top, text, caret, wide, family }) => (
-  <div style={{ position: 'absolute', left: MARGIN, width: LIST_W, top, height: ROW, borderBottom: `1px solid ${C.rule}`, boxSizing: 'border-box' }}>
+const Row: React.FC<{ i: number; top: number; text: string; L: Layout; caret?: boolean; wide?: boolean; family?: string }> = ({ i, top, text, L, caret, wide, family }) => (
+  <div style={{ position: 'absolute', left: MARGIN, width: L.listW, top, height: ROW, borderBottom: `1px solid ${C.rule}`, boxSizing: 'border-box' }}>
     {/* the row being typed runs past its own edge while the camera holds on it (the page would fade it there) */}
-    <div style={{ position: 'absolute', left: 0, width: wide ? 4000 : LINE_W, top: 18, height: 91, overflow: 'hidden', WebkitMaskImage: wide ? undefined : 'linear-gradient(90deg, #000 calc(100% - 80px), transparent)' }}>
+    <div style={{ position: 'absolute', left: 0, width: wide ? 4000 : L.lineW, top: 18, height: 91, overflow: 'hidden', WebkitMaskImage: wide ? undefined : 'linear-gradient(90deg, #000 calc(100% - 80px), transparent)' }}>
       <div style={{ fontFamily: family ?? `lf-${i % HANDS.length}`, fontSize: 64, lineHeight: '91px', color: C.ink, whiteSpace: 'nowrap' }}>
         {text || (caret ? '' : '\u00a0')}{caret && <Caret />}
       </div>
@@ -137,11 +162,14 @@ const Row: React.FC<{ i: number; top: number; text: string; caret?: boolean; wid
   </div>
 );
 
-export const FontList: React.FC<FontListProps> = ({ openHand, endText }) => {
+export const FontList: React.FC<FontListProps> = ({ openHand, endText, variant, w, h }) => {
   const frame = useCurrentFrame();
-  const { width: W, height: H, fps } = useVideoConfig();
+  const config = useVideoConfig();
+  const W = w || config.width, H = h || config.height, fps = config.fps;
+  const L = LAYOUTS[variant] ?? LAYOUTS.wide;
+  const VIEW = L.view, LIST_TOP = L.listTop, INPUT = L.input;
   const t = frame / fps;
-  const cam = camAt(t, W, H);
+  const cam = camAt(t, W, H, L);
   const scroll = rowsAt(t) * ROW; // CSS px
   const v = (rowsPerSecond(t) * ROW) / fps; // CSS px a frame
   // the opening: every row types the line together (the one in the close frame with its cursor), then the tester's
@@ -161,11 +189,11 @@ export const FontList: React.FC<FontListProps> = ({ openHand, endText }) => {
   const openCaret = t < T.rowType[0] ? blinkOn(t, 0) : t < T.rowType[1] ? true : t < T.rowType[1] + 0.4 && blinkOn(t, T.rowType[1]);
   // motion blur: along the scroll, about an eighth of a frame's travel (a hint of speed, the writing still there)
   const blur = Math.min(12, 0.13 * v);
-  const p = pointerAt(t);
+  const p = pointerAt(t, L);
   const winShow = clamp((t - T.pull[0] - 0.3) / 0.6, 0, 1);
   const testerCaret = t >= T.click && (t < T.type[1] ? t >= T.type[0] || blinkOn(t, T.click) : blinkOn(t, T.type[1]));
   return (
-    <AbsoluteFill style={{ background: C.desk }}>
+    <AbsoluteFill style={{ background: C.desk, overflow: 'hidden', width: W, height: H }}>
       <svg width={0} height={0} style={{ position: 'absolute' }}>
         <filter id="vblur" x="0" y="-20%" width="100%" height="140%"><feGaussianBlur stdDeviation={`0 ${blur.toFixed(2)}`} /></filter>
       </svg>
@@ -184,11 +212,11 @@ export const FontList: React.FC<FontListProps> = ({ openHand, endText }) => {
           <div style={{ position: 'absolute', left: 0, top: LIST_TOP, width: VIEW.w, height: VIEW.h - LIST_TOP, overflow: 'hidden' }}>
             <div style={{ position: 'absolute', left: 0, top: 0, width: VIEW.w, height: VIEW.h - LIST_TOP, filter: blur > 0.4 ? 'url(#vblur)' : undefined }}>
               {rows.map((i) => (i === CLOSE_ROW && opening
-                ? <Row key={i} i={i} top={i * ROW - scroll} text={openText} caret={!!openCaret} wide={t < T.ease[1]} family={openFamily} />
-                : <Row key={i} i={i} top={i * ROW - scroll} text={rowText} family={i === CLOSE_ROW ? openFamily : undefined} />))}
+                ? <Row key={i} i={i} L={L} top={i * ROW - scroll} text={openText} caret={!!openCaret} wide={t < T.ease[1]} family={openFamily} />
+                : <Row key={i} i={i} L={L} top={i * ROW - scroll} text={rowText} family={i === CLOSE_ROW ? openFamily : undefined} />))}
             </div>
           </div>
-          <Img src={staticFile('fonts-page-top.png')} style={{ position: 'absolute', left: 0, top: 0, width: VIEW.w, height: LIST_TOP }} />
+          <Img src={staticFile(L.top)} style={{ position: 'absolute', left: 0, top: 0, width: VIEW.w, height: LIST_TOP }} />
           {/* the tester's words, drawn over the picture's own so they can be cleared and typed */}
           <div style={{ position: 'absolute', left: INPUT.x + 1, top: INPUT.y + 1, width: INPUT.width - 40, height: INPUT.height - 2, background: C.slip, display: 'flex', alignItems: 'center', paddingLeft: 7, fontFamily: '"RR Schibsted", system-ui, sans-serif', fontSize: 13, color: C.ink, whiteSpace: 'pre' }}>
             {testerText(t, endText)}

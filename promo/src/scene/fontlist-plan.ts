@@ -8,10 +8,7 @@
 //   9.2–10.6 pulling back again: the page's header and tester bar, the browser window, the address
 //   10.65–11.4 the pointer glides to the tester; a click clears it; the ending words are typed, every row following
 //   14.0 end (the first frame follows: it loops)
-import page from '../data/fonts-page.json';
-
-export const VIEW = { w: page.width, h: page.height }; // the browser's page, CSS px (1600 × 1000)
-export const LIST_TOP = page.bar.bottom; // under the sticky header and tester bar (126)
+// (the page's sizes are FontList's: two photos of the live page, 1600 × 1000 and 1024 × 1150)
 export const ROW = 128; // a row at the page's 64 px
 export const LINE = 'The quick brown fox jumps over the lazy dog';
 export const TYPED = 'If this finds you';
