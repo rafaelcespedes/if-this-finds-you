@@ -32,8 +32,12 @@ const CAPTIONS: Record<string, string> = {
   strike: 'Backspace on ink: crossed out',
   over: 'One letter written over another',
   insert: 'A word added above the line',
+  again: 'Keep pressing: crossed out harder, then inked out',
+  underline: '⌘U: underlined by hand',
+  retrace: '⌘B: gone over again',
   undo: 'Undo lifts the ink while it’s wet',
   dry: 'Dry ink stays',
+  ps: '⌘↩: a P.S. under the signature',
 };
 
 // ---------- the hand, the paper, the replay ----------
@@ -165,6 +169,14 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
     ctx.save();
     ctx.drawImage(sheetCanvas, cam.x, cam.y);
     const sc = cam.k / cam.u, emPx = sc * UPM;
+    // a selection (dragged across, held until its command), as the system draws one: a soft blue behind the words
+    for (const sel of (SES.selections as any[])) {
+      if (t < sel.t - 0.75 || t > sel.until + 0.25) continue;
+      const frac = clamp((t - (sel.t - 0.75)) / 0.7, 0, 1);
+      const o = t > sel.until ? 1 - (t - sel.until) / 0.25 : 1;
+      ctx.fillStyle = `rgba(44, 99, 214, ${0.16 * o})`;
+      for (const b of selectionBoxes(sel, cam, easeInOutQuint(frac))) { ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 6 * k0); ctx.fill(); }
+    }
     const shift = (it: any) => ({ ...it, x: it.x + cam.x / sc, y: it.y + cam.y / sc, box: it.box && [it.box[0] + cam.x / sc, it.box[1] + cam.y / sc, it.box[2] + cam.x / sc, it.box[3] + cam.y / sc] });
     const sh = sheetAt(F.s);
     const ids = SES.states[F.s].ids as number[];
@@ -200,7 +212,9 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
     // the typing cursor: after the last thought letter, or after the pen's last letter (hidden mid-text)
     if (F.cur == null) {
       const glyphs = (sh.page.items as any[]).filter((it) => it.kind === 'glyph' && it.box && !it.above);
-      const lastInk = glyphs.reduce((a: any, b: any) => ((b.inkIndex ?? 0) > (a?.inkIndex ?? -1) ? b : a), null);
+      // the pen's last letter: the latest event's, and its last letter (a P.S. counts its letters on its own)
+      const later = (a: any, b: any) => (b.ev ?? 0) - (a.ev ?? 0) || (b.inkIndex ?? 0) - (a.inkIndex ?? 0);
+      const lastInk = glyphs.reduce((a: any, b: any) => (!a || later(a, b) > 0 ? b : a), null);
       const lastDraft = draftItems.length ? draftItems[draftItems.length - 1] : null;
       const ref2 = lastDraft ?? lastInk;
       const blink = t - (SES.keys as any[]).filter((kk) => kk.t <= t).reduce((a: number, kk: any) => Math.max(a, kk.t), -10) < 0.5 || Math.floor(t * 2.2) % 2 === 0;
@@ -251,11 +265,26 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   }
 
   // the pointer, for the clicks (into the text, then back to its end)
-  const clicks = SES.clicks as { t: number; index: number }[];
+  const clicks = SES.clicks as { t: number; index: number; kind?: string; look?: string }[];
   const pointer = (() => {
-    for (const [i, c] of clicks.entries()) {
+    // a drag across words for a selection: in from the side, then across them
+    for (const sel of (SES.selections as any[])) {
+      if (t < sel.t - 1.4 || t > sel.t + 0.9) continue;
+      const boxes = selectionBoxes(sel, cam);
+      if (!boxes.length) return null;
+      const a = boxes[0], b = boxes[boxes.length - 1];
+      const start = { x: a.x + 4, y: a.y + a.h * 0.6 }, end = { x: b.x + b.w - 4, y: b.y + b.h * 0.6 };
+      const from = { x: S * 0.82, y: PAPER_H * k0 * 0.95 };
+      if (t < sel.t - 0.75) {
+        const u = easeOutQuint(clamp((t - (sel.t - 1.4)) / 0.6, 0, 1));
+        return { x: from.x + (start.x - from.x) * u, y: from.y + (start.y - from.y) * u, press: 1, o: clamp((t - (sel.t - 1.4)) / 0.15, 0, 1) };
+      }
+      const u = easeInOutQuint(clamp((t - (sel.t - 0.75)) / 0.7, 0, 1));
+      return { x: start.x + (end.x - start.x) * u, y: start.y + (end.y - start.y) * u, press: t < sel.t ? 0.9 : 1, o: t > sel.t + 0.5 ? 1 - (t - sel.t - 0.5) / 0.4 : 1 };
+    }
+    for (const c of clicks) {
       if (t < c.t - 0.75 || t > c.t + 0.6) continue;
-      const target = clickTarget(c, i, cam);
+      const target = clickTarget(c as any, cam);
       if (!target) return null;
       const u = easeOutQuint(clamp((t - (c.t - 0.75)) / 0.7, 0, 1));
       const from = { x: S * 0.82, y: PAPER_H * k0 * 0.95 };
@@ -329,17 +358,43 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   );
 };
 
-/** where a click lands: just before the word the first click goes in front of ("terribly"), else after the last
- *  letter (the click back to the end) */
-function clickTarget(c: { t: number; index: number }, i: number, cam: { k: number; x: number; y: number; u: number }) {
-  const f = SES.frames[Math.min(SES.frames.length - 1, Math.round(c.t * SES.fps))];
+/** the written letters at a moment, in writing order, and the text they spell (to find a word on the page) */
+function glyphsAt(t: number) {
+  const f = SES.frames[Math.min(SES.frames.length - 1, Math.max(0, Math.round(t * SES.fps)))];
   const glyphs = (sheetAt(f.s).page.items as any[]).filter((it) => it.kind === 'glyph' && it.box).sort((a, b) => (a.inkIndex ?? 0) - (b.inkIndex ?? 0));
-  const text = glyphs.map((g) => g.ch).join('');
-  const at = i === 0 ? text.indexOf('terribly') : -1;
+  return { glyphs, text: glyphs.map((g) => g.ch).join('') };
+}
+/** where a click lands: just before a word ('before'), on a word ('at': the crossed-out one), or after the last letter */
+function clickTarget(c: { t: number; kind?: string; look?: string }, cam: { k: number; x: number; y: number; u: number }) {
+  const { glyphs, text } = glyphsAt(c.t);
+  const at = c.look && c.kind !== 'end' ? text.indexOf(c.look.replace(/\s+/g, '')) : -1;
+  const sc = cam.k / cam.u;
+  if (at >= 0 && c.kind === 'at') {
+    const ws = glyphs.slice(at, at + c.look!.length);
+    const g0 = ws[0], g1 = ws[ws.length - 1];
+    return { x: ((g0.box[0] + g1.box[2]) / 2) * sc + cam.x, y: (g0.y - 0.2 * UPM) * sc + cam.y };
+  }
   const g = at >= 0 ? glyphs[at] : glyphs[glyphs.length - 1];
   if (!g) return null;
-  const sc = cam.k / cam.u;
   return { x: (at >= 0 ? g.box[0] - 0.12 * UPM : g.box[2] + 0.1 * UPM) * sc + cam.x, y: (g.y - 0.25 * UPM) * sc + cam.y };
+}
+/** a selection's words on the page: one box per line, from the first letter of the first word to the last of the second */
+function selectionBoxes(sel: { t: number; words?: string[] }, cam: { k: number; x: number; y: number; u: number }, frac = 1) {
+  if (!sel.words) return [];
+  const { glyphs, text } = glyphsAt(sel.t);
+  const a = text.indexOf(sel.words[0]);
+  const b = a < 0 ? -1 : text.indexOf(sel.words[1], a) + sel.words[1].length;
+  if (a < 0 || b <= a) return [];
+  const n = Math.max(1, Math.round((b - a) * frac));
+  const ws = glyphs.slice(a, a + n);
+  const sc = cam.k / cam.u;
+  const lines = new Map<number, any[]>();
+  for (const g of ws) { const l = lines.get(g.line) ?? []; l.push(g); lines.set(g.line, l); }
+  return [...lines.values()].map((gs) => {
+    const x0 = Math.min(...gs.map((g) => g.box[0])), x1 = Math.max(...gs.map((g) => g.box[2]));
+    const base = gs[0].y;
+    return { x: x0 * sc + cam.x - 6, y: (base - 0.78 * UPM) * sc + cam.y, w: (x1 - x0) * sc + 12, h: 1.05 * UPM * sc };
+  });
 }
 
 let uiFont: Promise<unknown> | null = null;

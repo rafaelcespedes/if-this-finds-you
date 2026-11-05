@@ -97,7 +97,10 @@
   through the site's own Ink mode (engine plan/penStep/apply/dropLast, the calls lib/ink.ts InkSession makes; pen at
   4.5 letters a second, the site's is 2) and replayed frame by frame; letters drawn stroke by stroke in writing
   order; the letters the pen hasn't reached faint graphite, as on the site.
-- Beats: "yuo" fixed before the pen gets there (clean); "quite" struck and "so green" written after it; the 8 written
+- Draft 4 (5 Nov, 42.5 s): the writing page's own moves added (merged from preview): Delete held on the crossed-out
+  "quite" (engine again(), a pass every 280 ms: heavier, scribbled, inked out), ⌘U underlines "so green", ⌘B goes over
+  "miss you", ⌘↩ a P.S. ("P.S. Bring the dog."); a drag-to-select with the system's soft blue highlight.
+- Earlier beats: "yuo" fixed before the pen gets there (clean); "quite" struck and "so green" written after it; the 8 written
   over the 3 (salt 'a' gives this writer the overwrite); "all" above the line with a caret; "Love," lifted by undo
   while wet (a 3 s ring); undo on dry ink gets the site's toast ("The ink is dry · Cross it out, or start a fresh
   sheet."). A caption per beat (prop `captions`).

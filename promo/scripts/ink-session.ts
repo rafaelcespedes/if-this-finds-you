@@ -15,7 +15,7 @@ const engine = E as any;
 const FPS = 30;
 
 // ---------- the script: what's typed, when ----------
-type Act = { t: number; key: string; at?: 'end' | number; note?: string };
+type Act = { t: number; key: string; at?: 'end' | number | string; note?: string; to?: string; hold?: number; look?: string };
 const acts: Act[] = [];
 let clock = 0.5; // a beat on the empty sheet first
 let x = 0x2545f491;
@@ -29,7 +29,12 @@ function type(text: string, cps = 8) {
 }
 const press = (key: string, gap = 0.16) => { acts.push({ t: clock, key }); clock += gap; };
 const wait = (s: number) => { clock += s; };
-const click = (at: number | 'end', note?: string) => { acts.push({ t: clock, key: 'click', at, note }); clock += 0.35; };
+/** a click into the text: `at` places the cursor ('before:word', 'at:word' or 'end'); `look` is the word the pointer goes to */
+const click = (at: number | 'end' | string, note?: string, look?: string) => { acts.push({ t: clock, key: 'click', at, note, look }); clock += 0.35; };
+/** Delete held on a crossed-out word: a pass every 280 ms (the writing page's AGAIN_EVERY), harder each time */
+const holdDelete = (passes: number) => { acts.push({ t: clock, key: 'BackspaceHold', hold: passes }); clock += passes * 0.28 + 0.4; };
+/** a drag across words (the pointer), leaving them selected for a command */
+const select = (from: string, to: string) => { acts.push({ t: clock, key: 'select', at: from, to }); clock += 0.75; };
 const beat = (note: string) => acts.push({ t: clock, key: 'note', note });
 
 beat('start');
@@ -53,13 +58,28 @@ beat('strike');
 wait(1.9); // the pen writes "quite"
 press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.1); press('Backspace', 0.3);
 type('so green. I miss you.');
-wait(1.4);
-// 4. a word added above the line, with a caret
+wait(1.6);
+// 4. back to the crossed-out word: Delete held, crossed out harder, scribbled, inked out
+beat('again');
+click('at:so green', 'again', 'quite');
+wait(0.2);
+holdDelete(3);
+wait(0.9);
+// 5. a word added above the line, with a caret
 beat('insert');
 click('before:miss', 'insert');
 type('really ', 7);
 wait(1.9);
-// 5. undo lifts wet ink only
+// 6. underlined by hand (⌘U), then words gone over again (⌘B)
+beat('underline');
+select('so', 'green');
+press('Meta+u', 0.4);
+wait(1.6);
+beat('retrace');
+select('miss', 'you');
+press('Meta+b', 0.4);
+wait(1.6);
+// 7. undo lifts wet ink only
 beat('undo');
 click('end');
 press('Enter', 0.3);
@@ -70,7 +90,12 @@ beat('dry');
 type('All my love,');
 wait(3.8); // written, and dry
 press('Meta+z', 0.4);
-wait(1.8);
+wait(1.4);
+// 8. a P.S., below the signature (⌘↩)
+beat('ps');
+press('Meta+Enter', 0.5);
+type('P.S. Bring the dog.', 8);
+wait(2.6);
 const END = clock;
 
 // ---------- the session ----------
@@ -91,7 +116,9 @@ const states: { t: number; ids: number[] }[] = [{ t: 0, ids: [] }];
 const toasts: { t: number; title: string; body: string }[] = [];
 const lifts: { t: number; n: number }[] = [];
 const notes: { t: number; note: string }[] = [];
-const clicks: { t: number; index: number }[] = [];
+const clicks: { t: number; index: number; kind?: string; look?: string }[] = [];
+const selections: { t: number; from: number; to: number; until: number; words?: string[] }[] = [];
+let selection: { from: number; to: number } | null = null;
 const keys: { t: number; key: string }[] = [];
 const frames: any[] = [];
 
@@ -108,15 +135,57 @@ function edit(t: number, e: { at: number; del: number; ins: string; kind: string
   applyEvents(t, r.events);
   lastKey = t;
 }
+const pendingAgain: { t: number; at: number }[] = [];
+function flush(t: number) {
+  const r = engine.penStep(sheet, view, { final: true });
+  view = r.view;
+  applyEvents(t, r.events);
+}
 function act(a: Act) {
   const t = a.t;
   if (a.key === 'note') { notes.push({ t, note: a.note! }); return; }
   keys.push({ t, key: a.key });
   const text = engine.viewText(sheet, view);
   if (a.key === 'click') {
+    selection = null;
     if (a.at === 'end') cursor = null;
     else if (typeof a.at === 'string') { const word = a.at.split(':')[1]; cursor = text.indexOf(word); }
-    clicks.push({ t, index: cursor ?? text.length });
+    clicks.push({ t, index: cursor ?? text.length, kind: typeof a.at === 'string' ? a.at.split(':')[0] : 'end', look: a.look ?? (typeof a.at === 'string' ? a.at.split(':')[1] : undefined) });
+    return;
+  }
+  if (a.key === 'select') {
+    // a drag from the first word's start to the second word's end
+    const from = text.indexOf(a.at as string), to = text.indexOf(a.to!, from) + a.to!.length;
+    selection = { from, to };
+    selections.push({ t, from, to, until: Infinity, words: [a.at as string, a.to!] } as any);
+    return;
+  }
+  if (a.key === 'BackspaceHold') {
+    // the writing page: Delete at a crossed-out word goes over it again, a pass every 280 ms while held
+    for (let n = 0; n < (a.hold || 1); n++) {
+      const tn = t + n * 0.28;
+      pendingAgain.push({ t: tn, at: cursor ?? text.length });
+    }
+    return;
+  }
+  if (a.key === 'Meta+u' || a.key === 'Meta+b') {
+    // InkSession.mark: everything typed written first, then the mark on the selected words
+    flush(t);
+    if (selection) {
+      const runs = engine.inkIdsIn(sheet, view, selection.from, selection.to) as [number, number][];
+      applyEvents(t, runs.map(([x0, x1]) => (a.key === 'Meta+u' ? { t: 'underline', from: x0, to: x1 } : { t: 'pen', kind: 'retrace', from: x0, to: x1 })));
+      const sel = selections[selections.length - 1]; if (sel) sel.until = t + 0.25;
+      selection = null;
+    }
+    lastKey = t;
+    return;
+  }
+  if (a.key === 'Meta+Enter') {
+    // InkSession.postScript: what's typed written, then the pen moves below for a P.S.
+    flush(t);
+    applyEvents(t, engine.postScript(sheet));
+    cursor = null;
+    lastKey = t;
     return;
   }
   if (a.key === 'Meta+z') {
@@ -144,6 +213,12 @@ const DT = 0.01;
 let ai = 0;
 for (let t = 0, f = 0; t <= END + 1e-9; t += DT) {
   while (ai < acts.length && acts[ai].t <= t + 1e-9) act(acts[ai++]);
+  while (pendingAgain.length && pendingAgain[0].t <= t + 1e-9) {
+    const g = pendingAgain.shift()!;
+    const r = engine.again(sheet, view, g.at);
+    if (r && r.events.length) { view = r.view; applyEvents(t, r.events); }
+    lastKey = t;
+  }
   const r = engine.penStep(sheet, view, { dt: DT * 1000, idle: (t - lastKey) * 1000, forgiving: true, speed: PEN_SPEED });
   view = r.view;
   applyEvents(t, r.events);
@@ -154,7 +229,7 @@ for (let t = 0, f = 0; t <= END + 1e-9; t += DT) {
 }
 const out = {
   fps: FPS, seconds: END, hand: HAND, paper: PAPER, measure: MEASURE, salt,
-  events, evTime, states, frames, keys, clicks, toasts, lifts, notes,
+  events, evTime, states, frames, keys, clicks, selections, toasts, lifts, notes,
   text: engine.viewText(sheet, view), logical: engine.logicalText(sheet.doc),
 };
 fs.writeFileSync('src/data/ink-session.json', JSON.stringify(out));
@@ -163,3 +238,4 @@ console.log('log:', sheet.doc.log.map((e: any) => e.t + (e.text ? ':' + JSON.str
 console.log('text:', JSON.stringify(out.text));
 console.log('toasts', JSON.stringify(toasts), 'lifts', JSON.stringify(lifts));
 console.log('marks', sheet.page.items.filter((i: any) => i.kind === 'mark').map((i: any) => i.mark).join(', '));
+console.log('item ids sample', sheet.page.items.slice(0, 3).map((i: any) => i.id).join(','), 'selections', JSON.stringify(selections));
