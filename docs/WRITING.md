@@ -107,20 +107,23 @@ The thinking behind it, with prior art and the studies it draws on:
 
 ## Take a stab at it
 
-Some things we know aren't right yet, and ideas we haven't built:
+Some things we know aren't right yet, and ideas we haven't built. Each has an issue to pick up
+([all of them](https://github.com/rafaelcespedes/if-this-finds-you/issues?q=is%3Aopen+label%3Awriting)):
 
 - **One clock, not two.** The engine releases letters at its pace and the drawn pen draws at its own, so they drift.
   Ink can trickle in after you stop, and a word can become ink a moment before it looks like ink. The pen on screen
   should be the clock.
 - **Phones.** iPhone keyboards don't report a held key, so holding Backspace has to be read from how fast deletions
-  arrive. Autocorrect replaces whole words after the pen has written them.
-- **Pauses leave a mark.** Stop mid-sentence and the nib rests on the paper; a dot of ink spreads while you think.
-- **The hand keeps your tempo.** Type fast and the writing gets hasty; slow down and it gets careful.
+  arrive ([#6](https://github.com/rafaelcespedes/if-this-finds-you/issues/6)). Autocorrect replaces whole words after the pen has written them.
+- **Pauses leave a mark.** Stop mid-sentence and the nib rests on the paper; a dot of ink spreads while you think
+  ([#3](https://github.com/rafaelcespedes/if-this-finds-you/issues/3), a good first issue).
+- **The hand keeps your tempo.** Type fast and the writing gets hasty; slow down and it gets careful ([#4](https://github.com/rafaelcespedes/if-this-finds-you/issues/4)).
 - **Undo the way paper does it.** Undo on dry ink could write *stet* ("let it stand") beside a crossed-out word and
-  bring it back, the way editors have for centuries.
-- **Running out of room.** The last lines squeeze, then "over" and a new sheet; on a postcard, up the margin.
-- **Moving text** with a loop and an arrow instead of cut and paste.
-- **Pencil.** Erasing that leaves ghosts.
+  bring it back, the way editors have for centuries ([#5](https://github.com/rafaelcespedes/if-this-finds-you/issues/5)).
+- **Running out of room.** The last lines squeeze, then "over" and a new sheet; on a postcard, up the margin
+  ([#7](https://github.com/rafaelcespedes/if-this-finds-you/issues/7)).
+- **Moving text** with a loop and an arrow instead of cut and paste ([#8](https://github.com/rafaelcespedes/if-this-finds-you/issues/8)).
+- **Pencil.** Erasing that leaves ghosts ([#9](https://github.com/rafaelcespedes/if-this-finds-you/issues/9)).
 
 If you make something with it, I'd love to see it: open an issue or a pull request, or find me on X,
 [@rafcespedes](https://x.com/rafcespedes). For anything big, open an issue first so we can talk before you spend the
