@@ -23,11 +23,16 @@
 .write-page { --write-gutter: 16px; }
 @media (min-width: 768px) { .write-page { --write-gutter: 28px; } }
 .write-home {
-  color: var(--foreground);
-  font-weight: 600;
-  letter-spacing: -0.005em;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  min-width: 0;
+  color: color-mix(in srgb, var(--foreground) 85%, transparent);
   text-decoration: none;
+  transition: color var(--st-dur, 150ms) var(--ease-out, ease-out), opacity var(--st-dur, 150ms) var(--ease-out, ease-out);
 }
+@media (hover: hover) and (pointer: fine) { .write-home:hover { color: var(--foreground); } }
+.write-home:active { opacity: 0.75; }
 .write-tools { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
 .write-writer { margin-right: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 520px) { .write-writer { display: none; } }

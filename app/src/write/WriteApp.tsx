@@ -20,7 +20,8 @@ import { effective, effectiveHand } from '@/lib/params';
 import { handFor } from '@/lib/request';
 import { handOpts } from '@/lib/engine-features';
 import { writerName } from '@/lib/hands';
-import { APP_NAME } from '@/lib/brand';
+import { APP_NAME, withLogo } from '@/lib/brand';
+import { Wordmark } from '@/components/Wordmark';
 import type { NoteState } from '@/lib/state';
 import LOOKS from '@/lib/first-looks.json';
 
@@ -264,9 +265,20 @@ export function WriteApp() {
   const mod = isMac() ? '⌘' : 'Ctrl+';
 
   return (
-    <div className="write-page">
+    <div
+      className="write-page"
+      // a phone won't open its keyboard for a page on its own, only for a tap: any tap on the desk opens it, at the
+      // end of what's written (a tap on the sheet itself places the caret where it lands, as everywhere)
+      onClick={(e) => {
+        if (!coarse) return;
+        const t = e.target as HTMLElement;
+        if (t.closest('[data-paper], button, a, input, textarea, select, [role="dialog"], [data-sonner-toaster]')) return;
+        const at = text.length;
+        editor.current?.setSelection(at);
+      }}
+    >
       <header className="write-top">
-        <a href="/" className="write-home">{APP_NAME}</a>
+        <a href={withLogo('/')} aria-label={`${APP_NAME}: home`} className="write-home"><Wordmark /></a>
         <div className="write-tools">
           <span className="write-writer" title="The writer of this page">{name}</span>
           <button type="button" className="write-tool" onClick={changeWriter}>Change writer</button>
@@ -306,6 +318,7 @@ export function WriteApp() {
           </PaperEditor>
         )}
       </main>
+      {coarse && !used && <p className="write-keys write-tap" aria-hidden>Tap anywhere to write</p>}
       {!coarse && (
         <p className="write-keys" data-used={used || undefined} aria-hidden>
           <span><kbd>⌫</kbd> crosses out</span>
