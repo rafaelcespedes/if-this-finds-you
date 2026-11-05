@@ -3,7 +3,7 @@
 // with its key first, then the letter's record (LedgerRecord), and the writing materials as a drawer pinned to the
 // column's foot. Opened, the drawer rises over the record, so the column never needs a scroll bar of its own. The
 // controls inside are the tool's own (Panel.tsx), so everything they do is unchanged.
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronUp } from 'lucide-react';
 import { AboutHand, LetterStatus, LookControls, MoreControls, ShareMenu, type PanelProps } from '@/components/Panel';
 import { Signature } from '@/components/Signature';
@@ -17,6 +17,9 @@ import { callNo } from './catalogue';
 import { onWriteStart } from '@/lib/write-start';
 import { materials, useMaterialsCrack } from './materials';
 import { useRecord } from './useCatalogue';
+
+/** a CSS time token in ms, whether it is written in ms or s (the build minifies 130ms to .13s) */
+const msOf = (v: string): number => { const t = v.trim(); const n = parseFloat(t); return Number.isFinite(n) ? (t.endsWith('ms') ? n : n * 1000) : 0; };
 
 const DRAWER_KEY = 'seedhand:rr-slip';
 function readDrawer() {
@@ -119,11 +122,67 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
   const id = useId();
   const self = useRef<HTMLElement>(null);
   const shown = mode !== 'closed';
+  // put away with the pointer, it leaves the way it rose (rr-drawer-in, reversed and quicker): `closing` while it goes
+  const [closing, setClosing] = useState(false);
+  const exit = useRef<Animation | null>(null);
+  /** At once: Escape, the keyboard on its handle, focus moving under it, opening. An exit under way stops (below). */
   const put = (m: 'closed' | 'open') => {
+    setClosing(false);
     setMode(m);
     writeDrawer(m === 'open');
     if (m === 'closed') materials.close();
   };
+  /** The drawer moving, from wherever it is now (a close mid-rise, or a change of mind mid-close, never jumps) to `to`
+   * in 130 ms on the strong ease-out (--dur-out, --ease-out); with reduced motion, opacity only, in 120 ms. */
+  const move = (to: 'gone' | 'back') => {
+    const el = self.current!;
+    const cs = getComputedStyle(el);
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const end: Keyframe = to === 'gone' ? (reduce ? { opacity: 0 } : { opacity: 0, transform: 'translateY(12px)' }) : (reduce ? { opacity: 1 } : { opacity: 1, transform: 'none' });
+    // already moving: start from its present look, and let the old movement go
+    const was = exit.current;
+    const from: Keyframe | null = was ? (reduce ? { opacity: cs.opacity } : { opacity: cs.opacity, transform: cs.transform }) : null;
+    was?.cancel();
+    const a = el.animate(from ? [from, end] : [end], {
+      // the token minifies to seconds (--dur-out:.13s) in the built site, so read its unit
+      duration: reduce ? 120 : msOf(cs.getPropertyValue('--dur-out')) || 130,
+      easing: cs.getPropertyValue('--ease-out').trim() || 'ease-out',
+      fill: 'forwards',
+    });
+    exit.current = a;
+    return a;
+  };
+  /** The pointer's close: down 12 px and out, the record there from the start. */
+  const putAway = () => {
+    if (!self.current || typeof self.current.animate !== 'function') return put('closed');
+    const a = move('gone');
+    setClosing(true);
+    a.onfinish = () => {
+      if (exit.current !== a) return;
+      setClosing(false);
+      setMode('closed');
+      writeDrawer(false);
+      materials.close();
+    };
+  };
+  /** Opened again while it leaves: it comes back up from where it is, and stays as it was. */
+  const comeBack = () => {
+    const a = move('back');
+    setClosing(false);
+    a.onfinish = () => {
+      if (exit.current !== a) return;
+      exit.current = null;
+      a.cancel();
+    };
+  };
+  // the exit holds the drawer invisible until it's closed on screen, then lets go before that frame paints (closed by
+  // the finished exit, or at once mid-exit), so the handle never flashes
+  useLayoutEffect(() => {
+    if (mode !== 'closed' || !exit.current) return;
+    exit.current.cancel();
+    exit.current = null;
+  }, [mode]);
+  useEffect(() => () => exit.current?.cancel(), []);
   useEffect(() => {
     if (!props.crack) return;
     setMode((m) => (m === 'closed' ? 'peek' : m));
@@ -158,14 +217,26 @@ function WritingDrawer(props: PanelProps & { crack: number }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [shown, id]);
   return (
-    <section ref={self} className={cn('rr-drawer', mode === 'open' && 'is-open', mode === 'peek' && 'is-peek')} aria-labelledby={`${id}-h`}>
+    <section ref={self} className={cn('rr-drawer', mode === 'open' && 'is-open', mode === 'peek' && 'is-peek', closing && 'is-closing')} aria-labelledby={`${id}-h`}>
       <h2 id={`${id}-h`} className="m-0">
-        <button type="button" aria-expanded={shown} aria-controls={`${id}-b`} onClick={() => put(shown ? 'closed' : 'open')} className="rr-drawer-head ruled-row">
+        <button
+          type="button"
+          aria-expanded={shown && !closing}
+          aria-controls={`${id}-b`}
+          onClick={(e) => {
+            if (closing && exit.current) return comeBack();
+            if (!shown) return put('open');
+            // a click puts it away the way it rose; Enter or Space on the handle (no pointer: detail 0), at once
+            if (e.detail === 0) put('closed');
+            else putAway();
+          }}
+          className="rr-drawer-head ruled-row"
+        >
           <span className="rr-sc">Writing materials</span>
           <ChevronUp aria-hidden className="rr-drawer-chev" />
         </button>
       </h2>
-      <div id={`${id}-b`} className="rr-drawer-body panel-scroll" inert={!shown} onPointerDown={keepWriting} onMouseDown={keepWriting}>
+      <div id={`${id}-b`} className="rr-drawer-body panel-scroll" inert={!shown || closing} onPointerDown={keepWriting} onMouseDown={keepWriting}>
         <div className="rr-slip-inner">
           <LookControls {...props} />
           <MoreControls {...props} />

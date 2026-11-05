@@ -178,7 +178,7 @@ function Slider({
           aria-valuetext={ariaValueText}
           aria-description={ariaDescription}
           className={cn(
-            "relative block size-4 rounded-full border border-[color-mix(in_oklab,var(--ink)_30%,transparent)] bg-[#fffefb] shadow-[0_1px_2px_rgba(30,24,12,0.18),0_2px_6px_-2px_rgba(30,24,12,0.18)] transition-[transform,box-shadow] duration-150 ease-out after:absolute after:-inset-3 after:content-[''] hover-device:hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:size-5",
+            "relative block size-4 rounded-full border border-[color-mix(in_oklab,var(--ink)_30%,transparent)] bg-[#fffefb] shadow-[0_1px_2px_rgba(30,24,12,0.18),0_2px_6px_-2px_rgba(30,24,12,0.18)] transition-[scale,box-shadow] duration-(--st-dur) ease-(--ease-out) active:duration-(--dur-press) after:absolute after:-inset-3 after:content-[''] hover-device:hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-coarse:size-5",
             active && 'scale-110 shadow-[0_1px_2px_rgba(30,24,12,0.2),0_4px_10px_-2px_rgba(30,24,12,0.25)]',
           )}
         />

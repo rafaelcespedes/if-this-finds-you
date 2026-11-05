@@ -2,7 +2,7 @@
 // the engine's timeline + playSVG, about 3x a real hand, a tap finishes it), what is known about it, and what you
 // can do with it: write a reply, turn to the next one, share it, keep it as an image.
 // Loaded on demand (its own chunk, with the engine); the index never waits for it.
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PaperCanvas, PaperGuide, PaperLetter } from '@/components/PaperCanvas';
@@ -37,6 +37,46 @@ const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
 
 /** The look's slider values as the tool's seed-relative offsets (lib/controls.ts), so the tool draws the same hand. */
+// ---------- the sideways swipe on a phone (LetterPage's touch handlers) ----------
+const SWIPE = {
+  /** px before the swipe picks its way, and how much more sideways than up or down it must go to be the letter's */
+  engage: 8, axis: 1.6,
+  /** it turns past this (px), or at a flick faster than this (px/ms) */
+  turn: 56, flick: 0.11,
+  /** a flick must also travel this far (px), so a drifting tap never turns the letter */
+  flickMin: 24,
+  /** touches starting this near the screen's edges are the browser's back and forward */
+  edge: 20,
+};
+/** How far the sheet goes for the finger's dx: 0.35 of it up to the turning point, 0.15 beyond (it holds back). */
+function pull(dx: number) {
+  const a = Math.abs(dx);
+  return Math.sign(dx) * (a <= SWIPE.turn ? a * 0.35 : SWIPE.turn * 0.35 + (a - SWIPE.turn) * 0.15);
+}
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** A motion token from index.css (the curves live there, once). */
+function motionToken(name: string, fallback: string) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+/** Stop whatever the sheet is doing where it is on screen (its presented value) and say where that is (px). */
+function catchMotion(el: HTMLElement) {
+  for (const a of el.getAnimations()) {
+    try { a.commitStyles(); } catch { /* not rendered: nothing to keep */ }
+    a.cancel();
+  }
+  return parseFloat(getComputedStyle(el).translate) || 0;
+}
+/** Back to rest from wherever the sheet is (a swipe that fell short, a second finger): the drawer's curve, 300 ms. */
+function settle(el: HTMLElement) {
+  const from = el.style.translate || '0px 0px';
+  const opacity = el.style.opacity || '1';
+  el.style.translate = '';
+  el.style.opacity = '';
+  if (parseFloat(from) === 0 && opacity === '1') { el.style.willChange = ''; return; }
+  const run = el.animate([{ translate: from, opacity }, { translate: '0px 0px', opacity: 1 }], { duration: 300, easing: motionToken('--ease-drawer', 'cubic-bezier(0.32, 0.72, 0, 1)') });
+  run.onfinish = () => { el.style.willChange = ''; };
+}
+
 function lookOffsets(look: Look) {
   const natural = makeHand(look.seed, look.style);
   const out: Record<string, number> = {};
@@ -172,24 +212,92 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
     return () => window.removeEventListener('keydown', on);
   }, [back, turn]);
 
-  // phones: a sideways swipe on the letter turns to the next or previous one; a tap still finishes the writing
-  const swipe = useRef<{ x: number; y: number; turned: boolean } | null>(null);
+  // phones: a sideways swipe on the letter turns to the next or previous one; a tap still finishes the writing. The
+  // sheet goes with the finger, held back (a page to turn, not a card to throw: 0.35 of the finger's way, 0.15 past
+  // the turning point), so it's plain from the first move that the swipe was felt; a flick turns as well as a long
+  // drag; the next letter comes in from the side the finger is heading, and a swipe that falls short settles back.
+  // Touch only: the arrow keys and the dock's ‹ › turn at once. Transform and opacity only, set on the sheet itself;
+  // whatever is moving is caught where it is on screen, so a second swipe can take it mid-flight.
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const swipe = useRef<{ x: number; y: number; t: number; base: number; on: boolean | null; trail: { x: number; t: number }[] } | null>(null);
+  // a drag isn't a tap: the click a browser may still send after it doesn't skip the writing
+  const dragged = useRef(false);
+  // the way the next letter comes in, set by a swipe that turned (+1: from the right, the finger going left)
+  const arrive = useRef<0 | 1 | -1>(0);
   const onTouchStart = (e: TouchEvent) => {
-    if (e.touches.length !== 1) { swipe.current = null; return; }
-    swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, turned: false };
+    dragged.current = false;
+    const el = sheetRef.current;
+    // a second finger: a pinch, not a turn
+    if (e.touches.length !== 1) { if (swipe.current?.on && el) settle(el); swipe.current = null; return; }
+    const f = e.touches[0];
+    // zoomed in, a sideways drag is someone looking closer; from the screen's very edges it's the browser's own back
+    // and forward
+    if ((window.visualViewport?.scale ?? 1) > 1.01 || f.clientX < SWIPE.edge || f.clientX > window.innerWidth - SWIPE.edge) { swipe.current = null; return; }
+    swipe.current = { x: f.clientX, y: f.clientY, t: e.timeStamp, base: 0, on: null, trail: [] };
+  };
+  const onTouchMove = (e: TouchEvent) => {
+    const s = swipe.current, el = sheetRef.current;
+    if (!s || !el) return;
+    if (e.touches.length !== 1) { if (s.on) settle(el); swipe.current = null; return; }
+    const f = e.touches[0];
+    const dx = f.clientX - s.x, dy = f.clientY - s.y;
+    if (s.on === null) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE.engage) return;
+      // sideways: the letter's to turn; otherwise the page is scrolling, and the rest of this touch is left to it
+      s.on = Math.abs(dx) > Math.abs(dy) * SWIPE.axis;
+      if (!s.on) return;
+      dragged.current = true;
+      if (!reducedMotion()) {
+        s.base = catchMotion(el);
+        el.style.willChange = 'translate';
+      }
+    }
+    if (!s.on) return;
+    s.trail.push({ x: f.clientX, t: e.timeStamp });
+    while (s.trail.length > 2 && e.timeStamp - s.trail[0].t > 100) s.trail.shift();
+    if (!reducedMotion()) el.style.translate = `${s.base + pull(dx)}px 0px`;
   };
   const onTouchEnd = (e: TouchEvent) => {
-    const s0 = swipe.current;
-    if (!s0) return;
-    // zoomed in (a pinch), a sideways drag is someone looking closer, not turning the page
-    if ((window.visualViewport?.scale ?? 1) > 1.01) { swipe.current = null; return; }
-    const dx = e.changedTouches[0].clientX - s0.x, dy = e.changedTouches[0].clientY - s0.y;
-    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.6) { s0.turned = true; turn(dx < 0 ? 1 : -1); }
+    const s = swipe.current, el = sheetRef.current;
+    swipe.current = null;
+    if (!s?.on || !el) return;
+    const dx = e.changedTouches[0].clientX - s.x;
+    const ms = Math.max(1, e.timeStamp - s.t);
+    // the last tenth of a second: a finger heading back the other way is taking the turn back
+    const a = s.trail[0], b = s.trail[s.trail.length - 1];
+    const recent = a && b && b.t > a.t ? (b.x - a.x) / (b.t - a.t) : dx / ms;
+    const takenBack = Math.sign(recent) === -Math.sign(dx) && Math.abs(recent) > SWIPE.flick;
+    const d: 1 | -1 = dx < 0 ? 1 : -1;
+    const turns = !takenBack && (Math.abs(dx) > SWIPE.turn || (Math.abs(dx) > SWIPE.flickMin && Math.abs(dx) / ms > SWIPE.flick))
+      && (window.visualViewport?.scale ?? 1) <= 1.01 && !!neighbour(d);
+    if (!turns) { settle(el); return; }
+    arrive.current = d;
+    turn(d);
+  };
+  const onTouchCancel = () => {
+    const el = sheetRef.current;
+    if (swipe.current?.on && el) settle(el);
+    swipe.current = null;
   };
   const onSheetClick = () => {
-    if (swipe.current?.turned) { swipe.current = null; return; }
+    if (dragged.current) { dragged.current = false; return; }
     setFinish((n) => n + 1);
   };
+  // the next letter, after a swipe: in from the side the finger was heading (reduced motion: it fades in where it is),
+  // and then it's written out as ever
+  useLayoutEffect(() => {
+    const d = arrive.current, el = sheetRef.current;
+    arrive.current = 0;
+    if (!d || !el) return;
+    for (const a of el.getAnimations()) a.cancel();
+    el.style.translate = '';
+    el.style.opacity = '';
+    const ease = motionToken('--ease-out', 'cubic-bezier(0.23, 1, 0.32, 1)');
+    const run = reducedMotion()
+      ? el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: ease })
+      : el.animate([{ translate: `${24 * d}px 0px`, opacity: 0 }, { translate: '0px 0px', opacity: 1 }], { duration: 240, easing: ease });
+    run.onfinish = () => { el.style.willChange = ''; };
+  }, [letter?.id]);
 
   // a new letter: screen readers start at its title
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -290,10 +398,13 @@ export default function LetterPage({ letters, error, onRetry, id, hand, keep, ba
   const sheetH = r.paper.h * pxPerMm;
   const sheet = (
     <div
+      ref={sheetRef}
       className="flex touch-pan-y touch-pinch-zoom flex-col items-center"
       onClick={onSheetClick}
       onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchCancel}
       role="img"
       aria-label={`The letter, written out by hand on ${paperWords(r.paper.name)}`}
     >

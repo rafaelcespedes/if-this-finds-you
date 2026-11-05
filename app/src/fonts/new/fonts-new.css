@@ -161,13 +161,26 @@ html[data-fonts='new'] .fx-theme {
 }
 
 /* ---------- a line of handwriting, set in the hand's own font ---------- */
+/* The box bleeds past the writing on the left (--fx-bleed) by as much as it pads back, so a first letter's lead-in
+   stroke, which a hand starts left of the letter's own edge, is never cut (the overflow clip and the masks stop at the
+   box); the words don't move. Wrapped lines get a little room on the right for a closing swash (--fx-bleed-r). The
+   vertical clip stays: it hides the lines beyond --lines. */
 html[data-fonts='new'] .fx-specimen {
+  --fx-bleed: 0.25em;
+  --fx-bleed-r: 0px; /* (a length: calc(0 * -1) is a number, and would void the margin) */
+  /* (a whole number of pixels where the browser can round: the box then starts on the same fraction of a pixel as the
+     words did, so WebKit, which snaps text to half pixels, sets them exactly where it did) */
   position: relative;
   min-width: 0;
+  margin-inline: calc(var(--fx-bleed) * -1) calc(var(--fx-bleed-r) * -1);
+  padding-inline: var(--fx-bleed) var(--fx-bleed-r);
   overflow: hidden;
   /* the font's line box (Specimen.tsx LINE) */
   line-height: 1.42;
   color: var(--fx-ink);
+}
+@supports (width: round(1em, 1px)) {
+  html[data-fonts='new'] .fx-specimen { --fx-bleed: round(0.25em, 1px); }
 }
 /* one line runs off the right edge and fades; several wrap, and the last fades where the words run on */
 html[data-fonts='new'] .fx-specimen.is-single {
@@ -175,14 +188,17 @@ html[data-fonts='new'] .fx-specimen.is-single {
   mask-image: linear-gradient(to right, #000 calc(100% - 5rem), transparent);
 }
 html[data-fonts='new'] .fx-specimen.is-multi {
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem), transparent);
+  --fx-bleed-r: 0.08em;
+  /* (the last line's fade ends where it did, at the words' own right edge, not the bleed's) */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem - var(--fx-bleed-r)), transparent calc(100% - var(--fx-bleed-r)));
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 100% / var(--lines)), transparent 0), linear-gradient(to right, #000 calc(100% - 4rem - var(--fx-bleed-r)), transparent calc(100% - var(--fx-bleed-r)));
   -webkit-mask-composite: source-over;
   mask-composite: add;
 }
+/* the line bleeds into the box's room too, since the write-in mask stops at the line's own box */
 html[data-fonts='new'] .fx-line {
-  margin: 0;
-  padding-left: 0.04em;
+  margin: 0 calc(var(--fx-bleed-r) * -1) 0 calc(var(--fx-bleed) * -1);
+  padding: 0 var(--fx-bleed-r) 0 calc(0.04em + var(--fx-bleed));
   white-space: nowrap;
   font-kerning: normal;
   font-feature-settings: 'calt' 1, 'kern' 1;
@@ -207,7 +223,7 @@ html[data-fonts='new'] .fx-failed {
 /* waiting: the line's space already there, faintly ruled where the writing will sit (a breath, not a spinner) */
 html[data-fonts='new'] .fx-rules {
   position: absolute;
-  inset: 0 0 0 0.04em;
+  inset: 0 var(--fx-bleed-r) 0 calc(0.04em + var(--fx-bleed));
   background-image: linear-gradient(to bottom, transparent calc(1.06em - 1px), var(--fx-hair) calc(1.06em - 1px), var(--fx-hair) 1.06em, transparent 1.06em);
   background-size: 100% 1.42em;
   background-repeat: repeat-y;
@@ -340,7 +356,7 @@ html[data-fonts='new'] .fx-hero {
 }
 html[data-fonts='new'] .fx-hero > .fx-specimen {
   /* the writing's own left edge sits a hair left of the words under it, as a pen's first stroke does */
-  margin-left: -0.04em;
+  margin-left: calc(-0.04em - var(--fx-bleed));
 }
 html[data-fonts='new'] .fx-hero-caption {
   display: grid;
@@ -412,18 +428,69 @@ html[data-fonts='new'] .fx-toolbar-wrap {
   background: var(--fx-ground);
   border-bottom: 1px solid var(--fx-hair);
 }
+/* one family (Rafael: "the height of all the controls is the same… make sure that those all line up and look like
+   they're part of a family"): every control on the line is --fx-ctl-h tall (the desk's control and button height),
+   with the room's 4 px corners, the controls' hairline edge, 0.75rem inside its ends and the control type role (13 px).
+   Controls that belong together sit --fx-ctl-gap apart, the three groups (what to show; what they write; how to see
+   them and New set) --fx-group-gap apart, and the line runs from margin to margin. */
 html[data-fonts='new'] .fx-toolbar {
+  --fx-ctl-h: 2.25rem;
+  --fx-ctl-pad: 0.75rem;
+  --fx-ctl-gap: 0.5rem;
+  --fx-group-gap: 1.5rem;
+  /* the segmented tracks are the height; their faces sit 2 px inside (density.css reads these) */
+  --seg-h: calc(var(--fx-ctl-h) - 4px);
+  --m-seg-h: calc(var(--fx-ctl-h) - 4px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.625rem 1.5rem;
+  gap: var(--fx-ctl-gap) var(--fx-group-gap);
   padding-block: 0.75rem;
 }
 html[data-fonts='new'] .fx-tool-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--fx-ctl-gap);
   min-width: 0;
+}
+/* the buttons, the line's menu, Saved, the field: the one height, the one inner rhythm */
+html[data-fonts='new'] .fx-toolbar [data-slot='button'] {
+  height: var(--fx-ctl-h);
+}
+html[data-fonts='new'] .fx-toolbar [data-slot='button']:not([class~='size-9']) {
+  padding-inline: var(--fx-ctl-pad);
+}
+html[data-fonts='new'] .fx-toolbar .fx-tester input {
+  height: var(--fx-ctl-h);
+  padding-left: var(--fx-ctl-pad);
+  /* the field's edge is the controls' edge (the shared field's own is half as dark) */
+  border-color: var(--rc-ctl-edge);
+}
+/* the size: the desk's ink-bar slider at the one height, its name and value as far in as every label */
+html[data-fonts='new'][data-look] .fx-toolbar .fx-size [data-row] > [data-slot='slider'][data-orientation] {
+  height: var(--fx-ctl-h);
+}
+html[data-fonts='new'][data-look] .fx-toolbar .fx-size [data-row] > div:first-child {
+  padding-inline: var(--fx-ctl-pad);
+}
+/* New set: the desk's red action button, at the one height (its touch height comes from the margin below) */
+html[data-fonts='new'][data-look] .fx-toolbar .rr-bring.rr-bring-button.rr-bring.rr-bring {
+  min-height: var(--fx-ctl-h);
+  height: var(--fx-ctl-h);
+  padding-left: var(--fx-ctl-pad);
+}
+/* touch screens: the controls keep their drawn height, and an invisible margin makes each a 44 px target (as the
+   phone's control sheet does, density.css) */
+@media (pointer: coarse) {
+  html[data-fonts='new'] .fx-toolbar :is([data-slot='button'], .rr-bring, [data-slot='segmented-item'], .fx-tester > label, [data-slot='slider']) {
+    position: relative;
+  }
+  html[data-fonts='new'] .fx-toolbar :is([data-slot='button'], .rr-bring, [data-slot='segmented-item'], .fx-tester > label, [data-slot='slider'])::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: min(0px, calc((100% - 44px) / 2)) 0;
+  }
 }
 html[data-fonts='new'] .fx-tester {
   flex: 1 1 26rem;

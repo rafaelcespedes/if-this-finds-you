@@ -46,7 +46,9 @@ every header picks it up, and where the line no longer fits, the Menu takes over
 
 The header is the site's running head (the Reading Room layouts, house rule 2): the wordmark on the left, the page's
 **middle**, and the places on the right, on one line. In the Reading Room it sits over one hairline and is set in
-the label role's small capitals; the letter's number is archival red. Other looks keep the plain header.
+the label role's small capitals; the letter's number is archival red. Other looks keep the plain header. On a
+desktop (from 64rem) the places and My letters are a size up, 14 px (Rafael, launch: "feel really small on desktop";
+`--site-place-size` in index.css); the middle, the phone's header and the Menu keep their own sizes.
 
 - **The middle** says what this page holds, on desktops and tablets. Pages pass it as `centre`:
   - a letter's page: the counter "‹ No. 0004 · 4 of 127 ›" (the library builds it);

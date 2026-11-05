@@ -59,7 +59,7 @@ export function WritingMenu(p: Props) {
       trigger={
         <button
           type="button"
-          className="group inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 [font-family:var(--rr-control-face,inherit)] text-[0.7812rem] text-muted-foreground transition-[color,background-color,transform] duration-150 hover-device:hover:bg-[var(--st-hover)] hover-device:hover:text-foreground active:bg-[var(--st-press)] active:scale-[var(--st-scale)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:min-h-11 pointer-coarse:py-3"
+          className="group inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 [font-family:var(--rr-control-face,inherit)] text-[0.7812rem] text-muted-foreground transition-[color,background-color,scale] duration-(--st-dur) ease-(--ease-out) active:duration-(--dur-press) hover-device:hover:bg-[var(--st-hover)] hover-device:hover:text-foreground active:bg-[var(--st-press)] active:scale-[var(--st-scale)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring pointer-coarse:min-h-11 pointer-coarse:py-3"
         >
           {p.inkAvailable ? LABEL[p.mode] : 'Writing'}
           <ChevronDown aria-hidden className="size-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />

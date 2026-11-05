@@ -289,7 +289,7 @@ html[data-look='reading-room'] .rr-icon {
   flex: none;
   border-radius: 3px;
   color: var(--rr-muted);
-  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), scale var(--st-dur) var(--ease-out);
 }
 html[data-look='reading-room'] .rr-icon svg {
   width: 1.0625rem;
@@ -512,6 +512,7 @@ html[data-look='reading-room'] .rr-sig .writing svg {
 html[data-look='reading-room'] .rr-sig:active {
   background: var(--st-press);
   scale: var(--st-scale);
+  transition-duration: var(--dur-press);
 }
 
 /* ---------- the tool's desk, kept as a ledger (ReadingDesk.tsx, LedgerRecord.tsx) ----------
@@ -698,13 +699,18 @@ html[data-look='reading-room'] .rr-ledger-record .rr-card-title {
   margin: 0.5rem 0 0.875rem;
 }
 /* on the desk the title always takes two lines, so the record under it stays put as letters change or the page
-   reloads; a longer title stops at two with an ellipsis (the whole of it is in its tooltip and the Full record) */
+   reloads; a longer title stops at two with an ellipsis (the whole of it is in its tooltip and the Full record).
+   No glyph is ever cut by its box (Rafael, 4 Nov: "the bounding box seems to be smaller than the text itself"): at
+   this tight leading an accent over a capital (Å, É) reaches a quarter em above the lines, and g, j, p, y a little
+   below. LedgerRecord already cuts a longer title to two lines before it's drawn, so the box needn't clip; the
+   clip-path only stands in for that while a face swaps, with room all round for any glyph */
 html[data-look='reading-room'] .rr-desk .rr-card-title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  overflow: hidden;
+  overflow: visible;
+  clip-path: inset(-0.35em -0.25em);
   min-height: calc(2em * var(--rr-title-leading));
 }
 /* the unseen copy LedgerRecord measures a title on */
@@ -767,6 +773,17 @@ html[data-look='reading-room'] .rr-row-note {
 }
 html[data-look='reading-room'] .rr-full {
   border-top: 1px solid var(--rr-rule);
+}
+/* a note or the full record arriving fades in where it opens, at the Fonts record's pace (fonts.css, .font-record):
+   opacity only, the rows below make room at once. It plays each time it opens (a note mounts; the full record's
+   display leaves none) and closing is instant. Reduced motion: the same fade, shorter, as .hand-in does */
+html[data-look='reading-room'] :is(.rr-row-note, .rr-full > [id]) {
+  animation: rr-fade 220ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] :is(.rr-row-note, .rr-full > [id]) {
+    animation-duration: 160ms;
+  }
 }
 html[data-look='reading-room'] .rr-full-head {
   display: flex;
@@ -885,8 +902,9 @@ html[data-look='reading-room'] .rr-drawer-all svg {
   color: var(--rr-muted);
 }
 /* under the open drawer the record is covered, so it's hidden: nothing of it (Share, in the column's gutter) shows past
-   the drawer's edge, and focus and screen readers don't wander into it */
-html[data-look='reading-room'] .rr-desk:has(> .rr-drawer.is-open) > .rr-ledger {
+   the drawer's edge, and focus and screen readers don't wander into it. As the drawer leaves (is-closing,
+   ReadingDesk.tsx), the record is there from the start of the exit */
+html[data-look='reading-room'] .rr-desk:has(> .rr-drawer.is-open:not(.is-closing)) > .rr-ledger {
   visibility: hidden;
 }
 html[data-look='reading-room'] .rr-drawer.is-open .rr-drawer-body {
@@ -918,6 +936,11 @@ html[data-look='reading-room'] .rr-slip-inner section[data-row] {
 /* the drawer is on the room's grid: its groups take no inner margin of their own */
 html[data-look='reading-room'] .rr-slip-inner :is(section[data-row], .px-5) {
   padding-inline: 0;
+}
+/* …so nothing in a group's header may hang past its edge: Handwriting's Similar is drawn to reach into the panel's
+   padding (-mr-2), and here that made the drawer 8 px wider than itself, scrolling sideways (Rafael, 4 Nov) */
+html[data-look='reading-room'] .rr-slip-inner section[data-row] > div:first-child > [data-slot='button'] {
+  margin-inline-end: 0;
 }
 
 /* the tool's controls, in the room: hairline tiles, square corners, ink for what's chosen */
@@ -1140,6 +1163,10 @@ html[data-look='reading-room'] .rr-plate-title {
   font-style: italic;
   line-height: var(--rr-text-leading);
   color: var(--rr-ink);
+  /* one line, cut short with an ellipsis (truncate), so it clips: room for an italic capital's lean past its start,
+     and the words stay where they were */
+  padding-left: 0.1em;
+  margin-left: -0.1em;
 }
 /* the catalogue slip under the sheet (phones) */
 html[data-look='reading-room'] .rr-under-sheet {
@@ -1248,7 +1275,7 @@ html[data-look='reading-room'] .rr-dock-reply {
   padding: 6px 9px;
   border-radius: 3px;
   white-space: nowrap;
-  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out);
+  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
 }
 html[data-look='reading-room'] .rr-dock-word {
   color: var(--rr-ink);

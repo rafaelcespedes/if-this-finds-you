@@ -215,7 +215,7 @@ function SheetRow({ entry, close, checks }: { entry: Extract<SheetEntry, { onSel
       aria-busy={entry.status === 'busy' || undefined}
       onClick={() => { entry.onSelect(); close(); }}
       className={cn(
-        'sheet-row flex min-h-[52px] w-full items-center gap-3 rounded-[10px] px-3 py-2 text-left text-foreground transition-[transform,background-color] duration-100 ease-out select-none active:scale-[0.97] active:bg-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+        'sheet-row flex min-h-[52px] w-full items-center gap-3 rounded-[10px] px-3 py-2 text-left text-foreground transition-[scale,background-color] duration-(--st-dur) ease-(--ease-out) active:duration-(--dur-press) select-none active:scale-[0.97] active:bg-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
         entry.quiet ? 'text-[0.875rem]' : 'text-[1rem]',
       )}
     >

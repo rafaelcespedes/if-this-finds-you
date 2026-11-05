@@ -329,7 +329,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
               <button
                 type="button"
                 // a full 44 px to tap, reaching into the block's padding, so the row is only as tall as its line of text
-                className="-mr-1.5 -my-2.5 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-md px-1.5 text-[0.78rem] text-muted-foreground transition-[color,transform] duration-100 active:scale-[0.97] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                className="-mr-1.5 -my-2.5 inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-md px-1.5 text-[0.78rem] text-muted-foreground transition-[color,scale] duration-(--st-dur) ease-(--ease-out) active:duration-(--dur-press) active:scale-[0.97] hover-device:hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
               >
                 About this hand <ChevronRight aria-hidden className="size-3.5" />
               </button>
