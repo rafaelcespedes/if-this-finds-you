@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import * as E from '@engine';
 import { inkOpts } from '@/lib/ink';
 import { getPaper } from '@/lib/papers';
-import { HAND, PAPER, MEASURE, SALT, PEN_SPEED } from '../src/scene/ink-demo-setup';
+import { HAND, PAPER, MEASURE, SALT, PEN_SPEED } from '../src/setup';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as any;

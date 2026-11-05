@@ -91,7 +91,7 @@
   photo of the live page ("Every hand is a font you can download"), the title ("Free and open source ·
   ifthisfindsyou.app"). The canvas of hands is cut. FontList now takes a frame size and a page variant.
 
-## The ink demo (5 Nov, first cut for the coordinator)
+## The ink demo (5 Nov): moved to x-post-template/ (its one home, an open template; render it from there)
 - src/InkDemo.tsx, 1080 × 1080, 28.6 s (draft 2: a short letter, only the keys it uses, on a frosted glass plate), no sound. The sheet (the site's letter pad, Rafael's #13 Hana Hartmann in
   royal blue) above a minimal keyboard with ghost fingertips. The typing is recorded by scripts/ink-session.ts
   through the site's own Ink mode (engine plan/penStep/apply/dropLast, the calls lib/ink.ts InkSession makes; pen at

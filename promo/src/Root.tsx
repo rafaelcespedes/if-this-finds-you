@@ -6,8 +6,6 @@ import { Carousel } from './Carousel';
 import { FontList, fontListSchema } from './FontList';
 import { OpenOptions } from './OpenOptions';
 import { LinkedIn, LINKEDIN_FRAMES } from './LinkedIn';
-import { InkDemo, inkDemoSchema } from './InkDemo';
-import inkSession from './data/ink-session.json';
 import { SECONDS as FONTLIST_SECONDS } from './scene/fontlist-plan';
 import { CAROUSEL } from './scene/carousel';
 import { SPECIMENS } from './scene/specimen';
@@ -47,8 +45,6 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="OpenOptions" component={OpenOptions} width={1600} height={2160} fps={1} durationInFrames={1} />
     {/* the LinkedIn cut: 4:5, the square on top, one line at a time under it */}
     <Composition id="LinkedIn" component={LinkedIn} width={1080} height={1350} fps={30} durationInFrames={LINKEDIN_FRAMES} />
-    {/* the ink demo: typing that behaves like ink, a keyboard below (1:1) */}
-    <Composition id="InkDemo" component={InkDemo} schema={inkDemoSchema} defaultProps={{ captions: true }} width={1080} height={1080} fps={30} durationInFrames={(inkSession as any).frames.length} />
     <Composition id="Atlas" component={Atlas} width={ATLAS.tile * ATLAS.per} height={ATLAS.tile * ATLAS.per} fps={1} durationInFrames={ATLAS.pages} />
   </>
 );

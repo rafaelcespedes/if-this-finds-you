@@ -1,10 +1,10 @@
-// The ink demo (1:1, 1080): typing that behaves like ink. A sheet of the site's paper above, a minimal keyboard
-// below with ghost fingertips pressing its keys; what's typed goes through the site's own Ink mode (the session is
-// recorded by scripts/ink-session.ts with the engine's plan/penStep/apply/dropLast, the calls the site makes) and
-// the ink log is replayed here frame by frame (replay is deterministic), every letter drawn stroke by stroke as the
-// pen reaches it. The letters the pen hasn't reached yet show faint, as on the site. Shown, in order: a typo
-// deleted before the pen gets there, Backspace on ink striking the word, a letter written over another, a word added
-// above the line with a caret, undo lifting wet ink, and dry ink staying.
+// The ink demo: typing that behaves like ink, as a post video (1080 x 1080 by default; any shape works, see
+// Root.tsx). A sheet of the site's paper above a minimal keyboard with ghost fingertips pressing its keys; what's
+// typed goes through the site's own Ink mode. The session is recorded by scripts/ink-session.ts with the engine's
+// plan/penStep/apply/dropLast/again (the calls the site makes) and the ink log is replayed here frame by frame
+// (replay is deterministic), every letter drawn stroke by stroke as the pen reaches it; the letters the pen hasn't
+// reached yet show faint, as on the site. Under the writing, a bar names each moment (the `beat`s in the script) and
+// times the wet ink: undo lifts only ink written in the last 3 seconds.
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AbsoluteFill, continueRender, delayRender, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { z } from 'zod';
@@ -12,8 +12,8 @@ import { getPaper, paintPaper, type PaperSpec } from '@/lib/papers';
 import { inkOpts } from '@/lib/ink';
 import { inkColor } from '@/lib/inks';
 import session from './data/ink-session.json';
-import { HAND, MEASURE, PAPER, PEN_SPEED } from './scene/ink-demo-setup';
-import { engine, drawInk, UPM, clamp, easeInOutQuint, easeOutQuint } from './scene/ink';
+import { HAND, MEASURE, PAPER, PEN_SPEED } from './setup';
+import { engine, drawInk, UPM, clamp, easeInOutQuint, easeOutQuint } from './draw';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const inkDemoSchema = z.object({
@@ -23,9 +23,6 @@ export const inkDemoSchema = z.object({
 export type InkDemoProps = z.infer<typeof inkDemoSchema>;
 
 const S0 = 1080;
-const PAPER_H = 612; // the sheet's window, at 1080
-const STRIP = { y: 612, h: 84 }; // the line between sheet and keyboard
-const KB_TOP = 704;
 const C = { room: '#e6e4de', ink: '#1e2733', muted: '#575146', faint: '#8b857a', red: '#9b3b2a', key: 'rgba(255, 255, 255, 0.62)', keyEdge: 'rgba(30, 39, 51, 0.10)' };
 const SES = session as any;
 /** the hand's ink (royal blue): the wet-ink timer is drawn in it, so it reads as the ink's own */
@@ -77,9 +74,9 @@ function sheetAt(s: number) {
 
 // the camera: the final letter's writing fitted to the sheet's window, fixed for the whole video (nothing written
 // ever moves)
-function cameraFor(S: number) {
-  const k0 = S / S0;
-  const PAPER_H = barTop(S) / k0 - 20; // the writing's window: down to just above the bar
+function cameraFor(S: number, SH: number) {
+  const k0 = Math.min(S, SH) / S0;
+  const PAPER_H = barTop(S, SH) / k0 - 20; // the writing's window: down to just above the bar
   const last = sheetAt(SES.states.length - 1);
   const u = IO.u;
   let y0 = Infinity, y1 = -Infinity;
@@ -89,13 +86,14 @@ function cameraFor(S: number) {
   // the column across the frame (a little room either side), unless the letter would run past the window
   const k = Math.max(S / paper.w, Math.min((0.88 * S) / colMm, ((PAPER_H - 70) * k0) / hMm));
   const x = Math.min(0, Math.max(S - paper.w * k, 0.06 * S - paper.text.left * k));
-  const y = (PAPER_H * k0 - hMm * k) / 2 - (y0 / u) * k - 26 * k0; // a little above the window's middle
+  // a little above the window's middle, and never so low that the sheet's top edge shows
+  const y = Math.min(0, (PAPER_H * k0 - hMm * k) / 2 - (y0 / u) * k - 26 * k0);
   return { k, x, y, u };
 }
 
 /** the top of the hint bar (just above the keyboard's plate), px */
 const BAR_GAP = 22; // between the bar and the keyboard's plate, at 1080
-const barTop = (S: number) => keyboard(S).plate.y - (72 + BAR_GAP) * (S / S0);
+const barTop = (S: number, SH: number) => keyboard(S, SH).plate.y - (72 + BAR_GAP) * (Math.min(S, SH) / S0);
 
 // ---------- the pen's clock: every letter and mark drawn in writing order, stroke by stroke ----------
 interface Timed { it: any; start: number; dur: number }
@@ -128,10 +126,12 @@ interface Key { id: string; label: string; x: number; y: number; w: number; h: n
 const PLATE = { pad: 22, radius: 30 };
 /** the keyboard's (and the bar's) margin from the frame's sides, and from its bottom, at 1080 */
 const MARGIN_SIDE = 48;
-function keyboard(S: number): { keys: Key[]; plate: { x: number; y: number; w: number; h: number } } {
-  const k0 = S / S0;
-  // the keys sized so the plate spans the frame less MARGIN_SIDE each side (a 72 px key at a 66 px margin before)
-  const fit = (S - 2 * (MARGIN_SIDE + PLATE.pad) * k0) / ((1080 - 2 * (66 + PLATE.pad)) * k0);
+/** the keyboard for a frame S wide and SH tall: centred, as far from the bottom as from the sides */
+function keyboard(S: number, SH: number): { keys: Key[]; plate: { x: number; y: number; w: number; h: number } } {
+  // sized from the frame's shorter side (so a wide frame doesn't get giant keys), centred across its width
+  const D = Math.min(S, SH), k0 = D / S0;
+  // the keys sized so the plate spans the shorter side less MARGIN_SIDE each side (a 72 px key at 66 px before)
+  const fit = (D - 2 * (MARGIN_SIDE + PLATE.pad) * k0) / ((1080 - 2 * (66 + PLATE.pad)) * k0);
   const U = 72 * k0 * fit, G = 8 * k0 * fit, H = 64 * k0 * fit;
   // the letters as they sit on any keyboard (each row a little further in), with the few keys the letter uses
   const rows: { offset: number; keys: [string, string, number, ('left' | 'right')?][] }[] = [
@@ -143,10 +143,10 @@ function keyboard(S: number): { keys: Key[]; plate: { x: number; y: number; w: n
   const rowW = (r: (typeof rows)[number]) => r.keys.reduce((a, [, , w]) => a + w * U, 0) + G * (r.keys.length - 1);
   const W = Math.max(...rows.slice(0, 3).map((r) => rowW(r) + Math.abs(r.offset) * U));
   const x0 = (S - W) / 2;
-  // the plate as far from the bottom edge as from the sides
-  const pad0 = PLATE.pad * k0, side = x0 - pad0;
+  // the plate as far from the bottom edge as from the sides (of a square frame; centred in a wider one)
+  const pad0 = PLATE.pad * k0, side = MARGIN_SIDE * k0;
   const plateH = rows.length * H + (rows.length - 1) * G + 2 * pad0;
-  const top = S - side - plateH + pad0;
+  const top = SH - side - plateH + pad0;
   const keys: Key[] = [];
   rows.forEach((row, r) => {
     // the letter rows staggered as on a keyboard; the bottom row centred under the space between them
@@ -174,12 +174,13 @@ function keysOf(key: string): string[] {
 const PRESS = 0.11; // a key's press, s
 export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   const frame = useCurrentFrame();
-  const { width: S, fps } = useVideoConfig();
-  const k0 = S / S0;
+  const { width: S, height: SH, fps } = useVideoConfig();
+  const k0 = Math.min(S, SH) / S0;
+  const winH = barTop(S, SH) - 20 * k0; // the writing's window, px
   const t = frame / fps;
   const F = SES.frames[Math.min(SES.frames.length - 1, frame)];
-  const cam = useMemo(() => cameraFor(S), [S]);
-  const KB = useMemo(() => keyboard(S), [S]);
+  const cam = useMemo(() => cameraFor(S, SH), [S, SH]);
+  const KB = useMemo(() => keyboard(S, SH), [S, SH]);
   const KEYS = KB.keys;
   const ref = useRef<HTMLCanvasElement>(null);
   const [handle] = useState(() => delayRender('ink demo'));
@@ -192,9 +193,9 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   useLayoutEffect(() => {
     const h = delayRender(`ink ${frame}`);
     const ctx = ref.current!.getContext('2d', { alpha: false })!;
-    // the sheet fills the frame; the keyboard sits on it (Rafael: no band of its own, no divider)
+    // the sheet fills the frame; the keyboard sits on it (no band of its own, no divider)
     ctx.fillStyle = (paper as any).tint ?? '#f8f6f0';
-    ctx.fillRect(0, 0, S, S);
+    ctx.fillRect(0, 0, S, SH);
     ctx.save();
     ctx.drawImage(sheetCanvas, cam.x, cam.y);
     const sc = cam.k / cam.u, emPx = sc * UPM;
@@ -217,7 +218,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
     const fracOf = new Map<any, number>();
     items.forEach((it, i) => fracOf.set(it, frac.get(drawn[i].it)!));
     drawInk(ctx, p, items, {
-      emPx, width: S, height: PAPER_H * k0,
+      emPx, width: S, height: winH,
       reveal: (it: any, si: number) => {
         const f = fracOf.get(it) ?? 1;
         const n = it.g?.strokes?.length || 1;
@@ -230,13 +231,13 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
       const before = sheetAt(F.s - 1).page.items as any[];
       const keep = new Set((sh.page.items as any[]).map((it) => it.key));
       const gone = before.filter((it) => it.g && !keep.has(it.key)).map(shift);
-      if (gone.length) drawInk(ctx, p, gone, { emPx, width: S, height: PAPER_H * k0, alpha: 1 - (t - lift.t) / 0.35 });
+      if (gone.length) drawInk(ctx, p, gone, { emPx, width: S, height: winH, alpha: 1 - (t - lift.t) / 0.35 });
     }
     // the letters the pen hasn't reached: faint graphite, where they'll be written (the site's "thoughts")
     let draftItems: any[] = [];
     if (F.v.tail) {
       try { const d = engine.draftPage(sh, F.v); draftItems = ((d?.items ?? []) as any[]).filter((it) => it.kind === 'glyph'); } catch { /* none */ }
-      if (draftItems.length) drawInk(ctx, p, draftItems.map(shift), { emPx, width: S, height: PAPER_H * k0, ink: '#6f6f78', alpha: 0.26 });
+      if (draftItems.length) drawInk(ctx, p, draftItems.map(shift), { emPx, width: S, height: winH, ink: '#6f6f78', alpha: 0.26 });
     }
     // the typing cursor: after the last thought letter, or after the pen's last letter (hidden mid-text)
     if (F.cur == null) {
@@ -303,7 +304,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
       if (!boxes.length) return null;
       const a = boxes[0], b = boxes[boxes.length - 1];
       const start = { x: a.x + 4, y: a.y + a.h * 0.6 }, end = { x: b.x + b.w - 4, y: b.y + b.h * 0.6 };
-      const from = { x: S * 0.82, y: PAPER_H * k0 * 0.95 };
+      const from = { x: S * 0.82, y: winH * 0.95 };
       if (t < sel.t) {
         const u = easeOutQuint(clamp((t - (sel.t - 0.6)) / 0.55, 0, 1));
         return { x: from.x + (start.x - from.x) * u, y: from.y + (start.y - from.y) * u, press: 1, o: clamp((t - (sel.t - 0.6)) / 0.15, 0, 1) };
@@ -316,7 +317,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
       const target = clickTarget(c as any, cam);
       if (!target) return null;
       const u = easeOutQuint(clamp((t - (c.t - 0.75)) / 0.7, 0, 1));
-      const from = { x: S * 0.82, y: PAPER_H * k0 * 0.95 };
+      const from = { x: S * 0.82, y: winH * 0.95 };
       const o = t > c.t + 0.3 ? 1 - (t - c.t - 0.3) / 0.3 : clamp((t - (c.t - 0.75)) / 0.15, 0, 1);
       return { x: from.x + (target.x - from.x) * u, y: from.y + (target.y - from.y) * u, press: t >= c.t && t < c.t + 0.12 ? 0.86 : 1, o };
     }
@@ -336,19 +337,18 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
 
   return (
     <AbsoluteFill style={{ background: (paper as any).tint ?? '#f8f6f0' }}>
-      <canvas ref={ref} width={S} height={S} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+      <canvas ref={ref} width={S} height={SH} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
       {/* the hint and the wet-ink timer: two grey capsules with the keyboard plate's corners, joined by a gooey neck
           (the goo technique liquid-gooey is built on: an SVG blur and a sharp alpha threshold, so touching shapes merge
-          into one surface while the words stay crisp on top). The neck swells a moment each time ink goes down. */}
+          into one surface while the words stay crisp on top). */}
       {(() => {
         const H = 72 * k0, R = PLATE.radius * k0, top = KB.plate.y - (72 + BAR_GAP) * k0;
         const TW = 262 * k0, G = 18 * k0;
         const left = { x: KB.plate.x, w: KB.plate.w - TW - G };
         const right = { x: KB.plate.x + KB.plate.w - TW, w: TW };
         const M = 24 * k0; // the SVG's margin for the blur
-        const swell = wet ? Math.exp(-since * 5) : 0;
         const TEXT = 21; // the hint and the timer's seconds, the same size (at 1080)
-        const neckRy = (13 + 9 * swell) * k0;
+        const neckRy = 14 * k0;
         return (
           <>
             <svg width={KB.plate.w + 2 * M} height={H + 2 * M} style={{ position: 'absolute', left: KB.plate.x - M, top: top - M, overflow: 'visible' }}>
@@ -417,7 +417,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
         </svg>
       )}
       {toast && (
-        <div style={{ position: 'absolute', left: '50%', top: (PAPER_H - 128) * k0, transform: `translateX(-50%) translateY(${(1 - clamp((t - toast.t) / 0.25, 0, 1)) * 16 * k0}px)`, opacity: Math.min(clamp((t - toast.t) / 0.2, 0, 1), clamp((toast.t + 2.2 - t) / 0.3, 0, 1)), background: '#fbfaf7', borderRadius: 12 * k0, boxShadow: `0 ${8 * k0}px ${28 * k0}px rgba(30,39,51,0.14), 0 0 0 ${k0}px rgba(30,39,51,0.08)`, padding: `${16 * k0}px ${22 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif', minWidth: 420 * k0 }}>
+        <div style={{ position: 'absolute', left: '50%', top: winH - 108 * k0, transform: `translateX(-50%) translateY(${(1 - clamp((t - toast.t) / 0.25, 0, 1)) * 16 * k0}px)`, opacity: Math.min(clamp((t - toast.t) / 0.2, 0, 1), clamp((toast.t + 2.2 - t) / 0.3, 0, 1)), background: '#fbfaf7', borderRadius: 12 * k0, boxShadow: `0 ${8 * k0}px ${28 * k0}px rgba(30,39,51,0.14), 0 0 0 ${k0}px rgba(30,39,51,0.08)`, padding: `${16 * k0}px ${22 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif', minWidth: 420 * k0 }}>
           <div style={{ fontSize: 21 * k0, fontWeight: 600, color: C.ink }}>{toast.title}</div>
           <div style={{ fontSize: 18 * k0, color: C.muted, marginTop: 3 * k0 }}>{toast.body}</div>
         </div>
