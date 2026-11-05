@@ -1,5 +1,14 @@
 blank_issues_enabled: true
 contact_links:
-  - name: If This Finds You
-    url: https://ifthisfindsyou.app
-    about: The site itself. The collection doesn't take new letters for now.
+  - name: Show what you made
+    url: https://github.com/rafaelcespedes/if-this-finds-you/discussions/categories/show-and-tell
+    about: Built something with the writing, a hand or the fonts? Post it here, with a video if you can.
+  - name: Ask a question
+    url: https://github.com/rafaelcespedes/if-this-finds-you/discussions/categories/q-a
+    about: How something works, how to run it, where to start.
+  - name: How the writing works
+    url: https://github.com/rafaelcespedes/if-this-finds-you/blob/preview/docs/WRITING.md
+    about: The interaction model, where each piece lives, and what's still open.
+  - name: Report a security problem privately
+    url: https://github.com/rafaelcespedes/if-this-finds-you/security/advisories/new
+    about: Please don't open a public issue for it.

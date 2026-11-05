@@ -1,0 +1,32 @@
+name: An idea or an experiment
+description: Something the writing, a hand, the fonts or the site could do. Rough ideas welcome.
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What it would do, and what it would feel like. If it comes from how people really write by hand, say so.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How it might work
+      description: Optional. Where in the code it might go (docs/WRITING.md has a map), or a sketch, video or prototype.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - The writing (typing that behaves like ink)
+        - A hand (the handwriting engine)
+        - The fonts
+        - The letters and the library
+        - Something else
+  - type: checkboxes
+    id: build
+    attributes:
+      label: Would you like to build it?
+      options:
+        - label: I'd like to try building this myself
