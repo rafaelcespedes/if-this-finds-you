@@ -15,7 +15,9 @@
     "still": "remotion still src/index.ts Promo out/still.png",
     "hands": "node scripts/sample-hands.mjs 600",
     "specimens": "node scripts/node-ts.mjs scripts/specimens.ts 120 && remotion render src/index.ts Specimen out/specimens --sequence --image-format=jpeg --jpeg-quality=82 --image-sequence-pattern='hand-[frame].[ext]'",
-    "carousel": "remotion render src/index.ts Carousel out/carousel --sequence --image-format=png --image-sequence-pattern='letter-[frame].[ext]'"
+    "carousel": "remotion render src/index.ts Carousel out/carousel --sequence --image-format=png --image-sequence-pattern='letter-[frame].[ext]'",
+    "fonts": "node scripts/node-ts.mjs scripts/list-fonts.ts 120 && node scripts/node-ts.mjs scripts/sound-fonts.ts && remotion render src/index.ts FontList out/fonts-x-1080.mp4",
+    "fonts:draft": "node scripts/node-ts.mjs scripts/sound-fonts.ts && remotion render src/index.ts FontList out/fonts-draft.mp4 --scale=0.5 --crf=22"
   },
   "dependencies": {
     "@remotion/cli": "4.0.540",

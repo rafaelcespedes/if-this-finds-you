@@ -1,0 +1,118 @@
+{
+ "width": 1024,
+ "height": 720,
+ "dpr": 3,
+ "scrollY": 1600,
+ "header": {
+  "x": 0,
+  "y": 0,
+  "width": 1024,
+  "height": 65,
+  "top": 0,
+  "right": 1024,
+  "bottom": 65,
+  "left": 0
+ },
+ "bar": {
+  "x": 0,
+  "y": 65,
+  "width": 1024,
+  "height": 105,
+  "top": 65,
+  "right": 1024,
+  "bottom": 170,
+  "left": 0
+ },
+ "input": {
+  "x": 150.453125,
+  "y": 121,
+  "width": 617.546875,
+  "height": 36,
+  "top": 121,
+  "right": 768,
+  "bottom": 157,
+  "left": 150.453125
+ },
+ "inputStyle": {
+  "fontFamily": "\"RR Schibsted\", system-ui, sans-serif",
+  "fontSize": "13px",
+  "fontWeight": "400",
+  "color": "rgb(30, 39, 51)",
+  "paddingLeft": "8px",
+  "background": "rgb(248, 245, 236)",
+  "value": "The quick brown fox jumps over the lazy dog"
+ },
+ "rows": [
+  {
+   "x": 40,
+   "y": -90.078125,
+   "width": 944,
+   "height": 128,
+   "top": -90.078125,
+   "right": 984,
+   "bottom": 37.921875,
+   "left": 40
+  },
+  {
+   "x": 40,
+   "y": 37.921875,
+   "width": 944,
+   "height": 128,
+   "top": 37.921875,
+   "right": 984,
+   "bottom": 165.921875,
+   "left": 40
+  },
+  {
+   "x": 40,
+   "y": 165.921875,
+   "width": 944,
+   "height": 128,
+   "top": 165.921875,
+   "right": 984,
+   "bottom": 293.921875,
+   "left": 40
+  },
+  {
+   "x": 40,
+   "y": 293.921875,
+   "width": 944,
+   "height": 128,
+   "top": 293.921875,
+   "right": 984,
+   "bottom": 421.921875,
+   "left": 40
+  },
+  {
+   "x": 40,
+   "y": 421.921875,
+   "width": 944,
+   "height": 128,
+   "top": 421.921875,
+   "right": 984,
+   "bottom": 549.921875,
+   "left": 40
+  },
+  {
+   "x": 40,
+   "y": 549.921875,
+   "width": 944,
+   "height": 128,
+   "top": 549.921875,
+   "right": 984,
+   "bottom": 677.921875,
+   "left": 40
+  },
+  {
+   "x": 40,
+   "y": 677.921875,
+   "width": 944,
+   "height": 128,
+   "top": 677.921875,
+   "right": 984,
+   "bottom": 805.921875,
+   "left": 40
+  }
+ ],
+ "url": "https://ifthisfindsyou.app/fonts?set=fontsvid&text=The%20quick%20brown%20fox%20jumps%20over%20the%20lazy%20dog"
+}

@@ -38,7 +38,9 @@ const handOf = (l: any) => {
 const dir = path.resolve('public/list-fonts');
 fs.rmSync(dir, { recursive: true, force: true });
 fs.mkdirSync(dir, { recursive: true });
-const chars = [...new Set([...LINE, ' '])];
+// every character the rows show: the line, and the words typed into the tester at the end
+const EXTRA = process.argv[5] || 'If this finds you';
+const chars = [...new Set([...LINE, ...EXTRA, ' '])];
 const out: any[] = [];
 const t0 = Date.now();
 looks.forEach((l, i) => {
