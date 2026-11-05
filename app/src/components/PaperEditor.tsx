@@ -466,9 +466,12 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
             height="100%"
             style={{ opacity: sel.focused ? 1 : 0.4 }}
           >
-            {runs.map((pts, i) => (
-              <polygon key={i} points={pts} fill={AMBER} fillOpacity={0.42} stroke={AMBER} strokeOpacity={0.42} strokeWidth={5} strokeLinejoin="round" />
-            ))}
+            {/* fill and the rounding stroke at full strength, faded together: no darker rim where they overlap */}
+            <g opacity={0.42}>
+              {runs.map((pts, i) => (
+                <polygon key={i} points={pts} fill={AMBER} stroke={AMBER} strokeWidth={5} strokeLinejoin="round" />
+              ))}
+            </g>
           </svg>
         )}
         {preedit && composition && (
