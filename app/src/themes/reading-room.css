@@ -699,13 +699,18 @@ html[data-look='reading-room'] .rr-ledger-record .rr-card-title {
   margin: 0.5rem 0 0.875rem;
 }
 /* on the desk the title always takes two lines, so the record under it stays put as letters change or the page
-   reloads; a longer title stops at two with an ellipsis (the whole of it is in its tooltip and the Full record) */
+   reloads; a longer title stops at two with an ellipsis (the whole of it is in its tooltip and the Full record).
+   No glyph is ever cut by its box (Rafael, 4 Nov: "the bounding box seems to be smaller than the text itself"): at
+   this tight leading an accent over a capital (Å, É) reaches a quarter em above the lines, and g, j, p, y a little
+   below. LedgerRecord already cuts a longer title to two lines before it's drawn, so the box needn't clip; the
+   clip-path only stands in for that while a face swaps, with room all round for any glyph */
 html[data-look='reading-room'] .rr-desk .rr-card-title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  overflow: hidden;
+  overflow: visible;
+  clip-path: inset(-0.35em -0.25em);
   min-height: calc(2em * var(--rr-title-leading));
 }
 /* the unseen copy LedgerRecord measures a title on */
