@@ -23,6 +23,18 @@ for (const [seed, style] of [['tawny-atlas-52', 'adult-fr-2023'], ['quiet-heron-
   t = E.viewText(st, view);
   const levels = [];
   for (let k = 0; k < 5; k++) { const r = E.again(st, view, a); if (!r) { levels.push('null'); break; } levels.push(r.level + ':' + r.events.map((e) => e.how).join(',')); view = r.view; E.apply(st, r.events); }
+  // a selection taken with the space before the word: the caret is left a space short of the struck word
+  {
+    const st2 = E.replay(p, E.newInkDoc({ seed, style, salt: 't2' }), OPTS);
+    let v2 = E.newView();
+    const ed2 = (at, del, ins, kind) => { const r = E.plan(st2, v2, { at, del, ins, kind }); v2 = r.view; E.apply(st2, r.events); };
+    ed2(0, 0, 'I miss you terribly and the garden.', 'type');
+    { const r = E.penStep(st2, v2, { final: true }); v2 = r.view; E.apply(st2, r.events); }
+    const b = E.viewText(st2, v2).indexOf(' terribly');
+    ed2(b, 9, '', 'delete');
+    const r2 = E.again(st2, v2, b);
+    if (!r2 || r2.level !== 2) { process.exitCode = 1; console.log('✗', seed, 'a struck word one space from the caret was not crossed out again'); }
+  }
   // at the end: type more, delete the last word at the pen head, then again
   ed(t.length, 0, ' now', 'type'); pen();
   let v2 = E.viewText(st, view);

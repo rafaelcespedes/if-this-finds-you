@@ -702,14 +702,23 @@ export function again(st, view, at) {
   const v = copyView(view || newView());
   if (v.pending || v.mid) return null;
   const R = st.reader, m = viewMap(R, v), recs = R.recs;
-  const prev = at > 0 ? m.units[at - 1] : null, next = m.units[at] || null;
-  if ((prev && prev.k !== 'ink') || (next && next.k === 'mid')) return null;
-  const i0 = prev ? recs.indexOf(R.byId.get(prev.id)) + 1 : 0;
-  const i1 = next && next.k === 'ink' ? recs.indexOf(R.byId.get(next.id)) : recs.length;
-  if (i0 < 0 || i1 < 0) return null;
-  const run = [];
-  for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) run.push(recs[i]);
-  if (!run.length) return null;
+  // the struck recs in the gap before view offset k (struck words aren't in the view, so they sit in a gap)
+  const runAt = (k) => {
+    if (k < 0 || k > m.units.length) return null;
+    const prev = k > 0 ? m.units[k - 1] : null, next = m.units[k] || null;
+    if ((prev && prev.k !== 'ink') || (next && next.k === 'mid')) return null;
+    const i0 = prev ? recs.indexOf(R.byId.get(prev.id)) + 1 : 0;
+    const i1 = next && next.k === 'ink' ? recs.indexOf(R.byId.get(next.id)) : recs.length;
+    if (i0 < 0 || i1 < 0) return null;
+    const out = [];
+    for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) out.push(recs[i]);
+    return out.length ? out : null;
+  };
+  // a struck word right at the caret, or one space away (a selection taken with the space before it is struck as the
+  // word and the space after: the caret is left a space short of it)
+  const spaceAt = (k) => { const u = m.units[k]; return !!u && u.k === 'ink' && /^[ \t]$/.test((R.byId.get(u.id) || {}).ch || ''); };
+  const run = runAt(at) || (spaceAt(at) && runAt(at + 1)) || (spaceAt(at - 1) && runAt(at - 1)) || null;
+  if (!run) return null;
   const level = Math.max(...run.map((r) => r.lv || 1));
   if (level >= AGAIN_MAX) return { events: [], view: v, level };
   const lv = level + 1, was = run[run.length - 1].struck;
