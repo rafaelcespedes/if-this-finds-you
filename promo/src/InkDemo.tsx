@@ -30,6 +30,8 @@ const C = { room: '#e6e4de', ink: '#1e2733', muted: '#575146', faint: '#8b857a',
 const SES = session as any;
 /** the hand's ink (royal blue): the wet-ink timer is drawn in it, so it reads as the ink's own */
 const INK_BLUE = inkColor(HAND.ink);
+/** the room's ink grey at an alpha (the bar is grayscale) */
+const GREY = (a: number) => `rgba(30, 39, 51, ${a})`;
 const blueA = (a: number) => {
   const m = INK_BLUE.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i);
   return m ? `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${a})` : `rgba(44, 79, 163, ${a})`;
@@ -315,27 +317,27 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   return (
     <AbsoluteFill style={{ background: (paper as any).tint ?? '#f8f6f0' }}>
       <canvas ref={ref} width={S} height={S} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      {/* the hint and the wet-ink timer, together on one bar in the ink's blue (the writing is the only thing on the
-          paper itself): what this moment shows on the left, how long the ink stays wet on the right; the bar's fill
-          drains with the timer */}
+      {/* the hint and the wet-ink timer, together on one grey bar with the keyboard plate's corners (the writing is the
+          only thing on the paper itself): what this moment shows on the left, how long the ink stays wet on the
+          right; the bar's fill drains with the timer */}
       <div style={{
-        position: 'absolute', left: KB.plate.x, width: KB.plate.w, top: (STRIP.y + 10) * k0, height: 64 * k0, borderRadius: 32 * k0,
-        background: blueA(0.10), overflow: 'hidden', fontFamily: '"RR Schibsted", system-ui, sans-serif',
+        position: 'absolute', left: KB.plate.x, width: KB.plate.w, top: (STRIP.y + 4) * k0, height: 72 * k0, borderRadius: PLATE.radius * k0,
+        background: GREY(0.06), overflow: 'hidden', fontFamily: '"RR Schibsted", system-ui, sans-serif',
       }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${showChip && wet ? 100 * (1 - since / wetFor) : 0}%`, background: blueA(0.08) }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${showChip && wet ? 100 * (1 - since / wetFor) : 0}%`, background: GREY(0.05) }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `0 ${26 * k0}px 0 ${30 * k0}px` }}>
           <div style={{ fontSize: 24 * k0, fontWeight: 400, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 11 * k0, opacity: showChip ? 1 : 0 }}>
             <div style={{ textAlign: 'right', lineHeight: 1.1 }}>
-              <div style={{ fontSize: 23 * k0, fontWeight: 400, color: wet ? INK_BLUE : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
-              <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? INK_BLUE : C.faint, opacity: 0.8 }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
+              <div style={{ fontSize: 23 * k0, fontWeight: 400, color: wet ? C.ink : C.faint, fontVariantNumeric: 'tabular-nums' }}>{wet ? `${Math.max(0, wetFor - since).toFixed(1)} s` : 'dry'}</div>
+              <div style={{ fontSize: 13.5 * k0, fontWeight: 400, color: wet ? C.muted : C.faint }}>{wet ? 'wet ink · undo works' : 'undo can’t lift it'}</div>
             </div>
             <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
-              <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? INK_BLUE : C.faint} strokeOpacity={0.22} strokeWidth={2.6} />
-              <circle cx={17} cy={17} r={13} fill="none" stroke={INK_BLUE} strokeWidth={2.6} strokeLinecap="round" opacity={wet ? 1 : 0}
+              <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? C.ink : C.faint} strokeOpacity={0.16} strokeWidth={2.6} />
+              <circle cx={17} cy={17} r={13} fill="none" stroke={C.ink} strokeWidth={2.6} strokeLinecap="round" opacity={wet ? 1 : 0}
                 strokeDasharray={`${2 * Math.PI * 13}`} strokeDashoffset={`${2 * Math.PI * 13 * (wet ? since / wetFor : 1)}`} transform="rotate(-90 17 17)" />
-              {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={INK_BLUE} strokeWidth={1.8} strokeLinecap="round" />}
-              <circle cx={17} cy={17} r={1.6} fill={wet ? INK_BLUE : C.faint} />
+              {wet && <line x1={17} y1={17} x2={17 + 7.5 * Math.sin(2 * Math.PI * (since / wetFor))} y2={17 - 7.5 * Math.cos(2 * Math.PI * (since / wetFor))} stroke={C.ink} strokeWidth={1.8} strokeLinecap="round" />}
+              <circle cx={17} cy={17} r={1.6} fill={wet ? C.ink : C.faint} />
             </svg>
           </div>
         </div>
