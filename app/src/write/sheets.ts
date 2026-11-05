@@ -19,8 +19,8 @@ export interface Sheet {
 export interface Kept { v: 2; cur: Sheet; pile: Sheet[] }
 
 const KEY = 'seedhand:write';
-/** how many earlier sheets the pile keeps (the oldest go past this; a few kB each) */
-export const PILE_MAX = 60;
+/** how many earlier sheets the pile keeps (a few kB each); a full pile asks for room, it never drops one quietly */
+export const PILE_MAX = 50;
 
 /** the hands the site opens on (the curated first looks), less pencil: pencil doesn't write in ink */
 const WRITABLE = (LOOKS as Look[]).filter((l) => l.pen !== 'pencil');
@@ -40,8 +40,9 @@ export function readKept(): Kept | null {
   } catch { /* unreadable: start over */ }
   return null;
 }
-export function keep(k: Kept) {
-  try { localStorage.setItem(KEY, JSON.stringify({ ...k, pile: k.pile.slice(0, PILE_MAX) })); } catch { /* private mode or full: the page still works */ }
+/** false when the browser wouldn't keep it (private mode, or its storage is full) */
+export function keep(k: Kept): boolean {
+  try { localStorage.setItem(KEY, JSON.stringify(k)); return true; } catch { return false; }
 }
 
 export function stateOf(l: Look, inkLog: string | null = null): NoteState {

@@ -26,7 +26,7 @@ import { Wordmark } from '@/components/Wordmark';
 import { FilePlus } from 'lucide-react';
 import { Shuffle } from 'lucide-react';
 import { SheetPile } from './SheetPile';
-import { blankSheet, isBlank, keep, newId, pickLook, readKept, stateOf, type Look, type Sheet } from './sheets';
+import { PILE_MAX, blankSheet, isBlank, keep, newId, pickLook, readKept, stateOf, type Look, type Sheet } from './sheets';
 
 /** the sheet's largest size (px per mm), as on the desk */
 const MAX_PX_PER_MM = 3.9;
@@ -93,10 +93,17 @@ export function WriteApp() {
     return { id: curRef.current.id, look: curRef.current.look, ink: doc.log.length ? encodeInk(doc) : null, at: Date.now() };
   };
   const saveTimer = useRef(0);
-  const saveNow = () => { window.clearTimeout(saveTimer.current); keep({ v: 2, cur: deskNow(), pile: pileRef.current }); };
+  const keptOk = useRef(true);
+  /** kept; if the browser won't (private mode, storage full), said once */
+  const keepDesk = () => {
+    const ok = keep({ v: 2, cur: deskNow(), pile: pileRef.current });
+    if (!ok && keptOk.current) toast('This browser isn’t keeping your sheets', { id: 'not-kept', description: 'They’ll be gone when you close the page.', duration: 8000 });
+    keptOk.current = ok;
+  };
+  const saveNow = () => { window.clearTimeout(saveTimer.current); keepDesk(); };
   const save = useCallback(() => {
     window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => keep({ v: 2, cur: deskNow(), pile: pileRef.current }), 400);
+    saveTimer.current = window.setTimeout(keepDesk, 400);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const sync = useCallback(() => { setTick((n) => n + 1); save(); }, [save]);
@@ -144,14 +151,29 @@ export function WriteApp() {
   // ---------- typing ----------
   const editor = useRef<PaperEditorApi>(null);
   // writing: the pile steps back for a moment after each key
+  // the pile steps back to its edges on the first key, and comes back when the pointer moves, the letter is left, or
+  // Esc (never on a timer: it mustn't bob up while you pause to think)
   const [writing, setWriting] = useState(false);
   const [editing, setEditing] = useState(false);
-  const typedTimer = useRef(0);
-  const typed = useCallback(() => {
-    setWriting(true);
-    window.clearTimeout(typedTimer.current);
-    typedTimer.current = window.setTimeout(() => setWriting(false), 1800);
-  }, []);
+  const typed = useCallback(() => setWriting(true), []);
+  useEffect(() => {
+    if (!writing) return;
+    let x = -1, y = -1;
+    const moved = (e: PointerEvent) => {
+      if (x < 0) { x = e.clientX; y = e.clientY; return; }
+      if (Math.hypot(e.clientX - x, e.clientY - y) > 6) setWriting(false);
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setWriting(false); };
+    window.addEventListener('pointermove', moved);
+    window.addEventListener('keydown', esc);
+    return () => { window.removeEventListener('pointermove', moved); window.removeEventListener('keydown', esc); };
+  }, [writing]);
+  useEffect(() => { if (!editing) setWriting(false); }, [editing]);
+  // the pile open (its sheets in a column); opening and closing move the sheets themselves
+  const [pileOpen, setPileOpenNow] = useState(false);
+  const setPileOpen = useCallback((o: boolean) => moveSheets(() => setPileOpenNow(o)), []);
+  // said aloud to screen readers: a sheet set aside, brought back, thrown away
+  const [said, say] = useState('');
   const onEdit = useCallback((e: Edit) => {
     const s = sessionRef.current;
     setUsed(true);
@@ -272,12 +294,22 @@ export function WriteApp() {
     const s = sessionRef.current;
     if (s.waiting) s.flush();
     if (!s.doc.log.length) return;
+    // a full pile never drops its oldest sheet quietly: it asks for room first
+    if (pile.length >= PILE_MAX) {
+      toast('The pile is full', {
+        id: 'pile-full',
+        description: `It keeps ${PILE_MAX} sheets. Throw an old one away to start a new one.`,
+        action: { label: 'Open the pile', onClick: () => setPileOpen(true) },
+      });
+      return;
+    }
     const down = deskNow();
     const next = { id: newId(), look };
     moveSheets(() => {
       setPile((p) => [down, ...p]);
       setCur(next);
     });
+    say('Sheet set aside. A fresh sheet is on the desk.');
     undoHistory.clear();
     // back to writing on a computer; on a phone the keyboard waits for the next tap
     if (!coarse) requestAnimationFrame(() => editor.current?.focus());
@@ -294,7 +326,9 @@ export function WriteApp() {
     moveSheets(() => {
       setPile(isBlank(down) ? rest : [down, ...rest]);
       setCur({ id: picked.id, look: picked.look });
+      setPileOpenNow(false);
     });
+    say('Sheet brought back to the desk.');
     // back to writing on a computer; on a phone the keyboard waits for the next tap
     if (!coarse) requestAnimationFrame(() => editor.current?.focus());
   };
@@ -304,6 +338,7 @@ export function WriteApp() {
     if (at < 0) return;
     const gone = pile[at];
     setPile((p) => p.filter((x) => x.id !== id));
+    say('Sheet thrown away.');
     toast('Sheet thrown away', {
       id: 'thrown',
       duration: 6000,
@@ -320,7 +355,7 @@ export function WriteApp() {
       onClick={(e) => {
         if (!coarse) return;
         const t = e.target as HTMLElement;
-        if (t.closest('[data-paper], button, a, input, textarea, select, nav, [role="dialog"], [data-sonner-toaster], .write-pile-scrim')) return;
+        if (t.closest('[data-paper], button, a, input, textarea, select, [role="dialog"], [data-sonner-toaster], .write-pile, .write-pile-scrim')) return;
         const at = text.length;
         editor.current?.setSelection(at);
       }}
@@ -380,12 +415,15 @@ export function WriteApp() {
       </main>
       <SheetPile
         sheets={pile}
-        width={Math.round(Math.min(240, Math.max(150, deskW * 0.46)))}
+        open={pileOpen}
+        setOpen={setPileOpen}
+        room={Math.max(160, Math.min(deskW, typeof window !== 'undefined' ? window.innerWidth - 32 : deskW))}
         tucked={writing}
         hidden={coarse && editing}
         onBring={bringBack}
         onThrow={throwAway}
       />
+      <div className="sr-only" aria-live="polite">{said}</div>
       {coarse && !used && <p className="write-keys write-tap" aria-hidden>Tap anywhere to write</p>}
       {!coarse && (
         <p className="write-keys" data-used={used || undefined} aria-hidden>

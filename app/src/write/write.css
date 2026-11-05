@@ -129,6 +129,7 @@
 }
 
 /* ---------- the pile of earlier sheets ---------- */
+/* at rest: the top sheet's blank head above the desk's edge, two more as edges behind it */
 .write-pile {
   position: fixed;
   left: 50%;
@@ -140,41 +141,115 @@
   transition: opacity 200ms var(--ease-out, ease-out);
 }
 .write-pile[data-hidden] { opacity: 0; pointer-events: none; }
-.write-pile-card {
-  --peek: 58px;
+.write-pile-rest {
   position: absolute;
   left: 0;
-  top: 0;
+  bottom: 0;
+  width: var(--card-w);
+  height: 64px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius, 0.25rem);
+}
+.write-pile-rest:focus-visible { outline: 2px solid var(--ring, #333); outline-offset: 4px; }
+/* the pointer's reach grows with the preview, so the risen sheet doesn't drop back under it */
+.write-pile-rest::before { content: ''; position: absolute; inset: 0; }
+@media (hover: hover) and (pointer: fine) { .write-pile-rest:hover::before { top: -72px; } }
+.write-pile-card {
+  --peek: 44px;
+  position: absolute;
+  left: 0;
+  top: 64px;
   width: var(--card-w);
   z-index: calc(20 - var(--i));
   transform-origin: 50% 0;
-  /* at rest: the top sheet's head above the desk's edge, the others as edges behind it, each turned a little */
-  transform: translateY(calc(-1 * var(--peek) - var(--i) * 7px)) scale(calc(1 - var(--i) * 0.045)) rotate(var(--r));
-  transition: transform 420ms var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)), opacity 200ms var(--ease-out, ease-out);
-  filter: drop-shadow(0 -1px 6px rgba(60, 45, 20, 0.12));
+  transform: translateY(calc(-1 * var(--peek) - var(--i) * 7px)) scale(calc(1 - var(--i) * 0.03)) rotate(var(--r));
+  transition: transform 200ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  box-shadow: 0 -1px 8px rgba(60, 45, 20, 0.1);
+  pointer-events: none;
 }
-/* lifted apart: each sheet's first lines readable above the one in front of it, standing clear of the sheet below */
-.write-pile[data-open] .write-pile-card {
-  transform: translateY(calc(-96px - var(--i) * 68px)) rotate(calc(var(--r) * 0.5));
-  filter: drop-shadow(0 -2px 10px rgba(60, 45, 20, 0.2)) drop-shadow(0 0 1px rgba(60, 45, 20, 0.25));
+@media (max-width: 640px) { .write-pile-card { --peek: 36px; } }
+/* pointed at: a preview, the top sheet rises and the edges part (nothing opens by itself) */
+@media (hover: hover) and (pointer: fine) {
+  .write-pile-rest:hover .write-pile-card { transform: translateY(calc(-84px - var(--i) * 26px)) scale(calc(1 - var(--i) * 0.03)) rotate(var(--r)); }
 }
 /* someone is writing: it steps back to its edges */
-.write-pile[data-tucked] .write-pile-card {
-  transform: translateY(calc(-14px - var(--i) * 4px)) scale(calc(1 - var(--i) * 0.045)) rotate(var(--r));
+.write-pile[data-tucked] .write-pile-card { transform: translateY(calc(-12px - var(--i) * 4px)) scale(calc(1 - var(--i) * 0.03)) rotate(var(--r)); }
+.write-pile-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(44px + 2 * 7px + 10px);
+  text-align: center;
+  font-family: var(--rr-ui, ui-sans-serif, system-ui);
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  transition: opacity 200ms var(--ease-out, ease-out);
 }
-.write-pile-card[data-leaving] {
-  opacity: 0;
-  transform: translateY(calc(-96px - var(--i) * 68px + 36px)) translateX(28px) rotate(8deg);
-  transition-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
-  transition-duration: 200ms;
+.write-pile[data-tucked] .write-pile-label { opacity: 0; }
+
+/* open: the sheets in a column, newest at the bottom by the pile, each showing its head */
+.write-pile-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+  background: color-mix(in srgb, var(--background, #e6e4de) 72%, transparent);
+  animation: write-scrim-in 200ms var(--ease-out, ease-out) both;
 }
+@keyframes write-scrim-in { from { opacity: 0; } }
+.write-pile-open {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 30;
+  width: var(--card-w);
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.write-pile-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: min(72vh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 4px 12px;
+  scrollbar-width: none;
+}
+.write-pile-column::-webkit-scrollbar { display: none; }
+.write-pile-band { position: relative; flex: none; height: 116px; }
+@media (max-width: 640px) { .write-pile-band { height: 96px; } }
 .write-pile-sheet {
+  position: relative;
   display: block;
+  width: 100%;
+  height: 100%;
   padding: 0;
-  border-radius: 2px;
+  overflow: hidden;
   cursor: pointer;
+  border-radius: var(--radius, 0.25rem);
+  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.1), 0 8px 20px -12px rgba(60, 45, 20, 0.4);
+  transition: transform var(--dur-press, 100ms) var(--ease-out, ease-out);
 }
+.write-pile-sheet:active { transform: scale(var(--st-scale-row, 0.985)); }
 .write-pile-sheet:focus-visible { outline: 2px solid var(--ring, #333); outline-offset: 3px; }
+/* who wrote it and when, in the sheet's blank head */
+.write-pile-who {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-family: var(--rr-ui, ui-sans-serif, system-ui);
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+}
+.write-pile-band[data-leaving] {
+  opacity: 0;
+  transform: translate(16px, 32px) rotate(3deg);
+  transition: opacity 200ms var(--ease-out, ease-out), transform 200ms var(--ease-out, ease-out);
+}
 .write-pile-throw {
   position: absolute;
   top: 6px;
@@ -184,68 +259,42 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius, 0.25rem);
-  background: color-mix(in srgb, var(--card, #fff) 92%, transparent);
+  background: color-mix(in srgb, #fff 90%, transparent);
   color: var(--muted-foreground);
-  box-shadow: 0 1px 3px rgba(60, 45, 20, 0.18);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 10%, transparent);
   opacity: 0;
   transition: opacity 150ms var(--ease-out, ease-out), color 150ms var(--ease-out, ease-out);
 }
 .write-pile-throw svg { width: 14px; height: 14px; }
 @media (hover: hover) and (pointer: fine) {
-  .write-pile-card:hover .write-pile-throw { opacity: 1; }
-  .write-pile-throw:hover { color: var(--rr-red, #b3261e); }
+  .write-pile-band:hover .write-pile-throw { opacity: 1; }
+  .write-pile-throw:hover { color: var(--rr-red, #9b3b2a); }
 }
-.write-pile-throw:focus-visible { opacity: 1; }
-@media (pointer: coarse) { .write-pile-throw { opacity: 1; width: 32px; height: 32px; } }
-.write-pile-count {
-  position: absolute;
-  right: -10px;
-  top: calc(-58px - 2 * 7px - 10px);
-  z-index: 25;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--foreground);
-  color: var(--background);
+.write-pile-band:focus-within .write-pile-throw, .write-pile-throw:focus-visible { opacity: 1; }
+/* phones: always there (no hover), but quiet: a mark on the paper, not a white box */
+@media (pointer: coarse) { .write-pile-throw { opacity: 1; width: 36px; height: 36px; top: 2px; right: 2px; background: transparent; box-shadow: none; } }
+.write-pile-close {
+  align-self: center;
+  height: 34px;
+  margin: 2px 0 14px;
+  padding: 0 0.875rem;
+  border-radius: var(--radius, 0.25rem);
   font-family: var(--rr-ui, ui-sans-serif, system-ui);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  line-height: 20px;
-  text-align: center;
-  transition: opacity 200ms var(--ease-out, ease-out);
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  background: #fbf8f2;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 11%, transparent);
 }
-.write-pile[data-tucked] .write-pile-count { opacity: 0; }
-.write-pile-more {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(-96px - var(--i) * 68px - 22px);
-  text-align: center;
-  font-family: var(--rr-ui, ui-sans-serif, system-ui);
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
-.write-pile-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 29;
-  background: linear-gradient(to top, color-mix(in srgb, var(--background, #e6e4de) 88%, transparent) 0, transparent 60%);
-  animation: write-scrim-in 200ms var(--ease-out, ease-out) both;
-}
-@media (hover: hover) and (pointer: fine) { .write-pile-scrim { pointer-events: none; } }
-.write-pile-scrim { background: linear-gradient(to top, color-mix(in srgb, var(--background, #e6e4de) 92%, transparent) 0, color-mix(in srgb, var(--background, #e6e4de) 70%, transparent) 40%, transparent 75%); }
-@keyframes write-scrim-in { from { opacity: 0; } }
 
 /* ---------- sheets moving (moveSheets: View Transitions) ---------- */
 /* each sheet moves as itself; the rest of the page doesn't cross-fade */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-::view-transition-group(*) { animation-duration: 460ms; animation-timing-function: var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)); }
+::view-transition-group(*) { animation-duration: 400ms; animation-timing-function: var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)); }
 /* a fresh sheet is laid on the desk from above */
-::view-transition-new(*):only-child { animation: write-sheet-in 460ms var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)) both; }
+::view-transition-new(*):only-child { animation: write-sheet-in 400ms var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)) both; }
 ::view-transition-old(*):only-child { animation: write-sheet-out 200ms var(--ease-out, ease-out) both; }
-@keyframes write-sheet-in { from { opacity: 0; transform: translateY(-36px); } }
+@keyframes write-sheet-in { from { opacity: 0; transform: translateY(-24px); } }
 @keyframes write-sheet-out { to { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .write-pile-card { transition-duration: 1ms; }
+  .write-pile-card, .write-pile-band[data-leaving] { transition-duration: 1ms; }
 }
