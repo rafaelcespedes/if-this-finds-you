@@ -2,6 +2,20 @@
 
 Rafael's calls, newest first. Builders follow these. If one conflicts with a research recommendation, this log wins.
 
+## 2026-11-05
+
+- **Buttons match across the site:** the site's own corners (`--radius`, about 4px) everywhere, no pills (the Reading
+  Room's "slips, not pills"). Round shapes only for badges, swatches and switches.
+- **A writing page, `/write`** (unlinked, kept out of search): a sheet and a pen, a minimal editor that builds on
+  typing that behaves like ink. Micro-interactions and intuition first; a blank desk, not a word processor.
+  - Pressing Backspace or Delete again on a crossed-out word (or holding it) crosses it out harder: a heavier strike,
+    a scribble, then inked out. Nothing is ever deleted.
+  - New sheet sends the sheet on the desk down into a pile at the bottom; old sheets can be brought back or thrown
+    away (with Undo). Kept in the browser only.
+  - Phones: Change writer is the main action (a warm blush of the room's red), New sheet a page-with-a-plus icon in
+    warm paper; a tap anywhere on the desk opens the keyboard (a page can't open it by itself).
+  - The site's logo top left.
+
 ## 2026-11-03 (evening)
 
 - **Stamps:** the organic stamps with era adornments (folds, rust, seal traces, folio notes) are the default.
