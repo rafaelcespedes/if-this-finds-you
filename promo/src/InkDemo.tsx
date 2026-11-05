@@ -71,6 +71,7 @@ function sheetAt(s: number) {
 // ever moves)
 function cameraFor(S: number) {
   const k0 = S / S0;
+  const PAPER_H = barTop(S) / k0 - 20; // the writing's window: down to just above the bar
   const last = sheetAt(SES.states.length - 1);
   const u = IO.u;
   let y0 = Infinity, y1 = -Infinity;
@@ -80,9 +81,12 @@ function cameraFor(S: number) {
   // the column across the frame (a little room either side), unless the letter would run past the window
   const k = Math.max(S / paper.w, Math.min((0.88 * S) / colMm, ((PAPER_H - 70) * k0) / hMm));
   const x = Math.min(0, Math.max(S - paper.w * k, 0.06 * S - paper.text.left * k));
-  const y = (PAPER_H * k0 - hMm * k) / 2 - (y0 / u) * k + 8 * k0;
+  const y = (PAPER_H * k0 - hMm * k) / 2 - (y0 / u) * k - 26 * k0; // a little above the window's middle
   return { k, x, y, u };
 }
+
+/** the top of the hint bar (just above the keyboard's plate), px */
+const barTop = (S: number) => keyboard(S).plate.y - (72 + 14) * (S / S0);
 
 // ---------- the pen's clock: every letter and mark drawn in writing order, stroke by stroke ----------
 interface Timed { it: any; start: number; dur: number }
@@ -126,7 +130,10 @@ function keyboard(S: number): { keys: Key[]; plate: { x: number; y: number; w: n
   const rowW = (r: (typeof rows)[number]) => r.keys.reduce((a, [, , w]) => a + w * U, 0) + G * (r.keys.length - 1);
   const W = Math.max(...rows.slice(0, 3).map((r) => rowW(r) + Math.abs(r.offset) * U));
   const x0 = (S - W) / 2;
-  const top = KB_TOP * k0 + PLATE.pad * k0;
+  // the plate as far from the bottom edge as from the sides
+  const pad0 = PLATE.pad * k0, side = x0 - pad0;
+  const plateH = rows.length * H + (rows.length - 1) * G + 2 * pad0;
+  const top = S - side - plateH + pad0;
   const keys: Key[] = [];
   rows.forEach((row, r) => {
     // the letter rows staggered as on a keyboard; the bottom row centred under the space between them
@@ -321,7 +328,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
           only thing on the paper itself): what this moment shows on the left, how long the ink stays wet on the
           right; the bar's fill drains with the timer */}
       <div style={{
-        position: 'absolute', left: KB.plate.x, width: KB.plate.w, top: (STRIP.y + 4) * k0, height: 72 * k0, borderRadius: PLATE.radius * k0,
+        position: 'absolute', left: KB.plate.x, width: KB.plate.w, top: KB.plate.y - (72 + 14) * k0, height: 72 * k0, borderRadius: PLATE.radius * k0,
         background: GREY(0.06), overflow: 'hidden', fontFamily: '"RR Schibsted", system-ui, sans-serif',
       }}>
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${showChip && wet ? 100 * (1 - since / wetFor) : 0}%`, background: GREY(0.05) }} />
