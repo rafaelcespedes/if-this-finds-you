@@ -1373,6 +1373,7 @@ export default function App() {
                   text={replyPending ? '' : inkActive ? inkRef.current!.text() : state.text}
                   blank={replyPending}
                   hovering={inkActive && inkRef.current!.hovering}
+                  inkMode={inkMode}
                   onEdit={onEdit}
                   onHistory={onHistory}
                   start={startCaret}

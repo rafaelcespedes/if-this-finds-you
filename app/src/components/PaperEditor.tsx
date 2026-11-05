@@ -54,6 +54,8 @@ interface Props {
   onComposingChange?: (composing: boolean) => void;
   /** Ink mode: the writer is considering a fix at the pen head; the pen hovers instead of resting */
   hovering?: boolean;
+  /** Ink mode: what's written stays (the textarea's description says how corrections work) */
+  inkMode?: boolean;
   /** someone is about to write (the pointer comes over the letter, a finger lands on it): get ready */
   onIntent?: () => void;
   /** the page shows a letter that isn't in the text (a found letter before the reply's first key): the text
@@ -72,7 +74,7 @@ interface Sel {
 const AMBER = '#f3d27a';
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onHistory, start, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
+  { text, onEdit, onHistory, start, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, inkMode, blank, onIntent, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -563,7 +565,11 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
         style={{ left: caretPx.left, top: caretPx.top, width: lineW, height: lineH, caretColor: 'transparent' }}
       />
       <span id={descId} hidden>
-        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}Fair copy: the page is rewritten cleanly as you type. {`${modKey} U underlines, ${modKey} B presses harder, ${modKey} Return adds a P.S.`}
+        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}
+        {inkMode
+          ? 'In ink: what’s written stays. Deleting written words crosses them out, and undo lifts only ink still wet. '
+          : 'Fair copy: the page is rewritten cleanly as you type. '}
+        {`${modKey} U underlines, ${modKey} B presses harder, ${modKey} Return adds a P.S.`}
         {geo?.summary ? ` This draft has ${geo.summary}.` : ''}
       </span>
     </div>
