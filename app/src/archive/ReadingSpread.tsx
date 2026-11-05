@@ -168,7 +168,8 @@ export function ReadingSpread(p: Props) {
   );
 
   return (
-    <main className="sp">
+    // clipped sideways at the screen's edge: a sheet pulled by a swipe (LetterPage) never widens the page
+    <main className="sp overflow-x-clip">
       {head}
       <Plate {...p} />
       <div className="sp-body">
