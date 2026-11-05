@@ -23,6 +23,9 @@ cd app && npm install && npm run dev
 
 Then open `http://127.0.0.1:5173/write` for the writing page, or `http://127.0.0.1:5173/` for the letter desk.
 
+Want a video of it for a post? The [X post template](../x-post-template/) makes the square demo video, keyboard and
+all, with the real engine, and lets you change what's typed, the writer and the paper.
+
 ## What it does
 
 | You | The writer |
@@ -84,6 +87,7 @@ Crossing a word out again, one press at a time:
 | `app/src/components/LiveSheets.tsx` | The live page, patched word by word |
 | `app/src/write/` | The minimal writing page: held-key timing, the pile of earlier sheets |
 | `tools/qa/ink.mjs`, `tools/qa/again.mjs` | The checks |
+| `x-post-template/` | A video of the writing for a post (Remotion), drawn by the same engine |
 
 The thinking behind it, with prior art and the studies it draws on:
 [docs/research/writing-experience.md](research/writing-experience.md) (the interaction model and the ink log),

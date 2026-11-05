@@ -33,7 +33,8 @@ Nothing is ever erased.
 
 Try it on **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a sheet and a pen and nothing else (a work in
 progress). How it works, where each piece lives, the numbers to play with, and what's still open:
-**[docs/WRITING.md](docs/WRITING.md)**. Design engineers, take a stab at it.
+**[docs/WRITING.md](docs/WRITING.md)**. To make a video of it for a post, there's an
+**[X post template](x-post-template/)**. Design engineers, take a stab at it.
 
 ## Run it on your computer
 
@@ -101,6 +102,7 @@ rules and the collection's targets. The full notes are in [content/SAMPLE-TEXTS.
 | `tools/` | Engine QA, the smoke test, the tracing pipeline and the font pack builder |
 | `brand/` | The wordmark, written by the engine |
 | `docs/` | Principles, decisions, voice, architecture and research |
+| `x-post-template/` | A video of the writing for a post on X, made with Remotion |
 
 Every push to `preview` runs two checks on GitHub: the site is built and opened in a browser, and the engine's output
 is compared with the version before. [docs/CHECKS.md](docs/CHECKS.md) explains both.
