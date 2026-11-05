@@ -245,7 +245,8 @@ export function strikeStrokes(H, N, how, x0, x1, base, h, xh, W, r) {
     case 'scribble': return scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff);
     // crossed out again (sheet.js again()): a blackout whatever the writer's usual kind, and 'inkout', the last
     // straw: denser, taller and more passes, until the word is gone under the ink
-    case 'blackout': case 'inkout': return scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff, how);
+    // 'scrawl' (level 3): the writer's own scribble, but never a blackout yet, so the word still shows through
+    case 'scrawl': case 'blackout': case 'inkout': return scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff, how);
     default: return [line(0, 0, 1)]; // 'line': one fast, firm stroke, slightly rising
   }
 }
@@ -265,10 +266,18 @@ function scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff, force) {
   let tot = 0;
   for (const k in S.kinds) tot += S.kinds[k];
   let pk = r() * tot, kind = 'zigzag';
+  const u0 = pk / (tot || 1);
   for (const k in S.kinds) { pk -= S.kinds[k]; if (pk < 0) { kind = k; break; } }
   // (the roll above is drawn either way, so forcing a kind never reshuffles the rest of this scribble)
   const out = force === 'inkout';
-  if (force) kind = 'blackout';
+  if (force === 'scrawl') {
+    // the writer's kinds without the blackout (drawn from the same roll, so the rest of the scribble is unchanged)
+    let t2 = 0;
+    for (const k in S.kinds) if (k !== 'blackout') t2 += S.kinds[k];
+    let pk2 = u0 * t2;
+    kind = 'zigzag';
+    for (const k in S.kinds) { if (k === 'blackout') continue; pk2 -= S.kinds[k]; if (pk2 < 0) { kind = k; break; } }
+  } else if (force) kind = 'blackout';
   const chaos = clamp(S.chaos + 0.25 * r.gauss(), 0.05, 1.2);
   const L0 = Math.max(1, xe - xs);
   // this one's size and density (a wide per-instance spread around the writer's habit)
@@ -279,7 +288,7 @@ function scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff, force) {
   let passes = kind === 'blackout' ? 3 + (r() < 0.45 ? 1 : 0) : kind === 'coil' ? (r() < 0.35 + 0.3 * chaos ? 2 : 1) : (r() < 0.5 + 0.4 * chaos ? 2 : 1);
   if (out) passes += 1 + (r() < 0.5 ? 1 : 0);                              // inked out: back and forth until it's gone
   passes = Math.max(1, Math.min(passes, Math.floor((out ? 110 : 80) / Math.max(3, L0 / dx0)))); // a long word: fewer passes
-  const ex = (0.05 + 0.3 * chaos * r()) * xh * (force ? 0.45 : 1);       // past the word's ends (crossed out again: kept off its neighbours)
+  const ex = (0.05 + 0.3 * chaos * r()) * xh * (force ? 0.25 : 1);       // past the word's ends (crossed out again: kept off its neighbours)
   const a0 = xs - ex * r(), b0 = xe + ex * r();
   const drift = (r() - 0.5) * 2 * (2 + 7 * chaos) * DEG;                  // off the line's own angle
   const tiltAt = (x, t) => Math.tan(t) * (x - (a0 + b0) / 2);
@@ -312,7 +321,7 @@ function scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff, force) {
       h = Math.min(h, 1.3 * xh);                                           // into ascenders and descenders, not the next line
       const mid = mid0 + dyK + 0.16 * xh * chaos * N.n1(t * 4 + seedK);     // the scribble wanders up and down
       const lean = clamp(lean0 + r.gauss() * (9 + 18 * chaos) * DEG, -50 * DEG, 50 * DEG); // (past ~50° a stroke lies flat)
-      const spill = force ? 0.3 : 0.6;
+      const spill = force ? 0.15 : 0.6;
       const px = clamp(x + side * h * Math.tan(lean), Math.min(a, b) - spill * xh, Math.max(a, b) + spill * xh);
       turns.push([px, clamp(mid + side * h, -1.0 * xh, 2.0 * xh), side, step]); // from descenders to ascenders
       side = -side;
@@ -331,7 +340,8 @@ function scribbleStrokes(H, N, xs, xe, base, xh, W, r, nOff, force) {
   }
   if (cur.length > 1) strokes.push(cur);
   strokes.ink = (kind === 'blackout' ? 1.15 + 0.2 * r() : 1 + 0.12 * r()) * (out ? 1.12 : 1);
-  strokes.tempo = kind === 'blackout' ? 3.2 : kind === 'coil' ? 2.4 : 2.8;
+  // crossed out again: the hand goes faster at it (so a held key and the pen keep together)
+  strokes.tempo = (kind === 'blackout' ? 3.2 : kind === 'coil' ? 2.4 : 2.8) * (force ? 1.3 : 1);
   strokes.kind = kind;
   return strokes;
 }
@@ -368,7 +378,7 @@ export function strikeItems(p, firm, H, struck, how, r, o = {}) {
     const h = small ? H.strikeY * xh * (1 + 0.08 * r.gauss()) : 0.45 * CAP * scaleOf(run);
     const strokes = strikeStrokes(H, p.noise, how, sp.x0, sp.x1, base, h, xh, W, r);
     ref = run[run.length - 1];
-    const mi = markItem(firm, how === 'scribble' || how === 'blackout' || how === 'inkout' ? 'scribble' : 'strike', strokes, ref, Object.assign({ delayed: true, tempo: strokes.tempo || 1.25 }, o, { lines: undefined, ink: strokes.ink, seed: (o.seed || 311) + n * 13.7, key: o.key ? o.key + ':' + n : undefined }));
+    const mi = markItem(firm, how === 'scribble' || how === 'scrawl' || how === 'blackout' || how === 'inkout' ? 'scribble' : 'strike', strokes, ref, Object.assign({ delayed: true, tempo: strokes.tempo || 1.25 }, o, { lines: undefined, ink: strokes.ink, seed: (o.seed || 311) + n * 13.7, key: o.key ? o.key + ':' + n : undefined }));
     if (mi && strokes.kind) mi.scribble = strokes.kind;
     if (mi) items.push(mi);
     if (!start) start = strokes[0][0];
@@ -377,9 +387,12 @@ export function strikeItems(p, firm, H, struck, how, r, o = {}) {
   return { items, start, ref };
 }
 
-export function underlineStrokes(H, x0, x1, base, xh, r) {
-  const xs = x0 - (0.02 + 0.04 * r()) * UPM, xe = x1 + (0.04 + 0.1 * r()) * UPM, L = Math.max(1, xe - xs);
-  const drop = (0.17 + 0.1 * r()) * xh, tilt = Math.tan((0.5 + 2.5 * r()) * DEG);
+// k: underlines already under these words (0 = the first): a second sits clearly below it, a little shorter
+export function underlineStrokes(H, x0, x1, base, xh, r, k = 0) {
+  let xs = x0 - (0.02 + 0.04 * r()) * UPM, xe = x1 + (0.04 + 0.1 * r()) * UPM;
+  if (k) { const cut = 0.1 * k * (xe - xs); xs += cut * (0.3 + 0.4 * r()); xe -= cut * 0.6; }
+  const L = Math.max(1, xe - xs);
+  const drop = (0.17 + 0.1 * r() + 0.22 * k) * xh, tilt = Math.tan((0.5 + 2.5 * r()) * DEG);
   const n = Math.max(6, Math.ceil(L / 14)), pts = [];
   for (let i = 0; i <= n; i++) {
     const u = i / n, x = xs + u * L;

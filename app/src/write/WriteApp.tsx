@@ -31,8 +31,9 @@ import { PILE_MAX, blankSheet, isBlank, keep, newId, pickLook, readKept, stateOf
 /** the sheet's largest size (px per mm), as on the desk */
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
-/** a held Backspace on a struck word: one more pass this often (the pen needs a moment to scribble) */
-const AGAIN_EVERY = 280;
+/** a held Backspace on a struck word: one more pass this often, about as long as the hand takes to draw one (a
+ * faster key would run ahead of the pen and leave it scribbling seconds after the key is let go) */
+const AGAIN_EVERY = 700;
 
 /** A change of sheets, as the sheets themselves moving (View Transitions: each sheet is named by its id, so the one
  * on the desk shrinks down into the pile and a sheet from the pile grows back up). Instant without the API or with
@@ -232,7 +233,11 @@ export function WriteApp() {
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     const s = sessionRef.current;
     if (cmd === 'ps') { s.postScript(); sync(); return; }
-    if (s.mark(cmd === 'underline' ? 'underline' : 'retrace', from, to)) sync();
+    if (s.mark(cmd === 'underline' ? 'underline' : 'retrace', from, to)) {
+      sync();
+      // the marked words stand clear of the selection's tint, the caret after them
+      requestAnimationFrame(() => editor.current?.setSelection(to));
+    }
   }, [sync]);
 
   // Backspace or Delete at a crossed-out word: crossed out again, harder each time. Held down, it keeps going

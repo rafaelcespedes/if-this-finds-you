@@ -97,7 +97,8 @@ function applyEvent(R, e) {
       }
       break;
     }
-    case 'underline': for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r) r.under = true; } R.counts.underlined++; break;
+    // under: how many times (a second press is a double underline)
+    case 'underline': for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r) r.under = (r.under || 0) + 1; } R.counts.underlined++; break;
     case 'pen': if (e.kind === 'dry') for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r) r.faint = true; } break;
     case 'sheet':
       if (e.why === 'fresh' || e.why === 'fair') { // a new text: the old one is a draft, its corrections with it
@@ -123,7 +124,7 @@ export function logicalText(x) { return textOf(asReader(x).recs); }
 export function transcription(x) {
   const R = asReader(x);
   const recs = R.recs;
-  const kindOf = (q) => (q.joined ? 'joined' : q.struck ? (q.struck === 'inkout' ? 'inked out' : q.struck === 'scribble' || q.struck === 'blackout' ? 'scribbled out' : 'struck') : q.ins ? 'inserted' : q.under ? 'underlined' : null);
+  const kindOf = (q) => (q.joined ? 'joined' : q.struck ? (q.struck === 'inkout' ? 'inked out' : q.struck === 'scribble' || q.struck === 'scrawl' || q.struck === 'blackout' ? 'scribbled out' : 'struck') : q.ins ? 'inserted' : q.under ? 'underlined' : null);
   let out = '';
   for (let i = 0; i < recs.length;) {
     const r = recs[i], kind = kindOf(r);

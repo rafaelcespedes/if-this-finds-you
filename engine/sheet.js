@@ -220,13 +220,17 @@ function applyOne(st, e, ev) {
       break;
     }
     case 'underline': {
+      // a second underline under the same words is a double underline; a third adds nothing
+      let k = 0;
+      for (let i = e.from; i <= e.to; i++) { const rec = R.byId.get(i); if (rec && rec.under) k = Math.max(k, rec.under - 1); }
+      if (k >= 2) break;
       const byLine = new Map();
       for (const it of placedRun(s, e.from, e.to)) { if (!byLine.has(it.line)) byLine.set(it.line, []); byLine.get(it.line).push(it); }
       let n = 0;
       for (const ln of byLine.values()) {
         const r = R0(st, ev, ':' + n);
         const sp = spanOf(ln), xh = xhOf(st) * scaleOf(ln);
-        const mi = markItem(st.firm, 'underline', underlineStrokes(H, sp.x0, sp.x1, baselineFor(p, ln, s.lines), xh, r), ln[ln.length - 1], { seed: 733 + ev, delayed: true, tempo: 1.3, key: 'e' + ev + ':' + n++ });
+        const mi = markItem(st.firm, 'underline', underlineStrokes(H, sp.x0, sp.x1, baselineFor(p, ln, s.lines), xh, r, k), ln[ln.length - 1], { seed: 733 + ev, delayed: true, tempo: 1.3, key: 'e' + ev + ':' + n++ });
         if (mi) pushItem(st, s, Object.assign(mi, { ev }));
       }
       break;
@@ -359,9 +363,10 @@ function penEvent(st, s, e, ev) {
       s.placed.set(it.id, nu);
     });
   } else if (e.kind === 'retrace') {
+    // gone over again, harder: a heavier pen, a hair to the right and up, so the word visibly thickens
     const r = R0(st, ev);
-    const jx = r.gauss() * 0.01 * UPM, jy = r.gauss() * 0.01 * UPM;
-    run.forEach((it, k) => pushItem(st, s, Object.assign({}, it, { g: repen(p, it.g, (q) => [q[0] + jx, q[1] + jy], 811 + k), role: 'retrace', key: 'r' + ev + ':' + it.key, ev, wk: 'r' + ev, tempo: (it.tempo || 1) * 1.15 })));
+    const jx = (0.025 + r.gauss() * 0.008) * UPM, jy = (0.02 + r.gauss() * 0.008) * UPM;
+    run.forEach((it, k) => pushItem(st, s, Object.assign({}, it, { g: repen(st.heavy, it.g, (q) => [q[0] + jx, q[1] + jy], 811 + k), role: 'retrace', key: 'r' + ev + ':' + it.key, ev, wk: 'r' + ev, tempo: (it.tempo || 1) * 1.15 })));
   }
 }
 
@@ -709,7 +714,10 @@ export function again(st, view, at) {
   if (level >= AGAIN_MAX) return { events: [], view: v, level };
   const lv = level + 1, was = run[run.length - 1].struck;
   const scribbled = was === 'scribble' || was === 'blackout';
-  const how = lv >= 4 ? 'inkout' : lv === 3 ? (scribbled ? 'blackout' : 'scribble') : scribbled ? 'scribble' : was === 'double' ? 'wave' : 'double';
+  // each level the same person, more annoyed: a heavier strike, then their own scribble (the word still shows
+  // through), then inked out. A word already scribbled goes to a scrawl, then a blackout, then inked out
+  const scrawled = scribbled || was === 'scrawl';
+  const how = lv >= 4 ? 'inkout' : lv === 3 ? (scrawled ? 'blackout' : 'scrawl') : scrawled ? 'scrawl' : was === 'double' ? 'wave' : 'double';
   const events = idRuns(run.map((r) => r.id)).map(([a, b]) => ({ t: 'strike', from: a, to: b, how, why: 'again', lv }));
   return { events, view: v, level: lv };
 }
