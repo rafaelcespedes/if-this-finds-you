@@ -288,7 +288,9 @@ export default function App() {
   // writer's own mistakes, none of yours) and the pen then wrote the words that differ a second time
   if (inkMode && editing && !state.sample && !(inkRef.current && inkFor.current === inkLook)) inkSession();
   const inkActive = inkMode && editing && !!inkRef.current && inkFor.current === inkLook;
-  // the pen catches up with the typing, at handwriting speed
+  // the pen catches up with the typing, at handwriting speed: the drawn pen (LiveSheets) is the clock, the typing
+  // handed to it a word at a time as it draws
+  const drawnPen = useRef<{ at(now: number): { letters: number } } | null>(null);
   useEffect(() => {
     if (!inkActive) return;
     let last = performance.now();
@@ -297,7 +299,7 @@ export default function App() {
       const now = performance.now();
       const dt = now - last;
       last = now;
-      if (ink && ink.waiting && ink.step(dt)) syncInk();
+      if (ink && ink.waiting && ink.step(dt, false, drawnPen.current?.at(now / 1000).letters)) syncInk();
     }, 130);
     return () => window.clearInterval(id);
   }, [inkActive, syncInk]);
@@ -1405,6 +1407,9 @@ export default function App() {
                       extras={shownLive.extras}
                       handKey={state.seed + ':' + state.style}
                       hold={inkActive ? 0 : 'word'}
+                      trail={inkActive ? inkRef.current!.trail : undefined}
+                      penRef={inkActive ? drawnPen : undefined}
+                      dim={inkActive ? inkRef.current!.pendingKeys : undefined}
                     />
                   ) : (
                     // the first time, paper and writing arrive together

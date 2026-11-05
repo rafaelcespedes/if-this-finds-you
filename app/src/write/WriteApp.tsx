@@ -127,7 +127,8 @@ export function WriteApp() {
     return () => { window.removeEventListener('pagehide', leave); document.removeEventListener('visibilitychange', hidden); };
   }, []);
 
-  // the pen catches up with the typing, at handwriting speed
+  // the pen catches up with the typing: the drawn pen (LiveSheets) is the clock, the typing handed to it a word at a time
+  const drawnPen = useRef<{ at(now: number): { letters: number } } | null>(null);
   useEffect(() => {
     let last = performance.now();
     const id = window.setInterval(() => {
@@ -135,7 +136,7 @@ export function WriteApp() {
       const now = performance.now();
       const dt = now - last;
       last = now;
-      if (s.waiting && s.step(dt)) sync();
+      if (s.waiting && s.step(dt, false, drawnPen.current?.at(now / 1000).letters)) sync();
     }, 130);
     return () => window.clearInterval(id);
   }, [session, sync]);
@@ -410,6 +411,9 @@ export function WriteApp() {
               // each sheet is drawn as it is (one from the pile isn't written out again), and so is a new writer
               handKey={cur.id + ':' + state.seed + ':' + state.style}
               hold={0}
+              trail={session.trail}
+              penRef={drawnPen}
+              dim={session.pendingKeys}
             />
           </PaperEditor>
         )}

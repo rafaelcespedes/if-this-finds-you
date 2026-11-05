@@ -257,13 +257,18 @@ export function playSVG(svg, page, opts = {}) {
 //   s.ink(item.key, strokeIndex)  -> 0..1   how much of that stroke is inked (renderCanvas `reveal`)
 //   s.thought(item.key)           -> 0..1   how strongly to show the faint thought letter (60 ms fade-in)
 //   s.writing                     -> { key, stroke, frac } | null, the pen tip
-//   s.busy                        -> letters still to ink
+//   s.busy                        -> strokes still to ink
+//   s.letters                     -> letters (and marks) still to ink, the one on the pen included
 //   pen.finish(now)                         ink everything now
 //
 // opts: { hold (letters held back, or 'word' to hold an unfinished last word: right for fair copy,
 //   where the word being typed changes as it grows), holdMs (after this pause the held letters are
 //   written anyway, default 0.7 s), speed (× handwriting speed, default 1.5), fast (top speed when far
-//   behind, default 4), behind (letters behind before speeding up, default 12), reducedMotion }
+//   behind, default 4), behind (letters behind before speeding up, default 12), fadeIn (seconds a new thought
+//   letter takes to show, default 0.06; 0 when the letters already showed as thoughts elsewhere, so they never
+//   blink out), reducedMotion }
+// pen.trail = n: letters typed but not yet handed to the pen (Ink mode's thought letters); they count as waiting,
+// so the pen speeds up with the whole backlog.
 // Items keep their place in the queue by item.key. A key that disappears (deleted before it was
 // inked) is dropped cleanly; one that appears is queued after everything already waiting.
 // Dots, bars and accents (delayed strokes) are added once the rest of their word is written.
@@ -272,6 +277,8 @@ export function createPen(opts = {}) {
   const holdMs = opts.holdMs == null ? 0.7 : opts.holdMs;
   const base = opts.speed || 1.5, top = opts.fast || 4, behind = opts.behind == null ? 12 : opts.behind;
   const reduce = opts.reducedMotion == null ? prefersReducedMotion() : !!opts.reducedMotion;
+  const fadeIn = opts.fadeIn == null ? 0.06 : opts.fadeIn;
+  const self = { trail: 0 };
   const inked = new Map();   // key -> number of strokes fully inked (Infinity = whole letter)
   let queue = [];            // { key, si, dur, word, delayed, tn, sn }
   const seenAt = new Map();  // key -> time first seen (thought fade-in)
@@ -331,7 +338,7 @@ export function createPen(opts = {}) {
       g.strokes.forEach((st, si) => {
         if ((inked.get(it.key) || 0) > si || queued.has(it.key + '#' + si)) return;
         const t = timing(st.center, xh);
-        queue.push({ key: it.key, si, n: g.strokes.length, word: it.wkey, delayed: !!st.delayed, dur: Math.max(st.dot ? 0.05 : 0.04, t.dur) / (it.tempo || 1), tn: t.tn, sn: t.sn });
+        queue.push({ key: it.key, si, n: g.strokes.length, word: it.wkey, delayed: it.kind !== 'mark' && !!st.delayed, dur: Math.max(st.dot ? 0.05 : 0.04, t.dur) / (it.tempo || 1), tn: t.tn, sn: t.sn });
       });
     }
     // letters deleted before the pen reached them simply go (they were only a thought)
@@ -375,7 +382,7 @@ export function createPen(opts = {}) {
         cur = { s, done: 0 };
       }
       // speed: a little faster than a person, much faster when far behind
-      const waiting = new Set(queue.map((q) => q.key)).size;
+      const waiting = new Set(queue.map((q) => q.key)).size + (self.trail || 0);
       const speed = budget === Infinity ? Infinity : base + (top - base) * clamp((waiting - behind) / behind, 0, 1);
       const need = (cur.s.dur - cur.done) / speed;
       if (t >= need) {
@@ -404,26 +411,28 @@ export function createPen(opts = {}) {
       thought: (key) => {
         if (inked.get(key) === Infinity) return 0;
         const t0 = seenAt.get(key);
-        return t0 == null ? 0 : clamp((now - t0) / 0.06, 0, 1);
+        return t0 == null ? 0 : fadeIn > 0 ? clamp((now - t0) / fadeIn, 0, 1) : 1;
       },
       writing: c ? { key: c.s.key, stroke: c.s.si, frac: strokeFraction(c.s, c.done / c.s.dur) } : null,
       busy: queue.length + (c ? 1 : 0),
+      letters: new Set([...queue.map((q) => q.key), ...(c ? [c.s.key] : [])]).size,
     };
   }
 
-  return {
+  return Object.assign(self, {
     sync, at,
     finish(now) { advance(now, true, true); },
     reducedMotion: reduce,
     // for renderCanvas({ reveal }): (item, strokeIndex) -> 0..1 at the time of the last at()
     reveal(now) { const s = at(now); return (item, si) => s.ink(item.key, si); },
-  };
+  });
 }
 
 // Paint a pen state onto an SVG drawn with renderSVG(p, page, { runs: true, strokeKeys: true }).
 // Thought letters are the same strokes in faint graphite; inked strokes are normal ink; the stroke being
 // written is revealed along its centerline over a faint copy of itself, so nothing flickers.
-// opts: { emPx, thought (opacity of a thought letter, default 0.16), graphite (colour, default #6f6f78) }
+// opts: { emPx, thought (opacity of a thought letter, default 0.16), graphite (colour, default #6f6f78),
+//   dim (keys of letters shown faded: Ink mode's letters taken back while the pen hovers over the fix) }
 export function paintPen(svg, page, s, opts = {}) {
   const doc = svg.ownerDocument;
   let st = svg.__shPen;
@@ -448,6 +457,8 @@ export function paintPen(svg, page, s, opts = {}) {
   const sc = (opts.emPx || 58) / 1000;
   const thoughtOpacity = opts.thought == null ? 0.16 : opts.thought;
   const byKey = new Map(page.items.map((it) => [it.key, it]));
+  // a correction mark isn't a thought: it shows only as the pen draws it (no grey preview of a strike)
+  const isMark = (key) => { const it = byKey.get(key); return !!it && it.kind === 'mark'; };
   const w = s.writing;
   const activeKey = w ? w.key + '#' + w.stroke : null;
   if (st.active && st.active !== activeKey) {
@@ -462,8 +473,8 @@ export function paintPen(svg, page, s, opts = {}) {
     const key = ks.slice(0, cut), si = +ks.slice(cut + 1);
     const f = s.ink(key, si);
     if (ks === activeKey) return;
-    if (f >= 1) { el.classList.remove('sh-th'); el.style.opacity = ''; }
-    else { el.classList.add('sh-th'); el.style.opacity = String(thoughtOpacity * s.thought(key)); }
+    if (f >= 1) { el.classList.remove('sh-th'); el.style.opacity = opts.dim && opts.dim.has(key) ? '0.4' : ''; }
+    else { el.classList.add('sh-th'); el.style.opacity = isMark(key) ? '0' : String(thoughtOpacity * s.thought(key)); }
   });
   if (w) {
     const el = svg.querySelector(`[data-s="${activeKey}"]`);
@@ -476,7 +487,7 @@ export function paintPen(svg, page, s, opts = {}) {
         st.under.removeAttribute('mask');
         st.under.classList.remove('sh-th');
         st.under.classList.add('sh-under');
-        st.under.style.opacity = String(thoughtOpacity);
+        st.under.style.opacity = isMark(w.key) ? '0' : String(thoughtOpacity);
         el.parentNode.insertBefore(st.under, el);
         el.classList.remove('sh-th'); el.style.opacity = '';
         // the reveal follows the stroke's centerline in the run's own frame

@@ -98,6 +98,8 @@ export function inkLive(p: Hand, page: any, paper: PaperSpec, size: number, line
 }
 
 const GRAPHITE = '#6f6f78';
+/** how strongly the thought letters show (faint graphite); the drawn pen's waiting letters match it (LiveSheets) */
+export const INK_THOUGHT = 0.24;
 
 /** Contours of a posed item (letter or mark) in page units, y up, ready for contoursToD. */
 function itemContours(it: any): number[][][] {
@@ -132,7 +134,7 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
       const cs = itemContours(it);
       if (cs.length) thoughts[sheetAtY(it.y, sheetU, n)] += `<path d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
     }
-    thoughts.forEach((t, s) => { if (t) out[s] += `<g fill="${GRAPHITE}" fill-opacity="0.24" class="thoughts">${t}</g>`; });
+    thoughts.forEach((t, s) => { if (t) out[s] += `<g fill="${GRAPHITE}" fill-opacity="${INK_THOUGHT}" class="thoughts">${t}</g>`; });
   }
   if (x.signed && x.writerName) {
     const sig = liveExtras(live, { marks: [], signed: true, writerName: x.writerName, text: live.page.text });
@@ -145,6 +147,7 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
 const WET_MS = 3000;
 /** the most letters the planner's fix at the pen head takes on (sheet.js plan: a longer run is struck instead) */
 const LONG_FIX = 24;
+const NO_KEYS: string[] = [];
 
 /** The live sheet while someone writes in ink. Plain object state; the caller re-renders after changes. */
 export class InkSession {
@@ -194,14 +197,57 @@ export class InkSession {
     if (r.events.length) this.inked(r.events);
     this.lastKey = performance.now();
   }
-  /** the pen catches up; true when anything changed */
-  step(dt: number, final = false): boolean {
-    const r = engine.penStep(this.sheet, this.view, { dt, idle: performance.now() - this.lastKey, forgiving: true, touch: this.touch, final });
+  /**
+   * The pen catches up; true when anything changed. `drawing`: the letters the drawn pen (LiveSheets) still has to
+   * draw. Given, the drawn pen is the clock: the typing is handed to it a word at a time, the next only once this one
+   * is drawn (a letter to go at most), so what still shows as thought letters is never ink yet and a Backspace there
+   * deletes it cleanly; and once you stop, the rest is written as fast as the pen draws, not a letter every half
+   * second. (Without it, penStep paces itself at ~2 letters a second, and the two clocks drifted apart.)
+   */
+  step(dt: number, final = false, drawing?: number): boolean {
+    const now = performance.now();
+    const idle = now - this.lastKey;
+    const v = this.view;
+    let r: { events: unknown[]; view: any };
+    if (drawing != null && !final && !v.pending && !v.mid?.text && v.tail) {
+      // a word handed over a moment ago may not have reached the drawn pen yet
+      if (drawing > 1 || now - this.handedAt < 120) return false;
+      const tail = String(v.tail);
+      const m = /^\s*\S+[ \t]*/.exec(tail);
+      const chunk = m ? m[0] : tail;
+      const rest = tail.slice(chunk.length);
+      // a finished word goes once two more letters are typed after it, or after 700 ms (the forgiving grace)
+      const finished = !!m && (/\s$/.test(chunk) || /^\s/.test(rest));
+      if (finished) {
+        if (rest.length < 2 && idle < 700) return false;
+        r = engine.penStep(this.sheet, { ...v, tail: chunk }, { idle: Infinity, forgiving: false, touch: false });
+      } else {
+        // the word being typed (or only spaces): the usual grace, and on phones the unfinished word waits for autocorrect
+        r = engine.penStep(this.sheet, { ...v, tail: chunk }, { idle, forgiving: true, touch: this.touch });
+      }
+      r.view = { ...r.view, tail: String(r.view.tail ?? '') + rest };
+    } else {
+      r = engine.penStep(this.sheet, v, { dt, idle, forgiving: true, touch: this.touch, final });
+    }
     const moved = r.events.length > 0 || (r.view.tail !== this.view.tail) || !!r.view.pending !== !!this.view.pending;
     this.view = r.view;
-    if (r.events.length) this.inked(r.events);
+    if (r.events.length) { this.inked(r.events); this.handedAt = now; }
     return moved;
   }
+  /** when typing was last handed to the pen */
+  private handedAt = -Infinity;
+  /** the letters Backspaced at the pen head while the writer considers the fix (still on the paper), by item key */
+  get pendingKeys(): string[] {
+    const ids = new Set<number>(this.view?.pending?.ids ?? []);
+    if (!ids.size) return NO_KEYS;
+    const keys = ((this.page?.items ?? []) as { id?: number; key: string; kind: string }[]).filter((it) => it.kind === 'glyph' && it.id != null && ids.has(it.id)).map((it) => it.key);
+    // the same list while it's the same letters (the sheet it's handed to is memoised)
+    if (keys.join('|') !== this.pendingCache.join('|')) this.pendingCache = keys;
+    return this.pendingCache;
+  }
+  private pendingCache: string[] = NO_KEYS;
+  /** letters typed and not yet handed to the pen (the thought letters at the end) */
+  get trail(): number { return Array.from(String(this.view?.tail ?? '')).filter((c) => /\S/.test(c)).length; }
   /** everything typed, written now (before leaving, a fair copy, a P.S.) */
   flush() { this.step(0, true); }
   /**
