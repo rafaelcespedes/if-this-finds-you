@@ -283,14 +283,11 @@ export default function App() {
       });
     } else if (!ink.full) fullNoted.current = false;
   }, [update]);
-  // writing in ink: the session is up from the first tap (or, on an untouched sample letter, the first key)
+  // writing in ink: the session is up from the first tap (or, on an untouched sample letter, the first key), made
+  // as that render happens: made a frame later (in an effect), the first frame drew the letter as a fair copy (the
+  // writer's own mistakes, none of yours) and the pen then wrote the words that differ a second time
+  if (inkMode && editing && !state.sample && !(inkRef.current && inkFor.current === inkLook)) inkSession();
   const inkActive = inkMode && editing && !!inkRef.current && inkFor.current === inkLook;
-  useEffect(() => {
-    if (inkMode && editing && !stateNow.current.sample && !(inkRef.current && inkFor.current === inkLook)) {
-      inkSession();
-      setInkTick((n) => n + 1);
-    }
-  }, [inkMode, editing, inkLook, inkSession]);
   // the pen catches up with the typing, at handwriting speed
   useEffect(() => {
     if (!inkActive) return;
