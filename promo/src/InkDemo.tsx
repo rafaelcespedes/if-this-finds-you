@@ -126,9 +126,13 @@ function penClock(sh: any, ids: number[]): Timed[] {
 // ---------- the keyboard: only the keys a short letter needs, on a floating glass plate ----------
 interface Key { id: string; label: string; x: number; y: number; w: number; h: number; small?: boolean; align?: 'left' | 'right' }
 const PLATE = { pad: 22, radius: 30 };
+/** the keyboard's (and the bar's) margin from the frame's sides, and from its bottom, at 1080 */
+const MARGIN_SIDE = 48;
 function keyboard(S: number): { keys: Key[]; plate: { x: number; y: number; w: number; h: number } } {
   const k0 = S / S0;
-  const U = 72 * k0, G = 8 * k0, H = 64 * k0;
+  // the keys sized so the plate spans the frame less MARGIN_SIDE each side (a 72 px key at a 66 px margin before)
+  const fit = (S - 2 * (MARGIN_SIDE + PLATE.pad) * k0) / ((1080 - 2 * (66 + PLATE.pad)) * k0);
+  const U = 72 * k0 * fit, G = 8 * k0 * fit, H = 64 * k0 * fit;
   // the letters as they sit on any keyboard (each row a little further in), with the few keys the letter uses
   const rows: { offset: number; keys: [string, string, number, ('left' | 'right')?][] }[] = [
     { offset: 0, keys: [['q', 'Q', 1], ['w', 'W', 1], ['e', 'E', 1], ['r', 'R', 1], ['t', 'T', 1], ['y', 'Y', 1], ['u', 'U', 1], ['i', 'I', 1], ['o', 'O', 1], ['p', 'P', 1], ['Backspace', 'delete', 1.45, 'right']] },
@@ -368,7 +372,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
             <div style={{ position: 'absolute', left: left.x, top, width: left.w, height: H, display: 'flex', alignItems: 'center', padding: `0 ${30 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif' }}>
               <div style={{ fontSize: TEXT * k0, fontWeight: 400, color: C.ink, opacity: captions ? capO : 0 }}>{note ? CAPTIONS[note.note] : ''}</div>
             </div>
-            <div style={{ position: 'absolute', left: right.x, top, width: right.w, height: H, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 14 * k0, padding: `0 ${20 * k0}px 0 ${18 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif', opacity: showChip ? 1 : 0 }}>
+            <div style={{ position: 'absolute', left: right.x, top, width: right.w, height: H, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 14 * k0, padding: `0 ${20 * k0}px 0 ${21 * k0}px`, fontFamily: '"RR Schibsted", system-ui, sans-serif', opacity: showChip ? 1 : 0 }}>
               <svg width={34 * k0} height={34 * k0} viewBox="0 0 34 34">
                 <circle cx={17} cy={17} r={13} fill="none" stroke={wet ? C.ink : C.faint} strokeOpacity={0.16} strokeWidth={2.6} />
                 <circle cx={17} cy={17} r={13} fill="none" stroke={C.ink} strokeWidth={2.6} strokeLinecap="round" opacity={wet ? 1 : 0}
