@@ -3,7 +3,8 @@ import { Promo, defaultProps, promoSchema, settingsOf, type PromoProps } from '.
 import { Atlas } from './Atlas';
 import { Specimen } from './Specimen';
 import { Carousel } from './Carousel';
-import { FontList } from './FontList';
+import { FontList, fontListSchema } from './FontList';
+import { OpenOptions } from './OpenOptions';
 import { SECONDS as FONTLIST_SECONDS } from './scene/fontlist-plan';
 import { CAROUSEL } from './scene/carousel';
 import { SPECIMENS } from './scene/specimen';
@@ -38,7 +39,9 @@ export const RemotionRoot: React.FC = () => (
     {/* the launch thread's carousel: real letters in their own hands, 1080 × 1350 */}
     <Composition id="Carousel" component={Carousel} width={1080} height={1350} fps={1} durationInFrames={CAROUSEL.length} />
     {/* the fonts video: the Fonts page's list scrolling, every row in its real font (16:9 for X) */}
-    <Composition id="FontList" component={FontList} width={1920} height={1080} fps={30} durationInFrames={Math.round(30 * FONTLIST_SECONDS)} />
+    <Composition id="FontList" component={FontList} schema={fontListSchema} defaultProps={{ openHand: 13, endText: 'Over a million handwritten fonts' }} width={1920} height={1080} fps={30} durationInFrames={Math.round(30 * FONTLIST_SECONDS)} />
+    {/* the candidates for the fonts video's opening line: Rafael's favourites, each writing it */}
+    <Composition id="OpenOptions" component={OpenOptions} width={1600} height={2160} fps={1} durationInFrames={1} />
     <Composition id="Atlas" component={Atlas} width={ATLAS.tile * ATLAS.per} height={ATLAS.tile * ATLAS.per} fps={1} durationInFrames={ATLAS.pages} />
   </>
 );

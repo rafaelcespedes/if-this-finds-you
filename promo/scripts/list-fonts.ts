@@ -38,8 +38,8 @@ const handOf = (l: any) => {
 const dir = path.resolve('public/list-fonts');
 fs.rmSync(dir, { recursive: true, force: true });
 fs.mkdirSync(dir, { recursive: true });
-// every character the rows show: the line, and the words typed into the tester at the end
-const EXTRA = process.argv[5] || 'If this finds you';
+// every character the rows show: the line, and the words the tester might get at the end
+const EXTRA = process.argv[5] || 'If this finds you · Over a million handwritten fonts 1,432,080 1,000,000+';
 const chars = [...new Set([...LINE, ...EXTRA, ' '])];
 const out: any[] = [];
 const t0 = Date.now();
@@ -55,4 +55,20 @@ looks.forEach((l, i) => {
   });
 });
 fs.writeFileSync(path.resolve('src/data/list-fonts.json'), JSON.stringify({ line: LINE, hands: out }));
-console.log(out.length, 'fonts in', ((Date.now() - t0) / 1000).toFixed(1), 's →', dir);
+
+// the candidates for the opening row: Rafael's favourites from the thread's pangram page (src/data/specimens.json),
+// built the same way into public/open-fonts/ and src/data/open-fonts.json
+const FAVOURITES = [2, 9, 11, 16, 31, 34, 35, 57, 58, 63, 68, 74, 81, 103, 117];
+const specimens = JSON.parse(fs.readFileSync(path.resolve('src/data/specimens.json'), 'utf8'));
+const odir = path.resolve('public/open-fonts');
+fs.rmSync(odir, { recursive: true, force: true });
+fs.mkdirSync(odir, { recursive: true });
+const open = FAVOURITES.map((n, i) => {
+  const h = specimens[n - 1];
+  const built = engine.buildFont(null, handOf(h), { chars, ttf: false, name: h.name, clipper });
+  const file = `${String(i).padStart(2, '0')}.otf`;
+  fs.writeFileSync(path.join(odir, file), built.otf);
+  return { n: i + 1, no: n, file, name: h.name, seed: h.seed, style: h.style, pen: h.pen, words: `${h.school} · ${h.penLabel}` };
+});
+fs.writeFileSync(path.resolve('src/data/open-fonts.json'), JSON.stringify(open));
+console.log(out.length, '+', FAVOURITES.length, 'fonts in', ((Date.now() - t0) / 1000).toFixed(1), 's →', dir);

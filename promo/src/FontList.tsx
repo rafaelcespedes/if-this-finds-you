@@ -7,9 +7,20 @@
 // scripts/capture-page.mjs); the list, the typing and the window are drawn here. Timing: scene/fontlist-plan.ts.
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { AbsoluteFill, Img, continueRender, delayRender, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
+import { z } from 'zod';
 import data from './data/list-fonts.json';
+import openFonts from './data/open-fonts.json';
 import page from './data/fonts-page.json';
-import { LINE, LIST_TOP, ROW, T, TYPED, VIEW, rowsAt, rowsPerSecond } from './scene/fontlist-plan';
+import { LINE, LIST_TOP, ROW, T, VIEW, rowsAt, rowsPerSecond } from './scene/fontlist-plan';
+
+export const fontListSchema = z.object({
+  /** the hand the video opens on: one of Rafael's favourites (src/data/open-fonts.json, 1-based), or 0 for the list's own */
+  openHand: z.number().default(0),
+  /** what the pointer types into the tester at the end */
+  endText: z.string().default('Over a million handwritten fonts'),
+});
+export type FontListProps = z.infer<typeof fontListSchema>;
+const OPEN = openFonts as { n: number; file: string; name: string; seed: string; words: string }[];
 import { clamp, easeInOutQuint } from './scene/ink';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -32,13 +43,29 @@ function loadFont(i: number) {
   }
   return p;
 }
+const openLoaded = new Map<number, Promise<void>>();
+function loadOpen(n: number) {
+  let p = openLoaded.get(n);
+  if (!p) {
+    p = new FontFace(`of-${n}`, `url(${staticFile(`open-fonts/${OPEN[n - 1].file}`)}) format('opentype')`).load().then((f) => { document.fonts.add(f); });
+    openLoaded.set(n, p);
+  }
+  return p;
+}
 let uiFonts: Promise<unknown> | null = null;
 const loadUi = () => (uiFonts ??= new FontFace('RR Schibsted', `url(${staticFile('fonts/schibsted-grotesk-latin.woff2')}) format('woff2')`, { weight: '400 900' }).load().then((f) => document.fonts.add(f)));
 
 // ---------- the camera ----------
 interface Cam { x: number; y: number; z: number }
 const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
-const mix = (a: Cam, b: Cam, u: number): Cam => ({ x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u), z: Math.exp(lerp(Math.log(a.z), Math.log(b.z), u)) });
+/** between two cameras: the zoom eased in log space, the frame's left and top edges moved straight (so the start of
+ *  every line stays in frame while the camera pulls back from the cursor) */
+function mix(a: Cam, b: Cam, u: number, W: number, H: number): Cam {
+  const z = Math.exp(lerp(Math.log(a.z), Math.log(b.z), u));
+  const left = lerp(a.x - W / a.z / 2, b.x - W / b.z / 2, u);
+  const top = lerp(a.y - H / a.z / 2, b.y - H / b.z / 2, u);
+  return { x: left + W / z / 2, y: top + H / z / 2, z };
+}
 const span = (t: number, [a, b]: number[]) => easeInOutQuint(clamp((t - a) / (b - a), 0, 1));
 function cams(W: number) {
   const s = W / 1920;
@@ -53,11 +80,11 @@ function cams(W: number) {
   const pageCam: Cam = { x: VIEW.w / 2, y: -TITLE - 50 / zp + (1080 / zp) / 2, z: zp * s };
   return { close, list, pageCam };
 }
-function camAt(t: number, W: number): Cam {
+function camAt(t: number, W: number, H: number): Cam {
   const { close, list, pageCam } = cams(W);
   if (t < T.ease[0]) return close;
-  if (t < T.pull[0]) return mix(close, list, span(t, T.ease));
-  return mix(list, pageCam, span(t, T.pull));
+  if (t < T.pull[0]) return mix(close, list, span(t, T.ease), W, H);
+  return mix(list, pageCam, span(t, T.pull), W, H);
 }
 
 // ---------- typing ----------
@@ -65,7 +92,7 @@ const typedOf = (text: string, t: number, [a, b]: number[]) => text.slice(0, Mat
 const blinkOn = (t: number, from: number) => Math.floor((t - from) * 2.4) % 2 === 0;
 const INPUT = page.input as { x: number; y: number; width: number; height: number };
 const CLEAR = { x: INPUT.x + INPUT.width - 18, y: INPUT.y + INPUT.height / 2 };
-const testerText = (t: number) => (t < T.click ? LINE : typedOf(TYPED, t, T.type));
+const testerText = (t: number, end: string) => (t < T.click ? LINE : typedOf(end, t, T.type));
 function pointerAt(t: number) {
   // in from the lower right of the page to the tester's clear button, a small press on the click
   const from = { x: VIEW.w - 220, y: 640 };
@@ -81,37 +108,45 @@ const Pointer: React.FC<{ x: number; y: number; press: number; show: number }> =
 );
 
 // ---------- the list ----------
-const Row: React.FC<{ i: number; top: number; text: string; caret?: boolean; wide?: boolean }> = ({ i, top, text, caret, wide }) => (
+/** a text cursor with serifs (an I-beam), its left edge on the rule's start when the line is empty */
+const Caret: React.FC = () => (
+  <svg width={14} height={62} viewBox="0 0 14 62" style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: 0 }}>
+    <path d="M1.4 2.2 Q7 2.2 7 6.5 Q7 2.2 12.6 2.2 M7 6.5 L7 55.5 M1.4 59.8 Q7 59.8 7 55.5 Q7 59.8 12.6 59.8" fill="none" stroke={C.ink} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const Row: React.FC<{ i: number; top: number; text: string; caret?: boolean; wide?: boolean; family?: string }> = ({ i, top, text, caret, wide, family }) => (
   <div style={{ position: 'absolute', left: MARGIN, width: LIST_W, top, height: ROW, borderBottom: `1px solid ${C.rule}`, boxSizing: 'border-box' }}>
     {/* the row being typed runs past its own edge while the camera holds on it (the page would fade it there) */}
     <div style={{ position: 'absolute', left: 0, width: wide ? 4000 : LINE_W, top: 18, height: 91, overflow: 'hidden', WebkitMaskImage: wide ? undefined : 'linear-gradient(90deg, #000 calc(100% - 80px), transparent)' }}>
-      <div style={{ fontFamily: `lf-${i % HANDS.length}`, fontSize: 64, lineHeight: '91px', color: C.ink, whiteSpace: 'nowrap' }}>
-        {text || ' '}{caret && <span style={{ display: 'inline-block', width: 3, height: 58, background: C.ink, marginLeft: 3, verticalAlign: 'middle' }} />}
+      <div style={{ fontFamily: family ?? `lf-${i % HANDS.length}`, fontSize: 64, lineHeight: '91px', color: C.ink, whiteSpace: 'nowrap' }}>
+        {text || (caret ? '' : '\u00a0')}{caret && <Caret />}
       </div>
     </div>
     <Img src={staticFile('fonts-row-icons.png')} style={{ position: 'absolute', right: -8, top: (ROW - ICONS_H) / 2 - 1, width: ICONS_W, height: ICONS_H }} />
   </div>
 );
 
-export const FontList: React.FC = () => {
+export const FontList: React.FC<FontListProps> = ({ openHand, endText }) => {
   const frame = useCurrentFrame();
   const { width: W, height: H, fps } = useVideoConfig();
   const t = frame / fps;
-  const cam = camAt(t, W);
+  const cam = camAt(t, W, H);
   const scroll = rowsAt(t) * ROW; // CSS px
   const v = (rowsPerSecond(t) * ROW) / fps; // CSS px a frame
-  const rowText = testerText(t);
+  // the opening: every row types the line together (the one in the close frame with its cursor), then the tester's
+  const openText = typedOf(LINE, t, T.rowType);
+  const rowText = t < T.rowType[1] ? openText : testerText(t, endText);
+  const openFamily = openHand > 0 && OPEN[openHand - 1] ? `of-${openHand}` : undefined;
   const first = Math.max(0, Math.floor(scroll / ROW));
   const last = Math.ceil((scroll + VIEW.h - LIST_TOP) / ROW);
   const rows = useMemo(() => { const r: number[] = []; for (let i = first; i <= last; i++) r.push(i); return r; }, [first, last]);
   const [handle] = useState(() => delayRender('fonts'));
   useLayoutEffect(() => {
     const h = delayRender(`rows ${first}-${last}`);
-    Promise.all([loadUi(), ...rows.map(loadFont)]).then(() => document.fonts.ready).then(() => { continueRender(h); continueRender(handle); });
+    Promise.all([loadUi(), ...rows.map(loadFont), ...(openFamily ? [loadOpen(openHand)] : [])]).then(() => document.fonts.ready).then(() => { continueRender(h); continueRender(handle); });
   }, [first, last]); // eslint-disable-line react-hooks/exhaustive-deps
   // the opening row: a blinking cursor, then the line typed in; the cursor stays a moment, then goes
   const opening = t < T.scroll[0];
-  const openText = typedOf(LINE, t, T.rowType);
   const openCaret = t < T.rowType[0] ? blinkOn(t, 0) : t < T.rowType[1] ? true : t < T.rowType[1] + 0.4 && blinkOn(t, T.rowType[1]);
   // motion blur: along the scroll, about an eighth of a frame's travel (a hint of speed, the writing still there)
   const blur = Math.min(12, 0.13 * v);
@@ -125,7 +160,7 @@ export const FontList: React.FC = () => {
       </svg>
       <div style={{ position: 'absolute', left: 0, top: 0, transformOrigin: '0 0', transform: `translate(${W / 2 - cam.x * cam.z}px, ${H / 2 - cam.y * cam.z}px) scale(${cam.z})` }}>
         {/* the browser window: its title bar and address, a shadow on the desk (as the camera pulls back) */}
-        <div style={{ position: 'absolute', left: 0, top: -TITLE, width: VIEW.w, height: VIEW.h + TITLE, borderRadius: 10, boxShadow: `0 18px 50px rgba(30, 39, 51, ${0.22 * winShow}), 0 0 0 1px rgba(30, 39, 51, ${0.12 * winShow})`, background: C.chrome, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: 0, top: -TITLE, width: VIEW.w, height: VIEW.h + TITLE, borderRadius: 10, boxShadow: `0 0 0 1px rgba(30, 39, 51, ${0.14 * winShow})`, background: C.chrome, overflow: 'hidden' }}>
           <div style={{ position: 'absolute', left: 14, top: 13, display: 'flex', gap: 8 }}>
             {['#ff5f57', '#febc2e', '#28c840'].map((c) => <div key={c} style={{ width: 12, height: 12, borderRadius: 6, background: c }} />)}
           </div>
@@ -138,14 +173,14 @@ export const FontList: React.FC = () => {
           <div style={{ position: 'absolute', left: 0, top: LIST_TOP, width: VIEW.w, height: VIEW.h - LIST_TOP, overflow: 'hidden' }}>
             <div style={{ position: 'absolute', left: 0, top: 0, width: VIEW.w, height: VIEW.h - LIST_TOP, filter: blur > 0.4 ? 'url(#vblur)' : undefined }}>
               {rows.map((i) => (i === CLOSE_ROW && opening
-                ? <Row key={i} i={i} top={i * ROW - scroll} text={openText} caret={!!openCaret} wide={t < T.ease[1]} />
-                : <Row key={i} i={i} top={i * ROW - scroll} text={rowText} />))}
+                ? <Row key={i} i={i} top={i * ROW - scroll} text={openText} caret={!!openCaret} wide={t < T.ease[1]} family={openFamily} />
+                : <Row key={i} i={i} top={i * ROW - scroll} text={rowText} family={i === CLOSE_ROW ? openFamily : undefined} />))}
             </div>
           </div>
           <Img src={staticFile('fonts-page-top.png')} style={{ position: 'absolute', left: 0, top: 0, width: VIEW.w, height: LIST_TOP }} />
           {/* the tester's words, drawn over the picture's own so they can be cleared and typed */}
           <div style={{ position: 'absolute', left: INPUT.x + 1, top: INPUT.y + 1, width: INPUT.width - 40, height: INPUT.height - 2, background: C.slip, display: 'flex', alignItems: 'center', paddingLeft: 7, fontFamily: '"RR Schibsted", system-ui, sans-serif', fontSize: 13, color: C.ink, whiteSpace: 'pre' }}>
-            {testerText(t)}
+            {testerText(t, endText)}
             {testerCaret ? <span style={{ display: 'inline-block', width: 1, height: 16, background: C.ink, marginLeft: 1 }} /> : null}
           </div>
         </div>
