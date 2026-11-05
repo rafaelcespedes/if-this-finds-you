@@ -101,7 +101,7 @@ export function LedgerRecord({ record: r, hand, handAction, handName, actions, h
     <section aria-labelledby={`${id}-t`} className={cn('rr-ledger-record', className)}>
       <div className="rr-ledger-head">
         <p className="rr-card-no">
-          {r.no != null ? <><span className="rr-sc">No.</span> {callNo(r.no)}<span className="sr-only">, in the collection</span></> : <span className="rr-sc">In the collection</span>}
+          {r.no != null ? <><span className="rr-sc rr-no-label">No.</span> {callNo(r.no)}<span className="sr-only">, in the collection</span></> : <span className="rr-sc">In the collection</span>}
         </p>
         {actions && <div className="rr-card-actions">{actions}</div>}
       </div>
