@@ -478,7 +478,7 @@ html[data-look='reading-room'] .sp-quiet button {
   padding: 0.25rem 0.25rem;
   border-radius: 3px;
   color: var(--rr-muted);
-  transition: color 150ms var(--ease-out);
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out), scale var(--st-dur, 150ms) var(--ease-out);
 }
 html[data-look='reading-room'] .sp-quiet button:disabled { opacity: 0.45; }
 @media (hover: hover) and (pointer: fine) {
@@ -628,6 +628,10 @@ html[data-look='reading-room'] .sp .sp-reply {
 
 /* ---------- states (the shared state tokens, today's values as fallbacks): a press for every control, hover for every
    link, red words deepen and never sit on the ink wash ---------- */
+/* at rest, what a press changes eases back (and in, at the press's own pace, below): the wash, the words, the scale */
+html[data-look='reading-room'] :is(.fa-sort-by, .sp-record-open, .sp-hand, .sp-actions button, .sp-sheet-no, .sp-reply) {
+  transition: background-color var(--st-dur, 150ms) var(--ease-out), color var(--st-dur, 150ms) var(--ease-out), scale var(--st-dur, 150ms) var(--ease-out);
+}
 html[data-look='reading-room'] :is(.fa-sort-by, .sp-quiet button, .sp-record-open, .sp-hand, .sp-actions button, .sp-sheet-no, .era-seg):active {
   background: var(--st-press, var(--rc-ctl-press, color-mix(in oklab, var(--rr-ink) 16%, transparent)));
   border-radius: 3px;

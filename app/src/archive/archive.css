@@ -211,7 +211,7 @@ select.archive-field {
    soft chip while the others step back */
 .era-seg {
   color: var(--lib-text-soft);
-  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out), opacity 150ms var(--ease-out);
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out), opacity 150ms var(--ease-out), scale var(--st-dur, 150ms) var(--ease-out);
 }
 .era-seg .era-marks {
   opacity: 0.75;
@@ -411,7 +411,7 @@ select.archive-field {
   color: var(--lib-text-soft);
   font-size: 0.8125rem;
   white-space: nowrap;
-  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out), scale var(--st-dur, 150ms) var(--ease-out);
 }
 .dock-switch svg {
   width: 1rem;
@@ -453,7 +453,7 @@ select.archive-field {
   height: 1.75rem;
   border-radius: 3px;
   color: var(--lib-text-soft);
-  transition: color 150ms var(--ease-out);
+  transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out), scale var(--st-dur, 150ms) var(--ease-out);
 }
 .letter-counter button svg {
   width: 1rem;

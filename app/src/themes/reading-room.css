@@ -289,7 +289,7 @@ html[data-look='reading-room'] .rr-icon {
   flex: none;
   border-radius: 3px;
   color: var(--rr-muted);
-  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out), scale var(--st-dur) var(--ease-out);
 }
 html[data-look='reading-room'] .rr-icon svg {
   width: 1.0625rem;
@@ -512,6 +512,7 @@ html[data-look='reading-room'] .rr-sig .writing svg {
 html[data-look='reading-room'] .rr-sig:active {
   background: var(--st-press);
   scale: var(--st-scale);
+  transition-duration: var(--dur-press);
 }
 
 /* ---------- the tool's desk, kept as a ledger (ReadingDesk.tsx, LedgerRecord.tsx) ----------
@@ -1248,7 +1249,7 @@ html[data-look='reading-room'] .rr-dock-reply {
   padding: 6px 9px;
   border-radius: 3px;
   white-space: nowrap;
-  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out);
+  transition: background-color var(--st-dur) var(--ease-out), color var(--st-dur) var(--ease-out), scale var(--st-dur) var(--ease-out);
 }
 html[data-look='reading-room'] .rr-dock-word {
   color: var(--rr-ink);

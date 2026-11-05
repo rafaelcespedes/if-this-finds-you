@@ -88,7 +88,7 @@ export function TextPanel(p: Props & { onDone: () => void }) {
           const on = p.line === l.id;
           return (
             <button key={l.id} type="button" role="radio" aria-checked={on} onClick={() => { p.onLine(l.id); p.onDone(); }}
-              className="sheet-row flex min-h-11 w-full items-center gap-3 rounded-[10px] px-3 py-2 text-left text-foreground transition-[transform,background-color] duration-100 ease-out select-none active:scale-[0.98] active:bg-accent hover-device:hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring">
+              className="sheet-row flex min-h-11 w-full items-center gap-3 rounded-[10px] px-3 py-2 text-left text-foreground transition-[scale,background-color] duration-(--st-dur) ease-(--ease-out) active:duration-(--dur-press) select-none active:scale-[0.98] active:bg-accent hover-device:hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring">
               <span aria-hidden className="grid size-5 shrink-0 place-items-center">{on && <Check className="size-[18px] text-[var(--ink)]" />}</span>
               <span className="min-w-0 flex-1">{l.label}</span>
             </button>
