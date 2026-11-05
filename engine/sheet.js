@@ -183,7 +183,8 @@ function applyOne(st, e, ev) {
       const struck = placedRun(s, e.from, e.to);
       if (!struck.length) break;
       const r = R0(st, ev);
-      const { items, start, ref } = strikeItems(p, st.firm, H, struck, e.how || H.strike, r, { seed: 311 + ev * 0.77, key: 'e' + ev, lines: s.lines });
+      // crossed out again (again()): harder each time, with a heavier pen
+      const { items, start, ref } = strikeItems(p, (e.lv || 1) >= 2 ? st.heavy : st.firm, H, struck, e.how || H.strike, r, { seed: 311 + ev * 0.77, key: 'e' + ev, lines: s.lines });
       for (const it of items) pushItem(st, s, Object.assign(it, { ev }));
       if (e.blot && start) { const b = blotItem(p, start[0] - 0.02 * UPM, start[1] + 0.25 * xhOf(st), ref, r, ev, { key: 'e' + ev + ':blot' }); if (b) pushItem(st, s, Object.assign(b, { ev })); }
       break;
@@ -680,6 +681,48 @@ function resolvePending(st, R, v, emit) {
     for (const [a, b] of idRuns(sorted)) emit({ t: 'strike', from: a, to: b, how, why: 'rewritten' });
     emit({ t: 'write', text: rep });
   }
+}
+
+// ---------- crossing out again ----------
+// Rafael: "when you click delete multiple times or when you hold delete, you get more of a scribble in that
+// area. The same way that in real life, when you cross something out, you spend a lot of time scribbling it out."
+// Backspace or Delete at a struck run (the caret is where it was: struck words aren't in the view text) goes
+// over it again, harder each time: level 2 a second, heavier strike; 3 a scribble; 4 inked out. Each pass is
+// its own strike event { lv, why: 'again' }, so it's seeded by its event index (different every time, the same
+// on replay) and lifts like any wet ink. Pure, like plan(): returns { events, view, level } (the run's new
+// level), no events and level AGAIN_MAX when it's already inked out, or null when no struck run sits at `at`
+// or something is in flight there (a fix the pen is hovering over, an insertion being typed).
+export const AGAIN_MAX = 4;
+export function again(st, view, at) {
+  const v = copyView(view || newView());
+  if (v.pending || v.mid) return null;
+  const R = st.reader, m = viewMap(R, v), recs = R.recs;
+  const prev = at > 0 ? m.units[at - 1] : null, next = m.units[at] || null;
+  if ((prev && prev.k !== 'ink') || (next && next.k === 'mid')) return null;
+  const i0 = prev ? recs.indexOf(R.byId.get(prev.id)) + 1 : 0;
+  const i1 = next && next.k === 'ink' ? recs.indexOf(R.byId.get(next.id)) : recs.length;
+  if (i0 < 0 || i1 < 0) return null;
+  const run = [];
+  for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) run.push(recs[i]);
+  if (!run.length) return null;
+  const level = Math.max(...run.map((r) => r.lv || 1));
+  if (level >= AGAIN_MAX) return { events: [], view: v, level };
+  const lv = level + 1, was = run[run.length - 1].struck;
+  const scribbled = was === 'scribble' || was === 'blackout';
+  const how = lv >= 4 ? 'inkout' : lv === 3 ? (scribbled ? 'blackout' : 'scribble') : scribbled ? 'scribble' : was === 'double' ? 'wave' : 'double';
+  const events = idRuns(run.map((r) => r.id)).map(([a, b]) => ({ t: 'strike', from: a, to: b, how, why: 'again', lv }));
+  return { events, view: v, level: lv };
+}
+// The glyph ids written in [from, to) of the view text (what the textarea shows), for a mark made on a
+// selection: an underline, or the words gone over again. Spaces at either end are left out.
+export function inkIdsIn(st, view, from, to) {
+  const m = viewMap(st.reader, view || newView());
+  const ids = [];
+  for (let i = Math.max(0, from); i < Math.min(to, m.units.length); i++) { const u = m.units[i]; if (u.k === 'ink' && !u.half) ids.push(u.id); }
+  const blank = (id) => /\s/.test((st.reader.byId.get(id) || {}).ch || '');
+  while (ids.length && blank(ids[0])) ids.shift();
+  while (ids.length && blank(ids[ids.length - 1])) ids.pop();
+  return idRuns(ids);
 }
 
 // ---------- the pen (§3.2): what can be written now ----------

@@ -181,6 +181,29 @@ export class InkSession {
   fairCopy() { this.flush(); this.inked(engine.fairCopy(this.sheet)); }
   postScript() { this.flush(); this.inked(engine.postScript(this.sheet)); }
   freshSheet() { this.flush(); this.inked([{ t: 'sheet', why: 'fresh' }]); }
+  /**
+   * Backspace or Delete at a struck word (the caret at `at` sits where it was): the writer goes over it again,
+   * harder: a heavier strike, a scribble, then inked out (engine again()). null: no struck word there, or the
+   * engine can't. `level` is the word's level now; `max` when it was already inked out and nothing was drawn.
+   */
+  again(at: number): { level: number; max: boolean } | null {
+    if (typeof engine.again !== 'function') return null;
+    const r = engine.again(this.sheet, this.view, at);
+    if (!r) return null;
+    this.view = r.view;
+    if (r.events.length) this.inked(r.events);
+    this.lastKey = performance.now();
+    return { level: r.level, max: !r.events.length };
+  }
+  /** A mark on what's written in [from, to) of the text: an underline, or the words gone over again (bolder). */
+  mark(kind: 'underline' | 'retrace', from: number, to: number): boolean {
+    if (typeof engine.inkIdsIn !== 'function') return false;
+    this.flush();
+    const runs = engine.inkIdsIn(this.sheet, this.view, from, to) as [number, number][];
+    if (!runs.length) return false;
+    this.inked(runs.map(([a, b]) => (kind === 'underline' ? { t: 'underline', from: a, to: b } : { t: 'pen', kind: 'retrace', from: a, to: b })));
+    return true;
+  }
   /** Undo lifts only wet ink: the newest event, within 3 s. false: the ink is dry. */
   undo(): boolean {
     if (this.view.tail) return false;

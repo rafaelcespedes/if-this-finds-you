@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" data-look="reading-room">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#e6e4de" />
+    <!-- The look before anything paints (lib/look.ts reads the same, then applyLook takes over): the Reading Room
+         unless ?look= or this tab asked for another; classic is no data-look at all. Same colours as each look's desk. -->
+    <script>
+      (function () {
+        var id = 'reading-room';
+        try {
+          var names = { classic: 'classic', original: 'classic', before: 'classic', today: 'classic', current: 'classic', 'reading-room': 'reading-room', reading: 'reading-room', a: 'reading-room', postmarked: 'postmarked', postmark: 'postmarked', c: 'postmarked', 'default': 'reading-room' };
+          var asked = new URLSearchParams(location.search).get('look');
+          var kept = sessionStorage.getItem('seedhand:look');
+          id = (asked && names[asked.toLowerCase()]) || (kept && names[kept]) || id;
+        } catch (e) {}
+        var html = document.documentElement;
+        if (id === 'classic') html.removeAttribute('data-look'); else html.setAttribute('data-look', id);
+        // the layout (lib/layout.ts reads the same): the Ruler on the Reading Room unless ?layout=off (or this tab chose
+        // off), so the first frame already has its frame
+        var lay = 'ruler';
+        try {
+          var al = (new URLSearchParams(location.search).get('layout') || '').toLowerCase();
+          var kl = sessionStorage.getItem('seedhand:layout');
+          lay = /^(off|none|0|reading-room)$/.test(al) ? 'none' : al ? 'ruler' : kl === 'none' ? 'none' : 'ruler';
+        } catch (e) {}
+        // (no Ruler frame on the writing page: just the desk and the sheet)
+        var desk = { classic: '#eeeae2', 'reading-room': '#e6e4de', postmarked: '#f1ebdc' }[id];
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', desk);
+      })();
+    </script>
+    <!-- the desk's colour from the first frame, for each look (classic: no data-look) -->
+    <style>
+      html { background: #e6e4de; }
+      html:not([data-look]) { background: #eeeae2; }
+      html[data-look='postmarked'] { background: #f1ebdc; }
+    </style>
+    <title>Write · If This Finds You</title>
+    <meta name="description" content="A sheet of paper and a pen: type, and it’s written out by hand. Nothing is ever deleted." />
+    <!-- not linked from anywhere yet, and kept out of search until it is -->
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/brand/favicon-5.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/favicon-5.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon-5.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preload" href="/src/themes/reading-room/fonts/schibsted-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/write/main.tsx"></script>
+  </body>
+</html>
