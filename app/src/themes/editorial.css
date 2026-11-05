@@ -187,9 +187,11 @@ html:root[data-layout='ruler'] .rr-ledger-record .rr-card-no .rr-sc {
   line-height: 1;
   color: var(--rr-ink);
 }
-/* phones (the slip under the sheet, CatalogueSlip): the big figure needs no "No." over it (Rafael, 4 Nov). It stays
-   for screen readers, so the number still reads "No. 0004", and takes no room, so the figure sits where it began */
-html:root[data-layout='ruler'] .rr-under-sheet .rr-card-no .rr-sc {
+/* the big figure needs no "No." over it, on phones (the slip under the sheet, CatalogueSlip) and on the desk (Rafael,
+   4 Nov: "remove the little NO period above the big number… on desktop as well"). It stays for screen readers, so the
+   number still reads "No. 0004", and takes no room, so the figure sits where it began. (Only the "No." of a numbered
+   letter: a letter of your own keeps its "Your letter" / "A reply" in the same place, ReadingDesk.tsx) */
+html:root[data-layout='ruler'] :is(.rr-under-sheet .rr-card-no .rr-sc, .rr-ledger-record .rr-card-no .rr-no-label) {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -201,6 +203,21 @@ html:root[data-layout='ruler'] .rr-under-sheet .rr-card-no .rr-sc {
 }
 html:root[data-layout='ruler'] .rr-ledger-record .rr-ledger-head {
   align-items: flex-start;
+}
+/* Share beside the big figure: the top of its icon's ink level with the top of the figures' ink (Rafael, 4 Nov: "move
+   the share icon … so that it lines up with the top of the big number"), at every size the figure takes. The figures'
+   ink starts 0.0934 of their size below the head's top (the face's ascent and figure height at line-height 0.8,
+   measured in Chromium and WebKit); the icon's starts half the button's spare height, plus 11.6% of the icon (the
+   drawn Share mark's top, in its 1000 grid), below the button's top. The button keeps its size (40, or 44 to touch). */
+html:root[data-layout='ruler'] .rr-ledger-head:has(.rr-no-label) > .rr-card-actions {
+  --rr-share-box: var(--icon, 40px);
+  --rr-share-icon: 1.0625rem; /* reading-room.css, .rr-card-actions svg */
+  margin-top: calc(var(--ed-display-2) * 0.0934 - (var(--rr-share-box) - var(--rr-share-icon)) / 2 - var(--rr-share-icon) * 0.116);
+}
+@media (pointer: coarse) {
+  html:root[data-layout='ruler'] .rr-ledger-head:has(.rr-no-label) > .rr-card-actions {
+    --rr-share-box: var(--m-icon, 44px);
+  }
 }
 html:root[data-layout='ruler'] .rr-ledger-record .rr-card-title {
   --rr-title-leading: 1;
