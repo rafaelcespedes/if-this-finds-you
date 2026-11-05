@@ -461,6 +461,16 @@ html[data-look='reading-room'] .sp-note-open {
   color: var(--rr-muted);
 }
 html[data-look='reading-room'] .sp-note-no { color: var(--rr-red); }
+/* a note or the full record arriving fades in where it opens, as on the desk's record (reading-room.css, rr-fade):
+   opacity only, closing instant, shorter with reduced motion */
+html[data-look='reading-room'] :is(.sp-note-open, .sp-rows) {
+  animation: rr-fade 220ms var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-look='reading-room'] :is(.sp-note-open, .sp-rows) {
+    animation-duration: 160ms;
+  }
+}
 
 /* "Full record +", and the quiet actions on its line */
 html[data-look='reading-room'] .sp-record-bar {
