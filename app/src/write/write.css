@@ -84,8 +84,8 @@
 }
 
 /* ---------- the header's actions ---------- */
-/* two framed buttons of one family: Change writer, the main action, a warm blush with the room's red words;
-   New sheet in warm paper with ink. Soft rings, not hard lines. */
+/* two framed buttons of one family, with the site's corners: Change writer, the main action, a warm blush with the
+   room's red words; New sheet in warm paper with ink. Soft rings, not hard lines. */
 .write-tools { gap: 0.5rem; }
 .write-cta,
 .write-new {
@@ -94,7 +94,8 @@
   justify-content: center;
   gap: 0.375rem;
   height: 34px;
-  border-radius: 999px;
+  /* the site's corners (the Reading Room's buttons are slips, not pills) */
+  border-radius: var(--radius, 0.25rem);
   font-weight: 500;
   white-space: nowrap;
   transition: background-color var(--st-dur, 150ms) var(--ease-out, ease-out), box-shadow var(--st-dur, 150ms) var(--ease-out, ease-out), transform var(--dur-press, 100ms) var(--ease-out, ease-out);
@@ -119,7 +120,7 @@
 }
 .write-cta:active { transform: scale(var(--st-scale, 0.97)); background: color-mix(in oklab, var(--rr-red, #9b3b2a) 20%, #fffaf5); }
 .write-new:active:not(:disabled) { transform: scale(var(--st-scale, 0.97)); background: #f3eee4; }
-/* a phone: New sheet is the page-with-a-plus alone, in a round frame; the main action a touch larger */
+/* a phone: New sheet is the page-with-a-plus alone, in a square frame; the main action a touch larger */
 @media (max-width: 640px) {
   .write-new { width: 40px; height: 40px; padding: 0; }
   .write-new svg { width: 19px; height: 19px; }
@@ -182,7 +183,7 @@
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: var(--radius, 0.25rem);
   background: color-mix(in srgb, var(--card, #fff) 92%, transparent);
   color: var(--muted-foreground);
   box-shadow: 0 1px 3px rgba(60, 45, 20, 0.18);
