@@ -47,6 +47,8 @@ function moveSheets(change: () => void) {
 export function WriteApp() {
   const coarse = useMediaQuery('(pointer: coarse)');
   const phone = useMediaQuery('(max-width: 719.98px)');
+  // a narrow window: the library opens over the page instead of beside it
+  const roomy = useMediaQuery('(min-width: 1040px)');
 
   // ---------- the notes ----------
   const [notes, setNotes] = useState<Note[] | null>(null);
@@ -205,8 +207,12 @@ export function WriteApp() {
     } else void keep(n);
     dirty.current = false;
   };
-  const [libOpen, setLibOpen] = useState(() => { try { return localStorage.getItem(LIB_KEY) !== '0'; } catch { return true; } });
-  useEffect(() => { try { localStorage.setItem(LIB_KEY, libOpen ? '1' : '0'); } catch { /* fine */ } }, [libOpen]);
+  // the library beside the page as it was left; a narrow window opens on the page alone
+  const [libOpen, setLibOpen] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1040) return false;
+    try { return localStorage.getItem(LIB_KEY) !== '0'; } catch { return true; }
+  });
+  useEffect(() => { if (roomy) { try { localStorage.setItem(LIB_KEY, libOpen ? '1' : '0'); } catch { /* fine */ } } }, [libOpen, roomy]);
   const [phoneScreen, setPhoneScreen] = useState<'note' | 'library'>('note');
   const [writing, setWriting] = useState(false);
   const [said, say] = useState('');
@@ -226,6 +232,7 @@ export function WriteApp() {
     return next;
   };
   const openNote = (id: string) => {
+    if (!roomy) setLibOpen(false);
     if (id === currentRef.current) { setPhoneScreen('note'); desk.current?.focus(); return; }
     moveSheets(() => {
       leaveCurrent();
@@ -467,12 +474,14 @@ export function WriteApp() {
     <div
       className="wr-app"
       data-lib={showLib || undefined}
+      data-over={(!phone && !roomy && showLib) || undefined}
       data-phone={phone || undefined}
       data-away={chromeAway || undefined}
       data-kb={kbUp || undefined}
       data-tight={tight || undefined}
       tabIndex={-1}
     >
+      {showLib && !phone && !roomy && <div className="wr-scrim" aria-hidden onClick={() => setLibOpen(false)} />}
       {showLib && (
         <aside className="wr-side" aria-label="Your notes">
           {phone && (

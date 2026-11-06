@@ -232,6 +232,12 @@
   transition: opacity 240ms var(--ease-out);
 }
 .wr-app[data-away] .wr-side { opacity: 0.35; }
+/* a narrow window: the library over the page, the page dimmed a little behind it */
+.wr-app[data-over] .wr-side { position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; box-shadow: var(--wr-pop-shadow); animation: wr-side-in 220ms var(--ease-drawer); }
+@keyframes wr-side-in { from { transform: translateX(-24px); opacity: 0; } }
+.wr-scrim { position: fixed; inset: 0; z-index: 45; background: rgba(0, 0, 0, 0.12); animation: wr-fade 180ms var(--ease-out); }
+@keyframes wr-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wr-app[data-over] .wr-side, .wr-scrim { animation: none; } }
 .wr-app[data-phone] .wr-side { position: static; width: 100%; height: auto; min-height: 100dvh; box-shadow: none; background: var(--wr-desk); }
 .wr-side-top {
   display: flex;
