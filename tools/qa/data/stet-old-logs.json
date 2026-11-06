@@ -1,0 +1,110 @@
+{
+ "about": "Ink logs made before stet existed (engine of preview 42b68f5, 6 Nov 2026), with each page's SVG (sha256, first 16 hex) at width 900, emPx 58. tools/qa/stet.mjs checks they still decode and replay to the same pages.",
+ "logs": [
+  {
+   "seed": "tawny-atlas-52",
+   "style": "adult-fr-2023",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old00\",\"h\":[\"tawny-atlas-52\",\"adult-fr-2023\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"line\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"line\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"line\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"]]}",
+   "text": "Dear Ada, I still miss you  and the orchard too.\n The figs are ri pe\nP.S. Bring the maps.",
+   "svg": "9f469f2f4324faa8"
+  },
+  {
+   "seed": "tawny-atlas-52",
+   "style": "adult-fr-2023",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old00\",\"h\":[\"tawny-atlas-52\",\"adult-fr-2023\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"line\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"line\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"line\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"],[\"s\",\"fresh\"],[\"w\",\"Starting again.\"]]}",
+   "text": "Starting again.",
+   "svg": "4c058c10146b2347"
+  },
+  {
+   "seed": "tawny-atlas-52",
+   "style": "adult-fr-2023",
+   "opts": {
+    "maxWidth": 9000,
+    "lineHeight": 1500,
+    "marginLeft": 1600,
+    "firstBaseline": 2600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old01\",\"h\":[\"tawny-atlas-52\",\"adult-fr-2023\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"line\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"line\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"line\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"]]}",
+   "text": "Dear Ada, I still miss you  and the orchard too.\n The figs are ri pe\nP.S. Bring the maps.",
+   "svg": "b64bc605baae5948"
+  },
+  {
+   "seed": "quiet-heron-17",
+   "style": "script",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old10\",\"h\":[\"quiet-heron-17\",\"script\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"line\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"line\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"line\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"]]}",
+   "text": "Dear Ada, I still miss you  and the orchard too.\n The figs are ri pe\nP.S. Bring the maps.",
+   "svg": "a4959d1a430d7755"
+  },
+  {
+   "seed": "quiet-heron-17",
+   "style": "script",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old10\",\"h\":[\"quiet-heron-17\",\"script\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"line\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"line\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"line\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"],[\"s\",\"fresh\"],[\"w\",\"Starting again.\"]]}",
+   "text": "Starting again.",
+   "svg": "605a9bc4e972e7a1"
+  },
+  {
+   "seed": "quiet-heron-17",
+   "style": "script",
+   "opts": {
+    "maxWidth": 9000,
+    "lineHeight": 1500,
+    "marginLeft": 1600,
+    "firstBaseline": 2600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old11\",\"h\":[\"quiet-heron-17\",\"script\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"line\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"line\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"line\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"]]}",
+   "text": "Dear Ada, I still miss you  and the orchard too.\n The figs are ri pe\nP.S. Bring the maps.",
+   "svg": "252a24c118fc254f"
+  },
+  {
+   "seed": "brisk-parcel-92",
+   "style": "quebec-print",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old20\",\"h\":[\"brisk-parcel-92\",\"quebec-print\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"loops\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"loops\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"loops\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"]]}",
+   "text": "Dear Ada, I still miss you  and the orchard too.\n The figs are ri pe\nP.S. Bring the maps.",
+   "svg": "60680f57a9397ddf"
+  },
+  {
+   "seed": "brisk-parcel-92",
+   "style": "quebec-print",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old20\",\"h\":[\"brisk-parcel-92\",\"quebec-print\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"loops\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"loops\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"loops\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"],[\"s\",\"fresh\"],[\"w\",\"Starting again.\"]]}",
+   "text": "Starting again.",
+   "svg": "a7b66fea14ae082f"
+  },
+  {
+   "seed": "brisk-parcel-92",
+   "style": "quebec-print",
+   "opts": {
+    "maxWidth": 9000,
+    "lineHeight": 1500,
+    "marginLeft": 1600,
+    "firstBaseline": 2600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"old21\",\"h\":[\"brisk-parcel-92\",\"quebec-print\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Dear Ada, I miss you terribly and teh garden too.\"],[\"o\",35,\"h\"],[\"o\",36,\"e\"],[\"w\",\" The fgs\"],[\"w\",\" \"],[\"x\",54,57,\"scribble\",\"rewritten\"],[\"w\",\"figs\"],[\"w\",\" are ripe\"],[\"x\",21,28,\"loops\",\"deleted\"],[\"x\",21,28,\"double\",\"again\",0,2],[\"x\",21,28,\"scrawl\",\"again\",0,3],[\"x\",38,43,\"loops\",\"replaced\"],[\"i\",43,\"orchard\",38,43],[\"i\",11,\"still \"],[\"m\",68,\"split\"],[\"m\",48,\"para\"],[\"u\",5,7],[\"p\",\"retrace\",45,47],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring the maps.\"]]}",
+   "text": "Dear Ada, I still miss you  and the orchard too.\n The figs are ri pe\nP.S. Bring the maps.",
+   "svg": "8c207fb38f0f01ac"
+  }
+ ]
+}

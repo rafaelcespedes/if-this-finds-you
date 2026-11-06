@@ -3,7 +3,7 @@
 //
 //   fixHabits(p)          this writer's fixed correction habits (strike style, overwrite rate, caret, ...)
 //   coverQuality(a, b)    how well letter b covers letter a when written over it (0 = not a fix people make)
-//   strikeItems / overItem / insertionItems / underline / caret / slash / blot: page items built from
+//   strikeItems / overItem / insertionItems / underline / caret / slash / blot / stet: page items built from
 //   centerlines run through penOutline(), so marks carry this hand's pen, ink, pressure and kinematics.
 //
 // Page space: x right, y down, item.y = baseline; inside an item's glyph, y is up (as layout.js).
@@ -15,7 +15,7 @@ import { rng, clamp, lerp, smooth, DEG } from './core.js';
 import { markHabits, CAP, UPM } from './hand.js';
 import { getStyle } from './glyphs.js';
 import { penOutline, getPen, penKey, strokeInk, profileOutline } from './pen.js';
-import { lineBaseline, writeAt } from './layout.js';
+import { lineBaseline, lineAngle, writeAt } from './layout.js';
 
 // ---------- the writer's correction habits ----------
 // pens that blot (wet nibs) and pens that run dry; pointed dip pens already run dry in pen.js's inkWalker
@@ -182,7 +182,7 @@ export const MARK_VARIANT = { id: 'correction', source: { name: 'Correction mark
 const POSE0 = { slant: 0, scale: 1, squeeze: 1 };
 
 // One page item made of pen strokes given in page coordinates. ref: the item it belongs with (line,
-// para, word, inkIndex, tempo). o: { seed, delayed, tempo, ink (density ×), fix, wk, key }
+// para, word, inkIndex, tempo). o: { seed, delayed, tempo, ink (density ×), fix, wk, key, dot (each stroke a dab) }
 export function markItem(p, kind, strokesPage, ref, o) {
   const first = strokesPage.find((s) => s.length >= 2);
   if (!first) return null;
@@ -191,10 +191,10 @@ export function markItem(p, kind, strokesPage, ref, o) {
   strokesPage.forEach((pts, i) => {
     if (pts.length < 2) return;
     const center = pts.map(([X, Y]) => [X - ox, oy - Y]);
-    const c = penOutline(p, center, o.seed + i * 3.1);
+    const c = penOutline(p, center, o.seed + i * 3.1, o.dot ? { dot: true } : undefined);
     if (!c) return;
     if (o.ink) for (let k = 0; k < c.ink.n; k++) c.ink.d[k] *= o.ink;
-    strokes.push({ center, contour: c, dot: false, mark: kind, delayed: !!o.delayed });
+    strokes.push({ center, contour: c, dot: !!o.dot, mark: kind, delayed: !!o.delayed });
   });
   if (!strokes.length) return null;
   return {
@@ -403,6 +403,84 @@ export function underlineStrokes(H, x0, x1, base, xh, r, k = 0) {
   return [pts];
 }
 
+// ---------- let it stand: stet (Undo on dry ink, sheet.js stet()) ----------
+// A crossing-out taken back the way editors and proofreaders always have: a row of dots under the struck word
+// and "stet" ("let it stand") in the margin, in this writer's own hand. The dots are the writer's own: round
+// dabs, or the little dashes and ticks they dot their i's with. Fixed per seed ('stet:' namespace, so no other
+// habit moves); follows how tidy the writer is.
+const stetCache = new WeakMap();
+export function stetHabits(p) {
+  let S = stetCache.get(p);
+  if (S) return S;
+  const r = rng('stet:' + p.seed);
+  const u = Array.from({ length: 8 }, () => r());
+  const H = fixHabits(p), dot = markHabits(p).dot;
+  S = {
+    dot: dot === 'dash' || dot === 'tick' ? dot : 'dot',
+    pitch: lerp(0.66, 0.46, H.tidy) * (0.85 + 0.3 * u[0]),        // x-heights from one dot to the next
+    uneven: lerp(0.2, 0.06, H.tidy),                               // how unevenly they fall
+    drop: 0.26 + 0.1 * u[1],                                       // x-heights under the baseline
+    size: clamp(H.insertSize * (0.94 + 0.16 * u[2]), 0.56, 0.84),  // the stet: small, like a word above the line
+    gap: 0.55 + 0.45 * u[3],                                       // x-heights clear of where the writing starts
+    tilt: (1 - H.tidy) * 5 * (u[4] - 0.4),                         // degrees: a note in the margin sits a little askew
+    lead: u[5] < 0.5,                                              // the stet before the dots (else dots first)
+  };
+  stetCache.set(p, S);
+  return S;
+}
+
+// One dot (page points, y down) at (x, y) in the writer's habit: a dab, a little dash, or a tick.
+function stetDot(p, shape, x, y, xh, r) {
+  const seg = (L, a) => { const c = Math.cos(a) * L / 2, s = Math.sin(a) * L / 2; return [[x - c, y + s], [x, y], [x + c, y - s]]; };
+  if (shape === 'dash') return seg(0.13 * xh * (0.8 + 0.4 * r()), (14 + 9 * r.gauss()) * DEG);
+  if (shape === 'tick') return seg(0.09 * xh * (0.8 + 0.4 * r()), (-55 + 10 * r.gauss()) * DEG);
+  return seg(p.penWidth * 0.35 * (p.dotSize || 1), 0.3 + 0.9 * r() + (p.slant || 0) * DEG);
+}
+// The row of dots under [x0, x1] (a struck word's ink): base(x) = its baseline (page y), `drop` x-heights below.
+// Evenly spaced the way a quick hand spaces them, following the line, a dot every `pitch` x-heights.
+export function stetDotStrokes(p, S, x0, x1, base, xh, drop, r) {
+  const xs = x0 + (0.04 + 0.1 * r()) * xh, xe = x1 - (0.02 + 0.12 * r()) * xh, L = Math.max(0, xe - xs);
+  const n = Math.max(2, Math.round(L / (S.pitch * xh)) + 1);
+  const tilt = Math.tan(r.gauss() * 1.2 * DEG);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const x = xs + (i / (n - 1)) * L + r.gauss() * S.uneven * S.pitch * xh;
+    out.push(stetDot(p, S.dot, x, base(x) + drop * xh - tilt * (x - xs) + r.gauss() * 0.03 * xh, xh, r));
+  }
+  return out;
+}
+
+// "stet", small, in the margin of the struck word's line: its right end just clear of where the writing starts
+// (and left of a ruled margin), on the line's own curve, a little askew. Never on other ink: past anything
+// already in the margin there (an earlier stet), and null when the margin has no room for it (the caller writes it
+// above the word instead). ln: the line (lineInfo); edge: where its writing starts (page x); rule: a margin rule's
+// x, if the paper has one; boxes: the ink boxes on the sheet ([x0, y0, x1, y1]). Returns writeAt's { items, runs }.
+export function stetInMargin(p, S, { ln, edge, rule, boxes, xh, size, lean, seed, line, r }) {
+  const pad = 0.12 * xh;
+  let xr = Math.min(edge - S.gap * xh, rule == null ? Infinity : rule - (0.3 + 0.2 * r()) * xh);
+  const angle = (S.tilt + r.gauss() * 0.8) * DEG;
+  let s = size;
+  for (let tries = 0; tries < 4; tries++) {
+    let w = writeAt(p, 'stet', { x: 0, y: 0, angle: angle + lineAngle(p, ln, xr), lean, size: s, seed, line });
+    let ext = boxOf(w.items);
+    // a narrow margin: the stet a little smaller, never smaller than three quarters of its size
+    const room = xr - pad, need = ext.x1 - Math.min(0, ext.x0);
+    if (need > room) {
+      if (room < 0.75 * need) return null;
+      s *= room / need;
+      w = writeAt(p, 'stet', { x: 0, y: 0, angle: angle + lineAngle(p, ln, xr), lean, size: s, seed, line });
+      ext = boxOf(w.items);
+    }
+    const x0 = Math.max(pad - Math.min(0, ext.x0), xr - ext.x1 - r() * 0.12 * xh);
+    const at = shifted(w, x0, lineBaseline(p, ln, x0));
+    const b = boxOf(at.items), m = 0.06 * xh;
+    const hit = boxes.filter((q) => q[0] < b.x1 + m && q[2] > b.x0 - m && q[1] < b.y1 + m && q[3] > b.y0 - m);
+    if (!hit.length) return at;
+    xr = Math.min(...hit.map((q) => q[0])) - 0.35 * xh; // further out, past what's there
+  }
+  return null;
+}
+
 // ‸ in a gap (§5.3): 'below' = a caret standing on the baseline, pointing up at the insertion; 'above' =
 // a ∨ between this line and the insertion; 'slash' = one stroke up to it. yIns = the insertion's baseline.
 export function caretStrokes(how, cx, base, xh, yIns, r) {
@@ -467,7 +545,7 @@ const boxOf = (items) => {
   for (const it of items) if (it.box) { x0 = Math.min(x0, it.box[0]); y0 = Math.min(y0, it.box[1]); x1 = Math.max(x1, it.box[2]); y1 = Math.max(y1, it.box[3]); }
   return { x0, y0, x1, y1 };
 };
-const leanOf = (p, it) => { const pose = (it.g && it.g.pose) || {}; return clamp((pose.slant == null ? p.slant || 0 : pose.slant) - (p.slant || 0), -6, 6); };
+export const leanOf = (p, it) => { const pose = (it.g && it.g.pose) || {}; return clamp((pose.slant == null ? p.slant || 0 : pose.slant) - (p.slant || 0), -6, 6); };
 
 // ---------- overwrite (§5.2) ----------
 // The right letter over the wrong glyph item `wr`: a heavier pen (layout's weight: pen width, and the
