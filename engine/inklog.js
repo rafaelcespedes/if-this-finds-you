@@ -22,6 +22,9 @@
 //                                            paragraph break, takes an id), 'join' (the whitespace after
 //                                            `after` no longer counts)
 //   underline { from, to }                  emphasis
+//   stet   { from, to }                     let it stand: a crossing-out taken back once the ink was dry (Undo on
+//                                            dry ink, sheet.js stet()): dots under the struck letters and "stet"
+//                                            in the margin; those glyphs (ids inclusive) count in the text again
 //   pen    { kind, from?, to? }             'dry' (those glyphs came out faint), 'retrace' (gone over again),
 //                                            'restart' (fresh ink)
 //   move   { to: 'ps', size? }              the pen goes below the text for a P.S.
@@ -31,19 +34,20 @@
 //   session { }                             reopened later (v2)
 //
 // Reading order (§4.3): writes append, an insert splices directly after its anchor, so continued typing
-// after the last inserted character grows the same insertion. Struck glyphs drop out of the text; an
-// over replaces its glyph's character (the newest wins); sheet fresh/fair starts a new text.
+// after the last inserted character grows the same insertion. Struck glyphs drop out of the text (a stet
+// brings them back); an over replaces its glyph's character (the newest wins); sheet fresh/fair starts a new text.
 
 // ---------- reading the log ----------
 // A reader applies events one by one and keeps the text in reading order. sheet.js keeps one live.
 export function createReader() {
   const R = {
-    recs: [],          // current text, reading order: { id, ch, struck?, how?, over?, ins?, under?, joined?, faint? }
+    recs: [],          // current text, reading order: { id, ch, struck?, how?, over?, ins?, under?, joined?, faint?,
+                       //   sev? (the event that struck it), stet? (times let stand), stetOf? (how it was struck then) }
     byId: new Map(),   // id -> rec (all sheets)
     nextId: 0,
     events: 0,         // events applied
     drafts: [],        // texts of sheets set aside by 'fresh' / 'fair'
-    counts: { struck: 0, scribbled: 0, over: 0, inserted: 0, underlined: 0, split: 0, para: 0 },
+    counts: { struck: 0, scribbled: 0, over: 0, inserted: 0, underlined: 0, split: 0, para: 0, restored: 0 },
     apply(e) { applyEvent(R, e); R.events++; return R; },
     clone() {
       const C = createReader();
@@ -73,8 +77,21 @@ function applyEvent(R, e) {
         for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r && r.struck) { r.struck = e.how || r.struck; r.lv = Math.max(r.lv || 1, e.lv || 2); } }
         break;
       }
-      for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r && !r.struck) { r.struck = e.how || 'line'; r.why = e.why; } }
+      for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r && !r.struck) { r.struck = e.how || 'line'; r.why = e.why; r.sev = R.events; } }
       R.counts[e.how === 'scribble' ? 'scribbled' : 'struck']++;
+      break;
+    }
+    case 'stet': { // let it stand (sheet.js stet()): the struck glyphs count again; how they were struck is kept for the marks
+      let n = 0;
+      for (let i = e.from; i <= e.to; i++) {
+        const r = R.byId.get(i);
+        if (!r || !r.struck) continue;
+        r.stetOf = r.struck;
+        delete r.struck; delete r.why; delete r.lv;
+        r.stet = (r.stet || 0) + 1;
+        n++;
+      }
+      if (n) R.counts.restored++;
       break;
     }
     case 'over': { const r = R.byId.get(e.at); if (r) { if (r.was == null) r.was = r.ch; r.over = e.ch; R.counts.over++; } break; }
@@ -123,11 +140,12 @@ const asReader = (x) => (x && x.recs && x.byId ? x : x && x.reader ? x.reader : 
 export function logicalText(x) { return textOf(asReader(x).recs); }
 
 // The diplomatic transcription: "Dear [struck: Jon] John, it was a [inserted: very] good day", letters
-// written over as [a→o], for screen readers ("Read corrections") and "Copy with corrections".
+// written over as [a→o], a crossing-out let stand as [restored: very], for screen readers ("Read corrections")
+// and "Copy with corrections".
 export function transcription(x) {
   const R = asReader(x);
   const recs = R.recs;
-  const kindOf = (q) => (q.joined ? 'joined' : q.struck ? (q.struck === 'inkout' ? 'inked out' : q.struck === 'scribble' || q.struck === 'scrawl' || q.struck === 'blackout' ? 'scribbled out' : 'struck') : q.ins ? 'inserted' : q.under ? 'underlined' : null);
+  const kindOf = (q) => (q.joined ? 'joined' : q.struck ? (q.struck === 'inkout' ? 'inked out' : q.struck === 'scribble' || q.struck === 'scrawl' || q.struck === 'blackout' ? 'scribbled out' : 'struck') : q.stet ? 'restored' : q.ins ? 'inserted' : q.under ? 'underlined' : null);
   let out = '';
   for (let i = 0; i < recs.length;) {
     const r = recs[i], kind = kindOf(r);
@@ -149,19 +167,20 @@ export function summary(x) {
   const say = (n, one, many) => (n ? `${n} ${n === 1 ? one : many}` : '');
   return [say(c.struck, 'word crossed out', 'words crossed out'), say(c.scribbled, 'word scribbled out', 'words scribbled out'),
     say(c.over, 'letter written over', 'letters written over'), say(c.inserted, 'word added above the line', 'words added above the line'),
-    say(c.underlined, 'underline', 'underlines')].filter(Boolean).join(', ');
+    say(c.underlined, 'underline', 'underlines'), say(c.restored, 'word restored', 'words restored')].filter(Boolean).join(', ');
 }
 
 // ---------- compact form and share links (§4.6) ----------
-// Each event becomes a short array: ["w","Dear Ada,"] (["w",text,cont,rest,haste]) ["b"] ["x",12,15,"line","misspelt"] ["o",40,"G"]
-// ["i",52,"very "] ["m",9,"split"] ["u",3,7] ["p","dry",3,9] ["v","ps"] ["s","fresh"] ["n"]. Trailing
-// empty fields are dropped; anything unknown is kept as its object.
+// Each event becomes a short array: ["w","Dear Ada,"] (["w",text,cont,rest,haste]) ["b"] ["x",12,15,"line","misspelt"]
+// ["o",40,"G"] ["i",52,"very "] ["m",9,"split"] ["u",3,7] ["p","dry",3,9] ["v","ps"] ["s","fresh"] ["n"] ["r",12,15] (stet).
+// Trailing empty fields are dropped; anything unknown is kept as its object (an older engine keeps a stet it can't read
+// as its array, and passes it on unchanged).
 const ENC = {
   write: (e) => ['w', e.text, e.cont ? 1 : 0, e.rest, e.haste || 0], break: () => ['b'],
   strike: (e) => ['x', e.from, e.to, e.how, e.why, e.blot ? 1 : 0, e.lv],
   over: (e) => ['o', e.at, e.ch, e.blot ? 1 : 0],
   insert: (e) => ['i', e.after, e.text, e.over ? e.over[0] : null, e.over ? e.over[1] : null],
-  mark: (e) => ['m', e.after, e.kind], underline: (e) => ['u', e.from, e.to],
+  mark: (e) => ['m', e.after, e.kind], underline: (e) => ['u', e.from, e.to], stet: (e) => ['r', e.from, e.to],
   pen: (e) => ['p', e.kind, e.from, e.to], move: (e) => ['v', e.to, e.size], sheet: (e) => ['s', e.why, e.copy], session: () => ['n'],
 };
 const DEC = {
@@ -169,7 +188,7 @@ const DEC = {
   x: (a) => clean({ t: 'strike', from: a[1], to: a[2], how: a[3], why: a[4], blot: a[5] ? true : undefined, lv: a[6] || undefined }),
   o: (a) => clean({ t: 'over', at: a[1], ch: a[2], blot: a[3] ? true : undefined }),
   i: (a) => clean({ t: 'insert', after: a[1], text: a[2], over: a[3] != null ? [a[3], a[4]] : undefined }),
-  m: (a) => ({ t: 'mark', after: a[1], kind: a[2] }), u: (a) => ({ t: 'underline', from: a[1], to: a[2] }),
+  m: (a) => ({ t: 'mark', after: a[1], kind: a[2] }), u: (a) => ({ t: 'underline', from: a[1], to: a[2] }), r: (a) => ({ t: 'stet', from: a[1] || 0, to: a[2] || 0 }), // (["r"] is glyph 0 alone: its zeros were trimmed)
   p: (a) => clean({ t: 'pen', kind: a[1], from: a[2], to: a[3] }), v: (a) => clean({ t: 'move', to: a[1], size: a[2] }),
   s: (a) => clean({ t: 'sheet', why: a[1], copy: a[2] }), n: () => ({ t: 'session' }),
 };

@@ -11,6 +11,7 @@
 //   apply(sheet, events);                                   // appends to doc.log; nothing placed moves
 //   ({ events, view } = penStep(sheet, view, { dt, idle })); apply(sheet, events);   // the pen catches up
 //   textarea.value === viewText(sheet, view)                // logicalText(sheet.reader) + what isn't written yet
+//   ({ events, view } = stet(sheet, view, at)); apply(sheet, events);   // Undo on dry ink: a crossing-out let stand
 //
 // The pen trails the typing (§3.2): typed text waits in `view.tail` (at the end) or `view.mid` (an
 // insertion being typed mid-text) until penStep writes it, so most typos are fixed before ink touches
@@ -35,7 +36,7 @@ import { createReader } from './inklog.js';
 import { hasteStep } from './tempo.js';
 import {
   fixHabits, coverQuality, spanOf, baselineFor, scaleOf, repen, reink, markItem, strikeItems,
-  underlineStrokes, slashStrokes, blotItem, overItem, insertionItems,
+  underlineStrokes, slashStrokes, blotItem, overItem, insertionItems, stetHabits, stetDotStrokes, stetInMargin, leanOf,
 } from './marks.js';
 
 export const INK_VERSION = 'seedhand-ink-1';
@@ -240,6 +241,7 @@ function applyOne(st, e, ev) {
       break;
     }
     case 'pen': penEvent(st, s, e, ev); break;
+    case 'stet': placeStet(st, s, e, ev); break;
     case 'move': if (e.to === 'ps') startPS(st, s, e, ev); break;
     case 'sheet': newSheet(st, e.why); break;
     default: break;
@@ -372,6 +374,86 @@ function penEvent(st, s, e, ev) {
     const jx = (0.025 + r.gauss() * 0.008) * UPM, jy = (0.02 + r.gauss() * 0.008) * UPM;
     run.forEach((it, k) => pushItem(st, s, Object.assign({}, it, { g: repen(st.heavy, it.g, (q) => [q[0] + jx, q[1] + jy], 811 + k), role: 'retrace', key: 'r' + ev + ':' + it.key, ev, wk: 'r' + ev, tempo: (it.tempo || 1) * 1.15 })));
   }
+}
+
+// ---------- let it stand (stet) ----------
+// A crossing-out taken back after its ink dried (stet()): the writer can't lift it, so they do what editors and
+// proofreaders do. A row of dots under the struck letters (a row per line, under whatever the crossing-out left
+// below the line, clear of the next line), "stet" small in the margin of the word's first line (above the word
+// when there's no margin, or no room in it), and where the crossing-out hides the word (scribbled or inked out),
+// the word written again small above it, so it can be read. The struck letters never move; they read as text
+// again (inklog.js). Everything is seeded by the event's index, like every mark.
+const SCRIBBLED = new Set(['scribble', 'scrawl', 'blackout', 'inkout']);
+function placeStet(st, s, e, ev) {
+  const p = st.p, H = st.H, R = st.reader, S = stetHabits(p);
+  const run = placedRun(s, e.from, e.to);
+  if (!run.length) return;
+  const r = R0(st, ev);
+  const boxOfIt = (it) => { if (it.box) return it.box; const q = spanOf([it]); return [q.x0, q.y0, q.x1, q.y1]; };
+  const ink = s.items.filter(inky);
+  const byLine = new Map();
+  for (const it of run) { if (!byLine.has(it.line)) byLine.set(it.line, []); byLine.get(it.line).push(it); }
+  const lines = [...byLine.values()], first = lines[0], last = lines[lines.length - 1];
+  // the dots, a row under each line's part of the word
+  const dots = [];
+  lines.forEach((ln, n) => {
+    const sp = spanOf(ln), base = baselineFor(p, ln, s.lines), xh = xhOf(st) * scaleOf(ln), no = ln[0].line;
+    // (in x-heights below the baseline) under what's already below the word, a scribble's lower half or an
+    // underline; above anything of the next line
+    let floor = -Infinity, ceil = Infinity;
+    for (const it of ink) {
+      const b = boxOfIt(it);
+      if (!(b[2] > sp.x0 && b[0] < sp.x1)) continue;
+      if (it.line === no) {
+        // (a mark's own outline, point by point: its box is only sampled, and a scribble's turns reach past it)
+        if (it.kind === 'mark' && it.mark !== 'caret') for (const c of it.g.contours) for (const q of c) { const X = it.x + q[0]; if (X >= sp.x0 && X <= sp.x1) floor = Math.max(floor, (it.y - q[1] - base(X)) / xh); }
+        continue;
+      }
+      const top = (b[1] - base(clamp((b[0] + b[2]) / 2, sp.x0, sp.x1))) / xh;
+      if (top > 0.15) ceil = Math.min(ceil, top);
+    }
+    const drop = clamp(Math.min(Math.max(S.drop, floor + 0.14), ceil - 0.2), 0.12, 1.8);
+    const mi = markItem(p, 'stet', stetDotStrokes(p, S, sp.x0, sp.x1, base, xh, drop, r), ln[ln.length - 1],
+      { seed: 557 + ev * 0.61, dot: S.dot === 'dot', tempo: 1.5, key: 'e' + ev + ':dots:' + n, wk: 'k' + ev + 'd' });
+    if (mi) dots.push(mi);
+  });
+  // the word again, where the crossing-out hides it
+  const recs = [];
+  for (let i = e.from; i <= e.to; i++) { const q = R.byId.get(i); if (q) recs.push(q); }
+  const seed = 'stet:' + st.salt + ':' + ev, maxW = st.opts.maxWidth || 12000;
+  const aboveOf = (ln) => s.items.filter((it) => it.line === ln[0].line - 1 && it.role !== 'mark');
+  let again = null;
+  if (recs.some((q) => SCRIBBLED.has(q.stetOf))) {
+    const word = recs.map((q) => q.over || q.ch).join('').replace(/\s+/g, ' ').trim();
+    if (word) again = insertionItems(p, H, { sub: last, left: last[last.length - 1], above: aboveOf(last), text: word, seed: seed + ':w', maxW, r, lines: s.lines, caret: false });
+  }
+  // "stet": in the margin, left of where the line's writing starts (and of a ruled margin)
+  const no = first[0].line, info = s.lines.get(no);
+  let note = null;
+  if (info) {
+    // (the line's own ink: its letters, and the marks on them, a strike's overshoot or a scribble past the word)
+    let edge = info.x0;
+    for (const it of ink) if (it.line === no && it.role !== 'stet' && it.role !== 'insert') edge = Math.min(edge, boxOfIt(it)[0]);
+    const rule = st.opts.marginRule != null && st.opts.marginRule < edge ? st.opts.marginRule : null;
+    const boxes = ink.map(boxOfIt);
+    if (again) for (const it of again.items) if (it.box) boxes.push(it.box);
+    note = stetInMargin(p, S, { ln: info, edge, rule, boxes, xh: xhOf(st) * scaleOf(first), size: S.size * scaleOf(first), lean: leanOf(p, first[0]), seed, line: no, r });
+  }
+  // no room there: above the word (after the word written again, when it is)
+  if (!note) {
+    note = again ? insertionItems(p, H, { cont: Object.assign({}, again.block, { space: true }), text: 'stet', seed, maxW, r })
+      : insertionItems(p, H, { sub: first, left: first[first.length - 1], above: aboveOf(first), text: 'stet', seed, maxW, r, lines: s.lines, caret: false });
+  }
+  const ref = first[0];
+  const letters = (w, wk) => {
+    const base = s.items.length;
+    for (const it of w.items) pushItem(st, s, Object.assign(it, { ev, sheet: s.n, role: 'stet', charIndex: -1, para: ref.para, inkIndex: ref.inkIndex, word: ref.word, wk, wkey: wk, tempo: (ref.tempo || 1) * 1.15 }));
+    addRuns(s, w.runs, base);
+  };
+  const putDots = () => { for (const mi of dots) pushItem(st, s, Object.assign(mi, { ev })); };
+  // in the order the pen goes: the dots and the stet (some writers write the stet first), then the word again
+  if (S.lead) { letters(note, 'k' + ev + 's'); putDots(); } else { putDots(); letters(note, 'k' + ev + 's'); }
+  if (again) letters(again, 'k' + ev + 'w');
 }
 
 // ---------- the page ----------
@@ -704,11 +786,11 @@ function resolvePending(st, R, v, emit) {
 // level), no events and level AGAIN_MAX when it's already inked out, or null when no struck run sits at `at`
 // or something is in flight there (a fix the pen is hovering over, an insertion being typed).
 export const AGAIN_MAX = 4;
-export function again(st, view, at) {
-  const v = copyView(view || newView());
-  if (v.pending || v.mid) return null;
-  const R = st.reader, m = viewMap(R, v), recs = R.recs;
-  // the struck recs in the gap before view offset k (struck words aren't in the view, so they sit in a gap)
+// The struck recs at view offset `at` (struck words aren't in the view, so they sit in a gap before it): right at
+// the caret, or one space away (a selection taken with the space before it is struck as the word and the space
+// after: the caret is left a space short of it). null when there are none.
+function struckAt(R, m, at) {
+  const recs = R.recs;
   const runAt = (k) => {
     if (k < 0 || k > m.units.length) return null;
     const prev = k > 0 ? m.units[k - 1] : null, next = m.units[k] || null;
@@ -720,10 +802,14 @@ export function again(st, view, at) {
     for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) out.push(recs[i]);
     return out.length ? out : null;
   };
-  // a struck word right at the caret, or one space away (a selection taken with the space before it is struck as the
-  // word and the space after: the caret is left a space short of it)
   const spaceAt = (k) => { const u = m.units[k]; return !!u && u.k === 'ink' && /^[ \t]$/.test((R.byId.get(u.id) || {}).ch || ''); };
-  const run = runAt(at) || (spaceAt(at) && runAt(at + 1)) || (spaceAt(at - 1) && runAt(at - 1)) || null;
+  return runAt(at) || (spaceAt(at) && runAt(at + 1)) || (spaceAt(at - 1) && runAt(at - 1)) || null;
+}
+export function again(st, view, at) {
+  const v = copyView(view || newView());
+  if (v.pending || v.mid) return null;
+  const R = st.reader, m = viewMap(R, v);
+  const run = struckAt(R, m, at);
   if (!run) return null;
   const level = Math.max(...run.map((r) => r.lv || 1));
   if (level >= AGAIN_MAX) return { events: [], view: v, level };
@@ -736,6 +822,34 @@ export function again(st, view, at) {
   const events = idRuns(run.map((r) => r.id)).map(([a, b]) => ({ t: 'strike', from: a, to: b, how, why: 'again', lv }));
   return { events, view: v, level: lv };
 }
+// ---------- let it stand (stet) ----------
+// Undo on dry ink (issue #5). Ink can't be lifted once it's dry, so a crossing-out is taken back the way editors
+// always have: dots under the struck word, "stet" ("let it stand") in the margin (placeStet), and the word counts
+// again. Backspace on ink is a strike, so this is the paper's own undo for it. Pure, like again(): the struck run at
+// view offset `at` (found as again() finds it), and of it only the newest crossing-out: the glyphs its strike
+// struck, with every strike the same step made (one selection can strike several runs). `same(ev, newest)` says
+// whether strike event `ev` was part of the same step as `newest` (true / false, or null: don't know); by default,
+// strikes that follow one another in the log, struck for the same reason. Passes of crossing out harder go with the
+// word. Returns { events: one stet per run of ids, view, strikes: the strike events taken back, ids } or null when
+// nothing struck sits at `at` or something is in flight there (a fix the pen is hovering over, an insertion).
+export function stet(st, view, at, same) {
+  const v = copyView(view || newView());
+  if (v.pending || v.mid) return null;
+  const R = st.reader, m = viewMap(R, v), log = st.doc.log;
+  const run = struckAt(R, m, at);
+  if (!run) return null;
+  const newest = Math.max(...run.map((q) => (q.sev == null ? -1 : q.sev)));
+  if (newest < 0) return null;
+  const step = (a, b) => {
+    for (let i = Math.min(a, b); i <= Math.max(a, b); i++) { const x = log[i]; if (!x || x.t !== 'strike' || x.why === 'again' || x.why !== log[newest].why) return false; }
+    return true;
+  };
+  const one = (ev) => { if (ev === newest) return true; const k = same ? same(ev, newest) : null; return k == null ? step(ev, newest) : !!k; };
+  const ids = run.filter((q) => q.sev != null && one(q.sev)).map((q) => q.id);
+  const strikes = [...new Set(run.filter((q) => ids.includes(q.id)).map((q) => q.sev))].sort((a, b) => a - b);
+  return { events: idRuns(ids).map(([a, b]) => ({ t: 'stet', from: a, to: b })), view: v, strikes, ids };
+}
+
 // The glyph ids written in [from, to) of the view text (what the textarea shows), for a mark made on a
 // selection: an underline, or the words gone over again. Spaces at either end are left out.
 export function inkIdsIn(st, view, from, to) {

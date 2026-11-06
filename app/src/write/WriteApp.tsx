@@ -1,7 +1,8 @@
 // The writing page (/write): a sheet of paper and a pen, nothing else. Typing behaves like ink (lib/ink.ts):
 // the pen trails the keys, so what it hasn't reached yet deletes cleanly; once it's written, Backspace crosses
 // it out, and pressing again (or holding it) crosses it out harder: a heavier strike, a scribble, then inked
-// out (engine again()). ⌘B goes over the words again, ⌘U underlines them, and Undo lifts only wet ink.
+// out (engine again()). ⌘B goes over the words again, ⌘U underlines them, and Undo lifts only wet ink; on a dry
+// crossing-out it writes *stet* in the margin, with dots under the word, and the word counts again.
 // Nothing is ever deleted. Not linked from the site yet: a place to try what writing on a computer could feel like.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
@@ -191,7 +192,8 @@ export function WriteApp() {
     sync();
   }, [undoHistory, sync]);
 
-  // Undo takes back what the pen hasn't written yet, and lifts wet ink (the last 3 s); dry ink stays
+  // Undo takes back what the pen hasn't written yet, and lifts wet ink (the last 3 s); dry ink stays, but a word crossed
+  // out (and crossed out harder) is let stand: stet (lib/ink.ts)
   const onHistory = useCallback((dir: 'undo' | 'redo') => {
     const s = sessionRef.current;
     const cur = s.text();
@@ -201,11 +203,13 @@ export function WriteApp() {
     if (dir === 'undo' && !s.waiting && markOnTop) {
       // (an underline or words gone over again: every run the command marked, together)
       if (s.liftFormat() || s.undo()) { sync(); return; }
+      // dry: an underline or words gone over stay as they are (a word crossed out harder goes on, to be let stand)
+      if (lastEv.t !== 'strike') { toast('The ink is dry', { id: 'ink-dry', description: lastEv.t === 'underline' ? 'An underline stays once it’s dry.' : 'Words gone over stay once they’re dry.' }); return; }
     }
     const e = dir === 'undo' ? undoHistory.undo(cur) : undoHistory.redo(cur);
     if (!e) {
       if (dir === 'undo' && !s.waiting && s.doc.log.length) {
-        if (s.undo()) { undoHistory.clear(); sync(); return; }
+        if (s.undo() || s.stetLast()) { undoHistory.clear(); sync(); return; }
         toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' });
       }
       return;
@@ -214,7 +218,7 @@ export function WriteApp() {
     // redo: the step written again as it was made (typed, or deleted: struck); never as autocorrect's whole-word
     // replacement, which struck the word next to it. Undo: unwritten typing taken back, wet ink lifted (lib/ink.ts)
     if (dir === 'redo') s.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
-    else if (!undoInk(s, e)) {
+    else if (!undoInk(s, e, { stet: true })) {
       undoHistory.keep(dir);
       sync();
       toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' });

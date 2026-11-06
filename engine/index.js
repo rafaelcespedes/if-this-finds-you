@@ -8,8 +8,8 @@
 //   playSVG(el.firstChild, page, { emPx: 58 }).play();     // write it, stroke by stroke
 //   const j = writeWithJourney(p, 'Dear Ada,', { maxWidth: 9000 }, { amount: 0.4 }); // a draft, with its slips
 //   renderSVG(p, j.page, { width: 720, emPx: 58 });        // j.transcript / j.events say what happened
-//   Ink mode (typing that behaves like ink): see sheet.js — newInkDoc, replay, plan, penStep, apply; the typing's
-//   tempo (a fast burst writes hastier): tempo.js — newTypist, typistKey, typistHaste
+//   Ink mode (typing that behaves like ink): see sheet.js — newInkDoc, replay, plan, penStep, apply, again, stet; the
+//   typing's tempo (a fast burst writes hastier): tempo.js — newTypist, typistKey, typistHaste
 //
 // Sources register skeletons on import; add new source modules to the list below.
 
@@ -45,7 +45,7 @@ export { inkSVG } from './ink-svg.js';
 export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, buildFontPackage, verify, glyphName, fontNames, handCode, GF_LATIN_CORE } from './fontbuild.js';
 export { writeWithJourney, journeyAmount, fixHabits, journeyText } from './corrections.js';
-export { newInkDoc, newView, replay, apply, plan, penStep, viewText, draftPage, fairCopy, postScript, dropLast, sheetPage, again, inkIdsIn, AGAIN_MAX, INK_VERSION } from './sheet.js';
+export { newInkDoc, newView, replay, apply, plan, penStep, viewText, draftPage, fairCopy, postScript, dropLast, sheetPage, again, stet, inkIdsIn, AGAIN_MAX, INK_VERSION } from './sheet.js';
 export { logicalText, transcription, summary as inkSummary, encodeDoc, decodeDoc, encodeInkLink, decodeInkLink } from './inklog.js';
 export { newTypist, typistKey, typistHaste, hasteStep, hastyHand, hasteCarry, hasteNext, HASTE_MAX, TYPIST_PRIOR_MS } from './tempo.js';
 export { coverQuality } from './marks.js';

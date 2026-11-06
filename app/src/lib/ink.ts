@@ -64,7 +64,9 @@ export function inkOpts(p: Hand, paper: PaperSpec, size: number, lineSpacing: nu
   // the letter flows onto as many sheets as it needs (the engine breaks lines by the same rules as paginate:
   // a line that doesn't fit starts the next sheet, an empty line never does, a closing goes over with its name)
   const sheet = { first: frame.firstU, last: frame.lastU, ink: frame.inkU, height: paper.h * setup.u };
-  return { ...setup, frame, sheetU: sheet.height, layout: { ...setup.opts, pageHeight: frame.inkU, sheet } };
+  // a ruled margin, if the paper has one: a stet goes left of it (engine stet(); nothing else reads it)
+  const marginRule = paper.margin ? paper.margin.x * setup.u : undefined;
+  return { ...setup, frame, sheetU: sheet.height, layout: { ...setup.opts, pageHeight: frame.inkU, sheet, marginRule } };
 }
 
 /** Which sheet a point (page units, y down) is on, when sheets are stacked `sheetU` apart. */
@@ -327,7 +329,7 @@ export class InkSession {
     const n = this.doc.log.length;
     return n > 0 && performance.now() - (this.inkedAt[n - 1] ?? -Infinity) <= WET_MS;
   }
-  /** Undo lifts only wet ink: the newest event, while it's wet. false: the ink is dry. */
+  /** Undo lifts only wet ink: the newest event, while it's wet. false: the ink is dry (a crossing-out: stet()). */
   undo(): boolean {
     if (this.view.tail || !this.wet) return false;
     this.sheet = engine.dropLast(this.sheet);
@@ -388,6 +390,57 @@ export class InkSession {
   /** the tempo the next word to be written was typed at */
   private nextHaste(): number {
     return this.typist && typeof engine.hasteNext === 'function' ? engine.hasteNext(this.sheet, this.view.tail, this.tailHaste) : 0;
+  }
+  /**
+   * Undo on dry ink, for a crossing-out (issue #5). Dry ink can't be lifted, so the writer lets the word stand, as
+   * editors always have: a row of dots under it, *stet* ("let it stand") in the margin, and it counts in the letter
+   * again (engine stet()). `at`: the textarea offset where the struck word sits (where the caret was left when it was
+   * crossed out). Only the newest crossing-out there comes back, every strike of that step (they went down together)
+   * and every pass of crossing it out harder. false, with nothing changed: no struck word there, or something was
+   * done to the letter since that Undo would have to take back first and can't (an underline, words gone over, another
+   * word crossed out harder, a P.S., a fresh sheet).
+   */
+  stet(at: number): boolean {
+    if (typeof engine.stet !== 'function' || this.view.pending || this.view.mid?.text) return false;
+    const T = this.inkedAt;
+    // one step's strikes went down at the same moment; for ink from before this session, the engine's own reading
+    const same = (ev: number, newest: number) => (Number.isFinite(T[newest]) ? T[ev] === T[newest] : null);
+    const r = engine.stet(this.sheet, this.view, at, same) as { events: unknown[]; view: any; strikes: number[]; ids: number[] } | null;
+    if (!r || !r.events.length) return false;
+    const ids = new Set(r.ids);
+    const log = this.doc.log as { t?: string; why?: string; from?: number; to?: number }[];
+    for (let i = Math.min(...r.strikes) + 1; i < log.length; i++) {
+      const x = log[i];
+      if (x.t === 'underline' || x.t === 'pen' || x.t === 'move' || x.t === 'sheet') return false;
+      if (x.t === 'strike' && x.why === 'again') {
+        let ours = false;
+        for (let id = x.from ?? 0; id <= (x.to ?? -1) && !ours; id++) ours = ids.has(id);
+        if (!ours) return false;
+      }
+    }
+    this.view = r.view;
+    this.inked(r.events);
+    this.lastKey = performance.now();
+    return true;
+  }
+  /**
+   * Undo on dry ink with no step to go by (the sheet was reopened, so there's no history): the newest crossing-out is
+   * let stand when it's the last thing on the paper (passes crossing it out harder included). false otherwise.
+   */
+  stetLast(): boolean {
+    if (this.waiting) return false;
+    const log = this.doc.log as { t?: string; why?: string; from?: number }[];
+    let i = log.length - 1;
+    while (i >= 0 && log[i].t === 'strike' && log[i].why === 'again') i--;
+    const x = log[i];
+    if (!x || x.t !== 'strike' || x.from == null) return false;
+    // the textarea offset of the gap the struck word sits in: the letters still standing before it
+    let at = 0;
+    for (const r of (this.sheet.reader?.recs ?? []) as { id: number; ch: string; over?: string; struck?: unknown; joined?: boolean }[]) {
+      if (r.id === x.from) return this.stet(at);
+      if (!r.struck && !r.joined) at += String(r.over || r.ch).length;
+    }
+    return false;
   }
   private inked(events: unknown[]) {
     if (!events.length) return;
@@ -494,9 +547,11 @@ export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
 /**
  * One undo step in ink: typing the pen hasn't reached is taken back freely; anything on the paper (or a fix still in
  * hand at the pen head) is written down now, then its wet ink is lifted until the letter reads as it did before the
- * step. false: that ink is dry (nothing on the paper is lifted).
+ * step. With `stet` (on /write for now), a dry crossing-out (the step took letters away) is let stand instead: dots,
+ * *stet* in the margin, and the word back in the letter (InkSession.stet). false: that ink is dry (nothing on the
+ * paper is lifted), and it isn't a crossing-out that can be let stand.
  */
-export function undoInk(ink: InkSession, e: Edit): boolean {
+export function undoInk(ink: InkSession, e: Edit, o: { stet?: boolean } = {}): boolean {
   const cur = ink.text();
   const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
   const tailFrom = cur.length - String(ink.view?.tail ?? '').length;
@@ -506,5 +561,6 @@ export function undoInk(ink: InkSession, e: Edit): boolean {
     return true;
   }
   ink.flush();
-  return ink.liftTo(want);
+  if (ink.liftTo(want)) return true;
+  return !!o.stet && !!e.ins && !e.del && ink.stet(e.at);
 }
