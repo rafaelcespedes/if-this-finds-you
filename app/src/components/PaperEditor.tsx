@@ -2,7 +2,10 @@
 // text, the selection, undo, IME and screen-reader access; this component draws the caret and the
 // selection onto the handwriting and turns pointer input on the sheet into text positions.
 //
-// - The caret is the pen: an ink dot at the end of the letter, a fine line mid-text.
+// - The caret: a bar in the ink colour is where you are. With the pen's state given (penCaughtUp, insertsAbove), a
+//   bead of ink at its foot is the pen, there once the pen has caught up with you; it lifts off the line while the
+//   pen hovers over a fix; and where typing would go above the line, a small amber ‸ sits under it instead. Every
+//   change is instant: the only motion is the blink. Away from the letter, an ink dot rests at its end.
 // - Selection is a warm amber highlighter (a UI colour, never ink), swept in on pointer selections.
 // - Pen-only formatting: ⌘U/⌘I underline by hand (again for double), ⌘B press harder, ⌘↩ P.S.
 // - Up/Down/Home/End follow the written lines; IME compositions own the keys while they last.
@@ -54,6 +57,14 @@ interface Props {
   onComposingChange?: (composing: boolean) => void;
   /** Ink mode: the writer is considering a fix at the pen head; the pen hovers instead of resting */
   hovering?: boolean;
+  /**
+   * Ink mode: the drawn pen has caught up (nothing typed is left for it to write). Given, the caret shows the pen: a
+   * bead of ink at the bar's foot when the caret is at the end of the writing and the pen rests there, lifted off the
+   * line while it hovers over a fix; while the pen is still behind you, the bar stays solid (it blinks once it rests).
+   */
+  penCaughtUp?: boolean;
+  /** Ink mode: typing at this offset would go above the line (InkSession.insertsAbove): a small amber ‸ under the line */
+  insertsAbove?: (at: number) => boolean;
   /** how the page takes changes (In ink, In pencil, Fair copy): the textarea's description says which, for screen readers */
   mode?: 'ink' | 'pencil' | 'fair';
   /** someone is about to write (the pointer comes over the letter, a finger lands on it): get ready */
@@ -72,16 +83,18 @@ interface Sel {
 }
 
 const AMBER = '#f3d27a';
+/** the touch handles' amber (a UI colour, never ink): the ‸ where typing would go above the line */
+const CARET_AMBER = '#d9a520';
 
 /** the writing mode, said to screen readers (the same words as the writing menu's hints) */
 const MODE_SAID: Record<NonNullable<Props['mode']>, string> = {
-  ink: 'In ink: what’s written stays. Deleting written words crosses them out, and undo lifts only ink still wet. ',
+  ink: 'In ink: what’s written stays. Deleting written words crosses them out, and crossed-out words aren’t in the text. Undo lifts only ink still wet. ',
   pencil: 'In pencil: changes rub out and are written again. ',
   fair: 'Fair copy: every change redraws the page cleanly. ',
 };
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onHistory, start, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, mode = 'fair', blank, onIntent, children },
+  { text, onEdit, onHistory, start, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, penCaughtUp, insertsAbove, mode = 'fair', blank, onIntent, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -434,7 +447,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     // only when the caret moves to another line, not on every render
   }, [sel.focused, Math.round(caretPx.top)]);
 
-  // the caret stays solid for a moment after each move, then breathes
+  // the caret stays solid for a moment after each move, then blinks
   const [moveKey, setMoveKey] = useState(0);
   useLayoutEffect(() => setMoveKey((n) => n + 1), [caretPx.left, caretPx.top]);
 
@@ -499,28 +512,44 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
           // the caret leans with the writing when the engine knows the lean (its top point)
           const bx = caret.x * k, by = caret.sheet * pitch + caret.y * k;
           const lean = caret.top ? (caret.top[0] - caret.x) / Math.max(1, caret.y - caret.top[1]) : 0;
-          const opacity = sel.focused ? 0.85 : 0.18;
-          const key = sel.focused ? moveKey : 'rest';
+          const hx = xHeightU * k;
           if (atEnd && !sel.focused) {
             // the pen at rest: an ink dot on the baseline, a hairline up to the x-height
-            const hx = xHeightU * k;
             return (
-              <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && (hovering ? 'pen-hover' : 'caret-breathe'))} width="100%" height="100%" style={{ opacity }}>
+              <svg key="rest" className="absolute inset-0 overflow-visible" width="100%" height="100%" style={{ opacity: 0.18 }}>
                 <line x1={bx + dot * 0.6} y1={by} x2={bx + dot * 0.6 + lean * hx} y2={by - hx} stroke={ink} strokeOpacity={0.3} strokeWidth={1} />
                 <circle cx={bx + dot * 0.6} cy={by} r={dot / 2} fill={ink} />
               </svg>
             );
           }
-          // writing: a clear caret in the pen's ink, from just under the baseline to the letters' tops, blinking
-          // (solid for a moment after each move); the pen hovers while the writer considers a fix
+          // writing: the bar, in the pen's ink, from just under the baseline to the letters' tops (you). With the pen's
+          // state given, the bead at its foot is the pen: there once it has caught up, lifted while it hovers over a fix.
+          // Every change is instant; only the bar blinks (solid for a moment after each move, and while the pen is behind)
+          const nib = penCaughtUp !== undefined;
           const top = by - asc * k * 1.05, bottom = by + desc * k * 0.6;
           const w = Math.max(2.25, Math.min(3.5, dot * 0.7));
           // at the end of the writing, a small gap after the last letter (where the next one goes)
           const cx = bx + (atEnd ? Math.max(3, dot) : 0);
+          const above = !hovering && !atEnd && !!insertsAbove?.(head);
+          const blink = sel.focused && !hovering && (!nib || !atEnd || !!penCaughtUp);
+          const bead = nib && sel.focused && atEnd && (hovering || penCaughtUp);
+          const r = Math.max(1.5, dot * 0.5);
           return (
-            <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && (hovering ? 'pen-hover' : 'caret-blink'))} width="100%" height="100%" style={{ opacity: sel.focused ? 1 : opacity }}>
-              <line x1={cx - lean * (bottom - by)} y1={bottom} x2={cx + lean * (by - top)} y2={top} stroke={ink} strokeOpacity={0.92} strokeWidth={w} strokeLinecap="round" />
-            </svg>
+            <>
+              <svg key={sel.focused ? moveKey : 'rest'} className={cn('absolute inset-0 overflow-visible', blink && 'caret-blink')} width="100%" height="100%" style={{ opacity: sel.focused ? (hovering ? 0.55 : 1) : 0.18 }}>
+                <line x1={cx - lean * (bottom - by)} y1={bottom} x2={cx + lean * (by - top)} y2={top} stroke={ink} strokeOpacity={0.92} strokeWidth={w} strokeLinecap="round" />
+              </svg>
+              {(bead || (above && sel.focused)) && (
+                <svg className="absolute inset-0 overflow-visible" width="100%" height="100%" data-nib={bead ? (hovering ? 'lifted' : 'bead') : 'above'}>
+                  {bead && (hovering
+                    ? <circle cx={cx + lean * 0.3 * hx} cy={by - 0.3 * hx} r={r} fill={ink} fillOpacity={0.7} />
+                    : <circle cx={cx} cy={by} r={r} fill={ink} />)}
+                  {above && (
+                    <polyline points={`${cx - 3},${by + 5.5} ${cx},${by + 1.5} ${cx + 3},${by + 5.5}`} fill="none" stroke={CARET_AMBER} strokeOpacity={0.75} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
+                  )}
+                </svg>
+              )}
+            </>
           );
         })()}
       </div>
@@ -549,7 +578,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
             onPointerCancel={onHandleUp}
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="mt-0.5 block size-4 rounded-full shadow-[0_1px_2px_rgba(60,45,20,0.3)]" style={{ background: '#d9a520' }} />
+            <span className="mt-0.5 block size-4 rounded-full shadow-[0_1px_2px_rgba(60,45,20,0.3)]" style={{ background: CARET_AMBER }} />
           </div>
         );
       })}
