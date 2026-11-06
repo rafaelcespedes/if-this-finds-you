@@ -131,6 +131,15 @@ clock, while a phone films your hands from above.
    recorder showed it, and writes `src/data/take-session.json` (and the webcam video to `public/take/`). Both stay
    out of git: a take is yours.
 
+4. Track the hands in the phone's video: `.venv-track/bin/python scripts/track-hands.py "<phone video>" --turn 180
+   --preview out/track-preview.mp4` (`--turn` stands the video the right way up: the keyboard at the top, your
+   hands coming in from the bottom). It finds the recorder's beeps in the video's sound to line it up with the take,
+   and writes `src/data/hand-track.json`: each hand's 21 points in every frame (Google's MediaPipe hand landmarker),
+   plus a preview with the tracked hands drawn on. Once, before the first time:
+   `python3.12 -m venv .venv-track && .venv-track/bin/pip install mediapipe opencv-python-headless numpy`, and the
+   model from `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task`
+   saved as `.venv-track/models/hand_landmarker.task`.
+
 The recorder and the scripted session share one clock (`src/ink-run.ts`): a keystroke at the same moment gives the
 same ink in both. The phone's video of your hands is what the ghost hands will follow; its sound carries the
 recorder's beeps and your key clicks, which line it up with the take.
@@ -154,6 +163,7 @@ recorder's beeps and your key clicks, which line it up with the take.
 | `src/ink-run.ts` | Typing that behaves like ink, on the video's clock: the engine calls every 10 ms, and the recording the video replays. Shared by the script, the recorder and the take. |
 | `recorder/` | The typing recorder (`main.ts`, `index.html`), its guide (`guide.html`) and the zip it saves (`zip.ts`). Built by `scripts/build-recorder.mjs`. |
 | `scripts/take.ts` | Turns a recorded take into the video's data. |
+| `scripts/track-hands.py` | Tracks the hands in the phone's video of a take, and lines it up with the take by its beeps. |
 | `scripts/node-ts.mjs` | Bundles a TypeScript script with the engine (esbuild) and runs it. |
 | `public/fonts/` | Schibsted Grotesk for the hint and timer, with its licence (SIL Open Font License, `OFL-SchibstedGrotesk.txt`). |
 
