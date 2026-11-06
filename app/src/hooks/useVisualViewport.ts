@@ -31,7 +31,10 @@ export function keepInView(top: number, bottom: number, lineH: number) {
   const viewTop = vv ? vv.offsetTop : 0;
   const viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
   const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const roomBelow = lineH * 3, roomAbove = lineH;
+  // a page with a bar that stays over the top of the view (the writing app's toolbar) says how tall it is, so the line
+  // being written never ends up under it (phone QA: landscape with the keyboard up)
+  const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--keep-top')) || 0;
+  const roomBelow = lineH * 3, roomAbove = lineH + bar;
   let dy = 0;
   if (bottom > viewBottom - roomBelow) dy = bottom - (viewBottom - roomBelow);
   else if (top < viewTop + roomAbove) dy = top - (viewTop + roomAbove);

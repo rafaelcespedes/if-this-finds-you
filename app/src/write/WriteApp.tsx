@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { DropdownMenu } from 'radix-ui';
-import { ChevronLeft, Copy, Ellipsis, EyeOff, FileText, Image as ImageIcon, PanelLeft, Pin, PinOff, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, Copy, Ellipsis, EyeOff, FileText, Image as ImageIcon, PanelLeft, Pin, PinOff, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { Sheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -20,10 +20,12 @@ import { handFor } from '@/lib/request';
 import { handOpts } from '@/lib/engine-features';
 import { writerName } from '@/lib/hands';
 import { Desk, type DeskApi } from './Desk';
+import { CleanDesk } from './CleanDesk';
+import type { Mark } from '@/lib/doc';
 import { Library } from './Library';
 import { WriterName, WriterPanel } from './WriterPanel';
 import {
-  MIGRATED_KEY, blankNote, deleteNote, getNote, isBlank, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
+  MIGRATED_KEY, asClean, asInk, blankNote, deleteNote, getNote, isBlank, isClean, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
   readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
 } from './notes';
 
@@ -120,6 +122,7 @@ export function WriteApp() {
   const settle = useCallback((): Note | null => {
     const n = notesRef.current.find((x) => x.id === currentRef.current);
     if (!n) return null;
+    if (isClean(n)) return n;
     const ink = desk.current?.flush();
     if (ink === undefined || ink === n.ink) return n;
     const now = { ...n, ink, at: Date.now() };
@@ -145,6 +148,25 @@ export function WriteApp() {
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => { void saveNow(); }, 400);
   }, [patch, saveNow]);
+
+  // a clean note: its words and marks
+  const onCleanChange = useCallback((text: string, marks: Mark[]) => {
+    const id = currentRef.current;
+    dirty.current = true;
+    patch(id, (x) => ({ ...x, text, marks, at: Date.now() }));
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => { void saveNow(); }, 400);
+  }, [patch, saveNow]);
+  /** In ink, or Clean: the note carries on the other way from here */
+  const setMode = (mode: 'ink' | 'clean') => {
+    const n = settle();
+    if (!n || (mode === 'clean') === isClean(n)) return;
+    const next = mode === 'clean' ? asClean(n) : asInk(n);
+    patch(n.id, () => next);
+    void keep(next);
+    say(mode === 'clean' ? 'Clean: edit freely, like a font.' : 'In ink: mistakes are crossed out.');
+    if (!coarse) requestAnimationFrame(() => desk.current?.focusEnd());
+  };
 
   // leaving: the pen's tail written down and kept, twice over (the database, and a copy it can't miss)
   useEffect(() => {
@@ -370,6 +392,12 @@ export function WriteApp() {
   const vv = useVisualViewport();
   const kbGap = typeof window !== 'undefined' ? Math.max(0, window.innerHeight - (vv.top + vv.height)) : 0;
   const kbUp = coarse && editing && kbGap > 120;
+  // a phone on its side with the keyboard up has a sliver of page left: the toolbar steps aside for the writing
+  const tight = kbUp && vv.height < 380;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--keep-top', tight ? '8px' : coarse ? '70px' : '62px');
+  }, [tight, coarse]);
 
   const words = useMemo(() => (current ? wordCount(noteText(current)) : 0), [current]);
   const ink = look ? inkColor(look.ink) : 'currentColor';
@@ -442,6 +470,7 @@ export function WriteApp() {
       data-phone={phone || undefined}
       data-away={chromeAway || undefined}
       data-kb={kbUp || undefined}
+      data-tight={tight || undefined}
       tabIndex={-1}
     >
       {showLib && (
@@ -493,6 +522,22 @@ export function WriteApp() {
               </p>
             ) : <div className="wr-spacer" />}
             <div className="wr-group">
+              {menu(
+                <button type="button" className="wr-mode" aria-label={`Writing: ${isClean(current) ? 'Clean' : 'In ink'}`} title="How it's written">
+                  <span>{isClean(current) ? 'Clean' : 'Ink'}</span><ChevronDown aria-hidden />
+                </button>,
+                <>
+                  <DropdownMenu.Item className="wr-menu-item wr-menu-mode" onSelect={() => setMode('ink')}>
+                    <span className="wr-menu-tick">{!isClean(current) && <Check aria-hidden />}</span>
+                    <span><b>In ink</b><small>Mistakes are crossed out, never erased</small></span>
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item className="wr-menu-item wr-menu-mode" onSelect={() => setMode('clean')}>
+                    <span className="wr-menu-tick">{isClean(current) && <Check aria-hidden />}</span>
+                    <span><b>Clean</b><small>Edit freely, like a font. Crossings-out are tidied away</small></span>
+                  </DropdownMenu.Item>
+                </>,
+                'end',
+              )}
               {writerButton}
               <button type="button" className="wr-icon" onClick={another} aria-label="Another writer" title="Another writer"><Shuffle aria-hidden /></button>
             </div>
@@ -501,16 +546,28 @@ export function WriteApp() {
             </div>
           </header>
 
-          <Desk
-            key={current.id + ':' + rev}
-            ref={desk}
-            note={current}
-            coarse={coarse}
-            onChange={onChange}
-            onTyped={onTyped}
-            onEditingChange={setEditing}
-            onSay={say}
-          />
+          {isClean(current) ? (
+            <CleanDesk
+              key={current.id + ':clean:' + rev}
+              ref={desk}
+              note={current}
+              coarse={coarse}
+              onChange={onCleanChange}
+              onTyped={onTyped}
+              onEditingChange={setEditing}
+            />
+          ) : (
+            <Desk
+              key={current.id + ':' + rev}
+              ref={desk}
+              note={current}
+              coarse={coarse}
+              onChange={onChange}
+              onTyped={onTyped}
+              onEditingChange={setEditing}
+              onSay={say}
+            />
+          )}
 
           {!phone && <div className="wr-status" aria-hidden>{words} {words === 1 ? 'word' : 'words'}</div>}
 

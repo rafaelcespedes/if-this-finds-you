@@ -12,7 +12,8 @@ import type { NoteState } from '@/lib/state';
 import type { PaperId } from '@/lib/papers';
 import { requestFor } from '@/lib/request';
 import { writeInkLetter } from '@/lib/write-live';
-import { decodeInk, inkText } from '@/lib/ink';
+import { decodeInk, encodeInk, inkFromText, inkText } from '@/lib/ink';
+import type { Mark } from '@/lib/doc';
 
 export type Look = { seed: string; style: string; pen: string; penSize: string; ink: string; paper: string; size: number; offsets: Record<string, number> };
 export interface Note {
@@ -26,6 +27,25 @@ export interface Note {
   pinned?: boolean;
   /** when it was thrown away (ms); gone for good 30 days later */
   thrown?: number;
+  /** how it's written: in ink (the default: corrections show, nothing is erased), or clean (edited freely, like a font) */
+  mode?: 'ink' | 'clean';
+  /** a clean note's words and their marks (underlined, pressed harder); its ink is set aside */
+  text?: string;
+  marks?: Mark[];
+}
+export const isClean = (n: Note) => n.mode === 'clean';
+/** the note as ink: a clean note's words, written out as ink from here on */
+export function asInk(n: Note): Note {
+  if (!isClean(n)) return n;
+  const t = n.text ?? '';
+  const doc = inkFromText(n.look.seed, n.look.style, t);
+  doc.salt = n.id.slice(-6); // the same words always come out the same (the library's picture of it too)
+  return { ...n, mode: 'ink', ink: t.trim() ? encodeInk(doc) : null, text: undefined, marks: undefined, at: Date.now() };
+}
+/** the note in Clean: its words as they read now (crossings-out tidied away), free to edit */
+export function asClean(n: Note): Note {
+  if (isClean(n)) return n;
+  return { ...n, mode: 'clean', text: noteText(n), marks: [], at: Date.now() };
 }
 
 export const THROWN_DAYS = 30;
@@ -60,6 +80,7 @@ export function stateOf(l: Look, inkLog: string | null = null): NoteState {
 const said = new Map<string, string>();
 /** what the note says (struck words left out), as it reads now */
 export function noteText(n: Note): string {
+  if (isClean(n)) return n.text ?? '';
   if (!n.ink) return '';
   const hit = said.get(n.ink);
   if (hit != null) return hit;
@@ -79,14 +100,16 @@ export function snippetOf(n: Note): string {
   const lines = noteText(n).split('\n').map((l) => l.trim()).filter(Boolean);
   return lines.slice(1).join(' ').slice(0, 120);
 }
-export const isBlank = (n: Note) => !n.ink || !decodeInk(n.ink)?.log.length;
+export const isBlank = (n: Note) => (isClean(n) ? !(n.text ?? '').trim() : !n.ink || !decodeInk(n.ink)?.log.length);
 export const wordCount = (text: string) => (text.match(/[\p{L}\p{N}’']+/gu) ?? []).length;
 
 /** a note's first sheet as SVG, written once and kept for the session (the library shows a few at a time) */
 const drawn = new Map<string, { svg: string; ink: string }>();
 export function noteSvg(n: Note): { svg: string; ink: string } | null {
+  // a clean note is drawn as its words in ink (no corrections to show)
+  if (isClean(n)) return n.text?.trim() ? noteSvg(asInk({ ...n, id: n.id })) : null;
   if (!n.ink) return null;
-  const key = `${n.id}|${n.look.seed}|${n.look.paper}|${n.look.ink}|${n.ink.length}`;
+  const key = `${n.id}|${n.look.seed}|${n.look.paper}|${n.look.ink}|${n.ink.length}|${n.ink.slice(-24)}`;
   const hit = drawn.get(key);
   if (hit) return hit;
   const req = { ...requestFor(stateOf(n.look, n.ink)), id: 0 };
