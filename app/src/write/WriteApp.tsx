@@ -1,452 +1,532 @@
-// The writing page (/write): a sheet of paper and a pen, nothing else. Typing behaves like ink (lib/ink.ts):
-// the pen trails the keys, so what it hasn't reached yet deletes cleanly; once it's written, Backspace crosses
-// it out, and pressing again (or holding it) crosses it out harder: a heavier strike, a scribble, then inked
-// out (engine again()). ⌘B goes over the words again, ⌘U underlines them, and Undo lifts only wet ink; on a dry
-// crossing-out it writes *stet* in the margin, with dots under the word, and the word counts again.
-// Nothing is ever deleted. Not linked from the site yet: a place to try what writing on a computer could feel like.
+// The writing app (/write): write with a generated hand the way you'd write with a font in Notes. Each note is a sheet
+// in one writer's hand (Desk.tsx), kept in this browser (notes.ts); the library lists them all (Library.tsx); the
+// writer is the font menu (WriterPanel.tsx). Typing behaves like ink: nothing written is ever erased.
+//
+// The page is the app: everything that isn't the paper floats over the desk, never over the sheet, and steps back
+// while you write (a pointer move or Esc brings it back; ⌘. keeps it away).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { CAP } from '@engine';
 import { toast } from 'sonner';
-import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
-import { LiveSheets } from '@/components/LiveSheets';
+import { DropdownMenu } from 'radix-ui';
+import { ChevronLeft, Copy, Ellipsis, EyeOff, FileText, Image as ImageIcon, PanelLeft, Pin, PinOff, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
-import { useElementWidth } from '@/hooks/useElementWidth';
+import { Sheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { UndoHistory, type Edit } from '@/lib/edits';
-import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, undoInk, type InkDoc } from '@/lib/ink';
-import { pageSetup } from '@/lib/live';
-import { getPaper } from '@/lib/papers';
+import { useVisualViewport } from '@/hooks/useVisualViewport';
+import { copyText, saveNote } from '@/lib/actions';
 import { inkColor } from '@/lib/inks';
 import { effective, effectiveHand } from '@/lib/params';
 import { handFor } from '@/lib/request';
 import { handOpts } from '@/lib/engine-features';
 import { writerName } from '@/lib/hands';
-import { APP_NAME, withLogo } from '@/lib/brand';
-import { Wordmark } from '@/components/Wordmark';
-import { FilePlus } from 'lucide-react';
-import { Shuffle } from 'lucide-react';
-import { SheetPile } from './SheetPile';
-import { BackspaceHold, type HoldAct } from './hold';
-import { PILE_MAX, blankSheet, isBlank, keep, newId, pickLook, readKept, stateOf, type Look, type Sheet } from './sheets';
+import { Desk, type DeskApi } from './Desk';
+import { Library } from './Library';
+import { WriterName, WriterPanel } from './WriterPanel';
+import {
+  MIGRATED_KEY, blankNote, deleteNote, getNote, isBlank, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
+  readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
+} from './notes';
 
-/** the sheet's largest size (px per mm), as on the desk */
-const MAX_PX_PER_MM = 3.9;
-const SHEET_GAP = 24;
+const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const MOD = isMac() ? '⌘' : 'Ctrl+';
+/** the note being written, kept here too as the page goes (the database can't always finish in time) */
+const PENDING_KEY = 'seedhand:write:pending';
+const LIB_KEY = 'seedhand:write:library';
 
-/** A change of sheets, as the sheets themselves moving (View Transitions: each sheet is named by its id, so the one
- * on the desk shrinks down into the pile and a sheet from the pile grows back up). Instant without the API or with
- * reduced motion. */
+/** A change of notes, as the sheets themselves moving (View Transitions: each sheet is named by its note's id, so the
+ * one on the desk shrinks into its row in the library and one opened from it grows back up). Instant without the
+ * API or with reduced motion. */
 function moveSheets(change: () => void) {
   const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
   if (!doc.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { change(); return; }
   doc.startViewTransition(() => flushSync(change));
 }
 
-const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-
 export function WriteApp() {
-  const [kept0] = useState(readKept);
-  // the sheet on the desk (its writer; its ink lives in the session) and the pile of earlier ones, newest first
-  const [cur, setCur] = useState<{ id: string; look: Look }>(() => { const c = kept0?.cur ?? blankSheet(pickLook()); return { id: c.id, look: c.look }; });
-  const [pile, setPile] = useState<Sheet[]>(() => kept0?.pile ?? []);
-  const look = cur.look;
-  const state = useMemo(() => stateOf(look), [look]);
-  const natural = useMemo(() => handFor(state.seed, state.style, handOpts(state)), [state]);
-  const eff = useMemo(() => effective(natural, state), [natural, state]);
-  const p = useMemo(() => effectiveHand(natural, eff), [natural, eff]);
-  const paper = getPaper(state.paper);
-  const ink = inkColor(state.ink);
-  const name = useMemo(() => writerName(state.seed), [state.seed]);
   const coarse = useMediaQuery('(pointer: coarse)');
-  const layout = useMemo(() => inkOpts(p, paper, eff.size, eff.lineSpacing).layout, [p, paper, eff.size, eff.lineSpacing]);
-  const startCaret = useMemo(() => {
-    const { opts } = pageSetup(p, paper, eff.size, eff.lineSpacing);
-    return { sheet: 0, x: opts.marginLeft as number, y: opts.firstBaseline as number, line: 0 };
-  }, [p, paper, eff.size, eff.lineSpacing]);
+  const phone = useMediaQuery('(max-width: 719.98px)');
 
-  // ---------- the ink ----------
-  // one session per hand: a new hand writes the same log again in its own writing
-  const docFor = useRef<{ id: string; doc: InkDoc } | null>(null);
-  const session = useMemo(() => {
-    const kept = kept0?.cur.id === cur.id ? kept0.cur.ink : null;
-    const doc = docFor.current?.id === cur.id ? docFor.current.doc : decodeInk(kept) ?? newInkDoc(look.seed, look.style);
-    const s = new InkSession(p, doc, layout, coarse);
-    docFor.current = { id: cur.id, doc: s.doc };
-    return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p, layout, coarse, cur.id]);
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
-  const undoHistory = useMemo(() => new UndoHistory(), [session]);
-  const [tick, setTick] = useState(0);
-  const [used, setUsed] = useState(() => !!kept0?.cur.ink || !!kept0?.pile.length);
+  // ---------- the notes ----------
+  const [notes, setNotes] = useState<Note[] | null>(null);
+  const [currentId, setCurrentId] = useState<string>('');
+  /** bumped when the open note is replaced from outside (another tab): the desk starts again from it */
+  const [rev, setRev] = useState(0);
+  const [keptOk, setKeptOk] = useState(true);
+  const notesRef = useRef<Note[]>([]);
+  notesRef.current = notes ?? [];
+  const currentRef = useRef(currentId);
+  currentRef.current = currentId;
+  const current = useMemo(() => notes?.find((n) => n.id === currentId) ?? null, [notes, currentId]);
 
-  // kept as you go (what the pen has written; the rest is written down when you leave)
-  const curRef = useRef(cur);
-  curRef.current = cur;
-  const pileRef = useRef(pile);
-  pileRef.current = pile;
-  /** the desk as it is now, as kept (the pen's unwritten tail is written first only when leaving) */
-  const deskNow = (): Sheet => {
-    const doc = sessionRef.current.doc;
-    return { id: curRef.current.id, look: curRef.current.look, ink: doc.log.length ? encodeInk(doc) : null, at: Date.now() };
-  };
-  const saveTimer = useRef(0);
-  const keptOk = useRef(true);
-  /** kept; if the browser won't (private mode, storage full), said once */
-  const keepDesk = () => {
-    const ok = keep({ v: 2, cur: deskNow(), pile: pileRef.current });
-    if (!ok && keptOk.current) toast('This browser isn’t keeping your sheets', { id: 'not-kept', description: 'They’ll be gone when you close the page.', duration: 8000 });
-    keptOk.current = ok;
-  };
-  const saveNow = () => { window.clearTimeout(saveTimer.current); keepDesk(); };
-  const save = useCallback(() => {
-    window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(keepDesk, 400);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const sync = useCallback(() => { setTick((n) => n + 1); save(); }, [save]);
-  // a sheet moved (new, back from the pile, thrown away) or a new writer: kept at once, once the page shows it
-  const settled = useRef(false);
+  // first: what's kept (and, once, what the first version kept), then the note that was open
   useEffect(() => {
-    if (!settled.current) { settled.current = true; return; }
-    saveNow();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pile, cur]);
+    let off = false;
+    (async () => {
+      let all = await readNotes();
+      const ok = all !== null;
+      all = all ?? [];
+      try {
+        if (ok && !localStorage.getItem(MIGRATED_KEY)) {
+          const old = oldNotes().filter((o) => !all!.some((n) => n.id === o.id));
+          for (const n of old) await putNote(n);
+          all = [...all, ...old];
+          localStorage.setItem(MIGRATED_KEY, '1');
+        }
+        // the note that was being written when the page went, if the database didn't get it in time
+        const pend = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null') as Note | null;
+        if (pend?.id) {
+          const i = all.findIndex((n) => n.id === pend.id);
+          if (i < 0 || all[i].at < pend.at) {
+            all = i < 0 ? [...all, pend] : all.map((n) => (n.id === pend.id ? pend : n));
+            if (ok) await putNote(pend);
+          }
+          localStorage.removeItem(PENDING_KEY);
+        }
+      } catch { /* fine: the notes as kept */ }
+      if (off) return;
+      const want = lastOpen();
+      let open = all.find((n) => n.id === want && !n.thrown) ?? [...all].filter((n) => !n.thrown).sort((a, b) => b.at - a.at)[0];
+      if (!open) {
+        open = blankNote(pickLook());
+        all = [...all, open];
+      }
+      if (!ok) setKeptOk(false);
+      setNotes(all);
+      setCurrentId(open.id);
+    })();
+    return () => { off = true; };
+  }, []);
+  useEffect(() => { if (currentId) rememberOpen(currentId); }, [currentId]);
+  useEffect(() => {
+    if (!keptOk) toast('This browser isn’t keeping your notes', { id: 'not-kept', description: 'They’ll be gone when you close the page (a private window, or storage that’s full).', duration: 10000 });
+  }, [keptOk]);
+
+  const desk = useRef<DeskApi>(null);
+  /** the open note has changes the database hasn't got yet */
+  const dirty = useRef(false);
+  const saveTimer = useRef(0);
+  const keep = useCallback(async (n: Note) => {
+    if (isBlank(n) && !n.pinned && !n.thrown) return true; // an empty note isn't kept until something's written on it
+    const ok = await putNote(n);
+    setKeptOk(ok);
+    return ok;
+  }, []);
+  const setAll = useCallback((fn: (all: Note[]) => Note[]) => {
+    notesRef.current = fn(notesRef.current);
+    setNotes(notesRef.current);
+  }, []);
+  const patch = useCallback((id: string, fn: (n: Note) => Note) => setAll((all) => all.map((n) => (n.id === id ? fn(n) : n))), [setAll]);
+  /** the open note as it is this moment, written down (the pen's unwritten tail first) */
+  const settle = useCallback((): Note | null => {
+    const n = notesRef.current.find((x) => x.id === currentRef.current);
+    if (!n) return null;
+    const ink = desk.current?.flush();
+    if (ink === undefined || ink === n.ink) return n;
+    const now = { ...n, ink, at: Date.now() };
+    patch(n.id, () => now);
+    return now;
+  }, [patch]);
+  const saveNow = useCallback(async () => {
+    window.clearTimeout(saveTimer.current);
+    const n = notesRef.current.find((x) => x.id === currentRef.current);
+    if (!n) return true;
+    const ok = await keep(n);
+    if (ok) dirty.current = false;
+    return ok;
+  }, [keep]);
+
+  // every change on the desk: the note's ink (kept in a moment) and its title follow
+  const onChange = useCallback((ink: string | null) => {
+    const id = currentRef.current;
+    const n = notesRef.current.find((x) => x.id === id);
+    if (!n || n.ink === ink) return;
+    dirty.current = true;
+    patch(id, (x) => ({ ...x, ink, at: Date.now() }));
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => { void saveNow(); }, 400);
+  }, [patch, saveNow]);
+
+  // leaving: the pen's tail written down and kept, twice over (the database, and a copy it can't miss)
   useEffect(() => {
     const leave = () => {
-      const s = sessionRef.current;
-      if (s.waiting) s.flush();
-      keep({ v: 2, cur: deskNow(), pile: pileRef.current });
+      const n = settle();
+      if (!n || isBlank(n)) return;
+      try { localStorage.setItem(PENDING_KEY, JSON.stringify(n)); } catch { /* fine */ }
+      void putNote(n).then((ok) => { if (ok) { try { localStorage.removeItem(PENDING_KEY); } catch { /* fine */ } } });
     };
     const hidden = () => { if (document.visibilityState === 'hidden') leave(); };
     window.addEventListener('pagehide', leave);
     document.addEventListener('visibilitychange', hidden);
     return () => { window.removeEventListener('pagehide', leave); document.removeEventListener('visibilitychange', hidden); };
-  }, []);
+  }, [settle]);
 
-  // the pen catches up with the typing: the drawn pen (LiveSheets) is the clock, the typing handed to it a word at a time
-  const drawnPen = useRef<{ at(now: number): { letters: number } } | null>(null);
-  useEffect(() => {
-    let last = performance.now();
-    const id = window.setInterval(() => {
-      const s = sessionRef.current;
-      const now = performance.now();
-      const dt = now - last;
-      last = now;
-      if (s.waiting && s.step(dt, false, drawnPen.current?.at(now / 1000).letters)) sync();
-    }, 130);
-    return () => window.clearInterval(id);
-  }, [session, sync]);
+  // another tab kept a note: the library takes it; the open note too, unless it has changes of its own here
+  useEffect(() => listen(async (m) => {
+    if (m.kind === 'delete') { setAll((all) => all.filter((n) => n.id !== m.id || n.id === currentRef.current)); return; }
+    const n = await getNote(m.id);
+    if (!n) return;
+    const mine = notesRef.current.find((x) => x.id === n.id);
+    if (mine && mine.at >= n.at) return;
+    if (n.id === currentRef.current && dirty.current) return;
+    setAll((all) => (all.some((x) => x.id === n.id) ? all.map((x) => (x.id === n.id ? n : x)) : [...all, n]));
+    if (n.id === currentRef.current) setRev((r) => r + 1);
+  }), [setAll]);
 
-  const { live, extras, geometry, text, hovering } = useMemo(() => {
-    const draft = session.draft();
-    const live = inkLive(p, session.page, paper, eff.size, eff.lineSpacing, draft);
-    const extras = inkExtras(live, { draft, signed: false, writerName: '' });
-    const text = session.text();
-    return { live, extras, geometry: inkGeometry(live, p, session), text, hovering: session.hovering };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, tick, p, paper, eff.size, eff.lineSpacing]);
-
-  // ---------- typing ----------
-  const editor = useRef<PaperEditorApi>(null);
-  // writing: the pile steps back for a moment after each key
-  // the pile steps back to its edges on the first key, and comes back when the pointer moves, the letter is left, or
-  // Esc (never on a timer: it mustn't bob up while you pause to think)
+  // ---------- moving between notes ----------
+  /** the note on the desk is put away: kept, or let go if nothing was written on it (as an empty note goes in Notes) */
+  const leaveCurrent = () => {
+    const n = settle();
+    if (!n) return;
+    if (isBlank(n) && !n.pinned) {
+      setAll((all) => all.filter((x) => x.id !== n.id));
+      void deleteNote(n.id);
+    } else void keep(n);
+    dirty.current = false;
+  };
+  const [libOpen, setLibOpen] = useState(() => { try { return localStorage.getItem(LIB_KEY) !== '0'; } catch { return true; } });
+  useEffect(() => { try { localStorage.setItem(LIB_KEY, libOpen ? '1' : '0'); } catch { /* fine */ } }, [libOpen]);
+  const [phoneScreen, setPhoneScreen] = useState<'note' | 'library'>('note');
   const [writing, setWriting] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const typed = useCallback(() => setWriting(true), []);
+  const [said, say] = useState('');
+
+  const newNote = (look?: Look) => {
+    const n = notesRef.current.find((x) => x.id === currentRef.current);
+    if (n && isBlank(n) && !look) { setPhoneScreen('note'); desk.current?.focus(); return n; }
+    const next = blankNote(look ?? n?.look ?? pickLook());
+    moveSheets(() => {
+      leaveCurrent();
+      setAll((all) => [...all, next]);
+      setCurrentId(next.id);
+      setPhoneScreen('note');
+    });
+    setWriting(false);
+    say('A new note.');
+    return next;
+  };
+  const openNote = (id: string) => {
+    if (id === currentRef.current) { setPhoneScreen('note'); desk.current?.focus(); return; }
+    moveSheets(() => {
+      leaveCurrent();
+      setCurrentId(id);
+      setPhoneScreen('note');
+    });
+  };
+  const restore = (id: string) => {
+    const n = notesRef.current.find((x) => x.id === id);
+    if (!n) return;
+    const back: Note = { ...n, thrown: undefined };
+    patch(id, () => back);
+    void putNote(back);
+    say('Note put back.');
+  };
+  const throwAway = (id: string) => {
+    const n = id === currentRef.current ? settle() : notesRef.current.find((x) => x.id === id);
+    if (!n) return;
+    const gone: Note = { ...n, thrown: Date.now(), pinned: false };
+    const wasOpen = id === currentRef.current;
+    const next = wasOpen ? notesRef.current.filter((x) => !x.thrown && x.id !== id).sort((a, b) => b.at - a.at)[0] : null;
+    moveSheets(() => {
+      patch(id, () => gone);
+      if (wasOpen) {
+        if (next) setCurrentId(next.id);
+        else { const b = blankNote(n.look); setAll((all) => [...all, b]); setCurrentId(b.id); }
+      }
+    });
+    if (!isBlank(n)) void putNote(gone);
+    else { setAll((all) => all.filter((x) => x.id !== id)); void deleteNote(id); return; }
+    say('Note thrown away.');
+    // each note thrown away has its own Undo, so two in a row can both come back
+    toast(`“${titleOf(n) || 'Note'}” thrown away`, { id: `thrown-${id}`, duration: 6000, action: { label: 'Undo', onClick: () => restore(id) } });
+  };
+  const deleteForGood = (id: string) => {
+    setAll((all) => all.filter((x) => x.id !== id));
+    void deleteNote(id);
+  };
+  const pin = (id: string, pinned: boolean) => {
+    const n = notesRef.current.find((x) => x.id === id);
+    if (!n) return;
+    const next = { ...n, pinned };
+    patch(id, () => next);
+    void putNote(next);
+  };
+
+  // ---------- the writer, the pen, the paper ----------
+  const look = current?.look;
+  const hand = useMemo(() => {
+    if (!look) return null;
+    const s = stateOf(look);
+    const natural = handFor(s.seed, s.style, handOpts(s));
+    return effectiveHand(natural, effective(natural, s));
+  }, [look]);
+  const setLook = (change: Partial<Look>) => {
+    const n = notesRef.current.find((x) => x.id === currentRef.current);
+    if (!n) return;
+    settle();
+    const next = { ...n, look: { ...n.look, ...change }, at: Date.now() };
+    patch(n.id, () => next);
+    void keep(next);
+  };
+  const another = () => {
+    const n = notesRef.current.find((x) => x.id === currentRef.current);
+    if (!n) return;
+    const w = pickLook(n.look.seed);
+    setLook({ seed: w.seed, style: w.style, offsets: w.offsets });
+    say(`${writerName(w.seed)} is writing now.`);
+    if (!coarse) requestAnimationFrame(() => desk.current?.focus());
+  };
+
+  // ---------- the note's own actions ----------
+  // the fair copy is written out once its desk is up
+  const pendingWrite = useRef<{ id: string; text: string } | null>(null);
+  const fairCopy = () => {
+    const text = desk.current?.text().trim() ?? '';
+    if (!text) { toast('Nothing to copy out yet', { id: 'fair-none' }); return; }
+    const from = notesRef.current.find((x) => x.id === currentRef.current);
+    const n = newNote(from?.look);
+    pendingWrite.current = { id: n.id, text };
+    toast('A fair copy', { id: 'fair', description: 'The draft is in your notes.', duration: 4000 });
+  };
   useEffect(() => {
-    if (!writing) return;
+    const w = pendingWrite.current;
+    if (!w || w.id !== currentId) return;
+    pendingWrite.current = null;
+    const t = window.setTimeout(() => desk.current?.write(w.text), 420);
+    return () => window.clearTimeout(t);
+  }, [currentId]);
+  const copyAll = async () => {
+    await copyText(desk.current?.text() ?? '');
+    toast('Copied', { id: 'copied', description: 'The words, as they read now.', duration: 2000 });
+  };
+  const fileName = () => (titleOf(current!) || 'Note').replace(/[\\/:*?"<>|]+/g, '').slice(0, 60);
+  const downloadText = () => {
+    const blob = new Blob([desk.current?.text() ?? ''], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${fileName()}.txt`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  const downloadImage = async () => {
+    try {
+      const blob = await desk.current!.image();
+      await saveNote(blob, fileName(), coarse);
+    } catch (e) {
+      toast('The image couldn’t be made', { id: 'img-fail', description: String((e as Error)?.message ?? e) });
+    }
+  };
+
+  // ---------- the chrome steps back while you write ----------
+  const [hideUi, setHideUi] = useState(false);
+  const keys = useRef(0);
+  const onTyped = useCallback(() => {
+    // from the second key: the first may be a stray one
+    keys.current += 1;
+    if (keys.current >= 2) setWriting(true);
+  }, []);
+  useEffect(() => {
+    if (!writing) { keys.current = 0; return; }
     let x = -1, y = -1;
     const moved = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
       if (x < 0) { x = e.clientX; y = e.clientY; return; }
       if (Math.hypot(e.clientX - x, e.clientY - y) > 6) setWriting(false);
     };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setWriting(false); };
     window.addEventListener('pointermove', moved);
-    window.addEventListener('keydown', esc);
-    return () => { window.removeEventListener('pointermove', moved); window.removeEventListener('keydown', esc); };
+    return () => window.removeEventListener('pointermove', moved);
   }, [writing]);
-  useEffect(() => { if (!editing) setWriting(false); }, [editing]);
-  // the pile open (its sheets in a column); opening and closing move the sheets themselves
-  const [pileOpen, setPileOpenNow] = useState(false);
-  const setPileOpen = useCallback((o: boolean) => moveSheets(() => setPileOpenNow(o)), []);
-  // said aloud to screen readers: a sheet set aside, brought back, thrown away
-  const [said, say] = useState('');
-  // Backspace at a crossed-out word, pressed or held, on any keyboard (hold.ts)
-  const hold = useMemo(() => new BackspaceHold({ late: () => { setUsed(true); sync(); } }), [sync]);
-  hold.touch = coarse;
-  const onEdit = useCallback((e: Edit) => {
-    const s = sessionRef.current;
-    // a deletion the phone made after the page swallowed it (Android won't cancel one): the text stays, the caret too
-    const caret = hold.dropped(e);
-    if (caret != null) { queueMicrotask(() => editor.current?.setSelection(caret)); return; }
-    setUsed(true);
-    if (e.kind === 'undo') {
-      // the browser's own undo (a menu, a shake): the same as ⌘Z
-      onHistoryRef.current('undo');
-      return;
-    }
-    const before = s.text();
-    typed();
-    s.edit(e);
-    undoHistory.record(before, s.text(), e);
-    sync();
-  }, [undoHistory, sync, hold]);
+  const [editing, setEditing] = useState(false);
+  const chromeAway = (writing && !coarse) || hideUi;
 
-  // Undo takes back what the pen hasn't written yet, and lifts wet ink (the last 3 s); dry ink stays, but a word crossed
-  // out (and crossed out harder) is let stand: stet (lib/ink.ts)
-  const onHistory = useCallback((dir: 'undo' | 'redo') => {
-    const s = sessionRef.current;
-    const cur = s.text();
-    // a mark just made (crossed out again, an underline, a word gone over): lift it while it's wet
-    const lastEv = s.doc.log[s.doc.log.length - 1] as { t?: string; why?: string; kind?: string } | undefined;
-    const markOnTop = !!lastEv && ((lastEv.t === 'strike' && lastEv.why === 'again') || lastEv.t === 'underline' || (lastEv.t === 'pen' && lastEv.kind === 'retrace'));
-    if (dir === 'undo' && !s.waiting && markOnTop) {
-      // (an underline or words gone over again: every run the command marked, together)
-      if (s.liftFormat() || s.undo()) { sync(); return; }
-      // dry: an underline or words gone over stay as they are (a word crossed out harder goes on, to be let stand)
-      if (lastEv.t !== 'strike') { toast('The ink is dry', { id: 'ink-dry', description: lastEv.t === 'underline' ? 'An underline stays once it’s dry.' : 'Words gone over stay once they’re dry.' }); return; }
-    }
-    const e = dir === 'undo' ? undoHistory.undo(cur) : undoHistory.redo(cur);
-    if (!e) {
-      if (dir === 'undo' && !s.waiting && s.doc.log.length) {
-        if (s.undo() || s.stetLast()) { undoHistory.clear(); sync(); return; }
-        toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' });
+  // ---------- keys for the whole page ----------
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = isMac() ? e.metaKey : e.ctrlKey;
+      const k = e.key.toLowerCase();
+      if (e.key === 'Escape' && (writing || hideUi)) { setWriting(false); setHideUi(false); return; }
+      // ⌘S: it's already kept, on this device; say so (and say so when it isn't)
+      if (mod && !e.altKey && k === 's') {
+        e.preventDefault();
+        settle();
+        void saveNow().then((ok) => toast(ok ? 'Kept on this device' : 'Not kept', {
+          id: 'kept', duration: ok ? 1600 : 6000,
+          description: ok ? undefined : 'This browser isn’t keeping notes. Copy or save what you’ve written.',
+        }));
+        return;
       }
-      return;
-    }
-    const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
-    // redo: the step written again as it was made (typed, or deleted: struck); never as autocorrect's whole-word
-    // replacement, which struck the word next to it. Undo: unwritten typing taken back, wet ink lifted (lib/ink.ts)
-    if (dir === 'redo') s.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
-    else if (!undoInk(s, e, { stet: true })) {
-      undoHistory.keep(dir);
-      sync();
-      toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' });
-      return;
-    }
-    if (s.text() !== want) undoHistory.clear();
-    sync();
-    requestAnimationFrame(() => editor.current?.setSelection(e.at + e.ins.length));
-  }, [undoHistory, sync]);
-  const onHistoryRef = useRef(onHistory);
-  onHistoryRef.current = onHistory;
+      if (mod && k === '.' && !e.shiftKey) { e.preventDefault(); setHideUi((h) => !h); return; }
+      if (mod && k === '\\') { e.preventDefault(); setLibOpen((o) => !o); return; }
+      // a new note (⌘N belongs to the browser): ⌥⌘N
+      if (mod && e.altKey && e.code === 'KeyN') { e.preventDefault(); newNote(); return; }
+      // a key with nowhere to go (the pen was put down: Tab, a closed menu): back to the paper, so nothing typed is lost
+      const a = document.activeElement as HTMLElement | null;
+      const free = !a || a === document.body || a.classList.contains('wr-app');
+      if (free && !mod && !e.altKey && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Enter')) desk.current?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
-  // ⌘B: the words gone over again, heavier. ⌘U: underlined by hand. ⌘↩: a P.S.
-  const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
-    const s = sessionRef.current;
-    if (cmd === 'ps') { s.postScript(); sync(); return; }
-    if (s.format(cmd === 'underline' ? 'underline' : 'press', from, to)) {
-      sync();
-      // the marked words stand clear of the selection's tint, the caret after them
-      requestAnimationFrame(() => editor.current?.setSelection(to));
-    }
-  }, [sync]);
+  // ---------- phones: the keyboard's bar ----------
+  const vv = useVisualViewport();
+  const kbGap = typeof window !== 'undefined' ? Math.max(0, window.innerHeight - (vv.top + vv.height)) : 0;
+  const kbUp = coarse && editing && kbGap > 120;
 
-  // Backspace or Delete at a crossed-out word: crossed out again, harder each time. Held down, it keeps going
-  // (one pass every AGAIN_EVERY ms) until the word is inked out, and stops there; a fresh press after that
-  // deletes as usual. A phone's held key is read from how fast its deletions come (hold.ts).
-  const againAt = (at: number) => sessionRef.current.again(at);
-  const textSel = (t: EventTarget | null) => ((t as HTMLElement | null)?.tagName === 'TEXTAREA' ? editor.current?.selection() ?? null : null);
-  const held = (act: HoldAct) => {
-    if (act === 'again') { setUsed(true); sync(); }
-    return act !== 'pass';
-  };
-  // a phone's deletions as they come (keydown doesn't name them on Android, and iOS deletes whole words without one)
-  useEffect(() => {
-    const desk = deskRef.current;
-    if (!desk) return;
-    const before = (e: InputEvent) => { if (held(hold.input(e, textSel(e.target), againAt))) e.preventDefault(); };
-    desk.addEventListener('beforeinput', before, true);
-    return () => desk.removeEventListener('beforeinput', before, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hold]);
-  const onKeyDownCapture = (e: React.KeyboardEvent) => {
-    // ⌘S: it's already kept (on this device); say so instead of the browser's save dialog
-    if ((isMac() ? e.metaKey : e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 's') {
-      e.preventDefault();
-      const s = sessionRef.current;
-      if (s.waiting) { s.flush(); sync(); }
-      saveNow();
-      toast('Kept on this device', { id: 'kept', duration: 1600 });
-      return;
-    }
-    if (held(hold.key(e.nativeEvent, textSel(e.target), againAt))) { e.preventDefault(); e.stopPropagation(); }
-  };
-  const onKeyUpCapture = (e: React.KeyboardEvent) => hold.keyUp(e.nativeEvent);
+  const words = useMemo(() => (current ? wordCount(noteText(current)) : 0), [current]);
+  const ink = look ? inkColor(look.ink) : 'currentColor';
+  const title = current ? titleOf(current) : '';
+  const showLib = phone ? phoneScreen === 'library' : libOpen;
 
-  // ---------- the page ----------
-  const deskRef = useRef<HTMLDivElement>(null);
-  const deskW = useElementWidth(deskRef);
-  const pxPerMm = deskW > 0 ? Math.min(MAX_PX_PER_MM, deskW / paper.w) : 0;
-  // on a computer the pen is on the paper from the start; on a phone, a tap brings the keyboard up
-  useEffect(() => {
-    if (coarse || !pxPerMm) return;
-    editor.current?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coarse, !!pxPerMm]);
+  if (!notes || !current || !look || !hand) return <div className="wr-app" data-loading />;
 
-  const changeWriter = () => {
-    const s = sessionRef.current;
-    if (s.waiting) s.flush();
-    docFor.current = { id: cur.id, doc: s.doc };
-    setCur({ id: cur.id, look: pickLook(look.seed) });
-    // back to writing on a computer; on a phone the keyboard waits for the next tap
-    if (!coarse) requestAnimationFrame(() => editor.current?.focus());
-  };
-  /** the sheet on the desk goes down onto the pile; a fresh one, by the same writer, takes its place */
-  const newSheet = () => {
-    const s = sessionRef.current;
-    if (s.waiting) s.flush();
-    if (!s.doc.log.length) return;
-    // a full pile never drops its oldest sheet quietly: it asks for room first
-    if (pile.length >= PILE_MAX) {
-      toast('The pile is full', {
-        id: 'pile-full',
-        description: `It keeps ${PILE_MAX} sheets. Throw an old one away to start a new one.`,
-        action: { label: 'Open the pile', onClick: () => setPileOpen(true) },
-      });
-      return;
-    }
-    const down = deskNow();
-    const next = { id: newId(), look };
-    moveSheets(() => {
-      setPile((p) => [down, ...p]);
-      setCur(next);
-    });
-    say('Sheet set aside. A fresh sheet is on the desk.');
-    undoHistory.clear();
-    // back to writing on a computer; on a phone the keyboard waits for the next tap
-    if (!coarse) requestAnimationFrame(() => editor.current?.focus());
-  };
-  /** a sheet from the pile comes back up to the desk; the one there (if anything's on it) goes down in its place */
-  const bringBack = (id: string) => {
-    const picked = pile.find((x) => x.id === id);
-    if (!picked) return;
-    const s = sessionRef.current;
-    if (s.waiting) s.flush();
-    const down = deskNow();
-    const rest = pile.filter((x) => x.id !== id);
-    docFor.current = { id: picked.id, doc: decodeInk(picked.ink) ?? newInkDoc(picked.look.seed, picked.look.style) };
-    moveSheets(() => {
-      setPile(isBlank(down) ? rest : [down, ...rest]);
-      setCur({ id: picked.id, look: picked.look });
-      setPileOpenNow(false);
-    });
-    say('Sheet brought back to the desk.');
-    // back to writing on a computer; on a phone the keyboard waits for the next tap
-    if (!coarse) requestAnimationFrame(() => editor.current?.focus());
-  };
-  /** thrown away, with a moment to take it back */
-  const throwAway = (id: string) => {
-    const at = pile.findIndex((x) => x.id === id);
-    if (at < 0) return;
-    const gone = pile[at];
-    setPile((p) => p.filter((x) => x.id !== id));
-    say('Sheet thrown away.');
-    toast('Sheet thrown away', {
-      id: 'thrown',
-      duration: 6000,
-      action: { label: 'Undo', onClick: () => { setPile((p) => [...p.slice(0, at), gone, ...p.slice(at)]); } },
-    });
-  };
-  const mod = isMac() ? '⌘' : 'Ctrl+';
+  const focusBack = (e: Event) => { if (!coarse) { e.preventDefault(); desk.current?.focus(); } };
+
+  const writerButton = (
+    <Sheet
+      title="Writer"
+      showTitle={false}
+      side="bottom"
+      align="end"
+      className="wr-pop wr-pop-writer"
+      onCloseAutoFocus={focusBack}
+      trigger={
+        <button type="button" className="wr-writer-chip" style={{ '--chip-ink': ink } as React.CSSProperties} aria-label={`Writer: ${writerName(look.seed)}. Change the writer, pen, ink or paper`} title="Writer, pen and paper">
+          <WriterName look={look} color="inherit" emPx={phone ? 16 : 17} />
+        </button>
+      }
+    >
+      <WriterPanel look={look} sample={title || 'The quick brown fox'} hand={hand} onLook={setLook} onAnother={another} />
+    </Sheet>
+  );
+
+  const noteItems = (
+    <>
+      <DropdownMenu.Item className="wr-menu-item" onSelect={fairCopy}><WandSparkles aria-hidden /> Make a fair copy</DropdownMenu.Item>
+      <DropdownMenu.Item className="wr-menu-item" onSelect={() => pin(current.id, !current.pinned)}>
+        {current.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />} {current.pinned ? 'Unpin' : 'Pin'}
+      </DropdownMenu.Item>
+      <DropdownMenu.Separator className="wr-menu-sep" />
+      <DropdownMenu.Item className="wr-menu-item" onSelect={copyAll}><Copy aria-hidden /> Copy the words</DropdownMenu.Item>
+      <DropdownMenu.Item className="wr-menu-item" onSelect={downloadImage}><ImageIcon aria-hidden /> Save as an image</DropdownMenu.Item>
+      <DropdownMenu.Item className="wr-menu-item" onSelect={downloadText}><FileText aria-hidden /> Save as text</DropdownMenu.Item>
+      <DropdownMenu.Separator className="wr-menu-sep" />
+      <DropdownMenu.Item className="wr-menu-item" data-danger onSelect={() => throwAway(current.id)}><Trash2 aria-hidden /> Throw away</DropdownMenu.Item>
+    </>
+  );
+  const menu = (trigger: React.ReactElement, items: React.ReactNode, align: 'start' | 'end') => (
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content className="wr-menu" align={align} sideOffset={8} collisionPadding={12} onCloseAutoFocus={focusBack}>
+          {items}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+  const moreItems = (
+    <>
+      {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setHideUi(true)}><EyeOff aria-hidden /> Hide the toolbar <kbd>{MOD}.</kbd></DropdownMenu.Item>}
+      <DropdownMenu.Label className="wr-menu-label">
+        {words} {words === 1 ? 'word' : 'words'} · {keptOk ? 'Kept on this device' : 'Not kept in this browser'}
+      </DropdownMenu.Label>
+      <DropdownMenu.Separator className="wr-menu-sep" />
+      <DropdownMenu.Item className="wr-menu-item wr-menu-quiet" onSelect={() => { window.location.href = '/'; }}>
+        The handwriting is from If This Finds You
+      </DropdownMenu.Item>
+    </>
+  );
 
   return (
     <div
-      className="write-page"
-      // a phone won't open its keyboard for a page on its own, only for a tap: any tap on the desk opens it, at the
-      // end of what's written (a tap on the sheet itself places the caret where it lands, as everywhere)
-      onClick={(e) => {
-        if (!coarse) return;
-        const t = e.target as HTMLElement;
-        if (t.closest('[data-paper], button, a, input, textarea, select, [role="dialog"], [data-sonner-toaster], .write-pile, .write-pile-scrim')) return;
-        const at = text.length;
-        editor.current?.setSelection(at);
-      }}
+      className="wr-app"
+      data-lib={showLib || undefined}
+      data-phone={phone || undefined}
+      data-away={chromeAway || undefined}
+      data-kb={kbUp || undefined}
+      tabIndex={-1}
     >
-      <header className="write-top">
-        <a href={withLogo('/')} aria-label={`${APP_NAME}: home`} className="write-home"><Wordmark /></a>
-        <div className="write-tools">
-          <span className="write-writer" title="The writer of this page">{name}</span>
-          {/* a new sheet: words on a computer, a page with a plus on a phone */}
-          <button type="button" className="write-new" onClick={newSheet} disabled={!session.doc.log.length} aria-label="New sheet" title="New sheet">
-            <FilePlus aria-hidden />
-            <span className="write-new-word">New sheet</span>
-          </button>
-          <button type="button" className="write-cta" onClick={changeWriter}>
-            <Shuffle aria-hidden />
-            Change writer
-          </button>
-        </div>
-      </header>
-      <main className="write-desk" ref={deskRef} onKeyDownCapture={onKeyDownCapture} onKeyUpCapture={onKeyUpCapture}>
-        {/* named by the sheet's id: a new sheet or one from the pile moves as itself (moveSheets) */}
-        <div style={{ viewTransitionName: `sheet-${cur.id}` }}>
-        {pxPerMm > 0 && (
-          <PaperEditor
-            ref={editor}
-            text={text}
-            hovering={hovering}
-            mode="ink"
-            onEdit={onEdit}
-            onHistory={onHistory}
-            start={startCaret}
-            onFormat={onFormat}
-            writerName={name}
-            geometry={geometry}
-            pxPerMm={pxPerMm}
-            sheetW={live.paper.w}
-            sheetH={live.paper.h}
-            gapPx={SHEET_GAP}
-            ink={ink}
-            penWidthU={p.penWidth as number}
-            xHeightU={(p.xHeight as number) * CAP}
-            onEditingChange={setEditing}
-          >
-            <LiveSheets
-              live={live}
-              pxPerMm={pxPerMm}
-              gapPx={SHEET_GAP}
-              ink={ink}
-              inkKey={eff.inkKey}
-              extras={extras}
-              // each sheet is drawn as it is (one from the pile isn't written out again), and so is a new writer
-              handKey={cur.id + ':' + state.seed + ':' + state.style}
-              hold={0}
-              trail={session.trail}
-              penRef={drawnPen}
-              dim={session.pendingKeys}
-            />
-          </PaperEditor>
-        )}
-        </div>
-      </main>
-      <SheetPile
-        sheets={pile}
-        open={pileOpen}
-        setOpen={setPileOpen}
-        room={Math.max(160, Math.min(deskW, typeof window !== 'undefined' ? window.innerWidth - 32 : deskW))}
-        tucked={writing}
-        hidden={coarse && editing}
-        onBring={bringBack}
-        onThrow={throwAway}
-      />
-      <div className="sr-only" aria-live="polite">{said}</div>
-      {coarse && !used && <p className="write-keys write-tap" aria-hidden>Tap anywhere to write</p>}
-      {!coarse && (
-        <p className="write-keys" data-used={used || undefined} aria-hidden>
-          <span><kbd>⌫</kbd> crosses out</span>
-          <span>keep pressing to scribble it out</span>
-          <span><kbd>{mod}B</kbd> goes over it</span>
-          <span><kbd>{mod}U</kbd> underlines</span>
-        </p>
+      {showLib && (
+        <aside className="wr-side" aria-label="Your notes">
+          {phone && (
+            <div className="wr-side-top">
+              <h1>Notes</h1>
+              <button type="button" className="wr-icon" onClick={() => newNote()} aria-label="New note"><SquarePen aria-hidden /></button>
+            </div>
+          )}
+          <Library
+            notes={notes}
+            current={current.id}
+            onOpen={openNote}
+            onPin={pin}
+            onThrow={throwAway}
+            onRestore={restore}
+            onDelete={deleteForGood}
+            screen={phone}
+          />
+        </aside>
       )}
-      {/* the bottom of the desk is the pile's */}
-      <Toaster position="top-center" />
+
+      {!(phone && showLib) && (
+        <main className="wr-main">
+          <header className="wr-bar" aria-label="Toolbar">
+            <div className="wr-group">
+              {phone ? (
+                <button type="button" className="wr-icon wr-back" onClick={() => { settle(); setPhoneScreen('library'); }} aria-label="Notes">
+                  <ChevronLeft aria-hidden /><span>Notes</span>
+                </button>
+              ) : (
+                <button type="button" className="wr-icon" onClick={() => setLibOpen((o) => !o)} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} title={`Notes  ${MOD}\\`}>
+                  <PanelLeft aria-hidden />
+                </button>
+              )}
+              {!phone && <button type="button" className="wr-icon" onClick={() => newNote()} aria-label="New note" title={`New note  ⌥${MOD}N`}><SquarePen aria-hidden /></button>}
+            </div>
+            {!phone && menu(
+              <button type="button" className="wr-title" aria-label={`${title || 'New note'}: note actions`}>
+                <span>{title || 'New note'}</span>
+              </button>,
+              noteItems, 'start',
+            )}
+            {/* the first words on a blank note, in the bar's empty middle (never over the paper) */}
+            {!current.ink && !writing ? (
+              <p className="wr-first" aria-hidden>
+                {coarse ? 'Tap the paper to write' : <>Type to write. Grey letters delete cleanly until the pen reaches them; then <kbd>⌫</kbd> crosses out.</>}
+              </p>
+            ) : <div className="wr-spacer" />}
+            <div className="wr-group">
+              {writerButton}
+              <button type="button" className="wr-icon" onClick={another} aria-label="Another writer" title="Another writer"><Shuffle aria-hidden /></button>
+            </div>
+            <div className="wr-group">
+              {menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, phone ? <>{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</> : moreItems, 'end')}
+            </div>
+          </header>
+
+          <Desk
+            key={current.id + ':' + rev}
+            ref={desk}
+            note={current}
+            coarse={coarse}
+            onChange={onChange}
+            onTyped={onTyped}
+            onEditingChange={setEditing}
+            onSay={say}
+          />
+
+          {!phone && <div className="wr-status" aria-hidden>{words} {words === 1 ? 'word' : 'words'}</div>}
+
+          {kbUp && (
+            <div className="wr-kbar" style={{ bottom: kbGap }} role="toolbar" aria-label="Writing">
+              <button type="button" className="wr-icon" onPointerDown={(e) => e.preventDefault()} onClick={() => desk.current?.history('undo')} aria-label="Undo"><Undo2 aria-hidden /></button>
+              <button type="button" className="wr-icon" onPointerDown={(e) => e.preventDefault()} onClick={another} aria-label="Another writer"><Shuffle aria-hidden /></button>
+              <div className="wr-spacer" />
+              <button type="button" className="wr-done" onPointerDown={(e) => e.preventDefault()} onClick={() => (document.activeElement as HTMLElement | null)?.blur()}>Done</button>
+            </div>
+          )}
+        </main>
+      )}
+
+      <div className="sr-only" aria-live="polite">{said}</div>
+      <Toaster position={phone ? 'top-center' : 'bottom-center'} />
     </div>
   );
 }
