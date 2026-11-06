@@ -40,15 +40,17 @@ export { layout, inkPage, writeAt, pageHabits, pageMetrics, spreadOf, lineBaseli
 export { geometry, pathD, offsetStops } from './editing.js';
 export { kinematics } from './kinematics.js';
 export { timeline, frameAt, strokeFraction, createPlayer, playSVG, createPen, paintPen } from './animate.js';
-export { renderSVG, contoursToD, renderRun, runRenderer, runTransform, runChanges } from './render-svg.js';
+export { renderSVG, contoursToD, renderRun, runRenderer, runTransform, runChanges, highlightsSVG } from './render-svg.js';
 export { inkSVG } from './ink-svg.js';
 export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, buildFontPackage, verify, glyphName, fontNames, handCode, GF_LATIN_CORE } from './fontbuild.js';
 export { writeWithJourney, journeyAmount, fixHabits, journeyText } from './corrections.js';
-export { newInkDoc, newView, replay, apply, plan, penStep, viewText, draftPage, fairCopy, postScript, dropLast, sheetPage, again, stet, inkIdsIn, AGAIN_MAX, INK_VERSION } from './sheet.js';
+export { newInkDoc, newView, replay, apply, plan, penStep, viewText, draftPage, fairCopy, postScript, dropLast, sheetPage, again, stet, inkIdsIn, AGAIN_MAX, INK_VERSION,
+  styleCarry, lineNow, lineHeld, lineCarry } from './sheet.js';
 export { logicalText, transcription, summary as inkSummary, encodeDoc, decodeDoc, encodeInkLink, decodeInkLink } from './inklog.js';
 export { newTypist, typistKey, typistHaste, hasteStep, hastyHand, hasteCarry, hasteNext, HASTE_MAX, TYPIST_PRIOR_MS } from './tempo.js';
 export { coverQuality } from './marks.js';
+export { formatHabits, styleOf, leanStep, weightStep, sizeStep, LINE_FORMATS, HIGHLIGHTS } from './format.js';
 export { EXTRAS } from './sources/extras.js';
 export { STYLE_DIMS, STYLE_PARAMS, STYLE_NEUTRAL, MOVEMENTS, movementOf, styleTraits, styleDims } from './style-dims.js';
 

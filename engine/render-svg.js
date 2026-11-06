@@ -27,6 +27,22 @@ export function contoursToD(contours, ox, oy, sc) {
 }
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+// Highlighter swipes (Ink mode's page.highlights, sheet.js / format-marks.js): fluorescent ink under the writing, a
+// little see-through so overlapping swipes come out darker, with lighter streaks where the felt ran dry. Polygons are
+// in page units, y down; dy shifts them (a sheet's top, for a page drawn as stacked sheets). '' when there are none.
+export function highlightsSVG(page, emPx, dy = 0) {
+  const hs = page && page.highlights;
+  if (!hs || !hs.length) return '';
+  const sc = emPx / UPM;
+  const poly = (pts) => 'M' + pts.map(([x, y]) => (x * sc).toFixed(1) + ' ' + ((y - dy) * sc).toFixed(1)).join('L') + 'Z';
+  let out = '';
+  for (const h of hs) {
+    out += `<path data-hl="${h.ev}" fill="${h.fill}" fill-opacity="0.5" d="${poly(h.shape)}"/>`;
+    if (h.streaks && h.streaks.length) out += `<path fill="#fff" fill-opacity="0.22" d="${h.streaks.map(poly).join('')}"/>`;
+  }
+  return `<g class="highlights" style="mix-blend-mode:multiply">${out}</g>`;
+}
 const missMark = (ch, x, y, emPx) => `<text class="miss" x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${(0.62 * emPx).toFixed(1)}">` +
   `<title>This hand hasn’t learned ‹${esc(ch)}› yet</title>${esc(ch)}</text>`;
 
@@ -133,6 +149,6 @@ export function renderSVG(p, page, opts) {
       ys.map((y) => `<line x1="0" x2="${W}" y1="${(y * sc).toFixed(1)}" y2="${(y * sc).toFixed(1)}"/>`).join('') + '</g>';
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-label="Handwritten text">` +
-    `<defs>${ink.defs()}</defs>${rules}` +
+    `<defs>${ink.defs()}</defs>${rules}${highlightsSVG(page, emPx)}` +
     `<g data-ink="" ${ink.groupAttrs}>${body}</g>${misses.join('')}</svg>`;
 }
