@@ -11,6 +11,9 @@
 //                                            haste: the typing's tempo when its first word was typed, against the
 //                                            typist's own average (tempo.js): -2 … 2, absent = 0 (the usual hand).
 //                                            The words that start in this write are written hastier or tidier
+//         { …, lean?, weight?, size? }       the style it was typed in (format.js): lean 1–2 (leaning in: italic),
+//                                            weight 1–2 (pressed harder: bold), size (a factor, 0.6–2). Absent: the
+//                                            writer's usual hand. Like haste, for the words that start in this write
 //   break  { }                              Enter at the pen head: a new paragraph; takes an id ('\n')
 //   strike { from, to, how?, why?, blot?, lv? }  ids inclusive. how: line | double | wave | loops | scribble, and
 //                                            for why 'again' (crossed out again, lv 2–4) blackout | inkout
@@ -32,6 +35,13 @@
 //                                            over: the old sheet becomes a draft), 'fair' (a fair copy: a fresh
 //                                            sheet; the copy's own write events follow: `copy` of them)
 //   session { }                             reopened later (v2)
+//   line   { as }                           the line the pen is on (nothing written on it yet) is set out as a 'title',
+//                                            'heading', 'body', or a list item: 'bullet', 'number', 'check'
+//                                            (format.js; a list goes on, item after item, until another line event)
+//   check  { at }                           a checklist item ticked (the pen goes back to its box), or, ticked
+//                                            already, unticked (scribbled over); at = the item's first glyph id
+//   highlight { from, to, color }           a highlighter swiped under those glyphs (ids inclusive): yellow, pink,
+//                                            green, blue
 //
 // Reading order (§4.3): writes append, an insert splices directly after its anchor, so continued typing
 // after the last inserted character grows the same insertion. Struck glyphs drop out of the text (a stet
@@ -47,6 +57,7 @@ export function createReader() {
     nextId: 0,
     events: 0,         // events applied
     drafts: [],        // texts of sheets set aside by 'fresh' / 'fair'
+    checks: new Map(), // checklist items: first glyph id -> times ticked or unticked (odd: ticked)
     counts: { struck: 0, scribbled: 0, over: 0, inserted: 0, underlined: 0, split: 0, para: 0, restored: 0 },
     apply(e) { applyEvent(R, e); R.events++; return R; },
     clone() {
@@ -54,7 +65,7 @@ export function createReader() {
       const map = new Map();
       for (const [id, r] of R.byId) { const c = Object.assign({}, r); map.set(r, c); C.byId.set(id, c); }
       C.recs = R.recs.map((r) => map.get(r) || Object.assign({}, r));
-      C.nextId = R.nextId; C.events = R.events; C.drafts = R.drafts.slice(); C.counts = Object.assign({}, R.counts);
+      C.nextId = R.nextId; C.events = R.events; C.drafts = R.drafts.slice(); C.counts = Object.assign({}, R.counts); C.checks = new Map(R.checks);
       return C;
     },
   };
@@ -119,6 +130,8 @@ function applyEvent(R, e) {
     }
     // under: how many times (a second press is a double underline)
     case 'underline': for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r) r.under = (r.under || 0) + 1; } R.counts.underlined++; break;
+    case 'check': R.checks.set(e.at, (R.checks.get(e.at) || 0) + 1); break;
+    case 'highlight': for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r) r.hl = e.color || 'yellow'; } break;
     case 'pen': if (e.kind === 'dry') for (let i = e.from; i <= e.to; i++) { const r = R.byId.get(i); if (r) r.faint = true; } break;
     case 'sheet':
       if (e.why === 'fresh' || e.why === 'fair') { // a new text: the old one is a draft, its corrections with it
@@ -126,7 +139,7 @@ function applyEvent(R, e) {
         for (const k in R.counts) R.counts[k] = 0;
       }
       break;
-    default: break; // move, session, unknown: no effect on the text
+    default: break; // move, session, line, unknown: no effect on the text
   }
 }
 
@@ -172,25 +185,30 @@ export function summary(x) {
 
 // ---------- compact form and share links (§4.6) ----------
 // Each event becomes a short array: ["w","Dear Ada,"] (["w",text,cont,rest,haste]) ["b"] ["x",12,15,"line","misspelt"]
-// ["o",40,"G"] ["i",52,"very "] ["m",9,"split"] ["u",3,7] ["p","dry",3,9] ["v","ps"] ["s","fresh"] ["n"] ["r",12,15] (stet).
+// ["o",40,"G"] ["i",52,"very "] ["m",9,"split"] ["u",3,7] ["p","dry",3,9] ["v","ps"] ["s","fresh"] ["n"] ["r",12,15] (stet)
+// ["l","title"] (line) ["k",40] (check) ["h",3,9,"pink"] (highlight); a write's style follows its haste:
+// ["w",text,cont,rest,haste,lean,weight,size].
 // Trailing empty fields are dropped; anything unknown is kept as its object (an older engine keeps a stet it can't read
 // as its array, and passes it on unchanged).
 const ENC = {
-  write: (e) => ['w', e.text, e.cont ? 1 : 0, e.rest, e.haste || 0], break: () => ['b'],
+  write: (e) => ['w', e.text, e.cont ? 1 : 0, e.rest, e.haste || 0, e.lean || 0, e.weight || 0, e.size && e.size !== 1 ? e.size : 0], break: () => ['b'],
   strike: (e) => ['x', e.from, e.to, e.how, e.why, e.blot ? 1 : 0, e.lv],
   over: (e) => ['o', e.at, e.ch, e.blot ? 1 : 0],
   insert: (e) => ['i', e.after, e.text, e.over ? e.over[0] : null, e.over ? e.over[1] : null],
   mark: (e) => ['m', e.after, e.kind], underline: (e) => ['u', e.from, e.to], stet: (e) => ['r', e.from, e.to],
   pen: (e) => ['p', e.kind, e.from, e.to], move: (e) => ['v', e.to, e.size], sheet: (e) => ['s', e.why, e.copy], session: () => ['n'],
+  line: (e) => ['l', e.as], check: (e) => ['k', e.at], highlight: (e) => ['h', e.from, e.to, e.color],
 };
 const DEC = {
-  w: (a) => clean({ t: 'write', text: a[1], cont: a[2] ? true : undefined, rest: a[3], haste: a[4] || undefined }), b: () => ({ t: 'break' }),
+  w: (a) => clean({ t: 'write', text: a[1], cont: a[2] ? true : undefined, rest: a[3], haste: a[4] || undefined, lean: a[5] || undefined, weight: a[6] || undefined, size: a[7] || undefined }), b: () => ({ t: 'break' }),
   x: (a) => clean({ t: 'strike', from: a[1], to: a[2], how: a[3], why: a[4], blot: a[5] ? true : undefined, lv: a[6] || undefined }),
   o: (a) => clean({ t: 'over', at: a[1], ch: a[2], blot: a[3] ? true : undefined }),
   i: (a) => clean({ t: 'insert', after: a[1], text: a[2], over: a[3] != null ? [a[3], a[4]] : undefined }),
   m: (a) => ({ t: 'mark', after: a[1], kind: a[2] }), u: (a) => ({ t: 'underline', from: a[1], to: a[2] }), r: (a) => ({ t: 'stet', from: a[1] || 0, to: a[2] || 0 }), // (["r"] is glyph 0 alone: its zeros were trimmed)
   p: (a) => clean({ t: 'pen', kind: a[1], from: a[2], to: a[3] }), v: (a) => clean({ t: 'move', to: a[1], size: a[2] }),
   s: (a) => clean({ t: 'sheet', why: a[1], copy: a[2] }), n: () => ({ t: 'session' }),
+  l: (a) => ({ t: 'line', as: a[1] || 'body' }), k: (a) => ({ t: 'check', at: a[1] || 0 }), // (["k"] is glyph 0: its zero was trimmed)
+  h: (a) => clean({ t: 'highlight', from: a[1] || 0, to: a[2] || 0, color: a[3] }),
 };
 function clean(o) { for (const k in o) if (o[k] === undefined || o[k] === null) delete o[k]; return o; }
 const trim = (a) => { while (a.length > 1 && (a[a.length - 1] == null || a[a.length - 1] === 0 || a[a.length - 1] === '')) a.pop(); return a; };
