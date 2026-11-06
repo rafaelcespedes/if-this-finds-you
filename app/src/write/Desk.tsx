@@ -6,13 +6,15 @@
 //
 // The page around it (the library, the toolbar, the panels) is WriteApp's; this is only the paper.
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import * as E from '@engine';
 import { CAP } from '@engine';
 import { toast } from 'sonner';
 import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
 import { LiveSheets } from '@/components/LiveSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { UndoHistory, type Edit } from '@/lib/edits';
-import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, undoInk } from '@/lib/ink';
+import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, undoInk, type InkFormat, type InkHighlight } from '@/lib/ink';
+import { wordAt } from '@/lib/doc';
 import { pageSetup } from '@/lib/live';
 import { renderLiveNote } from '@/lib/actions';
 import { getPaper } from '@/lib/papers';
@@ -44,7 +46,13 @@ export interface DeskApi {
   selection: () => [number, number];
   /** the note as an image (JPEG), every sheet */
   image: () => Promise<Blob>;
+  /** what typing will do at the caret (the toolbar shows it): leaning, pressed, the line's style and list; null in Clean */
+  style: () => InkFormat | null;
+  /** a formatting command from the toolbar, on the selection (or the word, or the line, at the caret) */
+  command: (cmd: FormatCommand) => void;
 }
+/** the commands about the caret's line (the others take the word at the caret when nothing is selected) */
+const LINE_CMDS = new Set<FormatCommand>(['title', 'heading', 'body', 'bullets', 'numbers', 'checklist', 'check']);
 
 interface Props {
   note: Note;
@@ -59,9 +67,17 @@ interface Props {
   onSay?: (s: string) => void;
   /** room to leave above the sheet for the toolbar (px) */
   topRoom?: number;
+  /** the highlighter's colour */
+  highlighter?: InkHighlight;
+  /** what typing will do changed (a style, a line's format): the toolbar asks again */
+  onStyle?: () => void;
 }
 
-export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onChange, onTyped, onEditingChange, onSay, topRoom = 0 }, ref) {
+export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onChange, onTyped, onEditingChange, onSay, topRoom = 0, highlighter = 'yellow', onStyle }, ref) {
+  const highlighterRef = useRef<InkHighlight>(highlighter);
+  highlighterRef.current = highlighter;
+  const onStyleRef = useRef(onStyle);
+  onStyleRef.current = onStyle;
   const look = note.look;
   const state = useMemo(() => stateOf(look), [look]);
   const natural = useMemo(() => handFor(state.seed, state.style, handOpts(state)), [state]);
@@ -118,7 +134,9 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   const { live, extras, geometry, text, hovering } = useMemo(() => {
     const draft = session.draft();
     const live = inkLive(p, session.page, paper, eff.size, eff.lineSpacing, draft);
-    const extras = inkExtras(live, { draft, signed: false, writerName: '' });
+    // the highlighter's swipes, under the ink (multiplied, so the writing reads through as if laid over them)
+    const hl = (E as unknown as { highlightsSVG?: (page: unknown, emPx: number) => string }).highlightsSVG?.(live.page, live.emPx) ?? '';
+    const extras = inkExtras(live, { draft, signed: false, writerName: '' }).map((x) => hl + x);
     const text = session.text();
     return { live, extras, geometry: inkGeometry(live, p, session), text, hovering: session.hovering };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,6 +173,12 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     const cur = s.text();
     // a mark just made (crossed out again, an underline, a word gone over): lift it while it's wet
     const lastEv = s.doc.log[s.doc.log.length - 1] as { t?: string; why?: string; kind?: string } | undefined;
+    // a tick or a highlight just made: lifted while it's wet
+    if (dir === 'undo' && !s.waiting && (lastEv?.t === 'check' || lastEv?.t === 'highlight')) {
+      if (s.liftMark()) { sync(); return; }
+      toast('The ink is dry', { id: 'ink-dry', description: lastEv.t === 'check' ? 'Tick it again to cross the tick out.' : 'A highlight stays once it’s dry.' });
+      return;
+    }
     const markOnTop = !!lastEv && ((lastEv.t === 'strike' && lastEv.why === 'again') || lastEv.t === 'underline' || (lastEv.t === 'pen' && lastEv.kind === 'retrace'));
     if (dir === 'undo' && !s.waiting && markOnTop) {
       if (s.liftFormat() || s.undo()) { sync(); return; }
@@ -188,6 +212,30 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     const s = sessionRef.current;
     if (cmd === 'ps') { s.postScript(); sync(); return; }
+    // formatting by hand (lib/ink.ts): what's typed next, the caret's line, a checklist's tick, the highlighter
+    const caret = editor.current?.selection() ?? [from, to];
+    if (cmd === 'weight' || (cmd === 'lean' && caret[0] === caret[1])) {
+      const now = s.style();
+      s.setStyle(cmd === 'lean' ? { lean: now.lean ? 0 : 1 } : { weight: now.weight ? 0 : 1 });
+      sync();
+      onStyleRef.current?.();
+      return;
+    }
+    if (cmd === 'lean') { toast('Ink can’t be leaned once it’s written', { id: 'ink-dry', description: 'Press ⌘I, then type: the next words lean.' }); return; }
+    const list = cmd === 'bullets' ? 'bullet' : cmd === 'numbers' ? 'number' : cmd === 'checklist' ? 'check' : null;
+    if (list || cmd === 'title' || cmd === 'heading' || cmd === 'body') {
+      const ok = list ? s.setList(s.style(from).list === list ? null : list, from) : s.setRole(cmd === 'title' || cmd === 'heading' ? cmd : 'body', from);
+      if (!ok) toast('That line is already in ink', { id: 'ink-dry', description: 'Start a new line for a title or a list.' });
+      sync();
+      onStyleRef.current?.();
+      return;
+    }
+    if (cmd === 'check') { if (s.toggleCheck(s.text().slice(0, from).split('\n').length - 1)) { onTypedRef.current(); sync(); } return; }
+    if (cmd === 'highlight') {
+      if (from === to) { toast('Select the words to highlight', { id: 'format-none', duration: 2400 }); return; }
+      if (s.highlight(from, to, highlighterRef.current)) { onTypedRef.current(); sync(); requestAnimationFrame(() => editor.current?.setSelection(to)); }
+      return;
+    }
     if (from === to) {
       toast(cmd === 'underline' ? 'Select the words to underline' : 'Select the words to go over', { id: 'format-none', duration: 2400 });
       return;
@@ -256,13 +304,20 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     },
     text: () => sessionRef.current.text(),
     selection: () => editor.current?.selection() ?? [0, 0],
+    style: () => (typeof sessionRef.current.style === 'function' ? sessionRef.current.style(editor.current?.selection()[0]) : null),
+    command: (cmd) => {
+      let [a, b] = editor.current?.selection() ?? [0, 0];
+      if (a === b && !LINE_CMDS.has(cmd) && cmd !== 'weight' && cmd !== 'lean' && cmd !== 'ps') [a, b] = wordAt(textRef.current, a);
+      onFormat(cmd, a, b);
+      if (!coarse) editor.current?.focus();
+    },
     image: async () => {
       const s = sessionRef.current;
       if (s.waiting) { s.flush(); setTick((n) => n + 1); }
       const { live: l, extras: x, pxPerMm: k } = shown.current;
       return (await renderLiveNote(l, x, eff.inkKey ?? undefined, ink, k || 2)).blob;
     },
-  }), [onFormat, onEdit, eff.inkKey, ink]);
+  }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 
   // said once the pen settles on a change (the words themselves are in the textarea)
   const sayRef = useRef(onSay);
@@ -322,9 +377,46 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
               penRef={drawnPen}
               dim={session.pendingKeys}
             />
+            <CheckBoxes
+              checks={typeof session.checks === 'function' ? session.checks() : []}
+              mmPerU={1 / live.unitsPerMm}
+              pxPerMm={pxPerMm}
+              sheetPx={live.paper.h * pxPerMm + SHEET_GAP}
+              onToggle={(line) => { if (sessionRef.current.toggleCheck(line)) { onTypedRef.current(); sync(); } }}
+            />
           </PaperEditor>
         )}
       </div>
     </div>
   );
 });
+
+/** A checklist's boxes, clickable: the pen goes back and ticks one (or, ticked in ink, scribbles the tick out). */
+function CheckBoxes({ checks, mmPerU, pxPerMm, sheetPx, onToggle }: {
+  checks: { line: number; checked: boolean; sheet: number; box: [number, number, number, number] }[];
+  mmPerU: number; pxPerMm: number; sheetPx: number; onToggle: (line: number) => void;
+}) {
+  if (!checks.length) return null;
+  const k = mmPerU * pxPerMm;
+  return (
+    <>
+      {checks.map((c) => {
+        const [x0, y0, x1, y1] = c.box;
+        const pad = 6;
+        return (
+          <button
+            key={c.line + ':' + c.sheet}
+            type="button"
+            className="wr-check"
+            aria-pressed={c.checked}
+            aria-label={c.checked ? 'Untick' : 'Tick'}
+            style={{ left: x0 * k - pad, top: c.sheet * sheetPx + y0 * k - pad, width: (x1 - x0) * k + pad * 2, height: (y1 - y0) * k + pad * 2 }}
+            onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            onClick={(e) => { e.stopPropagation(); onToggle(c.line); }}
+          />
+        );
+      })}
+    </>
+  );
+}

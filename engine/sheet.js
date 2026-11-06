@@ -2,7 +2,7 @@
 //
 // You edit like a computer user; the writer corrects like a person. Every keystroke becomes intent, and a
 // small planner turns it into what this writer would do on paper: strike it through, write a letter over
-// another, add a word above the line with a caret, start a fresh sheet. What is written never moves.
+// another, add a word above the line with a caret. What is written never moves.
 //
 //   const doc = newInkDoc({ seed, style, salt });          // plain JSON; doc.log is the append-only ink log
 //   let sheet = replay(p, doc, layoutOpts);                 // sheet.page renders with renderSVG / renderCanvas
@@ -12,6 +12,9 @@
 //   ({ events, view } = penStep(sheet, view, { dt, idle })); apply(sheet, events);   // the pen catches up
 //   textarea.value === viewText(sheet, view)                // logicalText(sheet.reader) + what isn't written yet
 //   ({ events, view } = stet(sheet, view, at)); apply(sheet, events);   // Undo on dry ink: a crossing-out let stand
+//   apply(sheet, [{ t: 'line', as: 'title' }])            // formatting (format.js): the empty line the pen is on set out
+//   styleCarry(sheet, events, { lean: 1 })                 //   as a title, heading or list; writes in a style; a
+//   apply(sheet, [{ t: 'check', at }, { t: 'highlight', from, to, color }])   //   checklist tick; the highlighter
 //
 // The pen trails the typing (§3.2): typed text waits in `view.tail` (at the end) or `view.mid` (an
 // insertion being typed mid-text) until penStep writes it, so most typos are fixed before ink touches
@@ -31,13 +34,16 @@
 
 import { rng, clamp, lerp } from './core.js';
 import { withOverrides, CAP, UPM } from './hand.js';
-import { inkPage, pageMetrics } from './layout.js';
+import { inkPage, pageMetrics, writeAt, lineBaseline, lineAngle, lineLean } from './layout.js';
 import { createReader } from './inklog.js';
 import { hasteStep } from './tempo.js';
 import {
   fixHabits, coverQuality, spanOf, baselineFor, scaleOf, repen, reink, markItem, strikeItems,
   underlineStrokes, slashStrokes, blotItem, overItem, insertionItems, stetHabits, stetDotStrokes, stetInMargin, leanOf,
+  strikeStrokes, inkWidth,
 } from './marks.js';
+import { formatHabits, highlightColor, HIGHLIGHTS, styleOf } from './format.js';
+import { bulletStrokes, boxStrokes, tickStrokes, untickStrokes, highlightSwipe, titleUnderlineStrokes } from './format-marks.js';
 
 export const INK_VERSION = 'seedhand-ink-1';
 
@@ -70,7 +76,8 @@ function newStream(st, s, tag, opts, lineBase = 0, paraBase = 0) {
   return { tag, text: '', ids: [], ink: inkPage(st.p, Object.assign({}, opts, { salt: st.salt + (tag === 'p' ? ':ps' : '') })), pages: [], lineBase, paraBase };
 }
 function newSheet(st, why) {
-  const s = { n: st.sheets.length, why, items: [], placed: new Map(), at: new Map(), runs: [], stopSrc: [], lines: new Map(), rules: [] };
+  const s = { n: st.sheets.length, why, items: [], placed: new Map(), at: new Map(), runs: [], stopSrc: [], lines: new Map(), rules: [],
+    marked: new Set(), boxes: new Map(), highlights: [] }; // (format: list lines with their marker drawn, checklist boxes, highlighter swipes)
   s.main = newStream(st, s, 'm', st.opts);
   s.ps = null;
   s.stream = s.main;
@@ -181,9 +188,17 @@ function applyOne(st, e, ev) {
       let wo = st.ahead && st.ahead.has(ev) ? { ahead: st.ahead.get(ev), complete: true } : e.rest ? { ahead: e.rest } : undefined;
       // the typing's tempo (tempo.js): the words that start in this write are written that way
       if (e.t === 'write' && hasteStep(e.haste)) wo = Object.assign(wo || {}, { haste: hasteStep(e.haste) });
+      // the style it was typed in (format.js): the words that start in this write lean in, are pressed harder, bigger
+      if (e.t === 'write' && (e.lean || e.weight || (e.size && e.size !== 1))) wo = Object.assign(wo || {}, { style: { lean: e.lean, weight: e.weight, size: e.size } });
+      // Return at the end of a title the writer underlines: the pen goes back and underlines it first
+      if (e.t === 'break') closeLine(st, s, ev);
       writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev, wo);
       break;
     }
+    // a format for the line the pen is on (format.js): nothing is written on it yet, so it's begun again in it
+    case 'line': writeToStream(st, s, s.stream, '', first, ev, { line: e.as || 'body' }); break;
+    case 'check': placeCheck(st, s, e, ev); break;
+    case 'highlight': placeHighlight(st, s, e, ev); break;
     case 'strike': {
       const struck = placedRun(s, e.from, e.to);
       if (!struck.length) break;
@@ -260,7 +275,10 @@ function writeToStream(st, s, S, text, firstId, ev, wopts) {
   s.stopSrc.push({ S, stops: pg.stops });
   const base = s.items.length;
   const boost = st.boost;
-  for (const it0 of pg.items) {
+  // (format) a list line's marker goes in before its first item, so the pen draws it first: how many went in before each
+  let shift = null;
+  for (let k = 0; k < pg.items.length; k++) {
+    const it0 = pg.items[k];
     const c = it0.charIndex;
     const gid = it0.synthetic ? undefined : S.ids[c];
     const it = Object.assign({}, it0, { id: gid, ev, written: c, sheet: s.n, wk: S.tag + it0.word, key: S.tag === 'p' ? 'ps:' + it0.key : it0.key });
@@ -275,9 +293,20 @@ function writeToStream(st, s, S, text, firstId, ev, wopts) {
       if (it.glyph) it.glyph = reink(st.p, it.glyph, darker); // run renderers draw the unposed letter
       if (++boost.k > 12) st.boost = null;
     }
+    if (S === s.main && !s.marked.has(it.line)) {
+      const ln = s.lines.get(it.line);
+      if (ln && ln.list) {
+        s.marked.add(it.line);
+        const n0 = s.items.length;
+        placeMarker(st, s, ln, it, ev);
+        const added = s.items.length - n0;
+        if (added) { if (!shift) shift = new Array(pg.items.length).fill(0); for (let j = k; j < pg.items.length; j++) shift[j] += added; }
+      }
+    }
     pushItem(st, s, it);
   }
-  addRuns(s, pg.runs, base, S.lineBase);
+  if (!shift) addRuns(s, pg.runs, base, S.lineBase);
+  else for (const rn of pg.runs) s.runs.push(Object.assign({}, rn, { from: rn.from + base + shift[rn.from], to: rn.to + base + shift[rn.to - 1], line: rn.line + S.lineBase }));
 }
 
 // ---------- P.S. ----------
@@ -295,6 +324,122 @@ function startPS(st, s, e, ev) {
   const lineBase = 1 + Math.max(-1, ...s.items.map((it) => it.line)), paraBase = 1 + Math.max(-1, ...s.items.map((it) => it.para || 0));
   s.ps = newStream(st, s, 'p', opts, lineBase, paraBase);
   s.stream = s.ps;
+}
+
+// ---------- formatting (format.js) ----------
+// A list line's marker, drawn with its first word (writeToStream): the writer's own bullet, the number as they write
+// it, or a checklist's box. ln: the line (lineInfo: list, item, mark = where the marker starts); it: its first item.
+function placeMarker(st, s, ln, it, ev) {
+  const p = st.p, F = formatHabits(p), r = R0(st, ev, ':m' + ln.n);
+  const x = ln.mark != null ? ln.mark : ln.x0;
+  const base = (X) => lineBaseline(p, ln, X);
+  const xh = xhOf(st);
+  const wk = 'b' + ev + ':' + ln.n;
+  const ref = { line: ln.n, para: it.para, word: it.word, inkIndex: it.inkIndex, wk, wkey: wk, tempo: it.tempo };
+  if (ln.list === 'number') {
+    // the number, written like any word (it isn't in the text: it's the list's, and it never renumbers)
+    const w = writeAt(p, ln.item + F.list.number, { x, y: base(x), angle: lineAngle(p, ln, x), lean: lineLean(p, ln, x), size: 1, seed: 'num:' + st.salt + ':' + ev + ':' + ln.n, line: ln.n });
+    const b0 = s.items.length;
+    for (const li of w.items) pushItem(st, s, Object.assign(li, { ev, sheet: s.n, role: 'marker', charIndex: -1, para: ref.para, inkIndex: ref.inkIndex, word: ref.word, wk, wkey: wk, tempo: ref.tempo }));
+    addRuns(s, w.runs, b0);
+    return;
+  }
+  const key = 'e' + ev + ':m' + ln.n;
+  if (ln.list === 'check') {
+    const b = boxStrokes(F, x, base, xh, r);
+    const mi = markItem(p, 'box', b.strokes, ref, { seed: 619 + ev * 0.41, tempo: 1.15, key, wk });
+    if (mi) pushItem(st, s, Object.assign(mi, { ev, role: 'marker' }));
+    if (it.id != null) s.boxes.set(it.id, { at: it.id, line: ln.n, para: it.para, box: b.box, xh, ref });
+    return;
+  }
+  const mi = markItem(p, 'bullet', bulletStrokes(F, x, base, xh, r), ref, { seed: 613 + ev * 0.37, tempo: 1.2, key, wk, dot: false });
+  if (mi) pushItem(st, s, Object.assign(mi, { ev, role: 'marker' }));
+}
+// Return at the end of a title (or heading) the writer underlines: the pen goes back under it, once or twice, before
+// the new line. Under the title's own letters, line by line (a long title that ran on is underlined on each line).
+function closeLine(st, s, ev) {
+  const S = s.stream;
+  if (S !== s.main) return;
+  const pen = S.ink.pen, ln = pen && pen.line;
+  if (!ln || !ln.under) return;
+  const R = st.reader, p = st.p;
+  const byLine = new Map();
+  for (const it of s.items) {
+    if (it.kind !== 'glyph' || it.para !== pen.para || it.base != null || !it.g || !it.g.strokes.length || (R.byId.get(it.id) || {}).struck) continue;
+    if (!byLine.has(it.line)) byLine.set(it.line, []);
+    byLine.get(it.line).push(it);
+  }
+  let n = 0;
+  for (const run of byLine.values()) {
+    const sp = spanOf(run), xh = xhOf(st) * scaleOf(run), base = baselineFor(p, run, s.lines);
+    for (let k = 0; k < Math.min(2, ln.under); k++) {
+      const r = R0(st, ev, ':t' + n);
+      const mi = markItem(st.firm, 'underline', titleUnderlineStrokes(st.H, sp.x0, sp.x1, base, xh, r, k), run[run.length - 1], { seed: 739 + ev + n * 3.3, delayed: true, tempo: 1.3, key: 'e' + ev + ':t' + n });
+      n++;
+      if (mi) pushItem(st, s, Object.assign(mi, { ev }));
+    }
+  }
+}
+// A checklist item ticked or unticked (the reader counts: odd is ticked). The pen goes back to the box: a tick, a
+// cross or the box filled in, the writer's way; or the item crossed off (it stays in the text). Unticking in ink: the
+// tick is scribbled out, and a fresh box drawn beside it in the margin, when there's room (the next tick goes there);
+// a crossed-off item gets dots under it instead, the paper's own "let it stand".
+function placeCheck(st, s, e, ev) {
+  const b = s.boxes.get(e.at);
+  if (!b) return;
+  const p = st.p, F = formatHabits(p), H = st.H, r = R0(st, ev);
+  const on = (st.reader.checks.get(e.at) || 0) % 2 === 1;
+  const ln = s.lines.get(b.line);
+  const base = ln ? (X) => lineBaseline(p, ln, X) : () => b.box[3];
+  const xh = b.xh, key = 'e' + ev;
+  const put = (mi) => { if (mi) pushItem(st, s, Object.assign(mi, { ev })); };
+  if (F.list.tick === 'strike') {
+    const byLine = new Map();
+    for (const it of s.items) {
+      if (it.kind !== 'glyph' || it.para !== b.para || it.base != null || !it.g || !it.g.strokes.length) continue;
+      if (!byLine.has(it.line)) byLine.set(it.line, []);
+      byLine.get(it.line).push(it);
+    }
+    let n = 0;
+    for (const run of byLine.values()) {
+      const sp = spanOf(run), rb = baselineFor(p, run, s.lines), x = xhOf(st) * scaleOf(run);
+      if (on) put(markItem(st.firm, 'strike', strikeStrokes(H, p.noise, 'line', sp.x0, sp.x1, rb, H.strikeY * x, x, inkWidth(p), r), run[run.length - 1], { seed: 641 + ev + n * 7.1, tempo: 1.3, key: key + ':' + n }));
+      else {
+        const S = stetHabits(p);
+        put(markItem(p, 'stet', stetDotStrokes(p, S, sp.x0, sp.x1, rb, x, S.drop + 0.1, r), run[run.length - 1], { seed: 643 + ev + n * 7.1, dot: S.dot === 'dot', tempo: 1.5, key: key + ':' + n }));
+      }
+      n++;
+    }
+    return;
+  }
+  if (on) { put(markItem(st.firm, 'tick', tickStrokes(F, b.box, xh, r), b.ref, { seed: 647 + ev * 0.53, tempo: 1.6, key, wk: 'c' + ev })); return; }
+  const sc = untickStrokes(H, p.noise, b.box, base, xh, inkWidth(p), r);
+  const mi = markItem(st.firm, 'scribble', sc, b.ref, { seed: 653 + ev * 0.53, ink: sc.ink, tempo: sc.tempo || 2.4, key, wk: 'c' + ev });
+  if (mi && sc.kind) mi.scribble = sc.kind;
+  put(mi);
+  const w = b.box[2] - b.box[0], nx = b.box[0] - w - (0.3 + 0.2 * r()) * xh;
+  if (nx >= 0.15 * xh) {
+    const nb = boxStrokes(F, nx, base, xh, r);
+    put(markItem(p, 'box', nb.strokes, b.ref, { seed: 659 + ev * 0.53, tempo: 1.15, key: key + ':box', wk: 'c' + ev }));
+    b.box = nb.box;
+  }
+}
+// A highlighter swiped under those glyphs: one swipe a line, kept beside the ink (page.highlights), never in it.
+function placeHighlight(st, s, e, ev) {
+  const run = placedRun(s, e.from, e.to).filter((it) => it.kind === 'glyph');
+  if (!run.length) return;
+  const byLine = new Map();
+  for (const it of run) { if (!byLine.has(it.line)) byLine.set(it.line, []); byLine.get(it.line).push(it); }
+  const color = highlightColor(e.color);
+  let n = 0;
+  for (const ln of byLine.values()) {
+    const r = R0(st, ev, ':h' + n++);
+    const sp = spanOf(ln), xh = xhOf(st) * scaleOf(ln), base = baselineFor(st.p, ln, s.lines);
+    const sw = highlightSwipe(sp.x0, sp.x1, base, xh, r);
+    let y0 = Infinity, y1 = -Infinity;
+    for (const q of sw.shape) { y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
+    s.highlights.push({ ev, color, fill: HIGHLIGHTS[color], line: ln[0].line, shape: sw.shape, streaks: sw.streaks, box: [sw.x0, y0, sw.x1, y1] });
+  }
 }
 
 // ---------- insertions above the line ----------
@@ -490,7 +635,7 @@ function pageOf(st, s, live) {
   const pages = [...s.main.pages, ...(s.ps ? s.ps.pages : [])];
   const last = s.main.pages[s.main.pages.length - 1];
   const stops = live ? liveStops(st, s, live.at) : [];
-  return {
+  const page = {
     // fresh lists per page, so runChanges(oldPage, newPage) sees what a write added (the item objects
     // themselves are shared: finish() updates their role / at / word as corrections arrive)
     items: s.items.slice(), runs: s.runs.slice(), stops, lineInfo: [...s.lines.values()].sort((a, b) => a.n - b.n), rules: s.rules.slice().sort((a, b) => a - b),
@@ -504,7 +649,10 @@ function pageOf(st, s, live) {
     full: !!(st.opts.pageHeight && !st.opts.sheet && Number.isFinite(ink.y1) && ink.y1 > st.opts.pageHeight),
     pen: s.stream.ink.pen,
   };
-  void R;
+  // (format) highlighter swipes, laid under the writing; checklist boxes (their glyph id, line and box, ticked or not)
+  if (s.highlights.length) page.highlights = s.highlights.slice();
+  if (s.boxes.size) page.boxes = [...s.boxes.values()].map((b) => ({ at: b.at, line: b.line, box: b.box.slice(), checked: (R.checks.get(b.at) || 0) % 2 === 1 }));
+  return page;
 }
 // layout's caret stops (offsets in what was written) -> offsets in the text as it reads now; stops of
 // struck text are dropped. A later stop wins for the same offset and side (as geometry() does).
@@ -543,7 +691,10 @@ export function draftPage(st, view, opts) {
   if (!view || !view.tail) return null;
   const S = st.cur.stream;
   const haste = hasteStep(opts && opts.haste);
-  const pg = haste ? S.ink.draft(view.tail, { haste }) : S.ink.draft(view.tail);
+  // (opts.style: the style the tail is being typed in, format.js, so its thought letters sit where its ink will)
+  const o = opts && opts.style ? { style: opts.style } : null;
+  if (o && haste) o.haste = haste;
+  const pg = o ? S.ink.draft(view.tail, o) : haste ? S.ink.draft(view.tail, { haste }) : S.ink.draft(view.tail);
   if (!S.lineBase) return pg;
   return Object.assign({}, pg, { items: pg.items.map((it) => Object.assign({}, it, { line: it.line + S.lineBase })), stops: pg.stops.map((sp) => Object.assign({}, sp, { line: sp.line + S.lineBase })) });
 }
@@ -641,13 +792,9 @@ export function plan(st, view, edit, opts = {}) {
     return { events, view: v };
   }
   if (ids.length) {
-    const visible = m.units.filter((u) => u.k === 'ink' && !u.half).length;
-    // 2b. most of the sheet deleted: nobody strikes a whole page. A fresh sheet; what's left gets rewritten
-    if (!ins && ids.length >= 8 && ids.length >= 0.6 * visible) {
-      const keep = m.text.slice(0, at) + m.text.slice(at + del);
-      emit({ t: 'sheet', why: 'fresh' });
-      return { events, view: { tail: keep, mid: null, pending: null, budget: v.budget } };
-    }
+    // (2b, a fresh sheet when most of the sheet was deleted, is gone: the old sheet vanished from the desk with it.
+    // However much is deleted, it's struck where it stands, like any other deletion, and Undo on the dry crossing-out
+    // brings it all back, stet. Starting over is New sheet's job, or Fair copy's.)
     const old = R.byId.get(ids[0]);
     const one = ids.length === 1 && cps(ins) === 1 && old && isLetter(old.over || old.ch) && isLetter(ins);
     // 2c. one letter for one letter that covers it: written over, heavier (J→G)
@@ -930,6 +1077,59 @@ export function penStep(st, view, opts = {}) {
     }
   }
   return { events, view: v };
+}
+
+// ---------- formatting at the pen (format.js) ----------
+// The style typing is in goes on the writes the pen makes of it: each write that starts a word carries it (lean,
+// weight, size), as a write carries its tempo (tempo.js), so the log keeps it and a replay gives the same page. Mutates
+// and returns `events` (not applied yet). A write that only continues a word, or only spaces, carries nothing.
+export function styleCarry(st, events, style) {
+  const sty = styleOf(style);
+  if (!sty || !events) return events;
+  let open = !!(st && st.page && st.page.pen && st.page.pen.open);
+  for (const e of events) {
+    if (!e) continue;
+    if (e.t === 'write') {
+      const text = String(e.text || '');
+      let starts = false, o = open;
+      for (const ch of text) { const sp = /\s/.test(ch); if (!sp && !o) { starts = true; break; } o = !sp; }
+      if (starts) { if (sty.lean) e.lean = sty.lean; if (sty.weight) e.weight = sty.weight; if (sty.size !== 1) e.size = sty.size; }
+      if (text) open = /\S$/.test(text);
+    } else if (e.t === 'break' || e.t === 'move' || e.t === 'sheet' || e.t === 'line') open = false;
+  }
+  return events;
+}
+// The line the pen is on: its format ('title', 'heading', 'body', 'bullet', 'number', 'check'), the list going on (or
+// null), whether nothing is written on it yet and it can still be set out in a format (a `line` event: format), whether
+// it's centred and still empty (the pen waits for the whole line: lineHeld), and whether it's the P.S.
+export function lineNow(st) {
+  const s = st.cur, S = s.stream, pen = S.ink.pen, ln = pen && pen.line;
+  const list = pen && pen.list ? pen.list.kind : null;
+  return {
+    as: ln ? ln.fmt || ln.list || 'body' : (pen && pen.fmt) || list || 'body',
+    list,
+    format: S === s.main && (!ln || !!pen.restart),
+    centre: !!(ln && ln.centre != null && !ln.count && pen.endO == null),
+    ps: S !== s.main,
+  };
+}
+// A centred line waits: the pen is at the start of one (a title the writer centres) and the line isn't finished in
+// the typing yet (no Return in view.tail), so it can't know how long it will be. The app holds the pen (and writes it
+// after a pause anyway); the thought letters show it centred, live, as it's typed.
+export function lineHeld(st, view) {
+  return lineNow(st).centre && !String((view && view.tail) || '').includes('\n');
+}
+// The first piece written on a centred line carries the rest of the line as typed (write.rest), so it's centred on
+// the whole line, and a replay centres it the same. nextTail: the tail after these events. Mutates `events`.
+export function lineCarry(st, events, nextTail) {
+  if (!events || !events.length || !lineNow(st).centre) return events;
+  const i = events.findIndex((e) => e && (e.t === 'write' || e.t === 'break' || e.t === 'sheet' || e.t === 'move' || e.t === 'line'));
+  const e = events[i];
+  if (!e || e.t !== 'write' || !/\S/.test(e.text || '')) return events;
+  if (events.slice(i + 1).some((x) => x && (x.t === 'break' || x.t === 'sheet' || x.t === 'move'))) return events; // the whole line is here
+  const rest = String(nextTail || '').split('\n')[0];
+  if (rest.length > String(e.rest || '').length) e.rest = rest;
+  return events;
 }
 
 // ---------- commands ----------

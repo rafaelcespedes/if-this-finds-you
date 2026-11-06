@@ -132,17 +132,19 @@ export function newLetter() {
 export function noteWord(st, tok) { st.words++; st.chars += tok.length + (st.words > 1 ? 1 : 0); st.end = tok[tok.length - 1]; }
 // a blank line between paragraphs
 export function noteBlank(st) { st.blanks++; }
-// a new written line begins (line i of the known lines): close the line before, then decide this one
-export function beginLine(st, lines, i, complete) {
+// a new written line begins (line i of the known lines): close the line before, then decide this one. force: a role
+// the line was given (format.js: 'title', 'heading', 'item'), never guessed from its text
+export function beginLine(st, lines, i, complete, force) {
   if (st.n > 0) {
     let r = st.role;
     // the first line was a greeting (or a heading) if it was short
     if (r === 'first') r = st.words <= 10 && st.chars <= 64 ? 'opening' : 'para';
-    if (r === 'opening') { if (/[,:!—–-]/u.test(st.end)) st.greeted = true; } else st.open = false;
-    if (r === 'para' || r === 'cont') st.body = true;
+    // (a title or a heading is a heading line: the letter can still open with a greeting after it)
+    if (r === 'opening') { if (/[,:!—–-]/u.test(st.end)) st.greeted = true; } else if (r !== 'title' && r !== 'heading') st.open = false;
+    if (r === 'para' || r === 'cont' || r === 'item') st.body = true;
     st.prevRole = r; st.prevEnd = st.end;
   }
-  const role = lineRole(st, lines, i, complete);
+  const role = force || lineRole(st, lines, i, complete);
   st.afterOpen = role === 'para' && st.prevRole === 'opening'; // the first paragraph, under the greeting
   if (role === 'closing' || role === 'name') st.closing = true;
   if (role === 'signature') st.sigs++;

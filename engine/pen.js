@@ -251,7 +251,8 @@ export function penWidthUnits(p, key = penKey(p)) {
   if (typeof t === 'number' && t > 0) W = t / sizeMM(p) * xh;
   else if (i >= 0) W = TIP_MM[key][i] / sizeMM(p) * xh;
   else W = (key === 'ballpoint' ? clamp(p.penWidth * spec.wScale, 0.075 * xh, 0.12 * xh) : p.penWidth * spec.wScale) * handSize(p) / sizeMM(p);
-  return ceilingSoft(W, (MAX_OF_XH[key] || 0.32) * xh);
+  // (pressWidth: a hand pressing harder, format.js pressHand: the same tip, a wider line)
+  return ceilingSoft(W, (MAX_OF_XH[key] || 0.32) * xh) * (p.pressWidth || 1);
 }
 
 // ---------- the stroke profile ----------

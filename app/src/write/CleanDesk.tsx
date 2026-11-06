@@ -3,6 +3,7 @@
 // words harder, ⌘U underlines them by hand. Switch the note back to Ink and it carries on in ink from here.
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { CAP, withOverrides } from '@engine';
+import { toast } from 'sonner';
 import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
 import { LiveSheets } from '@/components/LiveSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
@@ -87,6 +88,11 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
   onHistoryRef.current = onHistory;
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     if (cmd === 'ps') return;
+    // Clean has the marks a text can carry (underlined, pressed harder); the rest is written in ink for now
+    if (cmd !== 'underline' && cmd !== 'press' && cmd !== 'weight') {
+      toast('That’s written in ink for now', { id: 'clean-format', description: 'Switch the note to In ink for titles, lists, checklists, leaning and the highlighter.' });
+      return;
+    }
     const [a, b] = from === to ? wordAt(docRef.current.text, from) : [from, to];
     put(toggleMark(docRef.current, cmd === 'underline' ? 'underline' : 'press', a, b));
   }, [put]);
@@ -114,11 +120,13 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
     },
     text: () => docRef.current.text,
     selection: () => editor.current?.selection() ?? [0, 0],
+    style: () => null,
+    command: (cmd) => { const [a, b] = editor.current?.selection() ?? [0, 0]; onFormat(cmd, a, b); if (!coarse) editor.current?.focus(); },
     image: async () => {
       const { live: l, extras: x, pxPerMm: k } = shown.current;
       return (await renderLiveNote(l, x, eff.inkKey ?? undefined, ink, k || 2)).blob;
     },
-  }), [onFormat, onEdit, eff.inkKey, ink]);
+  }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 
   return (
     <div

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { DropdownMenu } from 'radix-ui';
-import { Check, ChevronDown, ChevronLeft, Copy, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
+import { Bold, Check, ChevronDown, ChevronLeft, Copy, Highlighter, Italic, ListTodo, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { Sheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -25,6 +25,9 @@ import type { Mark } from '@/lib/doc';
 import { Library } from './Library';
 import { WriterName, WriterPanel } from './WriterPanel';
 import { Shortcuts, shortcutGroups } from './Shortcuts';
+import { FormatPanel, HIGHLIGHTERS, styleName } from './FormatPanel';
+import type { FormatCommand } from '@/components/PaperEditor';
+import type { InkFormat, InkHighlight } from '@/lib/ink';
 import {
   MIGRATED_KEY, asClean, asInk, blankNote, deleteNote, getNote, isBlank, isClean, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
   readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
@@ -348,6 +351,29 @@ export function WriteApp() {
   // ---------- the chrome steps back while you write ----------
   const [hideUi, setHideUi] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+
+  // ---------- formatting ----------
+  const [fmt, setFmt] = useState<InkFormat | null>(null);
+  const fmtFrame = useRef(0);
+  const refreshFmt = useCallback(() => {
+    cancelAnimationFrame(fmtFrame.current);
+    fmtFrame.current = requestAnimationFrame(() => setFmt(desk.current?.style() ?? null));
+  }, []);
+  useEffect(() => {
+    document.addEventListener('selectionchange', refreshFmt);
+    return () => document.removeEventListener('selectionchange', refreshFmt);
+  }, [refreshFmt]);
+  const [highlighter, setHighlighterNow] = useState<InkHighlight>(() => {
+    try { const h = localStorage.getItem('seedhand:write:hl'); return (HIGHLIGHTERS.find((x) => x.id === h)?.id ?? 'yellow'); } catch { return 'yellow'; }
+  });
+  const setHighlighter = (h: InkHighlight) => { setHighlighterNow(h); try { localStorage.setItem('seedhand:write:hl', h); } catch { /* fine */ } };
+  /** a command from the toolbar: Bold on a selection goes over it, with none presses harder from here */
+  const run = (cmd: FormatCommand) => {
+    const [a, b] = desk.current?.selection() ?? [0, 0];
+    if (cmd === 'weight' && a !== b) cmd = 'press';
+    desk.current?.command(cmd);
+    refreshFmt();
+  };
   const keys = useRef(0);
   const onTyped = useCallback(() => {
     // from the second key: the first may be a stray one
@@ -433,6 +459,34 @@ export function WriteApp() {
       }
     >
       <WriterPanel look={look} sample={title || 'The quick brown fox'} hand={hand} onLook={setLook} onAnother={another} />
+    </Sheet>
+  );
+
+  const formatButton = (
+    <Sheet
+      title="Format"
+      showTitle={phone}
+      side="bottom"
+      align="start"
+      className="wr-pop"
+      onOpenChange={(o) => { if (o) refreshFmt(); }}
+      onCloseAutoFocus={focusBack}
+      trigger={
+        <button type="button" className="wr-aa" aria-label={`Format: ${styleName(fmt)}`} title="Format">
+          <span className="wr-aa-mark" aria-hidden>Aa</span>{!phone && <span className="wr-aa-name">{styleName(fmt)}</span>}
+        </button>
+      }
+    >
+      {(close) => (
+        <FormatPanel
+          fmt={fmt}
+          clean={isClean(current)}
+          mod={MOD}
+          highlighter={highlighter}
+          onHighlighter={setHighlighter}
+          run={(cmd) => { run(cmd); if (cmd !== 'weight' && cmd !== 'lean') close(); }}
+        />
+      )}
     </Sheet>
   );
 
@@ -528,6 +582,18 @@ export function WriteApp() {
               </button>,
               noteItems, 'start',
             )}
+            {!phone && (
+              <div className="wr-group wr-format-bar">
+                {formatButton}
+                <span className="wr-bar-more">
+                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.weight} onClick={() => run('weight')} aria-label="Press harder" title={`Press harder (on a selection: go over it)  ${MOD}B`}><Bold aria-hidden /></button>
+                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.lean} disabled={isClean(current)} onClick={() => run('lean')} aria-label="Lean" title={`Lean in, from here  ${MOD}I`}><Italic aria-hidden /></button>
+                  <button type="button" className="wr-icon" onClick={() => run('underline')} aria-label="Underline" title={`Underline by hand  ${MOD}U`}><Underline aria-hidden /></button>
+                  <button type="button" className="wr-icon wr-hl-tool" disabled={isClean(current)} onClick={() => run('highlight')} aria-label="Highlight" title={`Highlight  ⇧${MOD}E`} style={{ '--hl': HIGHLIGHTERS.find((h) => h.id === highlighter)?.color } as React.CSSProperties}><Highlighter aria-hidden /></button>
+                  <button type="button" className="wr-icon" aria-pressed={fmt?.list === 'check'} disabled={isClean(current)} onClick={() => run('checklist')} aria-label="Checklist" title={`Checklist  ⇧${MOD}L`}><ListTodo aria-hidden /></button>
+                </span>
+              </div>
+            )}
             {/* the first words on a blank note, in the bar's empty middle (never over the paper) */}
             {!current.ink && !writing ? (
               <p className="wr-first" aria-hidden>
@@ -579,6 +645,8 @@ export function WriteApp() {
               onTyped={onTyped}
               onEditingChange={setEditing}
               onSay={say}
+              highlighter={highlighter}
+              onStyle={refreshFmt}
             />
           )}
 
@@ -586,6 +654,8 @@ export function WriteApp() {
 
           {kbUp && (
             <div className="wr-kbar" style={{ bottom: kbGap }} role="toolbar" aria-label="Writing">
+              {formatButton}
+              {!isClean(current) && <button type="button" className="wr-icon" aria-pressed={fmt?.list === 'check'} onPointerDown={(e) => e.preventDefault()} onClick={() => run('checklist')} aria-label="Checklist"><ListTodo aria-hidden /></button>}
               <button type="button" className="wr-icon" onPointerDown={(e) => e.preventDefault()} onClick={() => desk.current?.history('undo')} aria-label="Undo"><Undo2 aria-hidden /></button>
               <button type="button" className="wr-icon" onPointerDown={(e) => e.preventDefault()} onClick={another} aria-label="Another writer"><Shuffle aria-hidden /></button>
               <div className="wr-spacer" />
