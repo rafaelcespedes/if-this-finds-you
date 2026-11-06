@@ -164,8 +164,8 @@
 }
 .wr-name-hand { height: 26px; }
 /* the writer's name in the ink they write with; on a dark desk, in the desk's own light (a white pen on black) */
-.wr-writer-chip { color: var(--chip-ink, var(--wr-text)); }
-@media (prefers-color-scheme: dark) { .wr-writer-chip { color: var(--wr-text); } }
+.wr-app .wr-writer-chip { color: var(--chip-ink, var(--wr-text)); }
+@media (prefers-color-scheme: dark) { .wr-app .wr-writer-chip { color: var(--wr-text); } }
 .wr-writer-chip .wr-name-hand { height: 24px; }
 
 .wr-mode {
