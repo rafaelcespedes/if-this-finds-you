@@ -11,9 +11,10 @@ take it further, or take it somewhere else, this page is the way in.
 
 ## Try it
 
-On the site: **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a sheet and a pen and nothing else. It's a
-work in progress, where new ideas land first. The home page, [ifthisfindsyou.app](https://ifthisfindsyou.app), has the
-same writing on the letter desk: click the letter and start typing.
+On the site: **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a small writing app built on this
+interaction: write with a generated hand the way you'd write with a font in Notes. It's a work in progress, where new
+ideas land first. The home page, [ifthisfindsyou.app](https://ifthisfindsyou.app), has the same writing on the letter
+desk: click the letter and start typing.
 
 On your computer (you need [Node.js](https://nodejs.org) 24):
 
@@ -33,17 +34,34 @@ all, with the real engine, and lets you change what's typed, the writer and the 
 | Type | Writes it out by hand, a few letters behind you. No two letters come out the same. |
 | Backspace before the pen gets there | It's gone, cleanly. You changed your mind before the ink touched the paper. |
 | Backspace once it's ink | The pen hovers for a moment, then crosses the word out, or writes the right letter over the wrong one. |
-| Backspace again on a crossed-out word, or hold it down | Crosses it out harder: a heavier line, then a scribble, then inked out (on `/write` for now). |
+| Backspace again on a crossed-out word, or hold it down | Crosses it out harder: a heavier line, then a scribble, then inked out (on `/write` for now). On a phone, a held key is read from how fast the deletions come. |
 | Select and delete | Strikes it through, in this writer's own way (a line, two lines, a wave, loops or a scribble). |
 | Select and type | Strikes the old words and writes the new ones above them. |
 | Type in the middle of a line | Adds it above the line, with a caret. |
 | Space inside a word, Enter in the middle | A `/` between the words, a `//` for a new paragraph. |
 | ⌘B, ⌘U | Goes over the words again; underlines them by hand (twice for a double underline). |
-| ⌘Z | Lifts the ink only while it's wet, about three seconds. Dry ink stays. |
+| ⌘Z | Lifts the ink while it's wet, about three seconds. On a dry crossing-out, writes *stet* in the margin with dots under the word, and the word counts again. |
+| Type fast, or slowly | A burst comes out a little hastier; slow, careful typing a little tidier. The same writer, in a different mood. |
 
 Crossing a word out again, one press at a time:
 
 ![The word "terribly" four times: struck through once, struck again more heavily, scribbled over, and inked out](writing/crossing-out-again.png)
+
+## The writing app
+
+`/write` treats the hand like a font in a notes app:
+
+- **Notes, kept in the browser.** Every note is kept on the device as you write (IndexedDB, one record per note, so two
+  tabs never write over each other). The library lists them the way Notes does: Pinned, Today, Yesterday, then by
+  month, each with its real first sheet in its own hand. A note thrown away waits 30 days.
+- **The writer is the font menu.** The writer's name, written in their own hand, opens it: your own words written by
+  other writers (pick one and the note is written again in their hand), then the pen, the ink, the paper and the size.
+- **In ink or Clean.** In ink (the default) nothing is erased. Clean edits freely, like any font: the words are laid out
+  again as you go, with no slips of the writer's own. A note can switch either way; Clean tidies the crossings-out
+  away, and back in ink it carries on in ink from there. *Make a fair copy* writes a clean copy on a new note and keeps
+  the draft.
+- **The page is the app.** The toolbar floats over the desk, never over the paper, and steps back while you write. ⌘/
+  lists every shortcut.
 
 ## How it works
 
@@ -70,7 +88,12 @@ Crossing a word out again, one press at a time:
 7. **Drawing.** `app/src/components/LiveSheets.tsx` patches the page word by word as the log grows, and
    `engine/animate.js` (`createPen`, `paintPen`) draws the strokes in writing order. Letters the pen hasn't reached
    show as faint graphite "thoughts".
-8. **Deterministic.** The same log gives the same page, byte for byte, live or replayed. Every mark is seeded by its
+8. **The hand keeps your tempo.** `engine/tempo.js` measures each word against your own typing speed, and the `write`
+   event carries it (`haste`, −2 to 2): a hasty word leans and stretches a little, a careful one tidies up. Absent means
+   the usual hand, so older letters replay as they were.
+9. **Stet.** ⌘Z on a dry crossing-out adds a `stet` event: dots under the word, *stet* in the margin in the writer's own
+   letters, and the word counts again in the text (`[restored: …]` in the transcription).
+10. **Deterministic.** The same log gives the same page, byte for byte, live or replayed. Every mark is seeded by its
    event's place in the log, so each one is different and the page never changes after the fact.
    `tools/qa/ink.mjs` checks it, with random editing sessions and a check that nothing already on paper moves.
 
@@ -85,8 +108,9 @@ Crossing a word out again, one press at a time:
 | `app/src/lib/ink.ts` | `InkSession`: the bridge between the page and the engine |
 | `app/src/components/PaperEditor.tsx` | The textarea over the paper, the caret, selection and keys |
 | `app/src/components/LiveSheets.tsx` | The live page, patched word by word |
-| `app/src/write/` | The minimal writing page: held-key timing, the pile of earlier sheets |
-| `tools/qa/ink.mjs`, `tools/qa/again.mjs` | The checks |
+| `engine/tempo.js` | Your typing tempo, word by word, as a little haste or care in the hand |
+| `app/src/write/` | The writing app: `WriteApp.tsx` (the frame), `Desk.tsx` (a note in ink), `CleanDesk.tsx` (a note in Clean), `Library.tsx`, `WriterPanel.tsx` (the font menu), `notes.ts` (keeping notes), `hold.ts` (a held Backspace on any keyboard) |
+| `tools/qa/ink.mjs`, `again.mjs`, `tempo.mjs`, `stet.mjs`, `hold.mjs` | The checks (they run on every change) |
 | `x-post-template/` | A video of the writing for a post (Remotion), drawn by the same engine |
 
 The thinking behind it, with prior art and the studies it draws on:
@@ -102,7 +126,8 @@ The thinking behind it, with prior art and the studies it draws on:
 | Letters held back while you type | `penStep` (`forgiving`) | The last 2, until 700 ms without a key |
 | The pen hovering over a deletion | `penStep` (`pending`) | Until the next word starts, or 1.2 s |
 | How long ink stays wet | `InkSession` in `app/src/lib/ink.ts` | 3 s |
-| A held key crossing out again | `AGAIN_EVERY` in `app/src/write/WriteApp.tsx` | One level every 700 ms, four levels |
+| A held key crossing out again | `AGAIN_EVERY` in `app/src/write/hold.ts` | One level every 700 ms, four levels; on a phone, deletions closer than 150 ms are a held key |
+| How much your tempo shows | `engine/tempo.js` | About 5° more lean and 7–16% wider at the fastest, against your own average |
 | The drawn pen's pace | `createPen` in `LiveSheets.tsx` | Speed 1.5, faster when behind |
 
 ## Take a stab at it
@@ -113,13 +138,10 @@ Some things we know aren't right yet, and ideas we haven't built. Each has an is
 - **One clock, not two.** The engine releases letters at its pace and the drawn pen draws at its own, so they drift.
   Ink can trickle in after you stop, and a word can become ink a moment before it looks like ink. The pen on screen
   should be the clock.
-- **Phones.** iPhone keyboards don't report a held key, so holding Backspace has to be read from how fast deletions
-  arrive ([#6](https://github.com/rafaelcespedes/if-this-finds-you/issues/6)). Autocorrect replaces whole words after the pen has written them.
+- **Phones.** Autocorrect replaces whole words after the pen has written them. A held Backspace is now read from how
+  fast deletions arrive, which wants checking on real phones.
 - **Pauses leave a mark.** Stop mid-sentence and the nib rests on the paper; a dot of ink spreads while you think
   ([#3](https://github.com/rafaelcespedes/if-this-finds-you/issues/3), a good first issue).
-- **The hand keeps your tempo.** Type fast and the writing gets hasty; slow down and it gets careful ([#4](https://github.com/rafaelcespedes/if-this-finds-you/issues/4)).
-- **Undo the way paper does it.** Undo on dry ink could write *stet* ("let it stand") beside a crossed-out word and
-  bring it back, the way editors have for centuries ([#5](https://github.com/rafaelcespedes/if-this-finds-you/issues/5)).
 - **Running out of room.** The last lines squeeze, then "over" and a new sheet; on a postcard, up the margin
   ([#7](https://github.com/rafaelcespedes/if-this-finds-you/issues/7)).
 - **Moving text** with a loop and an arrow instead of cut and paste ([#8](https://github.com/rafaelcespedes/if-this-finds-you/issues/8)).
