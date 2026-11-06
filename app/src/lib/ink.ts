@@ -199,8 +199,8 @@ export class InkSession {
   private planEdit(e: Edit) {
     // Typing over a long selection that runs to the pen head (select all, then type): the planner struck it and wrote
     // the first letter above it as a substitution, but the next keys landed at the pen head, after the struck text:
-    // the new words came apart. A writer strikes it and carries on where the pen is (most of the sheet: a fresh sheet,
-    // as select all + Delete does). So it's planned as what it is, a delete, then typing at that spot.
+    // the new words came apart. A writer strikes it and carries on where the pen is (however much of the sheet it is:
+    // nothing is wiped). So it's planned as what it is, a delete, then typing at that spot.
     const tailFrom = this.text().length - String(this.view.tail ?? '').length;
     if (e.ins && e.del && !this.view.mid && e.at + e.del >= tailFrom && tailFrom - e.at > LONG_FIX) {
       this.planEdit({ ...e, ins: '' });

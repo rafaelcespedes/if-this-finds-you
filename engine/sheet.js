@@ -2,7 +2,7 @@
 //
 // You edit like a computer user; the writer corrects like a person. Every keystroke becomes intent, and a
 // small planner turns it into what this writer would do on paper: strike it through, write a letter over
-// another, add a word above the line with a caret, start a fresh sheet. What is written never moves.
+// another, add a word above the line with a caret. What is written never moves.
 //
 //   const doc = newInkDoc({ seed, style, salt });          // plain JSON; doc.log is the append-only ink log
 //   let sheet = replay(p, doc, layoutOpts);                 // sheet.page renders with renderSVG / renderCanvas
@@ -641,13 +641,9 @@ export function plan(st, view, edit, opts = {}) {
     return { events, view: v };
   }
   if (ids.length) {
-    const visible = m.units.filter((u) => u.k === 'ink' && !u.half).length;
-    // 2b. most of the sheet deleted: nobody strikes a whole page. A fresh sheet; what's left gets rewritten
-    if (!ins && ids.length >= 8 && ids.length >= 0.6 * visible) {
-      const keep = m.text.slice(0, at) + m.text.slice(at + del);
-      emit({ t: 'sheet', why: 'fresh' });
-      return { events, view: { tail: keep, mid: null, pending: null, budget: v.budget } };
-    }
+    // (2b, a fresh sheet when most of the sheet was deleted, is gone: the old sheet vanished from the desk with it.
+    // However much is deleted, it's struck where it stands, like any other deletion, and Undo on the dry crossing-out
+    // brings it all back, stet. Starting over is New sheet's job, or Fair copy's.)
     const old = R.byId.get(ids[0]);
     const one = ids.length === 1 && cps(ins) === 1 && old && isLetter(old.over || old.ch) && isLetter(ins);
     // 2c. one letter for one letter that covers it: written over, heavier (J→G)
