@@ -2,6 +2,21 @@
 
 Rafael's calls, newest first. Builders follow these. If one conflicts with a research recommendation, this log wins.
 
+## 2026-11-06
+
+- **The writing page becomes its own app** (for now still at `/write`, unlinked, out of search): a modern writing tool
+  where a generated hand is used the way any font is used in TextEdit or Notes. If This Finds You stays about the
+  fonts and the letters; the writing tool may be separated from it later. It should look and feel modern and snappy,
+  not like the rest of the site, and its interactions should be new but intuitive, using what a font made on the fly
+  can do (hinting, feedback, formatting by hand).
+  - Built that way on 6 Nov: notes in a library (in place of the pile), the writer as the font menu, In ink or
+    Clean per note, formatting by hand (titles, lists, checklists, leaning, pressing harder, the highlighter), wet
+    ink you can see, notes in the margin that teach the hidden gestures, a neutral frame with dark mode.
+  - Open, for Rafael: the tool's name (it's called "Write" for now); softer 10–12 px corners for this app's controls
+    (the site's 4 px rule is for the site); ⌘I leans the words (rather than underlining).
+- **GitHub issues #4 (the hand keeps your tempo), #5 (stet) and #6 (holding Backspace on a phone) are built.** #3
+  (pauses leave a dot) stays open as the good first issue for newcomers.
+
 ## 2026-11-05
 
 - **Buttons match across the site:** the site's own corners (`--radius`, about 4px) everywhere, no pills (the Reading
