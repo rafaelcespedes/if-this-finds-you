@@ -42,8 +42,9 @@ It's a lab experiment by Rafael Cespedes, a designer. It's free, and there's not
 - **Download any hand as a font.** [Fonts](https://ifthisfindsyou.app/fonts): every row is a real font, built in your
   browser. *Download font* gives the `.otf` and `.ttf` with their licence and credits, and *Write with it* opens the
   desk in that hand.
-- **Try the writing page.** [ifthisfindsyou.app/write](https://ifthisfindsyou.app/write), a work in progress: a sheet
-  and a pen, crossing out harder, and a pile of earlier sheets.
+- **Try the writing app.** [ifthisfindsyou.app/write](https://ifthisfindsyou.app/write), a work in progress: write
+  with a generated hand the way you'd use a font in Notes. Notes kept in your browser, the writer as the font menu,
+  titles, lists and checklists written by hand, and In ink or Clean.
 
 It works on phones and computers, and it was built for keyboards and screen readers as well as a mouse.
 
@@ -56,7 +57,7 @@ line with a caret. Nothing is ever erased.
 
 ![The word "terribly" crossed out four times, each harder: struck once, struck heavily, scribbled over, inked out](docs/writing/crossing-out-again.png)
 
-Try it on **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a sheet and a pen and nothing else (a work in
+Try it on **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a small writing app built on it (a work in
 progress). How it works, where each piece lives, the numbers to play with, and what's still open:
 **[docs/WRITING.md](docs/WRITING.md)**. To make a video of it for a post, there's an
 **[X post template](x-post-template/)**. Design engineers, take a stab at it.
