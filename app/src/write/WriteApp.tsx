@@ -128,6 +128,7 @@ export function WriteApp() {
 
   // the pen catches up with the typing: the drawn pen (LiveSheets) is the clock, the typing handed to it a word at a time
   const drawnPen = useRef<{ at(now: number): { letters: number } } | null>(null);
+  session.drawn = drawnPen;
   useEffect(() => {
     let last = performance.now();
     const id = window.setInterval(() => {
@@ -418,7 +419,7 @@ export function WriteApp() {
               handKey={cur.id + ':' + state.seed + ':' + state.style}
               hold={0}
               trail={session.trail}
-              penRef={drawnPen}
+              penRef={drawnPen} wetMs={session.wetMs}
               dim={session.pendingKeys}
             />
           </PaperEditor>
