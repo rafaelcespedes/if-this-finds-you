@@ -39,7 +39,12 @@ all, with the real engine, and lets you change what's typed, the writer and the 
 | Select and type | Strikes the old words and writes the new ones above them. |
 | Type in the middle of a line | Adds it above the line, with a caret. |
 | Space inside a word, Enter in the middle | A `/` between the words, a `//` for a new paragraph. |
-| ⌘B, ⌘U | Goes over the words again; underlines them by hand (twice for a double underline). |
+| ⌘B, ⌘U | Goes over the words again; underlines them by hand (twice for a double underline). With nothing selected, ⌘B presses harder from here on. |
+| ⌘I | What you type next leans in. |
+| `# `, `## ` at the start of a line | A title or a heading, set out the way this writer does it: underlined once or twice, in capitals, or centred. |
+| `- `, `1. `, `[] ` | A list with the writer's own bullet, numbers that never renumber, or a checklist with hand-drawn boxes. Click a box and the pen ticks it; unticked in ink, the tick is scribbled out. |
+| ⇧⌘E | A felt highlighter swipe, under the ink. |
+| Select and delete a whole page | Crossed out where it stands, like any other deletion. Undo on the dry ink writes *stet* and brings it back. |
 | ⌘Z | Lifts the ink while it's wet, about three seconds. On a dry crossing-out, writes *stet* in the margin with dots under the word, and the word counts again. |
 | Type fast, or slowly | A burst comes out a little hastier; slow, careful typing a little tidier. The same writer, in a different mood. |
 
@@ -60,6 +65,10 @@ Crossing a word out again, one press at a time:
   again as you go, with no slips of the writer's own. A note can switch either way; Clean tidies the crossings-out
   away, and back in ink it carries on in ink from there. *Make a fair copy* writes a clean copy on a new note and keeps
   the draft.
+- **Formatting by hand.** The words people know from Notes, done the way a hand does them (`engine/format.js`,
+  `engine/format-marks.js`): what's typed next changes at once (pressed harder, leaning), marks on written words are
+  made by the pen going back (going over, underlining, ticking, highlighting), and a line already in ink keeps its
+  style, because ink can't be re-set.
 - **The page is the app.** The toolbar floats over the desk, never over the paper, and steps back while you write. ⌘/
   lists every shortcut.
 
@@ -109,8 +118,9 @@ Crossing a word out again, one press at a time:
 | `app/src/components/PaperEditor.tsx` | The textarea over the paper, the caret, selection and keys |
 | `app/src/components/LiveSheets.tsx` | The live page, patched word by word |
 | `engine/tempo.js` | Your typing tempo, word by word, as a little haste or care in the hand |
-| `app/src/write/` | The writing app: `WriteApp.tsx` (the frame), `Desk.tsx` (a note in ink), `CleanDesk.tsx` (a note in Clean), `Library.tsx`, `WriterPanel.tsx` (the font menu), `notes.ts` (keeping notes), `hold.ts` (a held Backspace on any keyboard) |
-| `tools/qa/ink.mjs`, `again.mjs`, `tempo.mjs`, `stet.mjs`, `hold.mjs` | The checks (they run on every change) |
+| `engine/format.js`, `engine/format-marks.js` | Formatting by hand: leaning, pressing harder, titles and headings, lists and checklists, the highlighter |
+| `app/src/write/` | The writing app: `WriteApp.tsx` (the frame), `Desk.tsx` (a note in ink), `CleanDesk.tsx` (a note in Clean), `Library.tsx`, `WriterPanel.tsx` (the font menu), `FormatPanel.tsx` (Aa), `notes.ts` (keeping notes), `hold.ts` (a held Backspace on any keyboard) |
+| `tools/qa/ink.mjs`, `again.mjs`, `tempo.mjs`, `stet.mjs`, `hold.mjs`, `format.mjs` | The checks (they run on every change) |
 | `x-post-template/` | A video of the writing for a post (Remotion), drawn by the same engine |
 
 The thinking behind it, with prior art and the studies it draws on:
