@@ -27,7 +27,7 @@ import { writerName } from '@/lib/hands';
 import { BackspaceHold, type HoldAct } from './hold';
 import { useHints } from './hints';
 import { MarginNote } from './MarginNote';
-import { stateOf, type Note } from './notes';
+import { pendingTicks, stateOf, type LineFormat, type Note } from './notes';
 
 /** the sheet's largest size (px per mm) */
 const MAX_PX_PER_MM = 3.9;
@@ -53,6 +53,8 @@ export interface DeskApi {
   style: () => InkFormat | null;
   /** a formatting command from the toolbar, on the selection (or the word, or the line, at the caret) */
   command: (cmd: FormatCommand) => void;
+  /** the note's lines as they read now, each with how it's set out (a fair copy, or Clean, keeps them) */
+  lines: () => LineFormat[];
 }
 /** the commands about the caret's line (the others take the word at the caret when nothing is selected) */
 const LINE_CMDS = new Set<FormatCommand>(['title', 'heading', 'body', 'bullets', 'numbers', 'checklist', 'check']);
@@ -257,7 +259,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     if (cmd === 'check') { if (s.toggleCheck(s.text().slice(0, from).split('\n').length - 1)) { onTypedRef.current(); sync(); } return; }
     if (cmd === 'highlight') {
       if (from === to) { toast('Select the words to highlight', { id: 'format-none', duration: 2400 }); return; }
-      if (s.highlight(from, to, highlighterRef.current)) { onTypedRef.current(); sync(); requestAnimationFrame(() => editor.current?.setSelection(to)); }
+      if (s.highlight(from, to, highlighterRef.current)) { onTypedRef.current(); sync(); if (caret[0] !== caret[1]) requestAnimationFrame(() => editor.current?.setSelection(to)); }
       return;
     }
     if (from === to) {
@@ -273,8 +275,8 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
         else afterPen.current.add('double');
         lastUnderline.current = [from, to];
       }
-      // the marked words stand clear of the selection's tint, the caret after them
-      requestAnimationFrame(() => editor.current?.setSelection(to));
+      // the marked words stand clear of the selection's tint, the caret after them (with no selection, the caret stays)
+      if (caret[0] !== caret[1]) requestAnimationFrame(() => editor.current?.setSelection(to));
     }
   }, [sync]);
 
@@ -313,6 +315,24 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   const onKeyUpCapture = (e: React.KeyboardEvent) => hold.keyUp(e.nativeEvent);
   const sayRef = useRef(onSay);
   sayRef.current = onSay;
+
+  // a note brought back into ink, or a fair copy: its ticked items are ticked again, by the pen, once it's written
+  useEffect(() => {
+    if (!pendingTicks.get(note.id)?.length) return;
+    const t = window.setTimeout(() => {
+      // (taken only when they're drawn: a page that mounts twice in development keeps them for the second time)
+      const ticks = pendingTicks.get(note.id) ?? [];
+      pendingTicks.delete(note.id);
+      const s = sessionRef.current;
+      let any = false;
+      for (const line of ticks) any = s.toggleCheck(line) || any;
+      if (any) sync();
+    }, 600);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // a fair copy is written out by the pen the first time it's on the desk
+  const [writeOut] = useState(() => !!note.fair && Date.now() - note.fair < 4000);
 
   // ---------- what the pen did, said; and the notes that teach it ----------
   const saidN = useRef(session.changes ?? 0);
@@ -397,6 +417,19 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     text: () => sessionRef.current.text(),
     selection: () => editor.current?.selection() ?? [0, 0],
     style: () => (typeof sessionRef.current.style === 'function' ? sessionRef.current.style(editor.current?.selection()[0]) : null),
+    lines: () => {
+      const s = sessionRef.current;
+      if (s.waiting) { s.flush(); setTick((n) => n + 1); }
+      const t = s.text();
+      const ticked = new Map((typeof s.checks === 'function' ? s.checks() : []).map((c) => [c.line, c.checked]));
+      let at = 0;
+      return t.split('\n').map((text, i) => {
+        const f = typeof s.style === 'function' ? s.style(at) : null;
+        at += text.length + 1;
+        const as = f ? (f.list ?? f.role ?? 'body') : 'body';
+        return { text, as, checked: as === 'check' ? !!ticked.get(i) : undefined };
+      });
+    },
     command: (cmd) => {
       let [a, b] = editor.current?.selection() ?? [0, 0];
       if (a === b && !LINE_CMDS.has(cmd) && cmd !== 'weight' && cmd !== 'lean' && cmd !== 'ps') [a, b] = wordAt(textRef.current, a);
@@ -476,6 +509,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
               penRef={drawnPen}
               wetMs={session.wetMs}
               onPenRest={setPenRest}
+              writeOut={writeOut}
               dim={session.pendingKeys}
             />
             <CheckBoxes

@@ -12,7 +12,7 @@ import type { NoteState } from '@/lib/state';
 import type { PaperId } from '@/lib/papers';
 import { requestFor } from '@/lib/request';
 import { writeInkLetter } from '@/lib/write-live';
-import { decodeInk, encodeInk, inkFromText, inkText } from '@/lib/ink';
+import { decodeInk, encodeInk, inkFromText, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
 import type { Mark } from '@/lib/doc';
 
 export type Look = { seed: string; style: string; pen: string; penSize: string; ink: string; paper: string; size: number; offsets: Record<string, number> };
@@ -32,20 +32,57 @@ export interface Note {
   /** a clean note's words and their marks (underlined, pressed harder); its ink is set aside */
   text?: string;
   marks?: Mark[];
+  /** a clean note's lines as they were set out in ink (titles, lists, ticks): back in ink, lines still saying the same
+   *  take their format again */
+  lines?: LineFormat[];
+  /** made as a fair copy (ms): the pen writes it out when it's first opened */
+  fair?: number;
+  /** last kept (ms), by any tab: which copy of a note is newer (`at` is when it was last written on) */
+  touched?: number;
+}
+/** a line of a note and how it's set out: title, heading, body, or a list's bullet, number or checkbox (and ticked) */
+export type LineFormat = { text: string; as: string; checked?: boolean };
+/** a note's lines as ink, each set out as it was (the pen writes them; nothing is struck) */
+export function inkFromLines(seed: string, style: string, lines: LineFormat[], salt?: string): InkDoc {
+  const doc = newInkDoc(seed, style, salt);
+  let prev = 'body';
+  lines.forEach((L, i) => {
+    if (i) doc.log.push({ t: 'break' });
+    const as = L.as || 'body';
+    // a list carries on to the next line by itself (and numbers on); a line set out differently says so
+    if (as !== prev) doc.log.push({ t: 'line', as });
+    if (L.text) doc.log.push({ t: 'write', text: L.text });
+    prev = as;
+  });
+  return doc;
 }
 export const isClean = (n: Note) => n.mode === 'clean';
 /** the note as ink: a clean note's words, written out as ink from here on */
 export function asInk(n: Note): Note {
   if (!isClean(n)) return n;
   const t = n.text ?? '';
-  const doc = inkFromText(n.look.seed, n.look.style, t);
+  // lines that still say what they said in ink take their format again (a title stays a title, a ticked item ticked)
+  const saved = [...(n.lines ?? [])];
+  const lines: LineFormat[] = t.split('\n').map((text) => {
+    const i = saved.findIndex((L) => L.text === text && text.trim());
+    const L = i >= 0 ? saved.splice(i, 1)[0] : null;
+    return { text, as: L?.as ?? 'body', checked: L?.checked };
+  });
+  const doc = saved.length === (n.lines ?? []).length && !lines.some((L) => L.as !== 'body')
+    ? inkFromText(n.look.seed, n.look.style, t)
+    : inkFromLines(n.look.seed, n.look.style, lines);
   doc.salt = n.id.slice(-6); // the same words always come out the same (the library's picture of it too)
-  return { ...n, mode: 'ink', ink: t.trim() ? encodeInk(doc) : null, text: undefined, marks: undefined, at: Date.now() };
+  const ticks = lines.flatMap((L, i) => (L.checked ? [i] : []));
+  if (ticks.length) pendingTicks.set(n.id, ticks);
+  return { ...n, mode: 'ink', ink: t.trim() ? encodeInk(doc) : null, text: undefined, marks: undefined, lines: undefined, at: Date.now() };
 }
+/** ticks to draw once a note is on the desk (its boxes exist only once the pen has written them) */
+export const pendingTicks = new Map<string, number[]>();
 /** the note in Clean: its words as they read now (crossings-out tidied away), free to edit */
-export function asClean(n: Note): Note {
+export function asClean(n: Note, lines?: LineFormat[]): Note {
   if (isClean(n)) return n;
-  return { ...n, mode: 'clean', text: noteText(n), marks: [], at: Date.now() };
+  const text = lines ? lines.map((L) => L.text).join('\n') : noteText(n);
+  return { ...n, mode: 'clean', text, marks: [], lines: lines?.some((L) => L.as !== 'body') ? lines : undefined, at: Date.now() };
 }
 
 export const THROWN_DAYS = 30;
@@ -169,7 +206,8 @@ export async function readNotes(): Promise<Note[] | null> {
 }
 /** kept; false when the browser won't (private mode, storage full) */
 export async function putNote(n: Note): Promise<boolean> {
-  try { await tx('readwrite', (s) => s.put(n)); tell({ kind: 'put', id: n.id, at: n.at }); return true; } catch { return false; }
+  const kept = { ...n, touched: Date.now() };
+  try { await tx('readwrite', (s) => s.put(kept)); tell({ kind: 'put', id: n.id, at: kept.touched }); return true; } catch { return false; }
 }
 export async function deleteNote(id: string): Promise<boolean> {
   try { await tx('readwrite', (s) => s.delete(id)); tell({ kind: 'delete', id }); return true; } catch { return false; }

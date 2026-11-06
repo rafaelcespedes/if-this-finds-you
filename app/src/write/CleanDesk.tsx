@@ -125,6 +125,7 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
     text: () => docRef.current.text,
     selection: () => editor.current?.selection() ?? [0, 0],
     style: () => null,
+    lines: () => docRef.current.text.split('\n').map((text) => ({ text, as: 'body' })),
     command: (cmd) => { const [a, b] = editor.current?.selection() ?? [0, 0]; onFormat(cmd, a, b); if (!coarse) editor.current?.focus(); },
     image: async () => {
       const { live: l, extras: x, pxPerMm: k } = shown.current;

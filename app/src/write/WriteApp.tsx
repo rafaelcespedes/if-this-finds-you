@@ -14,6 +14,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { copyText, saveNote } from '@/lib/actions';
+import { encodeInk } from '@/lib/ink';
 import { inkColor } from '@/lib/inks';
 import { effective, effectiveHand } from '@/lib/params';
 import { handFor } from '@/lib/request';
@@ -29,7 +30,7 @@ import { FormatPanel, HIGHLIGHTERS, styleName } from './FormatPanel';
 import type { FormatCommand } from '@/components/PaperEditor';
 import type { InkFormat, InkHighlight } from '@/lib/ink';
 import {
-  MIGRATED_KEY, asClean, asInk, blankNote, deleteNote, getNote, isBlank, isClean, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
+  MIGRATED_KEY, asClean, asInk, blankNote, inkFromLines, pendingTicks, deleteNote, getNote, isBlank, isClean, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
   knowText, readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
 } from './notes';
 
@@ -47,6 +48,10 @@ function moveSheets(change: () => void): Promise<unknown> {
   if (!doc.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { change(); return Promise.resolve(); }
   return doc.startViewTransition(() => flushSync(change)).finished.catch(() => {});
 }
+
+/** a toolbar button pressed with a mouse doesn't take the focus from the paper (the keys go on to the writing; a space
+ * never presses the button again) */
+const keepPen = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') e.preventDefault(); };
 
 export function WriteApp() {
   const coarse = useMediaQuery('(pointer: coarse)');
@@ -168,7 +173,7 @@ export function WriteApp() {
   const setMode = (mode: 'ink' | 'clean') => {
     const n = settle();
     if (!n || (mode === 'clean') === isClean(n)) return;
-    const next = mode === 'clean' ? asClean(n) : asInk(n);
+    const next = mode === 'clean' ? asClean(n, desk.current?.lines()) : asInk(n);
     patch(n.id, () => next);
     void keep(next);
     say(mode === 'clean' ? 'Clean: edit freely, like a font.' : 'In ink: mistakes are crossed out.');
@@ -189,17 +194,32 @@ export function WriteApp() {
     return () => { window.removeEventListener('pagehide', leave); document.removeEventListener('visibilitychange', hidden); };
   }, [settle]);
 
-  // another tab kept a note: the library takes it; the open note too, unless it has changes of its own here
+  // another tab kept a note: the library takes it, and the open note too unless it has changes of its own here. A note
+  // thrown away, put back or pinned there is that here too, changes or not (its words stay as written here)
   useEffect(() => listen(async (m) => {
     if (m.kind === 'delete') { setAll((all) => all.filter((n) => n.id !== m.id || n.id === currentRef.current)); return; }
     const n = await getNote(m.id);
     if (!n) return;
     const mine = notesRef.current.find((x) => x.id === n.id);
-    if (mine && mine.at >= n.at) return;
-    if (n.id === currentRef.current && dirty.current) return;
-    setAll((all) => (all.some((x) => x.id === n.id) ? all.map((x) => (x.id === n.id ? n : x)) : [...all, n]));
-    if (n.id === currentRef.current) setRev((r) => r + 1);
-  }), [setAll]);
+    if (mine && (mine.touched ?? 0) >= (n.touched ?? 0)) return;
+    const open = n.id === currentRef.current;
+    if (open && dirty.current) {
+      patch(n.id, (x) => ({ ...x, thrown: n.thrown, pinned: n.pinned, touched: n.touched }));
+    } else {
+      setAll((all) => (all.some((x) => x.id === n.id) ? all.map((x) => (x.id === n.id ? n : x)) : [...all, n]));
+      if (open) setRev((r) => r + 1);
+    }
+    // the open note was thrown away in another tab: the desk moves on to the newest note (what was written here is kept with it)
+    if (open && n.thrown) {
+      settle();
+      const here = notesRef.current.find((x) => x.id === n.id);
+      if (here) void putNote({ ...here, thrown: n.thrown });
+      const next = notesRef.current.filter((x) => !x.thrown && x.id !== n.id).sort((a, b) => b.at - a.at)[0];
+      if (next) setCurrentId(next.id);
+      else { const b = blankNote(n.look); setAll((all) => [...all, b]); setCurrentId(b.id); }
+      toast('That note was thrown away in another tab', { id: 'thrown-elsewhere', description: 'It’s in Thrown away.' });
+    }
+  }), [setAll, patch]);
 
   // ---------- moving between notes ----------
   /** the note on the desk is put away: kept, or let go if nothing was written on it (as an empty note goes in Notes) */
@@ -227,7 +247,7 @@ export function WriteApp() {
   const [arrived, setArrived] = useState<string | null>(null);
   const newNote = (look?: Look) => {
     const n = notesRef.current.find((x) => x.id === currentRef.current);
-    if (n && isBlank(n) && !look) { setPhoneScreen('note'); desk.current?.focus(); return n; }
+    if (n && isBlank(n) && !(desk.current?.text().trim()) && !look) { setPhoneScreen('note'); desk.current?.focus(); return n; }
     const next = blankNote(look ?? n?.look ?? pickLook());
     leaveCurrent();
     setAll((all) => [...all, next]);
@@ -258,7 +278,7 @@ export function WriteApp() {
   const throwAway = (id: string) => {
     const n = id === currentRef.current ? settle() : notesRef.current.find((x) => x.id === id);
     if (!n) return;
-    const gone: Note = { ...n, thrown: Date.now(), pinned: false };
+    const gone: Note = { ...n, thrown: Date.now() };
     const wasOpen = id === currentRef.current;
     const next = wasOpen ? notesRef.current.filter((x) => !x.thrown && x.id !== id).sort((a, b) => b.at - a.at)[0] : null;
     moveSheets(() => {
@@ -312,23 +332,25 @@ export function WriteApp() {
   };
 
   // ---------- the note's own actions ----------
-  // the fair copy is written out once its desk is up
-  const pendingWrite = useRef<{ id: string; text: string } | null>(null);
+  // a fair copy: the note as it reads now, set out as it was (titles, lists, ticks), on a new note the pen writes out
   const fairCopy = () => {
-    const text = desk.current?.text().trim() ?? '';
-    if (!text) { toast('Nothing to copy out yet', { id: 'fair-none' }); return; }
     const from = notesRef.current.find((x) => x.id === currentRef.current);
-    const n = newNote(from?.look);
-    pendingWrite.current = { id: n.id, text };
+    const lines = desk.current?.lines() ?? [];
+    if (!from || !lines.some((L) => L.text.trim())) { toast('Nothing to copy out yet', { id: 'fair-none' }); return; }
+    leaveCurrent();
+    const n = blankNote(from.look);
+    const doc = inkFromLines(n.look.seed, n.look.style, lines);
+    const copy: Note = { ...n, ink: encodeInk(doc), fair: Date.now() };
+    const ticks = lines.flatMap((L, i) => (L.checked ? [i] : []));
+    if (ticks.length) pendingTicks.set(copy.id, ticks);
+    setAll((all) => [...all, copy]);
+    setCurrentId(copy.id);
+    setPhoneScreen('note');
+    void keep(copy);
+    setArrived(from.id);
+    window.setTimeout(() => setArrived((a) => (a === from.id ? null : a)), 900);
     toast('A fair copy', { id: 'fair', description: 'The draft is in your notes.', duration: 4000 });
   };
-  useEffect(() => {
-    const w = pendingWrite.current;
-    if (!w || w.id !== currentId) return;
-    pendingWrite.current = null;
-    const t = window.setTimeout(() => desk.current?.write(w.text), 420);
-    return () => window.clearTimeout(t);
-  }, [currentId]);
   const copyAll = async () => {
     await copyText(desk.current?.text() ?? '');
     toast('Copied', { id: 'copied', description: 'The words, as they read now.', duration: 2000 });
@@ -354,6 +376,8 @@ export function WriteApp() {
   // ---------- the chrome steps back while you write ----------
   const [hideUi, setHideUi] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  // Format: opened from the toolbar (or, on a phone, from the bar above the keyboard, which goes as the keyboard does)
+  const [formatOpen, setFormatOpen] = useState(false);
 
   // ---------- formatting ----------
   const [fmt, setFmt] = useState<InkFormat | null>(null);
@@ -375,6 +399,9 @@ export function WriteApp() {
     const [a, b] = desk.current?.selection() ?? [0, 0];
     if (cmd === 'weight' && a !== b) cmd = 'press';
     desk.current?.command(cmd);
+    // (a button isn't typing: the toolbar stays where the pointer is)
+    keys.current = 0;
+    setWriting(false);
     refreshFmt();
   };
   const keys = useRef(0);
@@ -472,7 +499,8 @@ export function WriteApp() {
       side="bottom"
       align="start"
       className="wr-pop"
-      onOpenChange={(o) => { if (o) refreshFmt(); }}
+      open={formatOpen}
+      onOpenChange={(o) => { setFormatOpen(o); if (o) refreshFmt(); }}
       onCloseAutoFocus={focusBack}
       trigger={
         <button type="button" className="wr-aa" aria-label={`Format: ${styleName(fmt)}`} title="Format">
@@ -574,11 +602,11 @@ export function WriteApp() {
                   <ChevronLeft aria-hidden /><span>Notes</span>
                 </button>
               ) : (
-                <button type="button" className="wr-icon" onClick={() => setLibOpen((o) => !o)} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} title={`Notes  ${MOD}\\`}>
+                <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => setLibOpen((o) => !o)} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} title={`Notes  ${MOD}\\`}>
                   <PanelLeft aria-hidden />
                 </button>
               )}
-              {!phone && <button type="button" className="wr-icon" onClick={() => newNote()} aria-label="New note" title={`New note  ⌥${MOD}N`}><SquarePen aria-hidden /></button>}
+              {!phone && <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => newNote()} aria-label="New note" title={`New note  ⌥${MOD}N`}><SquarePen aria-hidden /></button>}
             </div>
             {!phone && menu(
               <button type="button" className="wr-title" aria-label={`${title || 'New note'}: note actions`}>
@@ -586,20 +614,21 @@ export function WriteApp() {
               </button>,
               noteItems, 'start',
             )}
+            {phone && <span className="wr-format-anchor">{formatButton}</span>}
             {!phone && (
               <div className="wr-group wr-format-bar">
                 {formatButton}
                 <span className="wr-bar-more">
-                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.weight} onClick={() => run('weight')} aria-label="Press harder" title={`Press harder (on a selection: go over it)  ${MOD}B`}><Bold aria-hidden /></button>
-                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.lean} disabled={isClean(current)} onClick={() => run('lean')} aria-label="Lean" title={`Lean in, from here  ${MOD}I`}><Italic aria-hidden /></button>
-                  <button type="button" className="wr-icon" onClick={() => run('underline')} aria-label="Underline" title={`Underline by hand  ${MOD}U`}><Underline aria-hidden /></button>
-                  <button type="button" className="wr-icon wr-hl-tool" disabled={isClean(current)} onClick={() => run('highlight')} aria-label="Highlight" title={`Highlight  ⇧${MOD}E`} style={{ '--hl': HIGHLIGHTERS.find((h) => h.id === highlighter)?.color } as React.CSSProperties}><Highlighter aria-hidden /></button>
-                  <button type="button" className="wr-icon" aria-pressed={fmt?.list === 'check'} disabled={isClean(current)} onClick={() => run('checklist')} aria-label="Checklist" title={`Checklist  ⇧${MOD}L`}><ListTodo aria-hidden /></button>
+                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.weight} onPointerDown={keepPen} onClick={() => run('weight')} aria-label="Press harder" title={`Press harder (on a selection: go over it)  ${MOD}B`}><Bold aria-hidden /></button>
+                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.lean} disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('lean')} aria-label="Lean" title={`Lean in, from here  ${MOD}I`}><Italic aria-hidden /></button>
+                  <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => run('underline')} aria-label="Underline" title={`Underline by hand  ${MOD}U`}><Underline aria-hidden /></button>
+                  <button type="button" className="wr-icon wr-hl-tool" disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('highlight')} aria-label="Highlight" title={`Highlight  ⇧${MOD}E`} style={{ '--hl': HIGHLIGHTERS.find((h) => h.id === highlighter)?.color } as React.CSSProperties}><Highlighter aria-hidden /></button>
+                  <button type="button" className="wr-icon" aria-pressed={fmt?.list === 'check'} disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('checklist')} aria-label="Checklist" title={`Checklist  ⇧${MOD}L`}><ListTodo aria-hidden /></button>
                 </span>
               </div>
             )}
             {/* the first words on a blank note, in the bar's empty middle (never over the paper) */}
-            {!current.ink && !writing ? (
+            {!current.ink && !writing && !phone ? (
               <p className="wr-first" aria-hidden>
                 {coarse ? 'Tap the paper to write' : <>Type to write. Grey letters delete cleanly until the pen reaches them; then <kbd>⌫</kbd> crosses out.</>}
               </p>
@@ -622,7 +651,7 @@ export function WriteApp() {
                 'end',
               )}
               {writerButton}
-              <button type="button" className="wr-icon" onClick={another} aria-label="Another writer" title="Another writer"><Shuffle aria-hidden /></button>
+              <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={another} aria-label="Another writer" title="Another writer"><Shuffle aria-hidden /></button>
             </div>
             <div className="wr-group">
               {menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, phone ? <><DropdownMenu.Item className="wr-menu-item" onSelect={() => newNote()}><SquarePen aria-hidden /> New note</DropdownMenu.Item><DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</> : moreItems, 'end')}
@@ -658,7 +687,9 @@ export function WriteApp() {
 
           {kbUp && (
             <div className="wr-kbar" style={{ bottom: kbGap }} role="toolbar" aria-label="Writing">
-              {formatButton}
+              <button type="button" className="wr-aa" onClick={() => { refreshFmt(); setFormatOpen(true); }} aria-label={`Format: ${styleName(fmt)}`}>
+                <span className="wr-aa-mark" aria-hidden>Aa</span>
+              </button>
               {!isClean(current) && <button type="button" className="wr-icon" aria-pressed={fmt?.list === 'check'} onPointerDown={(e) => e.preventDefault()} onClick={() => run('checklist')} aria-label="Checklist"><ListTodo aria-hidden /></button>}
               <button type="button" className="wr-icon" onPointerDown={(e) => e.preventDefault()} onClick={() => desk.current?.history('undo')} aria-label="Undo"><Undo2 aria-hidden /></button>
               <button type="button" className="wr-icon" onPointerDown={(e) => e.preventDefault()} onClick={another} aria-label="Another writer"><Shuffle aria-hidden /></button>

@@ -52,10 +52,10 @@ export function WriterPanel({ look, sample, hand, onLook, onAnother }: Props) {
   const variants = ALL_PAPERS.filter((p) => (p.family ?? p.id) === family);
   const take = (w: Look) => onLook({ seed: w.seed, style: w.style, offsets: w.offsets });
   return (
-    <div className="wr-writer">
+    <div className="wr-writer" style={{ '--sample-ink': ink } as React.CSSProperties}>
       <header className="wr-writer-head">
-        <div className="wr-writer-name">
-          <WriterName look={look} color={ink} emPx={26} />
+        <div className="wr-writer-name" style={{ color: ink }}>
+          <WriterName look={look} color="inherit" emPx={26} />
           <span className="wr-writer-sub">{name} · {describeHand(hand)}</span>
         </div>
         <div className="wr-writer-moves">
@@ -76,7 +76,7 @@ export function WriterPanel({ look, sample, hand, onLook, onAnother }: Props) {
                   recipe={{ seed: w.seed, style: w.style }}
                   text={words}
                   emPx={17}
-                  color={ink}
+                  color="inherit"
                   className="wr-hand-sample"
                 />
                 <span className="wr-hand-name">{writerName(w.seed)}</span>
