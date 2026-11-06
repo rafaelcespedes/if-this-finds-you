@@ -27,14 +27,12 @@ import { Wordmark } from '@/components/Wordmark';
 import { FilePlus } from 'lucide-react';
 import { Shuffle } from 'lucide-react';
 import { SheetPile } from './SheetPile';
+import { BackspaceHold, type HoldAct } from './hold';
 import { PILE_MAX, blankSheet, isBlank, keep, newId, pickLook, readKept, stateOf, type Look, type Sheet } from './sheets';
 
 /** the sheet's largest size (px per mm), as on the desk */
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
-/** a held Backspace on a struck word: one more pass this often, about as long as the hand takes to draw one (a
- * faster key would run ahead of the pen and leave it scribbling seconds after the key is let go) */
-const AGAIN_EVERY = 700;
 
 /** A change of sheets, as the sheets themselves moving (View Transitions: each sheet is named by its id, so the one
  * on the desk shrinks down into the pile and a sheet from the pile grows back up). Instant without the API or with
@@ -177,8 +175,14 @@ export function WriteApp() {
   const setPileOpen = useCallback((o: boolean) => moveSheets(() => setPileOpenNow(o)), []);
   // said aloud to screen readers: a sheet set aside, brought back, thrown away
   const [said, say] = useState('');
+  // Backspace at a crossed-out word, pressed or held, on any keyboard (hold.ts)
+  const hold = useMemo(() => new BackspaceHold({ late: () => { setUsed(true); sync(); } }), [sync]);
+  hold.touch = coarse;
   const onEdit = useCallback((e: Edit) => {
     const s = sessionRef.current;
+    // a deletion the phone made after the page swallowed it (Android won't cancel one): the text stays, the caret too
+    const caret = hold.dropped(e);
+    if (caret != null) { queueMicrotask(() => editor.current?.setSelection(caret)); return; }
     setUsed(true);
     if (e.kind === 'undo') {
       // the browser's own undo (a menu, a shake): the same as ⌘Z
@@ -190,7 +194,7 @@ export function WriteApp() {
     s.edit(e);
     undoHistory.record(before, s.text(), e);
     sync();
-  }, [undoHistory, sync]);
+  }, [undoHistory, sync, hold]);
 
   // Undo takes back what the pen hasn't written yet, and lifts wet ink (the last 3 s); dry ink stays, but a word crossed
   // out (and crossed out harder) is let stand: stet (lib/ink.ts)
@@ -244,9 +248,22 @@ export function WriteApp() {
 
   // Backspace or Delete at a crossed-out word: crossed out again, harder each time. Held down, it keeps going
   // (one pass every AGAIN_EVERY ms) until the word is inked out, and stops there; a fresh press after that
-  // deletes as usual.
-  const lastAgain = useRef(0);
-  const againHeld = useRef(false);
+  // deletes as usual. A phone's held key is read from how fast its deletions come (hold.ts).
+  const againAt = (at: number) => sessionRef.current.again(at);
+  const textSel = (t: EventTarget | null) => ((t as HTMLElement | null)?.tagName === 'TEXTAREA' ? editor.current?.selection() ?? null : null);
+  const held = (act: HoldAct) => {
+    if (act === 'again') { setUsed(true); sync(); }
+    return act !== 'pass';
+  };
+  // a phone's deletions as they come (keydown doesn't name them on Android, and iOS deletes whole words without one)
+  useEffect(() => {
+    const desk = deskRef.current;
+    if (!desk) return;
+    const before = (e: InputEvent) => { if (held(hold.input(e, textSel(e.target), againAt))) e.preventDefault(); };
+    desk.addEventListener('beforeinput', before, true);
+    return () => desk.removeEventListener('beforeinput', before, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hold]);
   const onKeyDownCapture = (e: React.KeyboardEvent) => {
     // ⌘S: it's already kept (on this device); say so instead of the browser's save dialog
     if ((isMac() ? e.metaKey : e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 's') {
@@ -257,25 +274,9 @@ export function WriteApp() {
       toast('Kept on this device', { id: 'kept', duration: 1600 });
       return;
     }
-    if (e.key !== 'Backspace' && e.key !== 'Delete') { againHeld.current = false; return; }
-    if (e.metaKey || e.ctrlKey || e.altKey || e.nativeEvent.isComposing) return;
-    if ((e.target as HTMLElement).tagName !== 'TEXTAREA') return;
-    const [a, b] = editor.current?.selection() ?? [0, 0];
-    if (a !== b) return;
-    const now = performance.now();
-    if (e.repeat && againHeld.current && now - lastAgain.current < AGAIN_EVERY) { e.preventDefault(); e.stopPropagation(); return; }
-    const r = sessionRef.current.again(a);
-    if (!r) { againHeld.current = false; return; }
-    if (r.max && !e.repeat) { againHeld.current = false; return; } // inked out already: this press deletes as usual
-    e.preventDefault();
-    e.stopPropagation();
-    if (r.max) return; // held past inked out: it stays there
-    againHeld.current = true;
-    lastAgain.current = now;
-    setUsed(true);
-    sync();
+    if (held(hold.key(e.nativeEvent, textSel(e.target), againAt))) { e.preventDefault(); e.stopPropagation(); }
   };
-  const onKeyUpCapture = (e: React.KeyboardEvent) => { if (e.key === 'Backspace' || e.key === 'Delete') againHeld.current = false; };
+  const onKeyUpCapture = (e: React.KeyboardEvent) => hold.keyUp(e.nativeEvent);
 
   // ---------- the page ----------
   const deskRef = useRef<HTMLDivElement>(null);
