@@ -592,6 +592,15 @@ export class InkSession {
     const r = engine.again(this.sheet, this.view, at) as { events: unknown[]; level: number } | null;
     return r ? (r.events.length ? r.level - 1 : r.level) : null;
   }
+  /**
+   * The ghost of the next press at textarea offset `at` (engine previewAgain): the marks ⌫ there would draw, with the
+   * keys they'll have (so the pen inks over the ghost), or null when there's no crossed-out word there or it's inked out.
+   */
+  ghostAt(at: number): { items: any[]; level: number } | null {
+    if (typeof engine.previewAgain !== 'function') return null;
+    const r = engine.previewAgain(this.sheet, this.view, at) as { items: any[]; level: number } | null;
+    return r && r.items.length ? { items: r.items, level: r.level } : null;
+  }
   private offsets() {
     const k = this.offKey;
     if (k.sheet === this.sheet && k.view === this.view && k.n === this.doc.log.length) return k.v;
@@ -834,6 +843,27 @@ export class InkSession {
     for (let i = this.inkedAt.length; i < this.doc.log.length; i++) this.inkedAt.push(this.lastInk);
     this.describe(events as any[], first);
   }
+}
+
+/**
+ * The ghost of the next press (ideas-feel.md, idea 8), behind a flag that's off by default: `?ghost` in the address.
+ * When the caret rests beside a crossed-out word, the mark the next ⌫ would make shows faintly over it.
+ */
+export const GHOST = typeof location !== 'undefined' && new URLSearchParams(location.search).has('ghost');
+/** fainter than a thought letter: what would be, fainter than what's typed */
+export const GHOST_OPACITY = 0.14;
+
+/** The ghost's marks (InkSession.ghostAt) as outlines, by sheet (sheet px). */
+export function inkGhost(live: Live, items: any[]): string[] {
+  const sc = live.emPx / UPM;
+  const n = live.sheets.length;
+  const sheetU = live.paper.h * live.unitsPerMm;
+  const out = Array.from({ length: n }, () => '');
+  for (const it of items) {
+    const cs = itemContours(it);
+    if (cs.length) out[sheetAtY(it.y ?? 0, sheetU, n)] += `<path d="${E.contoursToD(cs, 0, 0, sc)}"/>`;
+  }
+  return out;
 }
 
 /** The ink page written from a log, for the worker and the JPEG. */

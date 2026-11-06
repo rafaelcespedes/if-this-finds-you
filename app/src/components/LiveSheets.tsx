@@ -18,7 +18,7 @@ import { sheetPaper, sheetShadow } from '@/lib/papers';
 import { SheetMarks } from '@/components/SheetView';
 import { sheetFrame, sheetOfLine, type Live } from '@/lib/live';
 import { scopeIds } from '@/lib/writing';
-import { INK_THOUGHT, THOUGHT_FILL, WET_LOOK, eventLift, inkDarkens, wetNext, wetStep, type InkExtras, type ThoughtWord } from '@/lib/ink';
+import { GHOST_OPACITY, INK_THOUGHT, THOUGHT_FILL, WET_LOOK, eventLift, inkDarkens, inkGhost, wetNext, wetStep, type InkExtras, type ThoughtWord } from '@/lib/ink';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const engine = E as unknown as Record<string, any>;
@@ -58,6 +58,12 @@ interface Props {
   wetMs?: number;
   /** the drawn pen came to rest (nothing left to write, nothing typed waiting for it), or set off again */
   onPenRest?: (resting: boolean) => void;
+  /**
+   * The ghost of the next press (InkSession.ghostAt; behind the GHOST flag): its marks drawn faint in graphite, fading
+   * in. Taken away (null), it goes at once, unless those marks are now being written: then it stays under them until
+   * the pen has inked them, the way thought letters become ink.
+   */
+  ghost?: { items: any[] } | null;
 }
 
 /** the five drying steps as SVG filters (a gamma curve on the colour: deeper, or for iron gall paler) */
@@ -107,7 +113,7 @@ function patchThoughts(svg: SVGSVGElement, words: ThoughtWord[]) {
   }
 }
 
-export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold, trail, penRef, dim, wetMs, onPenRest }: Props) {
+export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold, trail, penRef, dim, wetMs, onPenRest, ghost }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const svgs = useRef<SVGSVGElement[]>([]);
   const drys = useRef<SVGSVGElement[]>([]);
@@ -259,6 +265,41 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
     });
   });
 
+  // ---------- the ghost of the next press: faint, fading in; it stays under its marks while the pen inks them ----------
+  const ghostShown = useRef<{ items: any[]; keys: string[] } | null>(null);
+  const ghostEls = useRef<SVGGElement[]>([]);
+  const dropGhost = () => { for (const g of ghostEls.current) g.remove(); ghostEls.current = []; ghostShown.current = null; };
+  useLayoutEffect(() => {
+    const was = ghostShown.current;
+    if (ghost && was?.items === ghost.items && ghostEls.current.every((g) => g.isConnected)) return;
+    if (!ghost) {
+      // the press came: its marks are on the page now, being written over the ghost (it goes once they're inked)
+      const page = prev.current?.page;
+      const written = !!was && !!page && was.keys.some((k) => page.items.some((it: any) => it.key === k));
+      if (!written) dropGhost();
+      return;
+    }
+    dropGhost();
+    const per = inkGhost(live, ghost.items);
+    svgs.current.forEach((svg, s) => {
+      if (!svg || !per[s]) return;
+      const g = svg.ownerDocument.createElementNS(NS, 'g') as SVGGElement;
+      g.setAttribute('class', 'ghost-in');
+      g.setAttribute('fill', THOUGHT_FILL);
+      g.setAttribute('fill-opacity', String(GHOST_OPACITY));
+      g.innerHTML = per[s];
+      svg.appendChild(g);
+      ghostEls.current.push(g);
+    });
+    ghostShown.current = { items: ghost.items, keys: ghost.items.map((it) => String(it.key)) };
+  });
+  // (the pen has inked the marks the ghost showed: it's done)
+  const ghostDone = () => {
+    const was = ghostShown.current, pn = pen.current;
+    if (!was || ghost || !pn) return;
+    if (was.keys.every((k) => pn.liftedAt(k) !== undefined)) dropGhost();
+  };
+
   // ---------- wet ink: each run of fresh ink steps through its drying, then is left alone ----------
   const wetPaint = () => {
     window.clearTimeout(wetTimer.current);
@@ -325,6 +366,7 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
       if (dimSet || dimmed.current) for (const svg of [...wets.current, ...drys.current]) if (svg) engine.paintPen(svg, page, state, po);
       dimmed.current = !!dimSet;
       wetPaint();
+      ghostDone();
       const moving = !!(state.busy || state.writing);
       // a copy-out: a click or Esc finishes it, as the first write-out does
       if (state.copying && !rushOff.current) {
@@ -349,7 +391,7 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
     // word, or a strike, flashing before the pen writes it)
     step();
   };
-  useEffect(() => () => { cancelAnimationFrame(raf.current); window.clearTimeout(wetTimer.current); rushOff.current?.(); }, []);
+  useEffect(() => () => { cancelAnimationFrame(raf.current); window.clearTimeout(wetTimer.current); rushOff.current?.(); dropGhost(); }, []);
 
   // a click or key during the first write-out finishes it (editor-ux.md §3.4)
   useEffect(() => {

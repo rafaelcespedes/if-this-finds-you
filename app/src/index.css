@@ -296,6 +296,22 @@ textarea {
   }
 }
 
+/* The ghost of the next press (LiveSheets, behind a flag): the mark ⌫ would make, fading in faint over a crossed-out
+   word when the caret rests there (180 ms). A pause brings it, never a key; it goes at once. */
+@keyframes ghost-in {
+  from {
+    opacity: 0;
+  }
+}
+.ghost-in {
+  animation: ghost-in var(--dur-pop) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ghost-in {
+    animation: none;
+  }
+}
+
 /* The highlighter sweeps in left to right on pointer selections */
 @keyframes highlighter-sweep {
   from {

@@ -822,6 +822,23 @@ export function again(st, view, at) {
   const events = idRuns(run.map((r) => r.id)).map(([a, b]) => ({ t: 'strike', from: a, to: b, how, why: 'again', lv }));
   return { events, view: v, level: lv };
 }
+// A ghost of the next press: the marks again(st, view, at) would put down, exactly as the pen will draw them (the
+// same seeds: the event indexes they'll get next), with nothing put down. Pure, like again(). { items (mark items,
+// placed on the page: the app draws them faint), level (the run's level after the press), events } or null when
+// there's no struck run there, or it's already inked out.
+export function previewAgain(st, view, at) {
+  const r = again(st, view, at);
+  if (!r || !r.events.length) return null;
+  const s = st.cur, ev0 = st.doc.log.length, items = [];
+  // (as applyOne places a strike)
+  r.events.forEach((e, i) => {
+    const ev = ev0 + i, struck = placedRun(s, e.from, e.to);
+    if (!struck.length) return;
+    const res = strikeItems(st.p, (e.lv || 1) >= 2 ? st.heavy : st.firm, st.H, struck, e.how || st.H.strike, R0(st, ev), { seed: 311 + ev * 0.77, key: 'e' + ev, lines: s.lines });
+    for (const it of res.items) items.push(Object.assign(it, { ev }));
+  });
+  return { items, level: r.level, events: r.events };
+}
 // ---------- let it stand (stet) ----------
 // Undo on dry ink (issue #5). Ink can't be lifted once it's dry, so a crossing-out is taken back the way editors
 // always have: dots under the struck word, "stet" ("let it stand") in the margin (placeStet), and the word counts
