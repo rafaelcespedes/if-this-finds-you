@@ -288,7 +288,7 @@ const COPY_FROM = 60;
 const COPY_S = 6;
 const NO_KEYS: string[] = [];
 /** how long one call may spend laying out new thought letters (ms): a paste of hundreds of letters comes in parts */
-const DRAFT_MS = 10;
+const DRAFT_MS = 12;
 /** one word as the pen is handed it: spaces before it, the word, spaces after (a line break starts the next word) */
 const CHUNK = /^\s*\S+[ \t]*/;
 /** a reader that's inside no word (hasteNext for every piece of the draft after the first) */
@@ -359,9 +359,10 @@ export class InkSession {
    * ends, at the tempo it was typed at), so they sit exactly where their ink will. Kept between calls: a key re-lays
    * only the word it changed, a word handed to the pen drops off the front, and a long paste is laid out once. A
    * paste's new letters are laid out about DRAFT_MS at a time (the first ones at once), so no frame waits on hundreds
-   * of letters: until it's all there, `drafting` is true, and step() lays out more each time it's called.
+   * of letters: until it's all there, `drafting` is true, and step() lays out more each time it's called (`grow`); a
+   * render meanwhile shows what's there, plus a word at most.
    */
-  draft() {
+  draft(grow = false) {
     const tail = String(this.view.tail ?? '');
     if (!tail) return null;
     const st = this.sheet;
@@ -383,7 +384,7 @@ export class InkSession {
     const hastes = this.tailHaste.length === tail.length ? this.tailHaste : null;
     const pieces: typeof old = [];
     let rest = tail, o = 0, start = pen0, same = true, made = 0;
-    const until = performance.now() + DRAFT_MS;
+    const until = grow || !this.drafting ? performance.now() + DRAFT_MS : -Infinity;
     this.drafting = false;
     while (rest) {
       const m = CHUNK.exec(rest);
@@ -476,7 +477,7 @@ export class InkSession {
    */
   step(dt: number, final = false, drawing?: number): boolean {
     // (a paste's thought letters still being laid out: a part more each time, shown on the next render)
-    const more = this.drafting && !final && (this.draft(), true);
+    const more = this.drafting && !final && (this.draft(true), true);
     return this.stepPen(dt, final, drawing) || more;
   }
   private stepPen(dt: number, final: boolean, drawing?: number): boolean {
