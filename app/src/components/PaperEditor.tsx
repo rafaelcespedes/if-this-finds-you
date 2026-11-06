@@ -569,7 +569,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
                 <svg className="absolute inset-0 overflow-visible" width="100%" height="100%" data-nib={bead ? (hovering ? 'lifted' : 'bead') : 'above'}>
                   {bead && (hovering
                     ? <circle cx={cx + lean * 0.3 * hx} cy={by - 0.3 * hx} r={r} fill={ink} fillOpacity={0.7} />
-                    : <circle cx={cx} cy={by} r={r} fill={ink} />)}
+                    // (faint: at full strength, a resting bead reads as a full stop)
+                    : <circle cx={cx} cy={by} r={r} fill={ink} fillOpacity={0.35} />)}
                   {above && (
                     <polyline points={`${cx - 3},${by + 5.5} ${cx},${by + 1.5} ${cx + 3},${by + 5.5}`} fill="none" stroke={CARET_AMBER} strokeOpacity={0.75} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
                   )}

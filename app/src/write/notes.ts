@@ -90,6 +90,12 @@ export function noteText(n: Note): string {
   said.set(n.ink, t);
   return t;
 }
+/** what the desk already knows a note says (it reads it as you write): kept, so the library never decodes it again */
+export function knowText(ink: string | null, text: string) {
+  if (!ink) return;
+  if (said.size > 400) said.clear();
+  said.set(ink, text);
+}
 /** its title: the first line, as in Notes */
 export function titleOf(n: Note): string {
   const first = noteText(n).split('\n').map((l) => l.trim()).find(Boolean) ?? '';

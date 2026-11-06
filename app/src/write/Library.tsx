@@ -142,15 +142,20 @@ const Thumb = memo(function Thumb({ note, named }: { note: Note; named: boolean 
     io.observe(host.current);
     return () => io.disconnect();
   }, [near]);
-  // written in an idle moment, so a long library never holds up the page
+  // written in an idle moment, so a long library never holds up the page. The open note's picture waits until it's
+  // put away (writing it again on every key costs a frame on a full sheet: the sheet itself is on the desk anyway)
   const [drawn, setDrawn] = useState<{ svg: string; ink: string } | null>(null);
+  const noteRef = useRef(note);
+  noteRef.current = note;
+  const has = !!drawn;
+  const version = named ? `${note.ink?.length ?? 0}|${note.text?.length ?? 0}|${note.look.seed}|${note.look.paper}|${note.look.ink}` : has ? 'open' : 'first';
   useEffect(() => {
     if (!near) return;
     let off = false;
-    const run = () => { if (!off) setDrawn(noteSvg(note)); };
-    const id = typeof requestIdleCallback === 'function' ? requestIdleCallback(run, { timeout: 600 }) : window.setTimeout(run, 30);
+    const run = () => { if (!off) setDrawn(noteSvg(noteRef.current)); };
+    const id = typeof requestIdleCallback === 'function' ? requestIdleCallback(run, { timeout: 1200 }) : window.setTimeout(run, 60);
     return () => { off = true; if (typeof cancelIdleCallback === 'function') cancelIdleCallback(id as number); else clearTimeout(id as number); };
-  }, [near, note]);
+  }, [near, version]);
   const paper = getPaper(note.look.paper);
   return (
     <span ref={host} className="wr-thumb" style={{ viewTransitionName: named ? `sheet-${note.id}` : undefined, '--thumb-w': `${THUMB_W}px` } as CSSProperties} aria-hidden>

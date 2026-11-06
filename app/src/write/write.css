@@ -269,6 +269,28 @@
 }
 @media (hover: hover) and (pointer: fine) { .wr-check:hover { background: rgba(0, 0, 0, 0.05); } }
 
+.wr-sheet { position: relative; }
+/* a note from the hint ladder: a quiet line in the margin (MarginNote) */
+.wr-note { z-index: 4; font-family: var(--wr-font); font-size: 12px; line-height: 1.4; color: var(--wr-muted); pointer-events: none; }
+.wr-note kbd { margin: 0 2px; }
+.wr-note-low {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  width: fit-content;
+  margin: 0 auto;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--wr-glass-strong);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--wr-group-shadow);
+  text-align: center;
+}
+.wr-app[data-kb] .wr-note-low { bottom: calc(var(--kb-gap, 0px) + 64px); }
+
 /* ---------- the library ---------- */
 .wr-side {
   position: sticky;

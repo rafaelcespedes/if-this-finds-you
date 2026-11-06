@@ -24,6 +24,8 @@ import { handFor } from '@/lib/request';
 import { handOpts } from '@/lib/engine-features';
 import { writerName } from '@/lib/hands';
 import { BackspaceHold, type HoldAct } from './hold';
+import { useHints } from './hints';
+import { MarginNote } from './MarginNote';
 import { stateOf, type Note } from './notes';
 
 /** the sheet's largest size (px per mm) */
@@ -118,6 +120,15 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   // time; the timer runs only while something waits for the pen
   const drawnPen = useRef<{ at(now: number): { letters: number } } | null>(null);
   session.drawn = drawnPen;
+  // the drawn pen has caught up with everything handed to it (the caret's bead shows; notes about the pen can show)
+  const [penRest, setPenRest] = useState(true);
+  const penRestRef = useRef(penRest);
+  penRestRef.current = penRest;
+  const hints = useHints({ phone: coarse, stet: true });
+  const hintsRef = useRef(hints);
+  hintsRef.current = hints;
+  /** notes waiting for the pen to finish what it's drawing */
+  const afterPen = useRef(new Set<'strike' | 'double'>());
   const waiting = session.waiting;
   useEffect(() => {
     if (!waiting) return;
@@ -137,7 +148,9 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     const live = inkLive(p, session.page, paper, eff.size, eff.lineSpacing, draft);
     // the highlighter's swipes, under the ink (multiplied, so the writing reads through as if laid over them)
     const hl = (E as unknown as { highlightsSVG?: (page: unknown, emPx: number) => string }).highlightsSVG?.(live.page, live.emPx) ?? '';
-    const extras = inkExtras(live, { draft, signed: false, writerName: '' }).map((x) => hl + x);
+    const base = inkExtras(live, { draft, signed: false, writerName: '' });
+    // (the thought letters travel beside the sheets' markup, patched a word at a time: kept with it)
+    const extras = hl ? Object.assign(base.map((x) => hl + x), { thoughts: base.thoughts }) : base;
     const text = session.text();
     return { live, extras, geometry: inkGeometry(live, p, session), text, hovering: session.hovering };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,6 +175,8 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     }
     const before = s.text();
     onTypedRef.current();
+    if (e.del) hintsRef.current.used('select');
+    if (e.ins && e.at < before.length && typeof s.insertsAbove === 'function' && s.insertsAbove(e.at)) hintsRef.current.used('above');
     s.edit(e);
     undoHistory.record(before, s.text(), e);
     sync();
@@ -169,6 +184,8 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
 
   // Undo takes back what the pen hasn't written yet, and lifts wet ink; dry ink stays, but a word crossed out (and
   // crossed out harder) is let stand: stet (lib/ink.ts)
+  /** ⌘Z on dry ink: a quiet note in the margin, where you're looking (a toast only if the margin can't say it) */
+  const dry = () => { if (!hintsRef.current.trigger('dry', { direct: true })) toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' }); };
   const onHistory = useCallback((dir: 'undo' | 'redo') => {
     const s = sessionRef.current;
     const cur = s.text();
@@ -190,7 +207,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     if (!e) {
       if (dir === 'undo' && !s.waiting && s.doc.log.length) {
         if (s.undo() || s.stetLast()) { undoHistory.clear(); sync(); return; }
-        toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' });
+        dry();
       }
       return;
     }
@@ -199,7 +216,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     else if (!undoInk(s, e, { stet: true })) {
       undoHistory.keep(dir);
       sync();
-      toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out instead.' });
+      dry();
       return;
     }
     if (s.text() !== want) undoHistory.clear();
@@ -209,6 +226,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   const onHistoryRef = useRef(onHistory);
   onHistoryRef.current = onHistory;
 
+  const lastUnderline = useRef<[number, number] | null>(null);
   // ⌘B: the words gone over again, heavier. ⌘U: underlined by hand. ⌘↩: a P.S.
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     const s = sessionRef.current;
@@ -244,6 +262,12 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     if (s.format(cmd === 'underline' ? 'underline' : 'press', from, to)) {
       onTypedRef.current();
       sync();
+      if (cmd === 'underline') {
+        // the first underline: "⌘U again" once the pen has drawn it; a second one: found
+        if (lastUnderline.current && lastUnderline.current[0] === from && lastUnderline.current[1] === to) hintsRef.current.used('double');
+        else afterPen.current.add('double');
+        lastUnderline.current = [from, to];
+      }
       // the marked words stand clear of the selection's tint, the caret after them
       requestAnimationFrame(() => editor.current?.setSelection(to));
     }
@@ -252,8 +276,21 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   // a phone's deletions as they come (keydown doesn't name them on Android, and iOS deletes whole words without one)
   const againAt = (at: number) => sessionRef.current.again(at);
   const textSel = (t: EventTarget | null) => ((t as HTMLElement | null)?.tagName === 'TEXTAREA' ? editor.current?.selection() ?? null : null);
+  const againTimes = useRef<number[]>([]);
   const held = (act: HoldAct) => {
-    if (act === 'again') { onTypedRef.current(); sync(); }
+    if (act === 'again') {
+      onTypedRef.current();
+      sync();
+      // the ladder: pressing again was found; twice in a row on a computer, holding it is next (a held key's own
+      // cadence, 700 ms, means it was found too)
+      const now = performance.now();
+      const t = againTimes.current.filter((x) => now - x < 2000);
+      const heldNow = t.length > 0 && now - t[t.length - 1] < 800;
+      againTimes.current = [...t, now];
+      hintsRef.current.used('again');
+      if (heldNow) hintsRef.current.used('hold');
+      else if (t.length >= 1 && !coarse) hintsRef.current.trigger('hold', { direct: true });
+    }
     return act !== 'pass';
   };
   const deskRef = useRef<HTMLDivElement>(null);
@@ -269,6 +306,55 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     if (held(hold.key(e.nativeEvent, textSel(e.target), againAt))) { e.preventDefault(); e.stopPropagation(); }
   };
   const onKeyUpCapture = (e: React.KeyboardEvent) => hold.keyUp(e.nativeEvent);
+  const sayRef = useRef(onSay);
+  sayRef.current = onSay;
+
+  // ---------- what the pen did, said; and the notes that teach it ----------
+  const saidN = useRef(session.changes ?? 0);
+  useEffect(() => {
+    const s = sessionRef.current;
+    if (typeof s.lastChange !== 'function' || s.changes === saidN.current) return;
+    saidN.current = s.changes;
+    const said = s.lastChange();
+    if (!said) return;
+    sayRef.current?.(said);
+    // the first crossing-out or letter written over: once the pen has drawn it, ink stays, so ⌫ crosses out
+    if (/^(Crossed out|Written over)/.test(said)) afterPen.current.add('strike');
+  }, [tick]);
+  // notes waiting on the pen, once it rests (a beat after it lifts)
+  useEffect(() => {
+    if (!penRest || !afterPen.current.size) return;
+    const t = window.setTimeout(() => {
+      for (const id of afterPen.current) hintsRef.current.trigger(id, { direct: id === 'double' });
+      afterPen.current.clear();
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [penRest, tick]);
+  // the caret resting beside a crossed-out word (not inked out yet), the pen idle: ⌫ again crosses it out harder
+  const restTimer = useRef(0);
+  const restCheck = useCallback(() => {
+    window.clearTimeout(restTimer.current);
+    restTimer.current = window.setTimeout(() => {
+      const s = sessionRef.current;
+      const [a, b] = editor.current?.selection() ?? [0, 0];
+      if (a !== b || !penRestRef.current || typeof s.struckLevel !== 'function') return;
+      const lv = s.struckLevel(a);
+      if (lv != null && lv >= 1 && lv <= 3) hintsRef.current.trigger('again');
+    }, 1200);
+  }, []);
+  useEffect(() => { restCheck(); return () => window.clearTimeout(restTimer.current); }, [tick, penRest, restCheck]);
+  // a click that lands mid-ink (typing there goes above the line), or a selection made over ink
+  const onPointerUpCapture = () => {
+    requestAnimationFrame(() => {
+      const s = sessionRef.current;
+      const [a, b] = editor.current?.selection() ?? [0, 0];
+      if (a !== b) { if (s.doc.log.length) hintsRef.current.trigger('select', { direct: true }); return; }
+      if (typeof s.insertsAbove === 'function' && s.insertsAbove(a)) hintsRef.current.trigger('above', { direct: true });
+      restCheck();
+    });
+  };
+  // the note's first words reach screen readers once
+  useEffect(() => { if (hints.announce) sayRef.current?.(hints.announce); }, [hints.announce]);
 
   // ---------- the page ----------
   const deskW = useElementWidth(deskRef);
@@ -320,9 +406,13 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     },
   }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 
-  // said once the pen settles on a change (the words themselves are in the textarea)
-  const sayRef = useRef(onSay);
-  sayRef.current = onSay;
+  // the margin note: beside the line being written when there's room right of the sheet, else under the toolbar
+  const sheetPx = live.paper.w * pxPerMm;
+  const room = (deskW - sheetPx) / 2;
+  const caretAt = hints.note ? editor.current?.caretRect() ?? null : null;
+  const noteStyle: React.CSSProperties | undefined = hints.note && caretAt && room >= 200
+    ? { position: 'absolute', left: room + sheetPx + 16, top: caretAt.top + caretAt.height / 2, marginTop: '-0.7em', maxWidth: Math.min(220, room - 24) }
+    : undefined;
 
   return (
     <div
@@ -331,6 +421,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
       style={{ paddingTop: topRoom }}
       onKeyDownCapture={onKeyDownCapture}
       onKeyUpCapture={onKeyUpCapture}
+      onPointerUpCapture={onPointerUpCapture}
       // a press on the desk around the sheet keeps the pen where it was (it never drops the focus, so nothing typed
       // after is lost); on a phone, a tap there opens the keyboard at the end of what's written
       onPointerDown={(e) => {
@@ -363,6 +454,8 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
             penWidthU={p.penWidth as number}
             xHeightU={(p.xHeight as number) * CAP}
             onEditingChange={onEditingChange}
+            penCaughtUp={penRest}
+            insertsAbove={typeof session.insertsAbove === 'function' ? session.insertsAbove : undefined}
           >
             <LiveSheets
               live={live}
@@ -375,7 +468,9 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
               handKey={[note.id, state.seed, state.style, look.pen, look.penSize, look.paper, look.size, look.ink].join(':')}
               hold={0}
               trail={session.trail}
-              penRef={drawnPen} wetMs={session.wetMs}
+              penRef={drawnPen}
+              wetMs={session.wetMs}
+              onPenRest={setPenRest}
               dim={session.pendingKeys}
             />
             <CheckBoxes
@@ -387,6 +482,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
             />
           </PaperEditor>
         )}
+        <MarginNote note={hints.note} className={noteStyle ? 'wr-note' : 'wr-note wr-note-low'} style={noteStyle} />
       </div>
     </div>
   );

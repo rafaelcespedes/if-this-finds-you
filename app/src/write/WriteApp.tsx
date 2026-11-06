@@ -30,7 +30,7 @@ import type { FormatCommand } from '@/components/PaperEditor';
 import type { InkFormat, InkHighlight } from '@/lib/ink';
 import {
   MIGRATED_KEY, asClean, asInk, blankNote, deleteNote, getNote, isBlank, isClean, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
-  readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
+  knowText, readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
 } from './notes';
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -145,7 +145,8 @@ export function WriteApp() {
   }, [keep]);
 
   // every change on the desk: the note's ink (kept in a moment) and its title follow
-  const onChange = useCallback((ink: string | null) => {
+  const onChange = useCallback((ink: string | null, text: string) => {
+    knowText(ink, text);
     const id = currentRef.current;
     const n = notesRef.current.find((x) => x.id === id);
     if (!n || n.ink === ink) return;
