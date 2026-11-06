@@ -41,6 +41,8 @@ npm install
 | `npm run session` | Records the typing again after you change the script or the settings (see below). |
 | `npm run hands` | Records the ghost hands' motion for the typing (run it after `npm run session`). |
 | `npm run draft:hands`, `npm run render:hands` | The same draft and full video with the ghost hands typing (`InkDemoHands`). |
+| `npm run recorder` | Builds the typing recorder, a page you type a real take in, to `out/Typing recorder.html` (see below). |
+| `npm run take -- "<take>.zip"` | Turns a take from the recorder into the video's data, `src/data/take-session.json`. |
 
 If npm asks you to approve esbuild's install script, it's fine to say no: its binary comes as a package of its own.
 
@@ -114,6 +116,25 @@ model (the WebXR generic hands, 25 joints each) posed frame by frame, so the ana
   `src/hands/ghost.ts`. To judge the hands' shape and motion without the glass, set `handLook` to `clay` in the
   Studio's props. The `HandLab` composition shows one still of the hands at rest or pressing a key.
 
+## Record your own typing
+
+Instead of a script, you can type the letter yourself and record it: your keys, the pointer and your webcam on one
+clock, while a phone films your hands from above.
+
+1. `npm run recorder` builds `out/Typing recorder.html` and its guide, `out/Recording guide.html` (how to set up the
+   phone, the light and the take). The recorder opens straight from the disk in Google Chrome; it needs no server.
+2. Type your letter in it. It writes in ink as you type, with the video's own engine, pen and paper
+   (`src/setup.ts`), so what you see there is what the video replays. ⌫, held ⌫, ⌘B, ⌘U, ⌘Z, clicks and drags all
+   work as on the site. Press Finish and the take saves itself to Downloads as `Typing take <date> at <time>.zip`:
+   what you did, every key down and up, the pointer over the sheet, sync beeps, and the webcam with its sound.
+3. `npm run take -- "<take>.zip"` replays the writing on the video's clock, checks it comes out exactly as the
+   recorder showed it, and writes `src/data/take-session.json` (and the webcam video to `public/take/`). Both stay
+   out of git: a take is yours.
+
+The recorder and the scripted session share one clock (`src/ink-run.ts`): a keystroke at the same moment gives the
+same ink in both. The phone's video of your hands is what the ghost hands will follow; its sound carries the
+recorder's beeps and your key clicks, which line it up with the take.
+
 ## Files
 
 | File | What it is |
@@ -129,7 +150,10 @@ model (the WebXR generic hands, 25 joints each) posed frame by frame, so the ana
 | `src/draw.ts` | Drawing the ink with the engine's own canvas renderer, plus the easing curves. |
 | `src/Root.tsx`, `src/index.ts` | The composition (its size, frame rate and length). |
 | `src/data/ink-session.json` | The recorded session the video replays. Written by `npm run session`. |
-| `scripts/ink-session.ts` | The keystroke script, and the recorder that runs it through the engine. |
+| `scripts/ink-session.ts` | The keystroke script, run through the engine. |
+| `src/ink-run.ts` | Typing that behaves like ink, on the video's clock: the engine calls every 10 ms, and the recording the video replays. Shared by the script, the recorder and the take. |
+| `recorder/` | The typing recorder (`main.ts`, `index.html`), its guide (`guide.html`) and the zip it saves (`zip.ts`). Built by `scripts/build-recorder.mjs`. |
+| `scripts/take.ts` | Turns a recorded take into the video's data. |
 | `scripts/node-ts.mjs` | Bundles a TypeScript script with the engine (esbuild) and runs it. |
 | `public/fonts/` | Schibsted Grotesk for the hint and timer, with its licence (SIL Open Font License, `OFL-SchibstedGrotesk.txt`). |
 

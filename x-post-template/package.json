@@ -8,6 +8,8 @@
   "scripts": {
     "session": "node scripts/node-ts.mjs scripts/ink-session.ts",
     "hands": "node scripts/node-ts.mjs scripts/hand-session.ts",
+    "recorder": "node scripts/build-recorder.mjs",
+    "take": "node scripts/node-ts.mjs scripts/take.ts",
     "studio": "remotion studio src/index.ts",
     "draft": "remotion render src/index.ts InkDemo out/draft-540.mp4 --scale=0.5 --crf=24",
     "render": "remotion render src/index.ts InkDemo out/x-post-1080.mp4",

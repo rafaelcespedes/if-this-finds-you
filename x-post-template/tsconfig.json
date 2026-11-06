@@ -14,5 +14,5 @@
     "baseUrl": ".",
     "paths": { "@engine": ["../engine/index.js"], "@/*": ["../app/src/*"] }
   },
-  "include": ["src", "scripts", "remotion.config.ts"]
+  "include": ["src", "scripts", "recorder", "remotion.config.ts"]
 }

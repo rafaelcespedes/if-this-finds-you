@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Typing recorder · If This Finds You</title>
+<style>
+  :root { --ink: #1f2833; --soft: #5d6673; --line: rgba(31, 40, 51, 0.1); --desk: #e7e5df; --blue: #2c63d6; --red: #d8402f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--desk); color: var(--ink);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer; background: rgba(31, 40, 51, 0.07); color: var(--ink); font-weight: 550; }
+  button:hover { background: rgba(31, 40, 51, 0.11); }
+  button.primary { background: var(--ink); color: #fff; }
+  button.primary:hover { background: #2c3846; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  kbd { font: 600 12px/1 -apple-system, sans-serif; padding: 3px 6px; border-radius: 6px; background: rgba(31, 40, 51, 0.08); }
+
+  #desk { position: fixed; inset: 0; cursor: text; }
+  #sheet { position: absolute; top: 0; will-change: transform; }
+  #sheet canvas { position: absolute; left: 0; top: 0; }
+  #paper { box-shadow: 0 1px 2px rgba(31, 40, 51, 0.08), 0 12px 40px rgba(31, 40, 51, 0.1); }
+
+  header { position: fixed; top: 0; left: 0; right: 0; height: 56px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px 0 22px; background: rgba(247, 246, 242, 0.72); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border-bottom: 1px solid var(--line); z-index: 5; }
+  header .name { font-weight: 650; letter-spacing: -0.01em; }
+  header .name span { color: var(--soft); font-weight: 450; margin-left: 8px; }
+  #status { display: none; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-weight: 550; }
+  #status i { width: 9px; height: 9px; border-radius: 50%; background: var(--red); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+  body[data-phase="countdown"] #status, body[data-phase="recording"] #status, body[data-phase="finishing"] #status { display: flex; }
+  #finish { display: none; }
+  body[data-phase="recording"] #finish { display: inline-block; }
+
+  .card { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 40px)); max-height: calc(100vh - 100px); overflow: auto;
+    background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 22px; padding: 28px 30px 26px;
+    box-shadow: 0 1px 2px rgba(31, 40, 51, 0.06), 0 24px 70px rgba(31, 40, 51, 0.18); z-index: 6; cursor: default; }
+  .card h1 { font-size: 22px; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .card .lede { color: var(--soft); margin: 0 0 16px; }
+  .card ol { margin: 0 0 18px; padding-left: 22px; }
+  .card li { margin: 6px 0; }
+  .card li b { font-weight: 620; }
+  .cam { display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: center; margin: 4px 0 20px; }
+  .cam video { width: 200px; aspect-ratio: 16 / 9; border-radius: 12px; background: #d9d7d1; object-fit: cover; transform: scaleX(-1); }
+  .cam p { margin: 0 0 10px; color: var(--soft); font-size: 13.5px; }
+  .row { display: flex; gap: 10px; justify-content: flex-end; align-items: center; }
+  .row .note { margin-right: auto; color: var(--soft); font-size: 13px; }
+  #browser { background: #fff4df; color: #6b4a00; border-radius: 12px; padding: 10px 14px; margin: 0 0 16px; font-size: 13.5px; }
+  #setup { display: none; } body[data-phase="setup"] #setup { display: block; }
+  #done { display: none; } body[data-phase="done"] #done { display: block; }
+  body[data-phase="finishing"] #desk, body[data-phase="done"] #desk { cursor: default; }
+
+  #count { position: fixed; left: 50%; top: 46%; transform: translate(-50%, -50%) scale(0.92); font-size: 140px; font-weight: 250; letter-spacing: -0.04em;
+    color: var(--ink); opacity: 0; transition: opacity 0.25s, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1); pointer-events: none; z-index: 4; }
+  #count[data-on="1"] { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  #look { position: fixed; left: 50%; top: 64%; transform: translateX(-50%); color: var(--soft); font-size: 17px; opacity: 0; transition: opacity 0.4s; pointer-events: none; z-index: 4; }
+  body[data-phase="countdown"] #look { opacity: 1; }
+
+  #toast { position: fixed; left: 50%; top: 74px; transform: translate(-50%, -8px); background: rgba(31, 40, 51, 0.92); color: #fff; border-radius: 14px; padding: 10px 16px;
+    display: flex; flex-direction: column; gap: 1px; opacity: 0; transition: opacity 0.2s, transform 0.3s cubic-bezier(0.23, 1, 0.32, 1); pointer-events: none; z-index: 7; }
+  #toast span { opacity: 0.75; font-size: 13.5px; }
+  #toast[data-on="1"] { opacity: 1; transform: translate(-50%, 0); }
+
+  .hints { position: fixed; left: 0; right: 0; bottom: 18px; display: flex; justify-content: center; gap: 18px; color: var(--soft); font-size: 13px; pointer-events: none; z-index: 3; }
+  .hints span { background: rgba(247, 246, 242, 0.8); padding: 6px 10px; border-radius: 999px; }
+
+  #sink { position: fixed; left: -1000px; top: 0; width: 10px; height: 10px; opacity: 0; }
+</style>
+</head>
+<body>
+  <div id="desk"><div id="sheet"><canvas id="paper"></canvas><canvas id="ink"></canvas><canvas id="over"></canvas></div></div>
+  <textarea id="sink" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Writing"></textarea>
+
+  <header>
+    <div class="name">Typing recorder<span>If This Finds You</span></div>
+    <div id="status"><i></i><span>Recording</span><span id="clock">0:00</span></div>
+    <div><button id="finish" class="primary">Finish</button></div>
+  </header>
+
+  <section class="card" id="setup">
+    <h1>Record your hands typing</h1>
+    <p class="lede">This page writes in ink as you type, like the video will. It keeps your keys, the pointer and the webcam on one clock.</p>
+    <div id="browser" hidden>Use Google Chrome for this page: other browsers may not record the camera.</div>
+    <ol>
+      <li><b>Phone above the keyboard</b>, looking straight down, sideways, with the top of its picture toward the screen. Keyboard, trackpad and both wrists in view. Start it recording now.</li>
+      <li><b>Volume up, no headphones.</b> The phone listens for this page's beeps to line up with it.</li>
+      <li><b>Turn on the camera</b> and check your face is in the picture.</li>
+      <li><b>Press Start.</b> Three beeps, then a higher one: look at the camera for a moment, then look down and write.</li>
+      <li><b>Click Finish</b> at the top when you're done. Then stop the phone.</li>
+    </ol>
+    <div class="cam">
+      <video id="preview" muted playsinline></video>
+      <div><p id="camState">The laptop's camera films your face for the opening.</p><button id="cam">Turn on the camera</button></div>
+    </div>
+    <div class="row"><span class="note">Writing: <kbd>⌫</kbd> crosses out, <kbd>⌘B</kbd> goes over, <kbd>⌘U</kbd> underlines, <kbd>⌘Z</kbd> lifts wet ink.</span><button id="start" class="primary">Start</button></div>
+  </section>
+
+  <section class="card" id="done">
+    <h1>Take saved</h1>
+    <p class="lede" id="saved">Saving…</p>
+    <ol>
+      <li>Stop the phone's recording.</li>
+      <li>AirDrop the phone's video to this Mac. It lands in Downloads, next to the take.</li>
+    </ol>
+    <div class="row"><button id="resave">Save again</button><button id="again" class="primary">New take</button></div>
+  </section>
+
+  <div id="count"></div>
+  <div id="look">Look at the camera, then write</div>
+  <div id="toast"></div>
+  <div class="hints"><span><kbd>⌫</kbd> crosses out</span><span>keep pressing to scribble it out</span><span><kbd>⌘B</kbd> goes over it</span><span><kbd>⌘U</kbd> underlines</span><span><kbd>⌘Z</kbd> lifts wet ink</span></div>
+  <script>/*SCRIPT*/</script>
+</body>
+</html>
