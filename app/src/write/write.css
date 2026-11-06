@@ -270,6 +270,13 @@
 @media (hover: hover) and (pointer: fine) { .wr-check:hover { background: rgba(0, 0, 0, 0.05); } }
 
 .wr-sheet { position: relative; }
+/* a new note: the fresh sheet settles onto the desk (opacity and a few px only, so it's live and typable throughout) */
+.wr-sheet-fresh { animation: wr-sheet-fresh 200ms var(--ease-out); }
+@keyframes wr-sheet-fresh { from { opacity: 0.4; transform: translateY(-6px); } }
+/* the note just put away glows in the library for a moment */
+.wr-row[data-arrived] { animation: wr-row-arrived 900ms var(--ease-out); }
+@keyframes wr-row-arrived { 0%, 30% { background: color-mix(in srgb, var(--wr-focus) 16%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .wr-sheet-fresh, .wr-row[data-arrived] { animation: none; } }
 /* a note from the hint ladder: a quiet line in the margin (MarginNote) */
 .wr-note { z-index: 4; font-family: var(--wr-font); font-size: 12px; line-height: 1.4; color: var(--wr-muted); pointer-events: none; }
 .wr-note kbd { margin: 0 2px; }

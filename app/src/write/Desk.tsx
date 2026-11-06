@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
 import { LiveSheets } from '@/components/LiveSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
+import { cn } from '@/lib/utils';
 import { UndoHistory, type Edit } from '@/lib/edits';
 import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, undoInk, type InkFormat, type InkHighlight } from '@/lib/ink';
 import { wordAt } from '@/lib/doc';
@@ -69,18 +70,22 @@ interface Props {
   onSay?: (s: string) => void;
   /** room to leave above the sheet for the toolbar (px) */
   topRoom?: number;
+  /** the sheet moves as itself between the desk and the library (View Transitions): off while a new note arrives */
+  named?: boolean;
   /** the highlighter's colour */
   highlighter?: InkHighlight;
   /** what typing will do changed (a style, a line's format): the toolbar asks again */
   onStyle?: () => void;
 }
 
-export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onChange, onTyped, onEditingChange, onSay, topRoom = 0, highlighter = 'yellow', onStyle }, ref) {
+export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onChange, onTyped, onEditingChange, onSay, topRoom = 0, highlighter = 'yellow', onStyle, named = true }, ref) {
   const highlighterRef = useRef<InkHighlight>(highlighter);
   highlighterRef.current = highlighter;
   const onStyleRef = useRef(onStyle);
   onStyleRef.current = onStyle;
   const look = note.look;
+  // a blank note just put on the desk settles into place (once, as it mounts)
+  const [fresh] = useState(() => (note.mode === 'clean' ? !note.text : !note.ink) && Date.now() - note.created < 1500);
   const state = useMemo(() => stateOf(look), [look]);
   const natural = useMemo(() => handFor(state.seed, state.style, handOpts(state)), [state]);
   const eff = useMemo(() => effective(natural, state), [natural, state]);
@@ -433,7 +438,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
       }}
     >
       {/* named by the note's id: a new note, or one opened from the library, moves as itself (moveSheets) */}
-      <div className="wr-sheet" style={{ viewTransitionName: `sheet-${note.id}` }}>
+      <div className={cn('wr-sheet', fresh && 'wr-sheet-fresh')} style={{ viewTransitionName: named ? `sheet-${note.id}` : undefined }}>
         {pxPerMm > 0 && (
           <PaperEditor
             ref={editor}

@@ -42,10 +42,10 @@ const LIB_KEY = 'seedhand:write:library';
 /** A change of notes, as the sheets themselves moving (View Transitions: each sheet is named by its note's id, so the
  * one on the desk shrinks into its row in the library and one opened from it grows back up). Instant without the
  * API or with reduced motion. */
-function moveSheets(change: () => void) {
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-  if (!doc.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { change(); return; }
-  doc.startViewTransition(() => flushSync(change));
+function moveSheets(change: () => void): Promise<unknown> {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<unknown> } };
+  if (!doc.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { change(); return Promise.resolve(); }
+  return doc.startViewTransition(() => flushSync(change)).finished.catch(() => {});
 }
 
 export function WriteApp() {
@@ -222,16 +222,18 @@ export function WriteApp() {
   const [writing, setWriting] = useState(false);
   const [said, say] = useState('');
 
+  // New note is instant: the fresh sheet is simply there and takes the keys at once (a moving sheet would have to be
+  // photographed first, a tenth of a second on a full one). Where the old one went shows in the library: its row glows.
+  const [arrived, setArrived] = useState<string | null>(null);
   const newNote = (look?: Look) => {
     const n = notesRef.current.find((x) => x.id === currentRef.current);
     if (n && isBlank(n) && !look) { setPhoneScreen('note'); desk.current?.focus(); return n; }
     const next = blankNote(look ?? n?.look ?? pickLook());
-    moveSheets(() => {
-      leaveCurrent();
-      setAll((all) => [...all, next]);
-      setCurrentId(next.id);
-      setPhoneScreen('note');
-    });
+    leaveCurrent();
+    setAll((all) => [...all, next]);
+    setCurrentId(next.id);
+    setPhoneScreen('note');
+    if (n && !isBlank(n)) { setArrived(n.id); window.setTimeout(() => setArrived((a) => (a === n.id ? null : a)), 900); }
     setWriting(false);
     say('A new note.');
     return next;
@@ -558,6 +560,7 @@ export function WriteApp() {
             onRestore={restore}
             onDelete={deleteForGood}
             screen={phone}
+            arrived={arrived}
           />
         </aside>
       )}
@@ -622,7 +625,7 @@ export function WriteApp() {
               <button type="button" className="wr-icon" onClick={another} aria-label="Another writer" title="Another writer"><Shuffle aria-hidden /></button>
             </div>
             <div className="wr-group">
-              {menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, phone ? <>{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</> : moreItems, 'end')}
+              {menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, phone ? <><DropdownMenu.Item className="wr-menu-item" onSelect={() => newNote()}><SquarePen aria-hidden /> New note</DropdownMenu.Item><DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</> : moreItems, 'end')}
             </div>
           </header>
 

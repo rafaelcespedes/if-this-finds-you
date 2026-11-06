@@ -196,11 +196,12 @@ async function run(browser, base, dev) {
   await phase('');
 
   // 6. New sheet
-  const btn = page.getByRole('button', { name: 'New sheet' });
+  // (the writing app calls it New note)
+  const btn = page.getByRole('button', { name: /^New (sheet|note)$/ });
   if (await btn.count()) {
     await phase('new');
     R.newSheet = await page.evaluate(() => new Promise((resolve) => {
-      const b = [...document.querySelectorAll('button')].find((x) => x.getAttribute('aria-label') === 'New sheet' || x.textContent.trim() === 'New sheet');
+      const b = [...document.querySelectorAll('button')].find((x) => /^New (sheet|note)$/.test(x.getAttribute('aria-label') || x.textContent.trim()));
       const t0 = performance.now();
       b.click();
       const check = () => {

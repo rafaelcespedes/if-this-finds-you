@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
 import { LiveSheets } from '@/components/LiveSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
+import { cn } from '@/lib/utils';
 import { UndoHistory, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark, wordAt, type Mark } from '@/lib/doc';
 import { engineGeometry, liveExtras, liveLayout, pageSetup } from '@/lib/live';
@@ -29,10 +30,13 @@ interface Props {
   onChange: (text: string, marks: Mark[]) => void;
   onTyped: () => void;
   onEditingChange?: (editing: boolean) => void;
+  named?: boolean;
 }
 
-export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, coarse, onChange, onTyped, onEditingChange }, ref) {
+export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, coarse, onChange, onTyped, onEditingChange, named = true }, ref) {
   const look = note.look;
+  // a blank note just put on the desk settles into place (once, as it mounts)
+  const [fresh] = useState(() => (note.mode === 'clean' ? !note.text : !note.ink) && Date.now() - note.created < 1500);
   const state = useMemo(() => stateOf(look), [look]);
   const natural = useMemo(() => handFor(state.seed, state.style, handOpts(state)), [state]);
   const eff = useMemo(() => effective(natural, state), [natural, state]);
@@ -140,7 +144,7 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
         if (coarse) editor.current?.setSelection(docRef.current.text.length);
       }}
     >
-      <div className="wr-sheet" style={{ viewTransitionName: `sheet-${note.id}` }}>
+      <div className={cn('wr-sheet', fresh && 'wr-sheet-fresh')} style={{ viewTransitionName: named ? `sheet-${note.id}` : undefined }}>
         {pxPerMm > 0 && (
           <PaperEditor
             ref={editor}

@@ -18,9 +18,11 @@ interface Props {
   onDelete: (id: string) => void;
   /** a phone: the library is a screen of its own, with a back to the note */
   screen?: boolean;
+  /** the note just put away (New note): its row glows for a moment, so you see where it went */
+  arrived?: string | null;
 }
 
-export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onDelete, screen }: Props) {
+export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onDelete, screen, arrived }: Props) {
   const [q, setQ] = useState('');
   const [bin, setBin] = useState(false);
   const live = useMemo(() => notes.filter((n) => !n.thrown), [notes]);
@@ -66,6 +68,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
                   key={n.id}
                   note={n}
                   open={n.id === current}
+                  arrived={n.id === arrived}
                   binned={bin}
                   onOpen={() => onOpen(n.id)}
                   onPin={() => onPin(n.id, !n.pinned)}
@@ -88,13 +91,13 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
   );
 }
 
-const Row = memo(function Row({ note, open, binned, onOpen, onPin, onThrow, onRestore, onDelete }: {
-  note: Note; open: boolean; binned: boolean; onOpen: () => void; onPin: () => void; onThrow: () => void; onRestore: () => void; onDelete: () => void;
+const Row = memo(function Row({ note, open, arrived, binned, onOpen, onPin, onThrow, onRestore, onDelete }: {
+  note: Note; open: boolean; arrived: boolean; binned: boolean; onOpen: () => void; onPin: () => void; onThrow: () => void; onRestore: () => void; onDelete: () => void;
 }) {
   const title = titleOf(note) || 'New note';
   const snippet = snippetOf(note);
   return (
-    <li className="wr-row" data-open={open || undefined}>
+    <li className="wr-row" data-open={open || undefined} data-arrived={arrived || undefined}>
       <button
         type="button"
         className="wr-row-main"
