@@ -32,6 +32,7 @@ import { rng, clamp, lerp } from './core.js';
 import { withOverrides, CAP, UPM } from './hand.js';
 import { inkPage, pageMetrics } from './layout.js';
 import { createReader } from './inklog.js';
+import { hasteStep } from './tempo.js';
 import {
   fixHabits, coverQuality, spanOf, baselineFor, scaleOf, repen, reink, markItem, strikeItems,
   underlineStrokes, slashStrokes, blotItem, overItem, insertionItems,
@@ -175,10 +176,13 @@ function applyOne(st, e, ev) {
   const first = R.nextId;
   R.apply(e);
   switch (e.t) {
-    case 'write': case 'break':
-      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev,
-        st.ahead && st.ahead.has(ev) ? { ahead: st.ahead.get(ev), complete: true } : e.rest ? { ahead: e.rest } : undefined);
+    case 'write': case 'break': {
+      let wo = st.ahead && st.ahead.has(ev) ? { ahead: st.ahead.get(ev), complete: true } : e.rest ? { ahead: e.rest } : undefined;
+      // the typing's tempo (tempo.js): the words that start in this write are written that way
+      if (e.t === 'write' && hasteStep(e.haste)) wo = Object.assign(wo || {}, { haste: hasteStep(e.haste) });
+      writeToStream(st, s, s.stream, e.t === 'break' ? '\n' : e.text || '', first, ev, wo);
       break;
+    }
     case 'strike': {
       const struck = placedRun(s, e.from, e.to);
       if (!struck.length) break;
@@ -452,10 +456,12 @@ function liveStops(st, s, at) {
 // Thought letters (§3.2): the text the pen hasn't reached yet (view.tail), laid out from the pen's state
 // without committing, so the app can show it faint where it will be written. null when nothing waits.
 // Its items' charIndex - page.from = the offset within view.tail.
-export function draftPage(st, view) {
+// opts.haste: the tempo the next word will be written at (tempo.js), so its thought letters sit where its ink will
+export function draftPage(st, view, opts) {
   if (!view || !view.tail) return null;
   const S = st.cur.stream;
-  const pg = S.ink.draft(view.tail);
+  const haste = hasteStep(opts && opts.haste);
+  const pg = haste ? S.ink.draft(view.tail, { haste }) : S.ink.draft(view.tail);
   if (!S.lineBase) return pg;
   return Object.assign({}, pg, { items: pg.items.map((it) => Object.assign({}, it, { line: it.line + S.lineBase })), stops: pg.stops.map((sp) => Object.assign({}, sp, { line: sp.line + S.lineBase })) });
 }

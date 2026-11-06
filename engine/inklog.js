@@ -4,10 +4,13 @@
 //
 // Events. Glyph ids count every character ever written, in the order it was written, spaces and
 // paragraph breaks included (a break is the character '\n'). Ids are never reused or renumbered.
-//   write  { text, cont?, rest? }           written at the pen head (no '\n'); each character takes the next id.
+//   write  { text, cont?, rest?, haste? }   written at the pen head (no '\n'); each character takes the next id.
 //                                            cont: the next write runs straight on (no pause; one word).
 //                                            rest: a piece that stopped mid-word: the rest of that word as typed
 //                                            so far (layout measures the whole word for the line end)
+//                                            haste: the typing's tempo when its first word was typed, against the
+//                                            typist's own average (tempo.js): -2 … 2, absent = 0 (the usual hand).
+//                                            The words that start in this write are written hastier or tidier
 //   break  { }                              Enter at the pen head: a new paragraph; takes an id ('\n')
 //   strike { from, to, how?, why?, blot?, lv? }  ids inclusive. how: line | double | wave | loops | scribble, and
 //                                            for why 'again' (crossed out again, lv 2–4) blackout | inkout
@@ -150,11 +153,11 @@ export function summary(x) {
 }
 
 // ---------- compact form and share links (§4.6) ----------
-// Each event becomes a short array: ["w","Dear Ada,"] ["b"] ["x",12,15,"line","misspelt"] ["o",40,"G"]
+// Each event becomes a short array: ["w","Dear Ada,"] (["w",text,cont,rest,haste]) ["b"] ["x",12,15,"line","misspelt"] ["o",40,"G"]
 // ["i",52,"very "] ["m",9,"split"] ["u",3,7] ["p","dry",3,9] ["v","ps"] ["s","fresh"] ["n"]. Trailing
 // empty fields are dropped; anything unknown is kept as its object.
 const ENC = {
-  write: (e) => ['w', e.text, e.cont ? 1 : 0, e.rest], break: () => ['b'],
+  write: (e) => ['w', e.text, e.cont ? 1 : 0, e.rest, e.haste || 0], break: () => ['b'],
   strike: (e) => ['x', e.from, e.to, e.how, e.why, e.blot ? 1 : 0, e.lv],
   over: (e) => ['o', e.at, e.ch, e.blot ? 1 : 0],
   insert: (e) => ['i', e.after, e.text, e.over ? e.over[0] : null, e.over ? e.over[1] : null],
@@ -162,7 +165,7 @@ const ENC = {
   pen: (e) => ['p', e.kind, e.from, e.to], move: (e) => ['v', e.to, e.size], sheet: (e) => ['s', e.why, e.copy], session: () => ['n'],
 };
 const DEC = {
-  w: (a) => clean({ t: 'write', text: a[1], cont: a[2] ? true : undefined, rest: a[3] }), b: () => ({ t: 'break' }),
+  w: (a) => clean({ t: 'write', text: a[1], cont: a[2] ? true : undefined, rest: a[3], haste: a[4] || undefined }), b: () => ({ t: 'break' }),
   x: (a) => clean({ t: 'strike', from: a[1], to: a[2], how: a[3], why: a[4], blot: a[5] ? true : undefined, lv: a[6] || undefined }),
   o: (a) => clean({ t: 'over', at: a[1], ch: a[2], blot: a[3] ? true : undefined }),
   i: (a) => clean({ t: 'insert', after: a[1], text: a[2], over: a[3] != null ? [a[3], a[4]] : undefined }),

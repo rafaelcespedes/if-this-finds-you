@@ -40,6 +40,7 @@ import { rng, clamp, smooth, DEG } from './core.js';
 import { makeGlyph, markHabits, has, UPM, CAP } from './hand.js';
 import { getStyle } from './glyphs.js';
 import { newLetter, beginLine, noteWord, noteBlank, isPS, isShort } from './letter-shape.js';
+import { hasteStep, hastyHand, hasteCare, hasteTempo } from './tempo.js';
 
 export const MISS_ADVANCE = 560; // fallback; a placeholder takes the width of this hand's 'n'
 
@@ -260,7 +261,8 @@ function graphemes(tok, base) {
 //         salt (another letter by the same hand: different letter instances), size, weight,
 //         letter (false: no letter shape, every line at the margin), ahead (the text still to be written,
 //         as far as it's known: Ink mode's thought letters), complete (the text ends where the letter
-//         ends; default true, false in Ink mode),
+//         ends; default true, false in Ink mode), haste (-2 … 2, tempo.js: the typing's tempo; the words that
+//         start in this text are written a little hastier or tidier, and keep it when continued),
 //         sheet ({ first, last, ink, height }: sheets of paper, font units from each sheet's top: the first
 //         and last baselines, the lowest ink may go, the sheet's height. A line that doesn't fit starts the
 //         next sheet; sheets are stacked `height` apart, so sheet k's lines have y in [k·height, (k+1)·height).
@@ -327,6 +329,9 @@ export function layout(p, text, opts = {}) {
   // (an overwrite pressed over a wrong letter): pen width × weight, and item.weight for the ink
   const sizeK = opts.size || 1, weight = opts.weight || 1;
   const pw = weight === 1 ? p : Object.assign(Object.create(p), { penWidth: p.penWidth * weight });
+  // haste (tempo.js): the typing's tempo, -2 … 2. The words that start here are written a little hastier or tidier
+  // (a word continued from an earlier piece keeps its own); 0 or absent, exactly as before
+  const haste = hasteStep(opts.haste);
   // letter shape: the letter's lines as far as they're known (this text, then what's still to come)
   const knownText = opts.ahead ? text + String(opts.ahead).normalize('NFC') : text;
   const known = opts.letter === false ? null : knownText.split('\n');
@@ -467,9 +472,9 @@ export function layout(p, text, opts = {}) {
     if (w.squeeze) inst.squeeze = w.squeeze;
     if (ctx && ctx.bar) inst.bar = ctx.bar;
     const ck = ch + '\u0001' + seedKey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + (w.squeeze || 1) + '\u0001' + weight + '\u0001' +
-      (ctx ? [ctx.prev, ctx.next, ctx.index, ctx.wordStart, ctx.wordEnd, ctx.bar || ''].join('\u0002') : '');
+      (ctx ? [ctx.prev, ctx.next, ctx.index, ctx.wordStart, ctx.wordEnd, ctx.bar || ''].join('\u0002') : '') + (w.haste ? '\u0001h' + w.haste : '');
     let g = hc.glyphs.get(ck);
-    if (!g) { g = makeGlyph(pw, ch, inst, ctx && { prev: ctx.prev, next: ctx.next, index: ctx.index, wordStart: ctx.wordStart, wordEnd: ctx.wordEnd }); hc.glyphs.set(ck, g); }
+    if (!g) { g = makeGlyph(w.haste ? hastyHand(pw, w.haste) : pw, ch, inst, ctx && { prev: ctx.prev, next: ctx.next, index: ctx.index, wordStart: ctx.wordStart, wordEnd: ctx.wordEnd }); hc.glyphs.set(ck, g); }
     return g;
   }
   // build a word (or the next piece of an open word in Ink mode): glyphs with offsets relative to tokStart
@@ -549,7 +554,7 @@ export function layout(p, text, opts = {}) {
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (let i = runFrom; i < items.length; i++) { const bx = items[i].box; if (bx[0] < x0) x0 = bx[0]; if (bx[1] < y0) y0 = bx[1]; if (bx[2] > x1) x1 = bx[2]; if (bx[3] > y1) y1 = bx[3]; }
       // id: what the run looks like in its own frame; pid: that plus where the frame sits
-      const id = hash(hc.fid + '|' + [w.key, w.seed, w.slant, w.scale, w.care, w.prog, w.squeeze || 1, f.d0, runFirst, items.length - runFrom, hy ? 1 : 0].join('|'));
+      const id = hash(hc.fid + '|' + [w.key, w.seed, w.slant, w.scale, w.care, w.prog, w.squeeze || 1, f.d0, runFirst, items.length - runFrom, hy ? 1 : 0].join('|') + (w.haste ? '|h' + w.haste : ''));
       const pid = hash(id + '|' + [f.X.toFixed(2), f.Y.toFixed(2), f.a, f.k].join('|'));
       runs.push({ id, pid, key: w.key, line: line().n, from: runFrom, to: items.length, x: f.X, y: f.Y, a: f.a, k: f.k, box: [x0, y0, x1, y1] });
       runFrom = items.length; runFirst = null;
@@ -648,7 +653,8 @@ export function layout(p, text, opts = {}) {
     // ----- care arc over the paragraph (rule 14): careful first lines, then drift -----
     const prog = q(smooth((pen.wp + 0.35 * pen.wordsBefore - 8) / 150), 0.05);
     const fresh = 1 - smooth(pen.wp / 25);
-    const care = q(clamp(care0 + 0.12 * (1 - care0) * fresh - 0.3 * tire * prog, 0, 1), 0.025);
+    let care = q(clamp(care0 + 0.12 * (1 - care0) * fresh - 0.3 * tire * prog, 0, 1), 0.025);
+    if (haste) care = q(clamp(care - hasteCare(haste), 0, 1), 0.025); // a hasty word spreads a little more
     const spread = spreadOf(care);
     // ----- word level (rule 2): the whole word leans, grows and sits together -----
     // (the word's own draws depend only on its identity, so they're cached)
@@ -658,7 +664,7 @@ export function layout(p, text, opts = {}) {
       z = { tilt: wr.gauss(), gap: clamp(wr.gauss(), -2.5, 2.5), u1: wr(), u2: wr(), slant: zOf('slant', seedBase), size: zOf('size', seedBase), base: zOf('base', seedBase), wave: zOf('wave', seedBase) };
       hc.draws.set(seedBase, z);
     }
-    return {
+    const w = {
       key: wkey, seed: seedBase, n: pen.words++, prog, care,
       slant: q(clamp(K.pageSlant + 1.25 * spread * z.slant, -4, 4), 0.01),
       scale: q(clamp(K.pageSize * (1 + 0.04 * spread * z.size) * (1 + 0.1 * tire * prog), 0.88, 1.16) * sizeK * (pen.size || 1), 0.001),
@@ -666,6 +672,10 @@ export function layout(p, text, opts = {}) {
       tilt: clamp(z.tilt * 0.3 * spread, -0.9, 0.9) * DEG, gapZ: z.gap, u1: z.u1, u2: z.u2, waveZ: z.wave,
       tempo: H.tempo * (1 + 0.12 * tire * prog) * (1.15 - 0.3 * care),
     };
+    // the word's haste travels with it (an open word in Ink mode is continued with these values): its letters are
+    // made by the hand in that hurry (tempo.js hastyHand), and the pen draws it a little quicker or slower
+    if (haste) { w.haste = haste; w.tempo *= hasteTempo(haste); }
+    return w;
   }
 
   // ----- a written line begins: what it is in the letter, and how this writer sets that out -----
@@ -814,7 +824,7 @@ export function layout(p, text, opts = {}) {
       const w = wordValues(wkey, ink ? 'ink:' + ink.salt + ':w' + wkey : salt + wkey);
       pen.wp++;
       // whole words are cached (fair copy): same identity and values -> the same letters
-      const wck = ink ? null : wkey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + w.prog;
+      const wck = ink ? null : wkey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + w.prog + (w.haste ? '\u0001h' + w.haste : '');
       let sh = wck && hc.words.get(wck);
       if (!sh) { sh = shapeWord(chars, w, seedOf, { prev: null, index: 0, closed: !ink, next: ink ? nextAfter(tokStart + tok.length) : null }); if (wck) hc.words.set(wck, sh); }
       // ----- word gap: lognormal, wider after punctuation and when tired -----
