@@ -39,7 +39,7 @@ all, with the real engine, and lets you change what's typed, the writer and the 
 | Type in the middle of a line | Adds it above the line, with a caret. |
 | Space inside a word, Enter in the middle | A `/` between the words, a `//` for a new paragraph. |
 | ⌘B, ⌘U | Goes over the words again; underlines them by hand (twice for a double underline). |
-| ⌘Z | Lifts the ink only while it's wet, about three seconds. Dry ink stays. |
+| ⌘Z | Lifts the ink only while it's wet: fresh ink looks a little deeper until it dries, 2 to 6 seconds depending on the pen. Dry ink stays. |
 
 Crossing a word out again, one press at a time:
 
@@ -101,9 +101,9 @@ The thinking behind it, with prior art and the studies it draws on:
 | Pen speed | `penStep` in `engine/sheet.js` | About 2 characters a second, up to 4× when far behind |
 | Letters held back while you type | `penStep` (`forgiving`) | The last 2, until 700 ms without a key |
 | The pen hovering over a deletion | `penStep` (`pending`) | Until the next word starts, or 1.2 s |
-| How long ink stays wet | `InkSession` in `app/src/lib/ink.ts` | 3 s |
+| How long ink stays wet | `wetWindow` in `app/src/lib/ink.ts` | By pen, from when the pen lifts: ballpoint 2 s, felt 3 s, gel 4 s, fountain 6 s |
 | A held key crossing out again | `AGAIN_EVERY` in `app/src/write/WriteApp.tsx` | One level every 700 ms, four levels |
-| The drawn pen's pace | `createPen` in `LiveSheets.tsx` | Speed 1.5, faster when behind |
+| The drawn pen's pace | `createPen` in `LiveSheets.tsx` (`lag`) | About 1.2 s behind you while you type, done within about 1.5 s of your last key; a paste copied out within 6 s |
 
 ## Take a stab at it
 
