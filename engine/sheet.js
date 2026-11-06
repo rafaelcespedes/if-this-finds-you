@@ -865,7 +865,9 @@ export function inkIdsIn(st, view, from, to) {
 // ---------- the pen (§3.2): what can be written now ----------
 // opts: { dt (ms since the last step; omit = no speed limit), idle (ms since the last keystroke),
 //   forgiving (default true: hold back the last 2 characters until 700 ms idle), touch (hold back the
-//   unfinished word until 1.2 s idle: mobile autocorrect), final (write everything now), speed (chars/s) }
+//   unfinished word until 1.2 s idle: mobile autocorrect), final (write everything now), speed (chars/s),
+//   within (seconds: a copy-out, a paste being written out: everything waiting is written within that long, however
+//   much it is; pass what's left of it each step) }
 // The pen writes at ~2 characters a second and speeds up to ~4× when far behind.
 export function penStep(st, view, opts = {}) {
   const R = st.reader.clone();
@@ -884,8 +886,10 @@ export function penStep(st, view, opts = {}) {
   let allow = Infinity;
   if (opts.dt != null && !final) {
     const behind = cps(v.tail) + (v.mid ? cps(v.mid.text) : 0);
-    const speed = (opts.speed || 2) * (1 + Math.min(3, Math.max(0, behind - 6) / 4));
-    v.budget = Math.min(8, (v.budget || 0) + opts.dt / 1000 * speed);
+    let speed = (opts.speed || 2) * (1 + Math.min(3, Math.max(0, behind - 6) / 4)), most = 8;
+    // copying out: as fast as it takes to be done in time (a step's worth may be more than the usual 8 letters)
+    if (opts.within > 0) { speed = Math.max(speed, behind / opts.within); most = Math.max(most, Math.ceil(speed * opts.dt / 1000) + 1); }
+    v.budget = Math.min(most, (v.budget || 0) + opts.dt / 1000 * speed);
     allow = Math.floor(v.budget);
   }
   const ready = (text) => {
