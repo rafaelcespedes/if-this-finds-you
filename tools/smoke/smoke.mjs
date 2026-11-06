@@ -53,6 +53,8 @@ const PAGES = {
   fontsOld: { what: 'font specimens drawn (?fonts=old)', kind: 'fonts', sel: 'ol[aria-label="Fonts"] > li', need: 3 },
   // About: the one line a writer writes live (a figure, captioned with the writer's name)
   about: { what: 'the line written live', kind: 'sheet', sel: 'main figure', need: 1 },
+  // the writing app: a fresh note is a blank sheet, so the paper and the editor on it (not strokes) are what count
+  write: { what: 'the writing app’s sheet, ready to write on', kind: 'present', sel: '.wr-sheet [data-paper], .wr-sheet canvas', need: 1 },
 };
 const MIN_STROKES = 20; // svg paths; a found letter has hundreds, an empty sheet none
 // the site's own words for "this broke" (a page can fail without throwing)
@@ -123,6 +125,10 @@ function probePage({ kind, sel, lead, minStrokes, failureTexts }) {
       count = r.width >= 100 && r.height >= 100 && written(el) ? 1 : 0;
       detail = `${strokes} strokes${images ? `, ${images} images` : ''} (${Math.round(r.width)}×${Math.round(r.height)} px)`;
     }
+  } else if (kind === 'present') {
+    const big = els.filter((el) => { const r = el.getBoundingClientRect(); return r.width >= 100 && r.height >= 100; });
+    count = big.length && document.querySelector('.wr-desk textarea') ? 1 : 0;
+    detail = `${big.length} sheet(s), ${document.querySelector('.wr-desk textarea') ? 'with' : 'without'} the editor`;
   } else if (kind === 'cards') {
     count = els.filter(written).length;
     detail = `${count} of ${els.length} cards painted`;
@@ -234,6 +240,7 @@ async function main() {
       { name: 'fonts', path: '/fonts', kind: 'fonts' },
       ...(vp.name === 'desktop' ? [{ name: 'fonts-old', path: '/fonts?fonts=old', kind: 'fontsOld' }] : []),
       { name: 'about', path: '/about', kind: 'about' },
+      { name: 'write', path: '/write', kind: 'write' },
     ];
     for (const page of pages) {
       if (page.kind === 'letter') {
