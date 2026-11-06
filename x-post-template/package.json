@@ -7,9 +7,12 @@
   "license": "MIT",
   "scripts": {
     "session": "node scripts/node-ts.mjs scripts/ink-session.ts",
+    "hands": "node scripts/node-ts.mjs scripts/hand-session.ts",
     "studio": "remotion studio src/index.ts",
     "draft": "remotion render src/index.ts InkDemo out/draft-540.mp4 --scale=0.5 --crf=24",
     "render": "remotion render src/index.ts InkDemo out/x-post-1080.mp4",
+    "draft:hands": "remotion render src/index.ts InkDemoHands out/draft-hands-540.mp4 --scale=0.5 --crf=24",
+    "render:hands": "remotion render src/index.ts InkDemoHands out/x-post-hands-1080.mp4",
     "still": "remotion still src/index.ts InkDemo out/still.png --frame=1180"
   },
   "dependencies": {
@@ -17,9 +20,11 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "remotion": "4.0.540",
+    "three": "0.181.2",
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@types/three": "0.181.0",
     "esbuild": "0.28.1"
   }
 }

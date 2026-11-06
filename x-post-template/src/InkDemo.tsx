@@ -1,5 +1,6 @@
 // The ink demo: typing that behaves like ink, as a post video (1080 x 1080 by default; any shape works, see
-// Root.tsx). A sheet of the site's paper above a minimal keyboard with ghost fingertips pressing its keys; what's
+// Root.tsx). A sheet of the site's paper above a minimal keyboard with ghost fingertips pressing its keys (or, with
+// `hands`, two ghost hands typing on it: hands/); what's
 // typed goes through the site's own Ink mode. The session is recorded by scripts/ink-session.ts with the engine's
 // plan/penStep/apply/dropLast/again (the calls the site makes) and the ink log is replayed here frame by frame
 // (replay is deterministic), every letter drawn stroke by stroke as the pen reaches it; the letters the pen hasn't
@@ -14,15 +15,25 @@ import { inkColor } from '@/lib/inks';
 import session from './data/ink-session.json';
 import { HAND, MEASURE, PAPER, PEN_SPEED } from './setup';
 import { engine, drawInk, UPM, clamp, easeInOutQuint, easeOutQuint } from './draw';
+import { drawKeyboard, handKeyboard, keyboard, mmFrame, PLATE, S0 } from './keyboard';
+import handPose from './data/hand-pose.json';
+import type { HandModel, Side } from './hands/glb';
+import { loadHands, loadUiFont, UI_FONT } from './hands/load';
+import { HandsView } from './hands/view';
+import { DIGITS, type Angles, type Digit, type Pose } from './hands/rig';
+import * as THREE from 'three';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const inkDemoSchema = z.object({
   /** a short line under the sheet naming what each moment shows */
   captions: z.boolean().default(true),
+  /** two ghost hands typing on the keyboard (smaller keys, so the backs of the hands fit), instead of fingertips */
+  hands: z.boolean().default(false),
+  /** the hands' look: 'ghost' (frosted glass), or 'clay' (plain and opaque, to judge their shape and motion) */
+  handLook: z.enum(['ghost', 'clay']).default('ghost'),
 });
 export type InkDemoProps = z.infer<typeof inkDemoSchema>;
 
-const S0 = 1080;
 const C = { room: '#e6e4de', ink: '#1e2733', muted: '#575146', faint: '#8b857a', red: '#9b3b2a', key: 'rgba(255, 255, 255, 0.62)', keyEdge: 'rgba(30, 39, 51, 0.10)' };
 const SES = session as any;
 /** the hand's ink (royal blue): the wet-ink timer is drawn in it, so it reads as the ink's own */
@@ -121,58 +132,32 @@ function penClock(sh: any, ids: number[]): Timed[] {
   return out;
 }
 
-// ---------- the keyboard: only the keys a short letter needs, on a floating glass plate ----------
-interface Key { id: string; label: string; x: number; y: number; w: number; h: number; small?: boolean; align?: 'left' | 'right' }
-const PLATE = { pad: 22, radius: 30 };
-/** the keyboard's (and the bar's) margin from the frame's sides, and from its bottom, at 1080 */
-const MARGIN_SIDE = 48;
-/** the keyboard for a frame S wide and SH tall: centred, as far from the bottom as from the sides */
-function keyboard(S: number, SH: number): { keys: Key[]; plate: { x: number; y: number; w: number; h: number } } {
-  // sized from the frame's shorter side (so a wide frame doesn't get giant keys), centred across its width
-  const D = Math.min(S, SH), k0 = D / S0;
-  // the keys sized so the plate spans the shorter side less MARGIN_SIDE each side (a 72 px key at 66 px before)
-  const fit = (D - 2 * (MARGIN_SIDE + PLATE.pad) * k0) / ((1080 - 2 * (66 + PLATE.pad)) * k0);
-  const U = 72 * k0 * fit, G = 8 * k0 * fit, H = 64 * k0 * fit;
-  // the letters as they sit on any keyboard (each row a little further in), with the few keys the letter uses
-  const rows: { offset: number; keys: [string, string, number, ('left' | 'right')?][] }[] = [
-    { offset: 0, keys: [['q', 'Q', 1], ['w', 'W', 1], ['e', 'E', 1], ['r', 'R', 1], ['t', 'T', 1], ['y', 'Y', 1], ['u', 'U', 1], ['i', 'I', 1], ['o', 'O', 1], ['p', 'P', 1], ['Backspace', 'delete', 1.45, 'right']] },
-    { offset: 0.3, keys: [['a', 'A', 1], ['s', 'S', 1], ['d', 'D', 1], ['f', 'F', 1], ['g', 'G', 1], ['h', 'H', 1], ['j', 'J', 1], ['k', 'K', 1], ['l', 'L', 1], ['Enter', 'return', 1.6, 'right']] },
-    { offset: -0.55, keys: [['Shift', 'shift', 1.55, 'left'], ['z', 'Z', 1], ['x', 'X', 1], ['c', 'C', 1], ['v', 'V', 1], ['b', 'B', 1], ['n', 'N', 1], ['m', 'M', 1], [',', ',', 1], ['.', '.', 1]] },
-    { offset: 0, keys: [['Meta', '⌘', 1.3], [' ', '', 5.2]] },
-  ];
-  const rowW = (r: (typeof rows)[number]) => r.keys.reduce((a, [, , w]) => a + w * U, 0) + G * (r.keys.length - 1);
-  const W = Math.max(...rows.slice(0, 3).map((r) => rowW(r) + Math.abs(r.offset) * U));
-  const x0 = (S - W) / 2;
-  // the plate as far from the bottom edge as from the sides (of a square frame; centred in a wider one)
-  const pad0 = PLATE.pad * k0, side = MARGIN_SIDE * k0;
-  const plateH = rows.length * H + (rows.length - 1) * G + 2 * pad0;
-  const top = SH - side - plateH + pad0;
-  const keys: Key[] = [];
-  rows.forEach((row, r) => {
-    // the letter rows staggered as on a keyboard; the bottom row centred under the space between them
-    let x = r === 3 ? (S - rowW(row)) / 2 : x0 + (row.offset > 0 ? row.offset * U : 0) + (r === 2 ? 0 : 0);
-    if (r === 2) x = x0;
-    for (const [id, label, w, align] of row.keys) {
-      keys.push({ id, label, x, y: top + r * (H + G), w: w * U, h: H, small: label.length > 1, align });
-      x += w * U + G;
-    }
-  });
-  const pad = PLATE.pad * k0;
-  const minX = Math.min(...keys.map((kk) => kk.x)), maxX = Math.max(...keys.map((kk) => kk.x + kk.w));
-  const maxY = Math.max(...keys.map((kk) => kk.y + kk.h));
-  return { keys, plate: { x: minX - pad, y: top - pad, w: maxX - minX + 2 * pad, h: maxY - top + 2 * pad } };
-}
-/** a recorded key as the keys it presses */
-function keysOf(key: string): string[] {
+// ---------- the keyboard (keyboard.ts) ----------
+/** a recorded key as the keys the plain video shows pressed */
+function keysOfPlain(key: string): string[] {
   if (key === 'Meta+z') return ['Meta', 'z'];
   if (key === 'click') return [];
   if (/^[A-Z]$/.test(key)) return ['Shift', key.toLowerCase()];
   return [key];
 }
 
+// ---------- the ghost hands' recorded motion (scripts/hand-session.ts) ----------
+const HP = handPose as unknown as { fps: number; poses: number[][][]; presses: { key: string; t0: number; t1: number }[] };
+function posesAt(t: number): Record<Side, Pose> {
+  const rows = HP.poses[Math.max(0, Math.min(HP.poses.length - 1, Math.round(t * HP.fps)))];
+  const out = {} as Record<Side, Pose>;
+  (['L', 'R'] as const).forEach((side, i) => {
+    const r = rows[i];
+    const ang = {} as Record<Digit, Angles>;
+    DIGITS.forEach((d, j) => { const o = 6 + 4 * j; ang[d] = { a: r[o], f0: r[o + 1], f1: r[o + 2], f2: r[o + 3] }; });
+    out[side] = { pl: { mcp: new THREE.Vector3(r[0], r[1], r[2]), yaw: r[3], pitch: r[4], roll: r[5] }, ang };
+  });
+  return out;
+}
+
 // ---------- the pieces ----------
 const PRESS = 0.11; // a key's press, s
-export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
+export const InkDemo: React.FC<InkDemoProps> = ({ captions, hands = false, handLook = 'ghost' }) => {
   const frame = useCurrentFrame();
   const { width: S, height: SH, fps } = useVideoConfig();
   const k0 = Math.min(S, SH) / S0;
@@ -180,9 +165,13 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
   const t = frame / fps;
   const F = SES.frames[Math.min(SES.frames.length - 1, frame)];
   const cam = useMemo(() => cameraFor(S, SH), [S, SH]);
-  const KB = useMemo(() => keyboard(S, SH), [S, SH]);
+  const KB = useMemo(() => (hands ? handKeyboard(S, SH) : keyboard(S, SH)), [S, SH, hands]);
+  /** the bar spans the plain keyboard's plate (with hands, wider than the smaller keyboard under it) */
+  const BAR = useMemo(() => keyboard(S, SH).plate, [S, SH]);
   const KEYS = KB.keys;
   const ref = useRef<HTMLCanvasElement>(null);
+  const glRef = useRef<HTMLCanvasElement>(null);
+  const view = useRef<HandsView | null>(null);
   const [handle] = useState(() => delayRender('ink demo'));
   const sheetCanvas = useMemo(() => {
     const c = document.createElement('canvas');
@@ -190,8 +179,30 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
     paintPaper(c.getContext('2d')!, paper, { pxPerMm: cam.k, grainScale: cam.k / 4, holeFill: 'clear', shadow: 'none' });
     return c;
   }, [cam]);
+  // keys down now: with hands, exactly when their fingers press them
+  const down = new Map<string, number>(); // key id -> how pressed (0..1)
+  if (hands) {
+    for (const pr of HP.presses) {
+      const d = t < pr.t0 ? clamp(1 - (pr.t0 - t) / 0.02, 0, 1) : t <= pr.t1 ? 1 : clamp(1 - (t - pr.t1) / 0.06, 0, 1);
+      if (d > 0) down.set(pr.key, Math.max(down.get(pr.key) ?? 0, d));
+    }
+  }
   useLayoutEffect(() => {
     const h = delayRender(`ink ${frame}`);
+    if (!hands) { drawFrame(); continueRender(h); continueRender(handle); return; }
+    Promise.all([loadHands(), loadUiFont()]).then(([models]) => {
+      drawFrame();
+      // the keyboard on the canvas, under the hands; then the hands, seeing through to it
+      const ctx = ref.current!.getContext('2d', { alpha: false })!;
+      drawKeyboard(ctx, KB, down, UI_FONT);
+      view.current ??= new HandsView(glRef.current!, models as Record<Side, HandModel>, handLook);
+      const f = mmFrame(KB, S);
+      view.current.render({ poses: posesAt(t), PX: f.PX, ox: f.ox, oy: f.oy, under: ref.current! });
+      continueRender(h);
+      continueRender(handle);
+    });
+  }, [frame]); // eslint-disable-line react-hooks/exhaustive-deps
+  function drawFrame() {
     const ctx = ref.current!.getContext('2d', { alpha: false })!;
     // the sheet fills the frame; the keyboard sits on it (no band of its own, no divider)
     ctx.fillStyle = (paper as any).tint ?? '#f8f6f0';
@@ -260,14 +271,11 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
       }
     }
     ctx.restore();
-    continueRender(h);
-    continueRender(handle);
-  }, [frame]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
-  // keys down now, and the ghost fingertips
-  const down = new Map<string, number>(); // key id -> how pressed (0..1)
+  // the plain video: keys down, and the ghost fingertips
   const tips: { x: number; y: number; o: number; s: number }[] = [];
-  const presses = (SES.keys as any[]).flatMap((kk) => keysOf(kk.key).map((id, j) => ({ id, t: kk.t + (j ? 0.03 : 0), hold: kk.key === 'Meta+z' && j === 0 ? 0.22 : PRESS })));
+  const presses = hands ? [] : (SES.keys as any[]).flatMap((kk) => keysOfPlain(kk.key).map((id, j) => ({ id, t: kk.t + (j ? 0.03 : 0), hold: kk.key === 'Meta+z' && j === 0 ? 0.22 : PRESS })));
   for (const pr of presses) {
     const u = (t - pr.t) / pr.hold;
     if (u >= -0.3 && u <= 1.6) down.set(pr.id, Math.max(down.get(pr.id) ?? 0, u < 0 ? 0 : u <= 1 ? 1 : 1 - (u - 1) / 0.6));
@@ -342,16 +350,16 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
           (the goo technique liquid-gooey is built on: an SVG blur and a sharp alpha threshold, so touching shapes merge
           into one surface while the words stay crisp on top). */}
       {(() => {
-        const H = 72 * k0, R = PLATE.radius * k0, top = KB.plate.y - (72 + BAR_GAP) * k0;
+        const H = 72 * k0, R = PLATE.radius * k0, top = BAR.y - (72 + BAR_GAP) * k0;
         const TW = 262 * k0, G = 18 * k0;
-        const left = { x: KB.plate.x, w: KB.plate.w - TW - G };
-        const right = { x: KB.plate.x + KB.plate.w - TW, w: TW };
+        const left = { x: BAR.x, w: BAR.w - TW - G };
+        const right = { x: BAR.x + BAR.w - TW, w: TW };
         const M = 24 * k0; // the SVG's margin for the blur
         const TEXT = 21; // the hint and the timer's seconds, the same size (at 1080)
         const neckRy = 14 * k0;
         return (
           <>
-            <svg width={KB.plate.w + 2 * M} height={H + 2 * M} style={{ position: 'absolute', left: KB.plate.x - M, top: top - M, overflow: 'visible' }}>
+            <svg width={BAR.w + 2 * M} height={H + 2 * M} style={{ position: 'absolute', left: BAR.x - M, top: top - M, overflow: 'visible' }}>
               <defs>
                 <filter id="goo" x="-10%" y="-40%" width="120%" height="180%">
                   <feGaussianBlur in="SourceGraphic" stdDeviation={7 * k0} result="blur" />
@@ -360,7 +368,7 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
               </defs>
               <g filter="url(#goo)" fill={BAR_FILL}>
                 <rect x={M} y={M} width={left.w} height={H} rx={R} />
-                <rect x={M + KB.plate.w - TW} y={M} width={TW} height={H} rx={R} />
+                <rect x={M + BAR.w - TW} y={M} width={TW} height={H} rx={R} />
                 <ellipse cx={M + left.w + G / 2} cy={M + H / 2} rx={G / 2 + 10 * k0} ry={neckRy} />
               </g>
             </svg>
@@ -388,14 +396,16 @@ export const InkDemo: React.FC<InkDemoProps> = ({ captions }) => {
           </>
         );
       })()}
+      {/* the ghost hands (drawn over the canvas keyboard), or the HTML keyboard and its fingertips */}
+      {hands && <canvas ref={glRef} width={S} height={SH} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />}
       {/* the keyboard: a frosted glass plate floating over the room, quiet keys on it, the pressed one sinking */}
-      <div style={{
+      {!hands && <div style={{
         position: 'absolute', left: KB.plate.x, top: KB.plate.y, width: KB.plate.w, height: KB.plate.h, borderRadius: PLATE.radius * k0,
         background: 'linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0.38))',
         boxShadow: `0 ${18 * k0}px ${44 * k0}px rgba(30, 39, 51, 0.13), 0 ${2 * k0}px ${6 * k0}px rgba(30, 39, 51, 0.06), inset 0 ${k0}px 0 rgba(255,255,255,0.9), inset 0 0 0 ${k0}px rgba(255,255,255,0.55)`,
         backdropFilter: `blur(${16 * k0}px)`,
-      }} />
-      {KEYS.map((kk) => {
+      }} />}
+      {!hands && KEYS.map((kk) => {
         const d = down.get(kk.id) ?? 0;
         return (
           <div key={kk.id} style={{

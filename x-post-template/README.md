@@ -1,7 +1,7 @@
 # X post template
 
 A template for a post video for X (Twitter): typing that behaves like ink. A sheet of paper sits above a minimal
-keyboard, and the keys press themselves. Every keystroke goes through the same Ink mode as
+keyboard, and the keys press themselves (or, in the version with hands, two ghost hands type them). Every keystroke goes through the same Ink mode as
 [If This Finds You](https://ifthisfindsyou.app), so the handwriting is the real engine's, drawn stroke by stroke as
 the pen reaches each letter.
 
@@ -39,6 +39,8 @@ npm install
 | `npm run render` | Renders the full video: 1080 × 1080, 30 fps, H.264, to `out/x-post-1080.mp4`. |
 | `npm run still` | Renders one frame to `out/still.png`. |
 | `npm run session` | Records the typing again after you change the script or the settings (see below). |
+| `npm run hands` | Records the ghost hands' motion for the typing (run it after `npm run session`). |
+| `npm run draft:hands`, `npm run render:hands` | The same draft and full video with the ghost hands typing (`InkDemoHands`). |
 
 If npm asks you to approve esbuild's install script, it's fine to say no: its binary comes as a package of its own.
 
@@ -95,13 +97,34 @@ too. The keyboard sits at the bottom, as far from the edge as from the sides, an
 To try a size without editing anything: `npx remotion still src/index.ts InkDemo out/still.png --width=1080
 --height=1350`.
 
-The keyboard shows only the keys the letter uses. Its rows are in `keyboard()` in `src/InkDemo.tsx`.
+The keyboard shows only the keys the letter uses. Its rows are in `keyboard()` in `src/keyboard.ts`.
+
+## The version with ghost hands
+
+`InkDemoHands` is the same video with two hands of frosted glass typing it: each keystroke pressed by the finger
+that would press it, the hand following its fingers, the keys showing through the glass. The hands are a real hand
+model (the WebXR generic hands, 25 joints each) posed frame by frame, so the anatomy holds up close.
+
+- `npm run hands` records their motion to `src/data/hand-pose.json`: for every key in the session, which finger
+  presses it (`FINGER` in `src/hands/home.ts`), the fingertip's path to it and back (`src/hands/plan.ts`), and each
+  joint's angle along the way. Run it again whenever you record a new session.
+- The keyboard is smaller in this version (`HAND_KEYS` in `src/keyboard.ts`, three quarters of the plain one's), so
+  the backs of the hands fit in the frame. Hands are drawn to scale against it: a key pitch is 19 mm.
+- The glass (how much it bends and frosts what's under it, its milkiness, its rim and shine) is `GHOST` in
+  `src/hands/ghost.ts`. To judge the hands' shape and motion without the glass, set `handLook` to `clay` in the
+  Studio's props. The `HandLab` composition shows one still of the hands at rest or pressing a key.
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `src/InkDemo.tsx` | The video: the paper, the replayed ink, the keyboard with its ghost fingertips, the pointer, and the bar with the hint and the wet-ink timer. |
+| `src/InkDemo.tsx` | The video: the paper, the replayed ink, the keyboard with its ghost fingertips (or hands), the pointer, and the bar with the hint and the wet-ink timer. |
+| `src/keyboard.ts` | The keyboard's layout (and its canvas drawing, for the version with hands). |
+| `src/hands/` | The ghost hands: the model's skeleton and pose solver (`rig.ts`), its smoothed skin (`mesh.ts`), where the hands rest and which finger takes which key (`home.ts`), the typing motion (`plan.ts`), and the glass and its shadow (`ghost.ts`, `shadow.ts`, `view.ts`). |
+| `src/HandLab.tsx` | One still of the hands, to judge them on their own. |
+| `src/data/hand-pose.json` | The hands' recorded motion. Written by `npm run hands`. |
+| `scripts/hand-session.ts` | The recorder for the hands' motion. |
+| `public/hands/` | The hand models, with their licence (MIT). |
 | `src/setup.ts` | The writer, the paper, the salt and the pen's pace. |
 | `src/draw.ts` | Drawing the ink with the engine's own canvas renderer, plus the easing curves. |
 | `src/Root.tsx`, `src/index.ts` | The composition (its size, frame rate and length). |
@@ -119,3 +142,6 @@ The keyboard shows only the keys the letter uses. Its rows are in `keyboard()` i
   engine it draws with is the If This Finds You engine (`../engine`), MIT too. Some of the letter shapes it traces
   come from sources with their own credits; see [LICENSES.md](../LICENSES.md).
 - **Schibsted Grotesk** (in `public/fonts`) is under the SIL Open Font License; its licence file sits next to it.
+- **The hand models** (in `public/hands`) are the generic hands of the
+  [WebXR Input Profiles](https://github.com/immersive-web/webxr-input-profiles), MIT (© 2019 Amazon); their licence
+  file sits next to them. The version with hands also uses [three.js](https://threejs.org) (MIT).
