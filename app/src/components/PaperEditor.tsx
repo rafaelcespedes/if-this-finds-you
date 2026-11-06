@@ -27,6 +27,8 @@ export interface PaperEditorApi {
   setSelection: (from: number, to?: number) => void;
   /** start writing at a point on the page (client px): the nearest line and letter, the end when outside the lines */
   placeAt: (clientX: number, clientY: number) => void;
+  /** the caret's line on the page (CSS px from the letter's top left): where a margin note goes, beside it; null without one */
+  caretRect: () => { left: number; top: number; height: number } | null;
 }
 
 interface Props {
@@ -166,6 +168,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
 
   // a caret placed by the app after an edit it made (P.S.), once React has written the new value
   const pendingCaret = useRef<number | null>(null);
+  // where the caret's line is (for the page: a margin note beside it), as last drawn
+  const caretRectRef = useRef<{ left: number; top: number; height: number } | null>(null);
   useLayoutEffect(() => {
     if (pendingCaret.current == null || !ta.current) return;
     const at = Math.min(pendingCaret.current, ta.current.value.length);
@@ -179,6 +183,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     selection: () => (ta.current ? [ta.current.selectionStart, ta.current.selectionEnd] : [text.length, text.length]),
     setSelection: (from, to) => focusAt(to ?? from, to != null, from),
     placeAt: (x, y) => placeAt.current(x, y),
+    caretRect: () => caretRectRef.current,
   }), [focusAt, sync, text.length]);
   const placeAt = useRef<(x: number, y: number) => void>(() => {});
 
@@ -404,6 +409,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   // it, so the textarea waits at the sheet's top and nothing scrolls the letter to its end
   const caretPx = caret && !blank ? { left: caret.x * k, top: caret.sheet * pitch + (caret.y - asc) * k } : { left: 0, top: 0 };
   const caretH = (asc + desc) * k;
+  caretRectRef.current = caret && !blank ? { left: caretPx.left, top: caretPx.top, height: caretH } : null;
   const atEnd = /^\s*$/.test(text.slice(head));
 
   // highlighter ribbons: one shape per written line, following (and leaning with) that line
