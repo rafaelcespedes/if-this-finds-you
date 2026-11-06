@@ -11,6 +11,9 @@
 //   - inkExtras(): what runs don't carry: the faint "thought" letters the pen hasn't reached yet (and, from
 //     engines that keep marks outside runs, correction marks)
 //   - writeInk(): the same page written in the worker from the log (looks change there, and are prefetched)
+//   - the typing's tempo (engine tempo.js): every key's timing goes to the typist, each unwritten letter remembers the
+//     tempo it was typed at, and a write carries the tempo of its first new word (write.haste), so a fast burst comes
+//     out hastier and slow typing tidier, and a replay gives the same page
 import * as E from '@engine';
 import { UPM, type Hand } from '@engine';
 import type { Edit } from './edits';
@@ -149,6 +152,12 @@ const WET_MS = 3000;
 const LONG_FIX = 24;
 const NO_KEYS: string[] = [];
 
+/**
+ * The person typing (engine tempo.js): their own average pace and the tempo of the last few keys. One for the page,
+ * not one per sheet: a new hand or a fresh sheet is still the same person typing.
+ */
+const TYPIST: unknown = typeof engine.newTypist === 'function' ? engine.newTypist() : null;
+
 /** The live sheet while someone writes in ink. Plain object state; the caller re-renders after changes. */
 export class InkSession {
   sheet: any;
@@ -158,7 +167,12 @@ export class InkSession {
   lastInk = 0;
   /** when each event of the log went down (the log's own order); events from before this session are long dry */
   private inkedAt: number[];
-  constructor(readonly p: Hand, doc: InkDoc, readonly opts: Record<string, unknown>, readonly touch = false) {
+  /**
+   * The tempo each unwritten letter was typed at (one per UTF-16 unit of view.tail): a word is written at the tempo it
+   * was typed at, however far behind the pen is.
+   */
+  private tailHaste: number[] = [];
+  constructor(readonly p: Hand, doc: InkDoc, readonly opts: Record<string, unknown>, readonly touch = false, private readonly typist: unknown = TYPIST) {
     this.sheet = engine.replay(p, doc, opts);
     this.view = engine.newView();
     this.inkedAt = doc.log.map(() => -Infinity);
@@ -172,16 +186,22 @@ export class InkSession {
   /** a fix at the pen head: the pen hovers while the writer considers */
   get hovering() { return !!this.view.pending; }
   get full(): boolean { return !!this.sheet.page?.full; }
-  draft() { return this.view.tail ? engine.draftPage(this.sheet, this.view) : null; }
+  /** the thought letters, at the tempo the next word was typed at, so they sit where its ink will */
+  draft() { return this.view.tail ? engine.draftPage(this.sheet, this.view, { haste: this.nextHaste() }) : null; }
 
   edit(e: Edit) {
+    // every key keeps the typist's time; a letter or a space typed counts towards the tempo
+    if (this.typist) engine.typistKey(this.typist, performance.now(), e.kind === 'type' && !e.del && e.ins.length > 0 && e.ins.length <= 2);
+    this.planEdit(e);
+  }
+  private planEdit(e: Edit) {
     // Typing over a long selection that runs to the pen head (select all, then type): the planner struck it and wrote
     // the first letter above it as a substitution, but the next keys landed at the pen head, after the struck text:
     // the new words came apart. A writer strikes it and carries on where the pen is (most of the sheet: a fresh sheet,
     // as select all + Delete does). So it's planned as what it is, a delete, then typing at that spot.
     const tailFrom = this.text().length - String(this.view.tail ?? '').length;
     if (e.ins && e.del && !this.view.mid && e.at + e.del >= tailFrom && tailFrom - e.at > LONG_FIX) {
-      this.edit({ ...e, ins: '' });
+      this.planEdit({ ...e, ins: '' });
       // struck right up to the pen: a space first, so the new words start clear of the struck ones (as the planner
       // leaves one when it rewrites a word: "~teh~ the"). It's joined away: the text reads on, and no extra crossing-out
       const recs = (this.sheet.reader?.recs ?? []) as { id: number; ch: string; struck?: unknown }[];
@@ -189,10 +209,11 @@ export class InkSession {
       if (last?.struck && !/\s/.test(last.ch) && !this.view.pending) {
         this.inked([{ t: 'write', text: ' ' }, { t: 'mark', after: last.id, kind: 'join' }]);
       }
-      this.edit({ ...e, del: 0 });
+      this.planEdit({ ...e, del: 0 });
       return;
     }
     const r = engine.plan(this.sheet, this.view, { at: e.at, del: e.del, ins: e.ins, kind: e.kind });
+    this.carry(r.events, r.view);
     this.view = r.view;
     if (r.events.length) this.inked(r.events);
     this.lastKey = performance.now();
@@ -230,6 +251,7 @@ export class InkSession {
       r = engine.penStep(this.sheet, v, { dt, idle, forgiving: true, touch: this.touch, final });
     }
     const moved = r.events.length > 0 || (r.view.tail !== this.view.tail) || !!r.view.pending !== !!this.view.pending;
+    this.carry(r.events, r.view);
     this.view = r.view;
     if (r.events.length) { this.inked(r.events); this.handedAt = now; }
     return moved;
@@ -354,6 +376,18 @@ export class InkSession {
     for (const { e, at } of lifted.reverse()) { this.doc.log.push(e); this.inkedAt.push(at); }
     this.sheet = engine.replay(this.p, this.doc, this.opts);
     return false;
+  }
+  /**
+   * The view is about to become `next` (its events not applied yet): each write takes the tempo its first new word was
+   * typed at (write.haste), and the tempo of what's still unwritten follows the tail (engine hasteCarry).
+   */
+  private carry(events: unknown[], next: any) {
+    if (!this.typist || typeof engine.hasteCarry !== 'function') return;
+    this.tailHaste = engine.hasteCarry(this.sheet, events, this.view?.tail, this.tailHaste, next?.tail, engine.typistHaste(this.typist));
+  }
+  /** the tempo the next word to be written was typed at */
+  private nextHaste(): number {
+    return this.typist && typeof engine.hasteNext === 'function' ? engine.hasteNext(this.sheet, this.view.tail, this.tailHaste) : 0;
   }
   private inked(events: unknown[]) {
     if (!events.length) return;
