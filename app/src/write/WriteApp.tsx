@@ -239,6 +239,19 @@ export function WriteApp() {
   const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
     const s = sessionRef.current;
     if (cmd === 'ps') { s.postScript(); sync(); return; }
+    // formatting by hand (lib/ink.ts): what's typed next, the caret's line, a checklist's tick, the highlighter
+    const caret = editor.current?.selection() ?? [from, to];
+    if (cmd === 'weight' || (cmd === 'lean' && caret[0] === caret[1])) { const now = s.style(); s.setStyle(cmd === 'lean' ? { lean: now.lean ? 0 : 1 } : { weight: now.weight ? 0 : 1 }); sync(); return; }
+    if (cmd === 'lean') { toast('Ink can’t be leaned once it’s written', { id: 'ink-dry' }); return; }
+    const list = cmd === 'bullets' ? 'bullet' : cmd === 'numbers' ? 'number' : cmd === 'checklist' ? 'check' : null;
+    if (list || cmd === 'title' || cmd === 'heading' || cmd === 'body') {
+      const ok = list ? s.setList(s.style(from).list === list ? null : list, from) : s.setRole(cmd === 'title' || cmd === 'heading' ? cmd : 'body', from);
+      if (!ok) toast('That line is already in ink', { id: 'ink-dry' });
+      sync();
+      return;
+    }
+    if (cmd === 'check') { if (s.toggleCheck(s.text().slice(0, from).split('\n').length - 1)) sync(); return; }
+    if (cmd === 'highlight') { if (s.highlight(from, to, 'yellow')) sync(); return; }
     if (s.format(cmd === 'underline' ? 'underline' : 'press', from, to)) {
       sync();
       // the marked words stand clear of the selection's tint, the caret after them

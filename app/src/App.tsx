@@ -696,8 +696,10 @@ export default function App() {
     editor.current.focus();
     return true;
   }, []);
-  const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
-    if (cmd === 'ps') return;
+  const onFormat = useCallback((command: FormatCommand, from: number, to: number) => {
+    // the desk keeps its two pen-only formats: ⌘B goes over the word at the caret, ⌘I underlines (as before /write's)
+    const cmd = command === 'weight' ? 'press' : command === 'lean' ? 'underline' : command;
+    if (cmd !== 'underline' && cmd !== 'press') return;
     if (inkMode) {
       // in ink, by hand: an underline drawn under the words, or the letters gone over again (a found letter not
       // yet answered has nothing of yours to format)

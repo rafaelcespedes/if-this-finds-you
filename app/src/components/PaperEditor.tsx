@@ -4,7 +4,9 @@
 //
 // - The caret is the pen: an ink dot at the end of the letter, a fine line mid-text.
 // - Selection is a warm amber highlighter (a UI colour, never ink), swept in on pointer selections.
-// - Pen-only formatting: ⌘U/⌘I underline by hand (again for double), ⌘B press harder, ⌘↩ P.S.
+// - Pen-only formatting: ⌘U underlines by hand (again for double), ⌘B presses harder (on a selection: goes over it;
+//   with none: for what's typed next), ⌘I leans in, ⌘↩ P.S.; ⌥⌘1 Title, ⌥⌘2 Heading, ⌥⌘0 Body, ⇧⌘7 bullets,
+//   ⇧⌘9 numbers, ⇧⌘L checklist, ⇧⌘U tick the item, ⇧⌘E highlight
 // - Up/Down/Home/End follow the written lines; IME compositions own the keys while they last.
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { across, type CaretPos, type Geometry, type Side } from '@/lib/geometry';
@@ -14,7 +16,19 @@ import { historyKey, isComposingKey, isMac, useEditInput, type Composition } fro
 import { keepInView } from '@/hooks/useVisualViewport';
 import { cn } from '@/lib/utils';
 
-export type FormatCommand = 'underline' | 'press' | 'ps';
+export type FormatCommand = 'underline' | 'press' | 'ps'
+  // what's typed next: leaning in (⌘I), pressed harder (⌘B with no selection)
+  | 'lean' | 'weight'
+  // the line at the caret: ⌥⌘1, ⌥⌘2, ⌥⌘0; lists: ⇧⌘7, ⇧⌘9, ⇧⌘L; tick the item at the caret: ⇧⌘U; the highlighter: ⇧⌘E
+  | 'title' | 'heading' | 'body' | 'bullets' | 'numbers' | 'checklist' | 'check' | 'highlight';
+/** shortcuts with a modifier besides ⌘ (by physical key: ⌥ and ⇧ change e.key) */
+const FORMAT_KEYS: Record<string, FormatCommand> = {
+  'alt+Digit1': 'title', 'alt+Digit2': 'heading', 'alt+Digit0': 'body',
+  'shift+Digit7': 'bullets', 'shift+Digit9': 'numbers', 'shift+KeyL': 'checklist', 'shift+KeyU': 'check', 'shift+KeyE': 'highlight',
+};
+/** commands about the caret's line: the caret is passed as it is, never widened to its word (the others, with no
+ *  selection, get the word at the caret, as ⌘B and ⌘I always have: the page asks the selection for what's typed next) */
+const AT_CARET = new Set<FormatCommand>(['title', 'heading', 'body', 'bullets', 'numbers', 'checklist', 'check']);
 
 export interface PaperEditorApi {
   focus: () => void;
@@ -331,11 +345,17 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       return;
     }
     const mod = isMac() ? e.metaKey : e.ctrlKey;
+    const fk = mod && (e.altKey !== e.shiftKey) ? FORMAT_KEYS[(e.altKey ? 'alt+' : 'shift+') + e.code] : undefined;
+    if (fk) {
+      e.preventDefault();
+      format(fk);
+      return;
+    }
     if (mod && !e.altKey) {
       const key = e.key.toLowerCase();
       if (key === 'u' || key === 'i' || key === 'b') {
         e.preventDefault();
-        format(key === 'b' ? 'press' : 'underline');
+        format(key === 'b' ? (el.selectionStart === el.selectionEnd ? 'weight' : 'press') : key === 'i' ? 'lean' : 'underline');
         return;
       }
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -378,7 +398,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       return;
     }
     let [a, b] = [el.selectionStart, el.selectionEnd];
-    if (a === b) [a, b] = wordAt(el.value, a);
+    if (a === b && !AT_CARET.has(cmd)) [a, b] = wordAt(el.value, a);
     onFormat(cmd, a, b);
   };
 
