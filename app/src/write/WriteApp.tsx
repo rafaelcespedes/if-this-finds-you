@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { DropdownMenu } from 'radix-ui';
-import { Check, ChevronDown, ChevronLeft, Copy, Ellipsis, EyeOff, FileText, Image as ImageIcon, PanelLeft, Pin, PinOff, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, Copy, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { Sheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -24,6 +24,7 @@ import { CleanDesk } from './CleanDesk';
 import type { Mark } from '@/lib/doc';
 import { Library } from './Library';
 import { WriterName, WriterPanel } from './WriterPanel';
+import { Shortcuts, shortcutGroups } from './Shortcuts';
 import {
   MIGRATED_KEY, asClean, asInk, blankNote, deleteNote, getNote, isBlank, isClean, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
   readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
@@ -346,6 +347,7 @@ export function WriteApp() {
 
   // ---------- the chrome steps back while you write ----------
   const [hideUi, setHideUi] = useState(false);
+  const [keysOpen, setKeysOpen] = useState(false);
   const keys = useRef(0);
   const onTyped = useCallback(() => {
     // from the second key: the first may be a stray one
@@ -383,6 +385,7 @@ export function WriteApp() {
         return;
       }
       if (mod && k === '.' && !e.shiftKey) { e.preventDefault(); setHideUi((h) => !h); return; }
+      if (mod && (k === '/' || e.code === 'Slash')) { e.preventDefault(); setKeysOpen((o) => !o); return; }
       if (mod && k === '\\') { e.preventDefault(); setLibOpen((o) => !o); return; }
       // a new note (⌘N belongs to the browser): ⌥⌘N
       if (mod && e.altKey && e.code === 'KeyN') { e.preventDefault(); newNote(); return; }
@@ -460,6 +463,7 @@ export function WriteApp() {
   const moreItems = (
     <>
       {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setHideUi(true)}><EyeOff aria-hidden /> Hide the toolbar <kbd>{MOD}.</kbd></DropdownMenu.Item>}
+      {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setKeysOpen(true)}><Keyboard aria-hidden /> Keyboard shortcuts <kbd>{MOD}/</kbd></DropdownMenu.Item>}
       <DropdownMenu.Label className="wr-menu-label">
         {words} {words === 1 ? 'word' : 'words'} · {keptOk ? 'Kept on this device' : 'Not kept in this browser'}
       </DropdownMenu.Label>
@@ -591,6 +595,7 @@ export function WriteApp() {
         </main>
       )}
 
+      <Shortcuts open={keysOpen} onOpenChange={setKeysOpen} groups={shortcutGroups(MOD)} />
       <div className="sr-only" aria-live="polite">{said}</div>
       <Toaster position={phone ? 'top-center' : 'bottom-center'} />
     </div>
