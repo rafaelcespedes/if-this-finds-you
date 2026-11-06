@@ -14,6 +14,10 @@
 //   - the typing's tempo (engine tempo.js): every key's timing goes to the typist, each unwritten letter remembers the
 //     tempo it was typed at, and a write carries the tempo of its first new word (write.haste), so a fast burst comes
 //     out hastier and slow typing tidier, and a replay gives the same page
+//   - formatting by hand (engine format.js): a style for what's typed next (setStyle: leaning in, pressed harder, a
+//     size), titles, headings and lists the writer's own way (setRole, setList, with `# `, `- `, `[] `, `1. ` at the start
+//     of a line), checklist ticks (toggleCheck, checks), the highlighter (highlight, inkHighlights), and style(): what
+//     the toolbar shows at the caret
 import * as E from '@engine';
 import { UPM, type Hand } from '@engine';
 import type { Edit } from './edits';
@@ -148,6 +152,19 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
   return out;
 }
 
+/**
+ * The highlighter's swipes (InkSession.highlight), one SVG per sheet, for a layer UNDER the ink: the same frame as the
+ * sheet's ink SVG (sheetFrame's viewBox), so it sits exactly under it. '' for a sheet with none.
+ */
+export function inkHighlights(live: Live): string[] {
+  const n = live.sheets.length;
+  const hs = (live.page.highlights ?? []) as unknown[];
+  if (!hs.length || typeof engine.highlightsSVG !== 'function') return Array.from({ length: n }, () => '');
+  const g = engine.highlightsSVG(live.page, live.emPx) as string;
+  const sc = live.emPx / UPM;
+  return live.sheets.map((sh) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 ${(sh.shiftU * sc).toFixed(2)} ${live.widthPx} ${live.heightPx}" width="100%" height="100%" aria-hidden="true" style="position:absolute;inset:0">${g}</svg>`);
+}
+
 /** how long ink stays wet (writing-experience.md §4.5): an event can be lifted this long after it went down */
 const WET_MS = 3000;
 /** the most letters the planner's fix at the pen head takes on (sheet.js plan: a longer run is struck instead) */
@@ -159,6 +176,32 @@ const NO_KEYS: string[] = [];
  * not one per sheet: a new hand or a fresh sheet is still the same person typing.
  */
 const TYPIST: unknown = typeof engine.newTypist === 'function' ? engine.newTypist() : null;
+
+/** The style what's typed next is written in (engine format.js): lean 0–2 (leaning in), weight 0–2 (pressed harder), size (a factor). */
+export type InkStyle = { lean: number; weight: number; size: number };
+export type InkRole = 'title' | 'heading' | 'body';
+export type InkList = 'bullet' | 'number' | 'check';
+export type InkHighlight = 'yellow' | 'pink' | 'green' | 'blue';
+/** What the toolbar shows at the caret: the style (of the words there, or of what's typed next) and the line's format. */
+export type InkFormat = InkStyle & {
+  role: InkRole;
+  list: InkList | null;
+  /** the line can be set out as a title, heading or list now (nothing on it is ink yet) */
+  canFormatLine: boolean;
+};
+/** A checklist box on the sheet: the item's line (its paragraph in the text), ticked or not, and where the box is. */
+export type InkCheck = {
+  line: number;
+  /** the item's first glyph id (what a `check` event names) */
+  at: number;
+  checked: boolean;
+  /** which sheet of the page, and the box on it: [x0, y0, x1, y1] in page units from that sheet's top-left (y down) */
+  sheet: number;
+  box: [number, number, number, number];
+};
+const PLAIN: InkStyle = { lean: 0, weight: 0, size: 1 };
+/** how long a centred title waits for its line to be finished before the pen writes what's there (ms) */
+const HOLD_LINE_MS = 1600;
 
 /** The live sheet while someone writes in ink. Plain object state; the caller re-renders after changes. */
 export class InkSession {
@@ -189,11 +232,12 @@ export class InkSession {
   get hovering() { return !!this.view.pending; }
   get full(): boolean { return !!this.sheet.page?.full; }
   /** the thought letters, at the tempo the next word was typed at, so they sit where its ink will */
-  draft() { return this.view.tail ? engine.draftPage(this.sheet, this.view, { haste: this.nextHaste() }) : null; }
+  draft() { return this.view.tail ? engine.draftPage(this.sheet, this.view, { haste: this.nextHaste(), style: this.typingStyle() }) : null; }
 
   edit(e: Edit) {
     // every key keeps the typist's time; a letter or a space typed counts towards the tempo
     if (this.typist) engine.typistKey(this.typist, performance.now(), e.kind === 'type' && !e.del && e.ins.length > 0 && e.ins.length <= 2);
+    if (this.shorthand(e)) { this.lastKey = performance.now(); return; }
     this.planEdit(e);
   }
   private planEdit(e: Edit) {
@@ -231,6 +275,8 @@ export class InkSession {
     const now = performance.now();
     const idle = now - this.lastKey;
     const v = this.view;
+    // a centred title: the pen waits for the whole line (or a pause) to know how long it is (engine lineHeld)
+    if (!final && idle < HOLD_LINE_MS && typeof engine.lineHeld === 'function' && engine.lineHeld(this.sheet, v)) return false;
     let r: { events: unknown[]; view: any };
     if (drawing != null && !final && !v.pending && !v.mid?.text && v.tail) {
       // a word handed over a moment ago may not have reached the drawn pen yet
@@ -384,6 +430,7 @@ export class InkSession {
    * typed at (write.haste), and the tempo of what's still unwritten follows the tail (engine hasteCarry).
    */
   private carry(events: unknown[], next: any) {
+    this.formatCarry(events, next);
     if (!this.typist || typeof engine.hasteCarry !== 'function') return;
     this.tailHaste = engine.hasteCarry(this.sheet, events, this.view?.tail, this.tailHaste, next?.tail, engine.typistHaste(this.typist));
   }
@@ -441,6 +488,198 @@ export class InkSession {
       if (!r.struck && !r.joined) at += String(r.over || r.ch).length;
     }
     return false;
+  }
+
+  // ---------- formatting by hand (engine format.js) ----------
+  /** the style what's typed next is written in */
+  private typing: InkStyle = PLAIN;
+  private typingStyle(): InkStyle | undefined { return this.typing === PLAIN ? undefined : this.typing; }
+  /**
+   * The style for what's typed next: leaning in (lean, ⌘I), pressed harder (weight, ⌘B with no selection), bigger or
+   * smaller (size). Instant: what's typed so far is written first, in the style it was typed in, and every word after
+   * this is written in the new one (each write carries it, so the log keeps it). Returns the style now.
+   */
+  setStyle(s: Partial<InkStyle>): InkStyle {
+    const next = { lean: s.lean ?? this.typing.lean, weight: s.weight ?? this.typing.weight, size: s.size ?? this.typing.size };
+    const n = (typeof engine.styleOf === 'function' ? engine.styleOf(next) : null) as InkStyle | null;
+    const norm = n ?? PLAIN;
+    if (norm.lean === this.typing.lean && norm.weight === this.typing.weight && norm.size === this.typing.size) return this.typing;
+    this.flush();
+    this.typing = norm === PLAIN ? PLAIN : { ...norm };
+    return this.typing;
+  }
+  /**
+   * What the toolbar shows at the caret (a textarea offset; the end by default): the style of the words there, or, at
+   * the end or in what the pen hasn't written yet, of what's typed next; and the line's format.
+   */
+  style(at?: number): InkFormat {
+    const cur = this.text();
+    const o = Math.max(0, Math.min(cur.length, at ?? cur.length));
+    const tailFrom = cur.length - String(this.view.tail ?? '').length;
+    let st: InkStyle = this.typing;
+    const items = (this.page?.items ?? []) as { id?: number; kind: string; line: number; style?: Partial<InkStyle> }[];
+    const itemAt = (k: number) => {
+      if (typeof engine.inkIdsIn !== 'function' || k < 0) return null;
+      const runs = engine.inkIdsIn(this.sheet, this.view, k, k + 1) as [number, number][];
+      const id = runs.length ? runs[0][0] : null;
+      return id == null ? null : items.find((it) => it.id === id && it.kind === 'glyph') ?? null;
+    };
+    const near = o < tailFrom ? itemAt(o > 0 && /\S/.test(cur[o - 1] ?? '') ? o - 1 : o) : null;
+    if (near) st = { lean: near.style?.lean ?? 0, weight: near.style?.weight ?? 0, size: near.style?.size ?? 1 };
+    const line = this.lineAt(cur, o);
+    let role: InkRole = 'body', list: InkList | null = null;
+    if (line.last && typeof engine.lineNow === 'function') {
+      const L = engine.lineNow(this.sheet) as { as: string; list: InkList | null };
+      // a line the pen hasn't begun yet (its Return is still unwritten) is body, or the list's next item
+      const as = line.start > tailFrom ? (L.list ?? 'body') : L.as;
+      if (as === 'title' || as === 'heading') role = as; else if (as !== 'body') list = as as InkList;
+    } else {
+      const it = itemAt(line.start < tailFrom ? line.start : -1);
+      const info = it ? ((this.page?.lineInfo ?? []) as { n: number; fmt?: string; list?: string; role?: string }[]).find((l) => l.n === it.line) : null;
+      if (info?.fmt === 'title' || info?.fmt === 'heading') role = info.fmt;
+      else if (info?.list) list = info.list as InkList;
+    }
+    return { ...st, role, list, canFormatLine: this.canFormat(cur, line) };
+  }
+  /**
+   * Title, Heading or Body for the line at the caret (a textarea offset; the end by default). Instant on a line with no
+   * ink on it yet (empty, or only typed): what's typed before it is written first, then the line is set out the
+   * writer's own way, and what's typed on it is written that way. A title the writer underlines is underlined when
+   * Return ends it; a centred one waits for the whole line. false, with nothing changed: the line is already in ink.
+   */
+  setRole(role: InkRole, at?: number): boolean { return this.formatLine(role === 'title' || role === 'heading' ? role : 'body', at); }
+  /**
+   * A list for the line at the caret, and the lines after it (Return goes on to the next item; Return on an empty item
+   * ends the list): bullets, numbers or a checklist, each the writer's own. null: no list (body). Numbers never
+   * renumber: they're ink. false, with nothing changed: the line is already in ink.
+   */
+  setList(kind: InkList | null, at?: number): boolean { return this.formatLine(kind ?? 'body', at); }
+  /**
+   * The checklist's boxes on the current sheet: each item's line (its paragraph in the text), ticked or not, and where
+   * its box is (for a click on it). Unticked in ink, a box is scribbled out and a fresh one drawn beside it: `box` is the
+   * one in use.
+   */
+  checks(): InkCheck[] {
+    const boxes = (this.page?.boxes ?? []) as { at: number; box: [number, number, number, number]; checked: boolean }[];
+    if (!boxes.length) return [];
+    const sheetU = Number((this.opts as { sheet?: { height?: number } }).sheet?.height) || 0;
+    // each item's paragraph: the line breaks before its first letter in the text as it reads
+    const para = new Map<number, number>();
+    let n = 0;
+    for (const r of (this.sheet.reader?.recs ?? []) as { id: number; ch: string; over?: string; struck?: unknown; joined?: boolean }[]) {
+      para.set(r.id, n);
+      if (!r.struck && !r.joined && (r.over || r.ch) === '\n') n++;
+    }
+    return boxes.map((b) => {
+      const sheet = sheetU > 0 ? Math.max(0, Math.floor(((b.box[1] + b.box[3]) / 2) / sheetU)) : 0;
+      const box: InkCheck['box'] = [b.box[0], b.box[1] - sheet * sheetU, b.box[2], b.box[3] - sheet * sheetU];
+      return { line: para.get(b.at) ?? -1, at: b.at, checked: b.checked, sheet, box };
+    }).filter((c) => c.line >= 0);
+  }
+  /**
+   * Tick a checklist item, or untick it (`line`: its paragraph in the text, as checks() gives it, or the caret's line).
+   * The pen goes back to the box and ticks it the writer's way; unticking in ink scribbles the tick out. Wet, it lifts
+   * with Undo (liftMark). false: no box on that line.
+   */
+  toggleCheck(line: number): boolean {
+    let b = this.checks().find((c) => c.line === line);
+    // an item still in thought letters has no box yet: what's typed is written first (its box with it)
+    if (!b && this.waiting) { this.flush(); b = this.checks().find((c) => c.line === line); }
+    if (!b) return false;
+    this.inked([{ t: 'check', at: b.at }]);
+    return true;
+  }
+  /**
+   * The highlighter over textarea offsets [from, to): a felt swipe under the words, line by line, in fluorescent ink.
+   * It's kept beside the ink (page.highlights), and drawn under it: inkHighlights() for the live page, renderSVG for
+   * exports. Everything typed is written first. false: no ink there.
+   */
+  highlight(from: number, to: number, color: InkHighlight = 'yellow'): boolean {
+    this.flush();
+    if (typeof engine.inkIdsIn !== 'function') return false;
+    const runs = engine.inkIdsIn(this.sheet, this.view, from, to) as [number, number][];
+    if (!runs.length) return false;
+    this.inked(runs.map(([a, b]) => ({ t: 'highlight', from: a, to: b, color })));
+    return true;
+  }
+  /** Undo a tick, an untick or a highlight while it's wet (a command's events go together). false: none, or dry. */
+  liftMark(): boolean {
+    if (this.waiting || !this.wet) return false;
+    const log = this.doc.log as { t?: string }[];
+    const kind = log[log.length - 1]?.t;
+    if (kind !== 'check' && kind !== 'highlight') return false;
+    const at = this.inkedAt[log.length - 1];
+    let n = 0;
+    while (n < 64 && log.length && this.inkedAt[log.length - 1] === at && log[log.length - 1]?.t === kind) {
+      this.sheet = engine.dropLast(this.sheet);
+      this.inkedAt.length = this.doc.log.length;
+      n++;
+    }
+    return n > 0;
+  }
+  /** the text's line around offset o: where it starts and ends, and whether it's the last */
+  private lineAt(cur: string, o: number) {
+    const start = cur.lastIndexOf('\n', o - 1) + 1;
+    const nl = cur.indexOf('\n', o);
+    return { start, end: nl < 0 ? cur.length : nl, last: nl < 0 };
+  }
+  /** whether a line can be set out in a format now: the last line, nothing on it ink yet, not the P.S. */
+  private canFormat(cur: string, line: { start: number; last: boolean }): boolean {
+    if (typeof engine.lineNow !== 'function' || !line.last || this.view.mid?.text || this.view.pending) return false;
+    const tailFrom = cur.length - String(this.view.tail ?? '').length;
+    if (line.start < tailFrom) return false;
+    const L = engine.lineNow(this.sheet) as { format: boolean; ps: boolean };
+    return !L.ps && (line.start > tailFrom || L.format);
+  }
+  /** the line at `at` set out as `as` (a `line` event), the pen first catching up to where it starts */
+  private formatLine(as: string, at?: number): boolean {
+    const cur = this.text();
+    const line = this.lineAt(cur, Math.max(0, Math.min(cur.length, at ?? cur.length)));
+    if (!this.canFormat(cur, line)) return false;
+    const tailFrom = cur.length - String(this.view.tail ?? '').length;
+    if (line.start > tailFrom) this.writeUpTo(line.start - tailFrom);
+    const L = engine.lineNow(this.sheet) as { as: string; format: boolean };
+    if (!L.format) return false;
+    if (L.as !== as) this.inked([{ t: 'line', as }]);
+    this.lastKey = performance.now();
+    return true;
+  }
+  /** the pen writes the first n units of what's typed now (up to a line's start), the rest still waits */
+  private writeUpTo(n: number) {
+    const tail = String(this.view.tail ?? '');
+    const r = engine.penStep(this.sheet, { ...this.view, tail: tail.slice(0, n) }, { final: true });
+    r.view = { ...r.view, tail: String(r.view.tail ?? '') + tail.slice(n) };
+    this.carry(r.events, r.view);
+    this.view = r.view;
+    if (r.events.length) this.inked(r.events);
+  }
+  /**
+   * Shorthand at the start of a line, as in Notes: `# ` a title, `## ` a heading, `- ` or `* ` bullets, `[] ` or `[ ] ` a
+   * checklist, `1. ` numbers. Only on a line nothing is inked on yet: the shorthand is never written, the line is set out.
+   * And Return on an empty list item ends the list there (the line becomes body; the Return isn't typed). true: taken.
+   */
+  private shorthand(e: Edit): boolean {
+    if (e.del || e.kind !== 'type' || typeof engine.lineNow !== 'function') return false;
+    const cur = this.text();
+    if (e.at !== cur.length) return false;
+    if (e.ins === '\n') {
+      if (!cur.endsWith('\n')) return false;
+      const L = engine.lineNow(this.sheet) as { list: string | null };
+      return !!L.list && this.formatLine('body');
+    }
+    if (e.ins !== ' ') return false;
+    const line = this.lineAt(cur, cur.length);
+    const head = cur.slice(line.start);
+    const as = head === '#' ? 'title' : head === '##' ? 'heading' : head === '-' || head === '*' ? 'bullet'
+      : /^\[ ?\]$/.test(head) ? 'check' : /^1[.)]$/.test(head) ? 'number' : null;
+    if (!as || !this.canFormat(cur, line)) return false;
+    this.planEdit({ ...e, at: line.start, del: head.length, ins: '', kind: 'delete' });
+    return this.formatLine(as) || true;
+  }
+  /** the writes about to go down carry the typing's style; a centred line's first piece, the rest of its line */
+  private formatCarry(events: unknown[], next: any) {
+    if (typeof engine.styleCarry === 'function' && this.typing !== PLAIN) engine.styleCarry(this.sheet, events, this.typing);
+    if (typeof engine.lineCarry === 'function') engine.lineCarry(this.sheet, events, next?.tail);
   }
   private inked(events: unknown[]) {
     if (!events.length) return;
