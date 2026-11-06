@@ -3,6 +3,7 @@
 import { Composition } from 'remotion';
 import { InkDemo, inkDemoSchema } from './InkDemo';
 import { HandLab, handLabSchema } from './HandLab';
+import { TakeHands, takeHandsMetadata, takeHandsSchema } from './TakeHands';
 import session from './data/ink-session.json';
 
 export const RemotionRoot: React.FC = () => (
@@ -28,6 +29,8 @@ export const RemotionRoot: React.FC = () => (
       fps={30}
       durationInFrames={(session as any).frames.length}
     />
+    {/* a recorded take (recorder/, npm run take): his face, his hands, then the ghost hands copying them */}
+    <Composition id="TakeHands" component={TakeHands as any} schema={takeHandsSchema} defaultProps={{ handLook: 'ghost' as const }} calculateMetadata={takeHandsMetadata as any} width={1080} height={1080} fps={30} durationInFrames={30} />
     {/* the ghost hands on their own, one still: their shape ('clay') or their glass ('ghost') */}
     <Composition id="HandLab" component={HandLab} schema={handLabSchema} defaultProps={{ moment: 'rest', look: 'clay', scale: 0.75 }} width={1080} height={1080} fps={30} durationInFrames={1} />
   </>

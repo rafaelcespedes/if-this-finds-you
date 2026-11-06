@@ -4,3 +4,5 @@ public/take/
 src/data/take-session.json
 .venv-track/
 src/data/hand-track.json
+src/data/take-keyboard.json
+src/data/hand-3d.json

@@ -140,6 +140,18 @@ clock, while a phone films your hands from above.
    model from `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task`
    saved as `.venv-track/models/hand_landmarker.task`.
 
+5. Map the video onto the keyboard and find which finger pressed each key: pick the centres of the letter and number
+   keys on a clean frame of the turned video (no hands over them) into `src/data/take-keyboard.json` (key code →
+   pixel), then `.venv-track/bin/python scripts/hands-3d.py`. It fits the MacBook's layout (`src/macbook.ts`) to them
+   (to about a pixel), works out the phone's lens and where it was, and writes `src/data/hand-3d.json`.
+6. `npm run take:pose` turns that into the ghost hands' motion: each hand where his is, turned his way, each fingertip
+   where his fingertip is, and each key pressed by the finger that pressed it, where he hit it. It writes
+   `public/take/pose.json` and a copy of the take's writing; copy the phone's video, turned upright, to
+   `public/take/hands.mp4`.
+7. `npm run draft:take` renders the video (`TakeHands`): your face, the move down to your hands, then your hands
+   shrinking to the side while the ghost hands write the letter on your keyboard. The cut points are at the top of
+   `src/TakeHands.tsx`.
+
 The recorder and the scripted session share one clock (`src/ink-run.ts`): a keystroke at the same moment gives the
 same ink in both. The phone's video of your hands is what the ghost hands will follow; its sound carries the
 recorder's beeps and your key clicks, which line it up with the take.
@@ -152,6 +164,10 @@ recorder's beeps and your key clicks, which line it up with the take.
 | `src/keyboard.ts` | The keyboard's layout (and its canvas drawing, for the version with hands). |
 | `src/hands/` | The ghost hands: the model's skeleton and pose solver (`rig.ts`), its smoothed skin (`mesh.ts`), where the hands rest and which finger takes which key (`home.ts`), the typing motion (`plan.ts`), and the glass and its shadow (`ghost.ts`, `shadow.ts`, `view.ts`). |
 | `src/HandLab.tsx` | One still of the hands, to judge them on their own. |
+| `src/TakeHands.tsx` | The video of a recorded take: face, hands, then the ghost hands copying them over the letter. |
+| `src/macbook.ts`, `src/macbook-draw.ts` | The 16-inch MacBook Pro's keyboard and trackpad in millimetres, and their drawing. |
+| `src/ink-view.ts` | The writing of any session on the paper at a moment (InkDemo's drawing, for takes). |
+| `scripts/hands-3d.py`, `scripts/take-pose.ts` | A take's tracked hands onto the keyboard, then onto the ghost hands. |
 | `src/data/hand-pose.json` | The hands' recorded motion. Written by `npm run hands`. |
 | `scripts/hand-session.ts` | The recorder for the hands' motion. |
 | `public/hands/` | The hand models, with their licence (MIT). |

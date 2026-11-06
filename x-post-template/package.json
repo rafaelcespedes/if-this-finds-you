@@ -15,6 +15,9 @@
     "render": "remotion render src/index.ts InkDemo out/x-post-1080.mp4",
     "draft:hands": "remotion render src/index.ts InkDemoHands out/draft-hands-540.mp4 --scale=0.5 --crf=24",
     "render:hands": "remotion render src/index.ts InkDemoHands out/x-post-hands-1080.mp4",
+    "take:pose": "node scripts/node-ts.mjs scripts/take-pose.ts",
+    "draft:take": "remotion render src/index.ts TakeHands out/draft-take-hands-540.mp4 --scale=0.5 --crf=24",
+    "render:take": "remotion render src/index.ts TakeHands out/take-hands-1080.mp4",
     "still": "remotion still src/index.ts InkDemo out/still.png --frame=1180"
   },
   "dependencies": {
