@@ -365,18 +365,35 @@ window.addEventListener('pointermove', (e) => {
   logPointer(e, 'm');
   if (drag && phase === 'recording') { const p = onSheet(e); drag.b = hit(p.x, p.y); }
 }, true);
-$('desk').addEventListener('pointerdown', (e) => {
-  logPointer(e, 'd');
+// clicks as on a Mac: one puts the caret there (or drags a selection), two select the word, three the paragraph
+$('desk').addEventListener('pointerdown', (e) => logPointer(e, 'd'));
+window.addEventListener('pointerup', (e) => logPointer(e, 'u'), true);
+$('desk').addEventListener('mousedown', (e) => {
   if (phase !== 'recording' || e.button !== 0) return;
   e.preventDefault();
   focusSink();
+  goalX = null; anchor = null;
   const p = onSheet(e);
   const o = hit(p.x, p.y);
+  if (e.detail >= 2) {
+    drag = null;
+    lastKeyAt = T();
+    const text = run.text();
+    let a = o, b = o;
+    if (e.detail === 2) {
+      while (a > 0 && /[\p{L}\p{N}'’-]/u.test(text[a - 1])) a--;
+      while (b < text.length && /[\p{L}\p{N}'’-]/u.test(text[b])) b++;
+    } else {
+      a = text.lastIndexOf('\n', o - 1) + 1;
+      b = text.indexOf('\n', o);
+      if (b < 0) b = text.length;
+    }
+    if (b > a) doAct({ key: 'select', at: a, to: b });
+    return;
+  }
   drag = { a: o, b: o };
-  goalX = null; anchor = null;
 });
-window.addEventListener('pointerup', (e) => {
-  logPointer(e, 'u');
+window.addEventListener('mouseup', (e) => {
   if (!drag || phase !== 'recording') { drag = null; return; }
   const p = onSheet(e);
   drag.b = hit(p.x, p.y);
@@ -386,16 +403,6 @@ window.addEventListener('pointerup', (e) => {
   if (a === b) doAct({ key: 'click', at: a });
   else doAct({ key: 'select', at: Math.min(a, b), to: Math.max(a, b) });
 }, true);
-$('desk').addEventListener('dblclick', (e) => {
-  if (phase !== 'recording') return;
-  const p = onSheet(e);
-  const text = run.text();
-  const o = hit(p.x, p.y);
-  let a = o, b = o;
-  while (a > 0 && /[\p{L}\p{N}'’-]/u.test(text[a - 1])) a--;
-  while (b < text.length && /[\p{L}\p{N}'’-]/u.test(text[b])) b++;
-  if (b > a) doAct({ key: 'select', at: a, to: b });
-});
 
 // ---------- the camera ----------
 let stream: MediaStream | null = null;
@@ -466,6 +473,7 @@ function beep(at: number, hz: number, dur: number, what: string) {
 
 // ---------- start, finish, save ----------
 async function start() {
+  if (!stream && !window.confirm('The camera is off, so your face won’t be in this take. Start anyway?')) return;
   audio ??= new AudioContext({ latencyHint: 'interactive' });
   await audio.resume();
   // a moment for the sound to start running, so its timing and its delay to the speakers are known
@@ -528,6 +536,7 @@ async function save(face: Blob | null) {
     go: GO, end: END,
     beeps, acts, keys, pointer,
     camera: face ? { file: `face.${ext}`, mime: camMime, startedAt: camStart, settings: camSettings } : null,
+    cameraNote: $('camState').textContent,
     // what this page wrote, so the replay can check it writes the same
     check: { text: result.text, events: result.events.length, states: result.states.length, hash: hash(JSON.stringify(result.events)) },
   };
