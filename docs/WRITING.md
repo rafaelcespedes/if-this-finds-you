@@ -145,9 +145,10 @@ The thinking behind it, with prior art and the studies it draws on:
 Some things we know aren't right yet, and ideas we haven't built. Each has an issue to pick up
 ([all of them](https://github.com/rafaelcespedes/if-this-finds-you/issues?q=is%3Aopen+label%3Awriting)):
 
-- **One clock, not two.** The engine releases letters at its pace and the drawn pen draws at its own, so they drift.
-  Ink can trickle in after you stop, and a word can become ink a moment before it looks like ink. The pen on screen
-  should be the clock.
+- **Pencilled formatting.** A line already in ink can't be made a title or leaned: the ink is dry. A pencilled note
+  in the margin that the fair copy carries out would keep every control meaningful (see `FormatPanel.tsx`).
+- **Clean, with everything.** Titles, lists, leaning and the highlighter are written in ink for now; in Clean, only
+  underlining and pressing harder.
 - **Phones.** Autocorrect replaces whole words after the pen has written them. A held Backspace is now read from how
   fast deletions arrive, which wants checking on real phones.
 - **Pauses leave a mark.** Stop mid-sentence and the nib rests on the paper; a dot of ink spreads while you think
