@@ -20,6 +20,13 @@ export interface Edit {
   t: number;
   /** where it came from */
   source: 'paper' | 'plain';
+  /** the browser's inputType, when it said (a Backspace is 'deleteContentBackward', a forward Delete '…Forward') */
+  input?: string;
+  /**
+   * Which side of a crossed-out word the caret was on, when it was put before it (an arrow key: Ink mode keeps both
+   * sides of a struck word, which the text doesn't have, as one offset). Absent: after it, where it's left.
+   */
+  side?: 'before' | 'after';
 }
 
 export function kindOf(inputType: string | undefined, composing: boolean): InputKind {

@@ -188,9 +188,11 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     onTypedRef.current();
     if (e.del) hintsRef.current.used('select');
     if (e.ins && e.at < before.length && typeof s.insertsAbove === 'function' && s.insertsAbove(e.at)) hintsRef.current.used('above');
-    s.edit(e);
+    // (the writer may not do quite what the textarea did: Backspace over a written space goes on to the word before)
+    const caretTo = s.edit(e);
     undoHistory.record(before, s.text(), e);
     sync();
+    if (caretTo != null) requestAnimationFrame(() => editor.current?.setSelection(caretTo));
   }, [undoHistory, sync, hold]);
 
   // Undo takes back what the pen hasn't written yet, and lifts wet ink; dry ink stays, but a word crossed out (and

@@ -1080,6 +1080,27 @@ export function inkIdsIn(st, view, from, to) {
   return idRuns(ids);
 }
 
+// Backspace over a space the pen has written. A space has no ink: a press that only took it would show nothing, and
+// leave a crossing-out of nothing behind. So the press goes on to the word before: at the pen head the space goes with
+// that word's last letter (they're struck together, as a word is struck with its space); mid-text the space stays, and
+// the letter before it is struck. `edit`: the Backspace (one unit of viewText deleted, nothing typed). Returns { edit,
+// caret }: the edit to plan instead, and the view offset the caret is left at (right after what it struck), or null
+// when it isn't one (not a written space, or no written word before it on its line).
+export function backOverSpace(st, view, edit) {
+  if (!edit || edit.ins || (edit.del | 0) !== 1) return null;
+  const R = st.reader, m = viewMap(R, view || newView());
+  const at = edit.at | 0, u = m.units[at];
+  const ch = u && u.k === 'ink' && !u.half ? (R.byId.get(u.id) || {}).ch : null;
+  if (!ch || !/^[ \t]$/.test(ch)) return null;
+  let k = at - 1;
+  while (k >= 0 && m.units[k].k === 'ink' && /^[ \t]$/.test(m.text[k])) k--;
+  const w = k >= 0 ? m.units[k] : null;
+  if (!w || w.k !== 'ink' || /\s/.test(m.text[k])) return null;
+  const k0 = w.half ? k - 1 : k; // (both halves of a surrogate pair)
+  const head = !m.units.slice(at + 1).some((x) => x.k === 'ink' || x.k === 'mid');
+  return { edit: Object.assign({}, edit, { at: k0, del: head ? at + 1 - k0 : k + 1 - k0 }), caret: k0 };
+}
+
 // ---------- the pen (§3.2): what can be written now ----------
 // opts: { dt (ms since the last step; omit = no speed limit), idle (ms since the last keystroke),
 //   forgiving (default true: hold back the last 2 characters until 700 ms idle), touch (hold back the

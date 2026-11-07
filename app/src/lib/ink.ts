@@ -477,10 +477,21 @@ export class InkSession {
   private assembled: { list: { pg: any }[]; draft: any } | null = null;
   private whole: { page: unknown; key: string; draft: any } | null = null;
 
-  edit(e: Edit) {
+  /**
+   * An edit to what's typed (the textarea). Returns the textarea offset to put the caret at when the writer didn't do
+   * quite what the textarea did (Backspace over a written space goes on to the word before it, engine backOverSpace),
+   * else null: the caret stays where the edit left it.
+   */
+  edit(e: Edit): number | null {
     // every key keeps the typist's time; a letter or a space typed counts towards the tempo
     if (this.typist) engine.typistKey(this.typist, performance.now(), e.kind === 'type' && !e.del && e.ins.length > 0 && e.ins.length <= 2);
-    if (this.shorthand(e)) { this.lastKey = performance.now(); return; }
+    if (this.shorthand(e)) { this.lastKey = performance.now(); return null; }
+    // Backspace over a space the pen has written: a space has no ink, so the press goes on to the word before
+    let caret: number | null = null;
+    if (e.kind === 'delete' && (!e.input || e.input === 'deleteContentBackward') && typeof engine.backOverSpace === 'function') {
+      const w = engine.backOverSpace(this.sheet, this.view, e) as { edit: { at: number; del: number }; caret: number } | null;
+      if (w) { e = { ...e, at: w.edit.at, del: w.edit.del }; caret = w.caret; }
+    }
     const tail0 = String(this.view.tail ?? '').length, mid0 = String(this.view.mid?.text ?? '').length;
     this.planEdit(e);
     // a paste (more than COPY_FROM letters at once, at the end or above the line): copied out, within COPY_S
@@ -488,6 +499,7 @@ export class InkSession {
     if (tailGrew > COPY_FROM) this.copyLeft += tailGrew;
     if (tailGrew > COPY_FROM || midGrew > COPY_FROM) this.copyUntil = Math.max(this.copyUntil, performance.now() + COPY_S * 1000);
     if (!this.view.tail) this.copyLeft = 0;
+    return caret;
   }
   /** a copy-out: letters of a paste still to hand to the pen (at the end), and when it's to be done (ms) */
   private copyLeft = 0;
@@ -640,9 +652,9 @@ export class InkSession {
    * How hard the crossed-out word at textarea offset `at` is crossed out (1 struck … 4 inked out), or null when there's
    * none there (engine again(), asked without doing it): for the "⌫ again" note, and the ghost of the next press.
    */
-  struckLevel(at: number): number | null {
+  struckLevel(at: number, side?: Side): number | null {
     if (typeof engine.again !== 'function') return null;
-    const r = engine.again(this.sheet, this.view, at) as { events: unknown[]; level: number } | null;
+    const r = engine.again(this.sheet, this.view, at, side ? { side } : undefined) as { events: unknown[]; level: number } | null;
     return r ? (r.events.length ? r.level - 1 : r.level) : null;
   }
   /**
@@ -751,9 +763,9 @@ export class InkSession {
    * harder: a heavier strike, a scribble, then inked out (engine again()). null: no struck word there, or the
    * engine can't. `level` is the word's level now; `max` when it was already inked out and nothing was drawn.
    */
-  again(at: number): { level: number; max: boolean } | null {
+  again(at: number, side?: Side): { level: number; max: boolean } | null {
     if (typeof engine.again !== 'function') return null;
-    const r = engine.again(this.sheet, this.view, at);
+    const r = engine.again(this.sheet, this.view, at, side ? { side } : undefined);
     if (!r) return null;
     this.view = r.view;
     if (r.events.length) this.inked(r.events);
@@ -1133,22 +1145,23 @@ export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen
   const mid = view?.mid?.text ? (view.mid as { after: number; text: string }) : null;
   const tail = String(view?.tail ?? '');
   const toPaper: number[] = [];
-  let g = 0, midDone = false, pendAt = -1;
+  let g = 0, midDone = false;
   const putMid = () => { if (mid && !midDone) { for (let j = 0; j < mid.text.length; j++) toPaper.push(g); midDone = true; } };
   if (mid && mid.after < 0) putMid();
   for (const r of recs) {
     if (!r.struck && !r.joined) {
       const c = r.over || r.ch;
-      if (pending.has(r.id)) { if (pendAt < 0) pendAt = g; }
-      else for (let j = 0; j < c.length; j++) toPaper.push(g + j);
+      if (!pending.has(r.id)) for (let j = 0; j < c.length; j++) toPaper.push(g + j);
       g += c.length;
     }
     if (mid && mid.after === r.id) putMid();
   }
   putMid(); // its anchor isn't in this sheet's text: where it was typed (the end)
   for (let j = 0; j < tail.length; j++) toPaper.push(g + j);
-  // the end: after the thought letters; with only a pending fix, where the Backspaces reached
-  toPaper.push(tail.length ? g + tail.length : pendAt >= 0 ? pendAt : g);
+  // the end: after the thought letters. With a fix pending (letters Backspaced at the pen head, still on the paper while
+  // the writer considers it), still after them: that's where the pen carries on once it has struck them, so the caret
+  // never jumps forward over the word when the strike lands (and never back over a blot as the next press begins)
+  toPaper.push(g + tail.length);
   return { toPaper, paperLen: g + tail.length };
 }
 
