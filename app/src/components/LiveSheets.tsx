@@ -17,7 +17,7 @@ import { PaperCanvas } from '@/components/PaperCanvas';
 import { sheetPaper, sheetShadow } from '@/lib/papers';
 import { SheetMarks } from '@/components/SheetView';
 import { sheetFrame, sheetOfLine, type Live } from '@/lib/live';
-import { scopeIds } from '@/lib/writing';
+import { scopeIds, edgeForScreen } from '@/lib/writing';
 import { GHOST_OPACITY, INK_THOUGHT, THOUGHT_FILL, WET_LOOK, eventLift, inkDarkens, inkGhost, wetNext, wetStep, type InkExtras, type ThoughtWord } from '@/lib/ink';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -158,6 +158,8 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
       const d = dryHosts[s], w = wetHosts[s];
       if (d) { d.innerHTML = scopeIds(f.open + f.close, 'D' + s); drys.current[s] = d.querySelector('svg') as SVGSVGElement; }
       if (w) { w.innerHTML = scopeIds(f.open + f.close, 'W' + s); wets.current[s] = w.querySelector('svg') as SVGSVGElement; }
+      // a touch screen keeps the ink's rough edge off, so a pinch doesn't blur it (lib/writing.ts EDGE_OFF)
+      edgeForScreen(svgs.current[s]); edgeForScreen(drys.current[s]); edgeForScreen(wets.current[s]);
     });
     svgs.current.length = hosts.length;
     drys.current.length = dryHosts.length;
