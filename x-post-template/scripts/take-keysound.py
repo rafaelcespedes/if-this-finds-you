@@ -4,11 +4,15 @@
 # cleanest of them (nothing else near, well above the room's hiss) are cut out, cleaned and evened out into a small
 # bank by kind (letters, the space bar, the big keys, keys coming up, the trackpad), and one from the bank is laid
 # down at every moment in the log. So the keys are heard loud and clear, exactly when they happen, over silence.
-#   .venv-track/bin/python scripts/take-keysound.py "<phone video>" [--clip out/keysound-clip.wav]
+# Or, with --like and --pad, the bank comes from recordings of the same keyboard instead (Freesound, CC0: a 2021
+# MacBook Pro's keys, "Typing on Laptop Keyboard #2" by justamudkip, 853602; a MacBook Pro's trackpad by neilraouf,
+# 467490): their single clicks found by their onsets, sorted into keys going down (the deepest of them for the space
+# bar and the big keys), keys coming up, and the trackpad's press and release.
+#   .venv-track/bin/python scripts/take-keysound.py "<phone video>" [--like typing.mp3 --pad trackpad.mp3] [--clip out/keysound-clip.wav]
 # Writes public/take/keys.wav (on the phone video's clock: take time = its time + the tracker's offset).
 import argparse, json, os, subprocess, tempfile, wave
 import numpy as np
-from scipy.signal import butter, sosfiltfilt, stft, istft
+from scipy.signal import butter, sosfiltfilt, stft, istft, find_peaks
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SR = 48000
@@ -26,11 +30,55 @@ def kind(e):
     if e['e'] == 'u': return 'up'
     return BIG.get(e['code'], 'key')
 
+def onsets(x, rel=8):
+    """the clicks in a recording: each onset (sample), its loudness over the floor, and its brightness (Hz)"""
+    h = sosfiltfilt(butter(4, 200, 'hp', fs=SR, output='sos'), x)
+    env = np.sqrt(np.convolve(h ** 2, np.ones(48) / 48, 'same')); fl = np.median(env)
+    pk, pr = find_peaks(env, height=rel * fl, distance=int(0.035 * SR))
+    F = np.fft.rfftfreq(1200, 1 / SR); out = []
+    for p, v in zip(pk, pr['peak_heights']):
+        seg = env[max(0, p - int(0.02 * SR)):p + 1]
+        on = max(0, p - len(seg) + 1 + int(np.argmax(seg > 0.2 * v)))
+        m = np.abs(np.fft.rfft(x[on:on + 1200] * np.hanning(len(x[on:on + 1200])), 1200))
+        out.append((on, v / fl, float((F * m).sum() / m.sum())))
+    return out
+
+def cut(x, on, until, L):
+    """one click from its onset: up to L long, ending before the next one, faded out"""
+    n = min(L, until - on + int(0.004 * SR) - int(0.003 * SR)) if until else L
+    s = x[max(0, on - int(0.004 * SR)):max(0, on - int(0.004 * SR)) + n].astype(np.float32).copy()
+    tail = min(len(s) // 2, int(0.025 * SR))
+    s[-tail:] *= np.linspace(1, 0, tail) ** 2; s[:48] *= np.linspace(0, 1, 48)
+    return np.pad(s, (0, L - len(s)))
+
+def bank_like(like, pad, L, tmp):
+    bank = {}
+    def load(p):
+        w = os.path.join(tmp, os.path.basename(p) + '.wav'); ff('-i', os.path.expanduser(p), '-ac', '1', '-ar', str(SR), '-c:a', 'pcm_s16le', w); return read(w)
+    x = load(like); o = onsets(x)
+    starts = [q[0] for q in o] + [len(x)]
+    downs = [(i, q) for i, q in enumerate(o) if q[1] > 40]
+    loud = sorted(q[1] for _, q in downs); top = loud[int(0.95 * len(loud))]
+    clean = [(i, q) for i, q in downs if q[1] < top and starts[i + 1] - q[0] > int(0.06 * SR)]
+    br = sorted(q[2] for _, q in clean); deep = br[int(0.2 * len(br))]
+    bank['space'] = [cut(x, q[0], starts[i + 1], L) for i, q in clean if q[2] <= br[int(0.08 * len(br))]][:8]
+    bank['big'] = [cut(x, q[0], starts[i + 1], L) for i, q in clean if br[int(0.08 * len(br))] < q[2] <= deep][:10]
+    bank['key'] = [cut(x, q[0], starts[i + 1], L) for i, q in clean if q[2] > deep][::3][:14]
+    ups = [(i, q) for i, q in enumerate(o) if 10 < q[1] < 25 and any(0.05 * SR < q[0] - d[0] < 0.16 * SR for _, d in downs)]
+    bank['up'] = [cut(x, q[0], starts[i + 1], L) for i, q in ups if starts[i + 1] - q[0] > int(0.05 * SR)][::2][:12]
+    y = load(pad); o = onsets(y); starts = [q[0] for q in o] + [len(y)]
+    press = [i for i, q in enumerate(o) if q[1] > 400]
+    bank['pad-d'] = [cut(y, o[i][0], starts[i + 1], L) for i in press]
+    bank['pad-u'] = [cut(y, o[j][0], starts[j + 1], L) for i in press for j in range(i + 1, min(i + 4, len(o))) if 100 < o[j][1] < 400 and o[j][0] - o[i][0] < 0.25 * SR][:6]
+    return bank
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('video')
     ap.add_argument('--clip', help='also write a stretch of it to listen to (video seconds 8 to 30)')
     ap.add_argument('--seed', type=int, default=7)
+    ap.add_argument('--like', help="a recording of the keyboard's typing to take the keys' sounds from")
+    ap.add_argument('--pad', help="a recording of the trackpad's clicks (with --like)")
     a = ap.parse_args()
     tmp = tempfile.mkdtemp(); raw = os.path.join(tmp, 'raw.wav')
     ff('-i', os.path.expanduser(a.video), '-vn', '-ac', '1', '-ar', str(SR), '-c:a', 'pcm_s16le', raw)
@@ -71,9 +119,13 @@ def main():
         bank.setdefault(kind(e), []).append((peak / floor, snd, (on - c) / SR))
     for k in bank: bank[k] = sorted(bank[k], key=lambda q: -q[0])[:10]
     lat = np.median([q[2] for v in bank.values() for q in v])
-    print('the bank:', {k: len(v) for k, v in bank.items()}, f'(sounds start {lat * 1000:.0f} ms from the logged moment)')
+    print('his own clicks:', {k: len(v) for k, v in bank.items()}, f'(sounds start {lat * 1000:.0f} ms from the logged moment)')
+    if a.like:
+        ref = bank_like(a.like, a.pad, L, tmp)
+        bank = {k: [(1, s, 0) for s in v] for k, v in ref.items() if v}
+        print('the bank, from the reference recordings:', {k: len(v) for k, v in bank.items()})
     # even them out: each kind at its own level, every sound in it at the same loudness
-    LEVEL = {'key': 1.0, 'space': 1.05, 'big': 1.0, 'up': 0.4, 'pad-d': 0.8, 'pad-u': 0.55}
+    LEVEL = {'key': 1.0, 'space': 1.1, 'big': 1.0, 'up': 0.35, 'pad-d': 0.9, 'pad-u': 0.6}
     for k, v in bank.items():
         bank[k] = [s / (np.sqrt(np.mean(s[: int(0.03 * SR)] ** 2)) + 1e-9) * LEVEL.get(k, 0.8) for _, s, _ in v]
     fallback = {'space': 'big', 'big': 'key', 'up': None, 'pad-d': 'key', 'pad-u': 'up'}
