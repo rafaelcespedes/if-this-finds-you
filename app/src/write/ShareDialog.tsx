@@ -1,7 +1,10 @@
-// Share: the note as a picture to post (share.ts makes it). A preview, its shape, then Post on X, Copy image, Save.
+// Share: the note as a picture to post (share.ts makes it). A preview, its shape, then Post on X, Copy picture, Save.
 // X's post link can fill in words and a link but can't carry a picture, so Post on X is two moves made one: on a phone
-// the share sheet with the picture in it (pick X); on a computer the picture goes on the clipboard and X's post box
-// opens with the words in, for a ⌘V. Made on this device; the post links to the writing page, not to the note.
+// the share sheet with the picture in it (pick X); on a computer the picture is copied and X's post box opens with the
+// words in, to paste it into. Made on this device and kept nowhere; the post links to the writing page, not the note.
+//
+// Each opening starts clean: the pictures belong to the note as it is now, never to the note shared before (a stale
+// one was briefly postable, QA 7 Nov). While a shape's picture is made, the last one stays, dimmed, and can't be used.
 import { useEffect, useRef, useState } from 'react';
 import { Dialog } from 'radix-ui';
 import { toast } from 'sonner';
@@ -25,90 +28,117 @@ function XMark() {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** the note's sheets, painted (asked for each time it opens: the note may have changed) */
-  sheets: () => Promise<SheetShot[]>;
+  /** the note's first sheet, painted, and how many sheets it has (asked for each time it opens) */
+  sheets: () => Promise<{ shots: SheetShot[]; total: number }>;
   writer: string;
   fileName: string;
   coarse: boolean;
   mod: string;
 }
+type Pic = { blob: Blob; url: string };
 
 export function ShareDialog({ open, onOpenChange, sheets, writer, fileName, coarse, mod }: Props) {
   const [shape, setShapeNow] = useState<ShareShape>(() => {
     try { const s = localStorage.getItem(SHAPE_KEY); return SHARE_SHAPES.some((x) => x.id === s) ? (s as ShareShape) : 'square'; } catch { return 'square'; }
   });
-  const setShape = (s: ShareShape) => { setShapeNow(s); try { localStorage.setItem(SHAPE_KEY, s); } catch { /* not kept */ } };
-  const [shots, setShots] = useState<SheetShot[] | null>(null);
-  const [pic, setPic] = useState<{ blob: Blob; url: string; shape: ShareShape } | null>(null);
+  const [source, setSource] = useState<{ shot: SheetShot; total: number } | null>(null);
+  const [pics, setPics] = useState<Partial<Record<ShareShape, Pic>>>({});
+  const [last, setLast] = useState<Pic | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
-  const urlRef = useRef<string | null>(null);
+  const setShape = (s: ShareShape) => { setShapeNow(s); setFailed(null); try { localStorage.setItem(SHAPE_KEY, s); } catch { /* not kept */ } };
+  const urls = useRef<string[]>([]);
+  const forget = () => { for (const u of urls.current.splice(0)) URL.revokeObjectURL(u); };
 
-  // the sheets, painted once each time it opens
+  // each opening: nothing from before, then the note's first sheet, painted
   useEffect(() => {
-    if (!open) { setShots(null); return; }
+    setSource(null); setPics({}); setLast(null); setFailed(null); forget();
+    if (!open) return;
     let live = true;
-    setFailed(null);
-    sheets().then((s) => { if (live) setShots(s); }, (e) => { if (live) setFailed(String((e as Error)?.message ?? e)); });
+    sheets().then(
+      (s) => { if (live) setSource(s.shots[0] ? { shot: s.shots[0], total: s.total } : null); },
+      () => { if (live) setFailed('The picture couldn’t be made.'); },
+    );
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+  useEffect(() => forget, []);
 
-  // the picture for the shape
+  const empty = !!source && !source.shot.ink;
+  // the picture for the shape, made once per opening
   useEffect(() => {
-    if (!shots) return;
+    if (!source || empty || pics[shape]) return;
     let live = true;
-    sharePicture(shots, shape, writer)
+    sharePicture(source.shot, shape, writer)
       .then(toPng)
       .then((blob) => {
         if (!live) return;
         const url = URL.createObjectURL(blob);
-        if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-        urlRef.current = url;
-        setPic({ blob, url, shape });
-      }, (e) => { if (live) setFailed(String((e as Error)?.message ?? e)); });
+        urls.current.push(url);
+        setPics((p) => ({ ...p, [shape]: { blob, url } }));
+        setLast({ blob, url });
+      }, () => { if (live) setFailed('The picture couldn’t be made.'); });
     return () => { live = false; };
-  }, [shots, shape, writer]);
-  useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current); }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, shape]);
 
-  const ready = !!pic && pic.shape === shape;
-  const file = () => new File([pic!.blob], `${fileSafe(fileName || 'Note')}.png`, { type: 'image/png' });
+  const pic = pics[shape] ?? null;
+  const ready = !!pic && !empty;
+  const shown = pic ?? last;
+  const name = `${fileSafe(fileName || 'Note')}.png`;
+  const file = () => new File([pic!.blob], name, { type: 'image/png' });
   // a phone's share sheet, with the picture in it (null where there isn't one that takes files)
   const sheetFile = () => {
     if (!coarse || typeof navigator.canShare !== 'function') return null;
     const f = file();
     return navigator.canShare({ files: [f] }) ? f : null;
   };
-  const viaSheet = (f: File) =>
-    navigator.share({ files: [f], text: `${POST_TEXT} · ${SHARE_ADDRESS}` }).then(() => true, () => false);
-  // the clipboard write starts inside the press (Safari wants that), with nothing awaited before it
   const copy = () => navigator.clipboard.write([new ClipboardItem({ 'image/png': pic!.blob })]).then(() => true, () => false);
 
-  const post = () => {
+  const post = async () => {
     if (!ready) return;
     const f = sheetFile();
-    if (f) { void viaSheet(f).then((shared) => { if (shared) onOpenChange(false); }); return; }
-    const copying = copy();
-    window.open(xIntent(POST_TEXT), '_blank', 'noopener,noreferrer');
-    void copying.then((copied) => toast(copied ? `Image copied. In X, press ${mod}V to add it.` : 'X is open. Save the image and add it to your post.', { id: 'share-x', duration: 8000 }));
+    if (f) {
+      try { await navigator.share({ files: [f], text: `${POST_TEXT} · ${SHARE_ADDRESS}` }); onOpenChange(false); } catch { /* cancelled */ }
+      return;
+    }
+    // the copy first, while this page has the focus; then X's post box
+    const copied = await copy();
+    const x = window.open(xIntent(POST_TEXT), '_blank', 'noopener,noreferrer');
+    toast(copied ? 'Picture copied' : 'The picture couldn’t be copied', {
+      id: 'share-x',
+      description: copied ? `Paste it into your post on X (${mod}V).` : 'Save it, then add it to your post on X.',
+      duration: 8000,
+      ...(x ? {} : { action: { label: 'Open X', onClick: () => window.open(xIntent(POST_TEXT), '_blank', 'noopener,noreferrer') } }),
+    });
   };
-  const copyImage = () => {
+  const copyPicture = async () => {
     if (!ready) return;
-    void copy().then((ok) => toast(ok ? 'Image copied' : 'This browser won’t copy images. Save it instead.', { id: 'share-copy', duration: 3000 }));
+    const ok = await copy();
+    toast(ok ? 'Picture copied' : 'This browser won’t copy pictures', { id: 'share-copy', description: ok ? undefined : 'Save it instead.', duration: 3000 });
   };
-  const save = () => {
+  const save = async () => {
     if (!ready) return;
     const f = sheetFile();
-    if (f) { void viaSheet(f); return; }
-    saveBlob(pic!.blob, `${fileSafe(fileName || 'Note')}.png`);
+    if (f) {
+      try { await navigator.share({ files: [f], title: fileName || 'Note' }); return; } catch (e) {
+        const n = (e as DOMException).name;
+        if (n === 'AbortError') return;
+        if (n === 'NotAllowedError') { toast('Tap Save again', { id: 'share-save' }); return; }
+      }
+    }
+    saveBlob(pic!.blob, name);
   };
 
+  const status = failed ?? (empty ? 'Nothing written yet.' : null);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="wr-dialog-scrim" />
         <Dialog.Content className="wr-dialog wr-share" aria-describedby={undefined} onOpenAutoFocus={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement).focus(); }}>
           <div className="wr-share-preview" data-shape={shape}>
-            {ready ? <img src={pic!.url} alt="The picture to share" /> : <span className="wr-share-wait">{failed ?? 'Making the picture…'}</span>}
+            {status ? <span className="wr-share-wait">{status}</span>
+              : shown ? <img src={shown.url} alt={ready ? 'The picture to share' : ''} data-making={ready ? undefined : ''} />
+                : <span className="wr-share-wait">Making the picture…</span>}
           </div>
           <div className="wr-share-side">
             <div className="wr-dialog-head">
@@ -117,20 +147,22 @@ export function ShareDialog({ open, onOpenChange, sheets, writer, fileName, coar
             </div>
             <div>
               <h3 className="wr-share-label" id="share-shape">Shape</h3>
-              <div className="wr-seg" role="radiogroup" aria-labelledby="share-shape">
+              <div className="wr-chips" role="radiogroup" aria-labelledby="share-shape">
                 {SHARE_SHAPES.map((s) => (
-                  <button key={s.id} type="button" role="radio" aria-checked={shape === s.id} className="wr-seg-item" onClick={() => setShape(s.id)}>{s.label}</button>
+                  <button key={s.id} type="button" role="radio" aria-checked={shape === s.id} className="wr-chip" onClick={() => setShape(s.id)}>{s.label}</button>
                 ))}
               </div>
+              {source && source.total > 1 && <p className="wr-share-hint">The first page of {source.total}.</p>}
             </div>
             <div className="wr-share-actions">
               <button type="button" className="wr-share-post" disabled={!ready} onClick={post}><XMark /> Post on X</button>
+              <p className="wr-share-hint">{coarse ? 'Opens the share sheet with the picture in it: choose X.' : `Copies the picture and opens X. Paste it into your post (${mod}V).`}</p>
               <div className="wr-share-row">
-                <button type="button" className="wr-btn" disabled={!ready} onClick={copyImage}><Copy aria-hidden /> Copy image</button>
+                <button type="button" className="wr-btn" disabled={!ready} onClick={copyPicture}><Copy aria-hidden /> Copy picture</button>
                 <button type="button" className="wr-btn" disabled={!ready} onClick={save}><Download aria-hidden /> Save</button>
               </div>
             </div>
-            <p className="wr-share-note">Made on this device. Nothing is uploaded: the post links to the writing page, not to your note.</p>
+            <p className="wr-share-note">Made on this device, and we keep no copy. The post links to the writing page, not to your note.</p>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

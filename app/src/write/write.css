@@ -685,42 +685,38 @@
 .wr-share {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 290px;
-  gap: 0;
-  width: min(760px, calc(100vw - 32px));
+  width: min(780px, calc(100vw - 32px));
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
+/* the preview keeps one size whatever the shape, so switching shapes never moves the window */
 .wr-share-preview {
   display: grid;
   place-items: center;
-  min-height: 360px;
+  height: min(60vh, 470px);
   padding: 24px;
   background: var(--wr-hover);
 }
 .wr-share-preview img {
   display: block;
   max-width: 100%;
-  max-height: min(56vh, 440px);
+  max-height: 100%;
+  object-fit: contain;
   border-radius: 6px;
   box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 8px 24px -8px rgba(0, 0, 0, 0.22);
+  transition: opacity 160ms var(--ease-out);
 }
+/* the last picture, while this shape's is made: there, but plainly not the one you'll get */
+.wr-share-preview img[data-making] { opacity: 0.4; }
 .wr-share-wait { font-size: 12.5px; color: var(--wr-muted); }
 .wr-share-side { display: flex; flex-direction: column; gap: 16px; padding: 18px 20px 20px; }
 .wr-share-side .wr-dialog-head { margin-bottom: 0; }
 .wr-share-side .wr-dialog-head h2 { font-size: 15px; font-weight: 600; }
-.wr-share-label { margin-bottom: 6px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
-.wr-seg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: var(--wr-hover); }
-.wr-seg-item {
-  flex: 1;
-  height: 28px;
-  border-radius: 7px;
-  font-size: 12.5px;
-  color: var(--wr-muted);
-  transition: background-color 120ms var(--ease-out), color 120ms var(--ease-out);
-}
-.wr-seg-item[aria-checked='true'] { background: var(--wr-pop-bg); color: var(--wr-text); font-weight: 500; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.08); }
-@media (hover: hover) and (pointer: fine) { .wr-seg-item:not([aria-checked='true']):hover { color: var(--wr-text); } }
+.wr-share-label { margin-bottom: 2px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
+.wr-share-hint { margin-top: 6px; font-size: 11.5px; line-height: 1.4; color: var(--wr-muted); }
 .wr-share-actions { display: grid; gap: 6px; }
+.wr-share-actions .wr-share-hint { margin: 0 2px 4px; }
 .wr-share-post {
   display: flex;
   align-items: center;
@@ -734,20 +730,25 @@
   font-weight: 500;
   transition: transform var(--dur-press) var(--ease-out), opacity 120ms var(--ease-out);
 }
+@media (hover: hover) and (pointer: fine) { .wr-share-post:not(:disabled):hover { opacity: 0.88; } }
 .wr-share-post:active { transform: scale(0.98); }
 .wr-share-post:disabled, .wr-share-row .wr-btn:disabled { opacity: 0.4; }
 .wr-x-mark { width: 14px; height: 14px; }
 .wr-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .wr-share-row .wr-btn { justify-content: center; height: 34px; white-space: nowrap; }
 .wr-share-note { margin-top: auto; font-size: 11.5px; line-height: 1.45; color: var(--wr-muted); }
-/* phones: the preview over the choices */
+/* a finger: controls a finger can hit, on a phone held either way */
+@media (pointer: coarse) {
+  .wr-share-post, .wr-share-row .wr-btn { height: 44px; }
+}
+/* phones: the preview over the choices, and the window scrolls when the screen is short */
 @media (max-width: 719.98px) {
-  .wr-share { grid-template-columns: minmax(0, 1fr); max-height: calc(100dvh - 32px); overflow-y: auto; }
-  .wr-share-preview { min-height: 0; padding: 16px; }
-  .wr-share-preview img { max-height: 38vh; }
-  .wr-share-post { height: 44px; }
-  .wr-share-row .wr-btn { height: 44px; }
-  .wr-seg-item { height: 36px; }
+  .wr-share { grid-template-columns: minmax(0, 1fr); max-height: calc(100dvh - 32px); }
+  .wr-share-preview { height: 38vh; padding: 16px; }
+}
+@media (max-height: 520px) {
+  .wr-share { max-height: calc(100dvh - 24px); }
+  .wr-share-preview { height: calc(100dvh - 120px); }
 }
 /* the window itself takes the focus when it opens (no ring on its first button); it draws none of its own */
 .wr-dialog:focus { outline: none; }

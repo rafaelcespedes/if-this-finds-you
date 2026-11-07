@@ -30,6 +30,8 @@ import { MarginNote } from './MarginNote';
 import { StartHint } from './StartHint';
 import { pendingTicks, stateOf, wordCount, type LineFormat, type Note } from './notes';
 
+/** two frames: a state change has been rendered (the page's layout read after it is the new one) */
+const afterRender = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 /** the sheet's largest size (px per mm) */
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
@@ -50,8 +52,8 @@ export interface DeskApi {
   selection: () => [number, number];
   /** the note as an image (JPEG), every sheet */
   image: () => Promise<Blob>;
-  /** its sheets one by one, each with where its ink is (the share picture crops to the writing) */
-  sheets: () => Promise<SheetShot[]>;
+  /** its first sheet, painted, with where its ink is (the share picture crops to the writing), and how many it has */
+  sheets: () => Promise<{ shots: SheetShot[]; total: number }>;
   /** what typing will do at the caret (the toolbar shows it): leaning, pressed, the line's style and list; null in Clean */
   style: () => InkFormat | null;
   /** a formatting command from the toolbar, on the selection (or the word, or the line, at the caret) */
@@ -447,15 +449,16 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     },
     image: async () => {
       const s = sessionRef.current;
-      if (s.waiting) { s.flush(); setTick((n) => n + 1); }
+      // the pen's unwritten tail written down first, and the page drawn with it before it's read
+      if (s.waiting) { s.flush(); setTick((n) => n + 1); await afterRender(); }
       const { live: l, extras: x, pxPerMm: k } = shown.current;
       return (await renderLiveNote(l, x, eff.inkKey ?? undefined, ink, k || 2)).blob;
     },
     sheets: async () => {
       const s = sessionRef.current;
-      if (s.waiting) { s.flush(); setTick((n) => n + 1); }
+      if (s.waiting) { s.flush(); setTick((n) => n + 1); await afterRender(); }
       const { live: l, extras: x, pxPerMm: k } = shown.current;
-      return renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2);
+      return { shots: await renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2, 1), total: l.sheets.length };
     },
   }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 
