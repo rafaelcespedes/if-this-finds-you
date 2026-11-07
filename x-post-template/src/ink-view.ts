@@ -87,6 +87,11 @@ export class InkView {
     this.clocks.set(s, out);
     return out;
   }
+  /** when the pen has drawn everything there is to write at t (s) */
+  penDoneAt(t: number) {
+    const F = this.frameAt(t);
+    return this.penClock(F.s).reduce((m, x) => Math.max(m, x.start + x.dur), 0);
+  }
   private draft(s: number, v: any) {
     const key = `${s}:${v.tail ?? ''}`;
     if (!this.drafts.has(key)) {

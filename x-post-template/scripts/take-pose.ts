@@ -75,7 +75,17 @@ const RANGE: Record<'finger' | 'thumb', [number, number][]> = {
   finger: [[-0.45, 0.45], [-0.45, 1.45], [0, 1.85]],
   thumb: [[-1.2, 1.2], [-1.2, 1.2], [-0.3, 1.2]],
 };
-function costFn(rig: Rig, d: Digit, target: THREE.Vector3, world: THREE.Matrix4, wz: number) {
+// ...and a finger likes to be curled. Seen from above, a fingertip's place can't tell a finger bent at the knuckle
+// from one curled at its joints, and left alone the fit takes the stiff one (a straight finger, bent at the knuckle
+// only), which reads as dead. So each finger is drawn toward a relaxed curl (its middle joint, z), which drifts a
+// little over time, finger by finger, the way resting fingers never quite hold still; less so while it presses.
+const CURL: Record<Digit, number> = { thumb: 0, 'index-finger': 0.62, 'middle-finger': 0.72, 'ring-finger': 0.82, 'pinky-finger': 0.9 };
+const PHASE: Record<Digit, number> = { thumb: 0, 'index-finger': 0.3, 'middle-finger': 1.9, 'ring-finger': 3.4, 'pinky-finger': 4.6 };
+function curlAt(s: Side, d: Digit, t: number) {
+  const p = PHASE[d] + (s === 'L' ? 0 : 2.2);
+  return CURL[d] + 0.13 * Math.sin(2 * Math.PI * 0.21 * t + p) + 0.07 * Math.sin(2 * Math.PI * 0.53 * t + 1.7 * p);
+}
+function costFn(rig: Rig, d: Digit, target: THREE.Vector3, world: THREE.Matrix4, wz: number, curl = 0, wc = 0) {
   const ms = (d === 'thumb' ? [0, 0, 0, 0] : [0, 0, 0, 0, 0]).map(() => new THREE.Matrix4());
   const c = new THREE.Vector3();
   const thumb = d === 'thumb';
@@ -84,12 +94,12 @@ function costFn(rig: Rig, d: Digit, target: THREE.Vector3, world: THREE.Matrix4,
     contact(rig, d, ms, world, c);
     const dx = c.x - target.x, dy = c.y - target.y, dz = c.z - target.z;
     const under = Math.min(0, c.z + pressDepth + 0.2);
-    return dx * dx + dy * dy + wz * dz * dz + 400 * under * under + 3 * x * x + (thumb ? 0 : 1.2 * (y - 0.35) * (y - 0.35));
+    return dx * dx + dy * dy + wz * dz * dz + 400 * under * under + 3 * x * x + (thumb ? 0 : 1.2 * (y - 0.35) * (y - 0.35) + wc * (z - curl) * (z - curl));
   };
 }
-function ik(rig: Rig, d: Digit, target: THREE.Vector3, world: THREE.Matrix4, wz: number, start: [number, number, number] | null): [number, number, number] {
+function ik(rig: Rig, d: Digit, target: THREE.Vector3, world: THREE.Matrix4, wz: number, start: [number, number, number] | null, curl = 0, wc = 0): [number, number, number] {
   const R = RANGE[d === 'thumb' ? 'thumb' : 'finger'];
-  const cost = costFn(rig, d, target, world, wz);
+  const cost = costFn(rig, d, target, world, wz, curl, wc);
   const clampR = (v: number, i: number) => Math.min(R[i][1], Math.max(R[i][0], v));
   let best: [number, number, number] = [0, 0.35, 0.6], bc = Infinity;
   let h: number[];
@@ -114,6 +124,8 @@ function ik(rig: Rig, d: Digit, target: THREE.Vector3, world: THREE.Matrix4, wz:
   }
   return best;
 }
+/** how strongly a finger keeps its curl (tip error mm² per radian²) */
+const CURL_W = 70;
 const tipAt = (rig: Rig, d: Digit, a3: [number, number, number], world: THREE.Matrix4) => contact(rig, d, fk(rig, d, anglesOf(d, ...a3)), world);
 
 // ---------- each frame ----------
@@ -167,7 +179,8 @@ function solveAll(pass: number) {
         let wz = 0.06;
         const pr = presses.filter((p) => p.side === s && p.digit === d).map((p) => [p, holdOf(p, t)] as const).filter(([, w]) => w > 0).sort((a, b) => b[1] - a[1])[0];
         if (pr) { target = target.clone().lerp(pr[0].at, pr[1]); wz = wz + (1 - wz) * pr[1]; }
-        ang[d] = ik(rig, d, target, world, wz, last?.[d] ?? null);
+        const wc = thumb ? 0 : CURL_W * (1 - 0.75 * (pr?.[1] ?? 0));
+        ang[d] = ik(rig, d, target, world, wz, last?.[d] ?? null, curlAt(s, d, t), wc);
         if (pr && pr[1] > 0.99) {
           const miss = pr[0].at.clone().sub(tipAt(rig, d, ang[d], world));
           if (pass === 0 && miss.length() > 1.2 && Math.abs(t - pr[0].t0 - 0.02) < 0.5 / FPS) shiftOf.set(pr[0], miss.clone().add(handShift(s, t)));

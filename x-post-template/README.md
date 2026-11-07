@@ -148,6 +148,7 @@ clock, while a phone films your hands from above.
    where his fingertip is, and each key pressed by the finger that pressed it, where he hit it. It writes
    `public/take/pose.json` and a copy of the take's writing; copy the phone's video, turned upright, to
    `public/take/hands.mp4`.
+   Then take the room's hiss out of its sound: `.venv-track/bin/python scripts/take-denoise.py public/take/hands.mp4`.
 7. `npm run draft:take` renders the video (`TakeHands`): your face, the move down to your hands, then your hands
    shrinking to the side while the ghost hands write the letter on your keyboard. The cut points are at the top of
    `src/TakeHands.tsx`.

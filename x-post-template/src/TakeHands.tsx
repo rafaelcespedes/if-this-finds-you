@@ -34,31 +34,85 @@ interface TakeData { session: any; pose: any; lines: any }
 // ---------- the edit (seconds), for the take of 2026-11-07 at 13.09 ----------
 // (the test take of 11-06 at 08.47 used FACE_FROM 0.1, FACE_OFF -0.128, PAN_AT 1.5, HANDS_FROM 8.3, PHONE_OFF 8.0,
 // SHRINK 9.9-10.8)
-/** the opening: his face from this moment of the take (he looks into the camera from the go beep) */
-const FACE_FROM = 4.1;
+/** the opening: his face from this moment of the take (looking into the camera, just before he smiles) */
+const FACE_FROM = 4.5;
 /** the webcam's clock: take time = its time + FACE_OFF. This take's webcam has no sound (no beeps to go by), so it's
  *  from the last take's measure against the moment the camera started (startedAt): about 0.16 s - startedAt */
 const FACE_OFF = -0.01;
+/** where his face is in the webcam's picture (fractions across and down), to centre the square on it, and how much
+ *  closer than the whole picture's height */
+const FACE_AT = { x: 0.645, y: 0.565, zoom: 1.12 };
 /** the move down from the face to the hands: when it starts (video time) and how long it takes */
-const PAN_AT = 2.1, PAN = 0.8;
-/** from the move on, the video shows the take from this moment (FACE_FROM + PAN_AT: no jump in time) */
-const HANDS_FROM = 6.2;
+const PAN_AT = 1.1, PAN = 0.8;
+/** from the move on, the video shows the take from this moment (a little after the face's last moment: the move
+ *  hides the jump, and the typing starts as the hands arrive) */
+const HANDS_FROM = 6.3;
 /** the phone's clock: take time = its time + PHONE_OFF (from the beeps) */
 const PHONE_OFF = -0.924;
 /** the hands shrink into the corner over these take times (the first key is at 6.87) */
 const SHRINK: [number, number] = [7.6, 8.5];
-/** after the last thing typed, hold on the letter */
+/** after the last thing typed and written, hold on the letter */
 const HOLD = 1.8;
+/** the pauses: while nothing is typed or clicked and the pen has finished, the take plays this much faster */
+const FAST = 4;
+/** ...and while the pen is still writing in a pause, this much */
+const PEN_FAST = 2;
 
-/** take time at video time v (after the move down; before it, the face's own moment) */
-const takeAt = (v: number) => HANDS_FROM + (v - PAN_AT);
+// ---------- the clock: video time to take time ----------
+// The take plays as it happened, except its pauses: from a moment after the pen finishes until a moment before the
+// next key, it runs FAST times quicker (the pointer and the hands still move through it, just quicker; his video's
+// sound is off there). Clicks keep their own pace.
+interface Seg { v0: number; t0: number; t1: number; r: number }
+const inks = new WeakMap<object, InkView>();
+const inkOf = (session: any) => { let k = inks.get(session); if (!k) { k = new InkView(session); inks.set(session, k); } return k; };
+const warps = new WeakMap<object, { segs: Seg[]; end: number }>();
+function warpOf(session: any) {
+  const hit = warps.get(session);
+  if (hit) return hit;
+  const take = session.take, ink = inkOf(session);
+  const downs = (take.keys as any[]).filter((k) => k.e === 'd').map((k) => k.t as number).sort((a, b) => a - b);
+  const clicks = (take.pointer as any[]).filter((p) => p.e !== 'm').map((p) => p.t as number);
+  const lastKey = downs[downs.length - 1];
+  const end = Math.max(lastKey, ink.penDoneAt(lastKey + 5)) + HOLD;
+  // the quiet stretches of each pause between keys (clicks keep their pace): quicker still once the pen has finished
+  const fast: [number, number, number][] = [];
+  for (let i = 1; i < downs.length; i++) {
+    const a = downs[i - 1], b = downs[i];
+    if (b - a < 1.2) continue;
+    let w: [number, number][] = [[a + 0.35, b - 0.45]];
+    for (const c of clicks) w = w.flatMap(([x, y]) => (c + 0.25 <= x || c - 0.3 >= y ? [[x, y]] : [[x, c - 0.3], [c + 0.25, y]]) as [number, number][]);
+    const pen = ink.penDoneAt(b - 0.02) + 0.2;
+    for (const [x, y] of w) {
+      if (x < SHRINK[1] || y - x < 0.4) continue;
+      if (pen > x && pen < y) { fast.push([x, pen, PEN_FAST]); fast.push([pen, y, FAST]); } else fast.push([x, y, pen >= y ? PEN_FAST : FAST]);
+    }
+  }
+  const segs: Seg[] = [];
+  let t = HANDS_FROM, v = 0;
+  const push = (t1: number, r: number) => { if (t1 > t + 1e-6) { segs.push({ v0: v, t0: t, t1, r }); v += (t1 - t) / r; t = t1; } };
+  for (const [x, y, r] of fast) if (y - x >= 0.3) { push(x, 1); push(y, r); }
+  push(end, 1);
+  const out = { segs, end };
+  warps.set(session, out);
+  return out;
+}
+/** take time at video time v (before the move down, the face's own moment) */
+function takeAt(session: any, v: number) {
+  const u = v - PAN_AT;
+  if (u < 0) return HANDS_FROM + u;
+  const { segs } = warpOf(session);
+  const g = segs.find((x) => u < x.v0 + (x.t1 - x.t0) / x.r) ?? segs[segs.length - 1];
+  return Math.min(g.t1, g.t0 + (u - g.v0) * g.r);
+}
 
 let dataP: Promise<TakeData> | null = null;
 const loadTake = () => (dataP ??= Promise.all(['session', 'pose', 'lines'].map((n) => fetch(staticFile(`take/${n}.json`)).then((r) => r.json()))).then(([session, pose, lines]) => ({ session, pose, lines })));
 export const takeHandsMetadata: CalculateMetadataFunction<Props> = async () => {
   try {
     const d = await loadTake();
-    return { durationInFrames: Math.round((PAN_AT + d.session.take.end + HOLD - HANDS_FROM) * 30) };
+    const { segs } = warpOf(d.session);
+    const last = segs[segs.length - 1];
+    return { durationInFrames: Math.round((PAN_AT + last.v0 + (last.t1 - last.t0) / last.r) * 30) };
   } catch { return { durationInFrames: 30 }; }
 };
 
@@ -135,11 +189,12 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', h
   const frame = useCurrentFrame();
   const { width: S, height: SH, fps } = useVideoConfig();
   const v = frame / fps;
-  const T = takeAt(v);
+  const T = takeAt(data.session, v);
+  const segs = warpOf(data.session).segs;
   const SES = data.session, TAKE = SES.take, P = data.pose;
   const { k0, f, winH } = useMemo(() => layout(S, SH), [S, SH]);
   const LN = data.lines;
-  const ink = useMemo(() => new InkView(SES), [SES]);
+  const ink = inkOf(SES);
   // the letter, centred in the room between the corner video (top right) and the keyboard
   const cornerBottom = (24 + 180) * k0;
   const cam = useMemo(() => ink.camera(S, cornerBottom + 8 * k0, winH, k0, { center: true }), [ink, S, winH, k0, cornerBottom]);
@@ -187,9 +242,14 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', h
   // the move down: the face goes up and out, the hands come up from below
   const pan = easeInOutQuint(clamp((v - PAN_AT) / PAN, 0, 1));
   const faceVol = 0;
-  const phoneVol = (fr: number) => {
-    const t = takeAt(PAN_AT + fr / fps);
-    return clamp((t - HANDS_FROM) / 0.5, 0, 1) * clamp((TAKE.end + 0.25 - t) / 0.3, 0, 1);
+  /** his video's sound: in from the move down, off through the fast stretches (with a short fade each side), out at the end */
+  const END = warpOf(SES).end;
+  const volAt = (vv: number) => {
+    const t = takeAt(SES, vv);
+    const u = vv - PAN_AT;
+    const g = segs.find((x) => u < x.v0 + (x.t1 - x.t0) / x.r);
+    const fastNear = segs.filter((x) => x.r > 1).reduce((m, x) => Math.min(m, Math.max(0, x.v0 - u, u - (x.v0 + (x.t1 - x.t0) / x.r))), Infinity);
+    return (g && g.r > 1 ? 0 : clamp(fastNear / 0.08, 0, 1)) * clamp((t - HANDS_FROM) / 0.5, 0, 1) * clamp((END - 0.6 - t) / 0.4, 0, 1);
   };
 
   return (
@@ -203,12 +263,19 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', h
       )}
       {/* his hands, from the phone above */}
       {v >= PAN_AT && (
-        <Sequence from={Math.round(PAN_AT * fps)} layout="none">
+        <>
           <div style={{ position: 'absolute', left: box.x, top: box.y + (1 - pan) * SH, width: box.w, height: box.h, overflow: 'hidden', borderRadius: box.r, boxShadow: u > 0 ? `0 ${10 * k0 * u}px ${30 * k0 * u}px rgba(30,39,51,${0.22 * u}), 0 0 0 ${k0 * u}px rgba(255,255,255,0.6)` : undefined }}>
             {/* the phone's picture stood level (the keyboard's rows straight across), a touch larger to fill the box */}
             <div style={{ position: 'absolute', left: 0, top: -box.top * box.sc, width: 1080 * box.sc, height: 1920 * box.sc, transformOrigin: `${LN.pivot[0] * box.sc}px ${LN.pivot[1] * box.sc}px`, transform: `rotate(${-LN.level}deg) scale(1.03)` }}>
-              <OffthreadVideo src={staticFile('take/hands.mp4')} trimBefore={Math.round((HANDS_FROM - PHONE_OFF) * fps)} volume={phoneVol}
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+              {segs.map((g) => {
+                const from = Math.round((PAN_AT + g.v0) * fps), n = Math.round((PAN_AT + g.v0 + (g.t1 - g.t0) / g.r) * fps) - from;
+                return n > 0 && (
+                  <Sequence key={g.v0} from={from} durationInFrames={n} layout="none">
+                    <OffthreadVideo src={staticFile('take/hands.mp4')} trimBefore={Math.round((g.t0 - PHONE_OFF) * fps)} playbackRate={g.r} volume={(fr) => volAt((from + fr) / fps)}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+                  </Sequence>
+                );
+              })}
               {/* the laptop's screen, dark (it showed whatever was on it) */}
               <svg width={1080 * box.sc} height={1920 * box.sc} viewBox="0 0 1080 1920" style={{ position: 'absolute', left: 0, top: 0 }}>
                 <polygon points={LN.screen ?? '0,0 1080,0 1080,962 0,950'} fill="#0d0d10" />
@@ -216,13 +283,13 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', h
               {handLines && <HandLines lines={LN} t={T - PHONE_OFF} sc={box.sc} k0={k0} />}
             </div>
           </div>
-        </Sequence>
+        </>
       )}
       {/* his face, from the laptop's camera */}
       {v < PAN_AT + PAN && (
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', transform: `translateY(${-pan * SH}px)` }}>
           <OffthreadVideo src={staticFile('take/face.mp4')} trimBefore={Math.round((FACE_FROM - FACE_OFF) * fps)} volume={faceVol}
-            style={{ position: 'absolute', height: SH, width: (SH * 16) / 9, left: (S - (SH * 16) / 9) / 2, top: 0 }} />
+            style={{ position: 'absolute', height: SH * FACE_AT.zoom, width: (SH * FACE_AT.zoom * 16) / 9, left: clamp(S / 2 - FACE_AT.x * ((SH * FACE_AT.zoom * 16) / 9), S - (SH * FACE_AT.zoom * 16) / 9, 0), top: clamp(SH / 2 - FACE_AT.y * SH * FACE_AT.zoom, SH - SH * FACE_AT.zoom, 0) }} />
         </div>
       )}
     </AbsoluteFill>
