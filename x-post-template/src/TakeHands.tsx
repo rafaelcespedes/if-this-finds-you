@@ -34,27 +34,30 @@ interface TakeData { session: any; pose: any; lines: any }
 // ---------- the edit (seconds), for the take of 2026-11-07 at 13.09 ----------
 // (the test take of 11-06 at 08.47 used FACE_FROM 0.1, FACE_OFF -0.128, PAN_AT 1.5, HANDS_FROM 8.3, PHONE_OFF 8.0,
 // SHRINK 9.9-10.8)
-/** the opening: his face from this moment of the take (looking into the camera, just before he smiles) */
-const FACE_FROM = 4.5;
+/** the opening: his face from this moment of the take (he smiles into the camera, then looks down at the keys as
+ *  the picture moves down to them) */
+const FACE_FROM = 5.4;
 /** the webcam's clock: take time = its time + FACE_OFF. This take's webcam has no sound (no beeps to go by), so it's
  *  from the last take's measure against the moment the camera started (startedAt): about 0.16 s - startedAt */
 const FACE_OFF = -0.01;
 /** where his face is in the webcam's picture (fractions across and down), to centre the square on it, and how much
  *  closer than the whole picture's height */
-const FACE_AT = { x: 0.645, y: 0.565, zoom: 1.12 };
+const FACE_AT = { x: 0.65, y: 0.575, zoom: 1.12 };
 /** the move down from the face to the hands: when it starts (video time) and how long it takes */
-const PAN_AT = 1.1, PAN = 0.8;
-/** from the move on, the video shows the take from this moment (a little after the face's last moment: the move
- *  hides the jump, and the typing starts as the hands arrive) */
-const HANDS_FROM = 6.3;
+const PAN_AT = 1.0, PAN = 0.8;
+/** from the move on, the video shows the take from this moment (FACE_FROM + PAN_AT: no jump in time; the typing
+ *  starts as the hands arrive) */
+const HANDS_FROM = 6.4;
 /** the phone's clock: take time = its time + PHONE_OFF (from the beeps) */
 const PHONE_OFF = -0.924;
 /** the hands shrink into the corner over these take times (the first key is at 6.87) */
 const SHRINK: [number, number] = [7.6, 8.5];
 /** after the last thing typed and written, hold on the letter */
-const HOLD = 1.8;
+const HOLD = 2.2; // take seconds (about 1.8 s of video at SPEED)
 /** the pauses: while nothing is typed or clicked and the pen has finished, the take plays this much faster */
 const FAST = 4;
+/** and the whole take from the hands on, a touch quicker than it happened (not so it looks sped up) */
+const SPEED = 1.2;
 /** ...and while the pen is still writing in a pause, this much */
 const PEN_FAST = 2;
 
@@ -90,8 +93,8 @@ function warpOf(session: any) {
   const segs: Seg[] = [];
   let t = HANDS_FROM, v = 0;
   const push = (t1: number, r: number) => { if (t1 > t + 1e-6) { segs.push({ v0: v, t0: t, t1, r }); v += (t1 - t) / r; t = t1; } };
-  for (const [x, y, r] of fast) if (y - x >= 0.3) { push(x, 1); push(y, r); }
-  push(end, 1);
+  for (const [x, y, r] of fast) if (y - x >= 0.3) { push(x, SPEED); push(y, r * SPEED); }
+  push(end, SPEED);
   const out = { segs, end };
   warps.set(session, out);
   return out;
@@ -196,7 +199,7 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', h
   const LN = data.lines;
   const ink = inkOf(SES);
   // the letter, centred in the room between the corner video (top right) and the keyboard
-  const cornerBottom = (24 + 180) * k0;
+  const cornerBottom = (24 + 162) * k0;
   const cam = useMemo(() => ink.camera(S, cornerBottom + 8 * k0, winH, k0, { center: true }), [ink, S, winH, k0, cornerBottom]);
   const sheet = useMemo(() => ink.paperCanvas(cam), [ink, cam]);
   const ref = useRef<HTMLCanvasElement>(null);
@@ -235,7 +238,7 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', h
   const u = easeInOutQuint(clamp((T - SHRINK[0]) / (SHRINK[1] - SHRINK[0]), 0, 1));
   const full = { x: 0, y: 0, w: S, h: SH, sc: S / 1080, top: 800, r: 0 };
   // the corner: the top right
-  const cw = 240 * k0, ch = 180 * k0;
+  const cw = 216 * k0, ch = 162 * k0;
   const corner = { x: S - 24 * k0 - cw, y: 24 * k0, w: cw, h: ch, sc: cw / 1080, top: 1000, r: 18 * k0 };
   const L = (a: number, b: number) => a + (b - a) * u;
   const box = { x: L(full.x, corner.x), y: L(full.y, corner.y), w: L(full.w, corner.w), h: L(full.h, corner.h), sc: L(full.sc, corner.sc), top: L(full.top, corner.top), r: L(full.r, corner.r) };
@@ -248,8 +251,8 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', h
     const t = takeAt(SES, vv);
     const u = vv - PAN_AT;
     const g = segs.find((x) => u < x.v0 + (x.t1 - x.t0) / x.r);
-    const fastNear = segs.filter((x) => x.r > 1).reduce((m, x) => Math.min(m, Math.max(0, x.v0 - u, u - (x.v0 + (x.t1 - x.t0) / x.r))), Infinity);
-    return (g && g.r > 1 ? 0 : clamp(fastNear / 0.08, 0, 1)) * clamp((t - HANDS_FROM) / 0.5, 0, 1) * clamp((END - 0.6 - t) / 0.4, 0, 1);
+    const fastNear = segs.filter((x) => x.r > SPEED).reduce((m, x) => Math.min(m, Math.max(0, x.v0 - u, u - (x.v0 + (x.t1 - x.t0) / x.r))), Infinity);
+    return (g && g.r > SPEED ? 0 : clamp(fastNear / 0.08, 0, 1)) * clamp((t - HANDS_FROM) / 0.5, 0, 1) * clamp((END - 0.6 - t) / 0.4, 0, 1);
   };
 
   return (
