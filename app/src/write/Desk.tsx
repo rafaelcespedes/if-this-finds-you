@@ -9,12 +9,12 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import * as E from '@engine';
 import { CAP } from '@engine';
 import { toast } from 'sonner';
-import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
+import { PaperEditor, type FormatCommand, type PaperEditorApi, type Pencil } from '@/components/PaperEditor';
 import { LiveSheets } from '@/components/LiveSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { cn } from '@/lib/utils';
 import { UndoHistory, type Edit } from '@/lib/edits';
-import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, undoInk, type InkFormat, type InkHighlight } from '@/lib/ink';
+import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOffsets, inkOpts, newInkDoc, undoInk, type InkFormat, type InkHighlight } from '@/lib/ink';
 import { wordAt } from '@/lib/doc';
 import { pageSetup } from '@/lib/live';
 import { renderLiveNote, renderLiveSheets, type SheetShot } from '@/lib/actions';
@@ -29,6 +29,7 @@ import { useHints } from './hints';
 import { MarginNote } from './MarginNote';
 import { StartHint } from './StartHint';
 import { pendingTicks, stateOf, wordCount, type LineFormat, type Note } from './notes';
+import { caretFit, nibFinder, strikeSpans, type PageItem, type PencilFrame } from './pencil';
 
 /** two frames: a state change has been rendered (the page's layout read after it is the new one) */
 const afterRender = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
@@ -37,6 +38,8 @@ const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
 /** how often the pen is handed what's been typed (the drawn pen is the clock) */
 const PEN_TICK = 130;
+/** the next, harder strike, the moment ⌫ is pressed again: in red pencil, until the pen inks it */
+const GHOST_LOOK = { fill: 'var(--wr-pencil, #c4402a)', opacity: 0.4, fade: false };
 
 export interface DeskApi {
   focus: () => void;
@@ -154,7 +157,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     return () => window.clearInterval(id);
   }, [session, sync, waiting]);
 
-  const { live, extras, geometry, text, hovering } = useMemo(() => {
+  const { live, extras, geometry, text, hovering, draft } = useMemo(() => {
     const draft = session.draft();
     const live = inkLive(p, session.page, paper, eff.size, eff.lineSpacing, draft);
     // the highlighter's swipes, under the ink (multiplied, so the writing reads through as if laid over them)
@@ -163,12 +166,17 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     // (the thought letters travel beside the sheets' markup, patched a word at a time: kept with it)
     const extras = hl ? Object.assign(base.map((x) => hl + x), { thoughts: base.thoughts }) : base;
     const text = session.text();
-    return { live, extras, geometry: inkGeometry(live, p, session), text, hovering: session.hovering };
+    return { live, extras, geometry: inkGeometry(live, p, session), text, hovering: session.hovering, draft };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, tick, p, paper, eff.size, eff.lineSpacing]);
 
   // ---------- typing ----------
   const editor = useRef<PaperEditorApi>(null);
+  // ⌫ again on a crossed-out word, pressed or held: the harder strike shows in red pencil at once, where the pen is
+  // about to ink it; handed back right after it's shown, the page keeps it under the new ink until the pen has drawn
+  // it (LiveSheets' ghost, the engine's previewAgain)
+  const [ghost, setGhost] = useState<{ items: any[] } | null>(null);
+  useEffect(() => { if (ghost) setGhost(null); }, [ghost]);
   // Backspace at a crossed-out word, pressed or held, on any keyboard (hold.ts)
   const hold = useMemo(() => new BackspaceHold({ late: () => sync() }), [sync]);
   hold.touch = coarse;
@@ -285,7 +293,14 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   }, [sync]);
 
   // a phone's deletions as they come (keydown doesn't name them on Android, and iOS deletes whole words without one)
-  const againAt = (at: number) => sessionRef.current.again(at);
+  const againAt = (at: number) => {
+    const s = sessionRef.current;
+    // (the marks this press will draw, asked first: the same seeds and keys, so the pen inks over them)
+    const preview = typeof s.ghostAt === 'function' ? s.ghostAt(at) : null;
+    const r = s.again(at);
+    if (r && !r.max && preview) setGhost(preview);
+    return r;
+  };
   const textSel = (t: EventTarget | null) => ((t as HTMLElement | null)?.tagName === 'TEXTAREA' ? editor.current?.selection() ?? null : null);
   const againTimes = useRef<number[]>([]);
   const held = (act: HoldAct) => {
@@ -391,6 +406,45 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   };
   // the note's first words reach screen readers once
   useEffect(() => { if (hints.announce) sayRef.current?.(hints.announce); }, [hints.announce]);
+
+  // ---------- the red pencil: what the caret shows (PaperEditor's `pencil`) ----------
+  const frame = useMemo<PencilFrame>(() => {
+    const sheetU = live.paper.h * live.unitsPerMm, n = live.sheets.length;
+    return { shift: (s) => live.sheets[s]?.shiftU ?? s * sheetU, sheetOf: (it) => Math.min(n - 1, Math.max(0, Math.floor(it.y / sheetU))) };
+  }, [live]);
+  const nibs = useRef(nibFinder()).current;
+  useEffect(() => { if (penRest) nibs.reset(); }, [penRest, nibs]);
+  const pencil = useMemo<Pencil>(() => {
+    const s = session;
+    const t = s.text();
+    const tailFrom = t.length - String(s.view?.tail ?? '').length;
+    // where each typed letter is on the paper: a letter of ink takes a place of its own there, while the letters of
+    // an insertion being typed all sit at one place (they aren't written yet); the thought letters come after the ink
+    const { toPaper: tp } = inkOffsets(s.sheet, s.view);
+    const mapped = tp.length === t.length + 1;
+    const inked = (i: number) => i >= 0 && i < tailFrom && (!mapped || tp[i + 1] > tp[i]);
+    const mid = String(s.view?.mid?.text ?? '');
+    const midAt = mid && mapped ? tp.findIndex((v, i) => i < tailFrom && tp[i + 1] === v) : -1;
+    const items = (live.page.items ?? []) as PageItem[];
+    const xhU = (p.xHeight as number) * CAP;
+    const style = typeof s.style === 'function' ? s.style() : null;
+    return {
+      typing: style ? { weight: style.weight, lean: style.lean } : undefined,
+      inked,
+      marks: (at) => {
+        // typing goes above the line here, or this is the insertion being typed (still above, until it's written)
+        const above = (typeof s.insertsAbove === 'function' && s.insertsAbove(at)) || (midAt >= 0 && at >= midAt && at <= midAt + mid.length);
+        // Backspace crosses out: the letter before is ink, or there's a crossed-out word here to cross out harder
+        let strike = /\S/.test(t[at - 1] ?? '') && inked(at - 1);
+        if (!strike && typeof s.struckLevel === 'function') { const lv = s.struckLevel(at); strike = lv != null && lv >= 1 && lv <= 3; }
+        return { strike, above };
+      },
+      fit: (c) => caretFit([items, (draft?.items ?? []) as PageItem[]], xhU, frame, c),
+      nib: () => nibs.find(drawnPen.current, items, frame),
+      strikes: hovering ? strikeSpans(items, s.pendingKeys, frame) : undefined,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, tick, live, draft, hovering, frame, p]);
 
   // ---------- the page ----------
   const deskW = useElementWidth(deskRef);
@@ -511,6 +565,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
             onEditingChange={(on) => { setEditing(on); onEditingChange?.(on); }}
             penCaughtUp={penRest}
             insertsAbove={typeof session.insertsAbove === 'function' ? session.insertsAbove : undefined}
+            pencil={pencil}
           >
             <LiveSheets
               live={live}
@@ -527,7 +582,10 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
               wetMs={session.wetMs}
               onPenRest={setPenRest}
               writeOut={writeOut}
-              dim={session.pendingKeys}
+              // (no `dim`: letters the pen hovers over to cross out stay as they are; the caret's dashed red line
+              // shows where the strike will go)
+              ghost={ghost}
+              ghostLook={GHOST_LOOK}
             />
             <CheckBoxes
               checks={typeof session.checks === 'function' ? session.checks() : []}
