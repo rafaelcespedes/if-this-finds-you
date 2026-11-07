@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { UndoHistory, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark, wordAt, type Mark } from '@/lib/doc';
 import { engineGeometry, liveExtras, liveLayout, pageSetup } from '@/lib/live';
-import { renderLiveNote } from '@/lib/actions';
+import { renderLiveNote, renderLiveSheets } from '@/lib/actions';
 import { getPaper } from '@/lib/papers';
 import { inkColor } from '@/lib/inks';
 import { effective, effectiveHand } from '@/lib/params';
@@ -131,6 +131,10 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
     image: async () => {
       const { live: l, extras: x, pxPerMm: k } = shown.current;
       return (await renderLiveNote(l, x, eff.inkKey ?? undefined, ink, k || 2)).blob;
+    },
+    sheets: async () => {
+      const { live: l, extras: x, pxPerMm: k } = shown.current;
+      return renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2);
     },
   }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { DropdownMenu } from 'radix-ui';
-import { Bold, Check, ChevronDown, ChevronLeft, Copy, Highlighter, Italic, ListTodo, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
+import { Bold, Check, ChevronDown, ChevronLeft, Copy, Highlighter, Italic, ListTodo, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { Sheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -26,6 +26,7 @@ import type { Mark } from '@/lib/doc';
 import { Library } from './Library';
 import { WriterName, WriterPanel } from './WriterPanel';
 import { Shortcuts, shortcutGroups } from './Shortcuts';
+import { ShareDialog } from './ShareDialog';
 import { FormatPanel, HIGHLIGHTERS, styleName } from './FormatPanel';
 import type { FormatCommand } from '@/components/PaperEditor';
 import type { InkFormat, InkHighlight } from '@/lib/ink';
@@ -376,6 +377,7 @@ export function WriteApp() {
   // ---------- the chrome steps back while you write ----------
   const [hideUi, setHideUi] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   // Format: opened from the toolbar (or, on a phone, from the bar above the keyboard, which goes as the keyboard does)
   const [formatOpen, setFormatOpen] = useState(false);
 
@@ -528,6 +530,7 @@ export function WriteApp() {
         {current.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />} {current.pinned ? 'Unpin' : 'Pin'}
       </DropdownMenu.Item>
       <DropdownMenu.Separator className="wr-menu-sep" />
+      <DropdownMenu.Item className="wr-menu-item" onSelect={() => setShareOpen(true)}><Share aria-hidden /> Share…</DropdownMenu.Item>
       <DropdownMenu.Item className="wr-menu-item" onSelect={copyAll}><Copy aria-hidden /> Copy the words</DropdownMenu.Item>
       <DropdownMenu.Item className="wr-menu-item" onSelect={downloadImage}><ImageIcon aria-hidden /> Save as an image</DropdownMenu.Item>
       <DropdownMenu.Item className="wr-menu-item" onSelect={downloadText}><FileText aria-hidden /> Save as text</DropdownMenu.Item>
@@ -649,6 +652,7 @@ export function WriteApp() {
               <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={another} aria-label="Another writer" title="Another writer"><Shuffle aria-hidden /></button>
             </div>
             <div className="wr-group">
+              {!phone && <button type="button" className="wr-icon" onClick={() => setShareOpen(true)} aria-label="Share" title="Share as a picture"><Share aria-hidden /></button>}
               {menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, phone ? <><DropdownMenu.Item className="wr-menu-item" onSelect={() => newNote()}><SquarePen aria-hidden /> New note</DropdownMenu.Item><DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</> : moreItems, 'end')}
             </div>
           </header>
@@ -696,6 +700,17 @@ export function WriteApp() {
       )}
 
       <Shortcuts open={keysOpen} onOpenChange={setKeysOpen} groups={shortcutGroups(MOD)} />
+      {current && (
+        <ShareDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          sheets={() => desk.current!.sheets()}
+          writer={look ? writerName(look.seed) : ''}
+          fileName={fileName()}
+          coarse={coarse}
+          mod={MOD}
+        />
+      )}
       <div className="sr-only" aria-live="polite">{said}</div>
       <Toaster position={phone ? 'top-center' : 'bottom-center'} />
     </div>

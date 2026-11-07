@@ -17,7 +17,7 @@ import { UndoHistory, type Edit } from '@/lib/edits';
 import { InkSession, decodeInk, encodeInk, inkExtras, inkGeometry, inkLive, inkOpts, newInkDoc, undoInk, type InkFormat, type InkHighlight } from '@/lib/ink';
 import { wordAt } from '@/lib/doc';
 import { pageSetup } from '@/lib/live';
-import { renderLiveNote } from '@/lib/actions';
+import { renderLiveNote, renderLiveSheets, type SheetShot } from '@/lib/actions';
 import { getPaper } from '@/lib/papers';
 import { inkColor } from '@/lib/inks';
 import { effective, effectiveHand } from '@/lib/params';
@@ -50,6 +50,8 @@ export interface DeskApi {
   selection: () => [number, number];
   /** the note as an image (JPEG), every sheet */
   image: () => Promise<Blob>;
+  /** its sheets one by one, each with where its ink is (the share picture crops to the writing) */
+  sheets: () => Promise<SheetShot[]>;
   /** what typing will do at the caret (the toolbar shows it): leaning, pressed, the line's style and list; null in Clean */
   style: () => InkFormat | null;
   /** a formatting command from the toolbar, on the selection (or the word, or the line, at the caret) */
@@ -448,6 +450,12 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
       if (s.waiting) { s.flush(); setTick((n) => n + 1); }
       const { live: l, extras: x, pxPerMm: k } = shown.current;
       return (await renderLiveNote(l, x, eff.inkKey ?? undefined, ink, k || 2)).blob;
+    },
+    sheets: async () => {
+      const s = sessionRef.current;
+      if (s.waiting) { s.flush(); setTick((n) => n + 1); }
+      const { live: l, extras: x, pxPerMm: k } = shown.current;
+      return renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2);
     },
   }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 

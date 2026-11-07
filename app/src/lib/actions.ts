@@ -104,6 +104,55 @@ export async function renderLiveNote(live: Live, extras: string[], inkKey: strin
   return { blob, width: canvas.width, height: canvas.height };
 }
 
+/** Where a sheet's ink is, in its own pixels. */
+export type InkBox = { x0: number; y0: number; x1: number; y1: number };
+export type SheetShot = { canvas: HTMLCanvasElement; ink: InkBox | null };
+
+/** The ink's extent on a sheet, read from the drawn writing (a small copy of it, by its alpha). */
+function inkBox(img: CanvasImageSource, w: number, h: number): InkBox | null {
+  const s = Math.min(1, 480 / w);
+  const cw = Math.max(1, Math.round(w * s)), ch = Math.max(1, Math.round(h * s));
+  const c = document.createElement('canvas');
+  c.width = cw; c.height = ch;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  if (!g) return null;
+  g.drawImage(img, 0, 0, cw, ch);
+  const d = g.getImageData(0, 0, cw, ch).data;
+  let x0 = cw, y0 = ch, x1 = -1, y1 = -1;
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      if (d[(y * cw + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+  }
+  return x1 < 0 ? null : { x0: x0 / s, y0: y0 / s, x1: (x1 + 1) / s, y1: (y1 + 1) / s };
+}
+
+/** The live page's sheets one by one (paper and ink, as the image download paints them), each with where its ink is. */
+export async function renderLiveSheets(live: Live, extras: string[], inkKey: string | undefined, ink: string, cssPxPerMm: number, max = 4): Promise<SheetShot[]> {
+  const paper = wornForExport(live.paper);
+  let k = cssPxPerMm * 3;
+  k = Math.max(k, 1800 / paper.w);
+  k = Math.min(k, 3000 / paper.w);
+  const sheetW = Math.round(paper.w * k), sheetH = Math.round(paper.h * k);
+  const out: SheetShot[] = [];
+  for (let i = 0; i < Math.min(max, live.sheets.length); i++) {
+    const canvas = document.createElement('canvas');
+    canvas.width = sheetW;
+    canvas.height = sheetH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('This browser could not create an image.');
+    ctx.fillStyle = DESK;
+    ctx.fillRect(0, 0, sheetW, sheetH);
+    const marks = i === 0 ? marksForExport(paper) : null;
+    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined, sheet: i });
+    const img = await rasterizeWriting(sheetSVG(live, i, inkKey ?? 'currentColor', extras[i] ?? ''), sheetW, sheetH, ink);
+    ctx.drawImage(img, 0, 0, sheetW, sheetH);
+    if (marks) printMarks(ctx, marks, k, 'over', paper);
+    out.push({ canvas, ink: inkBox(img, sheetW, sheetH) });
+  }
+  return out;
+}
+
 export type SaveResult = 'saved' | 'shared' | 'cancelled' | 'needs-tap';
 
 /**
