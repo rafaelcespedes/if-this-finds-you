@@ -245,14 +245,12 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', h
   // the move down: the face goes up and out, the hands come up from below
   const pan = easeInOutQuint(clamp((v - PAN_AT) / PAN, 0, 1));
   const faceVol = 0;
-  /** his video's sound: in from the move down, off through the fast stretches (with a short fade each side), out at the end */
+  /** the sound (the keys, made again from a MacBook Pro's own clicks, over a quiet room: scripts/take-keysound.py):
+   *  in from the move down, out at the end */
   const END = warpOf(SES).end;
   const volAt = (vv: number) => {
     const t = takeAt(SES, vv);
-    const u = vv - PAN_AT;
-    const g = segs.find((x) => u < x.v0 + (x.t1 - x.t0) / x.r);
-    const fastNear = segs.filter((x) => x.r > SPEED).reduce((m, x) => Math.min(m, Math.max(0, x.v0 - u, u - (x.v0 + (x.t1 - x.t0) / x.r))), Infinity);
-    return (g && g.r > SPEED ? 0 : clamp(fastNear / 0.08, 0, 1)) * clamp((t - HANDS_FROM) / 0.5, 0, 1) * clamp((END - 0.6 - t) / 0.4, 0, 1);
+    return clamp((t - HANDS_FROM) / 0.3, 0, 1) * clamp((END - 0.2 - t) / 0.6, 0, 1);
   };
 
   return (

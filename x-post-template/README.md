@@ -148,7 +148,13 @@ clock, while a phone films your hands from above.
    where his fingertip is, and each key pressed by the finger that pressed it, where he hit it. It writes
    `public/take/pose.json` and a copy of the take's writing; copy the phone's video, turned upright, to
    `public/take/hands.mp4`.
-   Then clean its sound: `.venv-track/bin/python scripts/take-denoise.py public/take/hands.mp4 --keys` (the room's hiss out, and nothing but the keys and the trackpad's clicks).
+   Then give it its sound: `.venv-track/bin/python scripts/take-keysound.py "<phone video>" --like <typing>.mp3 --pad <trackpad>.mp3`
+   makes the keys again, one MacBook Pro click at every key and trackpad moment in the take's log, over a quiet room
+   (the clicks are from Freesound, CC0: [a 2021 MacBook Pro typing](https://freesound.org/people/justamudkip/sounds/853602/)
+   and [a MacBook Pro trackpad](https://freesound.org/people/neilraouf/sounds/467490/); without `--like` it uses the
+   take's own cleanest clicks), into `public/take/keys.wav`; put that in as the video's sound
+   (`npx remotion ffmpeg -i public/take/hands.mp4 -i public/take/keys.wav -map 0:v -map 1:a -c:v copy -c:a aac out.mp4`).
+   (`scripts/take-denoise.py` cleans the phone's own sound instead, if you'd rather keep it.)
 7. `npm run draft:take` renders the video (`TakeHands`): your face, the move down to your hands, then your hands
    shrinking to the side while the ghost hands write the letter on your keyboard. The cut points are at the top of
    `src/TakeHands.tsx`.

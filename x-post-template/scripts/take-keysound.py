@@ -79,6 +79,7 @@ def main():
     ap.add_argument('--seed', type=int, default=7)
     ap.add_argument('--like', help="a recording of the keyboard's typing to take the keys' sounds from")
     ap.add_argument('--pad', help="a recording of the trackpad's clicks (with --like)")
+    ap.add_argument('--room', type=float, default=-54, help="a quiet room under the clicks, dB (its loudness; 0 for none)")
     a = ap.parse_args()
     tmp = tempfile.mkdtemp(); raw = os.path.join(tmp, 'raw.wav')
     ff('-i', os.path.expanduser(a.video), '-vn', '-ac', '1', '-ar', str(SR), '-c:a', 'pcm_s16le', raw)
@@ -146,6 +147,15 @@ def main():
     peaks = [np.max(np.abs(out[int((e['t'] + lat) * SR) - 200: int((e['t'] + lat) * SR) + L])) for e in ev if e['t'] + lat > 0.01]
     out *= 10 ** (-6 / 20) / (np.median(peaks) + 1e-9)
     out = np.tanh(out * 1.2) / 1.2
+    if a.room:
+        # a quiet room under it all, so the silence between clicks isn't dead: soft noise, warm (mostly low and
+        # middle, none of the AC's rumble), breathing a little louder and softer over a few seconds
+        n = rng.standard_normal(len(out) + SR).astype(np.float32)
+        room = sosfiltfilt(butter(2, [120, 3500], 'bandpass', fs=SR, output='sos'), n)[: len(out)]
+        t = np.arange(len(out)) / SR
+        room *= 1 + 0.35 * np.sin(2 * np.pi * 0.07 * t + 1.3) + 0.2 * np.sin(2 * np.pi * 0.19 * t)
+        room *= 10 ** (a.room / 20) / (np.sqrt(np.mean(room ** 2)) + 1e-9)
+        out = out + room
     dest = os.path.join(ROOT, 'public/take/keys.wav')
     write(dest, out)
     print(f'wrote {os.path.relpath(dest, ROOT)} ({len(ev)} sounds, {len(out) / SR:.1f} s)')
