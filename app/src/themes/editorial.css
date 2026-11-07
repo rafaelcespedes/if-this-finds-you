@@ -219,6 +219,16 @@ html:root[data-layout='ruler'] .rr-ledger-head:has(.rr-no-label) > .rr-card-acti
     --rr-share-box: var(--m-icon, 44px);
   }
 }
+/* a record with no number ("Your letter", "A reply"): Share's middle on the label's line (the label is set solid, so
+   its middle is half its size down) */
+html:root[data-layout='ruler'] .rr-ledger-head:not(:has(.rr-no-label)) > .rr-card-actions {
+  margin-top: calc(var(--ed-head-size) / 2 - var(--icon, 40px) / 2);
+}
+@media (pointer: coarse) {
+  html:root[data-layout='ruler'] .rr-ledger-head:not(:has(.rr-no-label)) > .rr-card-actions {
+    margin-top: calc(var(--ed-head-size) / 2 - var(--m-icon, 44px) / 2);
+  }
+}
 html:root[data-layout='ruler'] .rr-ledger-record .rr-card-title {
   --rr-title-leading: 1;
   margin: 1rem 0 1.25rem;

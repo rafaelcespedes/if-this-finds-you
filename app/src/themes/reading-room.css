@@ -458,7 +458,7 @@ html[data-look='reading-room'] .rr-fact:has(.rr-sig) {
   align-items: center;
 }
 /* the name, not a line of text: its row holds no line box (whose strut sat the name high), so it centres on its label */
-html[data-look='reading-room'] .rr-fact:has(.rr-sig) > dd > .inline-flex {
+html[data-look='reading-room'] .rr-fact:has(.rr-sig) > dd > :is(.inline-flex, .rr-sig) {
   display: flex;
   width: fit-content;
 }

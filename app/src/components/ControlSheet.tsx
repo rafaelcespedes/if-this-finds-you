@@ -277,7 +277,7 @@ export const ControlSheet = memo(function ControlSheet({ open, detent, onDetent:
               aria-label={`${props.name}: about this hand`}
               className="peek-name min-h-11 min-w-[7.5rem] flex-1 rounded-lg py-0.5 select-none transition-transform duration-100 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              <span key={props.state.seed + props.state.style} className="hand-in block min-w-0" style={{ color: inkColor(props.state.ink) }}>
+              <span key={props.state.seed + props.state.style} className="hand-in relative top-[5px] block min-w-0" style={{ color: inkColor(props.state.ink) }}>
                 {/* a long name scales down to fit the row, never cut short */}
                 <Signature p={props.p} name={props.name} ink="currentColor" emPx={32} className="-ml-0.5 [&_svg]:max-h-[46px] [&_svg]:w-auto [&_svg]:overflow-visible" />
               </span>

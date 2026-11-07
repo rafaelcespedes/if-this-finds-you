@@ -414,6 +414,12 @@ html[data-fonts='new'] .fx-hero-actions {
   align-items: center;
   gap: 0.375rem;
 }
+@media (min-width: 48rem) {
+  html[data-fonts='new'] .fx-hero-actions { margin-top: calc((1.15 * 1.5rem - 36px) / 2); }
+}
+@media (min-width: 64rem) {
+  html[data-fonts='new'] .fx-hero-actions { margin-top: calc((1.15 * 1.75rem - 36px) / 2); }
+}
 html[data-fonts='new'] .fx-hero .font-record { margin-top: 1.5rem; }
 html[data-fonts='new'] .fx-hero .fx-credit + .font-record { margin-top: 1rem; }
 
