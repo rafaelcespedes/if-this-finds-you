@@ -458,7 +458,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
       const s = sessionRef.current;
       if (s.waiting) { s.flush(); setTick((n) => n + 1); await afterRender(); }
       const { live: l, extras: x, pxPerMm: k } = shown.current;
-      return { shots: await renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2, 1), total: l.sheets.length };
+      return { shots: await renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2, 1, true), total: l.sheets.length };
     },
   }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 

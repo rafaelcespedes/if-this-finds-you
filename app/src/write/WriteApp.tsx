@@ -705,6 +705,7 @@ export function WriteApp() {
           open={shareOpen}
           onOpenChange={setShareOpen}
           sheets={() => desk.current!.sheets()}
+          blank={() => !(desk.current?.text() ?? '').trim()}
           writer={look ? writerName(look.seed) : ''}
           fileName={fileName()}
           coarse={coarse}

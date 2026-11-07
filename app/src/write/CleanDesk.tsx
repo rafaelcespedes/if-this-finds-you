@@ -134,7 +134,7 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
     },
     sheets: async () => {
       const { live: l, extras: x, pxPerMm: k } = shown.current;
-      return { shots: await renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2, 1), total: l.sheets.length };
+      return { shots: await renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2, 1, true), total: l.sheets.length };
     },
   }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 

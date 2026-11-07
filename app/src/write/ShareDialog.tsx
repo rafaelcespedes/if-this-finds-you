@@ -30,6 +30,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   /** the note's first sheet, painted, and how many sheets it has (asked for each time it opens) */
   sheets: () => Promise<{ shots: SheetShot[]; total: number }>;
+  /** the note has no words yet */
+  blank: () => boolean;
   writer: string;
   fileName: string;
   coarse: boolean;
@@ -37,7 +39,7 @@ interface Props {
 }
 type Pic = { blob: Blob; url: string };
 
-export function ShareDialog({ open, onOpenChange, sheets, writer, fileName, coarse, mod }: Props) {
+export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileName, coarse, mod }: Props) {
   const [shape, setShapeNow] = useState<ShareShape>(() => {
     try { const s = localStorage.getItem(SHAPE_KEY); return SHARE_SHAPES.some((x) => x.id === s) ? (s as ShareShape) : 'square'; } catch { return 'square'; }
   });
@@ -45,17 +47,23 @@ export function ShareDialog({ open, onOpenChange, sheets, writer, fileName, coar
   const [pics, setPics] = useState<Partial<Record<ShareShape, Pic>>>({});
   const [last, setLast] = useState<Pic | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [empty, setEmpty] = useState(false);
   const setShape = (s: ShareShape) => { setShapeNow(s); setFailed(null); try { localStorage.setItem(SHAPE_KEY, s); } catch { /* not kept */ } };
   const urls = useRef<string[]>([]);
   const forget = () => { for (const u of urls.current.splice(0)) URL.revokeObjectURL(u); };
 
   // each opening: nothing from before, then the note's first sheet, painted
   useEffect(() => {
-    setSource(null); setPics({}); setLast(null); setFailed(null); forget();
+    setSource(null); setPics({}); setLast(null); setFailed(null); setEmpty(false); forget();
     if (!open) return;
+    if (blank()) { setEmpty(true); return; }
     let live = true;
     sheets().then(
-      (s) => { if (live) setSource(s.shots[0] ? { shot: s.shots[0], total: s.total } : null); },
+      (s) => {
+        if (!live) return;
+        if (!s.shots[0]?.ink) { setFailed('The picture couldn’t be made.'); return; }
+        setSource({ shot: s.shots[0], total: s.total });
+      },
       () => { if (live) setFailed('The picture couldn’t be made.'); },
     );
     return () => { live = false; };
@@ -63,7 +71,6 @@ export function ShareDialog({ open, onOpenChange, sheets, writer, fileName, coar
   }, [open]);
   useEffect(() => forget, []);
 
-  const empty = !!source && !source.shot.ink;
   // the picture for the shape, made once per opening
   useEffect(() => {
     if (!source || empty || pics[shape]) return;
@@ -103,7 +110,8 @@ export function ShareDialog({ open, onOpenChange, sheets, writer, fileName, coar
     }
     // the copy first, while this page has the focus; then X's post box
     const copied = await copy();
-    const x = window.open(xIntent(POST_TEXT), '_blank', 'noopener,noreferrer');
+    const x = window.open(xIntent(POST_TEXT), '_blank');
+    if (x) x.opener = null;
     toast(copied ? 'Picture copied' : 'The picture couldn’t be copied', {
       id: 'share-x',
       description: copied ? `Paste it into your post on X (${mod}V).` : 'Save it, then add it to your post on X.',
@@ -152,7 +160,7 @@ export function ShareDialog({ open, onOpenChange, sheets, writer, fileName, coar
                   <button key={s.id} type="button" role="radio" aria-checked={shape === s.id} className="wr-chip" onClick={() => setShape(s.id)}>{s.label}</button>
                 ))}
               </div>
-              {source && source.total > 1 && <p className="wr-share-hint">The first page of {source.total}.</p>}
+              {source && source.total > 1 && <p className="wr-share-hint">Page {source.shot.sheet + 1} of {source.total}.</p>}
             </div>
             <div className="wr-share-actions">
               <button type="button" className="wr-share-post" disabled={!ready} onClick={post}><XMark /> Post on X</button>

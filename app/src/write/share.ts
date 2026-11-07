@@ -75,18 +75,33 @@ function cropTo(W: number, H: number, b: InkBox, aspect: number): Crop {
   const pad = Math.max(bw, bh * aspect) * 0.1;
   // the sheet's very edge (torn, deckled) stays out of a crop that sits inside it
   const ex = W * 0.02, ey = H * 0.015;
-  let w = Math.max(bw + 2 * pad, (bh + 2 * pad) * aspect, W * 0.32);
-  // most of the sheet's width: the whole sheet, lying on the desk, rather than one side of it cut
-  if (w > (W - 2 * ex) * 0.8) w = Math.max(w, W * 1.12);
-  w = Math.min(w, W * 1.5);
-  const h = w / aspect;
-  const inside = w <= W - 2 * ex;
   const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
-  const sx = inside ? clamp(cx - w / 2, ex, W - ex - w) : (W - w) / 2;
-  if (h >= H - 2 * ey) return { sx, sy: (H - h) / 2, sw: w, sh: h, fade: false }; // the whole sheet, its height too
+  // a card (a postcard, a notecard: as wide as it's tall, or wider) is shown whole: its print is part of it
+  const card = W >= H * 0.9;
+  let w = card ? Infinity : Math.max(bw + 2 * pad, (bh + 2 * pad) * aspect, W * 0.32);
+  // the writing itself takes most of the sheet's width: the whole sheet, lying on the desk, rather than one side cut
+  // (judged on the writing, not on the crop widened below, or a few lines would shrink to a strip; QA 7 Nov)
+  const wide = w > (W - 2 * ex) * 0.8;
+  // writing near the sheet's left edge (binding holes, a margin rule): the crop starts at the edge itself, so nothing
+  // there is cut in half, and reaches as far right as the writing does
+  const snap = !card && !wide && cx - w / 2 < W * 0.12;
+  if (snap) w = Math.min(Math.max(w, b.x1 + pad - ex), W - 2 * ex);
+  if (wide) w = Math.max(Math.min(w, W * 1.5), W * 1.12);
+  let h = w / aspect;
   const tall = bh + 2 * pad > h;
-  const lo = inside ? ey : 0, hi = H - h - (inside ? ey : 0);
-  const sy = clamp(tall ? b.y0 - pad : cy - h / 2, lo, hi);
+  // a short note that still takes nearly the sheet's height (or a card): the whole sheet, all of it, with desk round
+  // it. A note longer than the frame shows from its top and fades out at the foot instead (never shrunk to fit)
+  if (card || (!tall && h >= H * 0.9)) {
+    w = Math.max(W * 1.12, H * 1.12 * aspect);
+    h = w / aspect;
+    return { sx: (W - w) / 2, sy: (H - h) / 2, sw: w, sh: h, fade: false };
+  }
+  const inside = w <= W - 2 * ex;
+  const sx = !inside ? (W - w) / 2 : snap ? ex : clamp(cx - w / 2, ex, W - ex - w);
+  // centred on the writing; near the sheet's top, a little of the desk above it rather than the writing pushed up
+  const sy = tall
+    ? clamp(b.y0 - pad, inside ? ey : 0, H - h)
+    : clamp(cy - h / 2, -h * 0.08, H - h - (inside ? ey : 0));
   return { sx, sy, sw: w, sh: h, fade: tall && sy + h < b.y1 };
 }
 
@@ -129,16 +144,16 @@ function frame(w: number, h: number) {
   return { c, g };
 }
 
-/** A picture with the writing above a quiet foot: the wordmark left, the address right. */
-async function withFoot(S: HTMLCanvasElement, ink: InkBox, W: number, H: number, foot: number) {
+/** A picture with the writing above a quiet foot: the wordmark left, the address right (sized to read in a feed). */
+async function withFoot(S: HTMLCanvasElement, ink: InkBox, W: number, H: number, foot: number, markH: number, textPx: number) {
   const { c, g } = frame(W, H);
   const paperH = H - foot;
   drawCrop(g, S, cropTo(S.width, S.height, ink, W / paperH), W, paperH);
   g.fillStyle = ROOM;
   g.fillRect(0, paperH, W, foot);
   const mid = paperH + foot / 2;
-  drawMark(g, await wordmark(INK), 64, mid, Math.round(foot * 0.26));
-  drawText(g, SHARE_ADDRESS, W - 64, mid, Math.round(foot * 0.19), 'right');
+  drawMark(g, await wordmark(INK), 64, mid, markH);
+  drawText(g, SHARE_ADDRESS, W - 64, mid, textPx, 'right');
   return c;
 }
 
@@ -147,8 +162,8 @@ export async function sharePicture(sheet: SheetShot, shape: ShareShape, writer: 
   const S = sheet.canvas;
   const ink = sheet.ink;
   if (!ink) throw new Error('Nothing written yet.');
-  if (shape === 'square') return withFoot(S, ink, 1200, 1200, 160);
-  if (shape === 'wide') return withFoot(S, ink, 1600, 900, 140);
+  if (shape === 'square') return withFoot(S, ink, 1200, 1200, 160, 42, 30);
+  if (shape === 'wide') return withFoot(S, ink, 1600, 900, 150, 46, 36);
   // the page: the whole sheet lying on the desk, a little askew, its writer's name under it; a landscape card
   // (a postcard, a notecard) gets a landscape frame
   const wideSheet = S.width > S.height;
