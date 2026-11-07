@@ -36,7 +36,7 @@ all, with the real engine, and lets you change what's typed, the writer and the 
 | Backspace once it's ink | The pen hovers for a moment, then crosses the word out, or writes the right letter over the wrong one. |
 | Backspace again on a crossed-out word, or hold it down | Crosses it out harder: a heavier line, then a scribble, then inked out (on `/write` for now). On a phone, a held key is read from how fast the deletions come. |
 | Select and delete | Strikes it through, in this writer's own way (a line, two lines, a wave, loops or a scribble). |
-| Select and type | Strikes the old words and writes the new ones above them. |
+| Select and type | Strikes the old words. Mid-text, the new ones go above them; on the last words written, the pen carries on after them, the way you would writing in one go. |
 | Type in the middle of a line | Adds it above the line, with a caret. |
 | Space inside a word, Enter in the middle | A `/` between the words, a `//` for a new paragraph. |
 | ⌘B, ⌘U | Goes over the words again; underlines them by hand (twice for a double underline). With nothing selected, ⌘B presses harder from here on. |
