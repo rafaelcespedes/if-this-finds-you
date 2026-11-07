@@ -38,6 +38,10 @@ const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
 /** how often the pen is handed what's been typed (the drawn pen is the clock) */
 const PEN_TICK = 130;
+/** the strike tick stays this long after the last Backspace of a run */
+const DELETING_MS = 1500;
+/** keys that are only held with another: they don't end a run of Backspaces */
+const MODIFIERS = new Set(['Shift', 'Meta', 'Control', 'Alt', 'CapsLock', 'Fn', 'OS']);
 /** the next, harder strike, the moment ⌫ is pressed again: in red pencil, until the pen inks it */
 const GHOST_LOOK = { fill: 'var(--wr-pencil, #c4402a)', opacity: 0.4, fade: false };
 
@@ -332,7 +336,32 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     return () => desk.removeEventListener('beforeinput', before, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hold]);
+  // the strike tick (the caret's red tick: Backspace will cross out) shows only once Backspace is being pressed, as a
+  // preview of the next strike (Rafael, 7 Nov: always there at the end of the writing, it read as a glitch): from the
+  // first press of a run until another key, a click, or a moment's rest
+  const [deleting, setDeleting] = useState(false);
+  const deletingTimer = useRef(0);
+  const deletingNow = useCallback((on: boolean) => {
+    window.clearTimeout(deletingTimer.current);
+    if (on) deletingTimer.current = window.setTimeout(() => setDeleting(false), DELETING_MS);
+    setDeleting(on);
+  }, []);
+  useEffect(() => () => window.clearTimeout(deletingTimer.current), []);
+  // a phone's deletions come as beforeinput (Android names no key: its keydown, "Unidentified", came first and ended
+  // the run; the deletion starts it again)
+  useEffect(() => {
+    const desk = deskRef.current;
+    if (!desk) return;
+    const input = (e: InputEvent) => {
+      if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteWordBackward') deletingNow(true);
+      else if (e.inputType.startsWith('insert')) deletingNow(false);
+    };
+    desk.addEventListener('beforeinput', input, true);
+    return () => desk.removeEventListener('beforeinput', input, true);
+  }, [deletingNow]);
   const onKeyDownCapture = (e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace') deletingNow(true);
+    else if (!MODIFIERS.has(e.key)) deletingNow(false);
     if (held(hold.key(e.nativeEvent, textSel(e.target), againAt))) { e.preventDefault(); e.stopPropagation(); }
   };
   const onKeyUpCapture = (e: React.KeyboardEvent) => hold.keyUp(e.nativeEvent);
@@ -439,10 +468,12 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
         // typing goes above the line here, or this is the insertion being typed (still above, until it's written)
         const above = (typeof s.insertsAbove === 'function' && s.insertsAbove(at)) || (midAt >= 0 && at >= midAt && at <= midAt + mid.length);
         // Backspace crosses out here (the session knows: the letter before is ink, or a crossed-out word is there
-        // to cross out harder), rather than taking back letters the pen hasn't reached
+        // to cross out harder), rather than taking back letters the pen hasn't reached. Shown only while Backspace is
+        // being pressed: a preview of the next strike
         const side = editor.current?.side?.();
         let strike: boolean;
-        if (typeof s.nextBackspace === 'function') { const k = s.nextBackspace(at, side).kind; strike = k === 'strike' || k === 'again'; }
+        if (!deleting) strike = false;
+        else if (typeof s.nextBackspace === 'function') { const k = s.nextBackspace(at, side).kind; strike = k === 'strike' || k === 'again'; }
         else {
           strike = /\S/.test(t[at - 1] ?? '') && inked(at - 1);
           if (!strike && typeof s.struckLevel === 'function') { const lv = s.struckLevel(at); strike = lv != null && lv >= 1 && lv <= 3; }
@@ -454,7 +485,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
       strikes: hovering ? strikeSpans(items, s.pendingKeys, frame) : undefined,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, tick, live, draft, hovering, frame, p]);
+  }, [session, tick, live, draft, hovering, frame, p, deleting]);
 
   // ---------- the page ----------
   const deskW = useElementWidth(deskRef);
@@ -541,6 +572,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
       onKeyDownCapture={onKeyDownCapture}
       onKeyUpCapture={onKeyUpCapture}
       onPointerUpCapture={onPointerUpCapture}
+      onPointerDownCapture={() => deletingNow(false)}
       // a press on the desk around the sheet keeps the pen where it was (it never drops the focus, so nothing typed
       // after is lost); on a phone, a tap there opens the keyboard at the end of what's written
       onPointerDown={(e) => {
