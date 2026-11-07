@@ -2,6 +2,26 @@
 
 Rafael's calls, newest first. Builders follow these. If one conflicts with a research recommendation, this log wins.
 
+## 2026-11-07
+
+- **The cursor is a red pencil, not the pen** (the writing app). The pen writes in ink; every mark that only shows what
+  will happen is an editor's red pencil, a UI colour no ink uses, readable on every paper and never mistaken for a
+  letter (the old ink-coloured caret read as an "l"). Rafael picked all four recommendations:
+  1. Red pencil for every editing mark (not a quieter grey-blue).
+  2. While the pen is behind you, a small ink dot marks where it has got to; the caret stays at the end of what's typed.
+  3. Press harder / lean pending: a heavier or leaning caret, plus a small B or I badge.
+  4. Typing after a word crossed out mid-line replaces it, written above it (as select-and-type does); at the end of
+     the writing the pen still carries on after it.
+  - With it: a red ‸ in the line and a dashed ghost caret above for insertions, typed insertions shown grey above at
+    once; a strike tick on the caret where Backspace will cross out, and a dashed red preview of the strike; a red bar
+    under one selected letter (written over); a red wash and underline for selections; a loupe and thin handles on
+    phones. And the behaviour fixes the audit found (typing after an insertion overprinting it, the caret jumping after a
+    strike, presses that did nothing, arrow keys skipping struck words). Proposal: the "Red Pencil Cursor" page.
+- **Share a note as a picture for X** (the writing app): Square by default, also Wide and The page; Post on X copies it and
+  opens X's post box (the share sheet on a phone); made on the device, nothing kept. **The writing page's link picture:**
+  "Paper", one handwritten line with its mistake crossed out.
+- **Ship as things are made:** Rafael reviews on the live site; options he hasn't picked go out as the recommended one.
+
 ## 2026-11-06
 
 - **The writing page becomes its own app** (for now still at `/write`, unlinked, out of search): a modern writing tool
