@@ -66,6 +66,8 @@ interface Props {
   ghost?: { items: any[] } | null;
   /** how the ghost looks (the writing app: red pencil, at once): its fill (a CSS colour, variables too), strength, and whether it fades in. Default: faint graphite, fading in */
   ghostLook?: { fill: string; opacity: number; fade?: boolean };
+  /** Ink mode: how strongly the thought letters show (and the drawn pen's letters still waiting); default INK_THOUGHT */
+  thought?: number;
 }
 
 /** the five drying steps as SVG filters (a gamma curve on the colour: deeper, or for iron gall paler) */
@@ -91,18 +93,18 @@ function wetFilters(doc: Document, prefix: string, darkens: boolean): SVGFilterE
 }
 
 /** the thought letters of one sheet: one path per word, kept while the word is, replaced when it's laid out again */
-function patchThoughts(svg: SVGSVGElement, words: ThoughtWord[]) {
+function patchThoughts(svg: SVGSVGElement, words: ThoughtWord[], strength = INK_THOUGHT) {
   const s = svg as SVGSVGElement & { __thoughts?: SVGGElement; __words?: Map<string, Element> };
   let g = s.__thoughts;
   if (!g || !g.isConnected) {
     g = svg.ownerDocument.createElementNS(NS, 'g') as SVGGElement;
     g.setAttribute('class', 'thoughts');
     g.setAttribute('fill', THOUGHT_FILL);
-    g.setAttribute('fill-opacity', String(INK_THOUGHT));
     svg.appendChild(g);
     s.__thoughts = g;
     s.__words = new Map();
   }
+  if (g.getAttribute('fill-opacity') !== String(strength)) g.setAttribute('fill-opacity', String(strength));
   const have = s.__words!;
   const want = new Set(words.map((w) => w.id));
   for (const [id, el] of have) if (!want.has(id)) { el.remove(); have.delete(id); }
@@ -115,7 +117,7 @@ function patchThoughts(svg: SVGSVGElement, words: ThoughtWord[]) {
   }
 }
 
-export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold, trail, penRef, dim, wetMs, onPenRest, ghost, ghostLook }: Props) {
+export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold, trail, penRef, dim, wetMs, onPenRest, ghost, ghostLook, thought = INK_THOUGHT }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const svgs = useRef<SVGSVGElement[]>([]);
   const drys = useRef<SVGSVGElement[]>([]);
@@ -265,7 +267,7 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
       const g = svg?.querySelector(':scope > g.extras') as (Element & { __html?: string }) | null;
       const html = extras[s] ?? '';
       if (g && g.__html !== html) { g.innerHTML = html; g.__html = html; }
-      if (svg) patchThoughts(svg, words?.[s] ?? []);
+      if (svg) patchThoughts(svg, words?.[s] ?? [], thought);
     });
   });
 
@@ -365,7 +367,7 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
       const page = prev.current?.page;
       if (!p || !page) return;
       const state = p.at(now());
-      const po = { emPx: live.emPx, thought: trail != null ? INK_THOUGHT : undefined, dim: dimSet };
+      const po = { emPx: live.emPx, thought: trail != null ? thought : undefined, dim: dimSet };
       for (const svg of svgs.current) if (svg) engine.paintPen(svg, page, state, po);
       // (the settled layer only ever changes when letters on it are dimmed, or no longer are)
       if (dimSet || dimmed.current) for (const svg of [...wets.current, ...drys.current]) if (svg) engine.paintPen(svg, page, state, po);

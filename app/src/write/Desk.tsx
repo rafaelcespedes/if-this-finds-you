@@ -36,6 +36,9 @@ const afterRender = () => new Promise<void>((r) => requestAnimationFrame(() => r
 /** the sheet's largest size (px per mm) */
 const MAX_PX_PER_MM = 3.9;
 const SHEET_GAP = 24;
+/** the grey letters the pen hasn't reached yet: about 3:1 on the papers, readable, and still plainly lighter than ink
+ *  (about 11:1). The home page's desk keeps its fainter ones (lib/ink.ts INK_THOUGHT) */
+const THOUGHT = 0.8;
 /** how often the pen is handed what's been typed (the drawn pen is the clock) */
 const PEN_TICK = 130;
 /** the strike tick stays this long after the last Backspace of a run */
@@ -628,6 +631,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
               // shows where the strike will go)
               ghost={ghost}
               ghostLook={GHOST_LOOK}
+              thought={THOUGHT}
             />
             <CheckBoxes
               checks={typeof session.checks === 'function' ? session.checks() : []}
