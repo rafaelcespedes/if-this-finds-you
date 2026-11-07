@@ -555,10 +555,6 @@ export function WriteApp() {
       <DropdownMenu.Label className="wr-menu-label">
         {words} {words === 1 ? 'word' : 'words'} · {keptOk ? 'Kept on this device' : 'Not kept in this browser'}
       </DropdownMenu.Label>
-      <DropdownMenu.Separator className="wr-menu-sep" />
-      <DropdownMenu.Item className="wr-menu-item wr-menu-quiet" onSelect={() => { window.location.href = '/'; }}>
-        The handwriting is from If This Finds You
-      </DropdownMenu.Item>
     </>
   );
 
