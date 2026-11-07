@@ -20,21 +20,34 @@ export const KEY_PITCH_MM = 19;
 
 /** the keyboard for a frame S wide and SH tall: centred, as far from the bottom as from the sides. `scale` < 1 makes
  *  the keys smaller (the plate shrinks with them, still centred); `top` puts the plate's top edge there (px) instead. */
-export function keyboard(S: number, SH: number, o: { scale?: number; top?: number } = {}): Keyboard {
+export function keyboard(S: number, SH: number, o: { scale?: number; top?: number; full?: boolean } = {}): Keyboard {
   // sized from the frame's shorter side (so a wide frame doesn't get giant keys), centred across its width
   const D = Math.min(S, SH), k0 = D / S0;
   // the keys sized so the plate spans the shorter side less MARGIN_SIDE each side (a 72 px key at 66 px before)
-  const fit = ((D - 2 * (MARGIN_SIDE + PLATE.pad) * k0) / ((1080 - 2 * (66 + PLATE.pad)) * k0)) * (o.scale ?? 1);
-  const U = 72 * k0 * fit, G = 8 * k0 * fit, H = 64 * k0 * fit;
+  let fit = ((D - 2 * (MARGIN_SIDE + PLATE.pad) * k0) / ((1080 - 2 * (66 + PLATE.pad)) * k0)) * (o.scale ?? 1);
   // the letters as they sit on any keyboard (each row a little further in), with the few keys the letter uses
-  const rows: { offset: number; keys: [string, string, number, ('left' | 'right')?][] }[] = [
+  // (`full`: a number row, brackets and ⌥ too, for the walkthrough of every interaction: InkEvery.tsx)
+  const rows: { offset: number; keys: [string, string, number, ('left' | 'right')?][] }[] = o.full ? [
+    { offset: 0, keys: [['1', '1', 1], ['2', '2', 1], ['3', '3', 1], ['4', '4', 1], ['5', '5', 1], ['6', '6', 1], ['7', '7', 1], ['8', '8', 1], ['9', '9', 1], ['0', '0', 1], ['-', '-', 1], ['Backspace', 'delete', 1.45, 'right']] },
+    { offset: 0.5, keys: [['q', 'Q', 1], ['w', 'W', 1], ['e', 'E', 1], ['r', 'R', 1], ['t', 'T', 1], ['y', 'Y', 1], ['u', 'U', 1], ['i', 'I', 1], ['o', 'O', 1], ['p', 'P', 1], ['[', '[', 1], [']', ']', 1]] },
+    { offset: 0.8, keys: [['a', 'A', 1], ['s', 'S', 1], ['d', 'D', 1], ['f', 'F', 1], ['g', 'G', 1], ['h', 'H', 1], ['j', 'J', 1], ['k', 'K', 1], ['l', 'L', 1], ['Enter', 'return', 1.65, 'right']] },
+    { offset: -0.55, keys: [['Shift', 'shift', 2.05, 'left'], ['z', 'Z', 1], ['x', 'X', 1], ['c', 'C', 1], ['v', 'V', 1], ['b', 'B', 1], ['n', 'N', 1], ['m', 'M', 1], [',', ',', 1], ['.', '.', 1], ['/', '/', 1]] },
+    { offset: 0, keys: [['Alt', '⌥', 1.15], ['Meta', '⌘', 1.3], [' ', '', 5.2]] },
+  ] : [
     { offset: 0, keys: [['q', 'Q', 1], ['w', 'W', 1], ['e', 'E', 1], ['r', 'R', 1], ['t', 'T', 1], ['y', 'Y', 1], ['u', 'U', 1], ['i', 'I', 1], ['o', 'O', 1], ['p', 'P', 1], ['Backspace', 'delete', 1.45, 'right']] },
     { offset: 0.3, keys: [['a', 'A', 1], ['s', 'S', 1], ['d', 'D', 1], ['f', 'F', 1], ['g', 'G', 1], ['h', 'H', 1], ['j', 'J', 1], ['k', 'K', 1], ['l', 'L', 1], ['Enter', 'return', 1.6, 'right']] },
     { offset: -0.55, keys: [['Shift', 'shift', 1.55, 'left'], ['z', 'Z', 1], ['x', 'X', 1], ['c', 'C', 1], ['v', 'V', 1], ['b', 'B', 1], ['n', 'N', 1], ['m', 'M', 1], [',', ',', 1], ['.', '.', 1]] },
     { offset: 0, keys: [['Meta', '⌘', 1.3], [' ', '', 5.2]] },
   ];
+  // (the full keyboard is wider: its keys a little smaller, so its plate spans the same width)
+  if (o.full) {
+    const wide = (r: (typeof rows)[number]) => r.keys.reduce((a, [, , w]) => a + w, 0) + (8 / 72) * (r.keys.length - 1) + Math.abs(r.offset);
+    fit *= (1080 - 2 * (66 + PLATE.pad)) / 72 / Math.max(...rows.slice(0, -1).map(wide));
+  }
+  const U = 72 * k0 * fit, G = 8 * k0 * fit, H = 64 * k0 * fit;
   const rowW = (r: (typeof rows)[number]) => r.keys.reduce((a, [, , w]) => a + w * U, 0) + G * (r.keys.length - 1);
-  const W = Math.max(...rows.slice(0, 3).map((r) => rowW(r) + Math.abs(r.offset) * U));
+  const last = rows.length - 1;
+  const W = Math.max(...rows.slice(0, last).map((r) => rowW(r) + Math.abs(r.offset) * U));
   const x0 = (S - W) / 2;
   // the plate as far from the bottom edge as from the sides (of a square frame; centred in a wider one)
   const pad0 = PLATE.pad * k0, side = MARGIN_SIDE * k0;
@@ -43,10 +56,10 @@ export function keyboard(S: number, SH: number, o: { scale?: number; top?: numbe
   const keys: Key[] = [];
   rows.forEach((row, r) => {
     // the letter rows staggered as on a keyboard; the bottom row centred under the space between them
-    let x = r === 3 ? (S - rowW(row)) / 2 : x0 + (row.offset > 0 ? row.offset * U : 0);
-    if (r === 2) x = x0;
+    let x = r === last ? (S - rowW(row)) / 2 : x0 + (row.offset > 0 ? row.offset * U : 0);
+    if (row.offset < 0) x = x0;
     for (const [id, label, w, align] of row.keys) {
-      keys.push({ id, label, x, y: top + r * (H + G), w: w * U, h: H, small: label.length > 1, align });
+      keys.push({ id, label, x, y: top + r * (H + G), w: w * U, h: H, small: label.length > 1 && !/^[⌘⌥]$/.test(label), align });
       x += w * U + G;
     }
   });

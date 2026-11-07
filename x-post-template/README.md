@@ -116,6 +116,27 @@ model (the WebXR generic hands, 25 joints each) posed frame by frame, so the ana
   `src/hands/ghost.ts`. To judge the hands' shape and motion without the glass, set `handLook` to `clay` in the
   Studio's props. The `HandLab` composition shows one still of the hands at rest or pressing a key.
 
+## Every interaction: the walkthrough
+
+`InkEvery` is a longer video (about two minutes) that goes through every interaction the writing page has now, one
+caption at a time, in the plain video's look: a letter (typing ahead of the pen, Backspace before and after the ink,
+crossing out harder and holding it, select and type mid-text and on the last words, a caret between two words, a
+letter written over another, ⌘B, ⌘I, ⌘U twice, ⇧⌘E, the tempo, ⌘Z on wet ink, on dry ink and on a dry crossing-out
+(stet), ⌘↩), then a new note (`# `, `- `, Return on an empty item, `## `, `1. `, `[] ` and a tick).
+
+Unlike `InkDemo`, it doesn't call the engine the way the site does: it runs the site's own code. `src/ink-live.ts`
+drives `InkSession` (app/src/lib/ink.ts), the page's undo history and held Backspace (app/src/write/hold.ts) and what
+the writing page (app/src/write/Desk.tsx) does around them, with the engine's own drawn pen (`createPen`, LiveSheets'
+Ink-mode options) as the clock, all on a virtual clock. So the pen paces itself as on the site, the ink dries in the
+pen's own window (six seconds for this fountain pen), and the video draws each stroke when that pen drew it.
+
+- `npm run every` types `scripts/ink-every.ts` and writes `src/data/ink-every-1.json` and `-2.json`.
+- `npm run draft:every` renders a small draft; `npm run render:every` the full 1080 × 1080.
+- The typist (the tempo's "your own average") is given the script's own pace, about 8 keys a second, so a burst and
+  slow typing read against it. A fresh visitor on the site starts from a typical typist's pace instead.
+- How this writer corrects is a roll seeded by the salt and the log (writing a letter over another, for one, is only
+  one time in five for this tidy hand): change the script before a correction and it may come out another way.
+
 ## Record your own typing
 
 Instead of a script, you can type the letter yourself and record it: your keys, the pointer and your webcam on one
@@ -168,7 +189,10 @@ recorder's beeps and your key clicks, which line it up with the take.
 | File | What it is |
 |---|---|
 | `src/InkDemo.tsx` | The video: the paper, the replayed ink, the keyboard with its ghost fingertips (or hands), the pointer, and the bar with the hint and the wet-ink timer. |
-| `src/keyboard.ts` | The keyboard's layout (and its canvas drawing, for the version with hands). |
+| `src/keyboard.ts` | The keyboard's layout (and its canvas drawing, for the version with hands); `full` adds a number row, brackets and ⌥ for the walkthrough. |
+| `src/InkEvery.tsx` | The walkthrough of every interaction: two scenes, replayed with the drawn pen's own timing. |
+| `src/ink-live.ts` | The site's own InkSession, undo history, held Backspace and drawn pen on a virtual clock, recorded for the walkthrough. |
+| `scripts/ink-every.ts`, `src/data/ink-every-*.json` | The walkthrough's script, and its recordings (`npm run every`). |
 | `src/hands/` | The ghost hands: the model's skeleton and pose solver (`rig.ts`), its smoothed skin (`mesh.ts`), where the hands rest and which finger takes which key (`home.ts`), the typing motion (`plan.ts`), and the glass and its shadow (`ghost.ts`, `shadow.ts`, `view.ts`). |
 | `src/HandLab.tsx` | One still of the hands, to judge them on their own. |
 | `src/TakeHands.tsx` | The video of a recorded take: face, hands, then the ghost hands copying them over the letter. |

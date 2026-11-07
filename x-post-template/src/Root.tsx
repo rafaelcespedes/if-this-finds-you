@@ -5,6 +5,7 @@ import { InkDemo, inkDemoSchema } from './InkDemo';
 import { HandLab, handLabSchema } from './HandLab';
 import { TakeHands, takeHandsMetadata, takeHandsSchema } from './TakeHands';
 import session from './data/ink-session.json';
+import { InkEvery, totalFrames } from './InkEvery';
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -29,6 +30,8 @@ export const RemotionRoot: React.FC = () => (
       fps={30}
       durationInFrames={(session as any).frames.length}
     />
+    {/* every interaction of the writing page, as a walkthrough: a letter, then a new note (npm run every) */}
+    <Composition id="InkEvery" component={InkEvery} width={1080} height={1080} fps={30} durationInFrames={totalFrames()} />
     {/* a recorded take (recorder/, npm run take): his face, his hands, then the ghost hands copying them */}
     <Composition id="TakeHands" component={TakeHands as any} schema={takeHandsSchema} defaultProps={{ handLook: 'ghost' as const, handLines: true }} calculateMetadata={takeHandsMetadata as any} width={1080} height={1080} fps={30} durationInFrames={30} />
     {/* the ghost hands on their own, one still: their shape ('clay') or their glass ('ghost') */}
