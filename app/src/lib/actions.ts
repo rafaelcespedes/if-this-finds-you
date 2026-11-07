@@ -142,10 +142,10 @@ export async function renderLiveSheets(live: Live, extras: string[], inkKey: str
     canvas.height = sheetH;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('This browser could not create an image.');
-    ctx.fillStyle = DESK;
-    ctx.fillRect(0, 0, sheetW, sheetH);
+    // the sheet alone, its torn and deckled edges and its holes see-through (no desk colour behind them): the share
+    // picture lays it on its own desk, so a rim of another colour never shows round a tear (Rafael, 7 Nov)
     const marks = i === 0 ? marksForExport(paper) : null;
-    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined, sheet: i });
+    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: 'clear', marks: marks ?? undefined, sheet: i });
     const img = await rasterizeWriting(sheetSVG(live, i, inkKey ?? 'currentColor', extras[i] ?? ''), sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
     if (marks) printMarks(ctx, marks, k, 'over', paper);
