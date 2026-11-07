@@ -330,6 +330,15 @@ function startPS(st, s, e, ev) {
 // A list line's marker, drawn with its first word (writeToStream): the writer's own bullet, the number as they write
 // it, or a checklist's box. ln: the line (lineInfo: list, item, mark = where the marker starts); it: its first item.
 function placeMarker(st, s, ln, it, ev) {
+  const m = markerItems(st, s, ln, it, ev);
+  const b0 = s.items.length;
+  for (const mi of m.items) pushItem(st, s, mi);
+  if (m.runs) addRuns(s, m.runs, b0);
+  if (m.box && it.id != null) s.boxes.set(it.id, { at: it.id, line: ln.n, para: it.para, box: m.box.box, xh: m.box.xh, ref: m.box.ref });
+}
+// The marker's items (and runs, and a checklist's box), made and not put down: placeMarker, and draftMarkers (the
+// marker of a list item not written yet, shown faint where the pen will draw it)
+function markerItems(st, s, ln, it, ev) {
   const p = st.p, F = formatHabits(p), r = R0(st, ev, ':m' + ln.n);
   const x = ln.mark != null ? ln.mark : ln.x0;
   const base = (X) => lineBaseline(p, ln, X);
@@ -339,21 +348,16 @@ function placeMarker(st, s, ln, it, ev) {
   if (ln.list === 'number') {
     // the number, written like any word (it isn't in the text: it's the list's, and it never renumbers)
     const w = writeAt(p, ln.item + F.list.number, { x, y: base(x), angle: lineAngle(p, ln, x), lean: lineLean(p, ln, x), size: 1, seed: 'num:' + st.salt + ':' + ev + ':' + ln.n, line: ln.n });
-    const b0 = s.items.length;
-    for (const li of w.items) pushItem(st, s, Object.assign(li, { ev, sheet: s.n, role: 'marker', charIndex: -1, para: ref.para, inkIndex: ref.inkIndex, word: ref.word, wk, wkey: wk, tempo: ref.tempo }));
-    addRuns(s, w.runs, b0);
-    return;
+    return { items: w.items.map((li) => Object.assign(li, { ev, sheet: s.n, role: 'marker', charIndex: -1, para: ref.para, inkIndex: ref.inkIndex, word: ref.word, wk, wkey: wk, tempo: ref.tempo })), runs: w.runs };
   }
   const key = 'e' + ev + ':m' + ln.n;
   if (ln.list === 'check') {
     const b = boxStrokes(F, x, base, xh, r);
     const mi = markItem(p, 'box', b.strokes, ref, { seed: 619 + ev * 0.41, tempo: 1.15, key, wk });
-    if (mi) pushItem(st, s, Object.assign(mi, { ev, role: 'marker' }));
-    if (it.id != null) s.boxes.set(it.id, { at: it.id, line: ln.n, para: it.para, box: b.box, xh, ref });
-    return;
+    return { items: mi ? [Object.assign(mi, { ev, role: 'marker' })] : [], box: { box: b.box, xh, ref } };
   }
   const mi = markItem(p, 'bullet', bulletStrokes(F, x, base, xh, r), ref, { seed: 613 + ev * 0.37, tempo: 1.2, key, wk, dot: false });
-  if (mi) pushItem(st, s, Object.assign(mi, { ev, role: 'marker' }));
+  return { items: mi ? [Object.assign(mi, { ev, role: 'marker' })] : [] };
 }
 // Return at the end of a title (or heading) the writer underlines: the pen goes back under it, once or twice, before
 // the new line. Under the title's own letters, line by line (a long title that ran on is underlined on each line).
@@ -757,6 +761,27 @@ export function draftInsert(st, view) {
   }
   const stops = (res.stops || []).map((sp) => Object.assign({}, sp, { line: ref.line }));
   return { items, caret: caret[0] || null, stops, line: ref.line, text: mid.text };
+}
+
+// The markers of list items the pen hasn't written yet, made where it will draw them (placeMarker's own, seeded as
+// the next event, the write that will start the item), without drawing them: the bullet, number or box of the line
+// the pen is on, when it's a list item with nothing written on it yet (only "- " typed, or its words still thought
+// letters; not when what's typed next starts a new line), and of the list lines the thought letters reach (`lines`:
+// a draft's lineInfo). [] when there are none. Each is a mark item (a number: letters), role 'marker'.
+export function draftMarkers(st, view, lines) {
+  const s = st.cur, S = s.stream, ev = st.doc.log.length;
+  if (S !== s.main) return [];
+  const out = [], seen = new Set();
+  const add = (ln) => {
+    if (!ln || !ln.list || s.marked.has(ln.n) || seen.has(ln.n)) return;
+    seen.add(ln.n);
+    const m = markerItems(st, s, ln, { para: 0, word: 0, inkIndex: 0, tempo: 1 }, ev);
+    for (const it of m.items) out.push(it);
+  };
+  const pen = S.ink.pen, tail = String((view && view.tail) || '');
+  if (pen && pen.line && !tail.startsWith('\n')) add(s.lines.get(pen.line.n) || pen.line);
+  for (const ln of lines || []) if (ln && ln.n > ((pen && pen.line && pen.line.n) ?? -1)) add(ln);
+  return out;
 }
 
 // a page for an earlier sheet (drafts set aside by a fresh sheet or a fair copy)

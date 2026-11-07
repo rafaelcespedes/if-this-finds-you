@@ -187,7 +187,8 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
       for (const { s, t } of c.words) words[s].push(t);
     };
     // the insertion being typed mid-text, faint where it will be written above the line (InkSession.insertDraft)
-    const others = () => { if (x.draft.ins?.items?.length) piece(x.draft.ins); };
+    // and the markers of list items not written yet (InkSession.markerDraft)
+    const others = () => { if (x.draft.ins?.items?.length) piece(x.draft.ins); if (x.draft.marker?.items?.length) piece(x.draft.marker); };
     if (Array.isArray(x.draft.pieces)) {
       for (const pg of x.draft.pieces as any[]) piece(pg);
       others();
@@ -201,7 +202,7 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
     let w: { s: number; wkey: unknown; id: string; d: string } | null = null;
     const put = () => { if (w && w.d) words[w.s].push({ id: w.id, d: w.d }); w = null; };
     for (const it of x.draft.items as any[]) {
-      if (it.kind !== 'glyph') continue;
+      if (it.kind !== 'glyph' && it.kind !== 'mark') continue;
       let c = thoughtD.get(it);
       if (!c || c.sc !== sc) { const cs = itemContours(it); c = { sc, d: cs.length ? E.contoursToD(cs, 0, 0, sc) : '' }; thoughtD.set(it, c); }
       const d = c.d;
@@ -412,12 +413,32 @@ export class InkSession {
    */
   draft(grow = false) {
     const tail = String(this.view.tail ?? '');
-    // (the thought letters of an insertion being typed mid-text ride along: `ins`, see insertDraft)
+    // (riding along: the thought letters of an insertion being typed mid-text, `ins` (insertDraft), and the markers of
+    // list items not written yet, `marker`: a bullet, number or box (markerDraft))
     const ins = this.insertDraft();
-    if (!tail) return ins ? this.withInsert(null, ins) : null;
-    const d = this.tailDraft(tail, grow);
-    return ins ? this.withInsert(d, ins) : d;
+    const d = tail ? this.tailDraft(tail, grow) : null;
+    const marker = this.markerDraft(d);
+    return ins || marker ? this.withExtras(d, ins, marker) : d;
   }
+  /**
+   * The markers of list items the pen hasn't written yet (engine draftMarkers): the bullet, number or box of an item
+   * with only "- " typed, or its words still thought letters, and of list items further on in the thought letters,
+   * where the pen will draw them. { items } (mark items; a number's are letters), or null when there are none.
+   */
+  markerDraft(d?: any): { items: any[] } | null {
+    if (typeof engine.draftMarkers !== 'function' || typeof engine.lineNow !== 'function') return null;
+    const st = this.sheet;
+    const m = this.markMemo;
+    const tail0 = String(this.view.tail ?? '').startsWith('\n');
+    if (m && m.page === st.page && m.d === (d ?? null) && m.tail0 === tail0) return m.out;
+    // (only when a list is going: the line the pen is on, or one in the thought letters)
+    const listed = !!(engine.lineNow(st) as { list: string | null }).list || ((d?.lineInfo ?? []) as { list?: string }[]).some((l) => l.list);
+    const items = listed ? engine.draftMarkers(st, this.view, d?.lineInfo ?? []) as any[] : [];
+    const out = items.length ? { items } : null;
+    this.markMemo = { page: st.page, d: d ?? null, tail0, out };
+    return out;
+  }
+  private markMemo: { page: unknown; d: unknown; tail0: boolean; out: { items: any[] } | null } | null = null;
   /**
    * The thought letters of the insertion being typed mid-text (view.mid), where the pen will write them above the line
    * (engine draftInsert): { items (the letters, page units), caret (the ‸ mark the pen will draw under a new insertion,
@@ -435,15 +456,15 @@ export class InkSession {
     return d;
   }
   private insMemo: { page: unknown; key: string; d: any } | null = null;
-  /** the draft with the insertion's thought letters on it (one object while both are the same) */
-  private withInsert(d: any, ins: any) {
+  /** the draft with the insertion's thought letters and the pending markers on it (one object while they're the same) */
+  private withExtras(d: any, ins: any, marker: any) {
     const m = this.withMemo;
-    if (m && m.d === d && m.ins === ins) return m.out;
-    const out = d ? { ...d, ins } : { items: [], stops: [], lineInfo: [], from: 0, text: '', lines: 0, pieces: [], ins };
-    this.withMemo = { d, ins, out };
+    if (m && m.d === d && m.ins === ins && m.marker === marker) return m.out;
+    const out = { ...(d ?? { items: [], stops: [], lineInfo: [], from: 0, text: '', lines: 0, pieces: [] }), ins, marker };
+    this.withMemo = { d, ins, marker, out };
     return out;
   }
-  private withMemo: { d: any; ins: any; out: any } | null = null;
+  private withMemo: { d: any; ins: any; marker: any; out: any } | null = null;
   private tailDraft(tail: string, grow: boolean) {
     const st = this.sheet;
     const S = st.cur?.stream;
@@ -472,29 +493,37 @@ export class InkSession {
     let rest = tail, o = 0, start = pen0, same = true, made = 0;
     const until = grow || !this.drafting ? performance.now() + DRAFT_MS : -Infinity;
     this.drafting = false;
-    while (rest) {
+    words: while (rest) {
       const m = CHUNK.exec(rest);
-      const text = m ? m[0] : rest;
+      const word = m ? m[0] : rest;
       const h = this.typist && typeof engine.hasteNext === 'function' && hastes
-        ? (engine.hasteNext(pieces.length ? NOT_IN_WORD : st, text, hastes.slice(o, o + text.length)) as number) : 0;
-      const was = same ? keep[pieces.length] : undefined;
-      let pc;
-      if (was && was.text === text && was.haste === h && was.style === styleKey && (was.start === start || (pieces.length === 0 && samePen(was.start, start)))) pc = pieces.length === 0 ? { ...was, start } : was;
-      else {
-        if (made && performance.now() > until) { this.drafting = true; break; }
-        same = false;
-        made++;
-        const pg = engine.layout(this.p, text, h ? { ...base, haste: h, start } : { ...base, start });
-        pc = { text, haste: h, style: styleKey, start, pg };
+        ? (engine.hasteNext(pieces.length ? NOT_IN_WORD : st, word, hastes.slice(o, o + word.length)) as number) : 0;
+      // as the pen is handed it (engine penStep): each line break written on its own, then the word, so a line that
+      // begins after it (a P.S. set in from the margin, a closing) is set out as the ink will be
+      const n0 = pieces.length;
+      for (const text of word.includes('\n') ? word.split(/(\n)/).filter(Boolean) : [word]) {
+        const hh = /\S/.test(text) ? h : 0;
+        const was = same ? keep[pieces.length] : undefined;
+        let pc;
+        if (was && was.text === text && was.haste === hh && was.style === styleKey && (was.start === start || (pieces.length === 0 && samePen(was.start, start)))) pc = pieces.length === 0 ? { ...was, start } : was;
+        else {
+          // (out of time: stop between words, never inside one)
+          if (made && pieces.length === n0 && performance.now() > until) { this.drafting = true; break words; }
+          same = false;
+          made++;
+          const pg = engine.layout(this.p, text, hh ? { ...base, haste: hh, start } : { ...base, start });
+          pc = { text, haste: hh, style: styleKey, start, pg };
+        }
+        pieces.push(pc);
+        start = pc.pg.pen;
       }
-      pieces.push(pc);
-      start = pc.pg.pen;
-      rest = rest.slice(text.length);
-      o += text.length;
+      rest = rest.slice(word.length);
+      o += word.length;
     }
     this.pieces = pieces;
     // the same pieces: the same draft (one object, so what's drawn from it can tell it hasn't changed)
     const memo = this.assembled;
+    if (!pieces.length) return null;
     if (memo && memo.list.length === pieces.length && memo.list.every((pc, i) => pc.pg === pieces[i].pg)) return memo.draft;
     const items: any[] = [], stops: any[] = [];
     const lines = new Map<number, any>();
