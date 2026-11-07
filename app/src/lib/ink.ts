@@ -698,9 +698,11 @@ export class InkSession {
    * Typing at textarea offset `at` would go above the line, with a caret: it's mid-ink (before the thought letters at
    * the end, with ink after it) and not inside an insertion already being typed (the planner's case 2e).
    */
-  insertsAbove = (at: number): boolean => {
+  insertsAbove = (at: number, side?: Side): boolean => {
     const text = this.text();
     const tailFrom = text.length - String(this.view.tail ?? '').length;
+    // (the caret put before a word crossed out at the end: typing goes above the line before it, not after it)
+    if (side === 'before' && at === tailFrom && this.struckLevel(at) != null) return true;
     if (at >= tailFrom || at < 0) return false;
     const mid = this.view.mid?.text ? String(this.view.mid.text) : '';
     if (mid) {
@@ -714,6 +716,50 @@ export class InkSession {
     }
     return true;
   };
+  /**
+   * What ⌫ at textarea offset `at` (a caret, `side` as the editor has it) will do, asked without doing it, so the caret
+   * can say so before the press:
+   *   - 'unwritten': the letter before the caret is a thought letter (not ink yet): it's deleted cleanly
+   *   - 'again': a crossed-out word right before the caret is crossed out harder; `level` is what it goes to (2 a heavier
+   *     line, 3 a scribble, 4 inked out)
+   *   - 'strike': written letters are crossed out: at the pen head the pen hovers first (`hover`), then strikes them with
+   *     whatever else is Backspaced in the meantime; mid-text at once. A written space goes with the letter before it
+   *   - 'none': nothing before the caret
+   * `keys`: the page items (letters, or the struck word's letters) it acts on, for a highlight; [] for 'unwritten'.
+   */
+  nextBackspace(at: number, side?: Side): { kind: 'unwritten' | 'again' | 'strike' | 'none'; level?: number; hover?: boolean; keys: string[] } {
+    const items = (this.page?.items ?? []) as { id?: number; key: string; kind: string; role?: string }[];
+    const keysOf = (ids: Set<number>) => items.filter((it) => it.kind === 'glyph' && it.id != null && ids.has(it.id)).map((it) => it.key);
+    if (typeof engine.again === 'function') {
+      const r = engine.again(this.sheet, this.view, at, side ? { side } : undefined) as { events: { from: number; to: number }[]; level: number } | null;
+      if (r && r.events.length) {
+        const ids = new Set<number>();
+        for (const e of r.events) for (let id = e.from; id <= e.to; id++) ids.add(id);
+        return { kind: 'again', level: r.level, keys: keysOf(ids) };
+      }
+    }
+    if (at <= 0) return { kind: 'none', keys: [] };
+    const text = this.text();
+    const tailFrom = text.length - String(this.view.tail ?? '').length;
+    const { midFrom } = this.offsets();
+    const midLen = String(this.view.mid?.text ?? '').length;
+    if (at - 1 >= tailFrom || (midFrom >= 0 && at - 1 >= midFrom && at - 1 < midFrom + midLen)) return { kind: 'unwritten', keys: [] };
+    let e = { at: at - 1, del: 1 };
+    const w = typeof engine.backOverSpace === 'function' ? engine.backOverSpace(this.sheet, this.view, { ...e, ins: '' }) as { edit: { at: number; del: number } } | null : null;
+    if (w) e = { at: w.edit.at, del: w.edit.del };
+    const ids = new Set<number>();
+    if (typeof engine.inkIdsIn === 'function') for (const [a, b] of engine.inkIdsIn(this.sheet, this.view, e.at, e.at + e.del) as [number, number][]) for (let id = a; id <= b; id++) ids.add(id);
+    // at the pen head: nothing written after what's taken (the planner's 2a)
+    const hover = !/\S/.test(text.slice(e.at + e.del, tailFrom)) && !(midFrom >= 0 && midFrom >= e.at + e.del);
+    return { kind: 'strike', hover, keys: keysOf(ids) };
+  }
+  /**
+   * Where the pen is: the textarea offset where the written text ends and the thought letters (the trail) begin. Its
+   * caret is the pen head (inkGeometry(...).caret(penAt())): where the pen carries on, after any word struck at the end.
+   */
+  penAt(): number {
+    return this.text().length - String(this.view.tail ?? '').length;
+  }
   /**
    * How hard the crossed-out word at textarea offset `at` is crossed out (1 struck … 4 inked out), or null when there's
    * none there (engine again(), asked without doing it): for the "⌫ again" note, and the ghost of the next press.
