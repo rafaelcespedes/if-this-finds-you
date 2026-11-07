@@ -54,13 +54,17 @@ function HomeMark() {
 const PENDING_KEY = 'seedhand:write:pending';
 const LIB_KEY = 'seedhand:write:library';
 
-/** A change of notes, as the sheets themselves moving (View Transitions: each sheet is named by its note's id, so the
- * one on the desk shrinks into its row in the library and one opened from it grows back up). Instant without the
- * API or with reduced motion. */
-function moveSheets(change: () => void): Promise<unknown> {
+/** A change of letters (View Transitions). On a phone, the sheets themselves move: each is named by its letter's id,
+ * so the one on the desk shrinks into its row and one opened from a row grows back up, the way a screen opens from
+ * the list. On a computer, where the list stays beside the sheet and letters change many times a day, the sheet just
+ * cross-fades where it is (Rafael, 7 Nov: "it grows from the side… that feels quite strong"): html[data-swap] takes
+ * the rows out of it (write.css). Instant without the API or with reduced motion. */
+function moveSheets(change: () => void, swap = false): Promise<unknown> {
   const doc = document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<unknown> } };
   if (!doc.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { change(); return Promise.resolve(); }
-  return doc.startViewTransition(() => flushSync(change)).finished.catch(() => {});
+  const html = document.documentElement;
+  if (swap) html.setAttribute('data-swap', '');
+  return doc.startViewTransition(() => flushSync(change)).finished.catch(() => {}).finally(() => html.removeAttribute('data-swap'));
 }
 
 /** a toolbar button pressed with a mouse doesn't take the focus from the paper (the keys go on to the writing; a space
@@ -279,7 +283,7 @@ export function WriteApp() {
       leaveCurrent();
       setCurrentId(id);
       setPhoneScreen('note');
-    });
+    }, !phone);
   };
   const restore = (id: string) => {
     const n = notesRef.current.find((x) => x.id === id);
@@ -301,7 +305,7 @@ export function WriteApp() {
         if (next) setCurrentId(next.id);
         else { const b = blankNote(n.look); setAll((all) => [...all, b]); setCurrentId(b.id); }
       }
-    });
+    }, !phone);
     if (!isBlank(n)) void putNote(gone);
     else { setAll((all) => all.filter((x) => x.id !== id)); void deleteNote(id); return; }
     say('Letter thrown away.');

@@ -26,6 +26,10 @@ interface Props {
 
 export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onDelete, screen, arrived, lead }: Props) {
   const [q, setQ] = useState('');
+  // a computer: Search is a button at the head's right; pressed, the field opens across the head (Rafael, 7 Nov). A
+  // phone keeps the field, the full width
+  const [searching, setSearching] = useState(false);
+  const field = !!screen || searching || !!q;
   const [bin, setBin] = useState(false);
   const live = useMemo(() => notes.filter((n) => !n.thrown), [notes]);
   const thrown = useMemo(() => notes.filter((n) => n.thrown).sort((a, b) => (b.thrown ?? 0) - (a.thrown ?? 0)), [notes]);
@@ -47,18 +51,28 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
           <button type="button" className="wr-lib-back" onClick={() => setBin(false)}>
             <X aria-hidden /> Thrown away
           </button>
-        ) : (
-          <label className="wr-search">
+        ) : field ? (
+          <label className="wr-search" data-opened={!screen || undefined}>
             <Search aria-hidden />
             <input
               type="search"
               placeholder="Search"
               value={q}
+              autoFocus={!screen && searching}
               onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Escape' && q) { e.stopPropagation(); setQ(''); } }}
+              onBlur={() => { if (!q) setSearching(false); }}
+              onKeyDown={(e) => {
+                if (e.key !== 'Escape') return;
+                e.stopPropagation();
+                if (q) setQ(''); else { setSearching(false); }
+              }}
               aria-label="Search letters"
             />
           </label>
+        ) : (
+          <button type="button" className="wr-icon wr-search-btn" onClick={() => setSearching(true)} aria-label="Search letters" title="Search">
+            <Search aria-hidden />
+          </button>
         )}
       </div>
       <div className="wr-lib-list">

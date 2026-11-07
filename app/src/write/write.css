@@ -419,6 +419,13 @@
 .wr-library[data-screen] .wr-search input { font-size: 16px; }
 .wr-search input::placeholder { color: var(--wr-muted); }
 .wr-search:focus-within { box-shadow: 0 0 0 2px var(--wr-focus); }
+/* one ring, the box's: the field inside draws none of its own (Rafael, 7 Nov) */
+.wr-search input:focus, .wr-search input:focus-visible { outline: none; box-shadow: none; }
+/* a computer: the search button at the head's right, and the field opening from it across the head */
+.wr-search-btn { margin-left: auto; color: var(--wr-muted); }
+.wr-search[data-opened] { transform-origin: right center; animation: wr-search-open 180ms var(--ease-out); }
+@keyframes wr-search-open { from { opacity: 0; clip-path: inset(0 0 0 calc(100% - 32px) round 9px); } }
+@media (prefers-reduced-motion: reduce) { .wr-search[data-opened] { animation: none; } }
 .wr-lib-back {
   display: inline-flex;
   align-items: center;
@@ -673,6 +680,12 @@
 ::view-transition-new(*):only-child { animation: none; }
 ::view-transition-old(*):only-child { animation: wr-sheet-out 180ms var(--ease-out) both; }
 @keyframes wr-sheet-out { to { opacity: 0; transform: translateY(8px) scale(0.98); } }
+/* a computer: the rows stay out of it, and the sheet cross-fades in place, quick and quiet (moveSheets' swap) */
+html[data-swap] .wr-thumb { view-transition-name: none !important; }
+html[data-swap]::view-transition-old(*) { animation: wr-swap-out 120ms var(--ease-out) both; }
+html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease-out) both; }
+@keyframes wr-swap-out { to { opacity: 0; } }
+@keyframes wr-swap-in { from { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   .wr-bar, .wr-side, .wr-status { transition: none; }
