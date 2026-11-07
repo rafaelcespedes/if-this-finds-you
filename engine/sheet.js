@@ -811,11 +811,63 @@ export function plan(st, view, edit, opts = {}) {
     let after = -1;
     for (let i = at - 1; i >= 0; i--) if (m.units[i].k === 'ink') { after = m.units[i].id; break; }
     const prevCh = at > 0 ? m.text[at - 1] : '', nextCh = m.text[at] || '';
+    // right after an insertion above the line: what's typed carries on writing it, up there (the insertion goes on
+    // from where it ends, never on top of it; a space there is a space in it, not a split mark on the line)
+    const inserted = !!(prev && prev.k === 'ink' && !prev.half && (R.byId.get(prev.id) || {}).ins);
     if (ins === '\n' && prev && prev.k === 'ink') { emit({ t: 'mark', after, kind: 'para' }); return { events, view: v }; }
-    if (ins === ' ' && prev && next && prev.k === 'ink' && next.k === 'ink' && isLetter(prevCh) && isLetter(nextCh)) { emit({ t: 'mark', after, kind: 'split' }); return { events, view: v }; }
+    if (!inserted && ins === ' ' && prev && next && prev.k === 'ink' && next.k === 'ink' && isLetter(prevCh) && isLetter(nextCh)) { emit({ t: 'mark', after, kind: 'split' }); return { events, view: v }; }
+    // right after a word crossed out, mid-text (where the caret is left): what's typed replaces it, written above it,
+    // as select-and-type does (a substitution). At the very end of the writing it's the tail: the pen carries on after
+    // it. (edit.side 'before': the caret was put before the struck word, by an arrow key: an insertion there instead)
+    if (!inserted && edit.side !== 'before') {
+      const run = struckWord(R, m, at);
+      if (run) { v.mid = { after: run.to, text: ins, over: [run.from, run.to] }; return { events, view: v }; }
+    }
     v.mid = { after, text: ins };
   }
   return { events, view: v };
+}
+
+// ---------- struck words in the view ----------
+// Struck words aren't in the view text: each sits in a gap between two of its units. The struck recs in the gap at view
+// offset k, in reading order; null when there are none, or the gap is next to text the pen hasn't written (or an
+// insertion being typed).
+function struckGap(R, m, k) {
+  const recs = R.recs;
+  if (k < 0 || k > m.units.length) return null;
+  const prev = k > 0 ? m.units[k - 1] : null, next = m.units[k] || null;
+  if ((prev && prev.k !== 'ink') || (next && next.k === 'mid')) return null;
+  const i0 = prev ? recs.indexOf(R.byId.get(prev.id)) + 1 : 0;
+  const i1 = next && next.k === 'ink' ? recs.indexOf(R.byId.get(next.id)) : recs.length;
+  if (i0 < 0 || i1 < 0) return null;
+  const out = [];
+  for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) out.push(recs[i]);
+  return out.length ? out : null;
+}
+// The crossings-out in a gap: runs of recs struck by the same event, in reading order, each with its level. A run of
+// only spaces or line breaks has no ink to cross out (nothing would show): it's left out.
+const blankRec = (r) => /^\s$/.test(r.over || r.ch || '');
+function struckRuns(recs) {
+  const runs = [];
+  for (const r of recs || []) {
+    const last = runs[runs.length - 1];
+    if (last && last.sev === r.sev) last.recs.push(r);
+    else runs.push({ sev: r.sev, recs: [r] });
+  }
+  return runs.filter((rn) => rn.recs.some((r) => !blankRec(r))).map((rn) => Object.assign(rn, { level: Math.max(...rn.recs.map((r) => r.lv || 1)) }));
+}
+// The word crossed out right before the caret at view offset k, mid-text (written text after the caret): the last
+// crossing-out in the gap, as a run of consecutive ids { from, to } (a substitution over it covers only it), or null.
+// One that already has words written over it (a substitution right after it) is taken: none.
+function struckWord(R, m, k) {
+  if (k >= m.tailStart) return null;
+  const runs = struckRuns(struckGap(R, m, k));
+  if (!runs.length) return null;
+  const next = m.units[k];
+  const nr = next && next.k === 'ink' ? R.byId.get(next.id) : null;
+  if (nr && nr.sub) return null;
+  const last = idRuns(runs[runs.length - 1].recs.filter((r) => !blankRec(r)).map((r) => r.id)).pop();
+  return last ? { from: last[0], to: last[1] } : null;
 }
 
 // A replacement edit arrives as the smallest change ("teh" -> "the" is "eh" -> "he"), so widen it to the
@@ -935,31 +987,33 @@ function resolvePending(st, R, v, emit) {
 export const AGAIN_MAX = 4;
 // The struck recs at view offset `at` (struck words aren't in the view, so they sit in a gap before it): right at
 // the caret, or one space away (a selection taken with the space before it is struck as the word and the space
-// after: the caret is left a space short of it). null when there are none.
-function struckAt(R, m, at) {
-  const recs = R.recs;
+// after: the caret is left a space short of it). null when there are none. Crossings-out of nothing but spaces are
+// left out: a space has no ink, so going over it again would show nothing (the press goes on to the word before).
+// opts.side 'before': the caret sits before the struck word of that gap (an arrow key left it there): not at it.
+function struckAt(R, m, at, opts = {}) {
   const runAt = (k) => {
-    if (k < 0 || k > m.units.length) return null;
-    const prev = k > 0 ? m.units[k - 1] : null, next = m.units[k] || null;
-    if ((prev && prev.k !== 'ink') || (next && next.k === 'mid')) return null;
-    const i0 = prev ? recs.indexOf(R.byId.get(prev.id)) + 1 : 0;
-    const i1 = next && next.k === 'ink' ? recs.indexOf(R.byId.get(next.id)) : recs.length;
-    if (i0 < 0 || i1 < 0) return null;
-    const out = [];
-    for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) out.push(recs[i]);
+    const recs = struckGap(R, m, k);
+    const keep = new Set(struckRuns(recs).flatMap((rn) => rn.recs));
+    const out = (recs || []).filter((r) => keep.has(r));
     return out.length ? out : null;
   };
   const spaceAt = (k) => { const u = m.units[k]; return !!u && u.k === 'ink' && /^[ \t]$/.test((R.byId.get(u.id) || {}).ch || ''); };
+  if (opts.side === 'before') return (spaceAt(at - 1) && runAt(at - 1)) || null;
   return runAt(at) || (spaceAt(at) && runAt(at + 1)) || (spaceAt(at - 1) && runAt(at - 1)) || null;
 }
-export function again(st, view, at) {
+// opts.side 'before': the caret sits before the struck word in its gap (see struckAt).
+export function again(st, view, at, opts = {}) {
   const v = copyView(view || newView());
   if (v.pending || v.mid) return null;
   const R = st.reader, m = viewMap(R, v);
-  const run = struckAt(R, m, at);
-  if (!run) return null;
+  const found = struckAt(R, m, at, opts);
+  if (!found) return null;
+  // each press goes over what's just before the caret: the last crossing-out there that isn't inked out yet (a word
+  // struck after the one beside it was inked out is crossed out harder in its turn). All inked out: it stops there
+  const open = struckRuns(found).filter((rn) => rn.level < AGAIN_MAX);
+  if (!open.length) return { events: [], view: v, level: AGAIN_MAX };
+  const run = open[open.length - 1].recs;
   const level = Math.max(...run.map((r) => r.lv || 1));
-  if (level >= AGAIN_MAX) return { events: [], view: v, level };
   const lv = level + 1, was = run[run.length - 1].struck;
   const scribbled = was === 'scribble' || was === 'blackout';
   // each level the same person, more annoyed: a heavier strike, then their own scribble (the word still shows
