@@ -64,6 +64,8 @@ interface Props {
    * the pen has inked them, the way thought letters become ink.
    */
   ghost?: { items: any[] } | null;
+  /** how the ghost looks (the writing app: red pencil, at once): its fill (a CSS colour, variables too), strength, and whether it fades in. Default: faint graphite, fading in */
+  ghostLook?: { fill: string; opacity: number; fade?: boolean };
 }
 
 /** the five drying steps as SVG filters (a gamma curve on the colour: deeper, or for iron gall paler) */
@@ -113,7 +115,7 @@ function patchThoughts(svg: SVGSVGElement, words: ThoughtWord[]) {
   }
 }
 
-export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold, trail, penRef, dim, wetMs, onPenRest, ghost }: Props) {
+export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, inkKey, extras, handKey, writeOut, hold, trail, penRef, dim, wetMs, onPenRest, ghost, ghostLook }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const svgs = useRef<SVGSVGElement[]>([]);
   const drys = useRef<SVGSVGElement[]>([]);
@@ -286,9 +288,10 @@ export const LiveSheets = memo(function LiveSheets({ live, pxPerMm, gapPx, ink, 
     svgs.current.forEach((svg, s) => {
       if (!svg || !per[s]) return;
       const g = svg.ownerDocument.createElementNS(NS, 'g') as SVGGElement;
-      g.setAttribute('class', 'ghost-in');
-      g.setAttribute('fill', THOUGHT_FILL);
-      g.setAttribute('fill-opacity', String(GHOST_OPACITY));
+      if (ghostLook?.fade !== false) g.setAttribute('class', 'ghost-in');
+      // (a style, not an attribute: a CSS variable works there)
+      g.style.setProperty('fill', ghostLook?.fill ?? THOUGHT_FILL);
+      g.setAttribute('fill-opacity', String(ghostLook?.opacity ?? GHOST_OPACITY));
       g.innerHTML = per[s];
       svg.appendChild(g);
       ghostEls.current.push(g);
