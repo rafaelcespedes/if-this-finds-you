@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A hand from If This Finds You</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1e2733;
+        --muted: #6b6457;
+        --wash: rgba(30, 39, 51, 0.06);
+        --wash-strong: rgba(30, 39, 51, 0.11);
+        --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+      }
+      * { box-sizing: border-box; margin: 0; }
+      /* transparent: the page around the iframe shows through (?bg= gives it a colour) */
+      html, body { background: transparent; }
+      body { font-family: var(--font); color: var(--ink); padding: 12px 16px 14px; }
+      #sheet { width: 100%; min-height: 64px; }
+      #sheet svg { display: block; width: 100%; height: auto; overflow: visible; }
+      #ui { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 10px; font-size: 13px; }
+      #ui[hidden] { display: none; }
+      #who { flex: 1 1 12rem; min-width: 0; color: var(--muted); }
+      button, select {
+        font: inherit;
+        font-size: 13px;
+        color: var(--ink);
+        height: 32px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--wash);
+        cursor: pointer;
+        transition: background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      select { padding-right: 8px; }
+      @media (hover: hover) and (pointer: fine) { button:hover, select:hover { background: var(--wash-strong); } }
+      button:active { transform: scale(0.97); }
+      button:focus-visible, select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+      @media (pointer: coarse) { button, select { height: 44px; } }
+      @media (prefers-reduced-motion: reduce) { button, select { transition: none; } }
+    </style>
+  </head>
+  <body>
+    <div id="sheet" role="img"></div>
+    <div id="ui" hidden>
+      <span id="who" aria-live="polite"></span>
+      <select id="style" aria-label="Tradition"></select>
+      <button id="again" type="button">Write it again</button>
+      <button id="another" type="button">Another writer</button>
+    </div>
+    <script>
+      // ?bg= a background colour for the page (by default it's transparent, for an iframe on any page)
+      const bg = new URLSearchParams(location.search).get('bg');
+      if (bg && /^[#a-z0-9(),.\s%-]+$/i.test(bg)) document.body.style.background = bg;
+    </script>
+    <script type="module" src="./embed.js"></script>
+  </body>
+</html>
