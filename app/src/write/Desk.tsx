@@ -287,7 +287,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   }, [sync]);
 
   // a phone's deletions as they come (keydown doesn't name them on Android, and iOS deletes whole words without one)
-  const againAt = (at: number) => sessionRef.current.again(at);
+  const againAt = (at: number) => sessionRef.current.again(at, editor.current?.side());
   const textSel = (t: EventTarget | null) => ((t as HTMLElement | null)?.tagName === 'TEXTAREA' ? editor.current?.selection() ?? null : null);
   const againTimes = useRef<number[]>([]);
   const held = (act: HoldAct) => {

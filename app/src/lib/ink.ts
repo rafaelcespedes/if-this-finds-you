@@ -559,7 +559,7 @@ export class InkSession {
       this.planEdit({ ...e, del: 0 });
       return;
     }
-    const r = engine.plan(this.sheet, this.view, { at: e.at, del: e.del, ins: e.ins, kind: e.kind });
+    const r = engine.plan(this.sheet, this.view, { at: e.at, del: e.del, ins: e.ins, kind: e.kind, ...(e.side ? { side: e.side } : {}) });
     this.carry(r.events, r.view);
     this.view = r.view;
     if (r.events.length) this.inked(r.events);
@@ -1250,9 +1250,31 @@ export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
     // (the caret's lean and height as on the line below)
     return { ...c, sheet, x: s.x, y, top: c.top ? [s.x + (c.top[0] - c.x), y - (c.y - c.top[1])] : undefined };
   };
+  // a crossed-out word sits in a gap at one offset of the text, its caret stop after it; the one before it (right after
+  // what precedes it) is the page's struckStops (engine): a caret stop on each side of it, the same offset, side 'before'
+  const beforeAt = new Map<number, { x: number; y: number; line: number }>();
+  for (const s of (live.page.struckStops ?? []) as { o: number; x: number; y: number; line: number }[]) beforeAt.set(s.o, s);
+  const gapBefore = (o: number) => {
+    if (!beforeAt.size || o < 0 || o >= toPaper.length || (midFrom >= 0 && o > midFrom && o <= midFrom + midLen)) return null;
+    return beforeAt.get(toP(o)) ?? null;
+  };
+  const caretBefore = (o: number): CaretPos | null => {
+    const s = gapBefore(o);
+    const c = s ? g.caret(toP(o), 'after') : null;
+    if (!s || !c) return null;
+    const sheet = Math.min(live.sheets.length - 1, Math.max(0, Math.floor(s.y / sheetU)));
+    const y = s.y - (live.sheets[sheet]?.shiftU ?? 0);
+    return { ...c, sheet, x: s.x, y, line: s.line, top: c.top ? [s.x + (c.top[0] - c.x), y - (c.y - c.top[1])] : undefined };
+  };
+  const step = (o: number, dir: -1 | 1, side?: Side): { o: number; side: Side } | null => {
+    if (dir < 0) return side !== 'before' && gapBefore(o) ? { o, side: 'before' } : null;
+    if (side === 'before' && gapBefore(o)) return { o, side: 'after' };
+    return o + 1 < toPaper.length && gapBefore(o + 1) ? { o: o + 1, side: 'before' } : null;
+  };
   const caret = (o: number, side?: Side) => {
     const up = caretInInsert(o, side);
     if (up) return up;
+    if (side === 'before') { const b = caretBefore(o); if (b) return b; }
     const po = toP(o);
     const c = g.caret(po, side);
     const list = stopsAt.get(po);
@@ -1267,6 +1289,7 @@ export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
     ...g,
     text: viewText,
     caret,
+    step,
     hit: (sheet, x, y) => fromP(g.hit(sheet, x, y)),
     vertical: (o, dir, goalX, side) => { const v = g.vertical(toP(o), dir, goalX, side); return { o: fromP(v.o), goalX: v.goalX }; },
     edges: (o, side) => { const e = g.edges(toP(o), side); return { start: fromP(e.start), end: fromP(e.end, 'right') }; },

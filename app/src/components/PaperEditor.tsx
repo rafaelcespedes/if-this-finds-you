@@ -43,6 +43,8 @@ export interface PaperEditorApi {
   placeAt: (clientX: number, clientY: number) => void;
   /** the caret's line on the page (CSS px from the letter's top left): where a margin note goes, beside it; null without one */
   caretRect: () => { left: number; top: number; height: number } | null;
+  /** which side of its offset the caret is on ('before': put before a crossed-out word by an arrow key, or a line's end) */
+  side: () => Side;
 }
 
 interface Props {
@@ -126,7 +128,14 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     setComposition(c);
     onComposingChange?.(c != null);
   }, [onComposingChange]);
-  const input = useEditInput(ta, text, onEdit, 'paper', onComposition, onHistory);
+  // an edit made with the caret put before a crossed-out word (an arrow key: Ink mode, geometry.step) says so
+  const sideRef = useRef<Side>('after');
+  sideRef.current = side;
+  const onEditSided = useCallback((e: Edit) => {
+    const at = sideAt.current;
+    onEdit(at != null && sideRef.current === 'before' && (e.at === at || e.at + e.del === at) ? { ...e, side: 'before' } : e);
+  }, [onEdit]);
+  const input = useEditInput(ta, text, onEditSided, 'paper', onComposition, onHistory);
   const descId = useId();
   // the shortcuts' key by its name on this keyboard (Command on Apple's, Ctrl elsewhere), as the keys themselves follow isMac
   const modKey = isMac() ? 'Command' : 'Ctrl';
@@ -198,6 +207,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     setSelection: (from, to) => focusAt(to ?? from, to != null, from),
     placeAt: (x, y) => placeAt.current(x, y),
     caretRect: () => caretRectRef.current,
+    side: () => (sideAt.current != null ? sideRef.current : 'after'),
   }), [focusAt, sync, text.length]);
   const placeAt = useRef<(x: number, y: number) => void>(() => {});
 
@@ -393,6 +403,18 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       return;
     }
     goalX.current = null;
+    // Left/Right across a crossed-out word (Ink mode): a stop on each side of it, though it has one offset
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey && el.selectionStart === el.selectionEnd && geo.step) {
+      const st = geo.step(toMap(head), e.key === 'ArrowLeft' ? -1 : 1, sideAt.current === head ? side : 'after');
+      if (st) {
+        e.preventDefault();
+        const to = fromMap(st.o);
+        focusAt(to);
+        sideAt.current = st.side === 'before' ? to : null;
+        setSide(st.side);
+        return;
+      }
+    }
     if (lineKey && !e.altKey) {
       e.preventDefault();
       const edges = geo.edges(toMap(head), side);

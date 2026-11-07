@@ -612,9 +612,10 @@ function placeStet(st, s, e, ev) {
 // lineInfo, rules, height, text (logicalText), plus sheet / sheets / full.
 function finish(st) {
   const s = st.cur, R = st.reader;
-  const at = new Map();
+  const at = new Map(), gap = new Map();
   let n = 0, text = '';
-  for (const r of R.recs) { if (r.struck || r.joined) at.set(r.id, -1); else { at.set(r.id, n); const c = r.over || r.ch; n += c.length; text += c; } }
+  // (gap: a struck glyph -> [the offset of the gap it sits in, its place in reading order])
+  R.recs.forEach((r, i) => { if (r.struck || r.joined) { at.set(r.id, -1); if (r.struck && !r.joined) gap.set(r.id, [n, i]); } else { at.set(r.id, n); const c = r.over || r.ch; n += c.length; text += c; } });
   let wordNo = -1, prev = null;
   for (const it of s.items) {
     let role = it.base;
@@ -631,7 +632,7 @@ function finish(st) {
     if (it.wk !== prev) { wordNo++; prev = it.wk; }
     it.word = wordNo;
   }
-  st.page = pageOf(st, s, { at, text });
+  st.page = pageOf(st, s, { at, gap, text });
   return st;
 }
 function pageOf(st, s, live) {
@@ -640,6 +641,7 @@ function pageOf(st, s, live) {
   const pages = [...s.main.pages, ...(s.ps ? s.ps.pages : [])];
   const last = s.main.pages[s.main.pages.length - 1];
   const stops = live ? liveStops(st, s, live.at) : [];
+  const struckStops = live ? struckStopsOf(st, s, live.gap) : [];
   const page = {
     // fresh lists per page, so runChanges(oldPage, newPage) sees what a write added (the item objects
     // themselves are shared: finish() updates their role / at / word as corrections arrive)
@@ -654,6 +656,8 @@ function pageOf(st, s, live) {
     full: !!(st.opts.pageHeight && !st.opts.sheet && Number.isFinite(ink.y1) && ink.y1 > st.opts.pageHeight),
     pen: s.stream.ink.pen,
   };
+  // (Ink mode: where the caret goes before each crossed-out word, which no offset of the text is inside: see struckStopsOf)
+  if (struckStops.length) page.struckStops = struckStops;
   // (format) highlighter swipes, laid under the writing; checklist boxes (their glyph id, line and box, ticked or not)
   if (s.highlights.length) page.highlights = s.highlights.slice();
   if (s.boxes.size) page.boxes = [...s.boxes.values()].map((b) => ({ at: b.at, line: b.line, box: b.box.slice(), checked: (R.checks.get(b.at) || 0) % 2 === 1 }));
@@ -686,6 +690,32 @@ function liveStops(st, s, at) {
     }
   }
   return [...out.values()].sort((a, b) => a.o - b.o || (a.aff === 'before' ? -1 : b.aff === 'before' ? 1 : 0));
+}
+
+// A crossed-out word has no offset of its own in the text (it's struck out of it): it sits in a gap at one offset, and
+// that offset's stop is after it (where the pen carries on, or a replacement goes). Its stop before it, right after what
+// precedes it, is kept here: one per gap { o (the gap's offset in the text as it reads now), x, y, line, kind, aff? },
+// the stop before the gap's first struck character (a gap of only spaces has nothing to step over: left out), so an
+// editor can give a crossed-out word a caret stop on each side.
+function struckStopsOf(st, s, gap) {
+  const R = st.reader, best = new Map(), inked = new Set();
+  for (const src of s.stopSrc) {
+    for (const sp of src.stops) {
+      let id;
+      if (src.ins) { if (sp.o >= src.ins.len) continue; id = src.ins.idAt[sp.o]; }
+      else { if (sp.o >= src.S.text.length) continue; id = src.S.ids[sp.o]; }
+      const g = id != null && id >= 0 ? gap.get(id) : null;
+      const r = g && R.byId.get(id);
+      if (!g || !r) continue;
+      if (!/\s/.test(r.over || r.ch || '')) inked.add(g[0]);
+      const was = best.get(g[0]);
+      // the first struck character of the gap; at a soft wrap, its place at the start of the line below
+      if (was && (was.i < g[1] || (was.i === g[1] && sp.aff !== 'after'))) continue;
+      const line = src.S && src.S.lineBase ? sp.line + src.S.lineBase : sp.line;
+      best.set(g[0], { i: g[1], sp: Object.assign({}, sp, { o: g[0], line }) });
+    }
+  }
+  return [...best.values()].map((b) => b.sp).filter((sp) => inked.has(sp.o)).sort((a, b) => a.o - b.o);
 }
 
 // Thought letters (§3.2): the text the pen hasn't reached yet (view.tail), laid out from the pen's state
@@ -779,17 +809,21 @@ export function plan(st, view, edit, opts = {}) {
   const at = edit.at | 0, del = edit.del | 0, ins = edit.ins || '';
   let m = viewMap(R, v);
   const inRange = (u) => u.k;
-  // 1. only unwritten text: edit it freely, nothing is ink yet
+  // 1. only unwritten text: edit it freely, nothing is ink yet. (Typing with the caret put before a word crossed out
+  // at the end, edit.side 'before': not after it, where the pen carries on, but above the line before it: 2e)
   const touched = m.units.slice(at, at + del).map(inRange);
-  if (at >= m.tailStart && touched.every((k) => k === 'tail')) {
-    const o = at - m.tailStart;
-    v.tail = v.tail.slice(0, o) + ins + v.tail.slice(o + del);
-    return { events, view: v };
-  }
+  const beforeStruck = edit.side === 'before' && !del && !!ins && at === m.tailStart && struckRuns(struckGap(R, m, at)).length > 0;
+  // (an insertion being typed comes first: where it ends right where the tail starts, before a word crossed out at the
+  // end, typing at its end carries it on)
   if (v.mid && m.midStart >= 0 && at >= m.midStart && at + del <= m.midEnd && touched.every((k) => k === 'mid')) {
     const o = at - m.midStart;
     v.mid.text = v.mid.text.slice(0, o) + ins + v.mid.text.slice(o + del);
     if (!v.mid.text) v.mid = null;
+    return { events, view: v };
+  }
+  if (at >= m.tailStart && touched.every((k) => k === 'tail') && !beforeStruck) {
+    const o = at - m.tailStart;
+    v.tail = v.tail.slice(0, o) + ins + v.tail.slice(o + del);
     return { events, view: v };
   }
   // 2r. a whole word replaced (a phone's autocorrect, after the pen had written it): the writer fixes
@@ -886,9 +920,10 @@ function struckRuns(recs) {
   }
   return runs.filter((rn) => rn.recs.some((r) => !blankRec(r))).map((rn) => Object.assign(rn, { level: Math.max(...rn.recs.map((r) => r.lv || 1)) }));
 }
-// The word crossed out right before the caret at view offset k, mid-text (written text after the caret): the last
-// crossing-out in the gap, as a run of consecutive ids { from, to } (a substitution over it covers only it), or null.
-// One that already has words written over it (a substitution right after it) is taken: none.
+// The words crossed out right before the caret at view offset k, mid-text (written text after the caret): the last
+// crossing-out in the gap (the words one deletion struck), without the spaces at its ends, as a run of consecutive ids
+// { from, to } (a substitution over it covers only it), or null. One that already has words written over it (a
+// substitution right after it) is taken: none.
 function struckWord(R, m, k) {
   if (k >= m.tailStart) return null;
   const runs = struckRuns(struckGap(R, m, k));
@@ -896,7 +931,10 @@ function struckWord(R, m, k) {
   const next = m.units[k];
   const nr = next && next.k === 'ink' ? R.byId.get(next.id) : null;
   if (nr && nr.sub) return null;
-  const last = idRuns(runs[runs.length - 1].recs.filter((r) => !blankRec(r)).map((r) => r.id)).pop();
+  const recs = runs[runs.length - 1].recs.slice();
+  while (recs.length && blankRec(recs[0])) recs.shift();
+  while (recs.length && blankRec(recs[recs.length - 1])) recs.pop();
+  const last = idRuns(recs.map((r) => r.id)).pop();
   return last ? { from: last[0], to: last[1] } : null;
 }
 

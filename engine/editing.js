@@ -117,15 +117,35 @@ export function geometry(p, pages, opts = {}) {
     for (const n of lineNums) { if (gaps.has(n)) continue; const b = baseline(n, x); if (b > ly) { ly = b; low = n; } }
     return low;
   }
+  // Ink mode: words written above a line (an insertion) have their stops on that line's number, on their own baseline
+  // well above it (written letters' stops are on their line's baseline). A click on them goes into them, not to the
+  // line above, or to the letters under them; a click on the line, or Up and Down, stay on the line's own stops.
+  const raised = stops.filter((s) => Number.isFinite(s.y) && lines.has(s.line) && baseline(s.line, s.x) - s.y > 0.6 * xh);
+  const onBaseline = new Map();
+  if (raised.length) {
+    const up = new Set(raised);
+    for (const [n, arr] of onLine) { const own = arr.filter((s) => !up.has(s)); onBaseline.set(n, own.length ? own : arr); }
+  }
+  function raisedAt(x, y) {
+    let best = null, bd = Infinity;
+    for (const s of raised) {
+      if (y < s.y - 1.7 * xh || y > s.y + 0.3 * xh) continue;
+      const dx = Math.abs(x - (s.y - y) * Math.tan(slant(s.line, s.x) * DEG) - s.x);
+      if (dx < bd) { bd = dx; best = s; }
+    }
+    return best && bd <= 1.1 * xh ? best : null;
+  }
   // the stop on line n nearest to page x (already un-sheared)
   function nearestOn(n, x) {
-    const arr = onLine.get(n);
+    const arr = onBaseline.get(n) || onLine.get(n);
     if (!arr || !arr.length) return null;
     let lo = 0, hi = arr.length - 1;
     while (lo < hi) { const m = (lo + hi) >> 1; if ((arr[m].x + arr[m + 1].x) / 2 < x) lo = m + 1; else hi = m; }
     return arr[lo];
   }
   function hitTest(x, y) {
+    const up = raised.length ? raisedAt(x, y) : null;
+    if (up) return { offset: up.o, aff: up.aff || 'after', line: up.line };
     const n = lineAt(x, y);
     if (n == null) return { offset: 0, aff: 'after', line: null };
     // un-shear: a click on an ascender belongs to the letter at its foot
