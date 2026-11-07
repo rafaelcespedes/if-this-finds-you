@@ -752,29 +752,41 @@ export function draftPage(st, view, opts) {
   return Object.assign({}, pg, { items: pg.items.map((it) => Object.assign({}, it, { line: it.line + S.lineBase })), stops: pg.stops.map((sp) => Object.assign({}, sp, { line: sp.line + S.lineBase })) });
 }
 
-// Thought letters above the line: the insertion being typed mid-text (view.mid), laid out where the pen will write it
-// (placeInsert's own placement, with the seeds of the event it will be: the log's next index; a long insertion the pen
-// writes in pieces may settle a hair differently), without writing it, so the app can show it faint where it goes.
+// Thought letters above the line: the insertion being typed mid-text (view.mid), laid out where the pen will write it,
+// without writing it, so the app can show it faint where it goes. As the writing page's pen hands it over: a word at a
+// time (a word, with the spaces before and after it), each its own insert event, the next carrying on from where the
+// last one ended (placeInsert's own placement, with the seeds of the events they'll be: the log's next indexes).
 // null when there's none, or nothing on the paper yet to write it above. { items: its letters (charIndex = the offset
-// in view.mid.text), caret: the caret mark the pen will draw under it (null when it carries on an insertion), stops:
-// the caret stops (o = the offset in view.mid.text; x, y on the insertion's own baseline), line: the written line it
-// goes above, text }
+// in view.mid.text), caret: the caret mark the pen will draw under it (null when it carries an insertion on), stops: the
+// caret stops (o = the offset in view.mid.text; x, y on the insertion's own baseline), line: the written line it goes
+// above, text }
+const INSERT_WORD = /^\s*\S+[ \t]*/;
 export function draftInsert(st, view) {
   const mid = view && view.mid;
   if (!mid || !mid.text) return null;
-  const s = st.cur;
-  const pl = insertPlan(st, s, { t: 'insert', after: mid.after, text: mid.text, over: mid.over, up: mid.up }, st.doc.log.length);
-  if (!pl) return null;
-  const { res, ref } = pl;
-  const shift = res.shift || 0;
-  const items = [], caret = [];
-  for (const it of res.items) {
-    // (copies: what layout hands back is never changed by a draft)
-    if (it.kind === 'mark') { caret.push(Object.assign({}, it, { ev: st.doc.log.length })); continue; }
-    items.push(Object.assign({}, it, { charIndex: it.charIndex - shift, role: 'insert', line: ref.line, para: ref.para, sheet: s.n, wk: ref.wk, wkey: 'ins:' + ref.wk + ':' + it.wkey }));
+  const s = st.cur, ev0 = st.doc.log.length, maxW = st.opts.maxWidth || 12000;
+  const items = [], stops = [];
+  let caret = null, block = null, ref = null, o = 0, rest = mid.text;
+  for (let i = 0; rest; i++) {
+    const m = INSERT_WORD.exec(rest), word = m ? m[0] : rest, ev = ev0 + i;
+    let res;
+    if (!i) {
+      const pl = insertPlan(st, s, { t: 'insert', after: mid.after, text: word, over: mid.over, up: mid.up }, ev);
+      if (!pl) return null;
+      res = pl.res; ref = pl.ref;
+    } else res = insertionItems(st.p, st.H, { cont: block, text: word, seed: 'fix:' + st.salt + ':' + ev, maxW, r: R0(st, ev) });
+    block = Object.assign({}, res.block, { ref });
+    const shift = res.shift || 0;
+    for (const it of res.items) {
+      // (copies: what layout hands back is never changed by a draft)
+      if (it.kind === 'mark') { caret = Object.assign({}, it, { ev }); continue; }
+      items.push(Object.assign({}, it, { charIndex: o + it.charIndex - shift, role: 'insert', line: ref.line, para: ref.para, sheet: s.n, wk: ref.wk, wkey: 'ins:' + ref.wk + ':' + i + ':' + it.wkey }));
+    }
+    for (const sp of res.stops || []) stops.push(Object.assign({}, sp, { o: o + sp.o, line: ref.line }));
+    o += word.length;
+    rest = rest.slice(word.length);
   }
-  const stops = (res.stops || []).map((sp) => Object.assign({}, sp, { line: ref.line }));
-  return { items, caret: caret[0] || null, stops, line: ref.line, text: mid.text };
+  return { items, caret, stops, line: ref.line, text: mid.text };
 }
 
 // The markers of list items the pen hasn't written yet, made where it will draw them (placeMarker's own, seeded as

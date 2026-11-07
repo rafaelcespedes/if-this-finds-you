@@ -326,6 +326,16 @@ for (const [seed, style] of HANDS) {
           s.flush();
           S.type(' new', at + 6); s.flush();
           if (s.text() !== 'The old little newharbour at dawn' || s.doc.log.some((e) => e.t === 'mark')) bad.push('1: ' + JSON.stringify(s.text()));
+          // the pen hands an insertion over a word at a time, as the trail: each word where its thought letters were
+          const W = mk('s5w'), ww = W.s;
+          W.type('The old harbour at dawn'); ww.flush();
+          W.type('very quiet grey ', ww.text().indexOf(' harbour') + 1);
+          const pos = (list) => list.filter((it) => it.kind === 'glyph').map((it) => `${it.ch}@${it.x.toFixed(1)},${it.y.toFixed(1)}`).join(' ');
+          const drafted = pos(ww.draft().ins.items), w0 = ww.page.items.length;
+          ww.lastKey = performance.now() - 5000; // (a pause; the drawn pen has caught up: drawing 0)
+          for (let k = 0; k < 20 && ww.waiting; k++) { ww.handedAt = -Infinity; ww.step(130, false, 0); }
+          const words = ww.doc.log.filter((e) => e.t === 'insert').map((e) => e.text);
+          if (drafted !== pos(ww.page.items.slice(w0)) || words.join('|') !== 'very |quiet |grey ') bad.push('5: an insertion handed over a word at a time isn\'t written where its thought letters were: ' + JSON.stringify(words));
           // 2: after a struck word, mid-text
           const R = mk('s2'), r = R.s;
           R.type('The old harbour at dawn'); r.flush();

@@ -625,7 +625,22 @@ export class InkSession {
     if (!final && idle < HOLD_LINE_MS && typeof engine.lineHeld === 'function' && engine.lineHeld(this.sheet, v)) return false;
     let r: { events: unknown[]; view: any };
     let handed = '';
-    if (drawing != null && !final && !v.pending && !v.mid?.text && v.tail) {
+    if (drawing != null && !final && !v.pending && v.mid?.text && !this.copyUntil) {
+      // an insertion being typed mid-text: handed over a word at a time too, each written on from where the last one
+      // ended, so it's written where its thought letters showed it (engine draftInsert lays it out the same way)
+      if (drawing > 1 || now - this.handedAt < 120) return false;
+      const mid = String(v.mid.text);
+      const m = CHUNK.exec(mid);
+      const chunk = m ? m[0] : mid;
+      const rest = mid.slice(chunk.length);
+      const finished = !!m && (/\s$/.test(chunk) || /^\s/.test(rest));
+      // a finished word goes once two more letters are typed after it, or after 700 ms; the word being typed after a
+      // pause (700 ms; on a phone 1.2 s, for autocorrect), as at the end
+      if (finished ? idle < 700 && rest.length < 2 : idle < (this.touch ? 1200 : 700)) return false;
+      const last = (this.sheet.reader?.nextId as number) + Array.from(chunk).length - 1;
+      r = engine.penStep(this.sheet, { ...v, tail: '', mid: { ...v.mid, text: chunk } }, { idle: Infinity, forgiving: false, touch: false });
+      r.view = { ...r.view, tail: v.tail, mid: rest ? { after: last, text: rest } : null };
+    } else if (drawing != null && !final && !v.pending && !v.mid?.text && v.tail) {
       const tail = String(v.tail);
       let chunk = '';
       if (copying) {
