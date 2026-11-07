@@ -33,10 +33,10 @@ export function shortcutGroups(mod: string, extra: ShortcutGroup[] = []): Shortc
     },
     ...extra,
     {
-      title: 'Notes',
+      title: 'Letters',
       rows: [
-        { keys: [`⌥${mod}N`], does: 'A new note' },
-        { keys: [`${mod}\\`], does: 'Show or hide your notes' },
+        { keys: [`⌥${mod}N`], does: 'A new letter' },
+        { keys: [`${mod}\\`], does: 'Show or hide your letters' },
         { keys: [`${mod}.`], does: 'Hide the toolbar (Esc brings it back)' },
         { keys: [`${mod}S`], does: 'Everything is kept as you go; this says so' },
         { keys: [`${mod}/`], does: 'These shortcuts' },

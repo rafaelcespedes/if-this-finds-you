@@ -91,7 +91,7 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
   const pic = pics[shape] ?? null;
   const ready = !!pic && !empty;
   const shown = pic ?? last;
-  const name = `${fileSafe(fileName || 'Note')}.png`;
+  const name = `${fileSafe(fileName || 'Letter')}.png`;
   const file = () => new File([pic!.blob], name, { type: 'image/png' });
   // a phone's share sheet, with the picture in it (null where there isn't one that takes files)
   const sheetFile = () => {
@@ -128,7 +128,7 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
     if (!ready) return;
     const f = sheetFile();
     if (f) {
-      try { await navigator.share({ files: [f], title: fileName || 'Note' }); return; } catch (e) {
+      try { await navigator.share({ files: [f], title: fileName || 'Letter' }); return; } catch (e) {
         const n = (e as DOMException).name;
         if (n === 'AbortError') return;
         if (n === 'NotAllowedError') { toast('Tap Save again', { id: 'share-save' }); return; }
@@ -150,7 +150,7 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
           </div>
           <div className="wr-share-side">
             <div className="wr-dialog-head">
-              <Dialog.Title>Share this note</Dialog.Title>
+              <Dialog.Title>Share this letter</Dialog.Title>
               <Dialog.Close className="wr-icon" aria-label="Close"><X aria-hidden /></Dialog.Close>
             </div>
             <div>
@@ -170,7 +170,7 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
                 <button type="button" className="wr-btn" disabled={!ready} onClick={save}><Download aria-hidden /> Save</button>
               </div>
             </div>
-            <p className="wr-share-note">Made on this device, and we keep no copy. The post links to the writing page, not to your note.</p>
+            <p className="wr-share-note">Made on this device, and we keep no copy. The post links to the writing page, not to your letter.</p>
           </div>
         </Dialog.Content>
       </Dialog.Portal>
