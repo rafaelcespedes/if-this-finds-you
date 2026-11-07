@@ -44,7 +44,17 @@ export function caretFit(lists: PageItem[][], xhU: number, frame: PencilFrame, c
     }
   }
   let scale = 1;
-  if (near && nd < 1.5 * xhU) {
+  if (!near || nd >= 1.5 * xhU) {
+    // no letters at the caret's height (an insertion whose grey letters this can't see): a caret lifted well above
+    // its own line's writing is in an insertion above it, written at about 0.6
+    let base: PageItem | null = null, bd = Infinity;
+    for (const list of lists) for (const it of list) {
+      if (!glyph(it) || it.line !== c.line || it.role === 'insert') continue;
+      const d = Math.abs((it.box![0] + it.box![2]) / 2 - c.x);
+      if (d < bd) { bd = d; base = it; }
+    }
+    if (base && base.y - Y > 1.1 * xhU) scale = 0.62;
+  } else {
     // the size of the main writing on that line, to measure an insertion's against
     let sum = 0, n = 0;
     for (const list of lists) for (const it of list) if (glyph(it) && it.line === near.line && it.role !== 'insert' && it !== near) { sum += scaleOf(it); n++; }
