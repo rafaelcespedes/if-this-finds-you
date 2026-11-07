@@ -102,7 +102,7 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
     if (cmd === 'ps') return;
     // Clean has the marks a text can carry (underlined, pressed harder); the rest is written in ink for now
     if (cmd !== 'underline' && cmd !== 'press' && cmd !== 'weight') {
-      toast('That’s written in ink for now', { id: 'clean-format', description: 'Switch the note to In ink for titles, lists, checklists, leaning and the highlighter.' });
+      toast('That’s written in ink for now', { id: 'clean-format', description: 'Switch the letter to In ink for titles, lists, checklists, leaning and the highlighter.' });
       return;
     }
     const [a, b] = from === to ? wordAt(docRef.current.text, from) : [from, to];

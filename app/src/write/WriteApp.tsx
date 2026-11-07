@@ -8,9 +8,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { DropdownMenu } from 'radix-ui';
-import { Bold, Check, ChevronLeft, Copy, Highlighter, Italic, ListTodo, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
+import { Bold, Check, ChevronLeft, Copy, Highlighter, Italic, ListTodo, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Trash2, Type, Undo2, WandSparkles } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
-import { Sheet } from '@/components/ui/sheet';
+import { ActionSheet, Sheet, type SheetEntry } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { copyText, saveNote } from '@/lib/actions';
@@ -125,7 +125,7 @@ export function WriteApp() {
   }, []);
   useEffect(() => { if (currentId) rememberOpen(currentId); }, [currentId]);
   useEffect(() => {
-    if (!keptOk) toast('This browser isn’t keeping your notes', { id: 'not-kept', description: 'They’ll be gone when you close the page (a private window, or storage that’s full).', duration: 10000 });
+    if (!keptOk) toast('This browser isn’t keeping your letters', { id: 'not-kept', description: 'They’ll be gone when you close the page (a private window, or storage that’s full).', duration: 10000 });
   }, [keptOk]);
 
   const desk = useRef<DeskApi>(null);
@@ -231,7 +231,7 @@ export function WriteApp() {
       const next = notesRef.current.filter((x) => !x.thrown && x.id !== n.id).sort((a, b) => b.at - a.at)[0];
       if (next) setCurrentId(next.id);
       else { const b = blankNote(n.look); setAll((all) => [...all, b]); setCurrentId(b.id); }
-      toast('That note was thrown away in another tab', { id: 'thrown-elsewhere', description: 'It’s in Thrown away.' });
+      toast('That letter was thrown away in another tab', { id: 'thrown-elsewhere', description: 'It’s in Thrown away.' });
     }
   }), [setAll, patch]);
 
@@ -269,7 +269,7 @@ export function WriteApp() {
     setPhoneScreen('note');
     if (n && !isBlank(n)) { setArrived(n.id); window.setTimeout(() => setArrived((a) => (a === n.id ? null : a)), 900); }
     setWriting(false);
-    say('A new note.');
+    say('A new letter.');
     return next;
   };
   const openNote = (id: string) => {
@@ -287,7 +287,7 @@ export function WriteApp() {
     const back: Note = { ...n, thrown: undefined };
     patch(id, () => back);
     void putNote(back);
-    say('Note put back.');
+    say('Letter put back.');
   };
   const throwAway = (id: string) => {
     const n = id === currentRef.current ? settle() : notesRef.current.find((x) => x.id === id);
@@ -304,9 +304,9 @@ export function WriteApp() {
     });
     if (!isBlank(n)) void putNote(gone);
     else { setAll((all) => all.filter((x) => x.id !== id)); void deleteNote(id); return; }
-    say('Note thrown away.');
+    say('Letter thrown away.');
     // each note thrown away has its own Undo, so two in a row can both come back
-    toast(`“${titleOf(n) || 'Note'}” thrown away`, { id: `thrown-${id}`, duration: 6000, action: { label: 'Undo', onClick: () => restore(id) } });
+    toast(`“${titleOf(n) || 'Letter'}” thrown away`, { id: `thrown-${id}`, duration: 6000, action: { label: 'Undo', onClick: () => restore(id) } });
   };
   const deleteForGood = (id: string) => {
     setAll((all) => all.filter((x) => x.id !== id));
@@ -363,13 +363,13 @@ export function WriteApp() {
     void keep(copy);
     setArrived(from.id);
     window.setTimeout(() => setArrived((a) => (a === from.id ? null : a)), 900);
-    toast('A fair copy', { id: 'fair', description: 'The draft is in your notes.', duration: 4000 });
+    toast('A fair copy', { id: 'fair', description: 'The draft is in your letters.', duration: 4000 });
   };
   const copyAll = async () => {
     await copyText(desk.current?.text() ?? '');
     toast('Copied', { id: 'copied', description: 'The words, as they read now.', duration: 2000 });
   };
-  const fileName = () => (titleOf(current!) || 'Note').replace(/[\\/:*?"<>|]+/g, '').slice(0, 60);
+  const fileName = () => (titleOf(current!) || 'Letter').replace(/[\\/:*?"<>|]+/g, '').slice(0, 60);
   const downloadText = () => {
     const blob = new Blob([desk.current?.text() ?? ''], { type: 'text/plain;charset=utf-8' });
     const a = document.createElement('a');
@@ -466,7 +466,7 @@ export function WriteApp() {
         settle();
         void saveNow().then((ok) => toast(ok ? 'Kept on this device' : 'Not kept', {
           id: 'kept', duration: ok ? 1600 : 6000,
-          description: ok ? undefined : 'This browser isn’t keeping notes. Copy or save what you’ve written.',
+          description: ok ? undefined : 'This browser isn’t keeping letters. Copy or save what you’ve written.',
         }));
         return;
       }
@@ -533,8 +533,8 @@ export function WriteApp() {
       onOpenChange={(o) => { setFormatOpen(o); if (o) refreshFmt(); }}
       onCloseAutoFocus={focusBack}
       trigger={
-        <button type="button" className="wr-aa" aria-label={`Format: ${styleName(fmt)}`} title="Format">
-          <span className="wr-aa-mark" aria-hidden>Aa</span>{!phone && <span className="wr-aa-name">{styleName(fmt)}</span>}
+        <button type="button" className="wr-icon wr-aa" aria-label={`Text style: ${styleName(fmt)}`} title={`Text style: ${styleName(fmt)}`}>
+          <Type aria-hidden />
         </button>
       }
     >
@@ -550,6 +550,31 @@ export function WriteApp() {
       )}
     </Sheet>
   );
+
+  // a phone: More is a sheet from the bottom, the main site's (Rafael, 7 Nov: "those have worked really well"), its rows
+  // the same as the menu's on a computer
+  const sep = (id: string): SheetEntry => ({ kind: 'separator', id });
+  const phoneMore: SheetEntry[] = [
+    { id: 'new', label: 'New letter', icon: <SquarePen aria-hidden />, onSelect: () => newNote() },
+    sep('s0'),
+    { id: 'ink', label: 'In ink', hint: 'Mistakes are crossed out, never erased', checked: !isClean(current), onSelect: () => setMode('ink') },
+    { id: 'clean', label: 'Clean', hint: 'Edit freely, like a font. Crossings-out are tidied away', checked: isClean(current), onSelect: () => setMode('clean') },
+    sep('s1'),
+    { id: 'fair', label: 'Make a fair copy', icon: <WandSparkles aria-hidden />, onSelect: fairCopy },
+    { id: 'pin', label: current?.pinned ? 'Unpin' : 'Pin', icon: current?.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />, onSelect: () => pin(current.id, !current.pinned) },
+    sep('s2'),
+    { id: 'share', label: 'Share…', icon: <Share aria-hidden />, onSelect: () => setShareOpen(true) },
+    { id: 'copy', label: 'Copy the words', icon: <Copy aria-hidden />, onSelect: () => void copyAll() },
+    { id: 'image', label: 'Save as an image', icon: <ImageIcon aria-hidden />, onSelect: () => void downloadImage() },
+    { id: 'text', label: 'Save as text', icon: <FileText aria-hidden />, onSelect: downloadText },
+    sep('s3'),
+    { id: 'throw', label: 'Throw away', icon: <Trash2 aria-hidden />, onSelect: () => throwAway(current.id) },
+    sep('s4'),
+    { kind: 'label', id: 'appearance', label: 'Appearance' },
+    ...APPEARANCES.map((a): SheetEntry => ({ id: `theme-${a.id}`, label: a.label, checked: theme === a.id, onSelect: () => setTheme(a.id) })),
+    sep('s5'),
+    { kind: 'label', id: 'count', label: `${words} ${words === 1 ? 'word' : 'words'} · ${keptOk ? 'Kept on this device' : 'Not kept in this browser'}` },
+  ];
 
   const noteItems = (
     <>
@@ -621,11 +646,16 @@ export function WriteApp() {
     >
       {showLib && !phone && !roomy && <div className="wr-scrim" aria-hidden onClick={() => setLibOpen(false)} />}
       {showLib && (
-        <aside className="wr-side" aria-label="Your notes">
+        <aside className="wr-side" aria-label="Your letters">
           {phone && (
+            // a phone: the way home at the top left, a new letter at the top right; the heading below, with room
+            // above it; Search the full width under it (Rafael, 7 Nov)
             <div className="wr-side-top">
-              <h1>Notes</h1>
-              <button type="button" className="wr-icon" onClick={() => newNote()} aria-label="New note"><SquarePen aria-hidden /></button>
+              <div className="wr-side-bar">
+                <HomeMark />
+                <button type="button" className="wr-icon" onClick={() => newNote()} aria-label="New letter"><SquarePen aria-hidden /></button>
+              </div>
+              <h1>Letters</h1>
             </div>
           )}
           <Library
@@ -638,7 +668,7 @@ export function WriteApp() {
             onDelete={deleteForGood}
             screen={phone}
             arrived={arrived}
-            lead={<HomeMark />}
+            lead={phone ? undefined : <HomeMark />}
           />
         </aside>
       )}
@@ -648,20 +678,21 @@ export function WriteApp() {
           <header className="wr-bar" aria-label="Toolbar">
             <div className="wr-group">
               {phone ? (
-                <button type="button" className="wr-icon wr-back" onClick={() => { settle(); setPhoneScreen('library'); }} aria-label="Notes">
-                  <ChevronLeft aria-hidden /><span>Notes</span>
+                <button type="button" className="wr-icon wr-back" onClick={() => { settle(); setPhoneScreen('library'); }} aria-label="Letters">
+                  <ChevronLeft aria-hidden /><span>Letters</span>
                 </button>
               ) : (
-                <>{!libOpen && <HomeMark />}<button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => setLibOpen((o) => !o)} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} title={`Notes  ${MOD}\\`}>
+                <>{!libOpen && <HomeMark />}<button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => setLibOpen((o) => !o)} aria-label={libOpen ? 'Hide letters' : 'Show letters'} aria-pressed={libOpen} title={`Letters  ${MOD}\\`}>
                   <PanelLeft aria-hidden />
                 </button></>
               )}
-              {!phone && <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => newNote()} aria-label="New note" title={`New note  ⌥${MOD}N`}><SquarePen aria-hidden /></button>}
+              {!phone && <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => newNote()} aria-label="New letter" title={`New letter  ⌥${MOD}N`}><SquarePen aria-hidden /></button>}
             </div>
             {phone && <span className="wr-format-anchor">{formatButton}</span>}
             {!phone && (
               <div className="wr-group wr-format-bar">
                 {formatButton}
+                <span className="wr-bar-div" aria-hidden />
                 <span className="wr-bar-more">
                   <button type="button" className="wr-icon" aria-pressed={!!fmt?.weight} onPointerDown={keepPen} onClick={() => run('weight')} aria-label="Press harder" title={`Press harder (on a selection: go over it)  ${MOD}B`}><Bold aria-hidden /></button>
                   <button type="button" className="wr-icon" aria-pressed={!!fmt?.lean} disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('lean')} aria-label="Lean" title={`Lean in, from here  ${MOD}I`}><Italic aria-hidden /></button>
@@ -678,7 +709,9 @@ export function WriteApp() {
             </div>
             <div className="wr-group">
               {!phone && <button type="button" className="wr-icon" onClick={() => setShareOpen(true)} aria-label="Share" title="Share as a picture"><Share aria-hidden /></button>}
-              {menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, <>{phone && <><DropdownMenu.Item className="wr-menu-item" onSelect={() => newNote()}><SquarePen aria-hidden /> New note</DropdownMenu.Item><DropdownMenu.Separator className="wr-menu-sep" /></>}{modeItems}<DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</>, 'end')}
+              {phone
+                ? <ActionSheet trigger={<button type="button" className="wr-icon" aria-label="More"><Ellipsis aria-hidden /></button>} title="More" entries={phoneMore} />
+                : menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, <>{modeItems}<DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</>, 'end')}
             </div>
           </header>
 
@@ -711,8 +744,8 @@ export function WriteApp() {
 
           {kbUp && (
             <div className="wr-kbar" style={{ bottom: kbGap }} role="toolbar" aria-label="Writing">
-              <button type="button" className="wr-aa" onClick={() => { refreshFmt(); setFormatOpen(true); }} aria-label={`Format: ${styleName(fmt)}`}>
-                <span className="wr-aa-mark" aria-hidden>Aa</span>
+              <button type="button" className="wr-icon wr-aa" onClick={() => { refreshFmt(); setFormatOpen(true); }} aria-label={`Text style: ${styleName(fmt)}`}>
+                <Type aria-hidden />
               </button>
               {!isClean(current) && <button type="button" className="wr-icon" aria-pressed={fmt?.list === 'check'} onPointerDown={(e) => e.preventDefault()} onClick={() => run('checklist')} aria-label="Checklist"><ListTodo aria-hidden /></button>}
               <button type="button" className="wr-icon" onPointerDown={(e) => e.preventDefault()} onClick={() => desk.current?.history('undo')} aria-label="Undo"><Undo2 aria-hidden /></button>

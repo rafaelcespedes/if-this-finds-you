@@ -40,7 +40,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
   useEffect(() => { if (bin && !thrown.length) setBin(false); }, [bin, thrown.length]);
 
   return (
-    <nav className="wr-library" data-screen={screen || undefined} aria-label="Notes">
+    <nav className="wr-library" data-screen={screen || undefined} aria-label="Letters">
       <div className="wr-lib-head">
         {lead}
         {bin ? (
@@ -56,7 +56,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Escape' && q) { e.stopPropagation(); setQ(''); } }}
-              aria-label="Search notes"
+              aria-label="Search letters"
             />
           </label>
         )}
@@ -83,7 +83,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
             </ul>
           </section>
         ))}
-        {!shown.length && <p className="wr-lib-empty">{q ? 'No notes say that.' : bin ? 'Nothing thrown away.' : 'No notes yet.'}</p>}
+        {!shown.length && <p className="wr-lib-empty">{q ? 'No letters say that.' : bin ? 'Nothing thrown away.' : 'No letters yet.'}</p>}
       </div>
       {!bin && thrown.length > 0 && (
         <button type="button" className="wr-lib-bin" onClick={() => setBin(true)}>
@@ -97,7 +97,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
 const Row = memo(function Row({ note, open, arrived, binned, onOpen, onPin, onThrow, onRestore, onDelete }: {
   note: Note; open: boolean; arrived: boolean; binned: boolean; onOpen: () => void; onPin: () => void; onThrow: () => void; onRestore: () => void; onDelete: () => void;
 }) {
-  const title = titleOf(note) || 'New note';
+  const title = titleOf(note) || 'New letter';
   const snippet = snippetOf(note);
   return (
     <li className="wr-row" data-open={open || undefined} data-arrived={arrived || undefined}>

@@ -237,19 +237,10 @@
 /* a mode row's tick as tall as its label's line, so it sits on that line at any text size (phones set the label larger) */
 .wr-menu-mode .wr-menu-tick { height: 1lh; }
 
-.wr-aa {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: 9px;
-  transition: background-color 120ms var(--ease-out);
-}
-.wr-aa-mark { font-family: Georgia, 'Times New Roman', serif; font-size: 15px; letter-spacing: -0.02em; }
-.wr-aa-name { min-width: 52px; text-align: left; font-weight: 500; color: var(--wr-muted); }
-@media (hover: hover) and (pointer: fine) { .wr-aa:hover { background: var(--wr-hover); } }
-@media (pointer: coarse) { .wr-aa { height: 40px; } }
+/* Text style: one icon, the T, drawn like B I U beside it (Rafael, 7 Nov: the serif "Aa" and its "Body" didn't belong); the
+   line's style is in its tooltip and the panel. A hairline divides it from the marks made on words */
+.wr-aa[data-state='open'] { background: var(--wr-hover-strong); }
+.wr-bar-div { flex: none; align-self: center; width: 1px; height: 18px; margin: 0 4px; border-radius: 1px; background: var(--wr-sep); }
 .wr-bar-more { display: contents; }
 @media (max-width: 1179.98px) { .wr-bar-more { display: none; } }
 .wr-icon:disabled { opacity: 0.35; }
@@ -389,11 +380,14 @@
 .wr-app[data-phone] .wr-side { position: static; width: 100%; height: auto; min-height: 100dvh; box-shadow: none; background: var(--wr-desk); }
 .wr-side-top {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 4px;
+  flex-direction: column;
+  align-items: stretch;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 4px 16px;
 }
-.wr-side-top h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+.wr-side-bar { display: flex; align-items: center; justify-content: space-between; margin-left: -6px; }
+.wr-side-bar .wr-home { width: 44px; height: 44px; }
+.wr-side-bar .wr-home img { width: 28px; height: 28px; border-radius: 6px; }
+.wr-side-top h1 { margin-top: 28px; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
 .wr-side-top .wr-icon { width: 44px; height: 44px; }
 .wr-side-top .wr-icon svg { width: 22px; height: 22px; }
 .wr-library { display: flex; flex: 1; min-height: 0; flex-direction: column; }
