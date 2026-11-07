@@ -94,6 +94,23 @@ for (const [seed, style] of HANDS) {
     if (!b || b.x0 < a.x1 - 0.1 * S.xh || Math.abs(b.y - a.y) > 0.6 * S.xh) bad.push(`1: " new" isn't written on after "little" (${b ? b.x0.toFixed(0) : '-'} vs ${a.x1.toFixed(0)})`);
     if (!S.replays()) bad.push('1: replay differs');
   }
+  // 1b. typing inside an insertion already written (the caret can be put there now: a click on it): never on top of it,
+  // a tier up, above it (insert.up, a new field: logs without it draw as before)
+  for (const [name, off] of [['inside', 3], ['at its start', 0]]) {
+    const S = session(seed, style, 'c1u');
+    S.type('First line of the letter is here and it runs on.\nThe old harbour at dawn was quiet'); S.pen();
+    const at = S.text().indexOf(' harbour') + 1;
+    S.type('little', at); S.pen();
+    const one = glyphsOf(S, (it) => it.role === 'insert'), n0 = S.st.doc.log.length;
+    S.type('XY', at + off); const evs = S.pen();
+    const two = glyphsOf(S, (it) => it.role === 'insert' && it.ev >= n0);
+    // (cramped between the line above and the insertion, a tail may touch a tall letter under it: never a letter's body)
+    const hit = (a, b) => { const cx = (a.box[0] + a.box[2]) / 2, cy = (a.box[1] + a.box[3]) / 2; return cx > b.box[0] && cx < b.box[2] && cy > b.box[1] && cy < b.box[3]; };
+    const want = 'little'.slice(0, off) + 'XY' + 'little'.slice(off);
+    if (!evs.some((e) => e.t === 'insert' && e.up) || !S.text().includes('old ' + want + 'harbour')) bad.push(`1b: typing ${name} an insertion: ${JSON.stringify(evs)} ${JSON.stringify(S.text())}`);
+    if (two.length !== 2 || two.some((a) => one.some((b) => hit(a, b))) || !(span(two).y < span(one).y - 0.5 * S.xh)) bad.push(`1b: typing ${name} an insertion wrote on top of it`);
+    if (!S.replays()) bad.push('1b: replay differs');
+  }
   // 2. typing right after a word crossed out, mid-text: written above it, in its place
   {
     const S = session(seed, style, 'c2');

@@ -447,13 +447,16 @@ function placeHighlight(st, s, e, ev) {
 }
 
 // ---------- insertions above the line ----------
-// the placed glyphs either side of glyph `after` in reading order (main text, not other insertions)
-function neighbours(st, s, after) {
+// the placed glyphs either side of glyph `after` in reading order (main text, not other insertions; with `ins`, the
+// letters of the insertion `after` is in or next to, instead: none past its ends)
+function neighbours(st, s, after, ins = false) {
   const recs = st.reader.recs;
   const k = after < 0 ? -1 : recs.indexOf(st.reader.byId.get(after));
   let left = null, right = null;
-  for (let i = k; i >= 0 && !left; i--) { const it = s.placed.get(recs[i].id); if (it && it.g && it.g.strokes.length && it.role !== 'insert') left = it; }
-  for (let i = k + 1; i < recs.length && !right; i++) { const it = s.placed.get(recs[i].id); if (it && it.g && it.g.strokes.length && it.role !== 'insert') right = it; }
+  const want = (it) => it && it.g && it.g.strokes.length && (ins ? it.base === 'insert' : it.role !== 'insert');
+  const stop = (i) => ins && !recs[i].ins;
+  for (let i = k; i >= 0 && !left; i--) { if (stop(i)) break; const it = s.placed.get(recs[i].id); if (want(it)) left = it; }
+  for (let i = k + 1; i < recs.length && !right; i++) { if (stop(i)) break; const it = s.placed.get(recs[i].id); if (want(it)) right = it; }
   return { left, right };
 }
 // Where insert event `e` (event index ev) is written: { res (insertionItems' letters, caret mark, stops, block), ref },
@@ -466,6 +469,17 @@ function insertPlan(st, s, e, ev) {
   const seed = 'fix:' + st.salt + ':' + ev;
   const cont = st.blocks.get(e.after);
   if (cont) return { ref: cont.ref, res: insertionItems(p, H, { cont, text: e.text, seed, maxW, r }) };
+  if (e.up) {
+    // typed inside an insertion already written: above it, a tier up, between its letters (on its own baseline)
+    const { left, right } = neighbours(st, s, e.after, true);
+    const a = left || right;
+    if (a) {
+      const ref = { line: a.line, para: a.para, inkIndex: a.inkIndex, word: a.word, wk: 'i' + ev, tempo: (a.tempo || 1) * 1.1, ev, key: 'e' + ev, sheet: s.n };
+      const above = s.items.filter((it) => it.line === a.line - 1 && it.role !== 'mark');
+      const clear = s.items.filter((it) => it.base === 'insert' && it.line === a.line && it.g && it.g.strokes.length);
+      return { ref, res: insertionItems(p, H, { left: a, right: right && right !== a && left ? right : null, above, clear, text: e.text, seed, maxW, r, ref }) };
+    }
+  }
   let sub = null;
   if (e.over) sub = placedRun(s, e.over[0], e.over[1]);
   let { left, right } = neighbours(st, s, e.after);
@@ -749,7 +763,7 @@ export function draftInsert(st, view) {
   const mid = view && view.mid;
   if (!mid || !mid.text) return null;
   const s = st.cur;
-  const pl = insertPlan(st, s, { t: 'insert', after: mid.after, text: mid.text, over: mid.over }, st.doc.log.length);
+  const pl = insertPlan(st, s, { t: 'insert', after: mid.after, text: mid.text, over: mid.over, up: mid.up }, st.doc.log.length);
   if (!pl) return null;
   const { res, ref } = pl;
   const shift = res.shift || 0;
@@ -920,6 +934,10 @@ export function plan(st, view, edit, opts = {}) {
       const run = struckWord(R, m, at);
       if (run) { v.mid = { after: run.to, text: ins, over: [run.from, run.to] }; return { events, view: v }; }
     }
+    // inside an insertion already written (or at its start: the caret is up there, before its first letter): the words
+    // can't be squeezed in between its letters, so they go above it, a tier up, with a caret mark of their own
+    const nextIns = !!(next && next.k === 'ink' && (R.byId.get(next.id) || {}).ins);
+    if (nextIns && !(inserted && st.blocks.has(prev.id))) { v.mid = { after, text: ins, up: true }; return { events, view: v }; }
     v.mid = { after, text: ins };
   }
   return { events, view: v };
@@ -1026,7 +1044,7 @@ function replaceWord(R, v, emit, roll, m, edit, H) {
 
 function flushMid(R, v, emit) {
   if (!v.mid) return;
-  if (v.mid.text) emit(Object.assign({ t: 'insert', after: v.mid.after, text: v.mid.text }, v.mid.over ? { over: v.mid.over } : {}));
+  if (v.mid.text) emit(Object.assign({ t: 'insert', after: v.mid.after, text: v.mid.text }, v.mid.over ? { over: v.mid.over } : {}, v.mid.up ? { up: true } : {}));
   v.mid = null;
 }
 
@@ -1250,7 +1268,7 @@ export function penStep(st, view, opts = {}) {
     const chunk = ready(v.mid.text);
     if (chunk) {
       const first = R.nextId;
-      emit(Object.assign({ t: 'insert', after: v.mid.after, text: chunk }, v.mid.over ? { over: v.mid.over } : {}));
+      emit(Object.assign({ t: 'insert', after: v.mid.after, text: chunk }, v.mid.over ? { over: v.mid.over } : {}, v.mid.up ? { up: true } : {}));
       allow -= cps(chunk);
       v.budget -= cps(chunk);
       const rest = v.mid.text.slice(chunk.length);
