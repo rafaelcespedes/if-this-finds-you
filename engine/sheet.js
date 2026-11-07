@@ -330,6 +330,15 @@ function startPS(st, s, e, ev) {
 // A list line's marker, drawn with its first word (writeToStream): the writer's own bullet, the number as they write
 // it, or a checklist's box. ln: the line (lineInfo: list, item, mark = where the marker starts); it: its first item.
 function placeMarker(st, s, ln, it, ev) {
+  const m = markerItems(st, s, ln, it, ev);
+  const b0 = s.items.length;
+  for (const mi of m.items) pushItem(st, s, mi);
+  if (m.runs) addRuns(s, m.runs, b0);
+  if (m.box && it.id != null) s.boxes.set(it.id, { at: it.id, line: ln.n, para: it.para, box: m.box.box, xh: m.box.xh, ref: m.box.ref });
+}
+// The marker's items (and runs, and a checklist's box), made and not put down: placeMarker, and draftMarkers (the
+// marker of a list item not written yet, shown faint where the pen will draw it)
+function markerItems(st, s, ln, it, ev) {
   const p = st.p, F = formatHabits(p), r = R0(st, ev, ':m' + ln.n);
   const x = ln.mark != null ? ln.mark : ln.x0;
   const base = (X) => lineBaseline(p, ln, X);
@@ -339,21 +348,16 @@ function placeMarker(st, s, ln, it, ev) {
   if (ln.list === 'number') {
     // the number, written like any word (it isn't in the text: it's the list's, and it never renumbers)
     const w = writeAt(p, ln.item + F.list.number, { x, y: base(x), angle: lineAngle(p, ln, x), lean: lineLean(p, ln, x), size: 1, seed: 'num:' + st.salt + ':' + ev + ':' + ln.n, line: ln.n });
-    const b0 = s.items.length;
-    for (const li of w.items) pushItem(st, s, Object.assign(li, { ev, sheet: s.n, role: 'marker', charIndex: -1, para: ref.para, inkIndex: ref.inkIndex, word: ref.word, wk, wkey: wk, tempo: ref.tempo }));
-    addRuns(s, w.runs, b0);
-    return;
+    return { items: w.items.map((li) => Object.assign(li, { ev, sheet: s.n, role: 'marker', charIndex: -1, para: ref.para, inkIndex: ref.inkIndex, word: ref.word, wk, wkey: wk, tempo: ref.tempo })), runs: w.runs };
   }
   const key = 'e' + ev + ':m' + ln.n;
   if (ln.list === 'check') {
     const b = boxStrokes(F, x, base, xh, r);
     const mi = markItem(p, 'box', b.strokes, ref, { seed: 619 + ev * 0.41, tempo: 1.15, key, wk });
-    if (mi) pushItem(st, s, Object.assign(mi, { ev, role: 'marker' }));
-    if (it.id != null) s.boxes.set(it.id, { at: it.id, line: ln.n, para: it.para, box: b.box, xh, ref });
-    return;
+    return { items: mi ? [Object.assign(mi, { ev, role: 'marker' })] : [], box: { box: b.box, xh, ref } };
   }
   const mi = markItem(p, 'bullet', bulletStrokes(F, x, base, xh, r), ref, { seed: 613 + ev * 0.37, tempo: 1.2, key, wk, dot: false });
-  if (mi) pushItem(st, s, Object.assign(mi, { ev, role: 'marker' }));
+  return { items: mi ? [Object.assign(mi, { ev, role: 'marker' })] : [] };
 }
 // Return at the end of a title (or heading) the writer underlines: the pen goes back under it, once or twice, before
 // the new line. Under the title's own letters, line by line (a long title that ran on is underlined on each line).
@@ -443,34 +447,53 @@ function placeHighlight(st, s, e, ev) {
 }
 
 // ---------- insertions above the line ----------
-// the placed glyphs either side of glyph `after` in reading order (main text, not other insertions)
-function neighbours(st, s, after) {
+// the placed glyphs either side of glyph `after` in reading order (main text, not other insertions; with `ins`, the
+// letters of the insertion `after` is in or next to, instead: none past its ends)
+function neighbours(st, s, after, ins = false) {
   const recs = st.reader.recs;
   const k = after < 0 ? -1 : recs.indexOf(st.reader.byId.get(after));
   let left = null, right = null;
-  for (let i = k; i >= 0 && !left; i--) { const it = s.placed.get(recs[i].id); if (it && it.g && it.g.strokes.length && it.role !== 'insert') left = it; }
-  for (let i = k + 1; i < recs.length && !right; i++) { const it = s.placed.get(recs[i].id); if (it && it.g && it.g.strokes.length && it.role !== 'insert') right = it; }
+  const want = (it) => it && it.g && it.g.strokes.length && (ins ? it.base === 'insert' : it.role !== 'insert');
+  const stop = (i) => ins && !recs[i].ins;
+  for (let i = k; i >= 0 && !left; i--) { if (stop(i)) break; const it = s.placed.get(recs[i].id); if (want(it)) left = it; }
+  for (let i = k + 1; i < recs.length && !right; i++) { if (stop(i)) break; const it = s.placed.get(recs[i].id); if (want(it)) right = it; }
   return { left, right };
 }
-function placeInsert(st, s, e, ev, firstId) {
+// Where insert event `e` (event index ev) is written: { res (insertionItems' letters, caret mark, stops, block), ref },
+// or null when nothing is on paper yet to write it above (it's written at the pen). Used by placeInsert, and by
+// draftInsert for the thought letters of an insertion still being typed (the same placement, before it's written).
+function insertPlan(st, s, e, ev) {
   const p = st.p, H = st.H;
   const r = R0(st, ev);
   const maxW = st.opts.maxWidth || 12000;
   const seed = 'fix:' + st.salt + ':' + ev;
   const cont = st.blocks.get(e.after);
-  let res, ref;
-  if (cont) { ref = cont.ref; res = insertionItems(p, H, { cont, text: e.text, seed, maxW, r }); }
-  else {
-    let sub = null;
-    if (e.over) sub = placedRun(s, e.over[0], e.over[1]);
-    let { left, right } = neighbours(st, s, e.after);
-    if (sub && sub.length) left = sub[sub.length - 1];
-    if (!left && right) left = right; // inserting before everything: over the first word
-    if (!left) { writeToStream(st, s, s.stream, e.text, firstId, ev); return; } // nothing on paper yet: write it at the pen
-    ref = { line: left.line, para: left.para, inkIndex: left.inkIndex, word: left.word, wk: 'i' + ev, tempo: (left.tempo || 1) * 1.1, ev, key: 'e' + ev, sheet: s.n };
-    const above = s.items.filter((it) => it.line === left.line - 1 && it.role !== 'mark');
-    res = insertionItems(p, H, { left, right: right && right !== left ? right : null, sub, above, text: e.text, seed, maxW, r, ref, lines: s.lines });
+  if (cont) return { ref: cont.ref, res: insertionItems(p, H, { cont, text: e.text, seed, maxW, r }) };
+  if (e.up) {
+    // typed inside an insertion already written: above it, a tier up, between its letters (on its own baseline)
+    const { left, right } = neighbours(st, s, e.after, true);
+    const a = left || right;
+    if (a) {
+      const ref = { line: a.line, para: a.para, inkIndex: a.inkIndex, word: a.word, wk: 'i' + ev, tempo: (a.tempo || 1) * 1.1, ev, key: 'e' + ev, sheet: s.n };
+      const above = s.items.filter((it) => it.line === a.line - 1 && it.role !== 'mark');
+      const clear = s.items.filter((it) => it.base === 'insert' && it.line === a.line && it.g && it.g.strokes.length);
+      return { ref, res: insertionItems(p, H, { left: a, right: right && right !== a && left ? right : null, above, clear, text: e.text, seed, maxW, r, ref }) };
+    }
   }
+  let sub = null;
+  if (e.over) sub = placedRun(s, e.over[0], e.over[1]);
+  let { left, right } = neighbours(st, s, e.after);
+  if (sub && sub.length) left = sub[sub.length - 1];
+  if (!left && right) left = right; // inserting before everything: over the first word
+  if (!left) return null;
+  const ref = { line: left.line, para: left.para, inkIndex: left.inkIndex, word: left.word, wk: 'i' + ev, tempo: (left.tempo || 1) * 1.1, ev, key: 'e' + ev, sheet: s.n };
+  const above = s.items.filter((it) => it.line === left.line - 1 && it.role !== 'mark');
+  return { ref, res: insertionItems(p, H, { left, right: right && right !== left ? right : null, sub, above, text: e.text, seed, maxW, r, ref, lines: s.lines }) };
+}
+function placeInsert(st, s, e, ev, firstId) {
+  const pl = insertPlan(st, s, e, ev);
+  if (!pl) { writeToStream(st, s, s.stream, e.text, firstId, ev); return; } // nothing on paper yet: write it at the pen
+  const { res, ref } = pl;
   // utf-16 offset in the text -> glyph id (each code point took the next id)
   const idAt = [];
   let id = firstId;
@@ -607,9 +630,10 @@ function placeStet(st, s, e, ev) {
 // lineInfo, rules, height, text (logicalText), plus sheet / sheets / full.
 function finish(st) {
   const s = st.cur, R = st.reader;
-  const at = new Map();
+  const at = new Map(), gap = new Map();
   let n = 0, text = '';
-  for (const r of R.recs) { if (r.struck || r.joined) at.set(r.id, -1); else { at.set(r.id, n); const c = r.over || r.ch; n += c.length; text += c; } }
+  // (gap: a struck glyph -> [the offset of the gap it sits in, its place in reading order])
+  R.recs.forEach((r, i) => { if (r.struck || r.joined) { at.set(r.id, -1); if (r.struck && !r.joined) gap.set(r.id, [n, i]); } else { at.set(r.id, n); const c = r.over || r.ch; n += c.length; text += c; } });
   let wordNo = -1, prev = null;
   for (const it of s.items) {
     let role = it.base;
@@ -626,7 +650,7 @@ function finish(st) {
     if (it.wk !== prev) { wordNo++; prev = it.wk; }
     it.word = wordNo;
   }
-  st.page = pageOf(st, s, { at, text });
+  st.page = pageOf(st, s, { at, gap, text });
   return st;
 }
 function pageOf(st, s, live) {
@@ -635,6 +659,7 @@ function pageOf(st, s, live) {
   const pages = [...s.main.pages, ...(s.ps ? s.ps.pages : [])];
   const last = s.main.pages[s.main.pages.length - 1];
   const stops = live ? liveStops(st, s, live.at) : [];
+  const struckStops = live ? struckStopsOf(st, s, live.gap) : [];
   const page = {
     // fresh lists per page, so runChanges(oldPage, newPage) sees what a write added (the item objects
     // themselves are shared: finish() updates their role / at / word as corrections arrive)
@@ -649,6 +674,8 @@ function pageOf(st, s, live) {
     full: !!(st.opts.pageHeight && !st.opts.sheet && Number.isFinite(ink.y1) && ink.y1 > st.opts.pageHeight),
     pen: s.stream.ink.pen,
   };
+  // (Ink mode: where the caret goes before each crossed-out word, which no offset of the text is inside: see struckStopsOf)
+  if (struckStops.length) page.struckStops = struckStops;
   // (format) highlighter swipes, laid under the writing; checklist boxes (their glyph id, line and box, ticked or not)
   if (s.highlights.length) page.highlights = s.highlights.slice();
   if (s.boxes.size) page.boxes = [...s.boxes.values()].map((b) => ({ at: b.at, line: b.line, box: b.box.slice(), checked: (R.checks.get(b.at) || 0) % 2 === 1 }));
@@ -683,6 +710,32 @@ function liveStops(st, s, at) {
   return [...out.values()].sort((a, b) => a.o - b.o || (a.aff === 'before' ? -1 : b.aff === 'before' ? 1 : 0));
 }
 
+// A crossed-out word has no offset of its own in the text (it's struck out of it): it sits in a gap at one offset, and
+// that offset's stop is after it (where the pen carries on, or a replacement goes). Its stop before it, right after what
+// precedes it, is kept here: one per gap { o (the gap's offset in the text as it reads now), x, y, line, kind, aff? },
+// the stop before the gap's first struck character (a gap of only spaces has nothing to step over: left out), so an
+// editor can give a crossed-out word a caret stop on each side.
+function struckStopsOf(st, s, gap) {
+  const R = st.reader, best = new Map(), inked = new Set();
+  for (const src of s.stopSrc) {
+    for (const sp of src.stops) {
+      let id;
+      if (src.ins) { if (sp.o >= src.ins.len) continue; id = src.ins.idAt[sp.o]; }
+      else { if (sp.o >= src.S.text.length) continue; id = src.S.ids[sp.o]; }
+      const g = id != null && id >= 0 ? gap.get(id) : null;
+      const r = g && R.byId.get(id);
+      if (!g || !r) continue;
+      if (!/\s/.test(r.over || r.ch || '')) inked.add(g[0]);
+      const was = best.get(g[0]);
+      // the first struck character of the gap; at a soft wrap, its place at the start of the line below
+      if (was && (was.i < g[1] || (was.i === g[1] && sp.aff !== 'after'))) continue;
+      const line = src.S && src.S.lineBase ? sp.line + src.S.lineBase : sp.line;
+      best.set(g[0], { i: g[1], sp: Object.assign({}, sp, { o: g[0], line }) });
+    }
+  }
+  return [...best.values()].map((b) => b.sp).filter((sp) => inked.has(sp.o)).sort((a, b) => a.o - b.o);
+}
+
 // Thought letters (§3.2): the text the pen hasn't reached yet (view.tail), laid out from the pen's state
 // without committing, so the app can show it faint where it will be written. null when nothing waits.
 // Its items' charIndex - page.from = the offset within view.tail.
@@ -697,6 +750,72 @@ export function draftPage(st, view, opts) {
   const pg = o ? S.ink.draft(view.tail, o) : haste ? S.ink.draft(view.tail, { haste }) : S.ink.draft(view.tail);
   if (!S.lineBase) return pg;
   return Object.assign({}, pg, { items: pg.items.map((it) => Object.assign({}, it, { line: it.line + S.lineBase })), stops: pg.stops.map((sp) => Object.assign({}, sp, { line: sp.line + S.lineBase })) });
+}
+
+// Thought letters above the line: the insertion being typed mid-text (view.mid), laid out where the pen will write it,
+// without writing it, so the app can show it faint where it goes. As the writing page's pen hands it over: a word at a
+// time (a word, with the spaces before and after it), each its own insert event, the next carrying on from where the
+// last one ended (placeInsert's own placement, with the seeds of the events they'll be: the log's next indexes).
+// null when there's none, or nothing on the paper yet to write it above. { items: its letters (charIndex = the offset
+// in view.mid.text), caret: the caret mark the pen will draw under it (null when it carries an insertion on), stops: the
+// caret stops (o = the offset in view.mid.text; x, y on the insertion's own baseline), line: the written line it goes
+// above, text }
+const INSERT_WORD = /^\s*\S+[ \t]*/;
+export function draftInsert(st, view) {
+  const mid = view && view.mid;
+  if (!mid || !mid.text) return null;
+  const s = st.cur, ev0 = st.doc.log.length, maxW = st.opts.maxWidth || 12000;
+  const items = [], stops = [];
+  let caret = null, block = null, ref = null, o = 0, rest = mid.text;
+  for (let i = 0; rest; i++) {
+    const m = INSERT_WORD.exec(rest), word = m ? m[0] : rest, ev = ev0 + i;
+    let res;
+    if (!i) {
+      const pl = insertPlan(st, s, { t: 'insert', after: mid.after, text: word, over: mid.over, up: mid.up }, ev);
+      if (!pl) return null;
+      res = pl.res; ref = pl.ref;
+    } else res = insertionItems(st.p, st.H, { cont: block, text: word, seed: 'fix:' + st.salt + ':' + ev, maxW, r: R0(st, ev) });
+    block = Object.assign({}, res.block, { ref });
+    const shift = res.shift || 0;
+    for (const it of res.items) {
+      // (copies: what layout hands back is never changed by a draft)
+      if (it.kind === 'mark') { caret = Object.assign({}, it, { ev }); continue; }
+      items.push(Object.assign({}, it, { charIndex: o + it.charIndex - shift, role: 'insert', line: ref.line, para: ref.para, sheet: s.n, wk: ref.wk, wkey: 'ins:' + ref.wk + ':' + i + ':' + it.wkey }));
+    }
+    for (const sp of res.stops || []) stops.push(Object.assign({}, sp, { o: o + sp.o, line: ref.line }));
+    o += word.length;
+    rest = rest.slice(word.length);
+  }
+  return { items, caret, stops, line: ref.line, text: mid.text };
+}
+
+// The markers of list items the pen hasn't written yet, made where it will draw them (placeMarker's own, seeded as
+// the next event, the write that will start the item), without drawing them: the bullet, number or box of the line
+// the pen is on, when it's a list item with nothing written on it yet (only "- " typed, or its words still thought
+// letters; not when what's typed next starts a new line), and of the list lines the thought letters reach (`lines`:
+// a draft's lineInfo). [] when there are none. Each is a mark item (a number: letters), role 'marker'.
+export function draftMarkers(st, view, lines) {
+  const s = st.cur, S = s.stream, n0 = st.doc.log.length;
+  if (S !== s.main) return [];
+  const out = [], seen = new Set();
+  const add = (ln, ev) => {
+    if (!ln || !ln.list || s.marked.has(ln.n) || seen.has(ln.n)) return;
+    seen.add(ln.n);
+    const m = markerItems(st, s, ln, { para: 0, word: 0, inkIndex: 0, tempo: 1 }, ev);
+    for (const it of m.items) out.push(it);
+  };
+  // the event each line's first write will be, as the pen hands the tail over: a write per line, a break between
+  const pen = S.ink.pen, tail = String((view && view.tail) || '');
+  const evs = [];
+  let e = n0;
+  tail.split('\n').forEach((seg, j) => { if (j) e++; if (seg) evs.push([j, e++]); });
+  const at = (j) => { const x = evs.find((v) => v[0] >= j); return x ? x[1] : e; };
+  const own = pen && pen.line ? pen.line.n : -1;
+  if (pen && pen.line && !tail.startsWith('\n')) add(s.lines.get(own) || pen.line, at(0));
+  // (the list lines the thought letters reach, in order: the k-th starts the k-th line after the pen's)
+  let k = 0;
+  for (const ln of (lines || []).filter((l) => l && l.n > own).sort((a, b) => a.n - b.n)) if (ln.list) add(ln, at(++k));
+  return out;
 }
 
 // a page for an earlier sheet (drafts set aside by a fresh sheet or a fair copy)
@@ -749,17 +868,21 @@ export function plan(st, view, edit, opts = {}) {
   const at = edit.at | 0, del = edit.del | 0, ins = edit.ins || '';
   let m = viewMap(R, v);
   const inRange = (u) => u.k;
-  // 1. only unwritten text: edit it freely, nothing is ink yet
+  // 1. only unwritten text: edit it freely, nothing is ink yet. (Typing with the caret put before a word crossed out
+  // at the end, edit.side 'before': not after it, where the pen carries on, but above the line before it: 2e)
   const touched = m.units.slice(at, at + del).map(inRange);
-  if (at >= m.tailStart && touched.every((k) => k === 'tail')) {
-    const o = at - m.tailStart;
-    v.tail = v.tail.slice(0, o) + ins + v.tail.slice(o + del);
-    return { events, view: v };
-  }
+  const beforeStruck = edit.side === 'before' && !del && !!ins && at === m.tailStart && struckRuns(struckGap(R, m, at)).length > 0;
+  // (an insertion being typed comes first: where it ends right where the tail starts, before a word crossed out at the
+  // end, typing at its end carries it on)
   if (v.mid && m.midStart >= 0 && at >= m.midStart && at + del <= m.midEnd && touched.every((k) => k === 'mid')) {
     const o = at - m.midStart;
     v.mid.text = v.mid.text.slice(0, o) + ins + v.mid.text.slice(o + del);
     if (!v.mid.text) v.mid = null;
+    return { events, view: v };
+  }
+  if (at >= m.tailStart && touched.every((k) => k === 'tail') && !beforeStruck) {
+    const o = at - m.tailStart;
+    v.tail = v.tail.slice(0, o) + ins + v.tail.slice(o + del);
     return { events, view: v };
   }
   // 2r. a whole word replaced (a phone's autocorrect, after the pen had written it): the writer fixes
@@ -811,11 +934,71 @@ export function plan(st, view, edit, opts = {}) {
     let after = -1;
     for (let i = at - 1; i >= 0; i--) if (m.units[i].k === 'ink') { after = m.units[i].id; break; }
     const prevCh = at > 0 ? m.text[at - 1] : '', nextCh = m.text[at] || '';
+    // right after an insertion above the line: what's typed carries on writing it, up there (the insertion goes on
+    // from where it ends, never on top of it; a space there is a space in it, not a split mark on the line)
+    const inserted = !!(prev && prev.k === 'ink' && !prev.half && (R.byId.get(prev.id) || {}).ins);
     if (ins === '\n' && prev && prev.k === 'ink') { emit({ t: 'mark', after, kind: 'para' }); return { events, view: v }; }
-    if (ins === ' ' && prev && next && prev.k === 'ink' && next.k === 'ink' && isLetter(prevCh) && isLetter(nextCh)) { emit({ t: 'mark', after, kind: 'split' }); return { events, view: v }; }
+    if (!inserted && ins === ' ' && prev && next && prev.k === 'ink' && next.k === 'ink' && isLetter(prevCh) && isLetter(nextCh)) { emit({ t: 'mark', after, kind: 'split' }); return { events, view: v }; }
+    // right after a word crossed out, mid-text (where the caret is left): what's typed replaces it, written above it,
+    // as select-and-type does (a substitution). At the very end of the writing it's the tail: the pen carries on after
+    // it. (edit.side 'before': the caret was put before the struck word, by an arrow key: an insertion there instead)
+    if (!inserted && edit.side !== 'before') {
+      const run = struckWord(R, m, at);
+      if (run) { v.mid = { after: run.to, text: ins, over: [run.from, run.to] }; return { events, view: v }; }
+    }
+    // inside an insertion already written (or at its start: the caret is up there, before its first letter): the words
+    // can't be squeezed in between its letters, so they go above it, a tier up, with a caret mark of their own
+    const nextIns = !!(next && next.k === 'ink' && (R.byId.get(next.id) || {}).ins);
+    if (nextIns && !(inserted && st.blocks.has(prev.id))) { v.mid = { after, text: ins, up: true }; return { events, view: v }; }
     v.mid = { after, text: ins };
   }
   return { events, view: v };
+}
+
+// ---------- struck words in the view ----------
+// Struck words aren't in the view text: each sits in a gap between two of its units. The struck recs in the gap at view
+// offset k, in reading order; null when there are none, or the gap is next to text the pen hasn't written (or an
+// insertion being typed).
+function struckGap(R, m, k) {
+  const recs = R.recs;
+  if (k < 0 || k > m.units.length) return null;
+  const prev = k > 0 ? m.units[k - 1] : null, next = m.units[k] || null;
+  if ((prev && prev.k !== 'ink') || (next && next.k === 'mid')) return null;
+  const i0 = prev ? recs.indexOf(R.byId.get(prev.id)) + 1 : 0;
+  const i1 = next && next.k === 'ink' ? recs.indexOf(R.byId.get(next.id)) : recs.length;
+  if (i0 < 0 || i1 < 0) return null;
+  const out = [];
+  for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) out.push(recs[i]);
+  return out.length ? out : null;
+}
+// The crossings-out in a gap: runs of recs struck by the same event, in reading order, each with its level. A run of
+// only spaces or line breaks has no ink to cross out (nothing would show): it's left out.
+const blankRec = (r) => /^\s$/.test(r.over || r.ch || '');
+function struckRuns(recs) {
+  const runs = [];
+  for (const r of recs || []) {
+    const last = runs[runs.length - 1];
+    if (last && last.sev === r.sev) last.recs.push(r);
+    else runs.push({ sev: r.sev, recs: [r] });
+  }
+  return runs.filter((rn) => rn.recs.some((r) => !blankRec(r))).map((rn) => Object.assign(rn, { level: Math.max(...rn.recs.map((r) => r.lv || 1)) }));
+}
+// The words crossed out right before the caret at view offset k, mid-text (written text after the caret): the last
+// crossing-out in the gap (the words one deletion struck), without the spaces at its ends, as a run of consecutive ids
+// { from, to } (a substitution over it covers only it), or null. One that already has words written over it (a
+// substitution right after it) is taken: none.
+function struckWord(R, m, k) {
+  if (k >= m.tailStart) return null;
+  const runs = struckRuns(struckGap(R, m, k));
+  if (!runs.length) return null;
+  const next = m.units[k];
+  const nr = next && next.k === 'ink' ? R.byId.get(next.id) : null;
+  if (nr && nr.sub) return null;
+  const recs = runs[runs.length - 1].recs.slice();
+  while (recs.length && blankRec(recs[0])) recs.shift();
+  while (recs.length && blankRec(recs[recs.length - 1])) recs.pop();
+  const last = idRuns(recs.map((r) => r.id)).pop();
+  return last ? { from: last[0], to: last[1] } : null;
 }
 
 // A replacement edit arrives as the smallest change ("teh" -> "the" is "eh" -> "he"), so widen it to the
@@ -873,7 +1056,7 @@ function replaceWord(R, v, emit, roll, m, edit, H) {
 
 function flushMid(R, v, emit) {
   if (!v.mid) return;
-  if (v.mid.text) emit(Object.assign({ t: 'insert', after: v.mid.after, text: v.mid.text }, v.mid.over ? { over: v.mid.over } : {}));
+  if (v.mid.text) emit(Object.assign({ t: 'insert', after: v.mid.after, text: v.mid.text }, v.mid.over ? { over: v.mid.over } : {}, v.mid.up ? { up: true } : {}));
   v.mid = null;
 }
 
@@ -935,31 +1118,33 @@ function resolvePending(st, R, v, emit) {
 export const AGAIN_MAX = 4;
 // The struck recs at view offset `at` (struck words aren't in the view, so they sit in a gap before it): right at
 // the caret, or one space away (a selection taken with the space before it is struck as the word and the space
-// after: the caret is left a space short of it). null when there are none.
-function struckAt(R, m, at) {
-  const recs = R.recs;
+// after: the caret is left a space short of it). null when there are none. Crossings-out of nothing but spaces are
+// left out: a space has no ink, so going over it again would show nothing (the press goes on to the word before).
+// opts.side 'before': the caret sits before the struck word of that gap (an arrow key left it there): not at it.
+function struckAt(R, m, at, opts = {}) {
   const runAt = (k) => {
-    if (k < 0 || k > m.units.length) return null;
-    const prev = k > 0 ? m.units[k - 1] : null, next = m.units[k] || null;
-    if ((prev && prev.k !== 'ink') || (next && next.k === 'mid')) return null;
-    const i0 = prev ? recs.indexOf(R.byId.get(prev.id)) + 1 : 0;
-    const i1 = next && next.k === 'ink' ? recs.indexOf(R.byId.get(next.id)) : recs.length;
-    if (i0 < 0 || i1 < 0) return null;
-    const out = [];
-    for (let i = i0; i < i1; i++) if (recs[i].struck && !recs[i].joined) out.push(recs[i]);
+    const recs = struckGap(R, m, k);
+    const keep = new Set(struckRuns(recs).flatMap((rn) => rn.recs));
+    const out = (recs || []).filter((r) => keep.has(r));
     return out.length ? out : null;
   };
   const spaceAt = (k) => { const u = m.units[k]; return !!u && u.k === 'ink' && /^[ \t]$/.test((R.byId.get(u.id) || {}).ch || ''); };
+  if (opts.side === 'before') return (spaceAt(at - 1) && runAt(at - 1)) || null;
   return runAt(at) || (spaceAt(at) && runAt(at + 1)) || (spaceAt(at - 1) && runAt(at - 1)) || null;
 }
-export function again(st, view, at) {
+// opts.side 'before': the caret sits before the struck word in its gap (see struckAt).
+export function again(st, view, at, opts = {}) {
   const v = copyView(view || newView());
   if (v.pending || v.mid) return null;
   const R = st.reader, m = viewMap(R, v);
-  const run = struckAt(R, m, at);
-  if (!run) return null;
+  const found = struckAt(R, m, at, opts);
+  if (!found) return null;
+  // each press goes over what's just before the caret: the last crossing-out there that isn't inked out yet (a word
+  // struck after the one beside it was inked out is crossed out harder in its turn). All inked out: it stops there
+  const open = struckRuns(found).filter((rn) => rn.level < AGAIN_MAX);
+  if (!open.length) return { events: [], view: v, level: AGAIN_MAX };
+  const run = open[open.length - 1].recs;
   const level = Math.max(...run.map((r) => r.lv || 1));
-  if (level >= AGAIN_MAX) return { events: [], view: v, level };
   const lv = level + 1, was = run[run.length - 1].struck;
   const scribbled = was === 'scribble' || was === 'blackout';
   // each level the same person, more annoyed: a heavier strike, then their own scribble (the word still shows
@@ -1026,6 +1211,28 @@ export function inkIdsIn(st, view, from, to) {
   return idRuns(ids);
 }
 
+// Backspace over a space the pen has written. A space has no ink: a press that only took it would show nothing, and
+// leave a crossing-out of nothing behind. So the press goes on to the word before: at the pen head the space goes with
+// that word's last letter (they're struck together, as a word is struck with its space); mid-text the space stays, and
+// the letter before it is struck. `edit`: the Backspace (one unit of viewText deleted, nothing typed). Returns { edit,
+// caret, head }: the edit to plan instead, the view offset the caret is left at (right after what it struck), and
+// whether it's at the pen head (the caret is left at the end, as the textarea leaves it); or null when it isn't one
+// (not a written space, or no written word before it on its line).
+export function backOverSpace(st, view, edit) {
+  if (!edit || edit.ins || (edit.del | 0) !== 1) return null;
+  const R = st.reader, m = viewMap(R, view || newView());
+  const at = edit.at | 0, u = m.units[at];
+  const ch = u && u.k === 'ink' && !u.half ? (R.byId.get(u.id) || {}).ch : null;
+  if (!ch || !/^[ \t]$/.test(ch)) return null;
+  let k = at - 1;
+  while (k >= 0 && m.units[k].k === 'ink' && /^[ \t]$/.test(m.text[k])) k--;
+  const w = k >= 0 ? m.units[k] : null;
+  if (!w || w.k !== 'ink' || /\s/.test(m.text[k])) return null;
+  const k0 = w.half ? k - 1 : k; // (both halves of a surrogate pair)
+  const head = !m.units.slice(at + 1).some((x) => x.k === 'ink' || x.k === 'mid');
+  return { edit: Object.assign({}, edit, { at: k0, del: head ? at + 1 - k0 : k + 1 - k0 }), caret: k0, head };
+}
+
 // ---------- the pen (§3.2): what can be written now ----------
 // opts: { dt (ms since the last step; omit = no speed limit), idle (ms since the last keystroke),
 //   forgiving (default true: hold back the last 2 characters until 700 ms idle), touch (hold back the
@@ -1074,7 +1281,7 @@ export function penStep(st, view, opts = {}) {
     const chunk = ready(v.mid.text);
     if (chunk) {
       const first = R.nextId;
-      emit(Object.assign({ t: 'insert', after: v.mid.after, text: chunk }, v.mid.over ? { over: v.mid.over } : {}));
+      emit(Object.assign({ t: 'insert', after: v.mid.after, text: chunk }, v.mid.over ? { over: v.mid.over } : {}, v.mid.up ? { up: true } : {}));
       allow -= cps(chunk);
       v.budget -= cps(chunk);
       const rest = v.mid.text.slice(chunk.length);

@@ -71,6 +71,7 @@ export function useEditInput(
           return;
         }
         const edit = diffEdit(latest.current.value, next, kindOf(inputType, composing), source);
+        if (edit && inputType) edit.input = inputType;
         hint.current = undefined;
         if (edit) latest.current.onEdit(edit);
         if (comp.current) {

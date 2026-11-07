@@ -589,7 +589,7 @@ export function overItem(p, heavy, H, wr, ch, seed, r) {
 // left); lines = Map n -> lineInfo (the real line curve). Returns { items, runs, stops, block, shift }:
 // items = the caret (a mark) and the letters (their charIndex = offset in `shift` + text), runs index the
 // letters as items[0..], stops use offsets within the text.
-export function insertionItems(p, H, { left, right, sub, cont, above = [], text, seed, maxW, r, ref, lines, caret = true }) {
+export function insertionItems(p, H, { left, right, sub, cont, above = [], clear, text, seed, maxW, r, ref, lines, caret = true }) {
   if (cont) {
     const lead = cont.space ? ' ' : '';
     const y = cont.yb - Math.tan(cont.slope) * (cont.endX - cont.x0);
@@ -620,8 +620,10 @@ export function insertionItems(p, H, { left, right, sub, cont, above = [], text,
   const half = w.endX / 2;
   const near = above.filter((it) => (it.kind === 'glyph' || it.kind === 'mark') && it.g && it.x < cx + half + 400 && it.x > cx - half - 900);
   if (near.length) ceil = (near.every((it) => it.box) ? boxOf(near).y1 : spanOf(near).y1) + 0.04 * UPM;
-  // (over a struck word, also clear its tall letters: the replacement sits above the whole word)
-  const floor = Math.min(base(cx) - 1.15 * xh, sub && sub.length ? ls.y0 - 0.12 * xh : Infinity);
+  // (over a struck word, also clear its tall letters: the replacement sits above the whole word; a tier up, over an
+  // insertion (`clear`: its letters), clear of all of them near it, tall ones too)
+  const clr = clear ? clear.filter((it) => it.box && it.box[2] > cx - half - 200 && it.box[0] < cx + half + 200) : [];
+  const floor = Math.min(base(cx) - 1.15 * xh, sub && sub.length ? ls.y0 - 0.12 * xh : Infinity, clr.length ? Math.min(...clr.map((it) => it.box[1])) - 0.12 * xh : Infinity);
   const room = floor - ceil, need = ext.y1 - ext.y0;
   if (need > room && need > 0) { s *= clamp(room / need, 0.72, 1); w = measure(); ext = boxOf(w.items); } // cramped: smaller
   let yb = Math.min(base(cx) - xh * (1.45 + 0.15 * r()), floor - ext.y1);

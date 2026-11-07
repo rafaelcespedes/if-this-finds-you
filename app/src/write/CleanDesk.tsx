@@ -4,13 +4,13 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { CAP, withOverrides } from '@engine';
 import { toast } from 'sonner';
-import { PaperEditor, type FormatCommand, type PaperEditorApi } from '@/components/PaperEditor';
+import { PaperEditor, type FormatCommand, type PaperEditorApi, type Pencil } from '@/components/PaperEditor';
 import { LiveSheets } from '@/components/LiveSheets';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { cn } from '@/lib/utils';
 import { UndoHistory, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark, wordAt, type Mark } from '@/lib/doc';
-import { engineGeometry, liveExtras, liveLayout, pageSetup } from '@/lib/live';
+import { engineGeometry, liveExtras, liveLayout, pageSetup, sheetOfLine } from '@/lib/live';
 import { renderLiveNote, renderLiveSheets } from '@/lib/actions';
 import { getPaper } from '@/lib/papers';
 import { inkColor } from '@/lib/inks';
@@ -20,6 +20,7 @@ import { handOpts } from '@/lib/engine-features';
 import { writerName } from '@/lib/hands';
 import type { DeskApi } from './Desk';
 import { StartHint } from './StartHint';
+import { caretFit, type PageItem } from './pencil';
 import { stateOf, type Note } from './notes';
 
 const MAX_PX_PER_MM = 3.9;
@@ -72,6 +73,12 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
     [live, doc.marks, name, state.paper],
   );
   const geometry = useMemo(() => engineGeometry(live), [live]);
+  // the red pencil's caret (as In ink): where the ink before it ends, on each sheet by its lines
+  const pencil = useMemo<Pencil>(() => {
+    const frame = { shift: (s: number) => live.sheets[s]?.shiftU ?? 0, sheetOf: (it: PageItem) => sheetOfLine(live, it.line ?? 0) };
+    const xhU = (p.xHeight as number) * CAP;
+    return { fit: (c) => caretFit([(live.page.items ?? []) as PageItem[]], xhU, frame, c) };
+  }, [live, p]);
 
   const editor = useRef<PaperEditorApi>(null);
   const onEdit = useCallback((e: Edit) => {
@@ -134,7 +141,7 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
     },
     sheets: async () => {
       const { live: l, extras: x, pxPerMm: k } = shown.current;
-      return renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2);
+      return { shots: await renderLiveSheets(l, x, eff.inkKey ?? undefined, ink, k || 2, 1, true), total: l.sheets.length };
     },
   }), [onFormat, onEdit, eff.inkKey, ink, coarse]);
 
@@ -170,6 +177,7 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
             penWidthU={p.penWidth as number}
             xHeightU={(p.xHeight as number) * CAP}
             onEditingChange={(on) => { setEditing(on); onEditingChange?.(on); }}
+            pencil={pencil}
           >
             <LiveSheets
               live={live}

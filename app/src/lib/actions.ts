@@ -106,7 +106,7 @@ export async function renderLiveNote(live: Live, extras: string[], inkKey: strin
 
 /** Where a sheet's ink is, in its own pixels. */
 export type InkBox = { x0: number; y0: number; x1: number; y1: number };
-export type SheetShot = { canvas: HTMLCanvasElement; ink: InkBox | null };
+export type SheetShot = { canvas: HTMLCanvasElement; ink: InkBox | null; sheet: number };
 
 /** The ink's extent on a sheet, read from the drawn writing (a small copy of it, by its alpha). */
 function inkBox(img: CanvasImageSource, w: number, h: number): InkBox | null {
@@ -128,27 +128,30 @@ function inkBox(img: CanvasImageSource, w: number, h: number): InkBox | null {
 }
 
 /** The live page's sheets one by one (paper and ink, as the image download paints them), each with where its ink is. */
-export async function renderLiveSheets(live: Live, extras: string[], inkKey: string | undefined, ink: string, cssPxPerMm: number, max = 4): Promise<SheetShot[]> {
+/** inked: skip sheets with no writing on them (the share picture wants the first page that has some) */
+export async function renderLiveSheets(live: Live, extras: string[], inkKey: string | undefined, ink: string, cssPxPerMm: number, max = 4, inked = false): Promise<SheetShot[]> {
   const paper = wornForExport(live.paper);
   let k = cssPxPerMm * 3;
   k = Math.max(k, 1800 / paper.w);
   k = Math.min(k, 3000 / paper.w);
   const sheetW = Math.round(paper.w * k), sheetH = Math.round(paper.h * k);
   const out: SheetShot[] = [];
-  for (let i = 0; i < Math.min(max, live.sheets.length); i++) {
+  for (let i = 0; i < live.sheets.length && out.length < max; i++) {
     const canvas = document.createElement('canvas');
     canvas.width = sheetW;
     canvas.height = sheetH;
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('This browser could not create an image.');
-    ctx.fillStyle = DESK;
-    ctx.fillRect(0, 0, sheetW, sheetH);
+    // the sheet alone, its torn and deckled edges and its holes see-through (no desk colour behind them): the share
+    // picture lays it on its own desk, so a rim of another colour never shows round a tear (Rafael, 7 Nov)
     const marks = i === 0 ? marksForExport(paper) : null;
-    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: DESK, marks: marks ?? undefined, sheet: i });
+    paintPaper(ctx, paper, { pxPerMm: k, grainScale: k / cssPxPerMm, holeFill: 'clear', marks: marks ?? undefined, sheet: i });
     const img = await rasterizeWriting(sheetSVG(live, i, inkKey ?? 'currentColor', extras[i] ?? ''), sheetW, sheetH, ink);
     ctx.drawImage(img, 0, 0, sheetW, sheetH);
     if (marks) printMarks(ctx, marks, k, 'over', paper);
-    out.push({ canvas, ink: inkBox(img, sheetW, sheetH) });
+    const box = inkBox(img, sheetW, sheetH);
+    if (inked && !box && i < live.sheets.length - 1) continue;
+    out.push({ canvas, ink: box, sheet: i });
   }
   return out;
 }

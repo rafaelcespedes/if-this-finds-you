@@ -6,10 +6,21 @@
     <meta name="theme-color" content="#e9e9e7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
-    <!-- the desk's colour from the first frame -->
+    <!-- the desk's colour from the first frame, and the More menu's Appearance (Automatic, Light or Dark) put on before
+         anything paints, so a dark desk never flashes light -->
+    <script>
+      try {
+        var t = localStorage.getItem('seedhand:write:theme');
+        if (t === 'light' || t === 'dark') {
+          document.documentElement.setAttribute('data-theme', t);
+          document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { m.setAttribute('content', t === 'dark' ? '#161618' : '#e9e9e7'); });
+        }
+      } catch (e) {}
+    </script>
     <style>
       html { background: #e9e9e7; }
-      @media (prefers-color-scheme: dark) { html { background: #161618; } }
+      html[data-theme='dark'] { background: #161618; }
+      @media (prefers-color-scheme: dark) { html:not([data-theme='light']) { background: #161618; } }
     </style>
     <title>Write</title>
     <meta name="description" content="Write with a handwriting that's made as you type. Mistakes are crossed out, never erased." />

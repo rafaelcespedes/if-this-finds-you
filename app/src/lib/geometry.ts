@@ -47,6 +47,12 @@ export interface Geometry {
   ribbons(from: number, to: number): Ribbon[];
   /** the draft's corrections in words (journey), for screen readers */
   summary?: string;
+  /**
+   * Left/Right (Ink mode): where an arrow key goes when it isn't one offset on, or null (the textarea moves as usual).
+   * A crossed-out word isn't in the text, so it has one offset; it gets a stop on each side all the same: 'after' it
+   * (where it's left, and where ⌫ and typing act on it) and 'before' it (the same offset, `side` 'before').
+   */
+  step?(o: number, dir: -1 | 1, side?: Side): { o: number; side: Side } | null;
 }
 
 /** Geometry from the worker's result: glyph boxes plus the app's caret rules. */

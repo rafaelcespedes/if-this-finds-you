@@ -1,0 +1,186 @@
+{
+ "made": "by the engine before the cursor fixes (6df7c3b), node v24.18.0",
+ "logs": [
+  {
+   "name": "insert, then typing after it",
+   "seed": "maple-river-42",
+   "style": "print",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o1\",\"h\":[\"maple-river-42\",\"print\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"The old harbour at dawn\"],[\"i\",7,\"little\"],[\"m\",28,\"split\"],[\"i\",29,\"new\"]]}",
+   "text": "The old little newharbour at dawn",
+   "svg": "f6908e49d68a9e99"
+  },
+  {
+   "name": "struck mid-text, typing after it",
+   "seed": "maple-river-42",
+   "style": "print",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o2\",\"h\":[\"maple-river-42\",\"print\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"The old harbour at dawn was quiet and grey, the boats were tied up along the wall\"],[\"x\",8,14,\"line\",\"deleted\"],[\"i\",7,\"port\"],[\"x\",54,57,\"line\",\"deleted\"],[\"i\",53,\"sat\"]]}",
+   "text": "The old port at dawn was quiet and grey, the boats sat tied up along the wall",
+   "svg": "a9da917698fe006b"
+  },
+  {
+   "name": "backspace ladder, spaces",
+   "seed": "maple-river-42",
+   "style": "print",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o3\",\"h\":[\"maple-river-42\",\"print\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Hello we \"],[\"x\",8,8,\"line\",\"deleted\"],[\"x\",8,8,\"double\",\"again\",0,2],[\"x\",8,8,\"scrawl\",\"again\",0,3],[\"w\",\"The old harbour\"],[\"x\",17,23,\"line\",\"deleted\"],[\"x\",17,23,\"double\",\"again\",0,2],[\"x\",17,23,\"scrawl\",\"again\",0,3],[\"x\",17,23,\"inkout\",\"again\",0,4],[\"x\",16,16,\"line\",\"deleted\"],[\"x\",14,15,\"line\",\"deleted\"]]}",
+   "text": "Hello weThe o",
+   "svg": "efb3025fae52886f"
+  },
+  {
+   "name": "select+type, struck line, stet, lists, P.S.",
+   "seed": "maple-river-42",
+   "style": "print",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o4\",\"h\":[\"maple-river-42\",\"print\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"First line\"],[\"b\"],[\"w\",\"second line words\"],[\"b\"],[\"w\",\"third\"],[\"x\",11,28,\"line\",\"deleted\"],[\"w\",\" and more\"],[\"x\",0,4,\"line\",\"replaced\"],[\"i\",4,\"Last\",0,4],[\"r\",0,4],[\"b\"],[\"l\",\"bullet\"],[\"w\",\"Milk\"],[\"b\"],[\"w\",\"Eggs\"],[\"b\"],[\"l\",\"check\"],[\"w\",\"Bread\"],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring maps\"]]}",
+   "text": "FirstLast line\nthird and more\nMilk\nEggs\nBread\nP.S. Bring maps",
+   "svg": "673f09d7e7f7141a"
+  },
+  {
+   "name": "random session",
+   "seed": "maple-river-42",
+   "style": "print",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o5\",\"h\":[\"maple-river-42\",\"print\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"out a\"],[\"w\",\" word point is and\"],[\"w\",\" little letters that touch\"],[\"w\",\" out\"],[\"w\",\" and\"],[\"w\",\" little word word\"],[\"i\",3,\"so \"],[\"w\",\" that\"],[\"x\",81,81,\"line\",\"deleted\"],[\"i\",16,\"so \"],[\"w\",\" is is\"],[\"w\",\" the different the never out the\"],[\"x\",122,122,\"line\",\"deleted\"],[\"w\",\" every is never\"],[\"w\",\" a the\"],[\"w\",\" that\"],[\"i\",95,\"so \"],[\"w\",\" that little letters\"],[\"x\",170,171,\"line\",\"deleted\"],[\"w\",\" comes a\"],[\"x\",65,68,\"line\",\"deleted\"],[\"x\",65,68,\"double\",\"again\",0,2],[\"i\",64,\"it\"],[\"w\",\" the\"],[\"x\",58,63,\"line\",\"deleted\"],[\"x\",58,63,\"double\",\"again\",0,2],[\"i\",57,\"it\"],[\"w\",\" a and comes\"],[\"x\",17,18,\"line\",\"deleted\"],[\"x\",17,18,\"double\",\"again\",0,2],[\"i\",84,\"it\"],[\"w\",\" quite\"],[\"x\",207,207,\"line\",\"deleted\"]]}",
+   "text": "out so a word point so it and little letters that touch out and it it word tha is is the so different the never out th every is never a the that that little lette comes a the a and comes quit",
+   "svg": "dc1e547a0aba46ee"
+  },
+  {
+   "name": "insert, then typing after it",
+   "seed": "quiet-heron-17",
+   "style": "script",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o1\",\"h\":[\"quiet-heron-17\",\"script\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"The old harbour at dawn\"],[\"i\",7,\"little\"],[\"m\",28,\"split\"],[\"i\",29,\"new\"]]}",
+   "text": "The old little newharbour at dawn",
+   "svg": "275792823946e82d"
+  },
+  {
+   "name": "struck mid-text, typing after it",
+   "seed": "quiet-heron-17",
+   "style": "script",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o2\",\"h\":[\"quiet-heron-17\",\"script\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"The old harbour at dawn was quiet and grey, the boats were tied up along the wall\"],[\"x\",8,14,\"line\",\"deleted\"],[\"i\",7,\"port\"],[\"x\",54,57,\"line\",\"deleted\"],[\"i\",53,\"sat\"]]}",
+   "text": "The old port at dawn was quiet and grey, the boats sat tied up along the wall",
+   "svg": "5decf23b4b20dfe5"
+  },
+  {
+   "name": "backspace ladder, spaces",
+   "seed": "quiet-heron-17",
+   "style": "script",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o3\",\"h\":[\"quiet-heron-17\",\"script\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Hello we \"],[\"x\",8,8,\"line\",\"deleted\"],[\"x\",8,8,\"double\",\"again\",0,2],[\"x\",8,8,\"scrawl\",\"again\",0,3],[\"w\",\"The old harbour\"],[\"x\",17,23,\"line\",\"deleted\"],[\"x\",17,23,\"double\",\"again\",0,2],[\"x\",17,23,\"scrawl\",\"again\",0,3],[\"x\",17,23,\"inkout\",\"again\",0,4],[\"x\",16,16,\"line\",\"deleted\"],[\"x\",14,15,\"line\",\"deleted\"]]}",
+   "text": "Hello weThe o",
+   "svg": "aad1baa4de2b9b2b"
+  },
+  {
+   "name": "select+type, struck line, stet, lists, P.S.",
+   "seed": "quiet-heron-17",
+   "style": "script",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o4\",\"h\":[\"quiet-heron-17\",\"script\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"First line\"],[\"b\"],[\"w\",\"second line words\"],[\"b\"],[\"w\",\"third\"],[\"x\",11,28,\"line\",\"deleted\"],[\"w\",\" and more\"],[\"x\",0,4,\"line\",\"replaced\"],[\"i\",4,\"Last\",0,4],[\"r\",0,4],[\"b\"],[\"l\",\"bullet\"],[\"w\",\"Milk\"],[\"b\"],[\"w\",\"Eggs\"],[\"b\"],[\"l\",\"check\"],[\"w\",\"Bread\"],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring maps\"]]}",
+   "text": "FirstLast line\nthird and more\nMilk\nEggs\nBread\nP.S. Bring maps",
+   "svg": "c45ed25985fa84a6"
+  },
+  {
+   "name": "random session",
+   "seed": "quiet-heron-17",
+   "style": "script",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o5\",\"h\":[\"quiet-heron-17\",\"script\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"out a\"],[\"w\",\" word point is and\"],[\"w\",\" little letters that touch\"],[\"w\",\" out\"],[\"w\",\" and\"],[\"w\",\" little word word\"],[\"i\",3,\"so \"],[\"w\",\" that\"],[\"x\",81,81,\"line\",\"deleted\"],[\"i\",16,\"so \"],[\"w\",\" is is\"],[\"w\",\" the different the never out the\"],[\"x\",122,122,\"line\",\"deleted\"],[\"w\",\" every is never\"],[\"w\",\" a the\"],[\"w\",\" that\"],[\"i\",95,\"so \"],[\"w\",\" that little letters\"],[\"x\",170,171,\"line\",\"deleted\"],[\"w\",\" comes a\"],[\"x\",65,68,\"line\",\"deleted\"],[\"x\",65,68,\"double\",\"again\",0,2],[\"i\",64,\"it\"],[\"w\",\" the\"],[\"x\",58,63,\"line\",\"deleted\"],[\"x\",58,63,\"double\",\"again\",0,2],[\"i\",57,\"it\"],[\"w\",\" a and comes\"],[\"x\",17,18,\"line\",\"deleted\"],[\"x\",17,18,\"double\",\"again\",0,2],[\"i\",84,\"it\"],[\"w\",\" quite\"],[\"x\",207,207,\"line\",\"deleted\"]]}",
+   "text": "out so a word point so it and little letters that touch out and it it word tha is is the so different the never out th every is never a the that that little lette comes a the a and comes quit",
+   "svg": "0dc7ec9e7208eb9b"
+  },
+  {
+   "name": "insert, then typing after it",
+   "seed": "tawny-atlas-52",
+   "style": "adult-fr-2023",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o1\",\"h\":[\"tawny-atlas-52\",\"adult-fr-2023\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"The old harbour at dawn\"],[\"i\",7,\"little\"],[\"m\",28,\"split\"],[\"i\",29,\"new\"]]}",
+   "text": "The old little newharbour at dawn",
+   "svg": "1e44866311c0b56a"
+  },
+  {
+   "name": "struck mid-text, typing after it",
+   "seed": "tawny-atlas-52",
+   "style": "adult-fr-2023",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o2\",\"h\":[\"tawny-atlas-52\",\"adult-fr-2023\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"The old harbour at dawn was quiet and grey, the boats were tied up along the wall\"],[\"x\",8,14,\"line\",\"deleted\"],[\"i\",7,\"port\"],[\"x\",54,57,\"line\",\"deleted\"],[\"i\",53,\"sat\"]]}",
+   "text": "The old port at dawn was quiet and grey, the boats sat tied up along the wall",
+   "svg": "096b91a5c25565e7"
+  },
+  {
+   "name": "backspace ladder, spaces",
+   "seed": "tawny-atlas-52",
+   "style": "adult-fr-2023",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o3\",\"h\":[\"tawny-atlas-52\",\"adult-fr-2023\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"Hello we \"],[\"x\",8,8,\"line\",\"deleted\"],[\"x\",8,8,\"double\",\"again\",0,2],[\"x\",8,8,\"scrawl\",\"again\",0,3],[\"w\",\"The old harbour\"],[\"x\",17,23,\"line\",\"deleted\"],[\"x\",17,23,\"double\",\"again\",0,2],[\"x\",17,23,\"scrawl\",\"again\",0,3],[\"x\",17,23,\"inkout\",\"again\",0,4],[\"x\",16,16,\"line\",\"deleted\"],[\"x\",14,15,\"line\",\"deleted\"]]}",
+   "text": "Hello weThe o",
+   "svg": "0221ef15d91eb8fa"
+  },
+  {
+   "name": "select+type, struck line, stet, lists, P.S.",
+   "seed": "tawny-atlas-52",
+   "style": "adult-fr-2023",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o4\",\"h\":[\"tawny-atlas-52\",\"adult-fr-2023\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"First line\"],[\"b\"],[\"w\",\"second line words\"],[\"b\"],[\"w\",\"third\"],[\"x\",11,28,\"line\",\"deleted\"],[\"w\",\" and more\"],[\"x\",0,4,\"line\",\"replaced\"],[\"i\",4,\"Last\",0,4],[\"r\",0,4],[\"b\"],[\"l\",\"bullet\"],[\"w\",\"Milk\"],[\"b\"],[\"w\",\"Eggs\"],[\"b\"],[\"l\",\"check\"],[\"w\",\"Bread\"],[\"b\"],[\"v\",\"ps\"],[\"w\",\"P.S. Bring maps\"]]}",
+   "text": "FirstLast line\nthird and more\nMilk\nEggs\nBread\nP.S. Bring maps",
+   "svg": "c7f85a398b30f00f"
+  },
+  {
+   "name": "random session",
+   "seed": "tawny-atlas-52",
+   "style": "adult-fr-2023",
+   "opts": {
+    "maxWidth": 12400,
+    "lineHeight": 1600
+   },
+   "doc": "{\"v\":1,\"ev\":\"seedhand-ink-1\",\"s\":\"o5\",\"h\":[\"tawny-atlas-52\",\"adult-fr-2023\",null],\"p\":{\"kind\":\"plain\"},\"m\":\"ink\",\"l\":[[\"w\",\"out a\"],[\"w\",\" word point is and\"],[\"w\",\" little letters that touch\"],[\"w\",\" out\"],[\"w\",\" and\"],[\"w\",\" little word word\"],[\"i\",3,\"so \"],[\"w\",\" that\"],[\"x\",81,81,\"line\",\"deleted\"],[\"i\",16,\"so \"],[\"w\",\" is is\"],[\"w\",\" the different the never out the\"],[\"x\",122,122,\"line\",\"deleted\"],[\"w\",\" every is never\"],[\"w\",\" a the\"],[\"w\",\" that\"],[\"i\",95,\"so \"],[\"w\",\" that little letters\"],[\"x\",170,171,\"line\",\"deleted\"],[\"w\",\" comes a\"],[\"x\",65,68,\"line\",\"deleted\"],[\"x\",65,68,\"double\",\"again\",0,2],[\"i\",64,\"it\"],[\"w\",\" the\"],[\"x\",58,63,\"line\",\"deleted\"],[\"x\",58,63,\"double\",\"again\",0,2],[\"i\",57,\"it\"],[\"w\",\" a and comes\"],[\"x\",17,18,\"line\",\"deleted\"],[\"x\",17,18,\"double\",\"again\",0,2],[\"i\",84,\"it\"],[\"w\",\" quite\"],[\"x\",207,207,\"line\",\"deleted\"]]}",
+   "text": "out so a word point so it and little letters that touch out and it it word tha is is the so different the never out th every is never a the that that little lette comes a the a and comes quit",
+   "svg": "6ac6016f56c96c01"
+  }
+ ],
+ "platform": "darwin-arm64"
+}

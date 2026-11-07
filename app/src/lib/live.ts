@@ -309,9 +309,22 @@ export function sheetFrame(live: Live, s: number, ink: string | undefined) {
   };
 }
 
-/** A whole sheet as one standalone SVG (for the JPEG): runs drawn by renderSVG, windowed, plus the extras. */
+/**
+ * A whole sheet as one standalone SVG (for the JPEG and the share picture): its own lines' runs drawn by renderSVG,
+ * windowed, plus the extras. Only this sheet's lines are drawn: the whole note in every sheet's SVG grew past what
+ * Safari will decode as an image once a note ran to several pages (blank sheets; QA 7 Nov). Ink is a pure function of
+ * the item and stroke, so a sheet drawn on its own looks exactly as it does in the whole note.
+ */
 export function sheetSVG(live: Live, s: number, ink: string | undefined, extras: string) {
-  const full: string = E.renderSVG(live.p, live.page, { width: live.widthPx, emPx: live.emPx, ink, runs: true } as never);
+  const { fromLine, toLine } = live.sheets[s];
+  const on = (line: unknown) => typeof line !== 'number' || (line >= fromLine && line < toLine);
+  const all = live.page as unknown as { runs?: { line: number }[]; items: { line?: number; g?: unknown }[] };
+  const page = live.sheets.length < 2 ? live.page : {
+    ...all,
+    runs: all.runs?.filter((r) => on(r.line)),
+    items: all.items.map((it) => (on(it.line) ? it : { ...it, g: null })),
+  };
+  const full: string = E.renderSVG(live.p, page as never, { width: live.widthPx, emPx: live.emPx, ink, runs: true } as never);
   const top = live.sheets[s].shiftU * (live.emPx / UPM);
   let svg = full
     .replace(/viewBox="[^"]*"/, `viewBox="0 ${top.toFixed(2)} ${live.widthPx} ${live.heightPx}"`)

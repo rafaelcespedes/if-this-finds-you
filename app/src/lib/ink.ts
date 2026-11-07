@@ -26,7 +26,7 @@
 import * as E from '@engine';
 import { UPM, type Hand } from '@engine';
 import type { Edit } from './edits';
-import type { Geometry, Side } from './geometry';
+import type { CaretPos, Geometry, Side } from './geometry';
 import { LIVE, engineGeometry, liveExtras, pageSetup, type Live } from './live';
 import { frameFor } from './paginate';
 import type { PaperSpec } from './papers';
@@ -176,17 +176,22 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
     const words: ThoughtWord[][] = Array.from({ length: n }, () => []);
     // a draft laid out a word at a time (InkSession.draft): each piece's words kept with it, so a render walks the
     // pieces, not every letter of a long paste
-    if (Array.isArray(x.draft.pieces)) {
-      for (const pg of x.draft.pieces as any[]) {
-        let c = piecesDrawn.get(pg);
-        if (!c || c.sc !== sc || c.n !== n || c.sheetU !== sheetU) {
-          c = { sc, n, sheetU, words: [] };
-          const sub = inkExtras(live, { draft: { items: pg.items }, signed: false, writerName: '' }).thoughts ?? [];
-          sub.forEach((list, s) => { for (const t of list) c!.words.push({ s, t }); });
-          piecesDrawn.set(pg, c);
-        }
-        for (const { s, t } of c.words) words[s].push(t);
+    const piece = (pg: any) => {
+      let c = piecesDrawn.get(pg);
+      if (!c || c.sc !== sc || c.n !== n || c.sheetU !== sheetU) {
+        c = { sc, n, sheetU, words: [] };
+        const sub = inkExtras(live, { draft: { items: pg.items }, signed: false, writerName: '' }).thoughts ?? [];
+        sub.forEach((list, s) => { for (const t of list) c!.words.push({ s, t }); });
+        piecesDrawn.set(pg, c);
       }
+      for (const { s, t } of c.words) words[s].push(t);
+    };
+    // the insertion being typed mid-text, faint where it will be written above the line (InkSession.insertDraft)
+    // and the markers of list items not written yet (InkSession.markerDraft)
+    const others = () => { if (x.draft.ins?.items?.length) piece(x.draft.ins); if (x.draft.marker?.items?.length) piece(x.draft.marker); };
+    if (Array.isArray(x.draft.pieces)) {
+      for (const pg of x.draft.pieces as any[]) piece(pg);
+      others();
       out.thoughts = words;
       if (x.signed && x.writerName) {
         const sig = liveExtras(live, { marks: [], signed: true, writerName: x.writerName, text: live.page.text });
@@ -197,7 +202,7 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
     let w: { s: number; wkey: unknown; id: string; d: string } | null = null;
     const put = () => { if (w && w.d) words[w.s].push({ id: w.id, d: w.d }); w = null; };
     for (const it of x.draft.items as any[]) {
-      if (it.kind !== 'glyph') continue;
+      if (it.kind !== 'glyph' && it.kind !== 'mark') continue;
       let c = thoughtD.get(it);
       if (!c || c.sc !== sc) { const cs = itemContours(it); c = { sc, d: cs.length ? E.contoursToD(cs, 0, 0, sc) : '' }; thoughtD.set(it, c); }
       const d = c.d;
@@ -211,6 +216,7 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
     put();
     // (the outline is in sheet px at this size: another size is another word)
     for (const list of words) for (const t of list) t.id += sc.toFixed(5);
+    others();
     out.thoughts = words;
   }
   if (x.signed && x.writerName) {
@@ -407,7 +413,59 @@ export class InkSession {
    */
   draft(grow = false) {
     const tail = String(this.view.tail ?? '');
-    if (!tail) return null;
+    // (riding along: the thought letters of an insertion being typed mid-text, `ins` (insertDraft), and the markers of
+    // list items not written yet, `marker`: a bullet, number or box (markerDraft))
+    const ins = this.insertDraft();
+    const d = tail ? this.tailDraft(tail, grow) : null;
+    const marker = this.markerDraft(d);
+    return ins || marker ? this.withExtras(d, ins, marker) : d;
+  }
+  /**
+   * The markers of list items the pen hasn't written yet (engine draftMarkers): the bullet, number or box of an item
+   * with only "- " typed, or its words still thought letters, and of list items further on in the thought letters,
+   * where the pen will draw them. { items } (mark items; a number's are letters), or null when there are none.
+   */
+  markerDraft(d?: any): { items: any[] } | null {
+    if (typeof engine.draftMarkers !== 'function' || typeof engine.lineNow !== 'function') return null;
+    const st = this.sheet;
+    const m = this.markMemo;
+    const tail0 = String(this.view.tail ?? '').startsWith('\n');
+    if (m && m.page === st.page && m.d === (d ?? null) && m.tail0 === tail0) return m.out;
+    // (only when a list is going: the line the pen is on, or one in the thought letters)
+    const listed = !!(engine.lineNow(st) as { list: string | null }).list || ((d?.lineInfo ?? []) as { list?: string }[]).some((l) => l.list);
+    const items = listed ? engine.draftMarkers(st, this.view, d?.lineInfo ?? []) as any[] : [];
+    const out = items.length ? { items } : null;
+    this.markMemo = { page: st.page, d: d ?? null, tail0, out };
+    return out;
+  }
+  private markMemo: { page: unknown; d: unknown; tail0: boolean; out: { items: any[] } | null } | null = null;
+  /**
+   * The thought letters of the insertion being typed mid-text (view.mid), where the pen will write them above the line
+   * (engine draftInsert): { items (the letters, page units), caret (the ‸ mark the pen will draw under a new insertion,
+   * or null when it carries one on: not drawn as a thought), stops (o: the offset in the insertion's text; x, y on its
+   * own baseline), line (the written line it goes above), text }. null when nothing is being inserted.
+   */
+  insertDraft(): any {
+    const mid = this.view.mid;
+    if (!mid?.text || typeof engine.draftInsert !== 'function') return null;
+    const key = `${mid.after}|${mid.over ?? ''}|${mid.text}`;
+    const m = this.insMemo;
+    if (m && m.page === this.sheet.page && m.key === key) return m.d;
+    const d = engine.draftInsert(this.sheet, this.view);
+    this.insMemo = { page: this.sheet.page, key, d };
+    return d;
+  }
+  private insMemo: { page: unknown; key: string; d: any } | null = null;
+  /** the draft with the insertion's thought letters and the pending markers on it (one object while they're the same) */
+  private withExtras(d: any, ins: any, marker: any) {
+    const m = this.withMemo;
+    if (m && m.d === d && m.ins === ins && m.marker === marker) return m.out;
+    const out = { ...(d ?? { items: [], stops: [], lineInfo: [], from: 0, text: '', lines: 0, pieces: [] }), ins, marker };
+    this.withMemo = { d, ins, marker, out };
+    return out;
+  }
+  private withMemo: { d: any; ins: any; marker: any; out: any } | null = null;
+  private tailDraft(tail: string, grow: boolean) {
     const st = this.sheet;
     const S = st.cur?.stream;
     const style = this.typingStyle();
@@ -435,29 +493,37 @@ export class InkSession {
     let rest = tail, o = 0, start = pen0, same = true, made = 0;
     const until = grow || !this.drafting ? performance.now() + DRAFT_MS : -Infinity;
     this.drafting = false;
-    while (rest) {
+    words: while (rest) {
       const m = CHUNK.exec(rest);
-      const text = m ? m[0] : rest;
+      const word = m ? m[0] : rest;
       const h = this.typist && typeof engine.hasteNext === 'function' && hastes
-        ? (engine.hasteNext(pieces.length ? NOT_IN_WORD : st, text, hastes.slice(o, o + text.length)) as number) : 0;
-      const was = same ? keep[pieces.length] : undefined;
-      let pc;
-      if (was && was.text === text && was.haste === h && was.style === styleKey && (was.start === start || (pieces.length === 0 && samePen(was.start, start)))) pc = pieces.length === 0 ? { ...was, start } : was;
-      else {
-        if (made && performance.now() > until) { this.drafting = true; break; }
-        same = false;
-        made++;
-        const pg = engine.layout(this.p, text, h ? { ...base, haste: h, start } : { ...base, start });
-        pc = { text, haste: h, style: styleKey, start, pg };
+        ? (engine.hasteNext(pieces.length ? NOT_IN_WORD : st, word, hastes.slice(o, o + word.length)) as number) : 0;
+      // as the pen is handed it (engine penStep): each line break written on its own, then the word, so a line that
+      // begins after it (a P.S. set in from the margin, a closing) is set out as the ink will be
+      const n0 = pieces.length;
+      for (const text of word.includes('\n') ? word.split(/(\n)/).filter(Boolean) : [word]) {
+        const hh = /\S/.test(text) ? h : 0;
+        const was = same ? keep[pieces.length] : undefined;
+        let pc;
+        if (was && was.text === text && was.haste === hh && was.style === styleKey && (was.start === start || (pieces.length === 0 && samePen(was.start, start)))) pc = pieces.length === 0 ? { ...was, start } : was;
+        else {
+          // (out of time: stop between words, never inside one)
+          if (made && pieces.length === n0 && performance.now() > until) { this.drafting = true; break words; }
+          same = false;
+          made++;
+          const pg = engine.layout(this.p, text, hh ? { ...base, haste: hh, start } : { ...base, start });
+          pc = { text, haste: hh, style: styleKey, start, pg };
+        }
+        pieces.push(pc);
+        start = pc.pg.pen;
       }
-      pieces.push(pc);
-      start = pc.pg.pen;
-      rest = rest.slice(text.length);
-      o += text.length;
+      rest = rest.slice(word.length);
+      o += word.length;
     }
     this.pieces = pieces;
     // the same pieces: the same draft (one object, so what's drawn from it can tell it hasn't changed)
     const memo = this.assembled;
+    if (!pieces.length) return null;
     if (memo && memo.list.length === pieces.length && memo.list.every((pc, i) => pc.pg === pieces[i].pg)) return memo.draft;
     const items: any[] = [], stops: any[] = [];
     const lines = new Map<number, any>();
@@ -477,10 +543,22 @@ export class InkSession {
   private assembled: { list: { pg: any }[]; draft: any } | null = null;
   private whole: { page: unknown; key: string; draft: any } | null = null;
 
-  edit(e: Edit) {
+  /**
+   * An edit to what's typed (the textarea). Returns the textarea offset to put the caret at when the writer didn't do
+   * quite what the textarea did (Backspace over a written space goes on to the word before it, engine backOverSpace),
+   * else null: the caret stays where the edit left it. `o.caret`: the caller puts the caret there (the writing page);
+   * without it, only what leaves the caret where the textarea would (at the end) is done.
+   */
+  edit(e: Edit, o: { caret?: boolean } = {}): number | null {
     // every key keeps the typist's time; a letter or a space typed counts towards the tempo
     if (this.typist) engine.typistKey(this.typist, performance.now(), e.kind === 'type' && !e.del && e.ins.length > 0 && e.ins.length <= 2);
-    if (this.shorthand(e)) { this.lastKey = performance.now(); return; }
+    if (this.shorthand(e)) { this.lastKey = performance.now(); return null; }
+    // Backspace over a space the pen has written: a space has no ink, so the press goes on to the word before
+    let caret: number | null = null;
+    if (e.kind === 'delete' && (!e.input || e.input === 'deleteContentBackward') && typeof engine.backOverSpace === 'function') {
+      const w = engine.backOverSpace(this.sheet, this.view, e) as { edit: { at: number; del: number }; caret: number; head: boolean } | null;
+      if (w && (w.head || o.caret)) { e = { ...e, at: w.edit.at, del: w.edit.del }; caret = w.caret; }
+    }
     const tail0 = String(this.view.tail ?? '').length, mid0 = String(this.view.mid?.text ?? '').length;
     this.planEdit(e);
     // a paste (more than COPY_FROM letters at once, at the end or above the line): copied out, within COPY_S
@@ -488,6 +566,7 @@ export class InkSession {
     if (tailGrew > COPY_FROM) this.copyLeft += tailGrew;
     if (tailGrew > COPY_FROM || midGrew > COPY_FROM) this.copyUntil = Math.max(this.copyUntil, performance.now() + COPY_S * 1000);
     if (!this.view.tail) this.copyLeft = 0;
+    return caret;
   }
   /** a copy-out: letters of a paste still to hand to the pen (at the end), and when it's to be done (ms) */
   private copyLeft = 0;
@@ -510,7 +589,7 @@ export class InkSession {
       this.planEdit({ ...e, del: 0 });
       return;
     }
-    const r = engine.plan(this.sheet, this.view, { at: e.at, del: e.del, ins: e.ins, kind: e.kind });
+    const r = engine.plan(this.sheet, this.view, { at: e.at, del: e.del, ins: e.ins, kind: e.kind, ...(e.side ? { side: e.side } : {}) });
     this.carry(r.events, r.view);
     this.view = r.view;
     if (r.events.length) this.inked(r.events);
@@ -546,7 +625,22 @@ export class InkSession {
     if (!final && idle < HOLD_LINE_MS && typeof engine.lineHeld === 'function' && engine.lineHeld(this.sheet, v)) return false;
     let r: { events: unknown[]; view: any };
     let handed = '';
-    if (drawing != null && !final && !v.pending && !v.mid?.text && v.tail) {
+    if (drawing != null && !final && !v.pending && v.mid?.text && !this.copyUntil) {
+      // an insertion being typed mid-text: handed over a word at a time too, each written on from where the last one
+      // ended, so it's written where its thought letters showed it (engine draftInsert lays it out the same way)
+      if (drawing > 1 || now - this.handedAt < 120) return false;
+      const mid = String(v.mid.text);
+      const m = CHUNK.exec(mid);
+      const chunk = m ? m[0] : mid;
+      const rest = mid.slice(chunk.length);
+      const finished = !!m && (/\s$/.test(chunk) || /^\s/.test(rest));
+      // a finished word goes once two more letters are typed after it, or after 700 ms; the word being typed after a
+      // pause (700 ms; on a phone 1.2 s, for autocorrect), as at the end
+      if (finished ? idle < 700 && rest.length < 2 : idle < (this.touch ? 1200 : 700)) return false;
+      const last = (this.sheet.reader?.nextId as number) + Array.from(chunk).length - 1;
+      r = engine.penStep(this.sheet, { ...v, tail: '', mid: { ...v.mid, text: chunk } }, { idle: Infinity, forgiving: false, touch: false });
+      r.view = { ...r.view, tail: v.tail, mid: rest ? { after: last, text: rest } : null };
+    } else if (drawing != null && !final && !v.pending && !v.mid?.text && v.tail) {
       const tail = String(v.tail);
       let chunk = '';
       if (copying) {
@@ -620,9 +714,11 @@ export class InkSession {
    * Typing at textarea offset `at` would go above the line, with a caret: it's mid-ink (before the thought letters at
    * the end, with ink after it) and not inside an insertion already being typed (the planner's case 2e).
    */
-  insertsAbove = (at: number): boolean => {
+  insertsAbove = (at: number, side?: Side): boolean => {
     const text = this.text();
     const tailFrom = text.length - String(this.view.tail ?? '').length;
+    // (the caret put before a word crossed out at the end: typing goes above the line before it, not after it)
+    if (side === 'before' && at === tailFrom && this.struckLevel(at) != null) return true;
     if (at >= tailFrom || at < 0) return false;
     const mid = this.view.mid?.text ? String(this.view.mid.text) : '';
     if (mid) {
@@ -637,12 +733,56 @@ export class InkSession {
     return true;
   };
   /**
+   * What ⌫ at textarea offset `at` (a caret, `side` as the editor has it) will do, asked without doing it, so the caret
+   * can say so before the press:
+   *   - 'unwritten': the letter before the caret is a thought letter (not ink yet): it's deleted cleanly
+   *   - 'again': a crossed-out word right before the caret is crossed out harder; `level` is what it goes to (2 a heavier
+   *     line, 3 a scribble, 4 inked out)
+   *   - 'strike': written letters are crossed out: at the pen head the pen hovers first (`hover`), then strikes them with
+   *     whatever else is Backspaced in the meantime; mid-text at once. A written space goes with the letter before it
+   *   - 'none': nothing before the caret
+   * `keys`: the page items (letters, or the struck word's letters) it acts on, for a highlight; [] for 'unwritten'.
+   */
+  nextBackspace(at: number, side?: Side): { kind: 'unwritten' | 'again' | 'strike' | 'none'; level?: number; hover?: boolean; keys: string[] } {
+    const items = (this.page?.items ?? []) as { id?: number; key: string; kind: string; role?: string }[];
+    const keysOf = (ids: Set<number>) => items.filter((it) => it.kind === 'glyph' && it.id != null && ids.has(it.id)).map((it) => it.key);
+    if (typeof engine.again === 'function') {
+      const r = engine.again(this.sheet, this.view, at, side ? { side } : undefined) as { events: { from: number; to: number }[]; level: number } | null;
+      if (r && r.events.length) {
+        const ids = new Set<number>();
+        for (const e of r.events) for (let id = e.from; id <= e.to; id++) ids.add(id);
+        return { kind: 'again', level: r.level, keys: keysOf(ids) };
+      }
+    }
+    if (at <= 0) return { kind: 'none', keys: [] };
+    const text = this.text();
+    const tailFrom = text.length - String(this.view.tail ?? '').length;
+    const { midFrom } = this.offsets();
+    const midLen = String(this.view.mid?.text ?? '').length;
+    if (at - 1 >= tailFrom || (midFrom >= 0 && at - 1 >= midFrom && at - 1 < midFrom + midLen)) return { kind: 'unwritten', keys: [] };
+    let e = { at: at - 1, del: 1 };
+    const w = typeof engine.backOverSpace === 'function' ? engine.backOverSpace(this.sheet, this.view, { ...e, ins: '' }) as { edit: { at: number; del: number } } | null : null;
+    if (w) e = { at: w.edit.at, del: w.edit.del };
+    const ids = new Set<number>();
+    if (typeof engine.inkIdsIn === 'function') for (const [a, b] of engine.inkIdsIn(this.sheet, this.view, e.at, e.at + e.del) as [number, number][]) for (let id = a; id <= b; id++) ids.add(id);
+    // at the pen head: nothing written after what's taken (the planner's 2a)
+    const hover = !/\S/.test(text.slice(e.at + e.del, tailFrom)) && !(midFrom >= 0 && midFrom >= e.at + e.del);
+    return { kind: 'strike', hover, keys: keysOf(ids) };
+  }
+  /**
+   * Where the pen is: the textarea offset where the written text ends and the thought letters (the trail) begin. Its
+   * caret is the pen head (inkGeometry(...).caret(penAt())): where the pen carries on, after any word struck at the end.
+   */
+  penAt(): number {
+    return this.text().length - String(this.view.tail ?? '').length;
+  }
+  /**
    * How hard the crossed-out word at textarea offset `at` is crossed out (1 struck … 4 inked out), or null when there's
    * none there (engine again(), asked without doing it): for the "⌫ again" note, and the ghost of the next press.
    */
-  struckLevel(at: number): number | null {
+  struckLevel(at: number, side?: Side): number | null {
     if (typeof engine.again !== 'function') return null;
-    const r = engine.again(this.sheet, this.view, at) as { events: unknown[]; level: number } | null;
+    const r = engine.again(this.sheet, this.view, at, side ? { side } : undefined) as { events: unknown[]; level: number } | null;
     return r ? (r.events.length ? r.level - 1 : r.level) : null;
   }
   /**
@@ -661,7 +801,7 @@ export class InkSession {
     this.offKey = { sheet: this.sheet, view: this.view, n: this.doc.log.length, v };
     return v;
   }
-  private offKey: { sheet: unknown; view: unknown; n: number; v: { toPaper: number[]; paperLen: number } } = { sheet: null, view: null, n: -1, v: { toPaper: [], paperLen: 0 } };
+  private offKey: { sheet: unknown; view: unknown; n: number; v: { toPaper: number[]; paperLen: number; midFrom: number } } = { sheet: null, view: null, n: -1, v: { toPaper: [], paperLen: 0, midFrom: -1 } };
 
   // ---------- what a screen reader hears ----------
   /**
@@ -751,9 +891,9 @@ export class InkSession {
    * harder: a heavier strike, a scribble, then inked out (engine again()). null: no struck word there, or the
    * engine can't. `level` is the word's level now; `max` when it was already inked out and nothing was drawn.
    */
-  again(at: number): { level: number; max: boolean } | null {
+  again(at: number, side?: Side): { level: number; max: boolean } | null {
     if (typeof engine.again !== 'function') return null;
-    const r = engine.again(this.sheet, this.view, at);
+    const r = engine.again(this.sheet, this.view, at, side ? { side } : undefined);
     if (!r) return null;
     this.view = r.view;
     if (r.events.length) this.inked(r.events);
@@ -1127,29 +1267,30 @@ export function inkPage(p: Hand, doc: InkDoc, paper: PaperSpec, size: number, li
  *     them: the textarea has dropped them, and the thought letters are written after them
  * `toPaper[i]` is the paper offset for textarea offset i (0..length); it never decreases.
  */
-export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen: number } {
+export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen: number; midFrom: number } {
   const recs = (sheet.reader?.recs ?? []) as { id: number; ch: string; over?: string; struck?: unknown; joined?: boolean }[];
   const pending = new Set<number>(view?.pending?.ids ?? []);
   const mid = view?.mid?.text ? (view.mid as { after: number; text: string }) : null;
   const tail = String(view?.tail ?? '');
   const toPaper: number[] = [];
-  let g = 0, midDone = false, pendAt = -1;
-  const putMid = () => { if (mid && !midDone) { for (let j = 0; j < mid.text.length; j++) toPaper.push(g); midDone = true; } };
+  let g = 0, midDone = false, midFrom = -1;
+  const putMid = () => { if (mid && !midDone) { midFrom = toPaper.length; for (let j = 0; j < mid.text.length; j++) toPaper.push(g); midDone = true; } };
   if (mid && mid.after < 0) putMid();
   for (const r of recs) {
     if (!r.struck && !r.joined) {
       const c = r.over || r.ch;
-      if (pending.has(r.id)) { if (pendAt < 0) pendAt = g; }
-      else for (let j = 0; j < c.length; j++) toPaper.push(g + j);
+      if (!pending.has(r.id)) for (let j = 0; j < c.length; j++) toPaper.push(g + j);
       g += c.length;
     }
     if (mid && mid.after === r.id) putMid();
   }
   putMid(); // its anchor isn't in this sheet's text: where it was typed (the end)
   for (let j = 0; j < tail.length; j++) toPaper.push(g + j);
-  // the end: after the thought letters; with only a pending fix, where the Backspaces reached
-  toPaper.push(tail.length ? g + tail.length : pendAt >= 0 ? pendAt : g);
-  return { toPaper, paperLen: g + tail.length };
+  // the end: after the thought letters. With a fix pending (letters Backspaced at the pen head, still on the paper while
+  // the writer considers it), still after them: that's where the pen carries on once it has struck them, so the caret
+  // never jumps forward over the word when the strike lands (and never back over a blot as the next press begins)
+  toPaper.push(g + tail.length);
+  return { toPaper, paperLen: g + tail.length, midFrom };
 }
 
 /**
@@ -1160,9 +1301,9 @@ export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen
 export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
   const draft = ink.draft();
   const written = String(live.page.text ?? '').length;
-  const geo = draft ? engine.geometry(p, [live.page, engine.offsetStops(draft, written - (draft.from || 0))]) : live.geo;
+  const geo = draft?.stops?.length ? engine.geometry(p, [live.page, engine.offsetStops(draft, written - (draft.from || 0))]) : live.geo;
   const viewText = ink.text();
-  const { toPaper, paperLen } = inkOffsets(ink.sheet, ink.view);
+  const { toPaper, paperLen, midFrom } = inkOffsets(ink.sheet, ink.view);
   const g = engineGeometry(live, { geo, text: String(live.page.text ?? '') + String(ink.view?.tail ?? '') });
   if (toPaper.length !== viewText.length + 1 || paperLen !== g.text.length) return { ...g, text: viewText }; // (never: a safe fallback)
   const toP = (o: number) => toPaper[Math.max(0, Math.min(toPaper.length - 1, o))];
@@ -1184,7 +1325,47 @@ export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
     stopsAt.get(s.o)!.push(s);
   }
   const lift = 0.3 * (g.ascU || 600);
+  // the insertion being typed mid-text: its thought letters are drawn where it will be written, above the line
+  // (InkSession.insertDraft), and the caret inside it or at its end goes there with them
+  const ins = draft?.ins as { stops: { o: number; x: number; y: number; aff?: string }[] } | undefined;
+  const midLen = String(ink.view?.mid?.text ?? '').length;
+  const sheetU = live.paper.h * live.unitsPerMm;
+  const caretInInsert = (o: number, side?: Side): CaretPos | null => {
+    if (!ins || midFrom < 0 || !(o > midFrom && o <= midFrom + midLen)) return null;
+    const at = ins.stops.filter((x) => x.o === o - midFrom);
+    const s = at.find((x) => (x.aff ?? '') === (side === 'before' ? 'before' : '')) ?? at[at.length - 1];
+    const c = s ? g.caret(toP(o), side) : null;
+    if (!s || !c) return null;
+    const sheet = Math.min(live.sheets.length - 1, Math.max(0, Math.floor(s.y / sheetU)));
+    const y = s.y - (live.sheets[sheet]?.shiftU ?? 0);
+    // (the caret's lean and height as on the line below)
+    return { ...c, sheet, x: s.x, y, top: c.top ? [s.x + (c.top[0] - c.x), y - (c.y - c.top[1])] : undefined };
+  };
+  // a crossed-out word sits in a gap at one offset of the text, its caret stop after it; the one before it (right after
+  // what precedes it) is the page's struckStops (engine): a caret stop on each side of it, the same offset, side 'before'
+  const beforeAt = new Map<number, { x: number; y: number; line: number }>();
+  for (const s of (live.page.struckStops ?? []) as { o: number; x: number; y: number; line: number }[]) beforeAt.set(s.o, s);
+  const gapBefore = (o: number) => {
+    if (!beforeAt.size || o < 0 || o >= toPaper.length || (midFrom >= 0 && o > midFrom && o <= midFrom + midLen)) return null;
+    return beforeAt.get(toP(o)) ?? null;
+  };
+  const caretBefore = (o: number): CaretPos | null => {
+    const s = gapBefore(o);
+    const c = s ? g.caret(toP(o), 'after') : null;
+    if (!s || !c) return null;
+    const sheet = Math.min(live.sheets.length - 1, Math.max(0, Math.floor(s.y / sheetU)));
+    const y = s.y - (live.sheets[sheet]?.shiftU ?? 0);
+    return { ...c, sheet, x: s.x, y, line: s.line, top: c.top ? [s.x + (c.top[0] - c.x), y - (c.y - c.top[1])] : undefined };
+  };
+  const step = (o: number, dir: -1 | 1, side?: Side): { o: number; side: Side } | null => {
+    if (dir < 0) return side !== 'before' && gapBefore(o) ? { o, side: 'before' } : null;
+    if (side === 'before' && gapBefore(o)) return { o, side: 'after' };
+    return o + 1 < toPaper.length && gapBefore(o + 1) ? { o: o + 1, side: 'before' } : null;
+  };
   const caret = (o: number, side?: Side) => {
+    const up = caretInInsert(o, side);
+    if (up) return up;
+    if (side === 'before') { const b = caretBefore(o); if (b) return b; }
     const po = toP(o);
     const c = g.caret(po, side);
     const list = stopsAt.get(po);
@@ -1199,6 +1380,7 @@ export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
     ...g,
     text: viewText,
     caret,
+    step,
     hit: (sheet, x, y) => fromP(g.hit(sheet, x, y)),
     vertical: (o, dir, goalX, side) => { const v = g.vertical(toP(o), dir, goalX, side); return { o: fromP(v.o), goalX: v.goalX }; },
     edges: (o, side) => { const e = g.edges(toP(o), side); return { start: fromP(e.start), end: fromP(e.end, 'right') }; },

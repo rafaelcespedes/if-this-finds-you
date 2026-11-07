@@ -18,9 +18,11 @@
 //   strike { from, to, how?, why?, blot?, lv? }  ids inclusive. how: line | double | wave | loops | scribble, and
 //                                            for why 'again' (crossed out again, lv 2–4) blackout | inkout
 //   over   { at, ch, blot? }                a new letter drawn on top of glyph `at`
-//   insert { after, text, over? }           text added above the line, right after glyph `after` (-1 = the
+//   insert { after, text, over?, up? }      text added above the line, right after glyph `after` (-1 = the
 //                                            very start); its characters take new ids. over: [from, to] = a
-//                                            substitution written above that struck run (TEI <subst>)
+//                                            substitution written above that struck run (TEI <subst>). up: typed
+//                                            inside (or at the start of) an insertion already written: written
+//                                            above that insertion, a tier up, with its own caret mark under it
 //   mark   { after, kind }                  'split' (a / in a word: a space, takes an id), 'para' (//: a
 //                                            paragraph break, takes an id), 'join' (the whitespace after
 //                                            `after` no longer counts)
@@ -194,7 +196,7 @@ const ENC = {
   write: (e) => ['w', e.text, e.cont ? 1 : 0, e.rest, e.haste || 0, e.lean || 0, e.weight || 0, e.size && e.size !== 1 ? e.size : 0], break: () => ['b'],
   strike: (e) => ['x', e.from, e.to, e.how, e.why, e.blot ? 1 : 0, e.lv],
   over: (e) => ['o', e.at, e.ch, e.blot ? 1 : 0],
-  insert: (e) => ['i', e.after, e.text, e.over ? e.over[0] : null, e.over ? e.over[1] : null],
+  insert: (e) => ['i', e.after, e.text, e.over ? e.over[0] : null, e.over ? e.over[1] : null, e.up ? 1 : 0],
   mark: (e) => ['m', e.after, e.kind], underline: (e) => ['u', e.from, e.to], stet: (e) => ['r', e.from, e.to],
   pen: (e) => ['p', e.kind, e.from, e.to], move: (e) => ['v', e.to, e.size], sheet: (e) => ['s', e.why, e.copy], session: () => ['n'],
   line: (e) => ['l', e.as], check: (e) => ['k', e.at], highlight: (e) => ['h', e.from, e.to, e.color],
@@ -203,7 +205,7 @@ const DEC = {
   w: (a) => clean({ t: 'write', text: a[1], cont: a[2] ? true : undefined, rest: a[3], haste: a[4] || undefined, lean: a[5] || undefined, weight: a[6] || undefined, size: a[7] || undefined }), b: () => ({ t: 'break' }),
   x: (a) => clean({ t: 'strike', from: a[1], to: a[2], how: a[3], why: a[4], blot: a[5] ? true : undefined, lv: a[6] || undefined }),
   o: (a) => clean({ t: 'over', at: a[1], ch: a[2], blot: a[3] ? true : undefined }),
-  i: (a) => clean({ t: 'insert', after: a[1], text: a[2], over: a[3] != null ? [a[3], a[4]] : undefined }),
+  i: (a) => clean({ t: 'insert', after: a[1], text: a[2], over: a[3] != null ? [a[3], a[4]] : undefined, up: a[5] ? true : undefined }),
   m: (a) => ({ t: 'mark', after: a[1], kind: a[2] }), u: (a) => ({ t: 'underline', from: a[1], to: a[2] }), r: (a) => ({ t: 'stet', from: a[1] || 0, to: a[2] || 0 }), // (["r"] is glyph 0 alone: its zeros were trimmed)
   p: (a) => clean({ t: 'pen', kind: a[1], from: a[2], to: a[3] }), v: (a) => clean({ t: 'move', to: a[1], size: a[2] }),
   s: (a) => clean({ t: 'sheet', why: a[1], copy: a[2] }), n: () => ({ t: 'session' }),
