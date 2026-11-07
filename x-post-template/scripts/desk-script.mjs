@@ -110,6 +110,7 @@ function desk() {
   S.click(ROW('Matteo Carver'), 1.7);
   S.press('Escape', 0.2);
   S.cam('all', 0.85, 1.1);
+  S.note('');
   S.move({ x: 1120, y: 620 }, 0.8);
   S.hide();
   S.wait(3.0);

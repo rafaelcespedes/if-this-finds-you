@@ -6,7 +6,7 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { AbsoluteFill, Img, continueRender, delayRender, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { z } from 'zod';
-import rec from './data/desk-draft.json';
+import rec from './data/desk.json';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const R = rec as any;
@@ -232,6 +232,7 @@ const Narrator: React.FC<{ notes: any[]; ni: number; t: number; lit: boolean; pi
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: OH - BAR_Y - BAR_H, display: 'flex', justifyContent: 'center' }}>
         <div style={{ ...GLASS, display: 'grid', justifyItems: 'center', opacity: ni >= 0 ? clamp((t - at(0)) / 0.3, 0, 1) : 0 }}>
           {notes.map((n, i) => {
+            if (!n.note) return null;
             const o = i === ni ? u : i === ni - 1 ? 1 - clamp((t - at(ni)) / OUT, 0, 1) : 0;
             return <div key={i} style={{ gridArea: '1 / 1', display: 'flex', alignItems: 'center', opacity: o, filter: `blur(${(1 - o) * 6}px)` }}><Caption text={n.note} lit={lit} /></div>;
           })}
@@ -242,7 +243,7 @@ const Narrator: React.FC<{ notes: any[]; ni: number; t: number; lit: boolean; pi
   // rise / left: the last caption sinks and fades, then the new one rises in, each pill its own size
   const shown: { i: number; o: number; y: number; s: number; b: number }[] = [];
   if (ni >= 1) { const u = clamp((t - at(ni)) / OUT, 0, 1); if (u < 1) shown.push({ i: ni - 1, o: 1 - u, y: 10 * u, s: 1 - 0.03 * u, b: 4 * u }); }
-  if (ni >= 0) { const u = easeOut((t - at(ni) - (ni >= 1 ? GAP : 0)) / IN); shown.push({ i: ni, o: u, y: 18 * (1 - u), s: 0.97 + 0.03 * u, b: 6 * (1 - u) }); }
+  if (ni >= 0 && notes[ni].note) { const u = easeOut((t - at(ni) - (ni >= 1 ? GAP : 0)) / IN); shown.push({ i: ni, o: u, y: 18 * (1 - u), s: 0.97 + 0.03 * u, b: 6 * (1 - u) }); }
   return (
     <>
       {shown.map(({ i, o, y, s, b }) => (

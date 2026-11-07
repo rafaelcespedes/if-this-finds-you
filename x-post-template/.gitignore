@@ -7,3 +7,4 @@ src/data/hand-track.json
 src/data/take-keyboard.json
 src/data/hand-3d.json
 public/desk/
+x-post-template/src/data/desk-*.json

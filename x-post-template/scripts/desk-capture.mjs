@@ -125,7 +125,8 @@ async function boxOf(from, to) {
     await look();
     if (!rs.length) return null;
     const r = rs[0];
-    return { x: r.left, y: r.top, w: r.width, h: r.height, lines: rs.length };
+    const last = rs.reduce((a, b) => (b.top + b.height / 2 > a.top + a.height / 2 ? b : a));
+    return { x: r.left, y: r.top, w: r.width, h: r.height, lines: rs.length, last: { x: last.left, y: last.top, w: last.width, h: last.height } };
   })()`);
 }
 async function resolve(where) {
@@ -141,14 +142,18 @@ async function locate(where) {
     // a word on the page: its middle, or its start or end, on the line's middle
     let w;
     if (where.end) {
-      const t = await noteText();
-      // the last letter written (a word put above the line isn't where the writing ends)
-      const end = t.trimEnd().length;
-      w = { from: end - 1, to: end };
-    } else w = await findWord(where.text);
+      // the end of the writing: just after where the caret goes at the end, on its line (a word put above the line
+      // isn't where the writing ends, and a lone full stop has no selection drawn to measure)
+      // so select the last paragraph and go just past the lowest band the page draws for it
+      const t = await noteText().then((v) => v.trimEnd());
+      const b = await boxOf(t.lastIndexOf('\n') + 1, t.length);
+      if (!b) throw new Error(`no box for the end of ${JSON.stringify(t)}`);
+      return { x: b.last.x + b.last.w + 16 + (where.dx ?? 0), y: b.last.y + b.last.h / 2 + (where.dy ?? 0) };
+    }
+    w = await findWord(where.text);
     const b = await boxOf(w.from, w.to);
     if (!b) throw new Error(`no box for ${JSON.stringify(where)}`);
-    const x = where.end ? b.x + b.w + 18 : where.start ? b.x + 3 : where.stop ? b.x + b.w - 3 : b.x + b.w / 2;
+    const x = where.start ? b.x + 3 : where.stop ? b.x + b.w - 3 : b.x + b.w / 2;
     return { x: x + (where.dx ?? 0), y: b.y + b.h / 2 + (where.dy ?? 0), box: b, from: w.from, to: w.to };
   }
   return { x: where.x, y: where.y };
@@ -255,7 +260,9 @@ try {
   await js(`window.__desk.shift(-window.__desk.shifted())`);
   await play(scene.acts, scene.end, true);
   console.log(`text: ${JSON.stringify(await noteText())}`);
+  // the latest filming is the one the video plays (src/data/desk.json); each tag's is kept beside it
   fs.writeFileSync(path.join(root, `src/data/desk-${TAG}.json`), JSON.stringify(rec));
+  fs.writeFileSync(path.join(root, 'src/data/desk.json'), JSON.stringify(rec));
   if (logs.length) console.log('page said:\n  ' + [...new Set(logs)].slice(0, 20).join('\n  '));
 
   async function perform(a) {
