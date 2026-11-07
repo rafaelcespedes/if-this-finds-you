@@ -19,8 +19,24 @@ export interface GhostLook {
   edge: number;
   /** the whole hand's opacity */
   opacity: number;
+  /** a colour the glass leans toward (graphite smoke), and how far, 0..1 */
+  tint?: [number, number, number];
+  tintMix?: number;
+  /** only the outline, 0..1: the inside clears and the silhouette is drawn as a thin line in the tint */
+  outline?: number;
 }
 export const GHOST: GhostLook = { refract: 4.2, frost: 2.2, milk: 0.1, rim: 0.6, spec: 0.22, edge: 0.16, opacity: 0.94 };
+
+/** the looks to choose from, after the first research sheet (Four looks): the glass, a frost fog, graphite smoke, a
+ *  hairline outline, and the hands' shadow alone (glass at no opacity) */
+export const LOOKS = {
+  ghost: GHOST,
+  frost: { refract: 1.2, frost: 6, milk: 0.55, rim: 0.2, spec: 0.05, edge: 0.06, opacity: 0.9 },
+  smoke: { refract: 0.8, frost: 4.5, milk: 0, rim: 0, spec: 0.02, edge: 0, opacity: 0.62, tint: [0.32, 0.33, 0.37], tintMix: 0.62 },
+  outline: { refract: 0, frost: 0, milk: 0, rim: 0, spec: 0, edge: 0, opacity: 0.95, tint: [0.36, 0.38, 0.43], outline: 1 },
+  shadow: { refract: 0, frost: 0, milk: 0, rim: 0, spec: 0, edge: 0, opacity: 0 },
+} satisfies Record<string, GhostLook>;
+export type GhostName = keyof typeof LOOKS;
 
 const vert = /* glsl */ `
 attribute float fade;
@@ -42,7 +58,8 @@ uniform float shadeK;
 uniform vec2 res;
 uniform float pxPerMm;
 uniform vec3 camPos;
-uniform float refract, milk, rim, spec, opacity, edge, fogPx, fogFrom;
+uniform float refract, milk, rim, spec, opacity, edge, fogPx, fogFrom, tintMix, outline;
+uniform vec3 tint;
 varying vec3 vPos;
 varying vec3 vNormal;
 varying float vFade;
@@ -72,8 +89,14 @@ void main() {
   vec3 H = normalize(L + V);
   float nh = max(dot(N, H), 0.0);
   col += spec * (0.35 * pow(nh, 36.0) + 0.1 * pow(nh, 6.0));
+  // smoke: leaning toward the tint, most where the glass is thickest
+  col = mix(col, tint, tintMix * (0.55 + 0.45 * ndv));
   // the fog: thinning toward the wrist, and gone before the frame's bottom edge (no cut-off arms)
   float a = opacity * vFade * smoothstep(0.0, fogPx, gl_FragCoord.y - fogFrom);
+  // the outline: only where the surface turns away, a thin line in the tint
+  float line = smoothstep(0.6, 0.8, fres);
+  col = mix(col, tint, outline);
+  a *= mix(1.0, line, outline);
   gl_FragColor = vec4(col * a, a);
 }`;
 
@@ -85,6 +108,7 @@ export function ghostMaterial(o: Partial<GhostLook> = {}) {
     uniforms: {
       under: { value: null }, underBlur: { value: null }, shade: { value: null }, shadeK: { value: 0 }, res: { value: new THREE.Vector2(1, 1) }, pxPerMm: { value: 4 },
       camPos: { value: new THREE.Vector3() },
+      tint: { value: new THREE.Vector3(...(look.tint ?? [1, 1, 1])) }, tintMix: { value: look.tintMix ?? 0 }, outline: { value: look.outline ?? 0 },
       refract: { value: look.refract }, milk: { value: look.milk }, rim: { value: look.rim }, spec: { value: look.spec }, edge: { value: look.edge }, opacity: { value: look.opacity },
       fogPx: { value: 150 }, fogFrom: { value: 0 },
     },

@@ -1,12 +1,14 @@
 // Drawing the hands: three.js on a WebGL canvas laid over the 2D frame, seen from straight above the frame's centre
 // through a slightly long lens (so the knuckles, nearer the camera, read a little larger than the fingertips, as in a
 // photo from above a desk). The key tops are the z = 0 plane, mapped exactly onto the keyboard in the frame.
-// Two looks: 'clay' (plain, opaque, to judge the shape) and 'ghost' (see ghost.ts).
+// The looks: 'clay' (plain, opaque, to judge the shape), and the glass ones (ghost.ts LOOKS): 'ghost' (liquid and
+// frost), 'frost' (fog), 'smoke' (graphite), 'outline' (a hairline) and 'shadow' (the hands' shadow alone).
+export type HandLook = 'clay' | GhostName;
 import * as THREE from 'three';
 import type { HandModel, Side } from './glb';
 import { surfaceOf, type HandSurface } from './mesh';
 import { rigOf, type Pose, type Rig } from './rig';
-import { depthMaterial, ghostMaterial, type GhostLook } from './ghost';
+import { depthMaterial, ghostMaterial, LOOKS, type GhostLook, type GhostName } from './ghost';
 import { HandShadow } from './shadow';
 
 export interface Frame {
@@ -36,7 +38,7 @@ export class HandsView {
   private underBlur?: THREE.CanvasTexture;
   private blurCanvas?: HTMLCanvasElement;
 
-  constructor(canvas: HTMLCanvasElement, models: Record<Side, HandModel>, readonly look: 'clay' | 'ghost', ghostLook?: Partial<GhostLook>) {
+  constructor(canvas: HTMLCanvasElement, models: Record<Side, HandModel>, readonly look: HandLook, ghostLook?: Partial<GhostLook>) {
     this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true, premultipliedAlpha: true });
     this.renderer.setPixelRatio(1);
     this.renderer.setClearColor(0x000000, 0);
@@ -45,7 +47,7 @@ export class HandsView {
     this.surf = { L: surfaceOf(models.L, this.rigs.L), R: surfaceOf(models.R, this.rigs.R) };
     const mat = look === 'clay'
       ? new THREE.MeshStandardMaterial({ color: '#d9cfc3', roughness: 0.72, metalness: 0 })
-      : (this.ghost = ghostMaterial(ghostLook));
+      : (this.ghost = ghostMaterial({ ...LOOKS[look], ...ghostLook }));
     this.geo = {} as Record<Side, THREE.BufferGeometry>;
     for (const side of ['L', 'R'] as const) {
       const s = this.surf[side];
@@ -60,7 +62,7 @@ export class HandsView {
       mesh.castShadow = look === 'clay';
       mesh.renderOrder = 1;
       this.scene.add(mesh);
-      if (look === 'ghost') {
+      if (look !== 'clay') {
         // the glass shows only its nearest surface: the hands' depth first, then the glass where it's frontmost
         const depth = new THREE.Mesh(g, depthMaterial());
         depth.frustumCulled = false;
@@ -68,7 +70,7 @@ export class HandsView {
         this.scene.add(depth);
       }
     }
-    if (look !== 'clay') this.shadow = new HandShadow([this.geo.L, this.geo.R]);
+    if (look !== 'clay') this.shadow = new HandShadow([this.geo.L, this.geo.R], look === 'shadow' ? 0.42 : look === 'outline' ? 0.12 : undefined);
     if (look === 'clay') {
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;

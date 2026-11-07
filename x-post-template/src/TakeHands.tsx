@@ -22,8 +22,9 @@ import { S0 } from './keyboard';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const takeHandsSchema = z.object({
-  /** the hands' look: 'ghost' (frosted glass), or 'clay' (plain, to judge their motion) */
-  handLook: z.enum(['ghost', 'clay']).default('ghost'),
+  /** the hands' look: 'ghost' (liquid and frost), 'frost' (fog), 'smoke' (graphite), 'outline' (a hairline),
+   *  'shadow' (their shadow alone), or 'clay' (plain, to judge their motion) */
+  handLook: z.enum(['ghost', 'frost', 'smoke', 'outline', 'shadow', 'clay']).default('ghost'),
 });
 type Props = z.infer<typeof takeHandsSchema> & { data?: TakeData };
 interface TakeData { session: any; pose: any }
