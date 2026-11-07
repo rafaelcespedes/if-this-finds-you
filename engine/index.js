@@ -45,7 +45,7 @@ export { inkSVG } from './ink-svg.js';
 export { renderCanvas, warmCanvas, PAPERS } from './render-canvas.js';
 export { buildFont, buildFontPackage, verify, glyphName, fontNames, handCode, GF_LATIN_CORE } from './fontbuild.js';
 export { writeWithJourney, journeyAmount, fixHabits, journeyText } from './corrections.js';
-export { newInkDoc, newView, replay, apply, plan, penStep, viewText, draftPage, fairCopy, postScript, dropLast, sheetPage, again, previewAgain, stet, inkIdsIn, backOverSpace, AGAIN_MAX, INK_VERSION,
+export { newInkDoc, newView, replay, apply, plan, penStep, viewText, draftPage, draftInsert, fairCopy, postScript, dropLast, sheetPage, again, previewAgain, stet, inkIdsIn, backOverSpace, AGAIN_MAX, INK_VERSION,
   styleCarry, lineNow, lineHeld, lineCarry } from './sheet.js';
 export { logicalText, transcription, summary as inkSummary, encodeDoc, decodeDoc, encodeInkLink, decodeInkLink } from './inklog.js';
 export { newTypist, typistKey, typistHaste, hasteStep, hastyHand, hasteCarry, hasteNext, HASTE_MAX, TYPIST_PRIOR_MS } from './tempo.js';

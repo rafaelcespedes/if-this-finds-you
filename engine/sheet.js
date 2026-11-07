@@ -452,25 +452,30 @@ function neighbours(st, s, after) {
   for (let i = k + 1; i < recs.length && !right; i++) { const it = s.placed.get(recs[i].id); if (it && it.g && it.g.strokes.length && it.role !== 'insert') right = it; }
   return { left, right };
 }
-function placeInsert(st, s, e, ev, firstId) {
+// Where insert event `e` (event index ev) is written: { res (insertionItems' letters, caret mark, stops, block), ref },
+// or null when nothing is on paper yet to write it above (it's written at the pen). Used by placeInsert, and by
+// draftInsert for the thought letters of an insertion still being typed (the same placement, before it's written).
+function insertPlan(st, s, e, ev) {
   const p = st.p, H = st.H;
   const r = R0(st, ev);
   const maxW = st.opts.maxWidth || 12000;
   const seed = 'fix:' + st.salt + ':' + ev;
   const cont = st.blocks.get(e.after);
-  let res, ref;
-  if (cont) { ref = cont.ref; res = insertionItems(p, H, { cont, text: e.text, seed, maxW, r }); }
-  else {
-    let sub = null;
-    if (e.over) sub = placedRun(s, e.over[0], e.over[1]);
-    let { left, right } = neighbours(st, s, e.after);
-    if (sub && sub.length) left = sub[sub.length - 1];
-    if (!left && right) left = right; // inserting before everything: over the first word
-    if (!left) { writeToStream(st, s, s.stream, e.text, firstId, ev); return; } // nothing on paper yet: write it at the pen
-    ref = { line: left.line, para: left.para, inkIndex: left.inkIndex, word: left.word, wk: 'i' + ev, tempo: (left.tempo || 1) * 1.1, ev, key: 'e' + ev, sheet: s.n };
-    const above = s.items.filter((it) => it.line === left.line - 1 && it.role !== 'mark');
-    res = insertionItems(p, H, { left, right: right && right !== left ? right : null, sub, above, text: e.text, seed, maxW, r, ref, lines: s.lines });
-  }
+  if (cont) return { ref: cont.ref, res: insertionItems(p, H, { cont, text: e.text, seed, maxW, r }) };
+  let sub = null;
+  if (e.over) sub = placedRun(s, e.over[0], e.over[1]);
+  let { left, right } = neighbours(st, s, e.after);
+  if (sub && sub.length) left = sub[sub.length - 1];
+  if (!left && right) left = right; // inserting before everything: over the first word
+  if (!left) return null;
+  const ref = { line: left.line, para: left.para, inkIndex: left.inkIndex, word: left.word, wk: 'i' + ev, tempo: (left.tempo || 1) * 1.1, ev, key: 'e' + ev, sheet: s.n };
+  const above = s.items.filter((it) => it.line === left.line - 1 && it.role !== 'mark');
+  return { ref, res: insertionItems(p, H, { left, right: right && right !== left ? right : null, sub, above, text: e.text, seed, maxW, r, ref, lines: s.lines }) };
+}
+function placeInsert(st, s, e, ev, firstId) {
+  const pl = insertPlan(st, s, e, ev);
+  if (!pl) { writeToStream(st, s, s.stream, e.text, firstId, ev); return; } // nothing on paper yet: write it at the pen
+  const { res, ref } = pl;
   // utf-16 offset in the text -> glyph id (each code point took the next id)
   const idAt = [];
   let id = firstId;
@@ -697,6 +702,31 @@ export function draftPage(st, view, opts) {
   const pg = o ? S.ink.draft(view.tail, o) : haste ? S.ink.draft(view.tail, { haste }) : S.ink.draft(view.tail);
   if (!S.lineBase) return pg;
   return Object.assign({}, pg, { items: pg.items.map((it) => Object.assign({}, it, { line: it.line + S.lineBase })), stops: pg.stops.map((sp) => Object.assign({}, sp, { line: sp.line + S.lineBase })) });
+}
+
+// Thought letters above the line: the insertion being typed mid-text (view.mid), laid out where the pen will write it
+// (placeInsert's own placement, with the seeds of the event it will be: the log's next index; a long insertion the pen
+// writes in pieces may settle a hair differently), without writing it, so the app can show it faint where it goes.
+// null when there's none, or nothing on the paper yet to write it above. { items: its letters (charIndex = the offset
+// in view.mid.text), caret: the caret mark the pen will draw under it (null when it carries on an insertion), stops:
+// the caret stops (o = the offset in view.mid.text; x, y on the insertion's own baseline), line: the written line it
+// goes above, text }
+export function draftInsert(st, view) {
+  const mid = view && view.mid;
+  if (!mid || !mid.text) return null;
+  const s = st.cur;
+  const pl = insertPlan(st, s, { t: 'insert', after: mid.after, text: mid.text, over: mid.over }, st.doc.log.length);
+  if (!pl) return null;
+  const { res, ref } = pl;
+  const shift = res.shift || 0;
+  const items = [], caret = [];
+  for (const it of res.items) {
+    // (copies: what layout hands back is never changed by a draft)
+    if (it.kind === 'mark') { caret.push(Object.assign({}, it, { ev: st.doc.log.length })); continue; }
+    items.push(Object.assign({}, it, { charIndex: it.charIndex - shift, role: 'insert', line: ref.line, para: ref.para, sheet: s.n, wk: ref.wk, wkey: 'ins:' + ref.wk + ':' + it.wkey }));
+  }
+  const stops = (res.stops || []).map((sp) => Object.assign({}, sp, { line: ref.line }));
+  return { items, caret: caret[0] || null, stops, line: ref.line, text: mid.text };
 }
 
 // a page for an earlier sheet (drafts set aside by a fresh sheet or a fair copy)

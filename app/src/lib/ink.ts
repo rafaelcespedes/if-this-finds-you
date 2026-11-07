@@ -26,7 +26,7 @@
 import * as E from '@engine';
 import { UPM, type Hand } from '@engine';
 import type { Edit } from './edits';
-import type { Geometry, Side } from './geometry';
+import type { CaretPos, Geometry, Side } from './geometry';
 import { LIVE, engineGeometry, liveExtras, pageSetup, type Live } from './live';
 import { frameFor } from './paginate';
 import type { PaperSpec } from './papers';
@@ -176,17 +176,21 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
     const words: ThoughtWord[][] = Array.from({ length: n }, () => []);
     // a draft laid out a word at a time (InkSession.draft): each piece's words kept with it, so a render walks the
     // pieces, not every letter of a long paste
-    if (Array.isArray(x.draft.pieces)) {
-      for (const pg of x.draft.pieces as any[]) {
-        let c = piecesDrawn.get(pg);
-        if (!c || c.sc !== sc || c.n !== n || c.sheetU !== sheetU) {
-          c = { sc, n, sheetU, words: [] };
-          const sub = inkExtras(live, { draft: { items: pg.items }, signed: false, writerName: '' }).thoughts ?? [];
-          sub.forEach((list, s) => { for (const t of list) c!.words.push({ s, t }); });
-          piecesDrawn.set(pg, c);
-        }
-        for (const { s, t } of c.words) words[s].push(t);
+    const piece = (pg: any) => {
+      let c = piecesDrawn.get(pg);
+      if (!c || c.sc !== sc || c.n !== n || c.sheetU !== sheetU) {
+        c = { sc, n, sheetU, words: [] };
+        const sub = inkExtras(live, { draft: { items: pg.items }, signed: false, writerName: '' }).thoughts ?? [];
+        sub.forEach((list, s) => { for (const t of list) c!.words.push({ s, t }); });
+        piecesDrawn.set(pg, c);
       }
+      for (const { s, t } of c.words) words[s].push(t);
+    };
+    // the insertion being typed mid-text, faint where it will be written above the line (InkSession.insertDraft)
+    const others = () => { if (x.draft.ins?.items?.length) piece(x.draft.ins); };
+    if (Array.isArray(x.draft.pieces)) {
+      for (const pg of x.draft.pieces as any[]) piece(pg);
+      others();
       out.thoughts = words;
       if (x.signed && x.writerName) {
         const sig = liveExtras(live, { marks: [], signed: true, writerName: x.writerName, text: live.page.text });
@@ -211,6 +215,7 @@ export function inkExtras(live: Live, x: { draft?: any; signed: boolean; writerN
     put();
     // (the outline is in sheet px at this size: another size is another word)
     for (const list of words) for (const t of list) t.id += sc.toFixed(5);
+    others();
     out.thoughts = words;
   }
   if (x.signed && x.writerName) {
@@ -407,7 +412,39 @@ export class InkSession {
    */
   draft(grow = false) {
     const tail = String(this.view.tail ?? '');
-    if (!tail) return null;
+    // (the thought letters of an insertion being typed mid-text ride along: `ins`, see insertDraft)
+    const ins = this.insertDraft();
+    if (!tail) return ins ? this.withInsert(null, ins) : null;
+    const d = this.tailDraft(tail, grow);
+    return ins ? this.withInsert(d, ins) : d;
+  }
+  /**
+   * The thought letters of the insertion being typed mid-text (view.mid), where the pen will write them above the line
+   * (engine draftInsert): { items (the letters, page units), caret (the ‸ mark the pen will draw under a new insertion,
+   * or null when it carries one on: not drawn as a thought), stops (o: the offset in the insertion's text; x, y on its
+   * own baseline), line (the written line it goes above), text }. null when nothing is being inserted.
+   */
+  insertDraft(): any {
+    const mid = this.view.mid;
+    if (!mid?.text || typeof engine.draftInsert !== 'function') return null;
+    const key = `${mid.after}|${mid.over ?? ''}|${mid.text}`;
+    const m = this.insMemo;
+    if (m && m.page === this.sheet.page && m.key === key) return m.d;
+    const d = engine.draftInsert(this.sheet, this.view);
+    this.insMemo = { page: this.sheet.page, key, d };
+    return d;
+  }
+  private insMemo: { page: unknown; key: string; d: any } | null = null;
+  /** the draft with the insertion's thought letters on it (one object while both are the same) */
+  private withInsert(d: any, ins: any) {
+    const m = this.withMemo;
+    if (m && m.d === d && m.ins === ins) return m.out;
+    const out = d ? { ...d, ins } : { items: [], stops: [], lineInfo: [], from: 0, text: '', lines: 0, pieces: [], ins };
+    this.withMemo = { d, ins, out };
+    return out;
+  }
+  private withMemo: { d: any; ins: any; out: any } | null = null;
+  private tailDraft(tail: string, grow: boolean) {
     const st = this.sheet;
     const S = st.cur?.stream;
     const style = this.typingStyle();
@@ -673,7 +710,7 @@ export class InkSession {
     this.offKey = { sheet: this.sheet, view: this.view, n: this.doc.log.length, v };
     return v;
   }
-  private offKey: { sheet: unknown; view: unknown; n: number; v: { toPaper: number[]; paperLen: number } } = { sheet: null, view: null, n: -1, v: { toPaper: [], paperLen: 0 } };
+  private offKey: { sheet: unknown; view: unknown; n: number; v: { toPaper: number[]; paperLen: number; midFrom: number } } = { sheet: null, view: null, n: -1, v: { toPaper: [], paperLen: 0, midFrom: -1 } };
 
   // ---------- what a screen reader hears ----------
   /**
@@ -1139,14 +1176,14 @@ export function inkPage(p: Hand, doc: InkDoc, paper: PaperSpec, size: number, li
  *     them: the textarea has dropped them, and the thought letters are written after them
  * `toPaper[i]` is the paper offset for textarea offset i (0..length); it never decreases.
  */
-export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen: number } {
+export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen: number; midFrom: number } {
   const recs = (sheet.reader?.recs ?? []) as { id: number; ch: string; over?: string; struck?: unknown; joined?: boolean }[];
   const pending = new Set<number>(view?.pending?.ids ?? []);
   const mid = view?.mid?.text ? (view.mid as { after: number; text: string }) : null;
   const tail = String(view?.tail ?? '');
   const toPaper: number[] = [];
-  let g = 0, midDone = false;
-  const putMid = () => { if (mid && !midDone) { for (let j = 0; j < mid.text.length; j++) toPaper.push(g); midDone = true; } };
+  let g = 0, midDone = false, midFrom = -1;
+  const putMid = () => { if (mid && !midDone) { midFrom = toPaper.length; for (let j = 0; j < mid.text.length; j++) toPaper.push(g); midDone = true; } };
   if (mid && mid.after < 0) putMid();
   for (const r of recs) {
     if (!r.struck && !r.joined) {
@@ -1162,7 +1199,7 @@ export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen
   // the writer considers it), still after them: that's where the pen carries on once it has struck them, so the caret
   // never jumps forward over the word when the strike lands (and never back over a blot as the next press begins)
   toPaper.push(g + tail.length);
-  return { toPaper, paperLen: g + tail.length };
+  return { toPaper, paperLen: g + tail.length, midFrom };
 }
 
 /**
@@ -1173,9 +1210,9 @@ export function inkOffsets(sheet: any, view: any): { toPaper: number[]; paperLen
 export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
   const draft = ink.draft();
   const written = String(live.page.text ?? '').length;
-  const geo = draft ? engine.geometry(p, [live.page, engine.offsetStops(draft, written - (draft.from || 0))]) : live.geo;
+  const geo = draft?.stops?.length ? engine.geometry(p, [live.page, engine.offsetStops(draft, written - (draft.from || 0))]) : live.geo;
   const viewText = ink.text();
-  const { toPaper, paperLen } = inkOffsets(ink.sheet, ink.view);
+  const { toPaper, paperLen, midFrom } = inkOffsets(ink.sheet, ink.view);
   const g = engineGeometry(live, { geo, text: String(live.page.text ?? '') + String(ink.view?.tail ?? '') });
   if (toPaper.length !== viewText.length + 1 || paperLen !== g.text.length) return { ...g, text: viewText }; // (never: a safe fallback)
   const toP = (o: number) => toPaper[Math.max(0, Math.min(toPaper.length - 1, o))];
@@ -1197,7 +1234,25 @@ export function inkGeometry(live: Live, p: Hand, ink: InkSession): Geometry {
     stopsAt.get(s.o)!.push(s);
   }
   const lift = 0.3 * (g.ascU || 600);
+  // the insertion being typed mid-text: its thought letters are drawn where it will be written, above the line
+  // (InkSession.insertDraft), and the caret inside it or at its end goes there with them
+  const ins = draft?.ins as { stops: { o: number; x: number; y: number; aff?: string }[] } | undefined;
+  const midLen = String(ink.view?.mid?.text ?? '').length;
+  const sheetU = live.paper.h * live.unitsPerMm;
+  const caretInInsert = (o: number, side?: Side): CaretPos | null => {
+    if (!ins || midFrom < 0 || !(o > midFrom && o <= midFrom + midLen)) return null;
+    const at = ins.stops.filter((x) => x.o === o - midFrom);
+    const s = at.find((x) => (x.aff ?? '') === (side === 'before' ? 'before' : '')) ?? at[at.length - 1];
+    const c = s ? g.caret(toP(o), side) : null;
+    if (!s || !c) return null;
+    const sheet = Math.min(live.sheets.length - 1, Math.max(0, Math.floor(s.y / sheetU)));
+    const y = s.y - (live.sheets[sheet]?.shiftU ?? 0);
+    // (the caret's lean and height as on the line below)
+    return { ...c, sheet, x: s.x, y, top: c.top ? [s.x + (c.top[0] - c.x), y - (c.y - c.top[1])] : undefined };
+  };
   const caret = (o: number, side?: Side) => {
+    const up = caretInInsert(o, side);
+    if (up) return up;
     const po = toP(o);
     const c = g.caret(po, side);
     const list = stopsAt.get(po);
