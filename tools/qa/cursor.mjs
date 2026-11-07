@@ -404,6 +404,11 @@ for (const [seed, style] of HANDS) {
 {
   const file = path.join(QA_DIR, 'data', 'cursor-old-logs.json');
   const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  // the pages are fingerprints of drawings made on one kind of machine: another platform's maths functions can round a
+  // tenth of a pixel the other way (GitHub's Linux runners did, 7 Nov). There the compact form and the text are still
+  // checked, and drawing against the version before is regress.mjs --against's job, on one machine
+  const here = `${process.platform}-${process.arch}`;
+  const pagesHere = update || !data.platform || data.platform === here;
   let same = 0;
   for (const l of data.logs) {
     const doc = E.decodeDoc(l.doc);
@@ -412,10 +417,12 @@ for (const [seed, style] of HANDS) {
     const p = E.makeHand(l.seed, l.style);
     const h = sha(E.renderSVG(p, E.replay(p, doc, l.opts).page, SVG));
     if (update) l.svg = h;
+    else if (!pagesHere) same++;
     else if (h !== l.svg) fail(`old log ${l.seed} (${l.name}): replays to a different page`);
     else same++;
   }
-  if (update) { fs.writeFileSync(file, JSON.stringify(data, null, 1) + '\n'); console.log(`  old logs: ${data.logs.length} pages measured again`); }
+  if (update) { data.platform = here; fs.writeFileSync(file, JSON.stringify(data, null, 1) + '\n'); console.log(`  old logs: ${data.logs.length} pages measured again`); }
+  else if (!pagesHere) console.log(`  old logs: ${same}/${data.logs.length} read and say the same; their pages were measured on ${data.platform}, not compared on ${here}`);
   else console.log(`  old logs: ${same}/${data.logs.length} replay to the same page as before the cursor fixes`);
 }
 
