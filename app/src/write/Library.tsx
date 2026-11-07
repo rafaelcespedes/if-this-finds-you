@@ -9,6 +9,8 @@ import { writerName } from '@/lib/hands';
 import { THROWN_DAYS, groupNotes, noteSvg, noteText, snippetOf, titleOf, whenOf, type Note } from './notes';
 
 interface Props {
+  /** at the head of the list, before Search: the way home */
+  lead?: React.ReactNode;
   notes: Note[];
   current: string;
   onOpen: (id: string) => void;
@@ -22,7 +24,7 @@ interface Props {
   arrived?: string | null;
 }
 
-export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onDelete, screen, arrived }: Props) {
+export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onDelete, screen, arrived, lead }: Props) {
   const [q, setQ] = useState('');
   const [bin, setBin] = useState(false);
   const live = useMemo(() => notes.filter((n) => !n.thrown), [notes]);
@@ -40,6 +42,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
   return (
     <nav className="wr-library" data-screen={screen || undefined} aria-label="Notes">
       <div className="wr-lib-head">
+        {lead}
         {bin ? (
           <button type="button" className="wr-lib-back" onClick={() => setBin(false)}>
             <X aria-hidden /> Thrown away

@@ -1,7 +1,7 @@
 /* The writing app (/write): its own frame, not the site's. The paper is the only physical thing on screen; around it
    a flat, neutral desk and a few frosted groups of controls that float over the desk (never over the writing) and step
-   back while you write. System type, soft corners, no hard lines. Light and dark follow the system; the paper stays
-   paper. */
+   back while you write. System type, soft corners, no hard lines. Light and dark follow the system, or the More
+   menu's Appearance; the paper stays paper. */
 
 :root[data-app='write'] {
   color-scheme: light dark;
@@ -45,8 +45,37 @@
   --rr-ui: var(--wr-font);
   background: var(--wr-desk);
 }
+/* Dark: the system's, unless the More menu says Light; or Dark, whatever the system says (WriteApp.tsx Appearance,
+   html[data-theme], set before the first paint in write.html) */
+:root[data-app='write'][data-theme='light'] { color-scheme: light; }
+:root[data-app='write'][data-theme='dark'] {
+  color-scheme: dark;
+    --wr-desk: #161618;
+    --wr-side: #1c1c1e;
+    --wr-glass: rgba(44, 44, 46, 0.72);
+    --wr-glass-strong: rgba(40, 40, 42, 0.94);
+    --wr-pop-bg: rgba(38, 38, 40, 0.985);
+    --wr-text: #f2f2f4;
+    --wr-muted: #a0a0a6;
+    --wr-faint: #7c7c82;
+    --wr-hover: rgba(255, 255, 255, 0.07);
+    --wr-hover-strong: rgba(255, 255, 255, 0.11);
+    --wr-sel: rgba(255, 255, 255, 0.09);
+    --wr-sep: rgba(255, 255, 255, 0.08);
+    --wr-on: #f2f2f4;
+    --wr-on-text: #161618;
+    --wr-danger: #ff6b63;
+    --wr-focus: #4c8dff;
+    --wr-pencil: #e0664f;
+    --wr-group-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 6px 20px -10px rgba(0, 0, 0, 0.6);
+    --wr-pop-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 18px 48px -16px rgba(0, 0, 0, 0.7);
+    --panel: #2a2a2c;
+    --text: #f2f2f4;
+    --ink-soft: #f2f2f4;
+}
 @media (prefers-color-scheme: dark) {
-  :root[data-app='write'] {
+  :root[data-app='write']:not([data-theme='light']) {
+    color-scheme: dark;
     --wr-desk: #161618;
     --wr-side: #1c1c1e;
     --wr-glass: rgba(44, 44, 46, 0.72);
@@ -183,7 +212,8 @@
 .wr-name-hand { height: 26px; }
 /* the writer's name in the ink they write with; on a dark desk, in the desk's own light (a white pen on black) */
 .wr-app .wr-writer-chip { color: var(--chip-ink, var(--wr-text)); }
-@media (prefers-color-scheme: dark) { .wr-app .wr-writer-chip { color: var(--wr-text); } }
+:root[data-theme='dark'] .wr-app .wr-writer-chip { color: var(--wr-text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .wr-app .wr-writer-chip { color: var(--wr-text); } }
 .wr-writer-chip .wr-name-hand { height: 24px; }
 
 .wr-mode {
@@ -697,7 +727,8 @@
 .wr-writer-moves { justify-content: flex-start; }
 /* the other writers' samples: in the ink on a light panel, in the panel's own light on a dark one */
 .wr-hand { color: var(--sample-ink, var(--wr-text)); }
-@media (prefers-color-scheme: dark) { .wr-hand, .wr-writer-name { color: var(--wr-text) !important; } }
+:root[data-theme='dark'] :is(.wr-hand, .wr-writer-name) { color: var(--wr-text) !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) :is(.wr-hand, .wr-writer-name) { color: var(--wr-text) !important; } }
 
 /* ---------- Share: the note as a picture to post (ShareDialog.tsx, share.ts) ---------- */
 .wr-share {
@@ -776,3 +807,14 @@
 }
 /* the window itself takes the focus when it opens (no ring on its first button); it draws none of its own */
 .wr-dialog:focus { outline: none; }
+
+/* the way home: the site's mark, at the top of the notes when they're open, beside their button when they're shut */
+.wr-home { display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 9px; transition: background-color 120ms var(--ease-out), transform var(--dur-press) var(--ease-out); }
+.wr-home img { width: 22px; height: 22px; border-radius: 5px; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12); }
+@media (hover: hover) and (pointer: fine) { .wr-home:hover { background: var(--wr-hover); } }
+.wr-home:active { transform: scale(0.94); }
+.wr-home:focus-visible { outline: 2px solid var(--wr-focus); outline-offset: 2px; }
+.wr-lib-head:has(.wr-home) { display: flex; align-items: center; gap: 8px; }
+.wr-lib-head:has(.wr-home) > .wr-search, .wr-lib-head:has(.wr-home) > .wr-lib-back { flex: 1; min-width: 0; }
+.wr-library[data-screen] .wr-home { width: 38px; height: 38px; }
+.wr-library[data-screen] .wr-home img { width: 26px; height: 26px; }

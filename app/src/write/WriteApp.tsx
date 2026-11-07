@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { DropdownMenu } from 'radix-ui';
-import { Bold, Check, ChevronDown, ChevronLeft, Copy, Highlighter, Italic, ListTodo, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
+import { Bold, Check, ChevronLeft, Copy, Highlighter, Italic, ListTodo, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Trash2, Undo2, WandSparkles } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { Sheet } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -37,6 +37,19 @@ import {
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const MOD = isMac() ? '⌘' : 'Ctrl+';
+type Appearance = 'auto' | 'light' | 'dark';
+const THEME_KEY = 'seedhand:write:theme';
+const APPEARANCES: { id: Appearance; label: string }[] = [{ id: 'auto', label: 'Automatic' }, { id: 'light', label: 'Light' }, { id: 'dark', label: 'Dark' }];
+
+/** The way home: the site's mark, a link to If This Finds You (Rafael, 7 Nov: a favicon-like button, at the top of the
+ *  notes when they're open, beside their button when they're shut) */
+function HomeMark() {
+  return (
+    <a className="wr-home" href="/" aria-label="If This Finds You, the home page" title="If This Finds You">
+      <img src="/brand/favicon-5.svg" alt="" width="22" height="22" />
+    </a>
+  );
+}
 /** the note being written, kept here too as the page goes (the database can't always finish in time) */
 const PENDING_KEY = 'seedhand:write:pending';
 const LIB_KEY = 'seedhand:write:library';
@@ -378,6 +391,21 @@ export function WriteApp() {
   const [hideUi, setHideUi] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  // ---------- Appearance: Automatic (the system's), Light or Dark (Rafael, 7 Nov: "a way to toggle between light theme
+  // and dark theme"). Kept on this device; write.html puts it on before the first paint ----------
+  const [theme, setThemeNow] = useState<Appearance>(() => {
+    try { const t = localStorage.getItem(THEME_KEY); return t === 'light' || t === 'dark' ? t : 'auto'; } catch { return 'auto'; }
+  });
+  const setTheme = (t: Appearance) => {
+    setThemeNow(t);
+    try { if (t === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, t); } catch { /* not kept */ }
+  };
+  useEffect(() => {
+    const html = document.documentElement;
+    if (theme === 'auto') html.removeAttribute('data-theme'); else html.setAttribute('data-theme', theme);
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    metas.forEach((m, i) => m.setAttribute('content', theme === 'auto' ? (i === 0 ? '#e9e9e7' : '#161618') : theme === 'dark' ? '#161618' : '#e9e9e7'));
+  }, [theme]);
   // Format: opened from the toolbar (or, on a phone, from the bar above the keyboard, which goes as the keyboard does)
   const [formatOpen, setFormatOpen] = useState(false);
 
@@ -552,11 +580,33 @@ export function WriteApp() {
     <>
       {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setHideUi(true)}><EyeOff aria-hidden /> Hide the toolbar <kbd>{MOD}.</kbd></DropdownMenu.Item>}
       {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setKeysOpen(true)}><Keyboard aria-hidden /> Keyboard shortcuts <kbd>{MOD}/</kbd></DropdownMenu.Item>}
+      <DropdownMenu.Separator className="wr-menu-sep" />
+      <DropdownMenu.Label className="wr-menu-label wr-menu-head">Appearance</DropdownMenu.Label>
+      {APPEARANCES.map((a) => (
+        <DropdownMenu.Item key={a.id} className="wr-menu-item" onSelect={() => setTheme(a.id)}>
+          <span className="wr-menu-tick">{theme === a.id && <Check aria-hidden />}</span> {a.label}
+        </DropdownMenu.Item>
+      ))}
+      <DropdownMenu.Separator className="wr-menu-sep" />
       <DropdownMenu.Label className="wr-menu-label">
         {words} {words === 1 ? 'word' : 'words'} · {keptOk ? 'Kept on this device' : 'Not kept in this browser'}
       </DropdownMenu.Label>
     </>
+  );  // how this note is written, In ink or Clean: in the More menu (Rafael, 7 Nov: "the ink can be rolled into the more
+  // button"); the page itself shows which it is
+  const modeItems = (
+    <>
+      <DropdownMenu.Item className="wr-menu-item wr-menu-mode" onSelect={() => setMode('ink')}>
+        <span className="wr-menu-tick">{!isClean(current) && <Check aria-hidden />}</span>
+        <span><b>In ink</b><small>Mistakes are crossed out, never erased</small></span>
+      </DropdownMenu.Item>
+      <DropdownMenu.Item className="wr-menu-item wr-menu-mode" onSelect={() => setMode('clean')}>
+        <span className="wr-menu-tick">{isClean(current) && <Check aria-hidden />}</span>
+        <span><b>Clean</b><small>Edit freely, like a font. Crossings-out are tidied away</small></span>
+      </DropdownMenu.Item>
+    </>
   );
+
 
   return (
     <div
@@ -588,6 +638,7 @@ export function WriteApp() {
             onDelete={deleteForGood}
             screen={phone}
             arrived={arrived}
+            lead={<HomeMark />}
           />
         </aside>
       )}
@@ -601,18 +652,12 @@ export function WriteApp() {
                   <ChevronLeft aria-hidden /><span>Notes</span>
                 </button>
               ) : (
-                <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => setLibOpen((o) => !o)} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} title={`Notes  ${MOD}\\`}>
+                <>{!libOpen && <HomeMark />}<button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => setLibOpen((o) => !o)} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} title={`Notes  ${MOD}\\`}>
                   <PanelLeft aria-hidden />
-                </button>
+                </button></>
               )}
               {!phone && <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => newNote()} aria-label="New note" title={`New note  ⌥${MOD}N`}><SquarePen aria-hidden /></button>}
             </div>
-            {!phone && menu(
-              <button type="button" className="wr-title" aria-label={`${title || 'New note'}: note actions`}>
-                <span>{title || 'New note'}</span>
-              </button>,
-              noteItems, 'start',
-            )}
             {phone && <span className="wr-format-anchor">{formatButton}</span>}
             {!phone && (
               <div className="wr-group wr-format-bar">
@@ -628,28 +673,12 @@ export function WriteApp() {
             )}
             <div className="wr-spacer" />
             <div className="wr-group">
-              {menu(
-                <button type="button" className="wr-mode" aria-label={`Writing: ${isClean(current) ? 'Clean' : 'In ink'}`} title="How it's written">
-                  <span>{isClean(current) ? 'Clean' : 'Ink'}</span><ChevronDown aria-hidden />
-                </button>,
-                <>
-                  <DropdownMenu.Item className="wr-menu-item wr-menu-mode" onSelect={() => setMode('ink')}>
-                    <span className="wr-menu-tick">{!isClean(current) && <Check aria-hidden />}</span>
-                    <span><b>In ink</b><small>Mistakes are crossed out, never erased</small></span>
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item className="wr-menu-item wr-menu-mode" onSelect={() => setMode('clean')}>
-                    <span className="wr-menu-tick">{isClean(current) && <Check aria-hidden />}</span>
-                    <span><b>Clean</b><small>Edit freely, like a font. Crossings-out are tidied away</small></span>
-                  </DropdownMenu.Item>
-                </>,
-                'end',
-              )}
               {writerButton}
               <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={another} aria-label="Another writer" title="Another writer"><Shuffle aria-hidden /></button>
             </div>
             <div className="wr-group">
               {!phone && <button type="button" className="wr-icon" onClick={() => setShareOpen(true)} aria-label="Share" title="Share as a picture"><Share aria-hidden /></button>}
-              {menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, phone ? <><DropdownMenu.Item className="wr-menu-item" onSelect={() => newNote()}><SquarePen aria-hidden /> New note</DropdownMenu.Item><DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</> : moreItems, 'end')}
+              {menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, <>{phone && <><DropdownMenu.Item className="wr-menu-item" onSelect={() => newNote()}><SquarePen aria-hidden /> New note</DropdownMenu.Item><DropdownMenu.Separator className="wr-menu-sep" /></>}{modeItems}<DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</>, 'end')}
             </div>
           </header>
 
