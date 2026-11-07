@@ -236,6 +236,10 @@ html:root[data-layout='ruler'] .rr-ledger-record .rr-fact {
   border-bottom: 1px solid var(--ed-rule);
   padding: 7px 0 8px;
 }
+/* the hand's row: room for its press wash, which is taller than the name's ink (reading-room.css, .rr-sig) */
+html:root[data-layout='ruler'] .rr-ledger-record .rr-fact:has(.rr-sig) {
+  padding: 10px 0 11px;
+}
 html:root[data-layout='ruler'] .rr-ledger-record .rr-full {
   border-top: 0;
 }

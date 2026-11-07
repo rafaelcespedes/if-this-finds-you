@@ -30,14 +30,15 @@ import { initialTheme, setTheme, type FontsTheme } from './switch';
 import { Toolbar, type Layout } from './Toolbar';
 import './fonts-new.css';
 
-/** List or grid, kept in the address (?grid=1) so a link shows the same. (Not ?layout=: that's the site's editorial
- *  layout switch, lib/layout.ts.) */
+/** List or grid, kept in the address so a link shows the same. The grid is the default (Rafael, 7 Nov: "default to the
+ *  grid instead of the list"; only wide screens have one), so the list is the one written down (?grid=0); an older
+ *  link's ?grid=1 still opens the grid. (Not ?layout=: that's the site's editorial layout switch, lib/layout.ts.) */
 function useLayout(): [Layout, (l: Layout) => void] {
-  const [layout, set] = useState<Layout>(() => (new URLSearchParams(location.search).get('grid') === '1' ? 'grid' : 'list'));
+  const [layout, set] = useState<Layout>(() => (new URLSearchParams(location.search).get('grid') === '0' ? 'list' : 'grid'));
   const update = useCallback((l: Layout) => {
     set(l);
     const q = new URLSearchParams(location.search);
-    if (l === 'grid') q.set('grid', '1'); else q.delete('grid');
+    if (l === 'list') q.set('grid', '0'); else q.delete('grid');
     history.replaceState(history.state, '', `?${q.toString()}${location.hash}`);
   }, []);
   return [layout, update];
