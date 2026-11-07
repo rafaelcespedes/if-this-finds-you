@@ -23,6 +23,9 @@
   --wr-on-text: #fbfbfa;
   --wr-danger: #c4302b;
   --wr-focus: #3478f6;
+  /* the editor's red pencil (PaperEditor): the caret, the ‸, the selection, every mark that only shows what will
+     happen. A colour no ink uses, on every paper */
+  --wr-pencil: #c4402a;
   --wr-group-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px -10px rgba(0, 0, 0, 0.18);
   --wr-pop-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 48px -16px rgba(0, 0, 0, 0.28);
   --wr-radius: 12px;
@@ -60,6 +63,7 @@
     --wr-on-text: #161618;
     --wr-danger: #ff6b63;
     --wr-focus: #4c8dff;
+    --wr-pencil: #e0664f;
     --wr-group-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 6px 20px -10px rgba(0, 0, 0, 0.6);
     --wr-pop-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 18px 48px -16px rgba(0, 0, 0, 0.7);
     --panel: #2a2a2c;
@@ -68,6 +72,20 @@
   }
 }
 :root[data-app='write'] body { background: var(--wr-desk); }
+
+/* The caret (PaperEditor's red pencil): solid while you type, blinking once you've stopped for half a second (each
+   move starts it again). Reduced motion: no blink (index.css) */
+:root[data-app='write'] .caret-blink { animation-delay: 500ms; }
+/* The loupe, while a finger drags the caret or a handle: the line under it, larger, above it */
+.wr-loupe {
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--wr-desk);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.12), 0 10px 28px -8px rgba(0, 0, 0, 0.32);
+  animation: wr-loupe-in 120ms var(--ease-out) both;
+}
+@keyframes wr-loupe-in { from { opacity: 0; transform: scale(0.92) translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .wr-loupe { animation: none; } }
 
 .wr-app {
   display: flex;

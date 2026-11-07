@@ -228,7 +228,8 @@ textarea {
 
 /* The caret (PaperEditor): the bar is you, a bead at its foot the pen. Its states change instantly; the blink is its only
    motion (the bobbing pen-hover and the breathing caret are gone: motion on a key response, and harder to read). */
-/* writing: the caret blinks like a text caret (on, off), solid for a moment after each move */
+/* writing: the caret blinks like a text caret (on, off), solid for a moment after each move (the writing app's red
+   pencil caret starts sooner, after half a second: write.css) */
 @keyframes caret-blink {
   0%,
   55% {
