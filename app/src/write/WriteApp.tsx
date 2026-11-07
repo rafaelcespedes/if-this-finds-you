@@ -627,12 +627,7 @@ export function WriteApp() {
                 </span>
               </div>
             )}
-            {/* the first words on a blank note, in the bar's empty middle (never over the paper) */}
-            {!current.ink && !writing && !phone ? (
-              <p className="wr-first" aria-hidden>
-                {coarse ? 'Tap the paper to write' : <>Type to write. Grey letters delete cleanly until the pen reaches them; then <kbd>⌫</kbd> crosses out.</>}
-              </p>
-            ) : <div className="wr-spacer" />}
+            <div className="wr-spacer" />
             <div className="wr-group">
               {menu(
                 <button type="button" className="wr-mode" aria-label={`Writing: ${isClean(current) ? 'Clean' : 'In ink'}`} title="How it's written">

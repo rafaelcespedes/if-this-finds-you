@@ -33,8 +33,8 @@ interface HintSpec {
 
 /** The ladder, in the order someone usually meets it (VOICE.md: one sentence, plain, contractions). */
 export const HINTS: Record<HintId, HintSpec> = {
-  // the first visit, at the bottom (in place of the shortcut bar), until 12 words are ink or the first crossing-out
-  grey: { parts: () => ['Until the pen reaches them, grey letters delete cleanly.'], max: 1, fade: false, persist: 600 },
+  // the first grey letters ever, at the bottom, until 12 words are ink or the first crossing-out (Desk)
+  grey: { parts: () => ['Grey letters delete cleanly until the pen reaches them.'], max: 1, fade: true, persist: 600 },
   // the pen finishes the first strike or overwrite ever, +300 ms
   strike: { parts: () => ['Ink stays, so ', { kbd: '⌫' }, ' crosses it out.'], max: 2, fade: true },
   // the caret rests 1.2 s beside a struck word (not inked out yet), the pen idle

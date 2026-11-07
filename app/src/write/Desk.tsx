@@ -27,7 +27,8 @@ import { writerName } from '@/lib/hands';
 import { BackspaceHold, type HoldAct } from './hold';
 import { useHints } from './hints';
 import { MarginNote } from './MarginNote';
-import { pendingTicks, stateOf, type LineFormat, type Note } from './notes';
+import { StartHint } from './StartHint';
+import { pendingTicks, stateOf, wordCount, type LineFormat, type Note } from './notes';
 
 /** the sheet's largest size (px per mm) */
 const MAX_PX_PER_MM = 3.9;
@@ -70,8 +71,6 @@ interface Props {
   onEditingChange?: (editing: boolean) => void;
   /** said to screen readers */
   onSay?: (s: string) => void;
-  /** room to leave above the sheet for the toolbar (px) */
-  topRoom?: number;
   /** the sheet moves as itself between the desk and the library (View Transitions): off while a new note arrives */
   named?: boolean;
   /** the highlighter's colour */
@@ -80,7 +79,7 @@ interface Props {
   onStyle?: () => void;
 }
 
-export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onChange, onTyped, onEditingChange, onSay, topRoom = 0, highlighter = 'yellow', onStyle, named = true }, ref) {
+export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onChange, onTyped, onEditingChange, onSay, highlighter = 'yellow', onStyle, named = true }, ref) {
   const highlighterRef = useRef<InkHighlight>(highlighter);
   highlighterRef.current = highlighter;
   const onStyleRef = useRef(onStyle);
@@ -129,6 +128,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
   session.drawn = drawnPen;
   // the drawn pen has caught up with everything handed to it (the caret's bead shows; notes about the pen can show)
   const [penRest, setPenRest] = useState(true);
+  const [editing, setEditing] = useState(false);
   const penRestRef = useRef(penRest);
   penRestRef.current = penRest;
   const hints = useHints({ phone: coarse, stet: true });
@@ -344,8 +344,15 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     if (!said) return;
     sayRef.current?.(said);
     // the first crossing-out or letter written over: once the pen has drawn it, ink stays, so ⌫ crosses out
-    if (/^(Crossed out|Written over)/.test(said)) afterPen.current.add('strike');
+    if (/^(Crossed out|Written over)/.test(said)) { afterPen.current.add('strike'); hintsRef.current.used('grey'); }
   }, [tick]);
+  // the first grey letters ever (typed, the pen not there yet): what they are, at the bottom, until twelve words are in
+  // ink or the first crossing-out (then it fades)
+  const thinking = session.trail > 0;
+  useEffect(() => { if (thinking) hintsRef.current.trigger('grey'); }, [thinking]);
+  useEffect(() => {
+    if (hints.note?.id === 'grey' && !hints.note.leaving && penRest && wordCount(sessionRef.current.text()) >= 12) hintsRef.current.used('grey');
+  }, [tick, penRest, hints.note]);
   // notes waiting on the pen, once it rests (a beat after it lifts)
   useEffect(() => {
     if (!penRest || !afterPen.current.size) return;
@@ -456,7 +463,6 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     <div
       className="wr-desk"
       ref={deskRef}
-      style={{ paddingTop: topRoom }}
       onKeyDownCapture={onKeyDownCapture}
       onKeyUpCapture={onKeyUpCapture}
       onPointerUpCapture={onPointerUpCapture}
@@ -491,7 +497,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
             ink={ink}
             penWidthU={p.penWidth as number}
             xHeightU={(p.xHeight as number) * CAP}
-            onEditingChange={onEditingChange}
+            onEditingChange={(on) => { setEditing(on); onEditingChange?.(on); }}
             penCaughtUp={penRest}
             insertsAbove={typeof session.insertsAbove === 'function' ? session.insertsAbove : undefined}
           >
@@ -521,6 +527,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
             />
           </PaperEditor>
         )}
+        <StartHint show={text === ''} tap={coarse && !editing} />
         <MarginNote note={hints.note} className={noteStyle ? 'wr-note' : 'wr-note wr-note-low'} style={noteStyle} />
       </div>
     </div>

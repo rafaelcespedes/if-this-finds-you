@@ -19,6 +19,7 @@ import { handFor, placeholderFor } from '@/lib/request';
 import { handOpts } from '@/lib/engine-features';
 import { writerName } from '@/lib/hands';
 import type { DeskApi } from './Desk';
+import { StartHint } from './StartHint';
 import { stateOf, type Note } from './notes';
 
 const MAX_PX_PER_MM = 3.9;
@@ -178,6 +179,7 @@ export const CleanDesk = forwardRef<DeskApi, Props>(function CleanDesk({ note, c
             />
           </PaperEditor>
         )}
+        <StartHint show={doc.text === ''} tap={coarse && !editing} />
       </div>
     </div>
   );

@@ -234,20 +234,36 @@
   width: 100%;
   max-width: 980px;
   margin: 0 auto;
-  padding: 4px 24px 140px;
+  /* a little air between the toolbar and the top of the sheet */
+  padding: 26px 24px 140px;
 }
-@media (max-width: 719.98px) { .wr-desk { padding: 0 12px 120px; } }
-.wr-first {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  text-align: center;
-  font-size: 12.5px;
-  color: var(--wr-muted);
+@media (max-width: 719.98px) { .wr-desk { padding: 12px 12px 120px; } }
+/* a blank note: "Type to write" in the sheet's top corner (StartHint; the letter desk's "Start typing") */
+.wr-start {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-family: var(--wr-font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wr-text);
+  background: var(--wr-glass-strong);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--wr-group-shadow);
   pointer-events: none;
+  animation: wr-start-in 200ms var(--ease-out) both;
 }
+.wr-start svg { width: 14px; height: 14px; }
+@keyframes wr-start-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .wr-start { animation-name: wr-start-fade; } }
+@keyframes wr-start-fade { from { opacity: 0; } }
 .wr-status {
   position: fixed;
   right: 16px;
@@ -258,7 +274,7 @@
   pointer-events: none;
   transition: opacity 240ms var(--ease-out);
 }
-.wr-app[data-away] .wr-status, .wr-app:has(.wr-first) .wr-status { opacity: 0; }
+.wr-app[data-away] .wr-status, .wr-app:has(.wr-start) .wr-status { opacity: 0; }
 
 .wr-check {
   position: absolute;
