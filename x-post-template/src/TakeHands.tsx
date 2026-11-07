@@ -29,19 +29,22 @@ export const takeHandsSchema = z.object({
 type Props = z.infer<typeof takeHandsSchema> & { data?: TakeData };
 interface TakeData { session: any; pose: any }
 
-// ---------- the edit (seconds) ----------
-/** the opening: his face from this moment of the take */
-const FACE_FROM = 0.1;
-/** the webcam's clock: take time = its time + FACE_OFF (from the recorder's beeps) */
-const FACE_OFF = -0.128;
+// ---------- the edit (seconds), for the take of 2026-11-07 at 13.09 ----------
+// (the test take of 11-06 at 08.47 used FACE_FROM 0.1, FACE_OFF -0.128, PAN_AT 1.5, HANDS_FROM 8.3, PHONE_OFF 8.0,
+// SHRINK 9.9-10.8)
+/** the opening: his face from this moment of the take (he looks into the camera from the go beep) */
+const FACE_FROM = 4.1;
+/** the webcam's clock: take time = its time + FACE_OFF. This take's webcam has no sound (no beeps to go by), so it's
+ *  from the last take's measure against the moment the camera started (startedAt): about 0.16 s - startedAt */
+const FACE_OFF = -0.01;
 /** the move down from the face to the hands: when it starts (video time) and how long it takes */
-const PAN_AT = 1.5, PAN = 0.8;
-/** from the move on, the video shows the take from this moment */
-const HANDS_FROM = 8.3;
+const PAN_AT = 2.1, PAN = 0.8;
+/** from the move on, the video shows the take from this moment (FACE_FROM + PAN_AT: no jump in time) */
+const HANDS_FROM = 6.2;
 /** the phone's clock: take time = its time + PHONE_OFF (from the beeps) */
-const PHONE_OFF = 8.0;
-/** the hands shrink into the corner over these take times */
-const SHRINK: [number, number] = [9.9, 10.8];
+const PHONE_OFF = -0.924;
+/** the hands shrink into the corner over these take times (the first key is at 6.87) */
+const SHRINK: [number, number] = [7.6, 8.5];
 /** after the last thing typed, hold on the letter */
 const HOLD = 1.8;
 
@@ -153,12 +156,12 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', d
   const ptr = pointerAt(TAKE, T);
   // the phone's picture: the whole frame, then shrinking into the corner
   const u = easeInOutQuint(clamp((T - SHRINK[0]) / (SHRINK[1] - SHRINK[0]), 0, 1));
-  const full = { x: 0, y: 0, w: S, h: SH, sc: S / 1080, top: 300, r: 0 };
+  const full = { x: 0, y: 0, w: S, h: SH, sc: S / 1080, top: 800, r: 0 };
   // the corner: at the right, under the letter and over the keyboard (clear of the trackpad, where his right hand is)
   const cw = 240 * k0, ch = 180 * k0;
   const kbTop = f.oy - (WELL.y + WELL.h / 2 + 2.2) * f.PX;
   const cy = clamp(textBottom + 26 * k0, 24 * k0, kbTop - 18 * k0 - ch);
-  const corner = { x: S - 24 * k0 - cw, y: cy, w: cw, h: ch, sc: cw / 1080, top: 400, r: 18 * k0 };
+  const corner = { x: S - 24 * k0 - cw, y: cy, w: cw, h: ch, sc: cw / 1080, top: 1000, r: 18 * k0 };
   const L = (a: number, b: number) => a + (b - a) * u;
   const box = { x: L(full.x, corner.x), y: L(full.y, corner.y), w: L(full.w, corner.w), h: L(full.h, corner.h), sc: L(full.sc, corner.sc), top: L(full.top, corner.top), r: L(full.r, corner.r) };
   // the move down: the face goes up and out, the hands come up from below

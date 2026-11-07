@@ -23,7 +23,7 @@ def layout():
     r = subprocess.run(['node', os.path.join(HERE, 'node-ts.mjs'), os.path.join(HERE, 'macbook-layout.ts')], capture_output=True, text=True, check=True, cwd=ROOT)
     return json.loads(r.stdout)
 
-def camera(H, size):
+def camera(H, size, focal=None):
     """the lens (focal length, px) and the keyboard's pose in the camera from the plane's homography (mm -> px)"""
     w, h = size
     T = np.array([[1, 0, w / 2], [0, 1, h / 2], [0, 0, 1]], float)
@@ -42,6 +42,7 @@ def camera(H, size):
     # lens in video (about 70 degrees across the long side) unless the plane says something close
     f0 = (max(w, h) / 2) / np.tan(np.radians(35))
     f = float(np.median(cands)) if cands and all(0.75 * f0 < c < 1.33 * f0 for c in cands) else f0
+    if focal: f = focal
     K = np.array([[f, 0, w / 2], [0, f, h / 2], [0, 0, 1]], float)
     B = np.linalg.inv(K) @ H
     lam = 1 / np.linalg.norm(B[:, 0])
@@ -77,6 +78,7 @@ def main():
     ap.add_argument('--take', default=os.path.join(ROOT, 'src/data/take-session.json'))
     ap.add_argument('--keys', default=os.path.join(ROOT, 'src/data/take-keyboard.json'))
     ap.add_argument('--out', default=os.path.join(ROOT, 'src/data/hand-3d.json'))
+    ap.add_argument('--focal', type=float, help="the lens's focal length, px, when the plane can't tell (the same phone and lens as a take that could: the 1x lens of Rafael's iPhone 15 Pro in 1080p video measured 1747)")
     ap.add_argument('--sigma', type=float, default=1.0, help='smoothing, frames')
     a = ap.parse_args()
     tr = json.load(open(a.track)); take = json.load(open(a.take))['take']; cal = json.load(open(a.keys))
@@ -87,7 +89,7 @@ def main():
     H, _ = cv2.findHomography(mm, img, 0)
     res = np.linalg.norm(cv2.perspectiveTransform(mm.reshape(-1, 1, 2), H).reshape(-1, 2) - img, axis=1)
     size = tr['size']
-    K, R, t, f, cands = camera(H, size)
+    K, R, t, f, cands = camera(H, size, a.focal)
     C = -R.T @ t
     print('keyboard fit: %d keys, %.1f px off on average (%.1f at most)' % (len(codes), res.mean(), res.max()))
     print('lens: f = %.0f px (the plane suggested %s); the phone %.0f mm over the keys, above (%.0f, %.0f)' % (f, [round(c) for c in cands], C[2], C[0], C[1]))
