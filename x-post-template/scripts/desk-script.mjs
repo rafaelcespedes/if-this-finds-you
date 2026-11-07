@@ -46,22 +46,22 @@ function before() {
 
 function desk() {
   const S = script();
-  S.cam('caret', 2.6, 0);
+  S.cam('caret', 1.85, 0);
   S.note('Type, and a hand writes it out');
   S.type('Dear Mara,\nThe garden is quite');
   S.wait(1.9);
-  S.note('Take a word back: it’s crossed out', ['⌫']);
-  S.cam('caret', 3.1, 0.7);
+  S.note('Backspace on ink: it’s crossed out');
+  S.cam('caret', 2.2, 0.7);
   for (let i = 0; i < 5; i++) S.press('Backspace', i < 4 ? 0.1 : 0.35);
   S.type('so green.');
   S.wait(1.4);
   S.note('Change a word: the new one goes above');
-  S.cam('caret', 2.6, 0.8);
+  S.cam('caret', 1.85, 0.8);
   S.move({ text: 'green' }, 0.7);
   S.click({ text: 'green' }, 0.45, 2);
   S.type('wild', 7);
   S.wait(1.2);
-  S.cam('all', 1, 1.0);
+  S.cam('all', 0.85, 1.0);
   S.note('A notes app, written by hand');
   S.move({ sel: '.wr-row', n: 1, fx: 0.55 }, 0.9);
   S.move({ sel: '.wr-row', n: 2, fx: 0.6 }, 0.7);
@@ -69,12 +69,12 @@ function desk() {
   S.move({ end: true }, 0.7);
   S.click({ end: true }, 0.25);
   S.hide();
-  S.cam('caret', 2.6, 1.0);
+  S.cam('caret', 1.85, 1.0);
   S.type(' I miss you terribly', 8.5);
   S.wait(2.0);
-  S.note('Cross it out, then hold Backspace: scribbled out', ['⌫ held']);
+  S.note('Cross it out, then hold Backspace: scribbled out');
   for (let i = 0; i < 8; i++) S.press('Backspace', i < 7 ? 0.07 : 2.2);
-  S.cam('caret', 2.8, 1.0);
+  S.cam('caret', 2.0, 1.0);
   S.hold('Backspace', 2.5);
   S.wait(0.6);
   S.type('.', 6);
@@ -84,7 +84,7 @@ function desk() {
   S.drag({ text: 'miss', start: true }, { text: 'you', stop: true }, 0.55);
   S.move({ sel: 'button[aria-label="Underline"]' }, 0.7);
   S.click({ sel: 'button[aria-label="Underline"]' }, 1.6);
-  S.cam('caret', 2.4, 0.9);
+  S.cam('caret', 1.7, 0.9);
   S.move({ end: true }, 0.6);
   S.click({ end: true }, 0.3);
   S.hide();
@@ -92,7 +92,7 @@ function desk() {
   S.type('\nBring:\n[] seeds\ntwine', 9);
   S.wait(2.4);
   S.note('Click a box: the pen ticks it');
-  S.cam('caret', 2.5, 0.8);
+  S.cam('caret', 1.8, 0.8);
   S.move({ text: 'seeds', start: true, dx: -26 }, 0.7);
   S.click({ text: 'seeds', start: true, dx: -26 }, 2.0);
   // the writer is the font menu
@@ -109,7 +109,7 @@ function desk() {
   S.move(ROW('Matteo Carver'), 0.45);
   S.click(ROW('Matteo Carver'), 1.7);
   S.press('Escape', 0.2);
-  S.cam('all', 1, 1.1);
+  S.cam('all', 0.85, 1.1);
   S.note('If This Finds You · ifthisfindsyou.app/write');
   S.move({ x: 1120, y: 620 }, 0.8);
   S.hide();
@@ -119,7 +119,7 @@ function desk() {
 
 const S = desk();
 export const scene = {
-  width: 1440, height: 900, rand: 7,
+  width: 1440, height: 900, rand: 7, scheme: 'light',
   startShift: START,
   pending: { id: 'desk-1', look: LOOK, ink: null, created: DATE0 + START * 3600e3, at: DATE0 + START * 3600e3 },
   before: before(),

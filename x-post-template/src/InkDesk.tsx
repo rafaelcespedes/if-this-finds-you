@@ -25,17 +25,17 @@ const mix = (a: number, b: number, u: number) => a + (b - a) * u;
 const ease = (u: number) => { u = clamp(u, 0, 1); return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; };
 const easeOut = (u: number) => 1 - Math.pow(1 - clamp(u, 0, 1), 3);
 
-// ---------- the stage: a window on the ground, the bar under it ----------
+// ---------- the stage: a window nearly the frame's width, its empty foot running off the bottom; the bar over it ----------
 const OW = 1920, OH = 1080;
 const PW = R.width as number, PH = R.height as number; // the page, CSS px
 const TB = 40; // the window's title bar, page px
-const BAR_H = 100, BAR_Y = OH - 44 - BAR_H; // the caption bar
-const VIEW = { x: 0, y: 0, w: OW, h: BAR_Y - 22 }; // what the camera frames: above the bar
-const S0 = Math.min((VIEW.h - 2 * 46) / (PH + TB), (OW - 2 * 120) / PW);
-const WIN = { w: PW * S0, h: (PH + TB) * S0, x: (OW - PW * S0) / 2, y: 46 + (VIEW.h - 2 * 46 - (PH + TB) * S0) / 2 };
+const BAR_H = 92, BAR_Y = OH - 40 - BAR_H; // the caption, floating over everything
+const VIEW = { x: 0, y: 0, w: OW, h: OH - 120 }; // what the camera frames (the bar covers the rest)
+const S0 = (OW * 0.94) / PW;
+const WIN = { w: PW * S0, h: (PH + TB) * S0, x: (OW * 0.06) / 2, y: 36 };
 /** a page point on the stage (before the camera) */
 const stage = (x: number, y: number) => ({ x: WIN.x + x * S0, y: WIN.y + (TB + y) * S0 });
-const REST = { x: OW / 2, y: WIN.y + WIN.h / 2, z: 1 };
+const REST = { x: OW / 2, y: VIEW.h / 2, z: 1 };
 
 type Rect = [number, number, number, number];
 type Cam = { x: number; y: number; z: number };
@@ -57,7 +57,7 @@ function cameraPath(): Cam[] {
     write.push(box);
   }
   const rectOf = (name: string, f: number): Rect | null => (name === 'write' ? write[f] : rects[f]?.[name] ?? null);
-  const fitZ = (w: number, h: number) => Math.min(2.6, (VIEW.w * 0.84) / w, (VIEW.h * 0.82) / h);
+  const fitZ = (w: number, h: number) => clamp(Math.min(2.2, (VIEW.w * 0.86) / w, (VIEW.h * 0.84) / h), ZMIN, 2.2);
   /** what a cue aims at, frame by frame (unsmoothed) */
   const aim = (cue: any, f: number): Cam => {
     const focus = cue.focus;
@@ -113,14 +113,20 @@ function cameraPath(): Cam[] {
       return { x: mix(p.x, xs[f], u), y: mix(p.y, ys[f], u), z: Math.exp(mix(Math.log(p.z), zs[f], u)) };
     });
   });
-  // keep the window filling the frame when close in
+  // the window never smaller than ZMIN (about 80% of the frame's width), and no ground under it: its foot stays off
+  // the bottom (when pulled back, the ground shows above and beside it instead)
   return path.map((c) => {
-    const hw = VIEW.w / 2 / c.z, hh = VIEW.h / 2 / c.z, m = 40 / c.z;
-    const x = WIN.w + 2 * m > 2 * hw ? clamp(c.x, WIN.x - m + hw, WIN.x + WIN.w + m - hw) : REST.x;
-    const y = WIN.h + 2 * m > 2 * hh ? clamp(c.y, WIN.y - m + hh, WIN.y + WIN.h + m - hh) : REST.y;
-    return { x, y, z: c.z };
+    const z = Math.max(ZMIN, c.z);
+    const VC = { x: VIEW.w / 2, y: VIEW.h / 2 };
+    const hw = VC.x / z;
+    const x = WIN.w * z >= OW ? clamp(c.x, WIN.x + hw, WIN.x + WIN.w - hw) : WIN.x + WIN.w / 2;
+    const low = WIN.y + (VC.y - 36) / z; // the window's top no lower than 36 px down
+    const high = WIN.y + WIN.h - (OH - VC.y) / z; // its foot below the frame
+    const y = Math.min(Math.max(c.y, low), high);
+    return { x, y, z };
   });
 }
+const ZMIN = 0.85;
 
 // ---------- the pointer (macOS's arrow) ----------
 const Arrow: React.FC<{ x: number; y: number; s: number; o: number; press: number }> = ({ x, y, s, o, press }) => (
@@ -130,7 +136,6 @@ const Arrow: React.FC<{ x: number; y: number; s: number; o: number; press: numbe
 );
 
 // ---------- the bar ----------
-const KEYCAPS: Record<string, string> = { Backspace: '⌫', Enter: '↩', Escape: 'esc' };
 
 export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip }) => {
   const frame = useCurrentFrame() + Math.round(skip * R.fps);
@@ -142,7 +147,7 @@ export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip }) 
   const src = staticFile(`desk/${tag}/${String(f).padStart(5, '0')}.jpg`);
 
   // the camera: stage → screen
-  const VC = { x: VIEW.w / 2, y: VIEW.h / 2 + 8 };
+  const VC = { x: VIEW.w / 2, y: VIEW.h / 2 };
   const tx = (q: { x: number; y: number }) => ({ x: (q.x - cam.x) * cam.z + VC.x, y: (q.y - cam.y) * cam.z + VC.y });
   const win = tx({ x: WIN.x, y: WIN.y });
   const k = S0 * cam.z; // page px → screen px
@@ -157,33 +162,29 @@ export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip }) 
   const press = click ? Math.max(0, 1 - (t - click.t) / 0.18) : ptr[f][3] ? 1 : 0;
   const ring = click ? tx(stage(click.x, click.y)) : null;
 
-  // the caption: the latest note, faded in; the keys it names, lit when pressed
+  // the caption: the latest note, faded in; its pill eases to the new caption's width; ⌫ before "Backspace", pressed with it
   const notes = R.notes as any[];
   const LEAD = 0.15;
   const ni = notes.map((n) => n.t - LEAD <= t).lastIndexOf(true);
-  const note = notes[ni];
+  const note = notes[ni], prev = notes[ni - 1];
   const capIn = note ? easeOut((t - note.t + LEAD) / 0.35) : 0;
-  const keysOf = (n: any) => (n?.keys ?? []) as string[];
-  const keys = keysOf(note);
-  const lit = (R.keys as any[]).some((kk) => t >= kk.t && t < kk.t + (kk.dur ?? 0) + 0.16 && (kk.k === 'Backspace'));
-  const end = note && /^If This Finds You/.test(note.note);
-  const KW = keys.length ? 200 : 0;
-  const BW = 1300, G = 18;
-  const capW = BW - (KW ? KW + G : 0);
+  const lit = (R.keys as any[]).some((kk) => kk.k === 'Backspace' && t >= kk.t && t < kk.t + (kk.dur ?? 0) + 0.14);
+  const wNow = captionWidth(note?.note), wWas = prev ? captionWidth(prev.note) : wNow;
+  const BW = note ? mix(wWas, wNow, ease((t - note.t + LEAD) / 0.4)) : 0;
   const BX = (OW - BW) / 2;
 
   return (
-    <AbsoluteFill style={{ background: `radial-gradient(120% 90% at 50% 38%, #f4f2ed 0%, ${C.ground} 62%, #e2ded5 100%)` }}>
+    <AbsoluteFill style={{ background: `radial-gradient(120% 90% at 50% 30%, #f6f4ef 0%, ${C.ground} 70%, #e3dfd6 100%)` }}>
       <UiFont />
       {/* the window */}
-      <div style={{ position: 'absolute', left: win.x, top: win.y, width: WIN.w * cam.z, height: WIN.h * cam.z, borderRadius: 14 * k, overflow: 'hidden', background: '#18181a',
-        boxShadow: `0 ${30 * k}px ${80 * k}px rgba(40,34,24,0.28), 0 ${6 * k}px ${18 * k}px rgba(40,34,24,0.18), 0 0 0 ${1 * k}px rgba(0,0,0,0.55)` }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: TB * k, background: '#202023', borderBottom: `${k}px solid #0d0d0e` }}>
+      <div style={{ position: 'absolute', left: win.x, top: win.y, width: WIN.w * cam.z, height: WIN.h * cam.z, borderRadius: 12 * k, overflow: 'hidden', background: '#ffffff',
+        boxShadow: `0 ${24 * k}px ${70 * k}px rgba(40,34,24,0.20), 0 ${4 * k}px ${14 * k}px rgba(40,34,24,0.12), 0 0 0 ${0.75 * k}px rgba(40,34,24,0.16)` }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: TB * k, background: '#f3f2f0', borderBottom: `${0.75 * k}px solid rgba(0,0,0,0.10)` }}>
           {['#ff5f57', '#febc2e', '#28c840'].map((c, i) => (
-            <div key={c} style={{ position: 'absolute', left: (18 + i * 20) * k, top: (TB / 2 - 6) * k, width: 12 * k, height: 12 * k, borderRadius: '50%', background: c, boxShadow: `inset 0 0 0 ${0.5 * k}px rgba(0,0,0,0.25)` }} />
+            <div key={c} style={{ position: 'absolute', left: (18 + i * 20) * k, top: (TB / 2 - 6) * k, width: 12 * k, height: 12 * k, borderRadius: '50%', background: c, boxShadow: `inset 0 0 0 ${0.5 * k}px rgba(0,0,0,0.18)` }} />
           ))}
-          <div style={{ position: 'absolute', left: '50%', top: 7 * k, height: (TB - 14) * k, width: 340 * k, transform: 'translateX(-50%)', borderRadius: 7 * k, background: '#2c2c30', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 * k, fontFamily: FONT, fontSize: 13 * k, color: '#d6d6da', letterSpacing: 0.1 * k }}>
-            <svg width={10 * k} height={12 * k} viewBox="0 0 10 12"><rect x="1" y="5" width="8" height="6.5" rx="1.4" fill="#9a9aa0" /><path d="M3 5 V3.6 a2 2 0 0 1 4 0 V5" fill="none" stroke="#9a9aa0" strokeWidth="1.3" /></svg>
+          <div style={{ position: 'absolute', left: '50%', top: 7 * k, height: (TB - 14) * k, width: 340 * k, transform: 'translateX(-50%)', borderRadius: 7 * k, background: '#e6e5e2', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 * k, fontFamily: FONT, fontSize: 13 * k, color: '#4a4844', letterSpacing: 0.1 * k }}>
+            <svg width={10 * k} height={12 * k} viewBox="0 0 10 12"><rect x="1" y="5" width="8" height="6.5" rx="1.4" fill="#8a8883" /><path d="M3 5 V3.6 a2 2 0 0 1 4 0 V5" fill="none" stroke="#8a8883" strokeWidth="1.3" /></svg>
             ifthisfindsyou.app/write
           </div>
         </div>
@@ -193,47 +194,52 @@ export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip }) 
       {ring && (() => {
         const u = (t - click.t) / 0.5;
         const r = (10 + 26 * easeOut(u)) * k;
-        return <div style={{ position: 'absolute', left: ring.x - r, top: ring.y - r, width: 2 * r, height: 2 * r, borderRadius: '50%', border: `${2.2 * k}px solid rgba(255,255,255,${0.85 * (1 - u)})`, background: `rgba(255,255,255,${0.18 * (1 - u)})`, boxShadow: `0 0 0 ${1 * k}px rgba(0,0,0,${0.25 * (1 - u)})` }} />;
+        return <div style={{ position: 'absolute', left: ring.x - r, top: ring.y - r, width: 2 * r, height: 2 * r, borderRadius: '50%', border: `${2 * k}px solid rgba(30,39,51,${0.5 * (1 - u)})`, background: `rgba(30,39,51,${0.07 * (1 - u)})` }} />;
       })()}
       {po > 0 && <Arrow x={pp.x} y={pp.y} s={k * 0.95} o={po} press={press} />}
 
-      {/* the bar: the caption, and the key it's about */}
-      <svg width={OW} height={BAR_H + 60} style={{ position: 'absolute', left: 0, top: BAR_Y - 30, overflow: 'visible' }}>
-        <defs>
-          <filter id="goo" x="-10%" y="-40%" width="120%" height="180%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation={8} result="blur" />
-            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9" />
-          </filter>
-          <filter id="lift" x="-10%" y="-50%" width="120%" height="200%"><feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000" floodOpacity="0.28" /></filter>
-        </defs>
-        <g filter="url(#lift)"><g filter="url(#goo)" fill="rgba(26,26,29,0.94)">
-          <rect x={BX} y={30} width={capW} height={BAR_H} rx={BAR_H / 2} />
-          {KW > 0 && <rect x={BX + capW + G} y={30} width={KW} height={BAR_H} rx={BAR_H / 2} />}
-          {KW > 0 && <ellipse cx={BX + capW + G / 2} cy={30 + BAR_H / 2} rx={G / 2 + 12} ry={15} />}
-        </g></g>
-      </svg>
-      <div style={{ position: 'absolute', left: BX, top: BAR_Y, width: capW, height: BAR_H, display: 'flex', alignItems: 'center', justifyContent: end ? 'center' : 'flex-start', padding: '0 48px', fontFamily: FONT, color: '#f3f1ec', overflow: 'hidden' }}>
-        <div style={{ opacity: capIn, transform: `translateY(${(1 - capIn) * 10}px)`, fontSize: 43, fontWeight: 400, whiteSpace: 'nowrap', letterSpacing: -0.4 }}>
-          {end ? <><span style={{ fontWeight: 600 }}>If This Finds You</span><span style={{ color: '#8f8c86' }}>{'  ·  '}</span>ifthisfindsyou.app/write</> : note?.note ?? ''}
-        </div>
-      </div>
-      {KW > 0 && (
-        <div style={{ position: 'absolute', left: BX + capW + G, top: BAR_Y, width: KW, height: BAR_H, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: FONT, opacity: capIn }}>
-          {keys.map((kk) => {
-            const [cap, ...rest] = kk.split(' ');
-            return (
-              <div key={kk} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ minWidth: 64, height: 60, borderRadius: 14, padding: '0 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, color: '#f3f1ec',
-                  background: lit ? '#5b5b62' : '#3a3a40', boxShadow: lit ? 'inset 0 1px 2px rgba(0,0,0,0.3)' : '0 1px 0 rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)', transform: `translateY(${lit ? 2 : 0}px)` }}>{KEYCAPS[cap] ?? cap}</div>
-                {rest.length > 0 && <span style={{ fontSize: 30, color: '#a9a59e' }}>{rest.join(' ')}</span>}
-              </div>
-            );
-          })}
+      {/* the narrator: frosted glass over everything */}
+      {note && (
+        <div style={{ position: 'absolute', left: BX, top: BAR_Y, width: BW, height: BAR_H, borderRadius: BAR_H / 2, overflow: 'hidden',
+          background: 'rgba(250, 249, 246, 0.5)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)',
+          boxShadow: '0 18px 44px rgba(40,34,24,0.20), 0 2px 6px rgba(40,34,24,0.10), inset 0 0 0 1px rgba(255,255,255,0.65), inset 0 1px 0 rgba(255,255,255,0.9)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT, color: C.ink }}>
+          <div style={{ opacity: capIn, transform: `translateY(${(1 - capIn) * 8}px)`, fontSize: CAP_PX, fontWeight: 430, whiteSpace: 'nowrap', letterSpacing: -0.4, display: 'flex', alignItems: 'center' }}>
+            <Caption text={note.note} lit={lit} />
+          </div>
         </div>
       )}
     </AbsoluteFill>
   );
 };
+
+const CAP_PX = 42, CAP_PAD = 64, KEY_W = 62;
+/** a caption's words, with a key cap before "Backspace"; the end card's address set apart */
+const Caption: React.FC<{ text: string; lit: boolean }> = ({ text, lit }) => {
+  if (/^If This Finds You/.test(text)) return <><span style={{ fontWeight: 620 }}>If This Finds You</span><span style={{ color: C.faint }}>{' · '}</span>ifthisfindsyou.app/write</>;
+  const parts = text.split(/(Backspace)/);
+  return (
+    <>
+      {parts.map((p, i) => p === 'Backspace' ? (
+        <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <span style={{ width: KEY_W - 12, height: 48, marginRight: 12, borderRadius: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 30,
+            background: lit ? 'rgba(30,39,51,0.14)' : 'rgba(255,255,255,0.75)', boxShadow: lit ? 'inset 0 1px 2px rgba(30,39,51,0.25)' : '0 1px 0 rgba(30,39,51,0.18), 0 0 0 1px rgba(30,39,51,0.08)', transform: `translateY(${lit ? 2 : 0}px)` }}>⌫</span>
+          Backspace
+        </span>
+      ) : <span key={i} style={{ whiteSpace: 'pre' }}>{p}</span>)}
+    </>
+  );
+};
+let measurer: CanvasRenderingContext2D | null = null;
+/** how wide a caption's pill is: its words in the caption's type, the key caps, the padding */
+function captionWidth(text?: string) {
+  if (!text) return 0;
+  measurer ??= document.createElement('canvas').getContext('2d');
+  const shown = /^If This Finds You/.test(text) ? text.replace(' · ', ' · ') : text;
+  measurer!.font = `430 ${CAP_PX}px ${FONT}`;
+  const keys = (text.match(/Backspace/g) ?? []).length;
+  return measurer!.measureText(shown).width + keys * KEY_W + 2 * CAP_PAD + (/^If This/.test(text) ? 12 : 0);
+}
 
 let uiFont: Promise<unknown> | null = null;
 const UiFont: React.FC = () => {
