@@ -769,18 +769,26 @@ export function draftInsert(st, view) {
 // letters; not when what's typed next starts a new line), and of the list lines the thought letters reach (`lines`:
 // a draft's lineInfo). [] when there are none. Each is a mark item (a number: letters), role 'marker'.
 export function draftMarkers(st, view, lines) {
-  const s = st.cur, S = s.stream, ev = st.doc.log.length;
+  const s = st.cur, S = s.stream, n0 = st.doc.log.length;
   if (S !== s.main) return [];
   const out = [], seen = new Set();
-  const add = (ln) => {
+  const add = (ln, ev) => {
     if (!ln || !ln.list || s.marked.has(ln.n) || seen.has(ln.n)) return;
     seen.add(ln.n);
     const m = markerItems(st, s, ln, { para: 0, word: 0, inkIndex: 0, tempo: 1 }, ev);
     for (const it of m.items) out.push(it);
   };
+  // the event each line's first write will be, as the pen hands the tail over: a write per line, a break between
   const pen = S.ink.pen, tail = String((view && view.tail) || '');
-  if (pen && pen.line && !tail.startsWith('\n')) add(s.lines.get(pen.line.n) || pen.line);
-  for (const ln of lines || []) if (ln && ln.n > ((pen && pen.line && pen.line.n) ?? -1)) add(ln);
+  const evs = [];
+  let e = n0;
+  tail.split('\n').forEach((seg, j) => { if (j) e++; if (seg) evs.push([j, e++]); });
+  const at = (j) => { const x = evs.find((v) => v[0] >= j); return x ? x[1] : e; };
+  const own = pen && pen.line ? pen.line.n : -1;
+  if (pen && pen.line && !tail.startsWith('\n')) add(s.lines.get(own) || pen.line, at(0));
+  // (the list lines the thought letters reach, in order: the k-th starts the k-th line after the pen's)
+  let k = 0;
+  for (const ln of (lines || []).filter((l) => l && l.n > own).sort((a, b) => a.n - b.n)) if (ln.list) add(ln, at(++k));
   return out;
 }
 
