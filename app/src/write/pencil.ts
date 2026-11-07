@@ -32,10 +32,16 @@ const scaleOf = (it: PageItem) => it.g?.pose?.scale ?? 1;
  */
 export function caretFit(lists: PageItem[][], xhU: number, frame: PencilFrame, c: CaretPos): PencilFit {
   const Y = c.y + frame.shift(c.sheet);
-  let near: PageItem | null = null, nd = Infinity, right = -Infinity;
+  let near: PageItem | null = null, nd = Infinity, right = -Infinity, ceil = -Infinity;
   for (const list of lists) {
     for (const it of list) {
-      if (!glyph(it) || Math.abs(it.y - Y) > 0.45 * xhU) continue;
+      if (!glyph(it)) continue;
+      // the ink of the lines above, over the caret (its descenders too): the dashed caret above the line stops short of it
+      if (it.line !== c.line && it.y < Y - 0.45 * xhU && Y - it.y < 6 * xhU) {
+        const [x0, , x1, y1] = it.box!;
+        if (x1 >= c.x - 0.7 * xhU && x0 <= c.x + 0.7 * xhU && y1 > ceil) ceil = y1;
+      }
+      if (Math.abs(it.y - Y) > 0.45 * xhU) continue;
       const [x0, , x1] = it.box!;
       const d = c.x < x0 ? x0 - c.x : c.x > x1 ? c.x - x1 : 0;
       if (d < nd) { nd = d; near = it; }
@@ -62,7 +68,7 @@ export function caretFit(lists: PageItem[][], xhU: number, frame: PencilFrame, c
     const r = scaleOf(near) / main;
     if (near.role === 'insert' || r < 0.8) scale = Math.max(0.4, Math.min(1, r));
   }
-  return { scale, inkRight: Number.isFinite(right) ? right : undefined };
+  return { scale, inkRight: Number.isFinite(right) ? right : undefined, ceil: Number.isFinite(ceil) ? ceil - frame.shift(c.sheet) : undefined };
 }
 
 /** where a strike will go: the letters the pen hovers over (by item key), a span per line, baseline at each end */

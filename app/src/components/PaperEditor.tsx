@@ -13,8 +13,9 @@
 // - Up/Down/Home/End follow the written lines; IME compositions own the keys while they last.
 // - The writing app (/write, `pencil`): the pen writes in ink, and every mark that only shows what will happen is an
 //   editor's red pencil, a UI colour no ink uses: an upright hairline caret, the ‸ where words will go above the line,
-//   a tick when Backspace will cross out, a bar under one letter that will be written over, a dashed line where a
-//   strike will go, the selection's wash, the touch handles and the loupe. The pen's own state is ink: a nib where the
+//   a tick while you're pressing Backspace when the next press will cross out (the page says when: `marks`), a bar under
+//   one letter that will be written over, a dashed line where a strike will go, the selection's wash, the touch
+//   handles and the loupe. The pen's own state is ink: a nib where the
 //   ink is up to while the pen is behind you. Without it (the home page's desk) everything is as it was.
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { across, type CaretPos, type Geometry, type Side } from '@/lib/geometry';
@@ -100,8 +101,9 @@ interface Props {
   children: ReactNode;
 }
 
-/** the caret's size where it sits (1: the line's; an insertion above the line about 0.6), and where the ink before it ends (font units) */
-export interface PencilFit { scale: number; inkRight?: number }
+/** the caret's size where it sits (1: the line's; an insertion above the line about 0.6), where the ink before it ends,
+ *  and the lowest ink of the lines above it, over it (font units, sheet-local) */
+export interface PencilFit { scale: number; inkRight?: number; ceil?: number }
 /** a strike to come, on one line: from x0 to x1 (font units, sheet-local), the baseline at each end */
 export interface PencilSpan { sheet: number; x0: number; x1: number; y0: number; y1: number }
 /** What the red pencil needs to know (Desk, CleanDesk). Every part is optional: what's missing isn't shown. */
@@ -690,7 +692,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
               <polyline points={bands[0].base.map(([x, y]) => `${x.toFixed(1)},${(y + 0.28 * xhL).toFixed(1)}`).join(' ')} fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )
-          // a light red wash and a red line under it: readable on every paper, the yellow pad too
+          // a light red wash: readable on every paper, the yellow pad too (no line under it, which read as ⌘U's
+          // underline: Rafael, 7 Nov)
           : (
             <svg
               key={sweep}
@@ -703,9 +706,6 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
               <g opacity={0.13}>
                 {bands.map((b, i) => <polygon key={i} points={b.pts} fill="currentColor" stroke="currentColor" strokeWidth={5} strokeLinejoin="round" />)}
               </g>
-              {bands.map((b, i) => (
-                <polyline key={i} points={b.base.map(([x, y]) => `${x.toFixed(1)},${(y + 0.36 * xhL).toFixed(1)}`).join(' ')} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              ))}
             </svg>
           ))}
         {!pencil && runs.length > 0 && (
@@ -779,20 +779,31 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
             const strike = !above && !!pMarks?.strike;
             const badges = [typing?.weight ? 'B' : null, typing?.lean ? 'I' : null].filter(Boolean) as string[];
             const yTick = by - 0.5 * xh;
+            // above the line: the bar stands on the baseline, and the ‸ hangs under it, 2 px clear (the two never
+            // fuse into a ⅄); the dashed caret up where the words will be written stops 2 px short of the ink of the
+            // line above (its descenders too), and goes when there's no room for it
+            const barBottom = above ? by : bottom;
+            const wedgeW = Math.max(1.6, hair);
+            const apex = barBottom + w / 2 + 2 + wedgeW / 2;
             const ghostBase = by - 1.9 * xhL, gx = 0.62 * xhL;
+            const ghostBottom = ghostBase + 0.32 * gx;
+            const ceilPx = pFit?.ceil != null && caret ? caret.sheet * pitch + pFit.ceil * k : -Infinity;
+            const ghostTop = Math.max(ghostBase - 1.85 * gx, ceilPx + 2 + hair / 2);
             return (
               <>
                 {/* solid while you type (each move starts it again), blinking once you stop: write.css */}
                 <svg key={moveKey} className="caret-blink absolute inset-0 overflow-visible" width="100%" height="100%" style={{ color: PENCIL }} data-caret={strike ? 'strike' : above ? 'above' : 'pencil'}>
-                  <line x1={cx} y1={bottom} x2={xAt(top)} y2={top} stroke="currentColor" strokeWidth={w} strokeLinecap="round" />
+                  <line x1={xAt(barBottom)} y1={barBottom} x2={xAt(top)} y2={top} stroke="currentColor" strokeWidth={w} strokeLinecap="round" />
                   {strike && <line x1={xAt(yTick) - 0.85 * xh} y1={yTick} x2={xAt(yTick)} y2={yTick} stroke="currentColor" strokeWidth={hair} strokeLinecap="round" />}
                 </svg>
                 {(above || badges.length > 0) && (
                   <svg className="absolute inset-0 overflow-visible" width="100%" height="100%" style={{ color: PENCIL }}>
                     {above && (
                       <>
-                        <polyline points={`${(cx - 0.42 * xhL).toFixed(1)},${(by + 0.62 * xhL).toFixed(1)} ${cx.toFixed(1)},${(by + 0.14 * xhL).toFixed(1)} ${(cx + 0.42 * xhL).toFixed(1)},${(by + 0.62 * xhL).toFixed(1)}`} fill="none" stroke="currentColor" strokeWidth={Math.max(1.6, hair)} strokeLinecap="round" strokeLinejoin="round" data-pencil="wedge" />
-                        <line x1={cx} y1={ghostBase + 0.32 * gx} x2={cx} y2={ghostBase - 1.85 * gx} stroke="currentColor" strokeWidth={hair} strokeLinecap="round" strokeDasharray="2 3" opacity={0.9} data-pencil="ghost" />
+                        <polyline points={`${(cx - 0.42 * xhL).toFixed(1)},${(apex + 0.48 * xhL).toFixed(1)} ${cx.toFixed(1)},${apex.toFixed(1)} ${(cx + 0.42 * xhL).toFixed(1)},${(apex + 0.48 * xhL).toFixed(1)}`} fill="none" stroke="currentColor" strokeWidth={wedgeW} strokeLinecap="round" strokeLinejoin="round" data-pencil="wedge" />
+                        {ghostBottom - ghostTop >= 4 && (
+                          <line x1={cx} y1={ghostBottom} x2={cx} y2={ghostTop} stroke="currentColor" strokeWidth={hair} strokeLinecap="round" strokeDasharray="2 3" opacity={0.9} data-pencil="ghost" />
+                        )}
                       </>
                     )}
                     {badges.map((b, i) => {
@@ -923,12 +934,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
               <svg className="absolute top-0 left-0 overflow-visible" width={sheetPx} height={1} style={{ color: PENCIL }}>
                 {collapsed
                   ? <line x1={hx} y1={by + 0.32 * xhL} x2={hx} y2={by - 1.85 * xhL} stroke="currentColor" strokeWidth={hair / LOUPE_ZOOM * 1.2} strokeLinecap="round" />
-                  : bands.map((b, i) => (
-                    <g key={i}>
-                      <polygon points={b.pts} fill="currentColor" fillOpacity={0.13} />
-                      <polyline points={b.base.map(([x, y]) => `${x.toFixed(1)},${(y + 0.36 * xhL).toFixed(1)}`).join(' ')} fill="none" stroke="currentColor" strokeWidth={2 / LOUPE_ZOOM} />
-                    </g>
-                  ))}
+                  : bands.map((b, i) => <polygon key={i} points={b.pts} fill="currentColor" fillOpacity={0.13} />)}
               </svg>
             </div>
           </div>
