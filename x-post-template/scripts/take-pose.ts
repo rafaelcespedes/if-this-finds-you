@@ -226,3 +226,32 @@ fs.mkdirSync(path.join(root, 'public/take'), { recursive: true });
 fs.writeFileSync(path.join(root, 'public/take/pose.json'), JSON.stringify({ fps: FPS, frames: N, scale, poses: L.map((l, j) => [l, R[j]]), keys }));
 fs.copyFileSync(path.join(root, 'src/data/take-session.json'), path.join(root, 'public/take/session.json'));
 console.log('wrote public/take/pose.json (and session.json)');
+
+// ---------- his hands' lines, for drawing over the phone's video ----------
+// The tracker's 21 points of each hand in the turned video's pixels (src/data/hand-track.json), lightly smoothed over
+// each run of frames it saw the hand in, by video frame (the video's frame i is at its time i / fps). And how far the
+// keyboard's rows tilt in that video, to stand it level.
+const TR = JSON.parse(fs.readFileSync(path.join(root, 'src/data/hand-track.json'), 'utf8'));
+const KB = JSON.parse(fs.readFileSync(path.join(root, 'src/data/take-keyboard.json'), 'utf8')).keys as Record<string, [number, number]>;
+const rowsOf = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'].map((r) => r.split('').map((c) => KB[`Key${c}`]).filter(Boolean));
+const tilt = rowsOf.map((pts) => {
+  const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length, my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  let sxy = 0, sxx = 0;
+  for (const [x, y] of pts) { sxy += (x - mx) * (y - my); sxx += (x - mx) ** 2; }
+  return Math.atan2(sxy, sxx);
+});
+const level = (tilt.reduce((a, b) => a + b, 0) / tilt.length) * (180 / Math.PI);
+const allKeys = Object.values(KB);
+const pivot = [allKeys.reduce((a, p) => a + p[0], 0) / allKeys.length, allKeys.reduce((a, p) => a + p[1], 0) / allKeys.length].map((v) => Math.round(v));
+const raw: Record<Side, (number[][] | null)[]> = { L: [], R: [] };
+for (const s of ['L', 'R'] as const) raw[s] = (TR.frames as any[][]).map((f) => f.find((h) => h.side === s)?.p ?? null);
+const kw = [0.06, 0.24, 0.4, 0.24, 0.06];
+const lineFrames = (TR.frames as any[][]).map((_, i) => (['L', 'R'] as const).flatMap((s) => {
+  if (!raw[s][i]) return [];
+  const acc = new Array(42).fill(0);
+  let w = 0;
+  kw.forEach((k, q) => { const r = raw[s][i + q - 2]; if (!r) return; r.forEach((p, j) => { acc[2 * j] += k * p[0]; acc[2 * j + 1] += k * p[1]; }); w += k; });
+  return [[s, ...acc.map((v) => Math.round(v / w))]];
+}));
+fs.writeFileSync(path.join(root, 'public/take/lines.json'), JSON.stringify({ fps: TR.fps, size: TR.size, level: Math.round(level * 100) / 100, pivot, frames: lineFrames }));
+console.log(`wrote public/take/lines.json (the keyboard tilts ${level.toFixed(2)}° in the phone's video)`);

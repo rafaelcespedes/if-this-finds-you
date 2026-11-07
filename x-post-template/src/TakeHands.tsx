@@ -25,9 +25,11 @@ export const takeHandsSchema = z.object({
   /** the hands' look: 'ghost' (liquid and frost), 'frost' (fog), 'smoke' (graphite), 'outline' (a hairline),
    *  'shadow' (their shadow alone), or 'clay' (plain, to judge their motion) */
   handLook: z.enum(['ghost', 'frost', 'smoke', 'outline', 'shadow', 'clay']).default('ghost'),
+  /** the tracker's lines over his real hands (the joints and the bones between them), to show what the ghost follows */
+  handLines: z.boolean().default(true),
 });
 type Props = z.infer<typeof takeHandsSchema> & { data?: TakeData };
-interface TakeData { session: any; pose: any }
+interface TakeData { session: any; pose: any; lines: any }
 
 // ---------- the edit (seconds), for the take of 2026-11-07 at 13.09 ----------
 // (the test take of 11-06 at 08.47 used FACE_FROM 0.1, FACE_OFF -0.128, PAN_AT 1.5, HANDS_FROM 8.3, PHONE_OFF 8.0,
@@ -52,7 +54,7 @@ const HOLD = 1.8;
 const takeAt = (v: number) => HANDS_FROM + (v - PAN_AT);
 
 let dataP: Promise<TakeData> | null = null;
-const loadTake = () => (dataP ??= Promise.all([fetch(staticFile('take/session.json')).then((r) => r.json()), fetch(staticFile('take/pose.json')).then((r) => r.json())]).then(([session, pose]) => ({ session, pose })));
+const loadTake = () => (dataP ??= Promise.all(['session', 'pose', 'lines'].map((n) => fetch(staticFile(`take/${n}.json`)).then((r) => r.json()))).then(([session, pose, lines]) => ({ session, pose, lines })));
 export const takeHandsMetadata: CalculateMetadataFunction<Props> = async () => {
   try {
     const d = await loadTake();
@@ -60,14 +62,16 @@ export const takeHandsMetadata: CalculateMetadataFunction<Props> = async () => {
   } catch { return { durationInFrames: 30 }; }
 };
 
-/** the layout at a frame size: the keyboard and trackpad in mm on the frame, and the writing's window above them */
+/** the layout at a frame size: the keyboard and trackpad in mm on the frame, and the writing's window above them.
+ *  The keyboard sits as far from the frame's bottom as from its sides (the trackpad runs off the bottom). */
 function layout(S: number, SH: number) {
   const k0 = Math.min(S, SH) / S0;
   const PX = 2.95 * k0;
-  const plateTop = WELL.y + WELL.h / 2 + 2.2; // mm
-  const top = SH - 611 * k0; // the keyboard's top edge, px (the trackpad runs off the bottom)
+  const plateTop = WELL.y + WELL.h / 2 + 2.2, plateBottom = WELL.y - WELL.h / 2 - 2.2; // mm
+  const side = (S - (WELL.w + 4.4) * PX) / 2;
+  const top = SH - side - (plateTop - plateBottom) * PX; // the keyboard's top edge, px
   const f: MmFrame = { PX, ox: S / 2 - WELL.x * PX, oy: top + plateTop * PX };
-  return { k0, f, winH: top - 22 * k0 };
+  return { k0, f, winH: top - 22 * k0, side };
 }
 
 function posesAt(P: any, t: number): Record<Side, Pose> {
@@ -98,6 +102,27 @@ function pointerAt(take: any, t: number) {
   return { x, y, down, o };
 }
 
+/** the tracker's view of his hands over the phone's video: each bone a thin line, each joint a dot (video px * sc) */
+const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
+const HandLines: React.FC<{ lines: any; t: number; sc: number; k0: number }> = ({ lines, t, sc, k0 }) => {
+  const row = lines.frames[clamp(Math.round(t * lines.fps), 0, lines.frames.length - 1)] as (string | number)[][];
+  // drawn at least a hairline wide, however small the picture
+  const lw = Math.max(1.1 * k0, 2.4 * sc), r = Math.max(1.6 * k0, 5 * sc);
+  return (
+    <svg width={lines.size[0] * sc} height={lines.size[1] * sc} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}>
+      {row.map(([side, ...q]) => {
+        const P = (j: number) => [(q[2 * j] as number) * sc, (q[2 * j + 1] as number) * sc];
+        return (
+          <g key={side as string} style={{ filter: `drop-shadow(0 0 ${1.5 * k0}px rgba(20,30,60,0.35))` }}>
+            {BONES.map(([a, b]) => { const [x1, y1] = P(a), [x2, y2] = P(b); return <line key={`${a}-${b}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.9)" strokeWidth={lw} strokeLinecap="round" />; })}
+            {Array.from({ length: 21 }, (_, j) => { const [x, y] = P(j); return <circle key={j} cx={x} cy={y} r={[4, 8, 12, 16, 20].includes(j) ? r * 1.25 : r} fill="#2c63d6" stroke="#fff" strokeWidth={lw * 0.8} />; })}
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
 export const TakeHands: React.FC<Props> = (props) => {
   const [data, setData] = useState<TakeData | null>(null);
   const [h] = useState(() => delayRender('take'));
@@ -106,22 +131,19 @@ export const TakeHands: React.FC<Props> = (props) => {
   return <TakeScene {...props} data={data} />;
 };
 
-const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', data }) => {
+const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', handLines = true, data }) => {
   const frame = useCurrentFrame();
   const { width: S, height: SH, fps } = useVideoConfig();
   const v = frame / fps;
   const T = takeAt(v);
   const SES = data.session, TAKE = SES.take, P = data.pose;
   const { k0, f, winH } = useMemo(() => layout(S, SH), [S, SH]);
+  const LN = data.lines;
   const ink = useMemo(() => new InkView(SES), [SES]);
-  const cam = useMemo(() => ink.camera(S, 0, winH, k0), [ink, S, winH, k0]);
+  // the letter, centred in the room between the corner video (top right) and the keyboard
+  const cornerBottom = (24 + 180) * k0;
+  const cam = useMemo(() => ink.camera(S, cornerBottom + 8 * k0, winH, k0, { center: true }), [ink, S, winH, k0, cornerBottom]);
   const sheet = useMemo(() => ink.paperCanvas(cam), [ink, cam]);
-  /** the bottom of the finished letter's writing, px */
-  const textBottom = useMemo(() => {
-    const last = ink.sheetAt(SES.states.length - 1);
-    const y1 = Math.max(...(last.page.items as any[]).filter((it) => it.box).map((it) => it.box[3]));
-    return cam.y + (y1 / cam.u) * cam.k;
-  }, [ink, cam, SES]);
   const ref = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<HTMLCanvasElement>(null);
   const view = useRef<HandsView | null>(null);
@@ -157,11 +179,9 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', d
   // the phone's picture: the whole frame, then shrinking into the corner
   const u = easeInOutQuint(clamp((T - SHRINK[0]) / (SHRINK[1] - SHRINK[0]), 0, 1));
   const full = { x: 0, y: 0, w: S, h: SH, sc: S / 1080, top: 800, r: 0 };
-  // the corner: at the right, under the letter and over the keyboard (clear of the trackpad, where his right hand is)
+  // the corner: the top right
   const cw = 240 * k0, ch = 180 * k0;
-  const kbTop = f.oy - (WELL.y + WELL.h / 2 + 2.2) * f.PX;
-  const cy = clamp(textBottom + 26 * k0, 24 * k0, kbTop - 18 * k0 - ch);
-  const corner = { x: S - 24 * k0 - cw, y: cy, w: cw, h: ch, sc: cw / 1080, top: 1000, r: 18 * k0 };
+  const corner = { x: S - 24 * k0 - cw, y: 24 * k0, w: cw, h: ch, sc: cw / 1080, top: 1000, r: 18 * k0 };
   const L = (a: number, b: number) => a + (b - a) * u;
   const box = { x: L(full.x, corner.x), y: L(full.y, corner.y), w: L(full.w, corner.w), h: L(full.h, corner.h), sc: L(full.sc, corner.sc), top: L(full.top, corner.top), r: L(full.r, corner.r) };
   // the move down: the face goes up and out, the hands come up from below
@@ -185,8 +205,16 @@ const TakeScene: React.FC<Props & { data: TakeData }> = ({ handLook = 'ghost', d
       {v >= PAN_AT && (
         <Sequence from={Math.round(PAN_AT * fps)} layout="none">
           <div style={{ position: 'absolute', left: box.x, top: box.y + (1 - pan) * SH, width: box.w, height: box.h, overflow: 'hidden', borderRadius: box.r, boxShadow: u > 0 ? `0 ${10 * k0 * u}px ${30 * k0 * u}px rgba(30,39,51,${0.22 * u}), 0 0 0 ${k0 * u}px rgba(255,255,255,0.6)` : undefined }}>
-            <OffthreadVideo src={staticFile('take/hands.mp4')} trimBefore={Math.round((HANDS_FROM - PHONE_OFF) * fps)} volume={phoneVol}
-              style={{ position: 'absolute', left: 0, top: -box.top * box.sc, width: 1080 * box.sc, height: 1920 * box.sc }} />
+            {/* the phone's picture stood level (the keyboard's rows straight across), a touch larger to fill the box */}
+            <div style={{ position: 'absolute', left: 0, top: -box.top * box.sc, width: 1080 * box.sc, height: 1920 * box.sc, transformOrigin: `${LN.pivot[0] * box.sc}px ${LN.pivot[1] * box.sc}px`, transform: `rotate(${-LN.level}deg) scale(1.03)` }}>
+              <OffthreadVideo src={staticFile('take/hands.mp4')} trimBefore={Math.round((HANDS_FROM - PHONE_OFF) * fps)} volume={phoneVol}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+              {/* the laptop's screen, dark (it showed whatever was on it) */}
+              <svg width={1080 * box.sc} height={1920 * box.sc} viewBox="0 0 1080 1920" style={{ position: 'absolute', left: 0, top: 0 }}>
+                <polygon points={LN.screen ?? '0,0 1080,0 1080,962 0,950'} fill="#0d0d10" />
+              </svg>
+              {handLines && <HandLines lines={LN} t={T - PHONE_OFF} sc={box.sc} k0={k0} />}
+            </div>
           </div>
         </Sequence>
       )}

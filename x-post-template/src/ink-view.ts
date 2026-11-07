@@ -38,18 +38,19 @@ export class InkView {
   frameAt(t: number) { return this.S.frames[clamp(Math.round(t * this.S.fps), 0, this.S.frames.length - 1)]; }
 
   /** the final letter's writing fitted into a window of the frame (W wide, from top to bottom px), fixed for the
-   *  whole video, so nothing written ever moves */
-  camera(W: number, top: number, bottom: number, k0: number): Cam {
+   *  whole video, so nothing written ever moves; o.center centres it both ways */
+  camera(W: number, top: number, bottom: number, k0: number, o: { center?: boolean } = {}): Cam {
     const last = this.sheetAt(this.S.states.length - 1);
     const u = IO.u;
-    let y0 = Infinity, y1 = -Infinity;
-    for (const it of last.page.items as any[]) { if (!it.box) continue; y0 = Math.min(y0, it.box[1]); y1 = Math.max(y1, it.box[3]); }
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const it of last.page.items as any[]) { if (!it.box) continue; x0 = Math.min(x0, it.box[0]); x1 = Math.max(x1, it.box[2]); y0 = Math.min(y0, it.box[1]); y1 = Math.max(y1, it.box[3]); }
     const colMm = paper.text.right - paper.text.left;
     const hMm = (y1 - y0) / u;
     const room = bottom - top;
     const k = Math.max(W / paper.w, Math.min((0.88 * W) / colMm, (room - 70 * k0) / hMm));
-    const x = Math.min(0, Math.max(W - paper.w * k, 0.06 * W - paper.text.left * k));
-    const y = Math.min(0, top + (room - hMm * k) / 2 - (y0 / u) * k - 10 * k0);
+    // the finished writing centred across the frame (or, o.left, its column at the left)
+    const x = Math.min(0, Math.max(W - paper.w * k, o.center ? W / 2 - ((x0 + x1) / 2 / u) * k : 0.06 * W - paper.text.left * k));
+    const y = Math.min(0, top + (room - hMm * k) / 2 - (y0 / u) * k - (o.center ? 0 : 10 * k0));
     return { k, x, y, u };
   }
   paperCanvas(cam: Cam) {
