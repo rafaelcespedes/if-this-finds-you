@@ -26,9 +26,10 @@ engine/            the handwriting engine: plain ES modules, no build step, runs
   fontbuild.js     hand -> open-source font: .otf + .ttf, word forms and joins, cycling samples, kern; the zip download (docs/FONTS.md)
 lab/               engine test bench (plain HTML). Controls are generated from engine PARAMS
 app/               the product UI (React + shadcn). Imports ../engine
-tools/             serve.py (static server), node-export.mjs, check_font.py, embed-hershey.mjs
-docs/              status, research, decisions
-references/        the open reference library (every source we used)
+tools/             qa/ (engine checks), smoke/ (the site in a browser), trace/ (tracing letter shapes), fonts/ (font checks),
+                   share-image/, serve.py (static server), node-export.mjs, check_font.py, embed-hershey.mjs
+docs/              principles, decisions, voice, research and how each part works (WRITING.md, FONTS.md, CHECKS.md)
+x-post-template/   a video of the writing for a post on X (Remotion)
 ```
 
 Run the lab: `python3 tools/serve.py 8765`, then open `http://127.0.0.1:8765/lab/index.html`.
@@ -70,6 +71,8 @@ text ──layout(p)──► page.items[] ──renderSVG──► SVG
   `kind: 'miss'` item, and the UI shows a pencil placeholder.
 
 ## Ownership while parallel sessions run (Phase 1)
+
+_Kept for the record: how the work was split while the project was being built._
 
 | Workstream | Owns (may edit) | Must not edit |
 |---|---|---|

@@ -9,6 +9,7 @@
 //
 // `play` writes the sheet out in front of the reader: each pen stroke appears in reading order, paced by
 // its size, with a breath at each new line. A stand-in until the engine's write-on animation lands.
+import { edgeForScreen } from '@/lib/writing';
 import { memo, useLayoutEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { perf } from '@/lib/perf';
@@ -84,6 +85,8 @@ export const Writing = memo(function Writing({ svg, ink, className, fade, play, 
         release(layer);
         layer.innerHTML = svg;
         layer.style.color = ink;
+        // a touch screen keeps the ink's rough edge off, so a pinch doesn't blur it (lib/writing.ts EDGE_OFF)
+        edgeForScreen(layer.querySelector('svg'));
         then();
         return;
       }

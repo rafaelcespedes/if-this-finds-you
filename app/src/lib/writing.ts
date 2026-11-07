@@ -33,6 +33,7 @@ export function scopeIds(svg: string, uid: string) {
  */
 export function liftInkEdge(svg: Element): () => void {
   const lifted: [Element, string][] = [];
+  // (on a touch screen it stays off: see EDGE_OFF)
   for (const el of svg.querySelectorAll('[filter]')) {
     const ref = el.getAttribute('filter') ?? '';
     const id = /^url\(#([^)]+)\)$/.exec(ref)?.[1];
@@ -43,9 +44,24 @@ export function liftInkEdge(svg: Element): () => void {
     el.removeAttribute('filter');
     lifted.push([el, ref]);
   }
+  if (EDGE_OFF) return () => {};
   return () => {
     for (const [el, ref] of lifted.splice(0)) el.setAttribute('filter', ref);
   };
+}
+
+/**
+ * Phones and tablets keep the ink's rough edge off for good. Safari draws that filter at the page's unzoomed size and
+ * stretches it, so pinching in, or the page zoomed in Safari's aA menu, turned the writing soft while the type stayed
+ * sharp (Rafael, 7 Nov: "on mobile … the text rendering … looks a little blurry"; measured in the iOS Simulator: ink
+ * edges 5 px wide at a 2.5x pinch with the filter, 1 px without). At 100% it moves edges by a fraction of a pixel: the
+ * same ink, measured identical. Felt's bleed and pencil's grain are more than an edge, and stay.
+ */
+export const EDGE_OFF = typeof window !== 'undefined' && typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+/** Take the rough edge off a sheet's SVG on a touch screen (EDGE_OFF); elsewhere leave it be. */
+export function edgeForScreen(svg: Element | null | undefined) {
+  if (EDGE_OFF && svg) liftInkEdge(svg);
 }
 
 /**

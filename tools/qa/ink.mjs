@@ -5,7 +5,7 @@
 //     end logicalText(log) equals it (writing-experience.md §7.5 property test)
 //   - nothing already on paper ever moves: every item keeps its position and outline as events arrive
 //   - golden replay: replaying the log gives a byte-identical SVG to the live page
-//   - share links round-trip; fresh sheet, fair copy and P.S. behave
+//   - share links round-trip; select all + delete strikes (never a fresh sheet), fair copy and P.S. behave
 //   - corrections per 100 words for a typical typist with Forgiving on (target 1–3, §3.6), printed
 //   node tools/qa/ink.mjs [--root=<checkout>] [--sessions=N]
 
@@ -182,10 +182,10 @@ for (let k = 0; k < SESSIONS; k++) {
   let r = E.plan(st, view, { at: 0, del: 0, ins: 'Dear Ada, it was lovely to see you.', kind: 'paste' });
   E.apply(st, r.events); view = r.view;
   r = E.penStep(st, view, { final: true }); E.apply(st, r.events); view = r.view;
-  // select all + delete: a fresh sheet, never a page of strikes
-  const all = E.viewText(st, view).length;
+  // select all + delete: struck where it stands, like any deletion (nothing vanishes; stet can bring it back)
+  const all = E.viewText(st, view).length, letters = st.page.items.filter((it) => it.kind === 'glyph').length;
   r = E.plan(st, view, { at: 0, del: all, ins: '', kind: 'delete' }); E.apply(st, r.events); view = r.view;
-  if (!r.events.some((e) => e.t === 'sheet' && e.why === 'fresh') || E.logicalText(st) !== '' || st.page.items.length) fail('select all + delete should start a fresh sheet');
+  if (r.events.some((e) => e.t === 'sheet') || !r.events.some((e) => e.t === 'strike') || E.logicalText(st) !== '' || st.page.items.filter((it) => it.kind === 'glyph').length !== letters) fail('select all + delete should strike everything, and keep it on the sheet');
   r = E.plan(st, view, { at: 0, del: 0, ins: 'Dear Ada,\nwe teh best.', kind: 'paste' }); E.apply(st, r.events); view = r.view;
   r = E.penStep(st, view, { final: true }); E.apply(st, r.events); view = r.view;
   const t = E.viewText(st, view), i = t.indexOf('teh');

@@ -169,7 +169,8 @@ cd tools/fonts && npm install && node build-pack.mjs   # writes tools/fonts/out/
   fsType 0; the name table has the licence, the Hershey notice and the URLs; calt is present; OTS (the sanitizer Chrome
   and Firefox run) accepts the file; HarfBuzz shaping has no .notdef, doubled letters never repeat a glyph, calt off
   gives no versions, and how often `the the the …` repeats a word.
-- **In a browser:** `python3 tools/serve.py 8765`, then open `/tools/fonts/try.html`. It builds any hand the way the
+- **In a browser:** `cd tools/fonts && npm install` once (the page needs `clipper-lib`), then from the top folder
+  `python3 tools/serve.py 8765` and open `/tools/fonts/try.html`. It builds any hand the way the
   app does, shows it with calt on and off, and has a download button. `?bench=20` times 20 random hands.
 
 ## Tested in real apps (2 November 2026)

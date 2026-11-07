@@ -220,7 +220,7 @@ function SheetRow({ entry, close, checks }: { entry: Extract<SheetEntry, { onSel
       )}
     >
       {checks && (
-        <span aria-hidden className="grid size-5 shrink-0 place-items-center self-start pt-0.5">{entry.checked && <Check className="size-[18px] text-[var(--ink)]" />}</span>
+        <span aria-hidden className={cn('grid size-5 shrink-0 place-items-center', entry.hint && 'mt-[calc((1lh-1.25rem)/2)] self-start')}>{entry.checked && <Check className="size-[18px] text-[var(--ink)]" />}</span>
       )}
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="min-w-0">{entry.label}</span>
@@ -298,7 +298,7 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
                       e.hint && 'py-2',
                     )}
                   >
-                    {checks && <span aria-hidden className="grid size-4 shrink-0 place-items-center self-start pt-0.5">{e.checked && <Check className="size-4 text-[var(--ink)]" />}</span>}
+                    {checks && <span aria-hidden className={cn('grid size-4 shrink-0 place-items-center', e.hint && 'mt-[calc((1lh-1rem)/2)] self-start')}>{e.checked && <Check className="size-4 text-[var(--ink)]" />}</span>}
                     <span className="grid min-w-0 flex-1 gap-0.5">
                       <span>{e.label}</span>
                       {e.hint && <span className="text-[0.7188rem] leading-snug text-muted-foreground">{e.hint}</span>}

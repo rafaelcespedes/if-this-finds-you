@@ -3,7 +3,7 @@
 _2 November 2026. Working name so far: Seedhand. Engine measured at `e89dd3b` (main). Reference library read
 at 484 entries. Trademark and domain checks were run today and will go stale; re-run them before you commit._
 
-Review page (private): https://claude.ai/artifact/SXuJT5wnyZjKRXCsmSmZDR
+> **Kept for the record:** the naming study from the project's first days. The name chosen was If This Finds You.
 
 ## Decision (2 November 2026)
 
@@ -893,7 +893,7 @@ an error; `seedhand.com` was created 2 Feb 2026 at GoDaddy and serves nothing.
 - Engine: `engine/` at `e89dd3b`; `tools/qa/REPORT.md`; `docs/STATUS.md`, `PRINCIPLES.md`, `ARCHITECTURE.md`,
   `character-set.md`; `docs/research/hand-traditions.md`, `fonts-study.md`, `writing-experience.md`.
 - Side-session hand-overs (pens and ink, writing and page, product UI, reference drawer), November 2026.
-- Reference library: `references/references.json`; published at https://claude.ai/artifact/6Hr1SxWsReZ2XqpoC4uNSk
+- Reference library: `references/references.json` (kept outside this repository)
 - UN DESA, *World Population Prospects 2024*: https://www.un.org/en/UN-projects-world-population-to-peak-within-this-century
 - Fair Hand (kids' app): https://fairhand.app/
 - Longhand (iPad app, Botto Studio): https://apps.apple.com/mx/app/longhand/id6754750977

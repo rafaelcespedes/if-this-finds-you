@@ -226,48 +226,8 @@ textarea {
   }
 }
 
-/* Ink mode: the writer considers a fix at the pen head; the pen hovers just above the paper */
-@keyframes pen-hover {
-  0%,
-  100% {
-    transform: translateY(0);
-    opacity: 0.9;
-  }
-  50% {
-    transform: translateY(-2px);
-    opacity: 0.55;
-  }
-}
-.pen-hover {
-  animation: pen-hover 900ms var(--ease-in-out) infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  @keyframes pen-hover {
-    50% {
-      transform: none;
-      opacity: 0.5;
-    }
-  }
-}
-
-/* The caret is the pen: solid for a moment after each move, then it breathes (editor-ux.md §3.4) */
-@keyframes caret-breathe {
-  0%,
-  100% {
-    opacity: 0.85;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}
-.caret-breathe {
-  animation: caret-breathe 1.2s ease-in-out 600ms infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .caret-breathe {
-    animation: none;
-  }
-}
+/* The caret (PaperEditor): the bar is you, a bead at its foot the pen. Its states change instantly; the blink is its only
+   motion (the bobbing pen-hover and the breathing caret are gone: motion on a key response, and harder to read). */
 /* writing: the caret blinks like a text caret (on, off), solid for a moment after each move */
 @keyframes caret-blink {
   0%,
@@ -284,6 +244,70 @@ textarea {
 }
 @media (prefers-reduced-motion: reduce) {
   .caret-blink {
+    animation: none;
+  }
+}
+
+/* A note in the margin (write/MarginNote.tsx, the hint ladder): one quiet line of UI type, no box. It fades in only when
+   a pause or the pen brought it (180 ms, sliding 4 px); a key takes it away at once; untouched, it fades out. */
+.margin-note {
+  margin: 0;
+  max-width: 200px;
+  font-family: var(--rr-ui, ui-sans-serif, system-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.margin-note kbd {
+  font-family: inherit;
+  font-size: 11px;
+  padding: 1px 5px;
+  margin: 0 1px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
+  color: var(--foreground);
+}
+@keyframes margin-note-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+@keyframes margin-note-out {
+  to {
+    opacity: 0;
+  }
+}
+.margin-note-in {
+  animation: margin-note-in var(--dur-pop) var(--ease-out) both;
+}
+.margin-note-out {
+  animation: margin-note-out var(--dur-out) var(--ease-out) both;
+}
+@keyframes margin-note-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .margin-note-in {
+    animation: margin-note-fade 120ms var(--ease-out) both;
+  }
+}
+
+/* The ghost of the next press (LiveSheets, behind a flag): the mark ⌫ would make, fading in faint over a crossed-out
+   word when the caret rests there (180 ms). A pause brings it, never a key; it goes at once. */
+@keyframes ghost-in {
+  from {
+    opacity: 0;
+  }
+}
+.ghost-in {
+  animation: ghost-in var(--dur-pop) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ghost-in {
     animation: none;
   }
 }

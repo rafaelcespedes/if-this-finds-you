@@ -27,7 +27,7 @@ import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { useWriting } from '@/hooks/useWriting';
 import { FONT_PACKAGE, canShareLinks, copyText, exportFont, exportFontPackage, renderNote, saveNote, shareLink } from '@/lib/actions';
 import { emForPaper } from '@/lib/compose';
-import { EditLog, UndoHistory, diffEdit, type Edit } from '@/lib/edits';
+import { EditLog, UndoHistory, type Edit } from '@/lib/edits';
 import { applyEdit, toggleMark } from '@/lib/doc';
 import { describeHand, pickSimilarHand, writerName } from '@/lib/hands';
 import { rollHand, rollLook, visitChance, withSample, type LockKey } from '@/lib/roll';
@@ -47,7 +47,7 @@ import { getPaper } from '@/lib/papers';
 import { mapGeometry } from '@/lib/geometry';
 import { LIVE, engineGeometry, liveExtras, liveLayout, pageSetup } from '@/lib/live';
 import { LiveSheets } from '@/components/LiveSheets';
-import { INK, InkSession, decodeInk, encodeInk, inkExtras, inkFromText, inkGeometry, inkLive, inkOpts, inkPage, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
+import { INK, InkSession, undoInk, decodeInk, encodeInk, inkExtras, inkFromText, inkGeometry, inkLive, inkOpts, inkPage, inkText, newInkDoc, type InkDoc } from '@/lib/ink';
 import { inkOn } from '@/lib/request';
 import { renderLiveNote } from '@/lib/actions';
 import { effective, effectiveHand, offsetFor } from '@/lib/params';
@@ -283,15 +283,14 @@ export default function App() {
       });
     } else if (!ink.full) fullNoted.current = false;
   }, [update]);
-  // writing in ink: the session is up from the first tap (or, on an untouched sample letter, the first key)
+  // writing in ink: the session is up from the first tap (or, on an untouched sample letter, the first key), made
+  // as that render happens: made a frame later (in an effect), the first frame drew the letter as a fair copy (the
+  // writer's own mistakes, none of yours) and the pen then wrote the words that differ a second time
+  if (inkMode && editing && !state.sample && !(inkRef.current && inkFor.current === inkLook)) inkSession();
   const inkActive = inkMode && editing && !!inkRef.current && inkFor.current === inkLook;
-  useEffect(() => {
-    if (inkMode && editing && !stateNow.current.sample && !(inkRef.current && inkFor.current === inkLook)) {
-      inkSession();
-      setInkTick((n) => n + 1);
-    }
-  }, [inkMode, editing, inkLook, inkSession]);
-  // the pen catches up with the typing, at handwriting speed
+  // the pen catches up with the typing, at handwriting speed: the drawn pen (LiveSheets) is the clock, the typing
+  // handed to it a word at a time as it draws
+  const drawnPen = useRef<{ at(now: number): { letters: number } } | null>(null);
   useEffect(() => {
     if (!inkActive) return;
     let last = performance.now();
@@ -300,7 +299,7 @@ export default function App() {
       const now = performance.now();
       const dt = now - last;
       last = now;
-      if (ink && ink.waiting && ink.step(dt)) syncInk();
+      if (ink && ink.waiting && ink.step(dt, false, drawnPen.current?.at(now / 1000).letters)) syncInk();
     }, 130);
     return () => window.clearInterval(id);
   }, [inkActive, syncInk]);
@@ -403,7 +402,7 @@ export default function App() {
   // paper and writing switch together when the result arrives
   const shownPaper = shownLive ? shownLive.live.paper : writing ? getPaper(writing.paper) : paper;
   const geometry = useMemo(() => {
-    if (inkActive && live) return inkGeometry(live, p, inkRef.current!.draft(), inkRef.current!.text());
+    if (inkActive && live) return inkGeometry(live, p, inkRef.current!);
     return shownLive ? engineGeometry(shownLive.live) : writing ? mapGeometry(writing) : null;
   }, [shownLive?.live, writing, inkActive, live, inkTick]);
 
@@ -612,13 +611,9 @@ export default function App() {
       if (e.kind === 'undo') {
         const ink = inkRef.current;
         if (!ink) return;
-        if (ink.waiting) { ink.edit({ ...e, kind: e.ins ? 'replace' : 'delete' }); syncInk(); return; }
-        const now = ink.text();
-        const want = now.slice(0, e.at) + e.ins + now.slice(e.at + e.del);
-        let lifted = false;
-        while (ink.text().length > want.length && ink.undo()) lifted = true;
-        if (lifted) syncInk();
-        else toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
+        const ok = undoInk(ink, e);
+        syncInk();
+        if (!ok) toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
         return;
       }
       // the first key on an untouched sample letter: a reply on a fresh sheet (or, 'onto', the found letter
@@ -660,6 +655,8 @@ export default function App() {
     const s = stateNow.current;
     if (s.sample && !s.inkLog && SAMPLE_FIRST_KEY === 'reply') return;
     const ink = inkMode && !!inkRef.current && inkFor.current === inkLook ? inkRef.current : null;
+    // a wet underline (or letters gone over again) is lifted on its own: it changed no words
+    if (ink && dir === 'undo' && ink.liftFormat()) { lastEditAt.current = performance.now(); syncInk(); return; }
     const cur = ink ? ink.text() : s.text;
     const e = dir === 'undo' ? undoHistory.undo(cur) : undoHistory.redo(cur);
     if (!e) return;
@@ -671,20 +668,14 @@ export default function App() {
     }
     const want = cur.slice(0, e.at) + e.ins + cur.slice(e.at + e.del);
     if (ink) {
-      if (want.length < cur.length && !ink.waiting) {
-        // written: lift wet ink back to what the step asks for, and no further
-        let lifted = 0;
-        while (ink.text().length > want.length && lifted < 2000 && ink.undo()) lifted++;
-        if (!lifted) {
-          undoHistory.keep(dir);
-          toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
-          return;
-        }
-        // a lifted stroke that took a letter too many: the pen writes it again
-        const fix = diffEdit(ink.text(), want, 'type', 'paper');
-        if (fix) ink.edit(fix);
-      } else {
-        ink.edit({ ...e, kind: e.ins ? 'replace' : 'delete' });
+      // a step taken again is written again as it was first made: typed (mid-text: above the line), or deleted
+      // (struck); never as an autocorrect's whole-word replacement, which would strike the word next to it
+      if (dir === 'redo') ink.edit({ ...e, kind: e.ins ? 'type' : 'delete' });
+      else if (!undoInk(ink, e)) {
+        undoHistory.keep(dir);
+        syncInk();
+        toast('The ink is dry', { id: 'ink-dry', description: 'Cross it out, or start a fresh sheet.' });
+        return;
       }
       if (ink.text() !== want) undoHistory.clear();
       syncInk();
@@ -705,13 +696,25 @@ export default function App() {
     editor.current.focus();
     return true;
   }, []);
-  const onFormat = useCallback((cmd: FormatCommand, from: number, to: number) => {
-    if (cmd === 'ps') return;
+  const onFormat = useCallback((command: FormatCommand, from: number, to: number) => {
+    // the desk keeps its two pen-only formats: ⌘B goes over the word at the caret, ⌘I underlines (as before /write's)
+    const cmd = command === 'weight' ? 'press' : command === 'lean' ? 'underline' : command;
+    if (cmd !== 'underline' && cmd !== 'press') return;
+    if (inkMode) {
+      // in ink, by hand: an underline drawn under the words, or the letters gone over again (a found letter not
+      // yet answered has nothing of yours to format)
+      const s = stateNow.current;
+      if (s.sample && !s.inkLog) return;
+      inkSession().format(cmd, from, to);
+      syncInk();
+      return;
+    }
     update((s) => ({ marks: toggleMark({ text: s.text, marks: s.marks, signed: s.signed }, cmd, from, to).marks, sample: null }));
-  }, [update]);
+  }, [update, inkMode, inkSession, syncInk]);
   const formatFromTray = (cmd: 'underline' | 'press') => {
     const [a, b] = editor.current?.selection() ?? [0, 0];
-    const [from, to] = a === b ? wordAround(state.text, a) : [a, b];
+    const shown = inkMode && inkRef.current && inkFor.current === inkLook ? inkRef.current.text() : state.text;
+    const [from, to] = a === b ? wordAround(shown, a) : [a, b];
     onFormat(cmd, from, to);
   };
   const toggleSigned = () => update((s) => ({ signed: !s.signed }));
@@ -1104,7 +1107,15 @@ export default function App() {
         else update({ mode, pen, ink: inkColorId });
       },
       onFairCopy: () => { inkSession().fairCopy(); syncInk(); },
-      onFreshSheet: () => { inkSession().freshSheet(); syncInk(); },
+      onFreshSheet: () => {
+        const ink = inkSession();
+        ink.flush();
+        // a letter set aside in one click: a note to bring it back, as any big cut has (writing-experience.md §3.4)
+        const s = stateNow.current;
+        if (ink.text().trim()) offerBack({ text: ink.text(), inkLog: encodeInk(ink.doc), marks: s.marks, signed: s.signed }, 'A fresh sheet');
+        ink.freshSheet();
+        syncInk();
+      },
     } : undefined,
   };
 
@@ -1371,6 +1382,7 @@ export default function App() {
                   text={replyPending ? '' : inkActive ? inkRef.current!.text() : state.text}
                   blank={replyPending}
                   hovering={inkActive && inkRef.current!.hovering}
+                  mode={INK ? (state.pen === 'pencil' ? 'pencil' : state.mode) : 'fair'}
                   onEdit={onEdit}
                   onHistory={onHistory}
                   start={startCaret}
@@ -1397,6 +1409,9 @@ export default function App() {
                       extras={shownLive.extras}
                       handKey={state.seed + ':' + state.style}
                       hold={inkActive ? 0 : 'word'}
+                      trail={inkActive ? inkRef.current!.trail : undefined}
+                      penRef={inkActive ? drawnPen : undefined}
+                      dim={inkActive ? inkRef.current!.pendingKeys : undefined}
                     />
                   ) : (
                     // the first time, paper and writing arrive together
@@ -1477,8 +1492,10 @@ export default function App() {
             onUnderline={() => formatFromTray('underline')}
             onPress={() => formatFromTray('press')}
             onPS={() => {
-              if (inkMode) { inkSession().postScript(); syncInk(); return; }
-              if (editor.current) insertPS(editor.current, state.text, onEdit);
+              // the same edit as ⌘↩, in ink too: "P.S." after a blank line, then the caret after it (the engine's own
+              // P.S. stream wrote the next words small under the letter with no "P.S." on the paper or in the text)
+              const shown = inkMode && inkRef.current && inkFor.current === inkLook ? inkRef.current.text() : state.text;
+              if (editor.current) insertPS(editor.current, shown, onEdit);
             }}
             onSign={toggleSigned}
             onDone={() => editor.current?.blur()}

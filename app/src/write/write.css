@@ -1,300 +1,753 @@
-/* The writing page (/write): the desk, one sheet, and very little else. */
-.write-page {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: var(--background, #e6e4de);
+/* The writing app (/write): its own frame, not the site's. The paper is the only physical thing on screen; around it
+   a flat, neutral desk and a few frosted groups of controls that float over the desk (never over the writing) and step
+   back while you write. System type, soft corners, no hard lines. Light and dark follow the system; the paper stays
+   paper. */
+
+:root[data-app='write'] {
+  color-scheme: light dark;
+  --wr-font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --wr-desk: #e9e9e7;
+  --wr-side: #f4f4f2;
+  --wr-glass: rgba(255, 255, 255, 0.74);
+  --wr-glass-strong: rgba(252, 252, 251, 0.92);
+  /* panels and menus that open over the paper: nearly solid, so the writing behind never reads through */
+  --wr-pop-bg: rgba(251, 251, 250, 0.985);
+  --wr-text: #1c1c1e;
+  --wr-muted: #6b6b70;
+  --wr-faint: #8c8c91;
+  --wr-hover: rgba(0, 0, 0, 0.05);
+  --wr-hover-strong: rgba(0, 0, 0, 0.08);
+  --wr-sel: rgba(0, 0, 0, 0.07);
+  --wr-sep: rgba(0, 0, 0, 0.07);
+  --wr-on: #1c1c1e;
+  --wr-on-text: #fbfbfa;
+  --wr-danger: #c4302b;
+  --wr-focus: #3478f6;
+  --wr-group-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px -10px rgba(0, 0, 0, 0.18);
+  --wr-pop-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 48px -16px rgba(0, 0, 0, 0.28);
+  --wr-radius: 12px;
+  --wr-radius-sm: 8px;
+  /* the site's shared parts (toasts, sheets, menus) read these */
+  --background: var(--wr-desk);
+  --foreground: var(--wr-text);
+  --popover: var(--wr-pop-bg);
+  --popover-foreground: var(--wr-text);
+  --muted-foreground: var(--wr-muted);
+  --accent: var(--wr-hover-strong);
+  --border: transparent;
+  --ring: var(--wr-focus);
+  --panel: #fbfbfa;
+  --text: #1c1c1e;
+  --ink-soft: #1c1c1e;
+  --rr-ui: var(--wr-font);
+  background: var(--wr-desk);
 }
-.write-top {
+@media (prefers-color-scheme: dark) {
+  :root[data-app='write'] {
+    --wr-desk: #161618;
+    --wr-side: #1c1c1e;
+    --wr-glass: rgba(44, 44, 46, 0.72);
+    --wr-glass-strong: rgba(40, 40, 42, 0.94);
+    --wr-pop-bg: rgba(38, 38, 40, 0.985);
+    --wr-text: #f2f2f4;
+    --wr-muted: #a0a0a6;
+    --wr-faint: #7c7c82;
+    --wr-hover: rgba(255, 255, 255, 0.07);
+    --wr-hover-strong: rgba(255, 255, 255, 0.11);
+    --wr-sel: rgba(255, 255, 255, 0.09);
+    --wr-sep: rgba(255, 255, 255, 0.08);
+    --wr-on: #f2f2f4;
+    --wr-on-text: #161618;
+    --wr-danger: #ff6b63;
+    --wr-focus: #4c8dff;
+    --wr-group-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 6px 20px -10px rgba(0, 0, 0, 0.6);
+    --wr-pop-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 18px 48px -16px rgba(0, 0, 0, 0.7);
+    --panel: #2a2a2c;
+    --text: #f2f2f4;
+    --ink-soft: #f2f2f4;
+  }
+}
+:root[data-app='write'] body { background: var(--wr-desk); }
+
+.wr-app {
+  display: flex;
+  min-height: 100dvh;
+  font-family: var(--wr-font);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--wr-text);
+  background: var(--wr-desk);
+  -webkit-font-smoothing: antialiased;
+  outline: none;
+}
+.wr-app :focus-visible { outline: 2px solid var(--wr-focus); outline-offset: 1px; }
+.wr-app button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.wr-app svg { flex: none; }
+.wr-spacer { flex: 1; }
+.wr-app kbd, .wr-menu kbd {
+  font: inherit;
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--wr-hover-strong);
+  color: var(--wr-muted);
+}
+
+/* ---------- the toolbar: floating groups over the desk ---------- */
+.wr-main { position: relative; flex: 1; min-width: 0; overflow-x: clip; }
+.wr-bar {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
+  pointer-events: none;
+  /* the desk shows through above the sheet as it scrolls under: a soft fade, no line */
+  background: linear-gradient(to bottom, var(--wr-desk) 45%, color-mix(in srgb, var(--wr-desk) 0%, transparent));
+  transition: opacity 240ms var(--ease-out);
+}
+.wr-bar > * { pointer-events: auto; }
+.wr-app[data-away] .wr-bar { opacity: 0; }
+.wr-app[data-tight] .wr-bar { display: none; }
+.wr-app[data-away] .wr-bar > * { pointer-events: none; }
+.wr-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--wr-radius);
+  background: var(--wr-glass);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--wr-group-shadow);
+}
+.wr-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--wr-text);
+  transition: background-color 120ms var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.wr-icon svg { width: 17px; height: 17px; stroke-width: 1.75; }
+.wr-icon[aria-pressed='true'] { background: var(--wr-hover-strong); }
+.wr-icon:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) {
+  .wr-icon:hover, .wr-title:hover, .wr-writer-chip:hover { background: var(--wr-hover); }
+}
+.wr-icon.wr-back { width: auto; padding: 0 12px 0 6px; gap: 2px; display: inline-flex; align-items: center; font-weight: 500; }
+.wr-icon.wr-back svg { width: 20px; height: 20px; }
+.wr-title {
+  max-width: min(42ch, 36vw);
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--wr-radius);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: left;
+  transition: background-color 120ms var(--ease-out);
+}
+.wr-title span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.wr-writer-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  max-width: 220px;
+  padding: 0 10px;
+  border-radius: 9px;
+  overflow: hidden;
+  transition: background-color 120ms var(--ease-out);
+}
+.wr-name-hand { height: 26px; }
+/* the writer's name in the ink they write with; on a dark desk, in the desk's own light (a white pen on black) */
+.wr-app .wr-writer-chip { color: var(--chip-ink, var(--wr-text)); }
+@media (prefers-color-scheme: dark) { .wr-app .wr-writer-chip { color: var(--wr-text); } }
+.wr-writer-chip .wr-name-hand { height: 24px; }
+
+.wr-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 32px;
+  padding: 0 6px 0 10px;
+  border-radius: 9px;
+  font-weight: 500;
+  transition: background-color 120ms var(--ease-out);
+}
+.wr-mode svg { width: 14px; height: 14px; color: var(--wr-muted); }
+@media (hover: hover) and (pointer: fine) { .wr-mode:hover { background: var(--wr-hover); } }
+@media (pointer: coarse) { .wr-mode { height: 44px; } }
+/* one class more than .wr-menu-item (later, same weight), or its centring and padding win: the tick on the label's line */
+.wr-menu-item.wr-menu-mode { align-items: flex-start; padding-top: 8px; padding-bottom: 8px; max-width: 300px; }
+.wr-menu-mode b { display: block; font-weight: 600; }
+.wr-menu-mode small { display: block; margin-top: 1px; font-size: 12px; color: var(--wr-muted); line-height: 1.3; }
+.wr-menu-tick { display: grid; place-items: center; width: 16px; height: 18px; flex: none; }
+/* a mode row's tick as tall as its label's line, so it sits on that line at any text size (phones set the label larger) */
+.wr-menu-mode .wr-menu-tick { height: 1lh; }
+
+.wr-aa {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+  transition: background-color 120ms var(--ease-out);
+}
+.wr-aa-mark { font-family: Georgia, 'Times New Roman', serif; font-size: 15px; letter-spacing: -0.02em; }
+.wr-aa-name { min-width: 52px; text-align: left; font-weight: 500; color: var(--wr-muted); }
+@media (hover: hover) and (pointer: fine) { .wr-aa:hover { background: var(--wr-hover); } }
+@media (pointer: coarse) { .wr-aa { height: 40px; } }
+.wr-bar-more { display: contents; }
+@media (max-width: 1179.98px) { .wr-bar-more { display: none; } }
+.wr-icon:disabled { opacity: 0.35; }
+.wr-hl-tool { position: relative; }
+.wr-hl-tool::after { content: ''; position: absolute; left: 9px; right: 9px; bottom: 5px; height: 3px; border-radius: 2px; background: var(--hl); opacity: 0.9; }
+.wr-format { display: grid; gap: 14px; width: 340px; padding: 12px; font-size: 13px; }
+.sheet-surface .wr-format { width: auto; padding: 4px 6px 10px; }
+.wr-styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.wr-style {
+  height: 52px;
+  border-radius: 10px;
+  background: var(--wr-hover);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  transition: background-color 120ms var(--ease-out);
+}
+.wr-style-title { font-size: 20px; font-weight: 600; }
+.wr-style-heading { font-size: 16px; font-weight: 600; }
+.wr-style[aria-checked='true'] { background: var(--wr-on); color: var(--wr-on-text); }
+.wr-style:disabled, .wr-btn:disabled { opacity: 0.4; }
+.wr-lists { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.wr-btn[aria-pressed='true'] { background: var(--wr-on); color: var(--wr-on-text); }
+.wr-format-note { margin-top: 8px; font-size: 12px; color: var(--wr-muted); }
+.wr-hls { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.wr-hl-colors { display: flex; gap: 6px; }
+.wr-hl { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18); color: #1c1c1e; }
+.wr-hl svg { width: 14px; height: 14px; stroke-width: 2.5; }
+.wr-hl[aria-checked='true'] { box-shadow: 0 0 0 2px var(--wr-pop-bg), 0 0 0 3.5px var(--wr-on); }
+@media (pointer: coarse) { .wr-hl { width: 34px; height: 34px; } .wr-style { height: 56px; } }
+
+/* ---------- the desk and the sheet ---------- */
+.wr-desk {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  /* a little air between the toolbar and the top of the sheet */
+  padding: 26px 24px 140px;
+}
+@media (max-width: 719.98px) { .wr-desk { padding: 12px 12px 120px; } }
+/* a blank note: "Type to write" in the sheet's top corner (StartHint; the letter desk's "Start typing") */
+.wr-start {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-family: var(--wr-font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wr-text);
+  background: var(--wr-glass-strong);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--wr-group-shadow);
+  pointer-events: none;
+  animation: wr-start-in 200ms var(--ease-out) both;
+}
+.wr-start svg { width: 14px; height: 14px; }
+@keyframes wr-start-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .wr-start { animation-name: wr-start-fade; } }
+@keyframes wr-start-fade { from { opacity: 0; } }
+.wr-status {
+  position: fixed;
+  right: 16px;
+  bottom: 14px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--wr-faint);
+  pointer-events: none;
+  transition: opacity 240ms var(--ease-out);
+}
+.wr-app[data-away] .wr-status, .wr-app:has(.wr-start) .wr-status { opacity: 0; }
+
+.wr-check {
+  position: absolute;
+  z-index: 3;
+  border-radius: 4px;
+  cursor: pointer;
+  background: transparent;
+}
+@media (hover: hover) and (pointer: fine) { .wr-check:hover { background: rgba(0, 0, 0, 0.05); } }
+
+.wr-sheet { position: relative; }
+/* a new note: the fresh sheet settles onto the desk (opacity and a few px only, so it's live and typable throughout) */
+.wr-sheet-fresh { animation: wr-sheet-fresh 200ms var(--ease-out); }
+@keyframes wr-sheet-fresh { from { opacity: 0.4; transform: translateY(-6px); } }
+/* the note just put away glows in the library for a moment */
+.wr-row[data-arrived] { animation: wr-row-arrived 900ms var(--ease-out); }
+@keyframes wr-row-arrived { 0%, 30% { background: color-mix(in srgb, var(--wr-focus) 16%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .wr-sheet-fresh, .wr-row[data-arrived] { animation: none; } }
+/* a note from the hint ladder: a quiet line in the margin (MarginNote) */
+.wr-note { z-index: 4; font-family: var(--wr-font); font-size: 12px; line-height: 1.4; color: var(--wr-muted); pointer-events: none; }
+.wr-note kbd { margin: 0 2px; }
+.wr-note-low {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  width: fit-content;
+  margin: 0 auto;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--wr-glass-strong);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--wr-group-shadow);
+  text-align: center;
+}
+.wr-app[data-kb] .wr-note-low { bottom: calc(var(--kb-gap, 0px) + 64px); }
+
+/* ---------- the library ---------- */
+.wr-side {
+  position: sticky;
+  top: 0;
+  z-index: 31;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 288px;
+  height: 100dvh;
+  background: var(--wr-side);
+  box-shadow: 0.5px 0 0 var(--wr-sep);
+  transition: opacity 240ms var(--ease-out);
+}
+.wr-app[data-away] .wr-side { opacity: 0.35; }
+/* a narrow window: the library over the page, the page dimmed a little behind it */
+.wr-app[data-over] .wr-side { position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; box-shadow: var(--wr-pop-shadow); animation: wr-side-in 220ms var(--ease-drawer); }
+@keyframes wr-side-in { from { transform: translateX(-24px); opacity: 0; } }
+.wr-scrim { position: fixed; inset: 0; z-index: 45; background: rgba(0, 0, 0, 0.12); animation: wr-fade 180ms var(--ease-out); }
+@keyframes wr-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wr-app[data-over] .wr-side, .wr-scrim { animation: none; } }
+.wr-app[data-phone] .wr-side { position: static; width: 100%; height: auto; min-height: 100dvh; box-shadow: none; background: var(--wr-desk); }
+.wr-side-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.875rem var(--write-gutter);
-  font-family: var(--rr-ui, ui-sans-serif, system-ui);
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
-  /* the bar sits on the desk, not over the sheet: a soft fade, no hard line */
-  background: linear-gradient(to bottom, var(--background, #e6e4de) 70%, transparent);
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 4px;
 }
-.write-page { --write-gutter: 16px; }
-@media (min-width: 768px) { .write-page { --write-gutter: 28px; } }
-.write-home {
+.wr-side-top h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+.wr-side-top .wr-icon { width: 44px; height: 44px; }
+.wr-side-top .wr-icon svg { width: 22px; height: 22px; }
+.wr-library { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+.wr-lib-head { padding: calc(13px + env(safe-area-inset-top, 0px)) 12px 6px; }
+.wr-library[data-screen] .wr-lib-head { padding-top: 6px; }
+.wr-search {
   display: flex;
   align-items: center;
+  gap: 6px;
   height: 32px;
-  min-width: 0;
-  color: color-mix(in srgb, var(--foreground) 85%, transparent);
-  text-decoration: none;
-  transition: color var(--st-dur, 150ms) var(--ease-out, ease-out), opacity var(--st-dur, 150ms) var(--ease-out, ease-out);
+  padding: 0 10px;
+  border-radius: 9px;
+  background: var(--wr-hover);
+  color: var(--wr-muted);
 }
-@media (hover: hover) and (pointer: fine) { .write-home:hover { color: var(--foreground); } }
-.write-home:active { opacity: 0.75; }
-.write-tools { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
-.write-writer { margin-right: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 520px) { .write-writer { display: none; } }
-.write-tool {
-  height: 32px;
-  padding: 0 0.625rem;
-  border-radius: 6px;
-  color: var(--foreground);
-  white-space: nowrap;
-  transition: background-color var(--st-dur, 150ms) var(--ease-out, ease-out), transform var(--dur-press, 100ms) var(--ease-out, ease-out);
-}
-@media (hover: hover) and (pointer: fine) { .write-tool:hover:not(:disabled) { background: var(--st-hover, rgba(0, 0, 0, 0.05)); } }
-.write-tool:active:not(:disabled) { transform: scale(var(--st-scale, 0.97)); }
-.write-tool:disabled { opacity: 0.4; }
-.write-desk {
+.wr-library[data-screen] .wr-search { height: 38px; border-radius: 11px; }
+.wr-search svg { width: 15px; height: 15px; }
+.wr-search input {
   flex: 1;
-  width: 100%;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 8px var(--write-gutter) 96px;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--wr-text);
 }
-@media (min-width: 768px) { .write-desk { padding-top: 24px; } }
-/* the keys, under the sheet until the first word: then they step back */
-.write-keys {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 18px;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.375rem 1.25rem;
-  padding: 0 var(--write-gutter);
-  font-family: var(--rr-ui, ui-sans-serif, system-ui);
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  pointer-events: none;
-  transition: opacity 600ms var(--ease-out, ease-out);
-}
-.write-keys[data-used] { opacity: 0; }
-.write-keys kbd {
-  font-family: inherit;
-  font-size: 0.6875rem;
-  padding: 1px 5px;
-  margin-right: 4px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--foreground) 7%, transparent);
-  color: var(--foreground);
-}
-
-/* ---------- the header's actions ---------- */
-/* two framed buttons of one family, with the site's corners: Change writer, the main action, a warm blush with the
-   room's red words; New sheet in warm paper with ink. Soft rings, not hard lines. */
-.write-tools { gap: 0.5rem; }
-.write-cta,
-.write-new {
+.wr-library[data-screen] .wr-search input { font-size: 16px; }
+.wr-search input::placeholder { color: var(--wr-muted); }
+.wr-search:focus-within { box-shadow: 0 0 0 2px var(--wr-focus); }
+.wr-lib-back {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  height: 34px;
-  /* the site's corners (the Reading Room's buttons are slips, not pills) */
-  border-radius: var(--radius, 0.25rem);
-  font-weight: 500;
-  white-space: nowrap;
-  transition: background-color var(--st-dur, 150ms) var(--ease-out, ease-out), box-shadow var(--st-dur, 150ms) var(--ease-out, ease-out), transform var(--dur-press, 100ms) var(--ease-out, ease-out);
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-weight: 600;
 }
-.write-cta svg, .write-new svg { width: 15px; height: 15px; flex: none; }
-.write-cta {
-  padding: 0 0.875rem 0 0.75rem;
-  background: color-mix(in oklab, var(--rr-red, #9b3b2a) 11%, #fffaf5);
-  color: var(--rr-red, #9b3b2a);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--rr-red, #9b3b2a) 16%, transparent), 0 1px 2px rgba(155, 59, 42, 0.12), 0 6px 14px -8px rgba(155, 59, 42, 0.35);
-}
-.write-new {
-  padding: 0 0.875rem 0 0.75rem;
-  background: #fbf8f2;
-  color: var(--foreground);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 11%, transparent), 0 1px 2px rgba(60, 45, 20, 0.08), 0 6px 14px -8px rgba(60, 45, 20, 0.28);
-}
-.write-new:disabled { opacity: 0.45; box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 9%, transparent); }
-@media (hover: hover) and (pointer: fine) {
-  .write-cta:hover { background: color-mix(in oklab, var(--rr-red, #9b3b2a) 16%, #fffaf5); color: var(--rr-red-deep, #7e2f21); }
-  .write-new:hover:not(:disabled) { background: #fffdf9; }
-}
-.write-cta:active { transform: scale(var(--st-scale, 0.97)); background: color-mix(in oklab, var(--rr-red, #9b3b2a) 20%, #fffaf5); }
-.write-new:active:not(:disabled) { transform: scale(var(--st-scale, 0.97)); background: #f3eee4; }
-/* a phone: New sheet is the page-with-a-plus alone, in a square frame; the main action a touch larger */
-@media (max-width: 640px) {
-  .write-new { width: 40px; height: 40px; padding: 0; }
-  .write-new svg { width: 19px; height: 19px; }
-  .write-new-word { display: none; }
-  .write-cta { height: 40px; padding: 0 1rem 0 0.875rem; font-size: 0.875rem; }
-}
-
-/* ---------- the pile of earlier sheets ---------- */
-/* at rest: the top sheet's blank head above the desk's edge, two more as edges behind it */
-.write-pile {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  z-index: 30;
-  width: var(--card-w);
-  height: 0;
-  translate: -50% 0;
-  transition: opacity 200ms var(--ease-out, ease-out);
-}
-.write-pile[data-hidden] { opacity: 0; pointer-events: none; }
-.write-pile-rest {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: var(--card-w);
-  height: 64px;
-  padding: 0;
-  cursor: pointer;
-  border-radius: var(--radius, 0.25rem);
-}
-.write-pile-rest:focus-visible { outline: 2px solid var(--ring, #333); outline-offset: 4px; }
-/* the pointer's reach grows with the preview, so the risen sheet doesn't drop back under it */
-.write-pile-rest::before { content: ''; position: absolute; inset: 0; }
-@media (hover: hover) and (pointer: fine) { .write-pile-rest:hover::before { top: -72px; } }
-.write-pile-card {
-  --peek: 44px;
-  position: absolute;
-  left: 0;
-  top: 64px;
-  width: var(--card-w);
-  z-index: calc(20 - var(--i));
-  transform-origin: 50% 0;
-  transform: translateY(calc(-1 * var(--peek) - var(--i) * 7px)) scale(calc(1 - var(--i) * 0.03)) rotate(var(--r));
-  transition: transform 200ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
-  box-shadow: 0 -1px 8px rgba(60, 45, 20, 0.1);
-  pointer-events: none;
-}
-@media (max-width: 640px) { .write-pile-card { --peek: 36px; } }
-/* pointed at: a preview, the top sheet rises and the edges part (nothing opens by itself) */
-@media (hover: hover) and (pointer: fine) {
-  .write-pile-rest:hover .write-pile-card { transform: translateY(calc(-84px - var(--i) * 26px)) scale(calc(1 - var(--i) * 0.03)) rotate(var(--r)); }
-}
-/* someone is writing: it steps back to its edges */
-.write-pile[data-tucked] .write-pile-card { transform: translateY(calc(-12px - var(--i) * 4px)) scale(calc(1 - var(--i) * 0.03)) rotate(var(--r)); }
-.write-pile-label {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(44px + 2 * 7px + 10px);
-  text-align: center;
-  font-family: var(--rr-ui, ui-sans-serif, system-ui);
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  pointer-events: none;
-  transition: opacity 200ms var(--ease-out, ease-out);
-}
-.write-pile[data-tucked] .write-pile-label { opacity: 0; }
-
-/* open: the sheets in a column, newest at the bottom by the pile, each showing its head */
-.write-pile-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 29;
-  background: color-mix(in srgb, var(--background, #e6e4de) 72%, transparent);
-  animation: write-scrim-in 200ms var(--ease-out, ease-out) both;
-}
-@keyframes write-scrim-in { from { opacity: 0; } }
-.write-pile-open {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  z-index: 30;
-  width: var(--card-w);
-  translate: -50% 0;
+.wr-lib-back svg { width: 16px; height: 16px; }
+.wr-lib-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 8px 12px; }
+.wr-lib-group h2 { padding: 14px 8px 4px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
+.wr-library[data-screen] .wr-lib-group h2 { font-size: 13px; padding: 18px 8px 6px; }
+.wr-lib-group ul { display: grid; gap: 1px; }
+.wr-lib-empty { padding: 28px 10px; color: var(--wr-muted); text-align: center; }
+.wr-row { position: relative; border-radius: 10px; }
+.wr-row[data-open] { background: var(--wr-sel); }
+.wr-row-main {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-.write-pile-column {
-  display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 10px;
-  max-height: min(72vh, 720px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 16px 4px 12px;
-  scrollbar-width: none;
-}
-.write-pile-column::-webkit-scrollbar { display: none; }
-.write-pile-band { position: relative; flex: none; height: 116px; }
-@media (max-width: 640px) { .write-pile-band { height: 96px; } }
-.write-pile-sheet {
-  position: relative;
-  display: block;
   width: 100%;
-  height: 100%;
-  padding: 0;
+  padding: 7px 8px;
+  border-radius: 10px;
+  text-align: left;
+  transition: background-color 120ms var(--ease-out);
+}
+.wr-library[data-screen] .wr-row-main { padding: 10px 8px; gap: 12px; }
+@media (hover: hover) and (pointer: fine) { .wr-row:not([data-open]) .wr-row-main:hover { background: var(--wr-hover); } }
+.wr-row-main:disabled { cursor: default; }
+.wr-thumb {
+  flex: none;
+  width: var(--thumb-w);
+  line-height: 0;
+  border-radius: 2px;
   overflow: hidden;
-  cursor: pointer;
-  border-radius: var(--radius, 0.25rem);
-  box-shadow: 0 1px 2px rgba(60, 45, 20, 0.1), 0 8px 20px -12px rgba(60, 45, 20, 0.4);
-  transition: transform var(--dur-press, 100ms) var(--ease-out, ease-out);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
-.write-pile-sheet:active { transform: scale(var(--st-scale-row, 0.985)); }
-.write-pile-sheet:focus-visible { outline: 2px solid var(--ring, #333); outline-offset: 3px; }
-/* who wrote it and when, in the sheet's blank head */
-.write-pile-who {
+.wr-library[data-screen] .wr-thumb { --thumb-w: 48px !important; }
+.wr-row-text { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.wr-row-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; font-size: 13px; }
+.wr-library[data-screen] .wr-row-title { font-size: 16px; }
+.wr-row-meta { display: flex; gap: 6px; min-width: 0; font-size: 12px; color: var(--wr-muted); white-space: nowrap; }
+.wr-library[data-screen] .wr-row-meta { font-size: 14px; }
+.wr-row-meta time { flex: none; color: color-mix(in srgb, var(--wr-text) 78%, transparent); }
+.wr-row-snippet { overflow: hidden; text-overflow: ellipsis; }
+.wr-row-actions {
   position: absolute;
-  top: 8px;
-  left: 12px;
-  font-family: var(--rr-ui, ui-sans-serif, system-ui);
-  font-size: 0.6875rem;
-  color: var(--muted-foreground);
-}
-.write-pile-band[data-leaving] {
-  opacity: 0;
-  transform: translate(16px, 32px) rotate(3deg);
-  transition: opacity 200ms var(--ease-out, ease-out), transform 200ms var(--ease-out, ease-out);
-}
-.write-pile-throw {
-  position: absolute;
-  top: 6px;
+  top: 50%;
   right: 6px;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius, 0.25rem);
-  background: color-mix(in srgb, #fff 90%, transparent);
-  color: var(--muted-foreground);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 10%, transparent);
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--wr-glass-strong);
+  box-shadow: var(--wr-group-shadow);
+  transform: translateY(-50%);
   opacity: 0;
-  transition: opacity 150ms var(--ease-out, ease-out), color 150ms var(--ease-out, ease-out);
+  transition: opacity 120ms var(--ease-out);
 }
-.write-pile-throw svg { width: 14px; height: 14px; }
+.wr-row-actions button { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; color: var(--wr-muted); }
+.wr-row-actions svg { width: 15px; height: 15px; }
 @media (hover: hover) and (pointer: fine) {
-  .write-pile-band:hover .write-pile-throw { opacity: 1; }
-  .write-pile-throw:hover { color: var(--rr-red, #9b3b2a); }
+  .wr-row:hover .wr-row-actions { opacity: 1; }
+  .wr-row-actions button:hover { background: var(--wr-hover); color: var(--wr-text); }
 }
-.write-pile-band:focus-within .write-pile-throw, .write-pile-throw:focus-visible { opacity: 1; }
-/* phones: always there (no hover), but quiet: a mark on the paper, not a white box */
-@media (pointer: coarse) { .write-pile-throw { opacity: 1; width: 36px; height: 36px; top: 2px; right: 2px; background: transparent; box-shadow: none; } }
-.write-pile-close {
-  align-self: center;
+.wr-row:focus-within .wr-row-actions { opacity: 1; }
+/* a phone: quiet, always there */
+@media (pointer: coarse) {
+  .wr-row-actions { opacity: 1; background: transparent; box-shadow: none; }
+  .wr-row-actions button { width: 40px; height: 40px; }
+  .wr-library .wr-row .wr-row-main { padding-right: 92px; }
+}
+.wr-lib-bin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 8px calc(10px + env(safe-area-inset-bottom, 0px));
   height: 34px;
-  margin: 2px 0 14px;
-  padding: 0 0.875rem;
-  border-radius: var(--radius, 0.25rem);
-  font-family: var(--rr-ui, ui-sans-serif, system-ui);
-  font-size: 0.8125rem;
-  color: var(--foreground);
-  background: #fbf8f2;
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--foreground) 11%, transparent);
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--wr-muted);
+}
+.wr-lib-bin svg { width: 15px; height: 15px; }
+.wr-lib-bin span { margin-left: auto; font-variant-numeric: tabular-nums; }
+@media (hover: hover) and (pointer: fine) { .wr-lib-bin:hover, .wr-lib-back:hover { background: var(--wr-hover); color: var(--wr-text); } }
+
+/* ---------- menus and the writer panel ---------- */
+.wr-menu {
+  z-index: 60;
+  min-width: 232px;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--wr-pop-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: var(--wr-pop-shadow);
+  font-family: var(--wr-font);
+  font-size: 13px;
+  color: var(--wr-text);
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  animation: wr-pop var(--dur-pop) var(--ease-out);
+}
+.wr-menu[data-state='closed'] { animation: wr-pop-out var(--dur-out) var(--ease-out) forwards; }
+@keyframes wr-pop { from { opacity: 0; transform: scale(0.96); } }
+@keyframes wr-pop-out { to { opacity: 0; transform: scale(0.98); } }
+.wr-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 7px;
+  outline: none;
+  cursor: default;
+  user-select: none;
+}
+.wr-menu-item svg { width: 16px; height: 16px; color: var(--wr-muted); stroke-width: 1.75; }
+.wr-menu-item kbd { margin-left: auto; }
+.wr-menu-item[data-highlighted] { background: var(--wr-hover-strong); }
+.wr-menu-item[data-danger] { color: var(--wr-danger); }
+.wr-menu-item[data-danger] svg { color: currentColor; }
+.wr-menu-quiet { font-size: 12px; color: var(--wr-muted); }
+.wr-menu-label { padding: 6px 10px 4px; font-size: 12px; color: var(--wr-muted); }
+.wr-menu-sep { height: 1px; margin: 4px 8px; background: var(--wr-sep); }
+@media (pointer: coarse) { .wr-menu-item { min-height: 44px; font-size: 15px; } }
+@media (prefers-reduced-motion: reduce) { .wr-menu, .wr-menu[data-state='closed'] { animation: none; } }
+
+/* the writer's popover (desktop) and sheet (phones) take this frame, not the site's */
+.wr-pop.wr-pop {
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: var(--wr-pop-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: var(--wr-pop-shadow);
+  color: var(--wr-text);
+  font-family: var(--wr-font);
+}
+:root[data-app='write'] .sheet-surface { background: var(--wr-side); border: 0; color: var(--wr-text); font-family: var(--wr-font); }
+.wr-writer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; width: 380px; padding: 14px; font-size: 13px; }
+.wr-writer > * { min-width: 0; }
+.sheet-surface .wr-writer { width: auto; padding: 6px 6px 10px; }
+.wr-writer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.wr-writer-name { flex: 1; min-width: 0; overflow: hidden; }
+.wr-writer-name .wr-name-hand { -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
+.wr-writer-name .wr-name-hand { height: 38px; }
+.wr-writer-sub { display: block; margin-top: 4px; font-size: 12px; color: var(--wr-muted); }
+.wr-writer-moves { display: flex; flex: none; gap: 6px; }
+.wr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--wr-radius-sm);
+  background: var(--wr-hover);
+  font-weight: 500;
+  transition: background-color 120ms var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.wr-btn svg { width: 15px; height: 15px; stroke-width: 1.75; }
+.wr-btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .wr-btn:hover { background: var(--wr-hover-strong); } }
+.wr-writer-section h3 { margin-bottom: 6px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
+.wr-hands li { min-width: 0; }
+.wr-hands { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; max-height: 248px; overflow-y: auto; margin: 0 -6px; overscroll-behavior: contain; }
+.wr-hand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 42px;
+  padding: 4px 8px;
+  border-radius: var(--wr-radius-sm);
+  text-align: left;
+  transition: background-color 120ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) { .wr-hand:hover { background: var(--wr-hover); } }
+.wr-hand-sample { flex: 1; height: 30px; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); }
+.wr-hand-name { flex: none; font-size: 11.5px; color: var(--wr-muted); white-space: nowrap; }
+.wr-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.wr-chip {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--wr-radius-sm);
+  background: var(--wr-hover);
+  font-size: 12.5px;
+  transition: background-color 120ms var(--ease-out);
+}
+.wr-chip[aria-checked='true'] { background: var(--wr-on); color: var(--wr-on-text); }
+@media (pointer: coarse) { .wr-chip { height: 36px; padding: 0 12px; font-size: 14px; } }
+.wr-inks { display: flex; flex-wrap: wrap; gap: 4px; }
+.wr-ink { display: grid; place-items: center; width: 46px; height: 32px; border-radius: var(--wr-radius-sm); background: #fbf9f4; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
+.wr-ink svg { width: 34px; }
+.wr-ink[aria-checked='true'] { box-shadow: inset 0 0 0 2px var(--wr-on); }
+.wr-papers { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 4px; }
+.wr-paper {
+  display: grid;
+  /* the swatch in a row of its own, sitting on its foot, so a name that wraps ("Notebook page") pushes nothing up */
+  grid-template-rows: 40px auto;
+  justify-items: center;
+  align-content: start;
+  gap: 5px;
+  padding: 8px 4px 6px;
+  border-radius: var(--wr-radius-sm);
+  font-size: 11.5px;
+  color: var(--wr-muted);
+}
+.wr-paper[aria-checked='true'] { background: var(--wr-hover-strong); color: var(--wr-text); }
+.wr-paper-swatch { align-self: end; width: 26px; max-height: 40px; border-radius: 1px; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.16), 0 1px 2px rgba(0, 0, 0, 0.08); }
+.wr-size { display: flex; align-items: center; gap: 10px; }
+.wr-size input { flex: 1; accent-color: var(--wr-on); }
+.wr-size-a { font-size: 12px; color: var(--wr-muted); }
+.wr-size-big { font-size: 19px; }
+
+/* ---------- phones: the bar above the keyboard ---------- */
+.wr-kbar {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--wr-glass);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--wr-group-shadow);
+}
+.wr-kbar .wr-icon { width: 44px; height: 40px; }
+.wr-app .wr-done { height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 600; background: var(--wr-on); color: var(--wr-on-text); }
+.wr-format-anchor { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+@media (pointer: coarse) {
+  .wr-icon { width: 44px; height: 44px; }
+  .wr-writer-chip { height: 44px; }
+  .wr-bar { gap: 6px; padding-left: 8px; padding-right: 8px; }
+}
+@media (max-width: 719.98px) {
+  .wr-writer-chip { max-width: 46vw; padding: 0 8px; }
 }
 
 /* ---------- sheets moving (moveSheets: View Transitions) ---------- */
 /* each sheet moves as itself; the rest of the page doesn't cross-fade */
-::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-::view-transition-group(*) { animation-duration: 400ms; animation-timing-function: var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)); }
-/* a fresh sheet is laid on the desk from above */
-::view-transition-new(*):only-child { animation: write-sheet-in 400ms var(--ease-drawer, cubic-bezier(0.32, 0.72, 0, 1)) both; }
-::view-transition-old(*):only-child { animation: write-sheet-out 200ms var(--ease-out, ease-out) both; }
-@keyframes write-sheet-in { from { opacity: 0; transform: translateY(-24px); } }
-@keyframes write-sheet-out { to { opacity: 0; } }
+:root[data-app='write'] { view-transition-name: none; }
+::view-transition-group(*) { animation-duration: 320ms; animation-timing-function: var(--ease-drawer); }
+/* a fresh sheet is simply there; one that goes to a hidden library fades */
+::view-transition-new(*):only-child { animation: none; }
+::view-transition-old(*):only-child { animation: wr-sheet-out 180ms var(--ease-out) both; }
+@keyframes wr-sheet-out { to { opacity: 0; transform: translateY(8px) scale(0.98); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .write-pile-card, .write-pile-band[data-leaving] { transition-duration: 1ms; }
+  .wr-bar, .wr-side, .wr-status { transition: none; }
 }
+
+/* ---------- the shortcuts card ---------- */
+.wr-dialog-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.18); animation: wr-fade 160ms var(--ease-out); }
+.wr-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 71;
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(80vh, 720px);
+  overflow-y: auto;
+  padding: 18px 20px 20px;
+  border-radius: 16px;
+  background: var(--wr-pop-bg);
+  box-shadow: var(--wr-pop-shadow);
+  font-family: var(--wr-font);
+  font-size: 13px;
+  color: var(--wr-text);
+  transform: translate(-50%, -50%);
+  animation: wr-dialog-in var(--dur-pop) var(--ease-out);
+}
+@keyframes wr-dialog-in { from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); } }
+.wr-dialog-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.wr-dialog-head h2 { font-size: 15px; font-weight: 600; }
+.wr-keys h3 { margin: 14px 0 6px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
+.wr-keys dl { display: grid; gap: 2px; }
+.wr-keys dl > div { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: baseline; padding: 5px 0; }
+.wr-keys dt { display: flex; gap: 3px; flex-wrap: wrap; }
+.wr-keys dd { color: var(--wr-text); }
+@media (prefers-reduced-motion: reduce) { .wr-dialog, .wr-dialog-scrim { animation: none; } }
+
+/* a very narrow phone: the back button is a chevron, the writer's name shorter */
+@media (max-width: 359.98px) {
+  .wr-icon.wr-back span { display: none; }
+  .wr-icon.wr-back { padding: 0 4px; }
+  .wr-writer-chip { max-width: 30vw; }
+  .wr-mode { padding: 0 2px 0 8px; }
+}
+/* the writer panel: the name on its own line, the moves under it */
+.wr-writer-head { flex-direction: column; align-items: stretch; gap: 8px; }
+.wr-writer-name .wr-name-hand { -webkit-mask-image: none; mask-image: none; }
+.wr-writer-moves { justify-content: flex-start; }
+/* the other writers' samples: in the ink on a light panel, in the panel's own light on a dark one */
+.wr-hand { color: var(--sample-ink, var(--wr-text)); }
+@media (prefers-color-scheme: dark) { .wr-hand, .wr-writer-name { color: var(--wr-text) !important; } }
+
+/* ---------- Share: the note as a picture to post (ShareDialog.tsx, share.ts) ---------- */
+.wr-share {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  gap: 0;
+  width: min(760px, calc(100vw - 32px));
+  padding: 0;
+  overflow: hidden;
+}
+.wr-share-preview {
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+  padding: 24px;
+  background: var(--wr-hover);
+}
+.wr-share-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: min(56vh, 440px);
+  border-radius: 6px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 8px 24px -8px rgba(0, 0, 0, 0.22);
+}
+.wr-share-wait { font-size: 12.5px; color: var(--wr-muted); }
+.wr-share-side { display: flex; flex-direction: column; gap: 16px; padding: 18px 20px 20px; }
+.wr-share-side .wr-dialog-head { margin-bottom: 0; }
+.wr-share-side .wr-dialog-head h2 { font-size: 15px; font-weight: 600; }
+.wr-share-label { margin-bottom: 6px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
+.wr-seg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: var(--wr-hover); }
+.wr-seg-item {
+  flex: 1;
+  height: 28px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: var(--wr-muted);
+  transition: background-color 120ms var(--ease-out), color 120ms var(--ease-out);
+}
+.wr-seg-item[aria-checked='true'] { background: var(--wr-pop-bg); color: var(--wr-text); font-weight: 500; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.08); }
+@media (hover: hover) and (pointer: fine) { .wr-seg-item:not([aria-checked='true']):hover { color: var(--wr-text); } }
+.wr-share-actions { display: grid; gap: 6px; }
+.wr-share-post {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  border-radius: var(--wr-radius-sm);
+  background: var(--wr-on);
+  color: var(--wr-on-text);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: transform var(--dur-press) var(--ease-out), opacity 120ms var(--ease-out);
+}
+.wr-share-post:active { transform: scale(0.98); }
+.wr-share-post:disabled, .wr-share-row .wr-btn:disabled { opacity: 0.4; }
+.wr-x-mark { width: 14px; height: 14px; }
+.wr-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.wr-share-row .wr-btn { justify-content: center; height: 34px; white-space: nowrap; }
+.wr-share-note { margin-top: auto; font-size: 11.5px; line-height: 1.45; color: var(--wr-muted); }
+/* phones: the preview over the choices */
+@media (max-width: 719.98px) {
+  .wr-share { grid-template-columns: minmax(0, 1fr); max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .wr-share-preview { min-height: 0; padding: 16px; }
+  .wr-share-preview img { max-height: 38vh; }
+  .wr-share-post { height: 44px; }
+  .wr-share-row .wr-btn { height: 44px; }
+  .wr-seg-item { height: 36px; }
+}
+/* the window itself takes the focus when it opens (no ring on its first button); it draws none of its own */
+.wr-dialog:focus { outline: none; }

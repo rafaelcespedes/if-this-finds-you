@@ -1,0 +1,26 @@
+name: The writing doesn't feel right
+description: Typing on the paper did something a person writing by hand wouldn't do, or it felt slow, jumpy or wrong.
+labels: [writing]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What you did and what the writer did
+      description: The keys you pressed, and what appeared on the paper. What would a person with a pen have done instead?
+    validations:
+      required: true
+  - type: textarea
+    id: recording
+    attributes:
+      label: A screen recording
+      description: Drag a short video or GIF in here if you can. Timing is most of it, and a recording shows it best.
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: The page's address, or the link from Share. It brings back the same letter, hand and ink.
+  - type: input
+    id: setup
+    attributes:
+      label: Device, browser and keyboard
+      placeholder: e.g. MacBook, Safari 19, built-in keyboard; or iPhone 16, Safari

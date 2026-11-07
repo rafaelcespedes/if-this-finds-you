@@ -40,6 +40,8 @@ import { rng, clamp, smooth, DEG } from './core.js';
 import { makeGlyph, markHabits, has, UPM, CAP } from './hand.js';
 import { getStyle } from './glyphs.js';
 import { newLetter, beginLine, noteWord, noteBlank, isPS, isShort } from './letter-shape.js';
+import { hasteStep, hastyHand, hasteCare, hasteTempo } from './tempo.js';
+import { styleOf, leanHand, pressHand, PRESS_INK, PRESS_SIZE, LEAN_TEMPO, formatHabits, isList, lineFormat } from './format.js';
 
 export const MISS_ADVANCE = 560; // fallback; a placeholder takes the width of this hand's 'n'
 
@@ -260,12 +262,18 @@ function graphemes(tok, base) {
 //         salt (another letter by the same hand: different letter instances), size, weight,
 //         letter (false: no letter shape, every line at the margin), ahead (the text still to be written,
 //         as far as it's known: Ink mode's thought letters), complete (the text ends where the letter
-//         ends; default true, false in Ink mode),
+//         ends; default true, false in Ink mode), haste (-2 … 2, tempo.js: the typing's tempo; the words that
+//         start in this text are written a little hastier or tidier, and keep it when continued),
 //         sheet ({ first, last, ink, height }: sheets of paper, font units from each sheet's top: the first
 //         and last baselines, the lowest ink may go, the sheet's height. A line that doesn't fit starts the
 //         next sheet; sheets are stacked `height` apart, so sheet k's lines have y in [k·height, (k+1)·height).
 //         An empty line never starts a sheet, and a closing goes over with its name. Ink placed on a sheet
-//         stays there, so Ink mode and fair copy flow onto as many sheets as they need.) }
+//         stays there, so Ink mode and fair copy flow onto as many sheets as they need.),
+//         style ({ lean, weight, size }, format.js: the words that start in this text lean in, are pressed harder,
+//         or are bigger or smaller, and keep it when continued; absent, exactly as before),
+//         line ('title' | 'heading' | 'body' | 'bullet' | 'number' | 'check', Ink mode, format.js: the line the pen is
+//         on, while nothing is written on it, is begun again in that format (or the first line is begun in it); a
+//         list goes on, item after item, until a line is set to another format) }
 // Letter shape: each line's role (greeting, paragraph, closing, name, P.S.) is decided when the line
 // begins, from what's known of it then (this text plus `ahead`), so ink placed once never moves. With
 // `complete`, a closing is also recognised by where it sits (only short lines follow it).
@@ -327,6 +335,11 @@ export function layout(p, text, opts = {}) {
   // (an overwrite pressed over a wrong letter): pen width × weight, and item.weight for the ink
   const sizeK = opts.size || 1, weight = opts.weight || 1;
   const pw = weight === 1 ? p : Object.assign(Object.create(p), { penWidth: p.penWidth * weight });
+  // haste (tempo.js): the typing's tempo, -2 … 2. The words that start here are written a little hastier or tidier
+  // (a word continued from an earlier piece keeps its own); 0 or absent, exactly as before
+  const haste = hasteStep(opts.haste);
+  // style (format.js): the words that start here lean in, are pressed harder, or are bigger or smaller; null, as before
+  const sty = styleOf(opts.style);
   // letter shape: the letter's lines as far as they're known (this text, then what's still to come)
   const knownText = opts.ahead ? text + String(opts.ahead).normalize('NFC') : text;
   const known = opts.letter === false ? null : knownText.split('\n');
@@ -339,6 +352,21 @@ export function layout(p, text, opts = {}) {
     letter: newLetter(), lastText: null, textEnd: null, wrapDx: 0, pk: 1, size: 1, blockX: null, sigX: null, sheet: 0,
   };
   if (!pen.letter) pen.letter = newLetter();
+  // A line format (opts.line, Ink mode): the pen is on a line nothing is written on yet (a paragraph just begun, kept in
+  // pen.restart as it was before that line began), so the line is begun again in the format; nothing moves. Without
+  // one (nothing written yet: the first line), the format is for the line about to begin.
+  let restarted = false;
+  if (opts.line && ink) {
+    if (pen.restart) {
+      const snap = JSON.parse(JSON.stringify(pen.restart));
+      for (const k of Object.keys(pen)) delete pen[k];
+      Object.assign(pen, snap);
+      restarted = !!pen.line;
+    }
+    const as = lineFormat(opts.line);
+    pen.fmt = as === 'title' || as === 'heading' ? as : null;
+    pen.list = isList(as) ? { kind: as, n: 0 } : null;
+  } else if (pen.restart && text.length) pen.restart = null; // something is written on it: it stays as begun
   const L = pen.letter;
   const from = pen.offset;
   const seen = Object.assign(Object.create(null), pen.seen);
@@ -412,6 +440,7 @@ export function layout(p, text, opts = {}) {
       }
     } else if (!ref) {
       ln.y = firstY + (placed ? 0 : 0.12 * xh * H.startY * Math.min(1, wander));
+      if (sp && sp.drop) ln.y += sp.drop; // a big first line (a title) sits a little lower, clear of the top
     } else if (between) {
       // (it follows the line above, so it stays between that line and the next)
       Object.assign(ln, { slope: ref.slope, bow: ref.bow, droop: ref.droop, drift: ref.drift, phase: ref.phase, x0: ref.x0 });
@@ -467,10 +496,18 @@ export function layout(p, text, opts = {}) {
     if (w.squeeze) inst.squeeze = w.squeeze;
     if (ctx && ctx.bar) inst.bar = ctx.bar;
     const ck = ch + '\u0001' + seedKey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + (w.squeeze || 1) + '\u0001' + weight + '\u0001' +
-      (ctx ? [ctx.prev, ctx.next, ctx.index, ctx.wordStart, ctx.wordEnd, ctx.bar || ''].join('\u0002') : '');
+      (ctx ? [ctx.prev, ctx.next, ctx.index, ctx.wordStart, ctx.wordEnd, ctx.bar || ''].join('\u0002') : '') + (w.haste ? '\u0001h' + w.haste : '') +
+      (w.lean ? '\u0001l' + w.lean : '') + (w.press ? '\u0001p' + w.press : '');
     let g = hc.glyphs.get(ck);
-    if (!g) { g = makeGlyph(pw, ch, inst, ctx && { prev: ctx.prev, next: ctx.next, index: ctx.index, wordStart: ctx.wordStart, wordEnd: ctx.wordEnd }); hc.glyphs.set(ck, g); }
+    if (!g) { g = makeGlyph(handOf(w), ch, inst, ctx && { prev: ctx.prev, next: ctx.next, index: ctx.index, wordStart: ctx.wordStart, wordEnd: ctx.wordEnd }); hc.glyphs.set(ck, g); }
     return g;
+  }
+  // the hand a word is written by: in the typing's tempo (tempo.js), leaning in, pressing harder (format.js)
+  function handOf(w) {
+    let h = w.haste ? hastyHand(pw, w.haste) : pw;
+    if (w.lean) h = leanHand(h, w.lean);
+    if (w.press) h = pressHand(h, w.press);
+    return h;
   }
   // build a word (or the next piece of an open word in Ink mode): glyphs with offsets relative to tokStart
   function shapeWord(chars, w, seedOf, ctxBase) {
@@ -549,7 +586,8 @@ export function layout(p, text, opts = {}) {
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (let i = runFrom; i < items.length; i++) { const bx = items[i].box; if (bx[0] < x0) x0 = bx[0]; if (bx[1] < y0) y0 = bx[1]; if (bx[2] > x1) x1 = bx[2]; if (bx[3] > y1) y1 = bx[3]; }
       // id: what the run looks like in its own frame; pid: that plus where the frame sits
-      const id = hash(hc.fid + '|' + [w.key, w.seed, w.slant, w.scale, w.care, w.prog, w.squeeze || 1, f.d0, runFirst, items.length - runFrom, hy ? 1 : 0].join('|'));
+      const id = hash(hc.fid + '|' + [w.key, w.seed, w.slant, w.scale, w.care, w.prog, w.squeeze || 1, f.d0, runFirst, items.length - runFrom, hy ? 1 : 0].join('|') + (w.haste ? '|h' + w.haste : '') +
+        (w.lean ? '|l' + w.lean : '') + (w.press ? '|p' + w.press : '') + (w.caps ? '|C' : ''));
       const pid = hash(id + '|' + [f.X.toFixed(2), f.Y.toFixed(2), f.a, f.k].join('|'));
       runs.push({ id, pid, key: w.key, line: line().n, from: runFrom, to: items.length, x: f.X, y: f.Y, a: f.a, k: f.k, box: [x0, y0, x1, y1] });
       runFrom = items.length; runFirst = null;
@@ -632,8 +670,12 @@ export function layout(p, text, opts = {}) {
         prevEndX = f.X + lxNow + it.advance;
       } else {
         // inkIndex: ink density is sampled per word position (see pen.strokeOpacity)
-        put(it, it.g, lxNow, ly, o, 'glyph', weight === 1 ? { inkIndex: ctl.inkIndex, line: line().n, para: pen.para, word: w.n, wkey: w.key, tempo: w.tempo }
-          : { inkIndex: ctl.inkIndex, line: line().n, para: pen.para, word: w.n, wkey: w.key, tempo: w.tempo, weight });
+        const ex = weight === 1 ? { inkIndex: ctl.inkIndex, line: line().n, para: pen.para, word: w.n, wkey: w.key, tempo: w.tempo }
+          : { inkIndex: ctl.inkIndex, line: line().n, para: pen.para, word: w.n, wkey: w.key, tempo: w.tempo, weight };
+        // pressed harder (format.js): more ink; and the word's style, for whoever asks what it was written in
+        if (w.press) ex.weight = weight * PRESS_INK(w.press);
+        if (w.fmt) ex.style = w.fmt;
+        put(it, it.g, lxNow, ly, o, 'glyph', ex);
         prevEndX = f.X + lxNow + it.g.advance;
       }
       prevIt = it;
@@ -648,7 +690,9 @@ export function layout(p, text, opts = {}) {
     // ----- care arc over the paragraph (rule 14): careful first lines, then drift -----
     const prog = q(smooth((pen.wp + 0.35 * pen.wordsBefore - 8) / 150), 0.05);
     const fresh = 1 - smooth(pen.wp / 25);
-    const care = q(clamp(care0 + 0.12 * (1 - care0) * fresh - 0.3 * tire * prog, 0, 1), 0.025);
+    let care = q(clamp(care0 + 0.12 * (1 - care0) * fresh - 0.3 * tire * prog, 0, 1), 0.025);
+    if (haste) care = q(clamp(care - hasteCare(haste), 0, 1), 0.025); // a hasty word spreads a little more
+    if (pen.careUp) care = q(clamp(care + pen.careUp, 0, 1), 0.025); // a title, written with more care (format.js)
     const spread = spreadOf(care);
     // ----- word level (rule 2): the whole word leans, grows and sits together -----
     // (the word's own draws depend only on its identity, so they're cached)
@@ -658,7 +702,7 @@ export function layout(p, text, opts = {}) {
       z = { tilt: wr.gauss(), gap: clamp(wr.gauss(), -2.5, 2.5), u1: wr(), u2: wr(), slant: zOf('slant', seedBase), size: zOf('size', seedBase), base: zOf('base', seedBase), wave: zOf('wave', seedBase) };
       hc.draws.set(seedBase, z);
     }
-    return {
+    const w = {
       key: wkey, seed: seedBase, n: pen.words++, prog, care,
       slant: q(clamp(K.pageSlant + 1.25 * spread * z.slant, -4, 4), 0.01),
       scale: q(clamp(K.pageSize * (1 + 0.04 * spread * z.size) * (1 + 0.1 * tire * prog), 0.88, 1.16) * sizeK * (pen.size || 1), 0.001),
@@ -666,6 +710,21 @@ export function layout(p, text, opts = {}) {
       tilt: clamp(z.tilt * 0.3 * spread, -0.9, 0.9) * DEG, gapZ: z.gap, u1: z.u1, u2: z.u2, waveZ: z.wave,
       tempo: H.tempo * (1 + 0.12 * tire * prog) * (1.15 - 0.3 * care),
     };
+    // the word's haste travels with it (an open word in Ink mode is continued with these values): its letters are
+    // made by the hand in that hurry (tempo.js hastyHand), and the pen draws it a little quicker or slower
+    if (haste) { w.haste = haste; w.tempo *= hasteTempo(haste); }
+    // a title's words come slower; its capitals, when this writer prints titles (format.js)
+    if (pen.careUp) w.tempo *= 0.85;
+    if (pen.caps) w.caps = true;
+    // the style the word was typed in (format.js), which it keeps when it's continued: leaning in (quicker), pressed
+    // harder (a touch bigger), bigger or smaller
+    if (sty) {
+      if (sty.lean) { w.lean = sty.lean; w.tempo *= LEAN_TEMPO; }
+      if (sty.weight) w.press = sty.weight;
+      if (sty.size !== 1 || sty.weight) w.scale = q(w.scale * sty.size * PRESS_SIZE(sty.weight), 0.001);
+      w.fmt = sty;
+    }
+    return w;
   }
 
   // ----- a written line begins: what it is in the letter, and how this writer sets that out -----
@@ -702,6 +761,8 @@ export function layout(p, text, opts = {}) {
       pen.wrapDx = 0;
       return;
     }
+    // a title, a heading or a list item (format.js): set out the way this writer sets them out
+    if (pen.fmt || pen.list) { formatLine(pi, wrote); return; }
     const kb = wrote ? L.blanks : 0;
     const role = beginLine(L, known, pi, complete);
     const xr = rng(S + 'shape:' + (pen.lineNo + 1)); // this line's own draws
@@ -713,6 +774,7 @@ export function layout(p, text, opts = {}) {
     let space = kb ? (ruled ? (H.blank > 0.2 ? 1 : 0) : H.blank * (0.9 + 0.2 * xr())) + (kb - 1) : 0;
     if (role === 'ps') space = Math.max(space, ruled ? 1 : H.psGap * (0.85 + 0.3 * xr()));
     let adv = space;
+    if (pen.after) { adv = Math.max(adv, R(pen.after)); pen.after = 0; } // below a title: room for its size
     if (L.afterOpen) adv += Math.max(0, R(H.greetGap * (0.7 + 0.6 * xr())) - space);
     if (role === 'closing' || role === 'name') adv += Math.max(0, R(H.closeGap * (0.6 + 0.8 * xr())) - space);
     if (role === 'signature' && L.sigs === 1) adv += R(H.sigGap * (0.6 + 0.8 * xr()));
@@ -751,6 +813,69 @@ export function layout(p, text, opts = {}) {
     pen.wrapDx = block(role) ? ln.start - ln.x0 : 0; // a block's lines run on at the block, not the margin
     pen.size = isPs(role) ? H.psSize : role === 'signature' || role === 'name' ? H.nameSize : 1;
     pen.pk = isPs(role) ? H.psPitch : 1;
+    if (pen.careUp) pen.careUp = 0;
+    if (pen.caps) pen.caps = false;
+  }
+
+  // ----- a line in a format (format.js): a title or heading the writer's own way, or a list item -----
+  // Its role is the format's ('title', 'heading', 'item'), never guessed from the text. A title is bigger and more
+  // careful, with space above it when it follows writing, and one of: underlined once or twice (sheet.js draws it
+  // when the line ends), printed in capitals, or centred by eye. A list item: the marker (sheet.js draws it with the
+  // item's first word) sits a little in from the margin, the words after it; lines that run on hang under the first.
+  function formatLine(pi, wrote) {
+    const F = K.F || (K.F = formatHabits(p));
+    const kb = wrote ? L.blanks : 0;
+    const as = pen.fmt || 'item';
+    beginLine(L, known, pi, complete, as);
+    const xr = rng(S + 'fmt:' + (pen.lineNo + 1));
+    const spread = spreadOf(care0);
+    const R = ruled ? (v) => (v > 0.35 ? 1 : 0) : (v) => v;
+    let space = kb ? (ruled ? (H.blank > 0.2 ? 1 : 0) : H.blank * (0.9 + 0.2 * xr())) + (kb - 1) : 0;
+    if (pen.after) { space = Math.max(space, R(pen.after)); pen.after = 0; }
+    pen.careUp = 0; pen.caps = false; pen.pk = 1;
+    if (as === 'title' || as === 'heading') {
+      const T = F[as];
+      // room above: the writer's own gap, and the extra height of the bigger letters
+      const adv = wrote ? Math.max(space, R(T.before * (0.8 + 0.4 * xr()) + 0.45 * (T.size - 1))) : space;
+      const ln = newLine(care0, { role: as, para: true, adv, k: 1, dx: 0, drop: !wrote && !ruled ? (T.size - 1) * M.ascender : 0 });
+      ln.fmt = as;
+      if (T.how === 'under1' || T.how === 'under2') ln.under = T.how === 'under2' ? 2 : 1;
+      pen.size = T.size; pen.careUp = T.care; pen.caps = T.how === 'caps';
+      if (T.how === 'centre') { ln.centre = T.off + 0.35 * spread * xr.gauss(); centreLine(ln, known[pi]); }
+      pen.wrapDx = T.how === 'centre' ? ln.start - ln.x0 : 0;
+      pen.after = T.after + 0.3 * (T.size - 1);
+      pen.fmt = null; // one line: what follows is body
+      return;
+    }
+    const I = F.list, kind = pen.list.kind, n = ++pen.list.n;
+    // the marker's width (x-heights): the writer's bullet, the number as they write it, or the box
+    const mw = kind === 'number' ? roughWidth(n + I.number) / xh : kind === 'check' ? (I.box === 'dash' ? 0.62 : I.boxSize)
+      : I.bullet === 'dot' ? 0.35 : I.bullet === 'dash' ? 0.75 : I.bullet === 'circle' ? 0.48 : 1.0;
+    const at = Math.max(0, I.at + 0.12 * spread * xr.gauss()) * xh;
+    const dx = at + (mw + Math.max(0.3, I.gap + 0.15 * spread * xr.gauss())) * xh;
+    const ln = newLine(care0, { role: 'item', para: false, adv: space, k: 1, dx });
+    ln.list = kind; ln.item = n; ln.mark = ln.x0 + at; ln.markW = mw * xh;
+    pen.size = 1;
+    pen.wrapDx = ln.start - ln.x0; // continuation lines hang under the first word
+  }
+  // a centred line: started where it centres on what's known of it (judged by eye, a little off). While nothing is
+  // written on it, it's centred again as more of it is known (the first word: the pen waits for the whole line).
+  function centreLine(ln, t) {
+    const w = roughWidth(pen.caps ? upper(t || '') : t || '') * (pen.size || 1);
+    const mid = marginL + (maxU - marginL) / 2 + (ln.centre || 0) * xh;
+    ln.start = Math.max(ln.x0, Math.min(mid - w / 2, ln.edge - w));
+    pen.x = ln.start; pen.endX = ln.start;
+  }
+  // capitals for a line the writer prints in capitals (a letter with no capital of its own, or one that would change
+  // the text's length, stays as it is)
+  function upper(t) {
+    let out = '';
+    for (const [c] of graphemes(t, 0)) out += capOf(c);
+    return out;
+  }
+  function capOf(c) {
+    const u = c.toUpperCase();
+    return u !== c && u.length === c.length && has(p, u) ? u : c;
   }
 
   // Ink mode: the letter that comes next in the same word, when a piece ends mid-word and it's known
@@ -764,8 +889,11 @@ export function layout(p, text, opts = {}) {
   const paras = text.split('\n');
   paras.forEach((para, pi) => {
     // the first piece continues the current line when resuming; every other one starts a paragraph
-    const paraStops = stops.length, paraStart = pen.offset, fresh = pi > 0 || !pen.line;
+    const paraStops = stops.length, paraStart = pen.offset, fresh = pi > 0 || !pen.line || (pi === 0 && restarted);
     if (fresh) {
+      // Ink mode: a paragraph begun with nothing on it yet (a break, written at the end of this text) can still be
+      // begun again in a format (opts.line): the pen as it was before the line began
+      if (ink && pi === paras.length - 1 && !para) { pen.restart = null; pen.restart = JSON.parse(JSON.stringify(pen)); }
       pen.para++; pen.lp = 0; pen.wordsBefore += pen.wp; pen.wp = 0; pen.pending = 0; pen.prevEnd = ''; pen.open = null;
       startLine(pi);
       pen.endO = null; pen.endX = line().start;
@@ -780,8 +908,15 @@ export function layout(p, text, opts = {}) {
         pen.pending += tok.length; pen.open = null;
         continue;
       }
-      const chars = graphemes(tok, 0);
+      let chars = graphemes(tok, 0);
+      // a line the writer prints in capitals (a word continued keeps what it started as)
+      if (ink && pen.open && pen.pending === 0 ? pen.open.w.caps : pen.caps) chars = chars.map(([c, rel]) => [capOf(c), rel]);
       const inkIndex = tokStart + tok.length;
+      // a centred line's first word: centred on the whole line, as far as it's known now (nothing on it moves: it's empty)
+      if (line().centre != null && !line().count && pen.endO == null && !(ink && pen.open)) {
+        centreLine(line(), known ? known[pi] : para);
+        if (!lineInfo.includes(line())) lineInfo.push(line());
+      }
       // ----- Ink mode: continue the word the pen stopped in -----
       if (ink && pen.open && pen.pending === 0) {
         const o = pen.open;
@@ -814,7 +949,8 @@ export function layout(p, text, opts = {}) {
       const w = wordValues(wkey, ink ? 'ink:' + ink.salt + ':w' + wkey : salt + wkey);
       pen.wp++;
       // whole words are cached (fair copy): same identity and values -> the same letters
-      const wck = ink ? null : wkey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + w.prog;
+      const wck = ink ? null : wkey + '\u0001' + w.slant + '\u0001' + w.scale + '\u0001' + w.care + '\u0001' + w.prog + (w.haste ? '\u0001h' + w.haste : '') +
+        (w.lean ? '\u0001l' + w.lean : '') + (w.press ? '\u0001p' + w.press : '') + (w.caps ? '\u0001C' : '');
       let sh = wck && hc.words.get(wck);
       if (!sh) { sh = shapeWord(chars, w, seedOf, { prev: null, index: 0, closed: !ink, next: ink ? nextAfter(tokStart + tok.length) : null }); if (wck) hc.words.set(wck, sh); }
       // ----- word gap: lognormal, wider after punctuation and when tired -----
@@ -835,7 +971,7 @@ export function layout(p, text, opts = {}) {
           const i = tokStart + tok.length - from;
           if (i === text.length) {
             const m = /^\S+/.exec(knownText.slice(i, i + 48));
-            if (m) fit = shapeWord(graphemes(tok + m[0], 0), w, seedOf, { prev: null, index: 0, closed: false, next: nextAfter(tokStart + tok.length + m[0].length) });
+            if (m) fit = shapeWord(w.caps ? graphemes(tok + m[0], 0).map(([c, rel]) => [capOf(c), rel]) : graphemes(tok + m[0], 0), w, seedOf, { prev: null, index: 0, closed: false, next: nextAfter(tokStart + tok.length + m[0].length) });
           }
         }
         const x = pen.x, end = x + gap + fit.wx, inkEnd = x + gap + fit.ink;

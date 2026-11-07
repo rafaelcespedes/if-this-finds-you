@@ -457,6 +457,11 @@ html[data-look='reading-room'] .rr-fact {
 html[data-look='reading-room'] .rr-fact:has(.rr-sig) {
   align-items: center;
 }
+/* the name, not a line of text: its row holds no line box (whose strut sat the name high), so it centres on its label */
+html[data-look='reading-room'] .rr-fact:has(.rr-sig) > dd > :is(.inline-flex, .rr-sig) {
+  display: flex;
+  width: fit-content;
+}
 html[data-look='reading-room'] .rr-fact dt {
   color: var(--rr-muted);
 }
@@ -484,13 +489,16 @@ html[data-look='reading-room'] .rr-card-foot {
   margin: 10px 0 0;
   color: var(--rr-muted);
 }
-/* the writer's name in their own hand, on the card (it opens what's known about the hand) */
+/* the writer's name in their own hand, on the card (it opens what's known about the hand). Its drawing keeps room
+   under the line for tails (g, y, f), so the ink's body sits in the box's top three quarters: the margins lower the box
+   by that much (7 px less above than below), so the body, capitals to baseline, centres on the row's label, within a
+   pixel across writers (Rafael, 7 Nov: "make sure that feels vertically centered… right now, it feels flush top") */
 html[data-look='reading-room'] .rr-sig {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   max-width: 100%;
-  margin: -4px -6px -6px;
+  margin: -2px -6px -9px;
   padding: 0 6px;
   border-radius: 3px;
   transition: background-color 150ms var(--ease-out), scale 150ms var(--ease-out);

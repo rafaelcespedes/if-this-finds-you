@@ -58,6 +58,15 @@ jobs:
       - name: Lost Letters texts
         run: node content/check-texts.mjs
 
+      - name: Writing checks (the ink log, crossing out again, tempo, stet, a held Backspace, formatting by hand)
+        run: |
+          node tools/qa/format.mjs
+          node tools/qa/ink.mjs
+          node tools/qa/again.mjs
+          node tools/qa/tempo.mjs
+          node tools/qa/stet.mjs
+          node tools/qa/hold.mjs
+
       - name: Install the smoke test
         working-directory: tools/smoke
         run: npm ci --no-audit --no-fund

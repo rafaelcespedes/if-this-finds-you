@@ -2,9 +2,14 @@
 // text, the selection, undo, IME and screen-reader access; this component draws the caret and the
 // selection onto the handwriting and turns pointer input on the sheet into text positions.
 //
-// - The caret is the pen: an ink dot at the end of the letter, a fine line mid-text.
+// - The caret: a bar in the ink colour is where you are. With the pen's state given (penCaughtUp, insertsAbove), a
+//   bead of ink at its foot is the pen, there once the pen has caught up with you; it lifts off the line while the
+//   pen hovers over a fix; and where typing would go above the line, a small amber ‸ sits under it instead. Every
+//   change is instant: the only motion is the blink. Away from the letter, an ink dot rests at its end.
 // - Selection is a warm amber highlighter (a UI colour, never ink), swept in on pointer selections.
-// - Pen-only formatting: ⌘U/⌘I underline by hand (again for double), ⌘B press harder, ⌘↩ P.S.
+// - Pen-only formatting: ⌘U underlines by hand (again for double), ⌘B presses harder (on a selection: goes over it;
+//   with none: for what's typed next), ⌘I leans in, ⌘↩ P.S.; ⌥⌘1 Title, ⌥⌘2 Heading, ⌥⌘0 Body, ⇧⌘7 bullets,
+//   ⇧⌘9 numbers, ⇧⌘L checklist, ⇧⌘U tick the item, ⇧⌘E highlight
 // - Up/Down/Home/End follow the written lines; IME compositions own the keys while they last.
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { across, type CaretPos, type Geometry, type Side } from '@/lib/geometry';
@@ -14,7 +19,19 @@ import { historyKey, isComposingKey, isMac, useEditInput, type Composition } fro
 import { keepInView } from '@/hooks/useVisualViewport';
 import { cn } from '@/lib/utils';
 
-export type FormatCommand = 'underline' | 'press' | 'ps';
+export type FormatCommand = 'underline' | 'press' | 'ps'
+  // what's typed next: leaning in (⌘I), pressed harder (⌘B with no selection)
+  | 'lean' | 'weight'
+  // the line at the caret: ⌥⌘1, ⌥⌘2, ⌥⌘0; lists: ⇧⌘7, ⇧⌘9, ⇧⌘L; tick the item at the caret: ⇧⌘U; the highlighter: ⇧⌘E
+  | 'title' | 'heading' | 'body' | 'bullets' | 'numbers' | 'checklist' | 'check' | 'highlight';
+/** shortcuts with a modifier besides ⌘ (by physical key: ⌥ and ⇧ change e.key) */
+const FORMAT_KEYS: Record<string, FormatCommand> = {
+  'alt+Digit1': 'title', 'alt+Digit2': 'heading', 'alt+Digit0': 'body',
+  'shift+Digit7': 'bullets', 'shift+Digit9': 'numbers', 'shift+KeyL': 'checklist', 'shift+KeyU': 'check', 'shift+KeyE': 'highlight',
+};
+/** commands about the caret's line: the caret is passed as it is, never widened to its word (the others, with no
+ *  selection, get the word at the caret, as ⌘B and ⌘I always have: the page asks the selection for what's typed next) */
+const AT_CARET = new Set<FormatCommand>(['title', 'heading', 'body', 'bullets', 'numbers', 'checklist', 'check']);
 
 export interface PaperEditorApi {
   focus: () => void;
@@ -24,6 +41,8 @@ export interface PaperEditorApi {
   setSelection: (from: number, to?: number) => void;
   /** start writing at a point on the page (client px): the nearest line and letter, the end when outside the lines */
   placeAt: (clientX: number, clientY: number) => void;
+  /** the caret's line on the page (CSS px from the letter's top left): where a margin note goes, beside it; null without one */
+  caretRect: () => { left: number; top: number; height: number } | null;
 }
 
 interface Props {
@@ -54,6 +73,16 @@ interface Props {
   onComposingChange?: (composing: boolean) => void;
   /** Ink mode: the writer is considering a fix at the pen head; the pen hovers instead of resting */
   hovering?: boolean;
+  /**
+   * Ink mode: the drawn pen has caught up (nothing typed is left for it to write). Given, the caret shows the pen: a
+   * bead of ink at the bar's foot when the caret is at the end of the writing and the pen rests there, lifted off the
+   * line while it hovers over a fix; while the pen is still behind you, the bar stays solid (it blinks once it rests).
+   */
+  penCaughtUp?: boolean;
+  /** Ink mode: typing at this offset would go above the line (InkSession.insertsAbove): a small amber ‸ under the line */
+  insertsAbove?: (at: number) => boolean;
+  /** how the page takes changes (In ink, In pencil, Fair copy): the textarea's description says which, for screen readers */
+  mode?: 'ink' | 'pencil' | 'fair';
   /** someone is about to write (the pointer comes over the letter, a finger lands on it): get ready */
   onIntent?: () => void;
   /** the page shows a letter that isn't in the text (a found letter before the reply's first key): the text
@@ -70,9 +99,18 @@ interface Sel {
 }
 
 const AMBER = '#f3d27a';
+/** the touch handles' amber (a UI colour, never ink): the ‸ where typing would go above the line */
+const CARET_AMBER = '#d9a520';
+
+/** the writing mode, said to screen readers (the same words as the writing menu's hints) */
+const MODE_SAID: Record<NonNullable<Props['mode']>, string> = {
+  ink: 'In ink: what’s written stays. Deleting written words crosses them out, and crossed-out words aren’t in the text. Undo lifts only ink still wet. ',
+  pencil: 'In pencil: changes rub out and are written again. ',
+  fair: 'Fair copy: every change redraws the page cleanly. ',
+};
 
 export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEditor(
-  { text, onEdit, onHistory, start, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, blank, onIntent, children },
+  { text, onEdit, onHistory, start, onFormat, writerName, geometry: geo, pxPerMm, sheetW, sheetH, gapPx, ink, penWidthU, xHeightU, onEditingChange, onComposingChange, hovering, penCaughtUp, insertsAbove, mode = 'fair', blank, onIntent, children },
   apiRef,
 ) {
   const ta = useRef<HTMLTextAreaElement>(null);
@@ -144,6 +182,8 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
 
   // a caret placed by the app after an edit it made (P.S.), once React has written the new value
   const pendingCaret = useRef<number | null>(null);
+  // where the caret's line is (for the page: a margin note beside it), as last drawn
+  const caretRectRef = useRef<{ left: number; top: number; height: number } | null>(null);
   useLayoutEffect(() => {
     if (pendingCaret.current == null || !ta.current) return;
     const at = Math.min(pendingCaret.current, ta.current.value.length);
@@ -157,6 +197,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     selection: () => (ta.current ? [ta.current.selectionStart, ta.current.selectionEnd] : [text.length, text.length]),
     setSelection: (from, to) => focusAt(to ?? from, to != null, from),
     placeAt: (x, y) => placeAt.current(x, y),
+    caretRect: () => caretRectRef.current,
   }), [focusAt, sync, text.length]);
   const placeAt = useRef<(x: number, y: number) => void>(() => {});
 
@@ -322,11 +363,17 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       return;
     }
     const mod = isMac() ? e.metaKey : e.ctrlKey;
+    const fk = mod && (e.altKey !== e.shiftKey) ? FORMAT_KEYS[(e.altKey ? 'alt+' : 'shift+') + e.code] : undefined;
+    if (fk) {
+      e.preventDefault();
+      format(fk);
+      return;
+    }
     if (mod && !e.altKey) {
       const key = e.key.toLowerCase();
       if (key === 'u' || key === 'i' || key === 'b') {
         e.preventDefault();
-        format(key === 'b' ? 'press' : 'underline');
+        format(key === 'b' ? (el.selectionStart === el.selectionEnd ? 'weight' : 'press') : key === 'i' ? 'lean' : 'underline');
         return;
       }
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -369,7 +416,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
       return;
     }
     let [a, b] = [el.selectionStart, el.selectionEnd];
-    if (a === b) [a, b] = wordAt(el.value, a);
+    if (a === b && !AT_CARET.has(cmd)) [a, b] = wordAt(el.value, a);
     onFormat(cmd, a, b);
   };
 
@@ -382,6 +429,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
   // it, so the textarea waits at the sheet's top and nothing scrolls the letter to its end
   const caretPx = caret && !blank ? { left: caret.x * k, top: caret.sheet * pitch + (caret.y - asc) * k } : { left: 0, top: 0 };
   const caretH = (asc + desc) * k;
+  caretRectRef.current = caret && !blank ? { left: caretPx.left, top: caretPx.top, height: caretH } : null;
   const atEnd = /^\s*$/.test(text.slice(head));
 
   // highlighter ribbons: one shape per written line, following (and leaning with) that line
@@ -425,7 +473,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
     // only when the caret moves to another line, not on every render
   }, [sel.focused, Math.round(caretPx.top)]);
 
-  // the caret stays solid for a moment after each move, then breathes
+  // the caret stays solid for a moment after each move, then blinks
   const [moveKey, setMoveKey] = useState(0);
   useLayoutEffect(() => setMoveKey((n) => n + 1), [caretPx.left, caretPx.top]);
 
@@ -464,9 +512,12 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
             height="100%"
             style={{ opacity: sel.focused ? 1 : 0.4 }}
           >
-            {runs.map((pts, i) => (
-              <polygon key={i} points={pts} fill={AMBER} fillOpacity={0.42} stroke={AMBER} strokeOpacity={0.42} strokeWidth={5} strokeLinejoin="round" />
-            ))}
+            {/* fill and the rounding stroke at full strength, faded together: no darker rim where they overlap */}
+            <g opacity={0.42}>
+              {runs.map((pts, i) => (
+                <polygon key={i} points={pts} fill={AMBER} stroke={AMBER} strokeWidth={5} strokeLinejoin="round" />
+              ))}
+            </g>
           </svg>
         )}
         {preedit && composition && (
@@ -487,28 +538,45 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
           // the caret leans with the writing when the engine knows the lean (its top point)
           const bx = caret.x * k, by = caret.sheet * pitch + caret.y * k;
           const lean = caret.top ? (caret.top[0] - caret.x) / Math.max(1, caret.y - caret.top[1]) : 0;
-          const opacity = sel.focused ? 0.85 : 0.18;
-          const key = sel.focused ? moveKey : 'rest';
+          const hx = xHeightU * k;
           if (atEnd && !sel.focused) {
             // the pen at rest: an ink dot on the baseline, a hairline up to the x-height
-            const hx = xHeightU * k;
             return (
-              <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && (hovering ? 'pen-hover' : 'caret-breathe'))} width="100%" height="100%" style={{ opacity }}>
+              <svg key="rest" className="absolute inset-0 overflow-visible" width="100%" height="100%" style={{ opacity: 0.18 }}>
                 <line x1={bx + dot * 0.6} y1={by} x2={bx + dot * 0.6 + lean * hx} y2={by - hx} stroke={ink} strokeOpacity={0.3} strokeWidth={1} />
                 <circle cx={bx + dot * 0.6} cy={by} r={dot / 2} fill={ink} />
               </svg>
             );
           }
-          // writing: a clear caret in the pen's ink, from just under the baseline to the letters' tops, blinking
-          // (solid for a moment after each move); the pen hovers while the writer considers a fix
+          // writing: the bar, in the pen's ink, from just under the baseline to the letters' tops (you). With the pen's
+          // state given, the bead at its foot is the pen: there once it has caught up, lifted while it hovers over a fix.
+          // Every change is instant; only the bar blinks (solid for a moment after each move, and while the pen is behind)
+          const nib = penCaughtUp !== undefined;
           const top = by - asc * k * 1.05, bottom = by + desc * k * 0.6;
           const w = Math.max(2.25, Math.min(3.5, dot * 0.7));
           // at the end of the writing, a small gap after the last letter (where the next one goes)
           const cx = bx + (atEnd ? Math.max(3, dot) : 0);
+          const above = !hovering && !atEnd && !!insertsAbove?.(head);
+          const blink = sel.focused && !hovering && (!nib || !atEnd || !!penCaughtUp);
+          const bead = nib && sel.focused && atEnd && (hovering || penCaughtUp);
+          const r = Math.max(1.5, dot * 0.5);
           return (
-            <svg key={key} className={cn('absolute inset-0 overflow-visible', sel.focused && (hovering ? 'pen-hover' : 'caret-blink'))} width="100%" height="100%" style={{ opacity: sel.focused ? 1 : opacity }}>
-              <line x1={cx - lean * (bottom - by)} y1={bottom} x2={cx + lean * (by - top)} y2={top} stroke={ink} strokeOpacity={0.92} strokeWidth={w} strokeLinecap="round" />
-            </svg>
+            <>
+              <svg key={sel.focused ? moveKey : 'rest'} className={cn('absolute inset-0 overflow-visible', blink && 'caret-blink')} width="100%" height="100%" style={{ opacity: sel.focused ? (hovering ? 0.55 : 1) : 0.18 }}>
+                <line x1={cx - lean * (bottom - by)} y1={bottom} x2={cx + lean * (by - top)} y2={top} stroke={ink} strokeOpacity={0.92} strokeWidth={w} strokeLinecap="round" />
+              </svg>
+              {(bead || (above && sel.focused)) && (
+                <svg className="absolute inset-0 overflow-visible" width="100%" height="100%" data-nib={bead ? (hovering ? 'lifted' : 'bead') : 'above'}>
+                  {bead && (hovering
+                    ? <circle cx={cx + lean * 0.3 * hx} cy={by - 0.3 * hx} r={r} fill={ink} fillOpacity={0.7} />
+                    // (faint: at full strength, a resting bead reads as a full stop)
+                    : <circle cx={cx} cy={by} r={r} fill={ink} fillOpacity={0.35} />)}
+                  {above && (
+                    <polyline points={`${cx - 3},${by + 5.5} ${cx},${by + 1.5} ${cx + 3},${by + 5.5}`} fill="none" stroke={CARET_AMBER} strokeOpacity={0.75} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
+                  )}
+                </svg>
+              )}
+            </>
           );
         })()}
       </div>
@@ -537,7 +605,7 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
             onPointerCancel={onHandleUp}
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="mt-0.5 block size-4 rounded-full shadow-[0_1px_2px_rgba(60,45,20,0.3)]" style={{ background: '#d9a520' }} />
+            <span className="mt-0.5 block size-4 rounded-full shadow-[0_1px_2px_rgba(60,45,20,0.3)]" style={{ background: CARET_AMBER }} />
           </div>
         );
       })}
@@ -563,7 +631,9 @@ export const PaperEditor = forwardRef<PaperEditorApi, Props>(function PaperEdito
         style={{ left: caretPx.left, top: caretPx.top, width: lineW, height: lineH, caretColor: 'transparent' }}
       />
       <span id={descId} hidden>
-        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}Fair copy: the page is rewritten cleanly as you type. {`${modKey} U underlines, ${modKey} B presses harder, ${modKey} Return adds a P.S.`}
+        {blank ? 'Typing starts your reply, on a fresh sheet. ' : ''}
+        {MODE_SAID[mode]}
+        {`${modKey} U underlines, ${modKey} B presses harder, ${modKey} Return adds a P.S.`}
         {geo?.summary ? ` This draft has ${geo.summary}.` : ''}
       </span>
     </div>

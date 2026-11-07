@@ -168,7 +168,7 @@ html:root[data-layout='ruler'] [data-site-number] {
    sans, the title at display size, the facts as a ruled table, the labels in the small sans */
 html:root[data-layout='ruler'] .rr-ledger-record .rr-card-no {
   font-family: var(--ed-figure-face);
-  font-size: var(--ed-display-2);
+  font-size: var(--rr-no-size, var(--ed-display-2));
   font-weight: 400;
   line-height: 0.8;
   letter-spacing: -0.03em;
@@ -212,11 +212,21 @@ html:root[data-layout='ruler'] .rr-ledger-record .rr-ledger-head {
 html:root[data-layout='ruler'] .rr-ledger-head:has(.rr-no-label) > .rr-card-actions {
   --rr-share-box: var(--icon, 40px);
   --rr-share-icon: 1.0625rem; /* reading-room.css, .rr-card-actions svg */
-  margin-top: calc(var(--ed-display-2) * 0.0934 - (var(--rr-share-box) - var(--rr-share-icon)) / 2 - var(--rr-share-icon) * 0.116);
+  margin-top: calc(var(--rr-no-size, var(--ed-display-2)) * 0.0934 - (var(--rr-share-box) - var(--rr-share-icon)) / 2 - var(--rr-share-icon) * 0.116);
 }
 @media (pointer: coarse) {
   html:root[data-layout='ruler'] .rr-ledger-head:has(.rr-no-label) > .rr-card-actions {
     --rr-share-box: var(--m-icon, 44px);
+  }
+}
+/* a record with no number ("Your letter", "A reply"): Share's middle on the label's line (the label is set solid, so
+   its middle is half its size down) */
+html:root[data-layout='ruler'] .rr-ledger-head:not(:has(.rr-no-label)) > .rr-card-actions {
+  margin-top: calc(var(--ed-head-size) / 2 - var(--icon, 40px) / 2);
+}
+@media (pointer: coarse) {
+  html:root[data-layout='ruler'] .rr-ledger-head:not(:has(.rr-no-label)) > .rr-card-actions {
+    margin-top: calc(var(--ed-head-size) / 2 - var(--m-icon, 44px) / 2);
   }
 }
 html:root[data-layout='ruler'] .rr-ledger-record .rr-card-title {
@@ -235,6 +245,10 @@ html:root[data-layout='ruler'] .rr-ledger-record .rr-fact {
   border-top: 0;
   border-bottom: 1px solid var(--ed-rule);
   padding: 7px 0 8px;
+}
+/* the hand's row: room for its press wash, which is taller than the name's ink (reading-room.css, .rr-sig) */
+html:root[data-layout='ruler'] .rr-ledger-record .rr-fact:has(.rr-sig) {
+  padding: 10px 0 11px;
 }
 html:root[data-layout='ruler'] .rr-ledger-record .rr-full {
   border-top: 0;
@@ -284,6 +298,14 @@ html:root[data-layout='ruler'] .rr-drawer {
     right: calc(var(--ed-gutter) / 2);
     width: 1px;
     background: var(--ed-rule-strong);
+  }
+  /* the number at the title's size, one heading in two lines (Rafael, 7 Nov: "the number and the title of the letter
+     … around the same size … for desktop"); phones keep the big figure */
+  html:root[data-layout='ruler'][data-layout-page='desk'] .rr-desk .rr-ledger-record {
+    --rr-no-size: var(--ed-display-4);
+  }
+  html:root[data-layout='ruler'][data-layout-page='desk'] .rr-desk .rr-ledger-record .rr-card-title {
+    margin-top: 0.75rem;
   }
   /* while writing the record steps aside to the left, not the right */
   html:root[data-layout='ruler'][data-layout-page='desk'] aside.translate-x-3 {
