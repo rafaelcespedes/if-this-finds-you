@@ -189,7 +189,7 @@ export const Desk = forwardRef<DeskApi, Props>(function Desk({ note, coarse, onC
     if (e.del) hintsRef.current.used('select');
     if (e.ins && e.at < before.length && typeof s.insertsAbove === 'function' && s.insertsAbove(e.at)) hintsRef.current.used('above');
     // (the writer may not do quite what the textarea did: Backspace over a written space goes on to the word before)
-    const caretTo = s.edit(e);
+    const caretTo = s.edit(e, { caret: true });
     undoHistory.record(before, s.text(), e);
     sync();
     if (caretTo != null) requestAnimationFrame(() => editor.current?.setSelection(caretTo));

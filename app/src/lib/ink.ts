@@ -546,17 +546,18 @@ export class InkSession {
   /**
    * An edit to what's typed (the textarea). Returns the textarea offset to put the caret at when the writer didn't do
    * quite what the textarea did (Backspace over a written space goes on to the word before it, engine backOverSpace),
-   * else null: the caret stays where the edit left it.
+   * else null: the caret stays where the edit left it. `o.caret`: the caller puts the caret there (the writing page);
+   * without it, only what leaves the caret where the textarea would (at the end) is done.
    */
-  edit(e: Edit): number | null {
+  edit(e: Edit, o: { caret?: boolean } = {}): number | null {
     // every key keeps the typist's time; a letter or a space typed counts towards the tempo
     if (this.typist) engine.typistKey(this.typist, performance.now(), e.kind === 'type' && !e.del && e.ins.length > 0 && e.ins.length <= 2);
     if (this.shorthand(e)) { this.lastKey = performance.now(); return null; }
     // Backspace over a space the pen has written: a space has no ink, so the press goes on to the word before
     let caret: number | null = null;
     if (e.kind === 'delete' && (!e.input || e.input === 'deleteContentBackward') && typeof engine.backOverSpace === 'function') {
-      const w = engine.backOverSpace(this.sheet, this.view, e) as { edit: { at: number; del: number }; caret: number } | null;
-      if (w) { e = { ...e, at: w.edit.at, del: w.edit.del }; caret = w.caret; }
+      const w = engine.backOverSpace(this.sheet, this.view, e) as { edit: { at: number; del: number }; caret: number; head: boolean } | null;
+      if (w && (w.head || o.caret)) { e = { ...e, at: w.edit.at, del: w.edit.del }; caret = w.caret; }
     }
     const tail0 = String(this.view.tail ?? '').length, mid0 = String(this.view.mid?.text ?? '').length;
     this.planEdit(e);

@@ -274,7 +274,7 @@ for (const [seed, style] of HANDS) {
           S.bs = (side) => {
             const r = s.again(S.caret, side);
             if (r && !r.max) return;
-            const c = s.edit({ at: S.caret - 1, del: 1, ins: '', kind: 'delete', t: 0, source: 'paper', input: 'deleteContentBackward' });
+            const c = s.edit({ at: S.caret - 1, del: 1, ins: '', kind: 'delete', t: 0, source: 'paper', input: 'deleteContentBackward' }, { caret: true });
             S.caret = c == null ? S.caret - 1 : c;
           };
           return S;
