@@ -15,6 +15,9 @@ export const inkDeskSchema = z.object({
   tag: z.string(),
   /** seconds of the filming skipped at the start (the empty sheet) */
   skip: z.number(),
+  /** how the caption changes: rise (each caption its own pill, rising in as the last one sinks away), fixed (one pill
+   *  as wide as the longest caption, the words dissolving), left (rise, from the bottom left corner) */
+  pill: z.enum(['rise', 'fixed', 'left']).optional(),
 });
 export const deskFrames = (skip = 0.35) => Math.round((R.frames ?? 0) - skip * R.fps);
 
@@ -113,20 +116,21 @@ function cameraPath(): Cam[] {
       return { x: mix(p.x, xs[f], u), y: mix(p.y, ys[f], u), z: Math.exp(mix(Math.log(p.z), zs[f], u)) };
     });
   });
-  // the window never smaller than ZMIN (about 80% of the frame's width), and no ground under it: its foot stays off
-  // the bottom (when pulled back, the ground shows above and beside it instead)
+  // the window is never smaller than ZMIN. Pulled back, the ground shows above and beside it by the same margin and
+  // its foot runs off the bottom; closer in, it fills the frame across and its top doesn't come down into view
   return path.map((c) => {
     const z = Math.max(ZMIN, c.z);
     const VC = { x: VIEW.w / 2, y: VIEW.h / 2 };
+    const side = (OW - WIN.w * z) / 2;
+    if (side > 0) return { x: WIN.x + WIN.w / 2, y: WIN.y - (side - VC.y) / z, z };
     const hw = VC.x / z;
-    const x = WIN.w * z >= OW ? clamp(c.x, WIN.x + hw, WIN.x + WIN.w - hw) : WIN.x + WIN.w / 2;
-    const low = WIN.y + (VC.y - 36) / z; // the window's top no lower than 36 px down
-    const high = WIN.y + WIN.h - (OH - VC.y) / z; // its foot below the frame
-    const y = Math.min(Math.max(c.y, low), high);
+    const x = clamp(c.x, WIN.x + hw, WIN.x + WIN.w - hw);
+    const y = Math.min(Math.max(c.y, WIN.y + VC.y / z), WIN.y + WIN.h - (OH - VC.y) / z);
     return { x, y, z };
   });
 }
-const ZMIN = 0.85;
+/** the farthest the camera pulls back: the window with a 96 px margin either side */
+const ZMIN = (OW - 2 * 96) / (OW * 0.94);
 
 // ---------- the pointer (macOS's arrow) ----------
 const Arrow: React.FC<{ x: number; y: number; s: number; o: number; press: number }> = ({ x, y, s, o, press }) => (
@@ -137,7 +141,7 @@ const Arrow: React.FC<{ x: number; y: number; s: number; o: number; press: numbe
 
 // ---------- the bar ----------
 
-export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip }) => {
+export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip, pill = 'rise' }) => {
   const frame = useCurrentFrame() + Math.round(skip * R.fps);
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -162,23 +166,17 @@ export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip }) 
   const press = click ? Math.max(0, 1 - (t - click.t) / 0.18) : ptr[f][3] ? 1 : 0;
   const ring = click ? tx(stage(click.x, click.y)) : null;
 
-  // the caption: the latest note, faded in; its pill eases to the new caption's width; ⌫ before "Backspace", pressed with it
+  // the caption: the latest note; the one before it, on its way out; ⌫ before "Backspace", pressed with it
   const notes = R.notes as any[];
-  const LEAD = 0.15;
-  const ni = notes.map((n) => n.t - LEAD <= t).lastIndexOf(true);
-  const note = notes[ni], prev = notes[ni - 1];
-  const capIn = note ? easeOut((t - note.t + LEAD) / 0.35) : 0;
+  const ni = notes.map((n) => n.t <= t + 0.1).lastIndexOf(true);
   const lit = (R.keys as any[]).some((kk) => kk.k === 'Backspace' && t >= kk.t && t < kk.t + (kk.dur ?? 0) + 0.14);
-  const wNow = captionWidth(note?.note), wWas = prev ? captionWidth(prev.note) : wNow;
-  const BW = note ? mix(wWas, wNow, ease((t - note.t + LEAD) / 0.4)) : 0;
-  const BX = (OW - BW) / 2;
 
   return (
     <AbsoluteFill style={{ background: `radial-gradient(120% 90% at 50% 30%, #f6f4ef 0%, ${C.ground} 70%, #e3dfd6 100%)` }}>
       <UiFont />
       {/* the window */}
       <div style={{ position: 'absolute', left: win.x, top: win.y, width: WIN.w * cam.z, height: WIN.h * cam.z, borderRadius: 12 * k, overflow: 'hidden', background: '#ffffff',
-        boxShadow: `0 ${24 * k}px ${70 * k}px rgba(40,34,24,0.20), 0 ${4 * k}px ${14 * k}px rgba(40,34,24,0.12), 0 0 0 ${0.75 * k}px rgba(40,34,24,0.16)` }}>
+        boxShadow: `0 ${30 * k}px ${90 * k}px rgba(40,34,24,0.07), 0 ${2 * k}px ${8 * k}px rgba(40,34,24,0.035), 0 0 0 ${0.5 * k}px rgba(40,34,24,0.10)` }}>
         <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: TB * k, background: '#f3f2f0', borderBottom: `${0.75 * k}px solid rgba(0,0,0,0.10)` }}>
           {['#ff5f57', '#febc2e', '#28c840'].map((c, i) => (
             <div key={c} style={{ position: 'absolute', left: (18 + i * 20) * k, top: (TB / 2 - 6) * k, width: 12 * k, height: 12 * k, borderRadius: '50%', background: c, boxShadow: `inset 0 0 0 ${0.5 * k}px rgba(0,0,0,0.18)` }} />
@@ -199,47 +197,64 @@ export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip }) 
       {po > 0 && <Arrow x={pp.x} y={pp.y} s={k * 0.95} o={po} press={press} />}
 
       {/* the narrator: frosted glass over everything */}
-      {note && (
-        <div style={{ position: 'absolute', left: BX, top: BAR_Y, width: BW, height: BAR_H, borderRadius: BAR_H / 2, overflow: 'hidden',
-          background: 'rgba(250, 249, 246, 0.5)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)',
-          boxShadow: '0 18px 44px rgba(40,34,24,0.20), 0 2px 6px rgba(40,34,24,0.10), inset 0 0 0 1px rgba(255,255,255,0.65), inset 0 1px 0 rgba(255,255,255,0.9)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT, color: C.ink }}>
-          <div style={{ opacity: capIn, transform: `translateY(${(1 - capIn) * 8}px)`, fontSize: CAP_PX, fontWeight: 430, whiteSpace: 'nowrap', letterSpacing: -0.4, display: 'flex', alignItems: 'center' }}>
-            <Caption text={note.note} lit={lit} />
-          </div>
-        </div>
-      )}
+      <Narrator notes={notes} ni={ni} t={t} lit={lit} pill={pill} />
     </AbsoluteFill>
   );
 };
 
-const CAP_PX = 42, CAP_PAD = 64, KEY_W = 62;
-/** a caption's words, with a key cap before "Backspace"; the end card's address set apart */
-const Caption: React.FC<{ text: string; lit: boolean }> = ({ text, lit }) => {
-  if (/^If This Finds You/.test(text)) return <><span style={{ fontWeight: 620 }}>If This Finds You</span><span style={{ color: C.faint }}>{' · '}</span>ifthisfindsyou.app/write</>;
-  const parts = text.split(/(Backspace)/);
+const CAP_PX = 42, PAD_Y = 22, PAD_X = 30;
+const GLASS: React.CSSProperties = {
+  background: 'rgba(250, 249, 246, 0.5)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)',
+  boxShadow: '0 14px 40px rgba(40,34,24,0.14), 0 1px 4px rgba(40,34,24,0.08), inset 0 0 0 1px rgba(255,255,255,0.65), inset 0 1px 0 rgba(255,255,255,0.9)',
+  borderRadius: 999, padding: `${PAD_Y}px ${PAD_X}px`, fontFamily: FONT, color: C.ink, fontSize: CAP_PX, fontWeight: 430, letterSpacing: -0.4,
+  whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', lineHeight: 1.1,
+};
+/** a caption's words, with a key cap before "Backspace" */
+const Caption: React.FC<{ text: string; lit: boolean }> = ({ text, lit }) => (
+  <>
+    {text.split(/(Backspace)/).map((p, i) => p === 'Backspace' ? (
+      <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
+        <span style={{ width: 50, height: 48, marginRight: 12, borderRadius: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 30,
+          background: lit ? 'rgba(30,39,51,0.14)' : 'rgba(255,255,255,0.75)', boxShadow: lit ? 'inset 0 1px 2px rgba(30,39,51,0.25)' : '0 1px 0 rgba(30,39,51,0.18), 0 0 0 1px rgba(30,39,51,0.08)', transform: `translateY(${lit ? 2 : 0}px)` }}>⌫</span>
+        Backspace
+      </span>
+    ) : <span key={i} style={{ whiteSpace: 'pre' }}>{p}</span>)}
+  </>
+);
+const OUT = 0.22, IN = 0.42, GAP = 0.08;
+/** the bar's captions: each one's own pill, sized to its words */
+const Narrator: React.FC<{ notes: any[]; ni: number; t: number; lit: boolean; pill: 'rise' | 'fixed' | 'left' }> = ({ notes, ni, t, lit, pill }) => {
+  const at = (i: number) => notes[i].t - 0.1;
+  if (pill === 'fixed') {
+    // one pill, as wide as the longest caption (all of them stacked in one cell), the words dissolving one into the next
+    const u = ni >= 0 ? easeOut((t - at(ni)) / 0.5) : 0;
+    return (
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: OH - BAR_Y - BAR_H, display: 'flex', justifyContent: 'center' }}>
+        <div style={{ ...GLASS, display: 'grid', justifyItems: 'center', opacity: ni >= 0 ? clamp((t - at(0)) / 0.3, 0, 1) : 0 }}>
+          {notes.map((n, i) => {
+            const o = i === ni ? u : i === ni - 1 ? 1 - clamp((t - at(ni)) / OUT, 0, 1) : 0;
+            return <div key={i} style={{ gridArea: '1 / 1', display: 'flex', alignItems: 'center', opacity: o, filter: `blur(${(1 - o) * 6}px)` }}><Caption text={n.note} lit={lit} /></div>;
+          })}
+        </div>
+      </div>
+    );
+  }
+  // rise / left: the last caption sinks and fades, then the new one rises in, each pill its own size
+  const shown: { i: number; o: number; y: number; s: number; b: number }[] = [];
+  if (ni >= 1) { const u = clamp((t - at(ni)) / OUT, 0, 1); if (u < 1) shown.push({ i: ni - 1, o: 1 - u, y: 10 * u, s: 1 - 0.03 * u, b: 4 * u }); }
+  if (ni >= 0) { const u = easeOut((t - at(ni) - (ni >= 1 ? GAP : 0)) / IN); shown.push({ i: ni, o: u, y: 18 * (1 - u), s: 0.97 + 0.03 * u, b: 6 * (1 - u) }); }
   return (
     <>
-      {parts.map((p, i) => p === 'Backspace' ? (
-        <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
-          <span style={{ width: KEY_W - 12, height: 48, marginRight: 12, borderRadius: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 30,
-            background: lit ? 'rgba(30,39,51,0.14)' : 'rgba(255,255,255,0.75)', boxShadow: lit ? 'inset 0 1px 2px rgba(30,39,51,0.25)' : '0 1px 0 rgba(30,39,51,0.18), 0 0 0 1px rgba(30,39,51,0.08)', transform: `translateY(${lit ? 2 : 0}px)` }}>⌫</span>
-          Backspace
-        </span>
-      ) : <span key={i} style={{ whiteSpace: 'pre' }}>{p}</span>)}
+      {shown.map(({ i, o, y, s, b }) => (
+        <div key={i} style={{ position: 'absolute', left: pill === 'left' ? 72 : 0, right: pill === 'left' ? undefined : 0, bottom: OH - BAR_Y - BAR_H, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ ...GLASS, opacity: o, transform: `translateY(${y}px) scale(${s})`, transformOrigin: pill === 'left' ? 'left bottom' : 'center bottom' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', filter: b > 0.05 ? `blur(${b}px)` : undefined }}><Caption text={notes[i].note} lit={lit} /></span>
+          </div>
+        </div>
+      ))}
     </>
   );
 };
-let measurer: CanvasRenderingContext2D | null = null;
-/** how wide a caption's pill is: its words in the caption's type, the key caps, the padding */
-function captionWidth(text?: string) {
-  if (!text) return 0;
-  measurer ??= document.createElement('canvas').getContext('2d');
-  const shown = /^If This Finds You/.test(text) ? text.replace(' · ', ' · ') : text;
-  measurer!.font = `430 ${CAP_PX}px ${FONT}`;
-  const keys = (text.match(/Backspace/g) ?? []).length;
-  return measurer!.measureText(shown).width + keys * KEY_W + 2 * CAP_PAD + (/^If This/.test(text) ? 12 : 0);
-}
 
 let uiFont: Promise<unknown> | null = null;
 const UiFont: React.FC = () => {
