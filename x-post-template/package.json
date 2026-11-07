@@ -21,7 +21,10 @@
     "take:pose": "node scripts/node-ts.mjs scripts/take-pose.ts",
     "draft:take": "remotion render src/index.ts TakeHands out/draft-take-hands-540.mp4 --scale=0.5 --crf=24",
     "render:take": "remotion render src/index.ts TakeHands out/take-hands-1080.mp4",
-    "still": "remotion still src/index.ts InkDemo out/still.png --frame=1180"
+    "still": "remotion still src/index.ts InkDemo out/still.png --frame=1180",
+    "desk": "node scripts/desk-capture.mjs --tag draft",
+    "draft:desk": "remotion render src/index.ts InkDesk out/desk-draft.mp4 --scale=0.5",
+    "render:desk": "node scripts/desk-capture.mjs --tag final --dpr 2 && remotion render src/index.ts InkDesk out/desk-1920.mp4 --props='{\"tag\":\"final\",\"skip\":0.35}'"
   },
   "dependencies": {
     "@remotion/cli": "4.0.540",

@@ -137,6 +137,26 @@ pen's own window (six seconds for this fountain pen), and the video draws each s
 - How this writer corrects is a roll seeded by the salt and the log (writing a letter over another, for one, is only
   one time in five for this tidy hand): change the script before a correction and it may come out another way.
 
+## The writing app on a desktop
+
+`InkDesk` (1920 × 1080, about 50 s) is the writing app itself, filmed: the real page (`/write`) in headless Chrome,
+in a window on the desk's light ground, with a camera that goes in close on each moment and pulls back between them,
+a drawn pointer with a ring where it clicks, and the bar naming each moment. Every pixel inside the window is the
+site's; nothing is redrawn.
+
+- `scripts/desk-clock.js` is put into the page before its own code runs: `performance.now`, `Date`, timers,
+  animation frames, CSS transitions and `Math.random` follow the video's clock, which only moves when the recorder
+  moves it. So the pen, the drying ink and the held Backspace keep the site's own timing, frame for frame.
+- `scripts/desk-script.mjs` is what happens: keys, clicks, double-clicks, drags, the captions and the camera cues.
+  It types two older notes first, unfilmed, so the notes list has something in it, and opens the note in the Dear
+  Mara hand. Words are found on the page by selecting them for a moment and measuring the selection the page draws.
+- `scripts/desk-capture.mjs` plays it into the page as real input (the DevTools protocol) and photographs each frame
+  into `public/desk/<tag>/` (not kept in git), with the pointer, the clicks and where things are in
+  `src/data/desk-<tag>.json`.
+- Run the site first (`cd app && npm run build && npx vite preview --port 4174`), then `npm run desk` (films the
+  draft, 1× pictures, about 90 s) and `npm run draft:desk` (renders 960 × 540). `npm run render:desk` films at 2×
+  and renders the full 1920 × 1080.
+
 ## Record your own typing
 
 Instead of a script, you can type the letter yourself and record it: your keys, the pointer and your webcam on one
