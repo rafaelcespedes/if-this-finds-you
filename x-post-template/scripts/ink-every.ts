@@ -52,7 +52,7 @@ function letter() {
   // 3. again on the crossed-out word: harder; held: a scribble, then inked out
   beat('again');
   click({ before: 'so green' }, 0.5);
-  press('Backspace', 1.0);
+  press('Backspace', 1.9);
   beat('hold');
   hold(1.6);
   wait(0.6);
@@ -149,7 +149,7 @@ function note() {
   const { type, press, wait, tick, beat } = S;
   S.wait(-0.2);
   beat('note');
-  press('Alt+Meta+n', 1.2);
+  press('Alt+Meta+n', 2.2);
   beat('title');
   type('# Sunday\n', 7);
   wait(1.2);
