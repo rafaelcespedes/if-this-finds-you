@@ -332,6 +332,27 @@
 @media (hover: hover) and (pointer: fine) { .wr-check:hover { background: rgba(0, 0, 0, 0.05); } }
 
 .wr-sheet { position: relative; }
+/* Dark: the paper a little dimmer, about 12% (Rafael, 7 Nov), so a lit sheet doesn't glare off the dark desk. A
+   veil over each sheet (LiveSheets' sheet, the one holding its ink), never a filter, which can soften the writing on
+   a phone; the red pencil and the selection are drawn over it (PaperEditor's own layer), at full strength */
+:root[data-app='write'][data-theme='dark'] .wr-sheet :has(> [data-sheet-ink])::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-app='write']:not([data-theme='light']) .wr-sheet :has(> [data-sheet-ink])::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+  }
+}
 /* a new note: the fresh sheet settles onto the desk (opacity and a few px only, so it's live and typable throughout) */
 .wr-sheet-fresh { animation: wr-sheet-fresh 200ms var(--ease-out); }
 @keyframes wr-sheet-fresh { from { opacity: 0.4; transform: translateY(-6px); } }
