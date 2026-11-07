@@ -37,7 +37,8 @@ all, with the real engine, and lets you change what's typed, the writer and the 
 | Backspace again on a crossed-out word, or hold it down | Crosses it out harder: a heavier line, then a scribble, then inked out (on `/write` for now). On a phone, a held key is read from how fast the deletions come. |
 | Select and delete | Strikes it through, in this writer's own way (a line, two lines, a wave, loops or a scribble). |
 | Select and type | Strikes the old words. Mid-text, the new ones go above them; on the last words written, the pen carries on after them, the way you would writing in one go. |
-| Type in the middle of a line | Adds it above the line, with a caret. |
+| Type in the middle of a line | Adds it above the line, with a caret; typing on at its end carries on the same insertion. |
+| Type right after a word crossed out | Mid-text, the new words go above it, in its place (as select and type does); at the end, the pen carries on after it. |
 | Space inside a word, Enter in the middle | A `/` between the words, a `//` for a new paragraph. |
 | ⌘B, ⌘U | Goes over the words again; underlines them by hand (twice for a double underline). With nothing selected, ⌘B presses harder from here on. |
 | ⌘I | What you type next leans in. |
@@ -120,7 +121,7 @@ Crossing a word out again, one press at a time:
 | `engine/tempo.js` | Your typing tempo, word by word, as a little haste or care in the hand |
 | `engine/format.js`, `engine/format-marks.js` | Formatting by hand: leaning, pressing harder, titles and headings, lists and checklists, the highlighter |
 | `app/src/write/` | The writing app: `WriteApp.tsx` (the frame), `Desk.tsx` (a note in ink), `CleanDesk.tsx` (a note in Clean), `Library.tsx`, `WriterPanel.tsx` (the font menu), `FormatPanel.tsx` (Aa), `notes.ts` (keeping notes), `hold.ts` (a held Backspace on any keyboard) |
-| `tools/qa/ink.mjs`, `again.mjs`, `tempo.mjs`, `stet.mjs`, `hold.mjs`, `format.mjs` | The checks (they run on every change) |
+| `tools/qa/ink.mjs`, `again.mjs`, `tempo.mjs`, `stet.mjs`, `hold.mjs`, `format.mjs`, `cursor.mjs` | The checks (they run on every change) |
 | `x-post-template/` | A video of the writing for a post (Remotion), drawn by the same engine |
 
 The thinking behind it, with prior art and the studies it draws on:
