@@ -32,6 +32,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
   const [searching, setSearching] = useState(false);
   const field = !!screen || searching || !!q;
   const [bin, setBin] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
   const live = useMemo(() => notes.filter((n) => !n.thrown), [notes]);
   const thrown = useMemo(() => notes.filter((n) => n.thrown).sort((a, b) => (b.thrown ?? 0) - (a.thrown ?? 0)), [notes]);
   const shown = useMemo(() => {
@@ -56,6 +57,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
           <label className="wr-search" data-opened={!screen || undefined}>
             <Search aria-hidden />
             <input
+              ref={input}
               type="search"
               placeholder="Search"
               value={q}
@@ -69,6 +71,18 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
               }}
               aria-label="Search notes"
             />
+            {/* our own clear button (the browser's is a blue ×): it keeps the field, and the field its focus */}
+            {q && (
+              <button
+                type="button"
+                className="wr-search-clear"
+                aria-label="Clear the search"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => { setQ(''); input.current?.focus(); }}
+              >
+                <X aria-hidden />
+              </button>
+            )}
           </label>
         ) : (
           <button type="button" className="wr-icon wr-search-btn" onClick={() => setSearching(true)} aria-label="Search notes" {...tip('Search')}>

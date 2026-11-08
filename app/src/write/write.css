@@ -1168,6 +1168,30 @@
   .wr-sw-row[aria-checked='true']:active > .wr-sw::after { transform: translateX(12px); }
 }
 
+/* ---------- Search's clear button, ours (the native one is a blue ×) ---------- */
+.wr-search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+.wr-search-clear {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-right: -4px;
+  border-radius: 6px;
+  color: var(--wr-muted);
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.wr-search .wr-search-clear svg { width: 13px; height: 13px; stroke-width: 2; }
+/* (a bigger target than it looks) */
+.wr-search-clear::after { content: ''; position: absolute; inset: -6px; }
+@media (hover: hover) and (pointer: fine) { .wr-search-clear:hover { background: var(--wr-hover-strong); color: var(--wr-text); } }
+.wr-search-clear:active { transform: scale(0.9); }
+.wr-search-clear:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--wr-focus); }
+.wr-library[data-screen] .wr-search-clear { width: 26px; height: 26px; margin-right: -6px; border-radius: 8px; }
+.wr-library[data-screen] .wr-search .wr-search-clear svg { width: 15px; height: 15px; }
+.wr-library[data-screen] .wr-search-clear::after { inset: -9px; }
+
 /* the phone's More sheet: Throw away in red there too; Appearance as one segmented row */
 :root[data-app='write'] .sheet-surface .wr-danger-label, :root[data-app='write'] .sheet-surface .wr-danger-icon { color: var(--wr-danger); }
 .wr-sheet-seg { margin: 0 -4px; }
