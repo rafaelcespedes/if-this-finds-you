@@ -581,6 +581,7 @@ export function WriteApp() {
           highlighter={highlighter}
           onHighlighter={setHighlighter}
           run={(cmd) => { run(cmd); if (cmd !== 'weight' && cmd !== 'lean') close(); }}
+          look={look}
         />
       )}
     </Sheet>

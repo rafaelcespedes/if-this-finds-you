@@ -250,30 +250,66 @@
 .wr-icon:disabled { opacity: 0.35; }
 .wr-hl-tool { position: relative; }
 .wr-hl-tool::after { content: ''; position: absolute; left: 9px; right: 9px; bottom: 5px; height: 3px; border-radius: 2px; background: var(--hl); opacity: 0.9; }
-.wr-format { display: grid; gap: 14px; width: 340px; padding: 12px; font-size: 13px; }
-.sheet-surface .wr-format { width: auto; padding: 4px 6px 10px; }
-.wr-styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.wr-style {
+/* The Format panel (FormatPanel.tsx; Rafael, 7 Nov: "fixing the spacing and the styling of all the little buttons"):
+   one grid of three columns on the 4/8/12/16 scale; every control a tile of one height and radius; what's on is
+   filled, as the writer panel's chips are; a tile that can't be used is plainly off, never filled */
+.wr-format { display: grid; gap: 16px; width: 340px; padding: 16px; font-size: 13px; }
+.sheet-surface .wr-format { width: auto; padding: 4px 4px 12px; }
+.wr-format-label { margin-bottom: 8px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
+.wr-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.wr-tiles + .wr-tiles { margin-top: 4px; }
+.wr-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
   height: 52px;
+  padding: 0 8px;
   border-radius: 10px;
   background: var(--wr-hover);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 14px;
-  transition: background-color 120ms var(--ease-out);
+  color: var(--wr-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background-color 120ms var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
-.wr-style-title { font-size: 20px; font-weight: 600; }
-.wr-style-heading { font-size: 16px; font-weight: 600; }
-.wr-style[aria-checked='true'] { background: var(--wr-on); color: var(--wr-on-text); }
-.wr-style:disabled, .wr-btn:disabled { opacity: 0.4; }
-.wr-lists { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.wr-btn[aria-pressed='true'] { background: var(--wr-on); color: var(--wr-on-text); }
-.wr-format-note { margin-top: 8px; font-size: 12px; color: var(--wr-muted); }
-.wr-hls { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.wr-hl-colors { display: flex; gap: 6px; }
-.wr-hl { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18); color: #1c1c1e; }
-.wr-hl svg { width: 14px; height: 14px; stroke-width: 2.5; }
-.wr-hl[aria-checked='true'] { box-shadow: 0 0 0 2px var(--wr-pop-bg), 0 0 0 3.5px var(--wr-on); }
-@media (pointer: coarse) { .wr-hl { width: 34px; height: 34px; } .wr-style { height: 56px; } }
+/* (the icons only: a writer's sample is an svg too) */
+.wr-tile > svg, .wr-tile-hl > svg { width: 18px; height: 18px; stroke-width: 1.75; }
+.wr-tile:not(:disabled):active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .wr-tile:not(:disabled):not([aria-checked='true']):not([aria-pressed='true']):hover { background: var(--wr-hover-strong); }
+}
+.wr-tile:is([aria-checked='true'], [aria-pressed='true']) { background: var(--wr-on); color: var(--wr-on-text); }
+/* off: muted, and never the filled look, even on the style the line already has */
+.wr-tile:disabled, .wr-tile:disabled:is([aria-checked='true'], [aria-pressed='true']) { background: var(--wr-hover); color: var(--wr-faint); opacity: 0.6; cursor: default; }
+/* Title, Heading and Body in the writer's hand, each at its size; the UI's type while the sample is written */
+.wr-tile-hand { display: flex; align-items: center; justify-content: center; max-width: 100%; height: calc(var(--em) * 1.7); }
+.wr-tile-sample { height: 100%; max-width: 100%; overflow: hidden; }
+.wr-tile-sample:empty { display: none; }
+.wr-tile-fallback { font-size: calc(var(--em) * 0.8); font-weight: 500; }
+.wr-tile-sample:not(:empty) + .wr-tile-fallback { display: none; }
+.wr-format-note { margin-top: 8px; font-size: 12px; line-height: 1.4; color: var(--wr-muted); }
+/* the highlighter: its colours as rings across two columns, the Highlight tile in the third */
+.wr-hl-colors { grid-column: span 2; display: flex; align-items: center; justify-content: space-evenly; }
+.wr-hl { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; }
+.wr-hl-dot { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18); color: #1c1c1e; transition: box-shadow 120ms var(--ease-out); }
+.wr-hl-dot svg { width: 14px; height: 14px; stroke-width: 2.5; }
+.wr-hl[aria-checked='true'] .wr-hl-dot { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18), 0 0 0 2px var(--wr-ring-gap), 0 0 0 3.5px var(--wr-on); }
+@media (hover: hover) and (pointer: fine) {
+  .wr-hl:not([aria-checked='true']):hover .wr-hl-dot { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18), 0 0 0 2px var(--wr-ring-gap), 0 0 0 3.5px var(--wr-hover-strong); }
+}
+.wr-tile-hl { position: relative; display: grid; }
+.wr-tile-hl::after { content: ''; position: absolute; left: 1px; right: 1px; bottom: -4px; height: 3px; border-radius: 2px; background: var(--hl); }
+/* a finger: 44 px and more */
+@media (pointer: coarse) {
+  .wr-tile { height: 56px; font-size: 13px; }
+  .wr-hl { width: 44px; height: 44px; }
+  .wr-hl-dot { width: 30px; height: 30px; }
+}
+.wr-btn:disabled { opacity: 0.4; }
 
 /* ---------- the desk and the sheet ---------- */
 .wr-desk {
