@@ -72,7 +72,7 @@ export function PenTray({ viewport, signed, onUnderline, onPress, onPS, onSign, 
           {!ink && item('Press harder', onPress)}
           {item('Add a P.S.', onPS)}
           {item(signed ? 'Remove signature' : 'Sign it', onSign)}
-          {onFairCopy && item('Make a fair copy', onFairCopy)}
+          {onFairCopy && item('Make a copy', onFairCopy)}
         </div>
       )}
       <div className="mx-auto flex h-11 max-w-[560px] items-center gap-1 rounded-[22px] bg-[color-mix(in_oklab,var(--panel)_94%,transparent)] px-1 shadow-[0_1px_2px_rgba(60,45,20,0.08),0_10px_28px_-12px_rgba(60,45,20,0.38)] backdrop-blur-md">

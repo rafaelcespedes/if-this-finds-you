@@ -42,7 +42,7 @@ export function WritingMenu(p: Props) {
     entries.push({ kind: 'separator', id: 's1' });
   }
   if (p.inkAvailable && p.mode === 'ink' && p.inkLetter) {
-    entries.push({ id: 'fair-copy', label: 'Make a fair copy', checked: false, onSelect: p.onFairCopy });
+    entries.push({ id: 'fair-copy', label: 'Make a copy', checked: false, onSelect: p.onFairCopy });
     entries.push({ id: 'fresh', label: 'Fresh sheet', checked: false, onSelect: p.onFreshSheet });
   }
   if (p.onBlankPage) entries.push({ id: 'blank', label: 'Blank page', checked: false, onSelect: p.onBlankPage });

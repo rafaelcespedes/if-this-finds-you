@@ -64,7 +64,7 @@ Crossing a word out again, one press at a time:
   other writers (pick one and the note is written again in their hand), then the pen, the ink, the paper and the size.
 - **In ink or Clean.** In ink (the default) nothing is erased. Clean edits freely, like any font: the words are laid out
   again as you go, with no slips of the writer's own. A note can switch either way; Clean tidies the crossings-out
-  away, and back in ink it carries on in ink from there. *Make a fair copy* writes a clean copy on a new note and keeps
+  away, and back in ink it carries on in ink from there. *Make a copy* writes a clean copy on a new note and keeps
   the draft.
 - **Formatting by hand.** The words people know from Notes, done the way a hand does them (`engine/format.js`,
   `engine/format-marks.js`): what's typed next changes at once (pressed harder, leaning), marks on written words are
