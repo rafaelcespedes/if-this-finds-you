@@ -353,7 +353,6 @@
   .wr-hl { width: 44px; height: 44px; }
   .wr-hl-dot { width: 30px; height: 30px; }
 }
-.wr-btn:disabled { opacity: 0.4; }
 
 /* ---------- the desk and the sheet ---------- */
 .wr-desk {
@@ -808,33 +807,6 @@
 .wr-paper:active .wr-paper-sheet { transform: scale(0.96); }
 .wr-paper:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--wr-focus); }
 
-.wr-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 10px;
-  border-radius: var(--wr-radius-sm);
-  background: var(--wr-hover);
-  font-weight: 500;
-  transition: background-color 120ms var(--ease-out), transform var(--dur-press) var(--ease-out);
-}
-.wr-btn svg { width: 15px; height: 15px; stroke-width: 1.75; }
-.wr-btn:active { transform: scale(0.97); }
-@media (hover: hover) and (pointer: fine) { .wr-btn:hover { background: var(--wr-hover-strong); } }
-.wr-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.wr-chip {
-  height: 28px;
-  padding: 0 10px;
-  border-radius: var(--wr-radius-sm);
-  background: var(--wr-hover);
-  font-size: 12.5px;
-  transition: background-color 120ms var(--ease-out);
-}
-.wr-chip[aria-checked='true'] { background: var(--wr-on); color: var(--wr-on-text); }
-/* a row's own name ("Tip", "Kind"), so its chips don't read as more of the row above */
-.wr-chips-label { align-self: center; min-width: 30px; margin-right: 2px; font-size: 11.5px; font-weight: 500; color: var(--wr-muted); }
-@media (pointer: coarse) { .wr-chip { height: 36px; padding: 0 12px; font-size: 14px; } }
 /* ---------- (a) Size: the row is the slider (SizeSlider.tsx) ---------- */
 .wr-size-row { display: flex; align-items: center; gap: 2px; }
 .wr-size-a {
@@ -1319,34 +1291,15 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
 .wr-share-side { display: flex; flex-direction: column; gap: 16px; padding: 18px 20px 20px; }
 .wr-share-side .wr-dialog-head { margin-bottom: 0; }
 .wr-share-side .wr-dialog-head h2 { font-size: 15px; font-weight: 600; }
-.wr-share-label { margin-bottom: 2px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
-.wr-share-hint { margin-top: 6px; font-size: 11.5px; line-height: 1.4; color: var(--wr-muted); }
+.wr-share-label { margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--wr-muted); }
+.wr-share-hint { margin-top: 6px; font-size: 12px; line-height: 1.4; color: var(--wr-muted); }
 .wr-share-actions { display: grid; gap: 6px; }
 .wr-share-actions .wr-share-hint { margin: 0 2px 4px; }
-.wr-share-post {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 38px;
-  border-radius: var(--wr-radius-sm);
-  background: var(--wr-on);
-  color: var(--wr-on-text);
-  font-size: 13.5px;
-  font-weight: 500;
-  transition: transform var(--dur-press) var(--ease-out), opacity 120ms var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) { .wr-share-post:not(:disabled):hover { opacity: 0.88; } }
-.wr-share-post:active { transform: scale(0.98); }
-.wr-share-post:disabled, .wr-share-row .wr-btn:disabled { opacity: 0.4; }
+/* Post on X: the window's one primary button (controls.tsx Button), the width of the column */
+.wr-share-post { width: 100%; }
 .wr-x-mark { width: 14px; height: 14px; }
 .wr-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.wr-share-row .wr-btn { justify-content: center; height: 34px; white-space: nowrap; }
 .wr-share-note { margin-top: auto; font-size: 11.5px; line-height: 1.45; color: var(--wr-muted); }
-/* a finger: controls a finger can hit, on a phone held either way */
-@media (pointer: coarse) {
-  .wr-share-post, .wr-share-row .wr-btn { height: 44px; }
-}
 /* phones: the preview over the choices, and the window scrolls when the screen is short */
 @media (max-width: 719.98px) {
   .wr-share { grid-template-columns: minmax(0, 1fr); max-height: calc(100dvh - 32px); }

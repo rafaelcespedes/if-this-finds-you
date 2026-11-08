@@ -10,6 +10,7 @@ import { Dialog } from 'radix-ui';
 import { toast } from 'sonner';
 import { Copy, Download, X } from 'lucide-react';
 import { PhoneSheet } from '@/components/ui/sheet';
+import { Button, Keys, Segmented, tip, useDone } from './controls';
 import type { SheetShot } from '@/lib/actions';
 import { fileSafe, saveBlob } from '@/lib/utils';
 import { SHARE_ADDRESS, SHARE_SHAPES, sharePicture, toPng, xIntent, type ShareShape } from './share';
@@ -53,6 +54,9 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
   const [empty, setEmpty] = useState(false);
   const setShape = (s: ShareShape) => { setShapeNow(s); setFailed(null); try { localStorage.setItem(SHAPE_KEY, s); } catch { /* not kept */ } };
   const urls = useRef<string[]>([]);
+  // Copied and Saved: said on the button itself, for a moment
+  const [copied, flashCopied] = useDone();
+  const [saved, flashSaved] = useDone();
   const forget = () => { for (const u of urls.current.splice(0)) URL.revokeObjectURL(u); };
 
   // each opening: nothing from before, then the note's first sheet, painted
@@ -125,19 +129,21 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
   const copyPicture = async () => {
     if (!ready) return;
     const ok = await copy();
-    toast(ok ? 'Picture copied' : 'This browser won’t copy pictures', { id: 'share-copy', description: ok ? undefined : 'Save it instead.', duration: 3000 });
+    if (ok) flashCopied();
+    else toast('This browser won’t copy pictures', { id: 'share-copy', description: 'Save it instead.', duration: 3000 });
   };
   const save = async () => {
     if (!ready) return;
     const f = sheetFile();
     if (f) {
-      try { await navigator.share({ files: [f], title: fileName || 'Note' }); return; } catch (e) {
+      try { await navigator.share({ files: [f], title: fileName || 'Note' }); flashSaved(); return; } catch (e) {
         const n = (e as DOMException).name;
         if (n === 'AbortError') return;
         if (n === 'NotAllowedError') { toast('Tap Save again', { id: 'share-save' }); return; }
       }
     }
     saveBlob(pic!.blob, name);
+    flashSaved();
   };
 
   const status = failed ?? (empty ? 'Nothing written yet.' : null);
@@ -152,19 +158,15 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
     <>
       <div>
         <h3 className="wr-share-label" id="share-shape">Shape</h3>
-        <div className="wr-chips" role="radiogroup" aria-labelledby="share-shape">
-          {SHARE_SHAPES.map((s) => (
-            <button key={s.id} type="button" role="radio" aria-checked={shape === s.id} className="wr-chip" onClick={() => setShape(s.id)}>{s.label}</button>
-          ))}
-        </div>
+        <Segmented<ShareShape> aria-labelledby="share-shape" cols={SHARE_SHAPES.length} value={shape} onChange={setShape} options={SHARE_SHAPES.map((s) => ({ value: s.id, label: s.label }))} />
         {source && source.total > 1 && <p className="wr-share-hint">Page {source.shot.sheet + 1} of {source.total}.</p>}
       </div>
       <div className="wr-share-actions">
-        <button type="button" className="wr-share-post" disabled={!ready} onClick={post}><XMark /> Post on X</button>
-        <p className="wr-share-hint">{coarse ? 'Opens the share sheet with the picture in it: choose X.' : `Copies the picture and opens X. Paste it into your post (${mod}V).`}</p>
+        <Button variant="primary" className="wr-share-post" disabled={!ready} onClick={post} icon={<XMark />}>Post on X</Button>
+        <p className="wr-share-hint">{coarse ? 'Opens the share sheet with the picture in it: choose X.' : <>Copies the picture and opens X. Paste it into your post <Keys keys={[mod.replace(/\+$/, ''), 'V']} />.</>}</p>
         <div className="wr-share-row">
-          <button type="button" className="wr-btn" disabled={!ready} onClick={copyPicture}><Copy aria-hidden /> Copy picture</button>
-          <button type="button" className="wr-btn" disabled={!ready} onClick={save}><Download aria-hidden /> Save</button>
+          <Button disabled={!ready} onClick={copyPicture} icon={<Copy aria-hidden />} done={copied} doneLabel="Copied">Copy picture</Button>
+          <Button disabled={!ready} onClick={save} icon={<Download aria-hidden />} done={saved} doneLabel="Saved">Save</Button>
         </div>
       </div>
       <p className="wr-share-note">Made on this device, and we keep no copy. The post links to the writing page, not to your note.</p>
@@ -191,7 +193,7 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
           <div className="wr-share-side">
             <div className="wr-dialog-head">
               <Dialog.Title>Share this note</Dialog.Title>
-              <Dialog.Close className="wr-icon" aria-label="Close"><X aria-hidden /></Dialog.Close>
+              <Dialog.Close className="wr-icon" aria-label="Close" {...tip('Close', ['esc'])}><X aria-hidden /></Dialog.Close>
             </div>
             {choices}
           </div>
