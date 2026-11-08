@@ -67,6 +67,10 @@ function moveSheets(change: () => void, swap = false): Promise<unknown> {
   return doc.startViewTransition(() => flushSync(change)).finished.catch(() => {}).finally(() => html.removeAttribute('data-swap'));
 }
 
+/** the writer's and the format's popovers open and close on the app's own timing (the site's popover keeps the
+ *  library's 150 ms both ways, as on the home page), as the menus (components/ui/menu.tsx) do */
+const POP = 'wr-pop data-[state=open]:duration-(--dur-pop) data-[state=open]:ease-(--ease-out) data-[state=closed]:duration-(--dur-out) data-[state=closed]:ease-(--ease-out)';
+
 /** a toolbar button pressed with a mouse doesn't take the focus from the paper (the keys go on to the writing; a space
  * never presses the button again) */
 const keepPen = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') e.preventDefault(); };
@@ -274,6 +278,23 @@ export function WriteApp() {
     try { return localStorage.getItem(LIB_KEY) !== '0'; } catch { return true; }
   });
   useEffect(() => { if (roomy) { try { localStorage.setItem(LIB_KEY, libOpen ? '1' : '0'); } catch { /* fine */ } } }, [libOpen, roomy]);
+  /** the letters panel opened or shut from its button: on a wide window, where it sits beside the page, the toolbar's
+   *  groups and the sheet glide the 144 px instead of jumping, and the panel slides in from the left (FLIP: measured
+   *  before and after, then moved from where they were). ⌘\ stays instant */
+  const togglePanel = () => {
+    const els = [...document.querySelectorAll<HTMLElement>('.wr-bar > .wr-group, .wr-desk')];
+    const x0 = els.map((e) => e.getBoundingClientRect().left);
+    const opening = !libOpen;
+    flushSync(() => setLibOpen(opening));
+    if (!roomy || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const o = { duration: 220, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' };
+    els.forEach((e, i) => {
+      if (!e.isConnected) return;
+      const dx = x0[i] - e.getBoundingClientRect().left;
+      if (dx) e.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], o);
+    });
+    if (opening) document.querySelector('.wr-side')?.animate([{ transform: 'translateX(-100%)' }, { transform: 'none' }], o);
+  };
   const [phoneScreen, setPhoneScreen] = useState<'note' | 'library'>('note');
   const [writing, setWriting] = useState(false);
   const [said, say] = useState('');
@@ -545,7 +566,7 @@ export function WriteApp() {
       showTitle={false}
       side="bottom"
       align="end"
-      className="wr-pop wr-pop-writer"
+      className={`${POP} wr-pop-writer`}
       onCloseAutoFocus={focusBack}
       trigger={
         <button type="button" className="wr-writer-chip" style={{ '--chip-ink': ink } as React.CSSProperties} aria-label={`Writer: ${writerName(look.seed)}. Change the writer, pen, ink or paper`} title="Writer, pen and paper">
@@ -563,7 +584,7 @@ export function WriteApp() {
       showTitle={phone}
       side="bottom"
       align="start"
-      className="wr-pop"
+      className={POP}
       open={formatOpen}
       onOpenChange={(o) => { setFormatOpen(o); if (o) refreshFmt(); }}
       onCloseAutoFocus={focusBack}
@@ -714,11 +735,11 @@ export function WriteApp() {
           <header className="wr-bar" aria-label="Toolbar">
             <div className="wr-group">
               {phone ? (
-                <button type="button" className="wr-icon wr-back" onClick={() => { settle(); setPhoneScreen('library'); }} aria-label="Letters">
+                <button type="button" className="wr-icon wr-back" onClick={() => { settle(); void moveSheets(() => setPhoneScreen('library')); }} aria-label="Letters">
                   <ChevronLeft aria-hidden /><span>Letters</span>
                 </button>
               ) : (
-                <>{!libOpen && <HomeMark />}<button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => setLibOpen((o) => !o)} aria-label={libOpen ? 'Hide letters' : 'Show letters'} aria-pressed={libOpen} title={`Letters  ${MOD}\\`}>
+                <>{!libOpen && <HomeMark />}<button type="button" className="wr-icon" onPointerDown={keepPen} onClick={togglePanel} aria-label={libOpen ? 'Hide letters' : 'Show letters'} aria-pressed={libOpen} title={`Letters  ${MOD}\\`}>
                   <PanelLeft aria-hidden />
                 </button></>
               )}

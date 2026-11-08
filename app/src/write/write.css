@@ -111,6 +111,8 @@
 :root[data-app='write'] .caret-blink { animation-delay: 500ms; }
 /* The loupe, while a finger drags the caret or a handle: the line under it, larger, above it */
 .wr-loupe {
+  /* (it grows up out of the finger) */
+  transform-origin: 50% 100%;
   border-radius: 50%;
   overflow: hidden;
   background: var(--wr-desk);
@@ -157,10 +159,12 @@
   pointer-events: none;
   /* the desk shows through above the sheet as it scrolls under: a soft fade, no line */
   background: linear-gradient(to bottom, var(--wr-desk) 45%, color-mix(in srgb, var(--wr-desk) 0%, transparent));
-  transition: opacity 240ms var(--ease-out);
+  transition: opacity 150ms var(--ease-out);
 }
 .wr-bar > * { pointer-events: auto; }
 .wr-app[data-away] .wr-bar { opacity: 0; }
+/* the chrome comes back quick and steps away calmly */
+.wr-app[data-away] :is(.wr-bar, .wr-side, .wr-status) { transition-duration: 300ms; }
 .wr-app[data-tight] .wr-bar { display: none; }
 .wr-app[data-away] .wr-bar > * { pointer-events: none; }
 .wr-group {
@@ -185,7 +189,7 @@
 }
 .wr-icon svg { width: 17px; height: 17px; stroke-width: 1.75; }
 .wr-icon[aria-pressed='true'] { background: var(--wr-hover-strong); }
-.wr-icon:active { transform: scale(0.94); }
+.wr-icon:active { transform: scale(0.95); }
 @media (hover: hover) and (pointer: fine) {
   .wr-icon:hover, .wr-title:hover, .wr-writer-chip:hover { background: var(--wr-hover); }
 }
@@ -355,7 +359,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--wr-status);
   pointer-events: none;
-  transition: opacity 240ms var(--ease-out);
+  transition: opacity 150ms var(--ease-out);
 }
 .wr-app[data-away] .wr-status, .wr-app:has(.wr-start) .wr-status { opacity: 0; }
 
@@ -392,11 +396,11 @@
 }
 /* a new note: the fresh sheet settles onto the desk (opacity and a few px only, so it's live and typable throughout) */
 .wr-sheet-fresh { animation: wr-sheet-fresh 200ms var(--ease-out); }
-@keyframes wr-sheet-fresh { from { opacity: 0.4; transform: translateY(-6px); } }
+@keyframes wr-sheet-fresh { from { opacity: 0.8; transform: translateY(-6px); } }
 /* the note just put away glows in the library for a moment */
 .wr-row[data-arrived] { animation: wr-row-arrived 900ms var(--ease-out); }
 @keyframes wr-row-arrived { 0%, 30% { background: color-mix(in srgb, var(--wr-focus) 16%, transparent); } }
-@media (prefers-reduced-motion: reduce) { .wr-sheet-fresh, .wr-row[data-arrived] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .wr-sheet-fresh { animation: none; } }
 /* a note from the hint ladder: a quiet line in the margin (MarginNote) */
 .wr-note { z-index: 4; font-family: var(--wr-font); font-size: 12px; line-height: 1.4; color: var(--wr-muted); pointer-events: none; }
 .wr-note kbd { margin: 0 2px; }
@@ -430,7 +434,7 @@
   height: 100dvh;
   background: var(--wr-side);
   box-shadow: 0.5px 0 0 var(--wr-sep);
-  transition: opacity 240ms var(--ease-out);
+  transition: opacity 150ms var(--ease-out);
 }
 .wr-app[data-away] .wr-side { opacity: 0.35; }
 /* a narrow window: the library over the page, the page dimmed a little behind it */
@@ -485,9 +489,13 @@
 .wr-search input:focus, .wr-search input:focus-visible { outline: none; box-shadow: none; }
 /* a computer: the search button at the head's right, and the field opening from it across the head */
 .wr-search-btn { margin-left: auto; color: var(--wr-muted); }
-.wr-search[data-opened] { transform-origin: right center; animation: wr-search-open 180ms var(--ease-out); }
-@keyframes wr-search-open { from { opacity: 0; clip-path: inset(0 0 0 calc(100% - 32px) round 9px); } }
-@media (prefers-reduced-motion: reduce) { .wr-search[data-opened] { animation: none; } }
+.wr-search[data-opened] { animation: wr-search-open var(--dur-pop) var(--ease-out); }
+/* (clip-path between two insets, so it interpolates; no fade, which blanked the first frame) */
+@keyframes wr-search-open { from { clip-path: inset(-2px -2px -2px calc(100% - 34px) round 11px); } to { clip-path: inset(-2px round 11px); } }
+/* the magnifier travels from the button's place to the field's start */
+.wr-search[data-opened] > svg { animation: wr-search-glyph var(--dur-pop) var(--ease-out); }
+@keyframes wr-search-glyph { from { transform: translateX(var(--wr-search-travel, 190px)); } }
+@media (prefers-reduced-motion: reduce) { .wr-search[data-opened], .wr-search[data-opened] > svg { animation: none; } }
 .wr-lib-back {
   display: inline-flex;
   align-items: center;
@@ -581,9 +589,8 @@
   min-width: 232px;
   padding: 5px;
   border-radius: 12px;
+  /* (nearly solid: no backdrop blur, which nobody would see and every frame would pay for) */
   background: var(--wr-pop-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  backdrop-filter: blur(24px) saturate(1.6);
   box-shadow: var(--wr-pop-shadow);
   font-family: var(--wr-font);
   font-size: 13px;
@@ -625,8 +632,6 @@
   border: 0;
   border-radius: 14px;
   background: var(--wr-pop-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  backdrop-filter: blur(24px) saturate(1.6);
   box-shadow: var(--wr-pop-shadow);
   color: var(--wr-text);
   font-family: var(--wr-font);
@@ -764,14 +769,11 @@
 @keyframes wr-sheet-out { to { opacity: 0; transform: translateY(8px) scale(0.98); } }
 /* a computer: the rows stay out of it, and the sheet cross-fades in place, quick and quiet (moveSheets' swap) */
 html[data-swap] .wr-thumb { view-transition-name: none !important; }
-html[data-swap]::view-transition-old(*) { animation: wr-swap-out 120ms var(--ease-out) both; }
+/* (the old sheet stays opaque under the incoming one for 60 ms, so no grey shows between them on a dark desk) */
+html[data-swap]::view-transition-old(*) { animation: wr-swap-out 100ms var(--ease-out) 60ms both; }
 html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease-out) both; }
 @keyframes wr-swap-out { to { opacity: 0; } }
 @keyframes wr-swap-in { from { opacity: 0; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .wr-bar, .wr-side, .wr-status { transition: none; }
-}
 
 /* ---------- the shortcuts card ---------- */
 .wr-dialog-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.18); animation: wr-fade 160ms var(--ease-out); }
@@ -794,6 +796,12 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
   animation: wr-dialog-in var(--dur-pop) var(--ease-out);
 }
 @keyframes wr-dialog-in { from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); } }
+.wr-dialog[data-state='closed'] { animation: wr-dialog-out var(--dur-out) var(--ease-out) forwards; }
+.wr-dialog-scrim[data-state='closed'] { animation: wr-fade-out var(--dur-out) var(--ease-out) forwards; }
+@keyframes wr-dialog-out { to { opacity: 0; transform: translate(-50%, -50%) scale(0.98); } }
+@keyframes wr-fade-out { to { opacity: 0; } }
+/* a card that toggles on a key (⌘/, the shortcuts): there and gone at once */
+.wr-dialog[data-instant], .wr-dialog-scrim[data-instant] { animation: none; }
 .wr-dialog-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .wr-dialog-head h2 { font-size: 15px; font-weight: 600; }
 .wr-keys h3 { margin: 14px 0 6px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
@@ -801,7 +809,7 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
 .wr-keys dl > div { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: baseline; padding: 5px 0; }
 .wr-keys dt { display: flex; gap: 3px; flex-wrap: wrap; }
 .wr-keys dd { color: var(--wr-text); }
-@media (prefers-reduced-motion: reduce) { .wr-dialog, .wr-dialog-scrim { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .wr-dialog, .wr-dialog-scrim, .wr-dialog[data-state='closed'], .wr-dialog-scrim[data-state='closed'] { animation: none; } }
 
 /* a very narrow phone: the back button is a chevron, the writer's name shorter */
 @media (max-width: 359.98px) {
@@ -905,7 +913,7 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
 .wr-home { display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 9px; transition: background-color 120ms var(--ease-out), transform var(--dur-press) var(--ease-out); }
 .wr-home img { width: 22px; height: 22px; border-radius: 5px; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12); }
 @media (hover: hover) and (pointer: fine) { .wr-home:hover { background: var(--wr-hover); } }
-.wr-home:active { transform: scale(0.94); }
+.wr-home:active { transform: scale(0.95); }
 .wr-home:focus-visible { outline: 2px solid var(--wr-focus); outline-offset: 2px; }
 .wr-lib-head:has(.wr-home) { display: flex; align-items: center; gap: 8px; }
 .wr-lib-head:has(.wr-home) > .wr-search, .wr-lib-head:has(.wr-home) > .wr-lib-back { flex: 1; min-width: 0; }
