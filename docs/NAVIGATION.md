@@ -9,17 +9,21 @@ they show even if the script can't load.
 
 ## The places
 
+**Home is the wordmark.** "If This Finds You" on the left is the way to the desk, the writing tool: a found letter
+on the desk, Find another, your own letter (`/`). It isn't one of the places on the right (Rafael, 2026-11-08: "Write
+a letter" next to "Notes" read as two ways to write); on the desk itself the wordmark is plain, not a link.
+
 Four places, always in this order, always in these words:
 
 | Place | What it is | Address |
 |---|---|---|
-| **Write a letter** | the writing tool: a found letter on the desk, Find another, your own letter | `/` |
 | **All letters** | the library: the canvas (and the grid, `?view=grid`); a letter's page sits inside it | `/letters` |
 | **Fonts** | every hand as a free font | `/fonts` |
+| **Notes** | your own notes in a hand, kept on this device: an app of its own, with no site header (its IF mark is the way back) | `/notes` |
 | **About** | what this is, where the letters and hands come from, credits | `/about` |
 
 **My letters** is not a place: it's your own letters kept on this device. It appears only when at least one is
-kept, before the four places (with a hairline between, so it reads as yours, not as a page), with the count.
+kept, before the places (with a hairline between, so it reads as yours, not as a page), with the count.
 It opens a short list; picking one brings that letter back onto the desk. It works from every page: away from the
 tool, it opens the tool at `/?kept=<savedAt>`, and the tool takes it off the address once it's open.
 
@@ -27,7 +31,7 @@ Words we don't use for these: "Letters", "Library", "Archive", "Home", "Write" o
 without words.
 
 **Adding a place.** A new page that people should be able to reach from anywhere gets one line in `PLACES`
-(`lib/places.ts`), after the others, and its page renders `<SiteHeader current="<its id>" />`. **About** (`/about`) is the fourth and last place, in that one word. Nothing else changes:
+(`lib/places.ts`), after the others, and its page renders `<SiteHeader current="<its id>" />`. **Notes** (`/notes`, added 2026-11-08) is the third, before **About** (`/about`), the last place, in that one word. Nothing else changes:
 every header picks it up, and where the line no longer fits, the Menu takes over.
 
 ## Where you are
@@ -94,7 +98,7 @@ desktop (from 64rem) the places and My letters are a size up, 14 px (Rafael, lau
 ## When the words fit (desktops, tablets)
 
 ```
-[wordmark]                         [page action]  My letters 3 | Write a letter  All letters  Fonts
+[wordmark]                         [page action]  My letters 3 | All letters  Fonts  Notes  About
 ```
 
 - The wordmark sits at the same spot on every page: 16 px from the window's edge on phones, 32 px from 640 px,
@@ -115,7 +119,7 @@ desktop (from 64rem) the places and My letters are a size up, 14 px (Rafael, lau
 - Everything goes into one **Menu** chip at the top right (drawn 32 px, a 44 px target, the same chip as Share): a
   quiet icon button, only its icon at rest, a wash in 4 px corners under the pointer and while pressed or open.
   It opens the shared Sheet (`components/ui/sheet.tsx`): on a phone a bottom sheet that slides up, follows your
-  finger, and closes on a swipe or flick down, the backdrop or Escape; the four places as big 56 px rows (the
+  finger, and closes on a swipe or flick down, the backdrop or Escape; the places as big 56 px rows (the
   current one marked), then "My letters, kept on this device" with the list. On a larger screen (large text, a
   narrow window) the same list opens as a popover from the chip. With letters kept, the chip carries their count.
 - **Why one menu and not a row of icons.** Before this, the tool's phone header had four icon chips (My letters,
@@ -198,6 +202,8 @@ the tool's chips covered the wordmark; the 404 had no way to Fonts.
 
 1. **"Write a letter" as the tool's name.** It's the established label (library, Fonts, 404) and reads as an
    invitation, but the tool opens on a found letter. Alternatives: "Write", "The desk". Kept for now.
+   _Settled 2026-11-08:_ the header no longer lists it; the wordmark is home (Notes joined the places, and "Write a
+   letter" beside "Notes" read as two ways to write). Pages may still say "Write a letter" as an action (the 404).
 2. **One more link out on phones?** At 375 px there's room for "All letters" beside the Menu (not at 320 px).
    Showing it would make the desk-to-library hop one tap, at the cost of a header that changes with the width.
 3. **The current-place rule in Rubric vermilion.** It's a guiding mark, which Rubric allows, but it's one more red
