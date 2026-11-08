@@ -678,7 +678,7 @@
 :root[data-app='write'] .sheet-surface { background: var(--wr-side); border: 0; color: var(--wr-text); font-family: var(--wr-font); }
 /* the writer's popover fits the window, with room to spare around it (it was taller than a 900 px window) */
 .wr-pop.wr-pop-writer { max-height: min(var(--radix-popover-content-available-height, 100dvh), calc(100dvh - 120px)); }
-.wr-writer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; width: 380px; padding: 14px; font-size: 13px; }
+.wr-writer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; width: 380px; padding: 14px; font-size: 13px; }
 /* the fade at the panel's foot while there's more below (WriterPanel's ScrollFade); none at the end */
 .wr-fade {
   position: sticky;
@@ -698,6 +698,116 @@
 .wr-writer-name .wr-name-hand { height: 38px; }
 .wr-writer-sub { display: block; margin-top: 4px; font-size: 12px; color: var(--wr-muted); }
 .wr-writer-moves { display: flex; flex: none; gap: 6px; }
+/* a section's heading, and what's chosen in it on the right; a row's own name under it (Tip, Kind) */
+.wr-sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.wr-sec-head h3 { font-size: 12px; font-weight: 600; color: var(--wr-muted); }
+.wr-sec-value { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; font-weight: 500; color: var(--wr-faint); font-variant-numeric: tabular-nums; }
+.wr-sub-head { margin: 10px 0 6px; font-size: 11.5px; font-weight: 500; color: var(--wr-faint); }
+.wr-hands li { min-width: 0; }
+.wr-hands { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; max-height: 248px; overflow-y: auto; margin: 0 -6px; overscroll-behavior: contain; }
+.wr-hand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 42px;
+  padding: 4px 8px;
+  border-radius: var(--wr-radius-sm);
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) { .wr-hand:not([aria-current]):hover { background: var(--wr-hover); } }
+.wr-hand-sample { flex: 1; height: 30px; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); }
+.wr-hand-name { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--wr-muted); white-space: nowrap; }
+.wr-hand-name svg { width: 13px; height: 13px; stroke-width: 2.25; }
+/* the writer in use: marked, at the head of the list */
+.wr-hand[aria-current] { background: var(--wr-sel); cursor: default; }
+.wr-hand[aria-current] .wr-hand-name { color: var(--wr-text); font-weight: 500; }
+
+/* the tip's nib, as a dot */
+.wr-nib { display: inline-block; flex: none; border-radius: 50%; background: currentColor; opacity: 0.85; }
+.wr-kind-hint { margin-top: 6px; min-height: 16px; font-size: 12px; line-height: 1.35; color: var(--wr-faint); }
+
+/* ---------- (c) the ink: one strip of paper, a stroke of each ink, a ring that slides to the one in use ---------- */
+.wr-inks {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--wr-paper-chip);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.09), 0 1px 2px rgba(0, 0, 0, 0.04);
+  isolation: isolate;
+}
+.wr-ink {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  height: 34px;
+  border-radius: 7px;
+  outline: none;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.wr-ink svg { width: 30px; height: 12px; overflow: visible; transition: transform var(--dur-press) var(--ease-out); }
+.wr-ink:active svg { transform: scale(0.92); }
+.wr-ink path { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 40; stroke-dashoffset: 0; }
+/* the ink picked is drawn again */
+.wr-ink path[data-draw] { animation: wr-ink-draw var(--dur-slide) var(--ease-out); }
+@keyframes wr-ink-draw { from { stroke-dashoffset: 40; } }
+@media (hover: hover) and (pointer: fine) { .wr-ink[aria-checked='false']:hover { background: rgba(0, 0, 0, 0.045); } }
+.wr-ink:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--wr-focus); }
+/* (a ring drawn on the paper, which is light in both themes) */
+.wr-ink-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.04);
+  box-shadow: inset 0 0 0 1.5px var(--wr-on-ink);
+  pointer-events: none;
+  opacity: 0;
+}
+.wr-inks[data-ready] > .wr-ink-ring { transition: transform var(--dur-slide) var(--ease-out); }
+
+/* ---------- (d) the paper: each drawn to its shape, standing on one foot line; the one in use ringed ---------- */
+.wr-papers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; }
+.wr-paper {
+  display: grid;
+  grid-template-rows: 44px auto;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 2px 7px;
+  border-radius: 10px;
+  outline: none;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.wr-paper-stage { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 44px; }
+.wr-paper-sheet {
+  position: relative;
+  display: block;
+  border-radius: 2px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.14), 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+/* a printed border (the notecard) */
+.wr-paper-sheet[data-border]::after { content: ''; position: absolute; inset: 2px; border-radius: 1px; box-shadow: 0 0 0 0.6px color-mix(in srgb, var(--border-c, #2f4f86) 55%, transparent); }
+.wr-paper-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--wr-muted); transition: color var(--dur-fast) var(--ease-out); }
+/* the one in use: a ring round the sheet; its name darker (colour only: a weight change would move the text) */
+.wr-paper[aria-checked='true'] .wr-paper-name { color: var(--wr-text); }
+.wr-paper[aria-checked='true'] .wr-paper-sheet { box-shadow: 0 0 0 2px var(--wr-ring-gap), 0 0 0 3.5px var(--wr-text), 0 1px 2px rgba(0, 0, 0, 0.08); }
+@media (hover: hover) and (pointer: fine) {
+  .wr-paper:hover { background: var(--wr-hover); }
+  .wr-paper:hover .wr-paper-sheet { transform: translateY(-1.5px); }
+  .wr-paper[aria-checked='true']:hover { background: transparent; }
+}
+.wr-paper:active .wr-paper-sheet { transform: scale(0.96); }
+.wr-paper:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--wr-focus); }
+
 .wr-btn {
   display: inline-flex;
   align-items: center;
@@ -712,24 +822,6 @@
 .wr-btn svg { width: 15px; height: 15px; stroke-width: 1.75; }
 .wr-btn:active { transform: scale(0.97); }
 @media (hover: hover) and (pointer: fine) { .wr-btn:hover { background: var(--wr-hover-strong); } }
-.wr-writer-section h3 { margin-bottom: 6px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
-.wr-hands li { min-width: 0; }
-.wr-hands { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; max-height: 248px; overflow-y: auto; margin: 0 -6px; overscroll-behavior: contain; }
-.wr-hand {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  min-height: 42px;
-  padding: 4px 8px;
-  border-radius: var(--wr-radius-sm);
-  text-align: left;
-  transition: background-color 120ms var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) { .wr-hand:hover { background: var(--wr-hover); } }
-.wr-hand-sample { flex: 1; height: 30px; min-width: 0; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); mask-image: linear-gradient(to right, #000 85%, transparent); }
-.wr-hand-name { flex: none; font-size: 11.5px; color: var(--wr-muted); white-space: nowrap; }
 .wr-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .wr-chip {
   height: 28px;
@@ -743,27 +835,6 @@
 /* a row's own name ("Tip", "Kind"), so its chips don't read as more of the row above */
 .wr-chips-label { align-self: center; min-width: 30px; margin-right: 2px; font-size: 11.5px; font-weight: 500; color: var(--wr-muted); }
 @media (pointer: coarse) { .wr-chip { height: 36px; padding: 0 12px; font-size: 14px; } }
-/* the eight inks on one row */
-.wr-inks { display: grid; grid-template-columns: repeat(8, minmax(0, 36px)); justify-content: space-between; gap: 4px; }
-.wr-ink { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: var(--wr-radius-sm); background: #fbf9f4; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
-.wr-ink svg { width: 26px; }
-/* the one in use: a ring around the swatch, standing off it (an inset ring vanished on the light swatch in dark mode) */
-.wr-ink[aria-checked='true'] { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0 0 2px var(--wr-ring-gap), 0 0 0 3.5px var(--wr-on); }
-.wr-papers { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 4px; }
-.wr-paper {
-  display: grid;
-  /* the swatch in a row of its own, sitting on its foot, so a name that wraps ("Notebook page") pushes nothing up */
-  grid-template-rows: 40px auto;
-  justify-items: center;
-  align-content: start;
-  gap: 5px;
-  padding: 8px 4px 6px;
-  border-radius: var(--wr-radius-sm);
-  font-size: 11.5px;
-  color: var(--wr-muted);
-}
-.wr-paper[aria-checked='true'] { background: var(--wr-hover-strong); color: var(--wr-text); }
-.wr-paper-swatch { align-self: end; width: 26px; max-height: 40px; border-radius: 1px; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.16), 0 1px 2px rgba(0, 0, 0, 0.08); }
 /* ---------- (a) Size: the row is the slider (SizeSlider.tsx) ---------- */
 .wr-size-row { display: flex; align-items: center; gap: 2px; }
 .wr-size-a {
