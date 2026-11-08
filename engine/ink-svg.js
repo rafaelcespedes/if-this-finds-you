@@ -30,7 +30,13 @@ export function polyD(c, ox, oy, sc) {
   return d + 'Z';
 }
 
-// Edge roughening scaled per pen and capped at 10% of the thinnest stroke; felt bleeds a little;
+// Safari (and every browser on an iPhone, all WebKit): it draws an SVG blur no finer than about a pixel of the
+// filter's own, so felt's bleed of a quarter pixel came out as a smear: edges 5.2 px wide on a Retina Mac against 2.1
+// in Chrome, measured in WebKit and Chromium at 2x (8 Nov). There the bleed is left out and felt looks as it does in
+// Chrome, where a blur this fine barely shows. Node and the other browsers are unchanged.
+const WEBKIT = typeof navigator !== 'undefined' && /^Apple/.test(navigator.vendor || '');
+
+// Edge roughening scaled per pen and capped at 10% of the thinnest stroke; felt bleeds a little (not in Safari, above);
 // pencil gets a graphite grain that breaks up its coverage.
 function svgLook(p, pen, emPx) {
   const sc = emPx / UPM;
@@ -39,7 +45,7 @@ function svgLook(p, pen, emPx) {
   const seed = 1 + Math.floor(rng('svg:' + p.seed)() * 997); // each hand's paper and pen roughen differently
   let f = `<feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="${seed}" result="n"/>` +
     `<feDisplacementMap in="SourceGraphic" in2="n" scale="${rough.toFixed(2)}" xChannelSelector="R" yChannelSelector="G" result="ink"/>`;
-  if (pen.kind === PEN_KIND.felt) f += `<feGaussianBlur in="ink" stdDeviation="${Math.max(0.25, 0.5 * (pen.bleed || 0.5) * emPx / 58).toFixed(2)}" result="ink"/>`;
+  if (pen.kind === PEN_KIND.felt && !WEBKIT) f += `<feGaussianBlur in="ink" stdDeviation="${Math.max(0.25, 0.5 * (pen.bleed || 0.5) * emPx / 58).toFixed(2)}" result="ink"/>`;
   if (pen.kind === PEN_KIND.pencil) {
     f += `<feTurbulence type="fractalNoise" baseFrequency="${(1.4 * 58 / emPx).toFixed(2)} ${(0.95 * 58 / emPx).toFixed(2)}" numOctaves="2" seed="${seed + 1}" result="g"/>` +
       `<feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.25 1.32" result="gm"/>` +

@@ -40,9 +40,9 @@ export function liftInkEdge(svg: Element): () => void {
     if (!id || !id.startsWith('inkEdge')) continue;
     const def = svg.querySelector(`filter[id="${id}"]`);
     const parts = def ? [...def.children].map((c) => c.localName) : [];
-    // (felt's bleed is a blur on top: Safari draws a blur no finer than about a device pixel, three times what felt asks
-    // for, so felt writing came out soft on every iPhone screen, measured 3.7-4.4 px edges against 1.5 for type. On a
-    // touch screen it goes too; elsewhere it stays. Pencil's grain is more than an edge, and stays everywhere)
+    // (felt's bleed is a blur on top. Safari draws a blur no finer than about a pixel, so the engine leaves it out there
+    // on every screen (ink-svg.js WEBKIT; felt measured 3.7-4.4 px edges on an iPhone against 1.5 for type). On another
+    // browser's touch screen it goes with the edge; elsewhere it stays. Pencil's grain is more than an edge, and stays)
     if (!parts.length || parts.some((n) => n !== 'feTurbulence' && n !== 'feDisplacementMap' && !(EDGE_OFF && n === 'feGaussianBlur'))) continue;
     el.removeAttribute('filter');
     lifted.push([el, ref]);
