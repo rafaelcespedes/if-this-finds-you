@@ -764,10 +764,138 @@
 }
 .wr-paper[aria-checked='true'] { background: var(--wr-hover-strong); color: var(--wr-text); }
 .wr-paper-swatch { align-self: end; width: 26px; max-height: 40px; border-radius: 1px; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.16), 0 1px 2px rgba(0, 0, 0, 0.08); }
-.wr-size { display: flex; align-items: center; gap: 10px; }
-.wr-size input { flex: 1; accent-color: var(--wr-on); }
-.wr-size-a { font-size: 12px; color: var(--wr-muted); }
-.wr-size-big { font-size: 19px; }
+/* ---------- (a) Size: the row is the slider (SizeSlider.tsx) ---------- */
+.wr-size-row { display: flex; align-items: center; gap: 2px; }
+.wr-size-a {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--wr-faint);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  outline: none;
+  transition: color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.wr-size-a.wr-size-big { font-size: 17px; }
+@media (hover: hover) and (pointer: fine) { .wr-size-a:hover { color: var(--wr-text); } }
+.wr-size-a:active { transform: scale(0.88); }
+.wr-sl {
+  --p: 0.5;
+  --w: 300px;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border-radius: 10px;
+  outline: none;
+  cursor: ew-resize;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.wr-sl-track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--wr-well);
+  transform-origin: var(--origin, left) center;
+  transform: scaleX(var(--give, 1));
+}
+/* past the ends: it gives, then settles back with a little bounce */
+.wr-sl[data-settle] .wr-sl-track { transition: transform 190ms var(--ease-give); }
+.wr-sl-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--wr-fill);
+  /* the fill's edge 4 px right of the needle; by transform only, so a drag never touches layout */
+  transform: translateX(calc(var(--p) * (var(--w) - 14px) + 11px - var(--w)));
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.wr-sl-needle {
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--wr-text);
+  opacity: 0.32;
+  transform: translateX(calc(var(--p) * (var(--w) - 14px) + 4px));
+  transition: opacity var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), scale var(--dur-press) var(--ease-out);
+}
+/* a tap, a key or a reset glides; a drag follows exactly */
+.wr-sl[data-glide] :is(.wr-sl-fill, .wr-sl-needle) {
+  transition-property: transform, opacity, background-color, scale;
+  transition-duration: var(--dur-slide), var(--dur-fast), var(--dur-fast), var(--dur-press);
+  transition-timing-function: var(--ease-out);
+}
+.wr-sl-ticks { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out); }
+.wr-sl-ticks i { position: absolute; bottom: 0; width: 1px; height: 4px; background: color-mix(in srgb, var(--wr-text) 22%, transparent); }
+.wr-sl-ticks i[data-ten] { height: 6px; }
+/* the writer's own size, 100%: the detent */
+.wr-sl-home { position: absolute; bottom: 0; width: 1.5px; height: 7px; border-radius: 1px 1px 0 0; background: color-mix(in srgb, var(--wr-text) 40%, transparent); transition: background-color var(--dur-fast) var(--ease-out), height var(--dur-fast) var(--ease-out); }
+.wr-sl-label, .wr-sl-value {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--wr-muted);
+  pointer-events: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.wr-sl-label { left: 12px; }
+.wr-sl-value { right: 12px; font-variant-numeric: tabular-nums; pointer-events: auto; }
+.wr-sl-u { margin-left: 1px; color: var(--wr-faint); }
+/* rest on the number a moment: it can be typed */
+.wr-sl-value[data-armed] { cursor: text; text-decoration: underline dotted color-mix(in srgb, var(--wr-text) 40%, transparent); text-underline-offset: 3px; }
+.wr-sl-value input {
+  width: 4ch;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  text-align: right;
+  color: var(--wr-text);
+  font-variant-numeric: tabular-nums;
+}
+.wr-sl-value:has(input) { margin-right: -4px; padding: 2px 4px; border-radius: 6px; background: var(--wr-pop-bg); box-shadow: 0 0 0 2px var(--wr-focus); }
+/* hover and hold: the fill deepens, the needle comes forward, the ruler shows */
+@media (hover: hover) and (pointer: fine) {
+  .wr-sl:hover .wr-sl-fill { background: var(--wr-fill-strong); }
+  .wr-sl:hover .wr-sl-needle { opacity: 0.62; }
+  .wr-sl:hover .wr-sl-ticks { opacity: 1; }
+  .wr-sl:hover :is(.wr-sl-label, .wr-sl-value) { color: var(--wr-text); }
+}
+/* focus: a ring inside the bar */
+.wr-sl:focus-visible .wr-sl-track { box-shadow: inset 0 0 0 2px var(--wr-focus); }
+.wr-sl:focus-visible .wr-sl-ticks { opacity: 1; }
+.wr-sl:focus-visible .wr-sl-needle { opacity: 0.62; }
+/* near the label or the value the needle steps back */
+.wr-sl[data-dodge]:not([data-held]) .wr-sl-needle { opacity: 0.12; }
+.wr-sl[data-held] .wr-sl-fill { background: var(--wr-fill-strong); }
+.wr-sl[data-held] .wr-sl-needle { opacity: 1; background: var(--wr-pencil); scale: 1 1.12; }
+.wr-sl[data-held] .wr-sl-ticks { opacity: 1; }
+.wr-sl[data-held] :is(.wr-sl-label, .wr-sl-value) { color: var(--wr-text); }
+.wr-sl[data-caught] .wr-sl-home { background: var(--wr-pencil); height: 10px; }
+.wr-sl-help { height: 16px; margin-top: 6px; padding-left: 30px; font-size: 11.5px; color: var(--wr-faint); opacity: 0; transition: opacity var(--dur-fast) var(--ease-out); }
+.wr-sl-help kbd { margin: 0 1px; }
+.wr-size:hover .wr-sl-help, .wr-size:focus-within .wr-sl-help { opacity: 1; }
+@media (pointer: coarse) {
+  .wr-sl, .wr-size-a { height: 44px; }
+  .wr-sl-needle { top: 12px; height: 20px; }
+  /* (no keys or double-click to tell of on a phone) */
+  .wr-sl-help { display: none; }
+}
 
 /* ---------- (b) the segmented control: a recessed well, a raised card that slides to the choice ---------- */
 .wr-seg {

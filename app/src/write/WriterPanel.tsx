@@ -13,6 +13,7 @@ import { PEN_SIZES } from '@/lib/controls';
 import LOOKS from '@/lib/first-looks.json';
 import type { Hand } from '@engine';
 import type { Look } from './notes';
+import { SizeSlider } from './SizeSlider';
 
 const WRITERS = (LOOKS as Look[]).filter((l) => l.pen !== 'pencil');
 const PENS = PEN_CHOICES.filter((p) => p.id !== 'pencil');
@@ -161,12 +162,7 @@ export function WriterPanel({ look, sample, hand, onLook, onAnother }: Props) {
         </section>
 
         <section className="wr-writer-section" aria-label="Size">
-          <h3>Size</h3>
-          <label className="wr-size">
-            <span aria-hidden className="wr-size-a">A</span>
-            <input type="range" min={0.8} max={1.45} step={0.01} value={look.size} onChange={(e) => onLook({ size: +e.target.value })} aria-label="Writing size" />
-            <span aria-hidden className="wr-size-a wr-size-big">A</span>
-          </label>
+          <SizeSlider value={look.size} onChange={(size) => onLook({ size })} />
         </section>
       </div>
       <ScrollFade />
