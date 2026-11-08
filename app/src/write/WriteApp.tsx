@@ -455,6 +455,19 @@ export function WriteApp() {
     window.addEventListener('pointermove', moved);
     return () => window.removeEventListener('pointermove', moved);
   }, [writing]);
+  // the toolbar put away (⌘.) comes back to a pointer resting at the window's top, 48 px, for 150 ms (as a full-screen
+  // window's menu bar does); Esc and ⌘. still bring it back too
+  useEffect(() => {
+    if (!hideUi) return;
+    let t = 0;
+    const moved = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      if (e.clientY < 48) { if (!t) t = window.setTimeout(() => { setHideUi(false); setWriting(false); }, 150); }
+      else { window.clearTimeout(t); t = 0; }
+    };
+    window.addEventListener('pointermove', moved);
+    return () => { window.removeEventListener('pointermove', moved); window.clearTimeout(t); };
+  }, [hideUi]);
   const [editing, setEditing] = useState(false);
   const chromeAway = (writing && !coarse) || hideUi;
 
