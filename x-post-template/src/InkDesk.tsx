@@ -205,11 +205,13 @@ export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip, pi
   );
 };
 
-const CAP_PX = 42, PAD_Y = 22, PAD_X = 30;
+// the caption's size: 42 px type at 1, set 12% smaller (everything in the pill scales with it)
+const CAP = 0.88;
+const CAP_PX = 42 * CAP, PAD_Y = 22 * CAP, PAD_X = 30 * CAP;
 const GLASS: React.CSSProperties = {
   background: 'rgba(250, 249, 246, 0.5)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)',
   boxShadow: '0 14px 40px rgba(40,34,24,0.14), 0 1px 4px rgba(40,34,24,0.08), inset 0 0 0 1px rgba(255,255,255,0.65), inset 0 1px 0 rgba(255,255,255,0.9)',
-  borderRadius: 999, padding: `${PAD_Y}px ${PAD_X}px`, fontFamily: FONT, color: C.ink, fontSize: CAP_PX, fontWeight: 430, letterSpacing: -0.4,
+  borderRadius: 999, padding: `${PAD_Y}px ${PAD_X}px`, fontFamily: FONT, color: C.ink, fontSize: CAP_PX, fontWeight: 430, letterSpacing: -0.4 * CAP,
   whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', lineHeight: 1.1,
 };
 /** a caption's words, with a key cap before "Backspace" */
@@ -217,8 +219,8 @@ const Caption: React.FC<{ text: string; lit: boolean }> = ({ text, lit }) => (
   <>
     {text.split(/(Backspace)/).map((p, i) => p === 'Backspace' ? (
       <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
-        <span style={{ width: 50, height: 48, marginRight: 12, borderRadius: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 30,
-          background: lit ? 'rgba(30,39,51,0.14)' : 'rgba(255,255,255,0.75)', boxShadow: lit ? 'inset 0 1px 2px rgba(30,39,51,0.25)' : '0 1px 0 rgba(30,39,51,0.18), 0 0 0 1px rgba(30,39,51,0.08)', transform: `translateY(${lit ? 2 : 0}px)` }}>⌫</span>
+        <span style={{ width: 50 * CAP, height: 48 * CAP, marginRight: 12 * CAP, borderRadius: 11 * CAP, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 * CAP,
+          background: lit ? 'rgba(30,39,51,0.14)' : 'rgba(255,255,255,0.75)', boxShadow: lit ? 'inset 0 1px 2px rgba(30,39,51,0.25)' : '0 1px 0 rgba(30,39,51,0.18), 0 0 0 1px rgba(30,39,51,0.08)', transform: `translateY(${lit ? 2 * CAP : 0}px)` }}>⌫</span>
         Backspace
       </span>
     ) : <span key={i} style={{ whiteSpace: 'pre' }}>{p}</span>)}
