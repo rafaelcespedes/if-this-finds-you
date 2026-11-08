@@ -34,6 +34,25 @@
   --wr-pop-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 48px -16px rgba(0, 0, 0, 0.28);
   --wr-radius: 12px;
   --wr-radius-sm: 8px;
+  /* the control set (controls.tsx; Rafael, 7 Nov): the recess a control sits in, the slider's fill, the raised card a
+     segmented choice slides on, key chips, the tooltip, the ink strip's paper (paper stays paper), a ring drawn on that
+     paper, a switch's knob; and their timing: colour and opacity quick, the pieces that slide a little slower, the
+     slider's ends settling back with a give */
+  --dur-fast: 120ms;
+  --dur-slide: 180ms;
+  --ease-give: cubic-bezier(0.3, 1.45, 0.6, 1);
+  --wr-well: rgba(0, 0, 0, 0.05);
+  --wr-fill: rgba(0, 0, 0, 0.075);
+  --wr-fill-strong: rgba(0, 0, 0, 0.11);
+  --wr-raised: #ffffff;
+  --wr-raised-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.07), 0 2px 6px -2px rgba(0, 0, 0, 0.08);
+  --wr-key-bg: rgba(0, 0, 0, 0.055);
+  --wr-tip-bg: #1c1c1e;
+  --wr-tip-text: #f2f2f4;
+  --wr-tip-key: rgba(255, 255, 255, 0.14);
+  --wr-paper-chip: #fbf9f4;
+  --wr-on-ink: rgba(28, 28, 30, 0.8);
+  --wr-knob: #ffffff;
   /* the site's shared parts (toasts, sheets, menus) read these */
   --background: var(--wr-desk);
   --foreground: var(--wr-text);
@@ -76,6 +95,16 @@
     --panel: #2a2a2c;
     --text: #f2f2f4;
     --ink-soft: #f2f2f4;
+    --wr-well: rgba(255, 255, 255, 0.07);
+    --wr-fill: rgba(255, 255, 255, 0.1);
+    --wr-fill-strong: rgba(255, 255, 255, 0.145);
+    --wr-raised: rgba(255, 255, 255, 0.13);
+    --wr-raised-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --wr-key-bg: rgba(255, 255, 255, 0.08);
+    --wr-tip-bg: #3a3a3c;
+    --wr-tip-key: rgba(255, 255, 255, 0.12);
+    --wr-paper-chip: #d9d5cc;
+    --wr-knob: #d9d9dc;
 }
 @media (prefers-color-scheme: dark) {
   :root[data-app='write']:not([data-theme='light']) {
@@ -102,6 +131,16 @@
     --panel: #2a2a2c;
     --text: #f2f2f4;
     --ink-soft: #f2f2f4;
+    --wr-well: rgba(255, 255, 255, 0.07);
+    --wr-fill: rgba(255, 255, 255, 0.1);
+    --wr-fill-strong: rgba(255, 255, 255, 0.145);
+    --wr-raised: rgba(255, 255, 255, 0.13);
+    --wr-raised-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --wr-key-bg: rgba(255, 255, 255, 0.08);
+    --wr-tip-bg: #3a3a3c;
+    --wr-tip-key: rgba(255, 255, 255, 0.12);
+    --wr-paper-chip: #d9d5cc;
+    --wr-knob: #d9d9dc;
   }
 }
 :root[data-app='write'] body { background: var(--wr-desk); }
