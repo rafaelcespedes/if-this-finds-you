@@ -264,7 +264,7 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
       <PhoneSheet trigger={trigger} title={title} open={open} onOpenChange={set}>
         <div role="list" className="grid pb-1">
           {entries.map((e) =>
-            e.kind === 'separator' ? <div key={e.id} role="presentation" className="mx-3 my-1.5 h-px bg-border" />
+            e.kind === 'separator' ? <div key={e.id} role="presentation" className="sheet-sep mx-3 my-1.5 h-px bg-border" />
               : e.kind === 'label' ? <div key={e.id} className="px-3 pt-2 pb-2 text-[0.75rem] text-muted-foreground">{e.label}</div>
                 : <div key={e.id} role="listitem"><SheetRow entry={e} close={() => set(false)} /></div>,
           )}

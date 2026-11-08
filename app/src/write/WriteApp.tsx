@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { DropdownMenu } from 'radix-ui';
-import { Bold, Check, ChevronLeft, Contrast, Copy, Highlighter, Italic, ListTodo, Moon, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Sun, Trash2, Type, Undo2, WandSparkles } from 'lucide-react';
+import { Bold, Check, ChevronLeft, Contrast, Copy, CopyPlus, Highlighter, Italic, ListTodo, Moon, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Sun, Trash2, Type, Undo2 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { ActionSheet, Sheet, type SheetEntry } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -474,7 +474,7 @@ export function WriteApp() {
     void keep(copy);
     setArrived(from.id);
     window.setTimeout(() => setArrived((a) => (a === from.id ? null : a)), 900);
-    toast('A fair copy', { id: 'fair', description: 'The draft is in your notes.', duration: 4000 });
+    toast('Made a copy', { id: 'fair', description: 'The original is in your notes.', duration: 4000 });
   };
   const copyAll = async () => {
     await copyText(desk.current?.text() ?? '');
@@ -685,7 +685,7 @@ export function WriteApp() {
     { id: 'ink', label: 'In ink', hint: 'Mistakes are crossed out, never erased', checked: !isClean(current), onSelect: () => setMode('ink') },
     { id: 'clean', label: 'Clean', hint: 'Edit freely, like a font. Crossings-out are tidied away', checked: isClean(current), onSelect: () => setMode('clean') },
     sep('s1'),
-    { id: 'fair', label: 'Make a fair copy', icon: <WandSparkles aria-hidden />, onSelect: fairCopy },
+    { id: 'fair', label: 'Make a copy', icon: <CopyPlus aria-hidden />, onSelect: fairCopy },
     { id: 'pin', label: current?.pinned ? 'Unpin' : 'Pin', icon: current?.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />, onSelect: () => pin(current.id, !current.pinned) },
     sep('s2'),
     { id: 'share', label: 'Share…', icon: <Share aria-hidden />, onSelect: () => setShareOpen(true) },
@@ -711,7 +711,7 @@ export function WriteApp() {
 
   const noteItems = (
     <>
-      <DropdownMenu.Item className="wr-menu-item" onSelect={fairCopy}><WandSparkles aria-hidden /> Make a fair copy</DropdownMenu.Item>
+      <DropdownMenu.Item className="wr-menu-item" onSelect={fairCopy}><CopyPlus aria-hidden /> Make a copy</DropdownMenu.Item>
       <DropdownMenu.Item className="wr-menu-item" onSelect={() => pin(current.id, !current.pinned)}>
         {current.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />} {current.pinned ? 'Unpin' : 'Pin'}
       </DropdownMenu.Item>

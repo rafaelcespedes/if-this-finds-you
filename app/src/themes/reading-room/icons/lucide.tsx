@@ -54,7 +54,10 @@ import { ENGINE_ICONS } from './engine-icons';
 export * from 'lucide-react/icons';
 
 type P = SVGProps<SVGSVGElement> & { size?: number | string; strokeWidth?: number | string; absoluteStrokeWidth?: boolean };
-const PEN = LOOK === 'reading-room';
+// (Notes, notes.html: data-app="write", is a tool of its own, set in Lucide throughout at one weight, like its
+// controls; the pen's icons mixed in there read as another set. Rafael, 8 Nov)
+const NOTES = typeof document !== 'undefined' && document.documentElement.dataset.app === 'write';
+const PEN = LOOK === 'reading-room' && !NOTES;
 
 /** What the words beside an icon are set in: 'book' (the look's serif, --rr-book, whose capitals sit off its line box's
  * centre by --rr-book-cap-lift), 'ui' (the sans, or the serif's small capitals, which already centre), or nothing
