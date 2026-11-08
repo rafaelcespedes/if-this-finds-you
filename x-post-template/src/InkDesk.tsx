@@ -205,8 +205,8 @@ export const InkDesk: React.FC<z.infer<typeof inkDeskSchema>> = ({ tag, skip, pi
   );
 };
 
-// the caption's size: 42 px type at 1, set 12% smaller (everything in the pill scales with it)
-const CAP = 0.88;
+// the caption's size: 34 px type (42 at 1; everything in the pill scales with it)
+const CAP = 34 / 42;
 const CAP_PX = 42 * CAP, PAD_Y = 22 * CAP, PAD_X = 30 * CAP;
 const GLASS: React.CSSProperties = {
   background: 'rgba(250, 249, 246, 0.5)', backdropFilter: 'blur(30px) saturate(180%)', WebkitBackdropFilter: 'blur(30px) saturate(180%)',
