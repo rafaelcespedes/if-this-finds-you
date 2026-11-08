@@ -14,6 +14,7 @@ import { ActionSheet, Sheet, type SheetEntry } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useVisualViewport } from '@/hooks/useVisualViewport';
 import { copyText, saveNote } from '@/lib/actions';
+import { takeFromDesk } from '@/lib/to-notes';
 import { encodeInk } from '@/lib/ink';
 import { inkColor } from '@/lib/inks';
 import { effective, effectiveHand } from '@/lib/params';
@@ -33,8 +34,23 @@ import type { FormatCommand } from '@/components/PaperEditor';
 import type { InkFormat, InkHighlight } from '@/lib/ink';
 import {
   MIGRATED_KEY, asClean, asInk, blankNote, inkFromLines, pendingTicks, deleteNote, getNote, isBlank, isClean, lastOpen, listen, noteText, oldNotes, pickLook, putNote,
-  knowText, readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
+  knowText, noteFromDesk, readNotes, rememberOpen, stateOf, titleOf, wordCount, type Look, type Note,
 } from './notes';
+
+/** Arriving from the desk (Keep writing in Notes, lib/to-notes.ts): what it put across, taken once per page load (kept
+ *  here, so a second run of the first effect, as React's development mode does, finds it still), and the address
+ *  loses its ?from. */
+let arrived: ReturnType<typeof takeFromDesk> | undefined;
+function arrival() {
+  if (arrived !== undefined) return arrived;
+  const q = new URLSearchParams(location.search);
+  arrived = q.get('from') === 'desk' ? takeFromDesk() : null;
+  if (q.has('from')) {
+    q.delete('from');
+    history.replaceState(history.state, '', location.pathname + (q.size ? `?${q}` : '') + location.hash);
+  }
+  return arrived;
+}
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const MOD = isMac() ? '⌘' : 'Ctrl+';
@@ -164,6 +180,7 @@ export function WriteApp() {
   // first: what's kept (and, once, what the first version kept), then the note that was open
   useEffect(() => {
     let off = false;
+    const fromDesk = arrival();
     (async () => {
       let all = await readNotes();
       const ok = all !== null;
@@ -189,6 +206,13 @@ export function WriteApp() {
       if (off) return;
       const want = lastOpen();
       let open = all.find((n) => n.id === want && !n.thrown) ?? [...all].filter((n) => !n.thrown).sort((a, b) => b.at - a.at)[0];
+      // from the desk (Keep writing in Notes): its letter, a new note in the same hand, open (lib/to-notes.ts)
+      if (fromDesk) {
+        open = noteFromDesk(fromDesk.look, fromDesk.text);
+        all = [...all, open];
+        if (ok && !isBlank(open)) await putNote(open);
+        if (open.ink) toast('Your letter, in Notes', { id: 'from-desk', description: 'In the same hand. It’s still on the desk too.', duration: 5000 });
+      }
       if (!open) {
         open = blankNote(pickLook());
         all = [...all, open];

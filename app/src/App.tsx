@@ -40,6 +40,7 @@ import { foundHand, foundKey, foundLetter, theirRequest } from '@/lib/found';
 import { SheetLabel } from '@/components/SheetLabel';
 import type { WriteResult } from '@/lib/write-protocol';
 import { WritingMenu } from '@/components/WritingMenu';
+import { sendToNotes } from '@/lib/to-notes';
 import { DEFAULT_INK, INK_FAMILIES } from '@/lib/inks';
 import { inkColor } from '@/lib/inks';
 import { getOccasion } from '@/lib/occasions';
@@ -202,6 +203,9 @@ export default function App() {
       setKept(drafts());
       toFound();
     },
+    /** Keep writing in Notes: the letter as it is now (the panel's copy leaves out its words), put across just before
+     *  the link is followed (lib/to-notes.ts) */
+    onToNotes: () => sendToNotes(stateNow.current),
     /** back to a letter you were writing (this tab's newest, or the one picked from the list) */
     onBackToMine: (savedAt?: number) => {
       const s = stateNow.current;

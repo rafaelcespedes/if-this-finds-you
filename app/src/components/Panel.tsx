@@ -36,6 +36,7 @@ import { AMOUNT_RANGE, SIZE_RANGE, type NoteState } from '@/lib/state';
 import { cn, keepChosenInView } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { LOOK } from '@/lib/look';
+import { NOTES_FROM_DESK } from '@/lib/to-notes';
 import { FindRow } from '@/themes/postmarked/tool';
 
 export interface PanelProps {
@@ -102,6 +103,8 @@ export interface PanelProps {
     onAnother: () => void;
     /** this tab's newest, or the one put down at `savedAt` */
     onBackToMine: (savedAt?: number) => void;
+    /** your letter, put across for Notes just before its link is followed (Keep writing in Notes) */
+    onToNotes: () => void;
   };
   /** Ink mode (when the engine writes in ink): used by the writing menu and the pen tray, not the panel */
   ink?: {
@@ -328,6 +331,13 @@ export function LetterStatus({ letter, className }: PanelProps & { className?: s
         {/* your kept letters live in the header (My letters); on a found letter, Find another brings the next one */}
         {!letter.found && <button type="button" onClick={letter.onAnother} className={link}>Read a found letter</button>}
       </span>
+      {/* your letter, onward: a new note in this hand, its words written out (lib/to-notes.ts; Rafael, 8 Nov). A link,
+          so a new tab works too: what goes across is put by just before it's followed */}
+      {!letter.found && (
+        <a href={NOTES_FROM_DESK} onClick={letter.onToNotes} onAuxClick={letter.onToNotes} className={link}>
+          Keep writing in Notes
+        </a>
+      )}
     </div>
   );
 }

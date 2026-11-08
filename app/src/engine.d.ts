@@ -86,6 +86,10 @@ declare module '@engine' {
   export function styleNames(): string[];
   export function choose(p: Hand, ch: string, ctx?: unknown): unknown;
   export function penOutline(p: Hand, pts: number[][], seedOff: number, opt?: { dot?: boolean }): number[][] | null;
+  /** the pen this hand writes with: its own (from its seed) unless p.pen names one */
+  export function penKey(p: Hand): string;
+  /** the ink this hand fills its pen (penKey) with, when none is chosen */
+  export function handInk(p: Hand): string;
   export function contoursToD(contours: number[][][], ox: number, oy: number, sc: number): string;
   export function getStyle(name: string): { name: string; label?: string; connected?: boolean } | undefined;
 

@@ -104,6 +104,14 @@ export const pickLook = (not?: string, sameAs?: Look) => {
 };
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 export const blankNote = (look: Look): Note => { const now = Date.now(); return { id: newId(), look, ink: null, created: now, at: now }; };
+/** The desk's letter, as a new note (lib/to-notes.ts): its hand and look, and its words written out fresh by the pen
+ *  when it opens, as a copy is (none: a blank note in that hand) */
+export function noteFromDesk(look: Look, text: string): Note {
+  const n = blankNote(look);
+  const lines: LineFormat[] = text.split('\n').map((t) => ({ text: t, as: 'body' }));
+  if (!lines.some((L) => L.text.trim())) return n;
+  return { ...n, ink: encodeInk(inkFromLines(look.seed, look.style, lines)), fair: Date.now() };
+}
 
 export function stateOf(l: Look, inkLog: string | null = null): NoteState {
   return {
