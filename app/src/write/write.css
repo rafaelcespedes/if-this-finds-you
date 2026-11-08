@@ -579,6 +579,9 @@
 @media (pointer: coarse) { .wr-menu-item { min-height: 44px; font-size: 15px; } }
 @media (prefers-reduced-motion: reduce) { .wr-menu, .wr-menu[data-state='closed'] { animation: none; } }
 
+/* a selected swatch's ring stands off the swatch by the surface's own colour (a popover's, or a phone sheet's) */
+:root[data-app='write'] { --wr-ring-gap: var(--wr-pop-bg); }
+:root[data-app='write'] .sheet-surface { --wr-ring-gap: var(--wr-side); }
 /* the writer's popover (desktop) and sheet (phones) take this frame, not the site's */
 .wr-pop.wr-pop {
   padding: 0;
@@ -592,7 +595,20 @@
   font-family: var(--wr-font);
 }
 :root[data-app='write'] .sheet-surface { background: var(--wr-side); border: 0; color: var(--wr-text); font-family: var(--wr-font); }
+/* the writer's popover fits the window, with room to spare around it (it was taller than a 900 px window) */
+.wr-pop.wr-pop-writer { max-height: min(var(--radix-popover-content-available-height, 100dvh), calc(100dvh - 120px)); }
 .wr-writer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; width: 380px; padding: 14px; font-size: 13px; }
+/* the fade at the panel's foot while there's more below (WriterPanel's ScrollFade); none at the end */
+.wr-fade {
+  position: sticky;
+  bottom: 0;
+  height: 24px;
+  margin-top: -24px;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wr-ring-gap) 0%, transparent), var(--wr-ring-gap));
+  pointer-events: none;
+  transition: opacity 150ms var(--ease-out);
+}
+.wr-fade[data-end] { opacity: 0; }
 .wr-writer > * { min-width: 0; }
 .sheet-surface .wr-writer { width: auto; padding: 6px 6px 10px; }
 .wr-writer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -643,11 +659,15 @@
   transition: background-color 120ms var(--ease-out);
 }
 .wr-chip[aria-checked='true'] { background: var(--wr-on); color: var(--wr-on-text); }
+/* a row's own name ("Tip", "Kind"), so its chips don't read as more of the row above */
+.wr-chips-label { align-self: center; min-width: 30px; margin-right: 2px; font-size: 11.5px; font-weight: 500; color: var(--wr-muted); }
 @media (pointer: coarse) { .wr-chip { height: 36px; padding: 0 12px; font-size: 14px; } }
-.wr-inks { display: flex; flex-wrap: wrap; gap: 4px; }
-.wr-ink { display: grid; place-items: center; width: 46px; height: 32px; border-radius: var(--wr-radius-sm); background: #fbf9f4; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
-.wr-ink svg { width: 34px; }
-.wr-ink[aria-checked='true'] { box-shadow: inset 0 0 0 2px var(--wr-on); }
+/* the eight inks on one row */
+.wr-inks { display: grid; grid-template-columns: repeat(8, minmax(0, 36px)); justify-content: space-between; gap: 4px; }
+.wr-ink { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: var(--wr-radius-sm); background: #fbf9f4; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
+.wr-ink svg { width: 26px; }
+/* the one in use: a ring around the swatch, standing off it (an inset ring vanished on the light swatch in dark mode) */
+.wr-ink[aria-checked='true'] { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0 0 2px var(--wr-ring-gap), 0 0 0 3.5px var(--wr-on); }
 .wr-papers { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 4px; }
 .wr-paper {
   display: grid;
