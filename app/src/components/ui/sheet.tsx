@@ -40,7 +40,7 @@ export type SheetEntry =
     disabled?: boolean;
     /** a smaller, secondary row */
     quiet?: boolean;
-    /** a choice that is on (a tick at the start) */
+    /** a choice that is on (a tick: at the start in a menu, at the end on a phone, where the icons are) */
     checked?: boolean;
   }
   | { kind: 'separator'; id: string }
@@ -207,8 +207,11 @@ function StatusSlot({ icon, status, top }: { icon?: ReactNode; status?: RowStatu
   );
 }
 
-/** A row in a phone sheet: 52 px, a press that answers at once. */
-function SheetRow({ entry, close, checks }: { entry: Extract<SheetEntry, { onSelect: () => void }>; close: () => void; checks?: boolean }) {
+/**
+ * A row in a phone sheet: 52 px, a press that answers at once. A choice that's on is ticked at the row's end, in the
+ * icons' column, and no row is indented to make room for a tick (Rafael, 8 Nov).
+ */
+function SheetRow({ entry, close }: { entry: Extract<SheetEntry, { onSelect: () => void }>; close: () => void }) {
   return (
     <button
       type="button"
@@ -221,14 +224,11 @@ function SheetRow({ entry, close, checks }: { entry: Extract<SheetEntry, { onSel
         entry.quiet ? 'text-[0.875rem]' : 'text-[1rem]',
       )}
     >
-      {checks && (
-        <span aria-hidden className={cn('grid size-5 shrink-0 place-items-center', entry.hint && 'mt-[calc((1lh-1.25rem)/2)] self-start')}>{entry.checked && <Check className="size-[18px] text-[var(--ink)]" />}</span>
-      )}
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="min-w-0">{entry.label}</span>
         {entry.hint && <span className="text-[0.75rem] leading-snug text-muted-foreground">{entry.hint}</span>}
       </span>
-      <StatusSlot icon={entry.icon} status={entry.status} top={!!entry.hint} />
+      <StatusSlot icon={entry.checked ? <Check className="text-[var(--ink)]" /> : entry.icon} status={entry.status} top={!!entry.hint} />
     </button>
   );
 }
@@ -256,7 +256,7 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
   const [open, setOpen] = useState(false);
   const set = (o: boolean) => { setOpen(o); onOpenChange?.(o); };
   const [chose, setChose] = useState(false);
-  // when some rows can be ticked, every row keeps the tick's room, so the words line up
+  // a menu: when some rows can be ticked, every row keeps the tick's room, so the words line up
   const checks = entries.some((e) => (e.kind ?? 'item') === 'item' && (e as { checked?: boolean }).checked != null);
 
   if (sheets) {
@@ -266,7 +266,7 @@ export function ActionSheet({ trigger, title, entries, onOpenChange, side = 'bot
           {entries.map((e) =>
             e.kind === 'separator' ? <div key={e.id} role="presentation" className="mx-3 my-1.5 h-px bg-border" />
               : e.kind === 'label' ? <div key={e.id} className="px-3 pt-2 pb-2 text-[0.75rem] text-muted-foreground">{e.label}</div>
-                : <div key={e.id} role="listitem"><SheetRow entry={e} checks={checks} close={() => set(false)} /></div>,
+                : <div key={e.id} role="listitem"><SheetRow entry={e} close={() => set(false)} /></div>,
           )}
         </div>
       </PhoneSheet>

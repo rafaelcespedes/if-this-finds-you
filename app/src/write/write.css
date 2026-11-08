@@ -232,8 +232,8 @@
 @media (hover: hover) and (pointer: fine) {
   .wr-icon:hover, .wr-title:hover, .wr-writer-chip:hover { background: var(--wr-hover); }
 }
-.wr-icon.wr-back { width: auto; padding: 0 12px 0 6px; gap: 2px; display: inline-flex; align-items: center; font-weight: 500; }
-.wr-icon.wr-back svg { width: 20px; height: 20px; }
+/* a phone's way back to the notes: a chevron alone, a button as square as More (Rafael, 8 Nov) */
+.wr-icon.wr-back svg { width: 22px; height: 22px; margin-left: -1px; }
 .wr-title {
   max-width: min(42ch, 36vw);
   height: 38px;
@@ -556,15 +556,9 @@
 .wr-library[data-screen] .wr-row-main { padding: 10px 8px; gap: 12px; }
 @media (hover: hover) and (pointer: fine) { .wr-row:not([data-open]) .wr-row-main:hover { background: var(--wr-hover); } }
 .wr-row-main:disabled { cursor: default; }
-.wr-thumb {
-  flex: none;
-  width: var(--thumb-w);
-  line-height: 0;
-  border-radius: 2px;
-  overflow: hidden;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-.wr-library[data-screen] .wr-thumb { --thumb-w: 48px !important; }
+/* the sheet itself (its own edge and shadow, SheetView), centred in a slot as wide on every row */
+.wr-thumb-slot { flex: none; display: flex; justify-content: center; width: var(--thumb-w); }
+.wr-thumb { display: block; line-height: 0; }
 .wr-row-text { display: grid; gap: 2px; min-width: 0; flex: 1; }
 .wr-row-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; font-size: 13px; }
 .wr-library[data-screen] .wr-row-title { font-size: 16px; }
@@ -1277,10 +1271,8 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
 .wr-keys dd { color: var(--wr-text); }
 @media (prefers-reduced-motion: reduce) { .wr-dialog, .wr-dialog-scrim, .wr-dialog[data-state='closed'], .wr-dialog-scrim[data-state='closed'] { animation: none; } }
 
-/* a very narrow phone: the back button is a chevron, the writer's name shorter */
+/* a very narrow phone: the writer's name shorter */
 @media (max-width: 359.98px) {
-  .wr-icon.wr-back span { display: none; }
-  .wr-icon.wr-back { padding: 0 4px; }
   .wr-writer-chip { max-width: 30vw; }
   .wr-mode { padding: 0 2px 0 8px; }
 }

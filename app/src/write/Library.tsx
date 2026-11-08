@@ -140,7 +140,7 @@ const Row = memo(function Row({ note, open, screen, arrived, binned, onOpen, onP
       >
         {/* (a phone: the open letter's sheet isn't on the page while its list is, so its row's picture takes the
             sheet's name, and Back shrinks the sheet into it) */}
-        <Thumb note={note} named={!open || screen} />
+        <Thumb note={note} named={!open || screen} phone={screen} />
         <span className="wr-row-text">
           <span className="wr-row-title">{title}</span>
           <span className="wr-row-meta">
@@ -168,10 +168,15 @@ const Row = memo(function Row({ note, open, screen, arrived, binned, onOpen, onP
   );
 });
 
-/** the note's first sheet, small, written out once it's near the view */
-const THUMB_W = 40;
+/**
+ * The note's first sheet, small, written out once it's near the view. It's the sheet itself, with its own edge and
+ * shadow, in no box of its own: fitted into a slot of the same width on every row (so the titles line up), centred
+ * across it, a tall pad or a wide card as it is (Rafael, 8 Nov: a phone's picture sat flush left in a bigger box)
+ */
+const THUMB = { w: 40, h: 54 };
+const THUMB_PHONE = { w: 48, h: 64 };
 // (the open note's sheet is on the desk under the same name; a name can only be on the page once)
-const Thumb = memo(function Thumb({ note, named }: { note: Note; named: boolean }) {
+const Thumb = memo(function Thumb({ note, named, phone }: { note: Note; named: boolean; phone: boolean }) {
   const host = useRef<HTMLSpanElement>(null);
   const [near, setNear] = useState(false);
   useEffect(() => {
@@ -195,9 +200,12 @@ const Thumb = memo(function Thumb({ note, named }: { note: Note; named: boolean 
     return () => { off = true; if (typeof cancelIdleCallback === 'function') cancelIdleCallback(id as number); else clearTimeout(id as number); };
   }, [near, version]);
   const paper = getPaper(note.look.paper);
+  const box = phone ? THUMB_PHONE : THUMB;
   return (
-    <span ref={host} className="wr-thumb" style={{ viewTransitionName: named ? `sheet-${note.id}` : undefined, '--thumb-w': `${THUMB_W}px` } as CSSProperties} aria-hidden>
-      <SheetView paper={paper} pxPerMm={THUMB_W / paper.w} svg={drawn?.svg ?? null} ink={drawn?.ink ?? 'currentColor'} index={0} count={1} />
+    <span className="wr-thumb-slot" style={{ '--thumb-w': `${box.w}px` } as CSSProperties} aria-hidden>
+      <span ref={host} className="wr-thumb" style={{ viewTransitionName: named ? `sheet-${note.id}` : undefined }}>
+        <SheetView paper={paper} pxPerMm={Math.min(box.w / paper.w, box.h / paper.h)} svg={drawn?.svg ?? null} ink={drawn?.ink ?? 'currentColor'} index={0} count={1} />
+      </span>
     </span>
   );
 });

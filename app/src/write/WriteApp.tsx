@@ -807,8 +807,8 @@ export function WriteApp() {
           <header className="wr-bar" aria-label="Toolbar">
             <div className="wr-group">
               {phone ? (
-                <button type="button" className="wr-icon wr-back" onClick={() => { settle(); void moveSheets(() => setPhoneScreen('library')); }} aria-label="Notes">
-                  <ChevronLeft aria-hidden /><span>Notes</span>
+                <button type="button" className="wr-icon wr-back" onClick={() => { settle(); void moveSheets(() => setPhoneScreen('library')); }} aria-label="Back to notes">
+                  <ChevronLeft aria-hidden />
                 </button>
               ) : (
                 <>{!libOpen && <HomeMark />}<button type="button" className="wr-icon" onPointerDown={keepPen} onClick={togglePanel} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} {...tip('Notes', [KEY.mod, '\\'])}>
