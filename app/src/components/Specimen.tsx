@@ -1,9 +1,9 @@
 // A few words written in a hand, for pickers (school cards, pen swatches). Each sample is a real layout and
 // render, so they're written in a worker (a copy of the writing worker, workers/specimen.ts) and kept: a new hand
 // never stops the page for them. Without the worker, the page makes them one at a time in idle moments.
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Hand } from '@engine';
-import { inlineSVG } from '@/lib/writing';
+import { edgeForScreen, inlineSVG } from '@/lib/writing';
 import { cn } from '@/lib/utils';
 import type { SpecimenAsk, SpecimenJob, SpecimenReply } from '@/lib/specimen-protocol';
 
@@ -143,8 +143,12 @@ export const Specimen = memo(function Specimen({ sampleKey, hand, recipe, text, 
     return () => { live = false; };
     // hand() and recipe are read only when the key changes
   }, [key]);
+  // a touch screen: the ink's edge and felt's bleed off, as on the page (lib/writing.ts EDGE_OFF)
+  const host = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => { edgeForScreen(host.current?.querySelector('svg')); }, [svg]);
   return (
     <div
+      ref={host}
       aria-hidden
       className={cn('writing flex items-center transition-opacity duration-200 ease-out [&_svg]:h-full [&_svg]:w-auto [&_svg]:max-w-none', svg ? 'opacity-100' : 'opacity-0', className)}
       style={{ color }}

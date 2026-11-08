@@ -47,11 +47,11 @@ const CACHE_NAME = 'lost-letters-cards';
 const BUILD = workerSrc.split('/').pop()?.replace(/\W+/g, '-') ?? 'dev';
 
 /**
- * A card shown `css` px wide: that width in steps of 20 px, and its raster width at the screen's density (at most
- * 2x). Steps keep cached images reusable between similar screens.
+ * A card shown `css` px wide: that width in steps of 20 px, and its raster width at the screen's density (to 3x: at
+ * 2x a phone's cards were soft). Steps keep cached images reusable between similar screens.
  */
 export function cardSize(css: number) {
-  const dpr = Math.min(2, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1);
+  const dpr = Math.min(3, typeof devicePixelRatio === 'number' ? devicePixelRatio : 1);
   const step = Math.max(140, Math.round(css / 20) * 20);
   return { css: step, width: Math.min(960, Math.ceil((step * dpr) / 80) * 80) };
 }

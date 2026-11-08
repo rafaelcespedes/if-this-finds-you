@@ -95,7 +95,7 @@ self.onmessage = async (e: MessageEvent<CardRequest | CardWarm>) => {
     inkOnPaper(ctx, ink, B, W, H);
 
     let blob: Blob;
-    try { blob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.86 }); } catch { blob = await canvas.convertToBlob(); }
+    try { blob = await canvas.convertToBlob({ type: 'image/webp', quality: 0.92 }); } catch { blob = await canvas.convertToBlob(); }
     const bytes = await blob.arrayBuffer();
     post({ job: req.job, id: req.letter.id, bytes, type: blob.type, look, width: W, height: H, bleed: B, shaped, ms: performance.now() - t0 }, [bytes]);
   } catch (err) {

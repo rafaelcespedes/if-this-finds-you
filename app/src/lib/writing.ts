@@ -40,7 +40,10 @@ export function liftInkEdge(svg: Element): () => void {
     if (!id || !id.startsWith('inkEdge')) continue;
     const def = svg.querySelector(`filter[id="${id}"]`);
     const parts = def ? [...def.children].map((c) => c.localName) : [];
-    if (!parts.length || parts.some((n) => n !== 'feTurbulence' && n !== 'feDisplacementMap')) continue;
+    // (felt's bleed is a blur on top: Safari draws a blur no finer than about a device pixel, three times what felt asks
+    // for, so felt writing came out soft on every iPhone screen, measured 3.7-4.4 px edges against 1.5 for type. On a
+    // touch screen it goes too; elsewhere it stays. Pencil's grain is more than an edge, and stays everywhere)
+    if (!parts.length || parts.some((n) => n !== 'feTurbulence' && n !== 'feDisplacementMap' && !(EDGE_OFF && n === 'feGaussianBlur'))) continue;
     el.removeAttribute('filter');
     lifted.push([el, ref]);
   }
@@ -55,7 +58,7 @@ export function liftInkEdge(svg: Element): () => void {
  * stretches it, so pinching in, or the page zoomed in Safari's aA menu, turned the writing soft while the type stayed
  * sharp (Rafael, 7 Nov: "on mobile … the text rendering … looks a little blurry"; measured in the iOS Simulator: ink
  * edges 5 px wide at a 2.5x pinch with the filter, 1 px without). At 100% it moves edges by a fraction of a pixel: the
- * same ink, measured identical. Felt's bleed and pencil's grain are more than an edge, and stay.
+ * same ink, measured identical. Felt's bleed goes too (it blurred, see liftInkEdge); pencil's grain stays.
  */
 export const EDGE_OFF = typeof window !== 'undefined' && typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
