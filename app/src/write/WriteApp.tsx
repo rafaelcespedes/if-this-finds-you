@@ -182,6 +182,8 @@ export function WriteApp() {
   // a clean note: its words and marks
   const onCleanChange = useCallback((text: string, marks: Mark[]) => {
     const id = currentRef.current;
+    // (written on in Clean: switching to it can't be undone exactly any more)
+    toast.dismiss(`clean-${id}`);
     dirty.current = true;
     patch(id, (x) => ({ ...x, text, marks, at: Date.now() }));
     window.clearTimeout(saveTimer.current);
@@ -196,6 +198,22 @@ export function WriteApp() {
     void keep(next);
     say(mode === 'clean' ? 'Clean: edit freely, like a font.' : 'In ink: mistakes are crossed out.');
     if (!coarse) requestAnimationFrame(() => desk.current?.focusEnd());
+    // Clean tidies the crossings-out away: Undo puts the letter back in ink exactly as it was, its ink log and all
+    // (In ink from the menu writes the words out afresh instead). Until the clean letter is written on
+    if (mode === 'clean' && n.ink) {
+      toast('Crossings-out tidied away', { id: `clean-${n.id}`, duration: 8000, action: { label: 'Undo', onClick: () => undoClean(n, next) } });
+    }
+  };
+  /** the letter back in ink as it was before Clean (`was`), if it's still the clean letter that was made from it */
+  const undoClean = (was: Note, clean: Note) => {
+    const now = notesRef.current.find((x) => x.id === was.id);
+    if (!now || !isClean(now) || now.text !== clean.text || (now.marks?.length ?? 0) > 0) return;
+    // (what changed since, the writer, a pin, stays; the words are the ink's again, exactly)
+    const back: Note = { ...now, mode: was.mode, ink: was.ink, text: was.text, marks: was.marks, lines: was.lines, at: Date.now() };
+    patch(was.id, () => back);
+    void keep(back);
+    say('In ink: mistakes are crossed out.');
+    if (!coarse && was.id === currentRef.current) requestAnimationFrame(() => desk.current?.focusEnd());
   };
 
   // leaving: the pen's tail written down and kept, twice over (the database, and a copy it can't miss)
