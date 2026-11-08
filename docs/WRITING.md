@@ -11,7 +11,7 @@ take it further, or take it somewhere else, this page is the way in.
 
 ## Try it
 
-On the site: **[ifthisfindsyou.app/write](https://ifthisfindsyou.app/write)**, a small writing app built on this
+On the site: **[ifthisfindsyou.app/notes](https://ifthisfindsyou.app/notes)**, a small writing app built on this
 interaction: write with a generated hand the way you'd write with a font in Notes. It's a work in progress, where new
 ideas land first. The home page, [ifthisfindsyou.app](https://ifthisfindsyou.app), has the same writing on the letter
 desk: click the letter and start typing.
@@ -22,7 +22,7 @@ On your computer (you need [Node.js](https://nodejs.org) 24):
 cd app && npm install && npm run dev
 ```
 
-Then open `http://127.0.0.1:5173/write` for the writing page, or `http://127.0.0.1:5173/` for the letter desk.
+Then open `http://127.0.0.1:5173/notes` for the writing page, or `http://127.0.0.1:5173/` for the letter desk.
 
 Want a video of it for a post? The [X post template](../x-post-template/) makes the square demo video, keyboard and
 all, with the real engine, and lets you change what's typed, the writer and the paper.
@@ -34,7 +34,7 @@ all, with the real engine, and lets you change what's typed, the writer and the 
 | Type | Writes it out by hand, a few letters behind you. No two letters come out the same. |
 | Backspace before the pen gets there | It's gone, cleanly. You changed your mind before the ink touched the paper. |
 | Backspace once it's ink | The pen hovers for a moment, then crosses the word out, or writes the right letter over the wrong one. |
-| Backspace again on a crossed-out word, or hold it down | Crosses it out harder: a heavier line, then a scribble, then inked out (on `/write` for now). On a phone, a held key is read from how fast the deletions come. |
+| Backspace again on a crossed-out word, or hold it down | Crosses it out harder: a heavier line, then a scribble, then inked out (on `/notes` for now). On a phone, a held key is read from how fast the deletions come. |
 | Select and delete | Strikes it through, in this writer's own way (a line, two lines, a wave, loops or a scribble). |
 | Select and type | Strikes the old words. Mid-text, the new ones go above them; on the last words written, the pen carries on after them, the way you would writing in one go. |
 | Type in the middle of a line | Adds it above the line, with a caret; typing on at its end carries on the same insertion. |
@@ -55,7 +55,7 @@ Crossing a word out again, one press at a time:
 
 ## The writing app
 
-`/write` treats the hand like a font in a notes app:
+`/notes` treats the hand like a font in a notes app:
 
 - **Notes, kept in the browser.** Every note is kept on the device as you write (IndexedDB, one record per note, so two
   tabs never write over each other). The library lists them the way Notes does: Pinned, Today, Yesterday, then by
@@ -94,7 +94,7 @@ Crossing a word out again, one press at a time:
    blackouts, loopy coils), how hard they press. Each mark is placed once, on the letters it covers.
 6. **Crossing out again.** `again()` in `engine/sheet.js` finds the struck run at the caret and adds one more pass, a
    level harder: a heavier strike, then the writer's own scribble with the word still showing through, then inked
-   out. Held down, `/write` climbs one level every 700 ms, about as long as the hand takes to draw one.
+   out. Held down, `/notes` climbs one level every 700 ms, about as long as the hand takes to draw one.
 7. **Drawing.** `app/src/components/LiveSheets.tsx` patches the page word by word as the log grows, and
    `engine/animate.js` (`createPen`, `paintPen`) draws the strokes in writing order. Letters the pen hasn't reached
    show as faint graphite "thoughts".

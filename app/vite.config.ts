@@ -88,8 +88,9 @@ export default defineConfig({
         letters: path.resolve(import.meta.dirname, 'letters.html'),
         fonts: path.resolve(import.meta.dirname, 'fonts.html'),
         about: path.resolve(import.meta.dirname, 'about.html'),
-        // the writing page (write.html, src/write/): a sheet and a pen, typing that behaves like ink. Not linked yet
-        write: path.resolve(import.meta.dirname, 'write.html'),
+        // the notes app (notes.html at /notes, src/write/; /write redirects there, vercel.json): typing that behaves
+        // like ink. Not linked yet
+        notes: path.resolve(import.meta.dirname, 'notes.html'),
         notfound: path.resolve(import.meta.dirname, '404.html'),
       },
     },

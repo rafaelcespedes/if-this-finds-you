@@ -3,7 +3,7 @@
 //
 //   cd app && npm run build && cd ..
 //   (cd tools/smoke && npm ci)
-//   node tools/smoke/budget.mjs                     serve app/dist with `npx vite preview` and measure /write
+//   node tools/smoke/budget.mjs                     serve app/dist with `npx vite preview` and measure /notes
 //   node tools/smoke/budget.mjs --dist=<folder>     another build (an earlier one, to compare)
 //   node tools/smoke/budget.mjs --url=<site>        a running site instead (http://127.0.0.1:5391, a Vercel preview)
 //   --only=desktop|phone    one device        --json=<file>    also write every number there
@@ -60,7 +60,7 @@ async function serve() {
   const url = arg('url');
   if (url) return { base: url.replace(/\/$/, ''), stop: () => {} };
   const dist = path.resolve(arg('dist') || path.join(APP, 'dist'));
-  if (!fs.existsSync(path.join(dist, 'write.html'))) {
+  if (!fs.existsSync(path.join(dist, 'notes.html'))) {
     console.error(`No build with a writing page at ${dist}: run "cd app && npm run build" first.`);
     process.exit(1);
   }
@@ -68,7 +68,7 @@ async function serve() {
   const vite = spawn('npx', ['vite', 'preview', '--outDir', dist, '--port', String(port), '--strictPort', '--host', '127.0.0.1'], { cwd: APP, stdio: ['ignore', 'pipe', 'pipe'] });
   const base = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 100; i++) {
-    try { const r = await fetch(base + '/write.html'); if (r.ok) break; } catch { /* not up yet */ }
+    try { const r = await fetch(base + '/notes.html'); if (r.ok) break; } catch { /* not up yet */ }
     await new Promise((r) => setTimeout(r, 150));
   }
   return { base, stop: () => vite.kill() };
@@ -134,7 +134,7 @@ async function run(browser, base, dev) {
     for (const ch of text) { await page.keyboard.type(ch); await page.waitForTimeout(base * (0.6 + Math.random() * 0.8)); }
   };
 
-  await page.goto(base + '/write', { waitUntil: 'load' });
+  await page.goto(base + '/notes', { waitUntil: 'load' });
   await page.evaluate(() => { try { localStorage.clear(); } catch { /* fine */ } });
   await page.reload({ waitUntil: 'load' });
   await page.waitForSelector('[data-paper] textarea', { timeout: 30000 });
@@ -287,7 +287,7 @@ const all = {};
 let failed = 0;
 try {
   for (const d of devices) {
-    console.log(`\n${d === 'phone' ? 'Phone (390×844, CPU 4× slower)' : 'Desktop (1440×900)'}: ${site.base}/write`);
+    console.log(`\n${d === 'phone' ? 'Phone (390×844, CPU 4× slower)' : 'Desktop (1440×900)'}: ${site.base}/notes`);
     const R = await run(browser, site.base, d);
     all[d] = R;
     for (const l of report(R)) {

@@ -18,8 +18,8 @@ export const SHARE_SHAPES: { id: ShareShape; label: string }[] = [
   { id: 'wide', label: 'Wide' },
   { id: 'page', label: 'The page' },
 ];
-export const SHARE_ADDRESS = 'ifthisfindsyou.app/write';
-export const SHARE_URL = 'https://ifthisfindsyou.app/write';
+export const SHARE_ADDRESS = 'ifthisfindsyou.app/notes';
+export const SHARE_URL = 'https://ifthisfindsyou.app/notes';
 
 const ROOM = '#e6e4de';
 const INK = '#1e2733';

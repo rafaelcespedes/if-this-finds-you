@@ -5,6 +5,18 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/write",
+      "destination": "/notes",
+      "permanent": true
+    },
+    {
+      "source": "/write.html",
+      "destination": "/notes",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

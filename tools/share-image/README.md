@@ -56,12 +56,12 @@ where the page's title says the same.
 
 ## The writing page's card
 
-`app/public/brand/share-write.jpg` (1200 × 630, about 30 kB) is `/write`'s own link preview (`og:image` and
-`twitter:image` in `app/write.html`). It's one line on cream paper with the wordmark small at its foot: "Paper", Rafael's
+`app/public/brand/share-write.jpg` (1200 × 630, about 30 kB) is `/notes`'s own link preview (`og:image` and
+`twitter:image` in `app/notes.html`). It's one line on cream paper with the wordmark small at its foot: "Paper", Rafael's
 pick of four on 7 Nov 2026 (Paper, Dark, Typed, Slip), after a look at 25 notes and writing apps' cards. The most
 modern ones (Linear, Vercel, tldraw, Arc) show one thing on an empty field.
 
-The line is real ink, written on `/write` by Matteo Carver with a medium tip: "The coffee here is terrible", a pause
+The line is real ink, written on `/notes` (then `/write`) by Matteo Carver with a medium tip: "The coffee here is terrible", a pause
 for the pen to pass, eight Backspaces, then "wonderful." The pen's own SVG (its filters, pooled ink and the strike) is
 kept as it was drawn, cropped to its ink, in `write-line.svg`.
 

@@ -240,7 +240,7 @@ async function main() {
       { name: 'fonts', path: '/fonts', kind: 'fonts' },
       ...(vp.name === 'desktop' ? [{ name: 'fonts-old', path: '/fonts?fonts=old', kind: 'fontsOld' }] : []),
       { name: 'about', path: '/about', kind: 'about' },
-      { name: 'write', path: '/write', kind: 'write' },
+      { name: 'write', path: '/notes', kind: 'write' },
     ];
     for (const page of pages) {
       if (page.kind === 'letter') {
