@@ -78,8 +78,11 @@ function cameraPath(): Cam[] {
         const half = (VIEW.w / 2 / zz) * 0.8;
         x = clamp(col, p.x - half, p.x + half);
       }
-      // down: the caret's line a little above the middle
-      return { x, y: p.y + (0.5 - 0.4) * VIEW.h / zz, z: zz };
+      // down: the caret's line a little above the middle, but never so high that a sliver of the toolbar shows at the
+      // top (on the first lines it would): then the view's top sits just under the toolbar and the line comes lower
+      const bar = rects[f]?.bar;
+      const below = bar ? stage(0, bar[1] + bar[3] + 8).y + VIEW.h / 2 / zz : -Infinity;
+      return { x, y: Math.max(p.y + (0.5 - 0.4) * VIEW.h / zz, below), z: zz };
     }
     if (focus === 'pointer') { const p = stage(ptr[f][0], ptr[f][1]); return { x: p.x, y: p.y, z: cue.zoom ?? 2 }; }
     const names: string[] = Array.isArray(focus) ? focus : [focus];
