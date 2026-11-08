@@ -6,6 +6,7 @@ import { Pin, PinOff, RotateCcw, Search, Trash2, X } from 'lucide-react';
 import { SheetView } from '@/components/SheetView';
 import { getPaper } from '@/lib/papers';
 import { writerName } from '@/lib/hands';
+import { tip } from './controls';
 import { THROWN_DAYS, groupNotes, noteSvg, noteText, snippetOf, titleOf, whenOf, type Note } from './notes';
 
 interface Props {
@@ -70,7 +71,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
             />
           </label>
         ) : (
-          <button type="button" className="wr-icon wr-search-btn" onClick={() => setSearching(true)} aria-label="Search notes" title="Search">
+          <button type="button" className="wr-icon wr-search-btn" onClick={() => setSearching(true)} aria-label="Search notes" {...tip('Search')}>
             <Search aria-hidden />
           </button>
         )}
@@ -137,15 +138,15 @@ const Row = memo(function Row({ note, open, screen, arrived, binned, onOpen, onP
       <span className="wr-row-actions">
         {binned ? (
           <>
-            <button type="button" onClick={onRestore} aria-label={`Put back: ${title}`} title="Put back"><RotateCcw aria-hidden /></button>
-            <button type="button" onClick={onDelete} aria-label={`Delete for good: ${title}`} title="Delete for good"><X aria-hidden /></button>
+            <button type="button" onClick={onRestore} aria-label={`Put back: ${title}`} {...tip('Put back')}><RotateCcw aria-hidden /></button>
+            <button type="button" onClick={onDelete} aria-label={`Delete for good: ${title}`} {...tip('Delete for good')}><X aria-hidden /></button>
           </>
         ) : (
           <>
-            <button type="button" onClick={onPin} aria-label={note.pinned ? `Unpin: ${title}` : `Pin: ${title}`} title={note.pinned ? 'Unpin' : 'Pin'}>
+            <button type="button" onClick={onPin} aria-label={note.pinned ? `Unpin: ${title}` : `Pin: ${title}`} {...tip(note.pinned ? 'Unpin' : 'Pin')}>
               {note.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />}
             </button>
-            <button type="button" onClick={onThrow} aria-label={`Throw away: ${title}`} title="Throw away"><Trash2 aria-hidden /></button>
+            <button type="button" onClick={onThrow} aria-label={`Throw away: ${title}`} {...tip('Throw away')}><Trash2 aria-hidden /></button>
           </>
         )}
       </span>

@@ -28,6 +28,7 @@ import { WriterName, WriterPanel } from './WriterPanel';
 import { Shortcuts, shortcutGroups } from './Shortcuts';
 import { ShareDialog } from './ShareDialog';
 import { FormatPanel, HIGHLIGHTERS, styleName } from './FormatPanel';
+import { KEY, Tooltips, tip } from './controls';
 import type { FormatCommand } from '@/components/PaperEditor';
 import type { InkFormat, InkHighlight } from '@/lib/ink';
 import {
@@ -45,7 +46,7 @@ const APPEARANCES: { id: Appearance; label: string }[] = [{ id: 'auto', label: '
  *  notes when they're open, beside their button when they're shut) */
 function HomeMark() {
   return (
-    <a className="wr-home" href="/" aria-label="If This Finds You, the home page" title="If This Finds You">
+    <a className="wr-home" href="/" aria-label="If This Finds You, the home page" {...tip('If This Finds You')}>
       <img src="/brand/favicon-5.svg" alt="" width="22" height="22" />
     </a>
   );
@@ -569,7 +570,7 @@ export function WriteApp() {
       className={`${POP} wr-pop-writer`}
       onCloseAutoFocus={focusBack}
       trigger={
-        <button type="button" className="wr-writer-chip" style={{ '--chip-ink': ink } as React.CSSProperties} aria-label={`Writer: ${writerName(look.seed)}. Change the writer, pen, ink or paper`} title="Writer, pen and paper">
+        <button type="button" className="wr-writer-chip" style={{ '--chip-ink': ink } as React.CSSProperties} aria-label={`Writer: ${writerName(look.seed)}. Change the writer, pen, ink or paper`} {...tip('Writer, pen and paper')}>
           <WriterName look={look} color="inherit" emPx={phone ? 16 : 17} />
         </button>
       }
@@ -589,7 +590,7 @@ export function WriteApp() {
       onOpenChange={(o) => { setFormatOpen(o); if (o) refreshFmt(); }}
       onCloseAutoFocus={focusBack}
       trigger={
-        <button type="button" className="wr-icon wr-aa" aria-label={`Text style: ${styleName(fmt)}`} title={`Text style: ${styleName(fmt)}`}>
+        <button type="button" className="wr-icon wr-aa" aria-label={`Text style: ${styleName(fmt)}`} {...tip(`Text style: ${styleName(fmt)}`)}>
           <Type aria-hidden />
         </button>
       }
@@ -739,11 +740,11 @@ export function WriteApp() {
                   <ChevronLeft aria-hidden /><span>Notes</span>
                 </button>
               ) : (
-                <>{!libOpen && <HomeMark />}<button type="button" className="wr-icon" onPointerDown={keepPen} onClick={togglePanel} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} title={`Notes  ${MOD}\\`}>
+                <>{!libOpen && <HomeMark />}<button type="button" className="wr-icon" onPointerDown={keepPen} onClick={togglePanel} aria-label={libOpen ? 'Hide notes' : 'Show notes'} aria-pressed={libOpen} {...tip('Notes', [KEY.mod, '\\'])}>
                   <PanelLeft aria-hidden />
                 </button></>
               )}
-              {!phone && <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => newNote()} aria-label="New note" title={`New note  ⌥${MOD}N`}><SquarePen aria-hidden /></button>}
+              {!phone && <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => newNote()} aria-label="New note" {...tip('New note', [KEY.alt, KEY.mod, 'N'])}><SquarePen aria-hidden /></button>}
             </div>
             {phone && <span className="wr-format-anchor">{formatButton}</span>}
             {!phone && (
@@ -751,24 +752,24 @@ export function WriteApp() {
                 {formatButton}
                 <span className="wr-bar-div" aria-hidden />
                 <span className="wr-bar-more">
-                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.weight} onPointerDown={keepPen} onClick={() => run('weight')} aria-label="Press harder" title={`Press harder (on a selection: go over it)  ${MOD}B`}><Bold aria-hidden /></button>
-                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.lean} disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('lean')} aria-label="Lean" title={`Lean in, from here  ${MOD}I`}><Italic aria-hidden /></button>
-                  <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => run('underline')} aria-label="Underline" title={`Underline by hand  ${MOD}U`}><Underline aria-hidden /></button>
-                  <button type="button" className="wr-icon wr-hl-tool" disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('highlight')} aria-label="Highlight" title={`Highlight  ⇧${MOD}E`} style={{ '--hl': HIGHLIGHTERS.find((h) => h.id === highlighter)?.color } as React.CSSProperties}><Highlighter aria-hidden /></button>
-                  <button type="button" className="wr-icon" aria-pressed={fmt?.list === 'check'} disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('checklist')} aria-label="Checklist" title={`Checklist  ⇧${MOD}L`}><ListTodo aria-hidden /></button>
+                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.weight} onPointerDown={keepPen} onClick={() => run('weight')} aria-label="Press harder" {...tip('Press harder', [KEY.mod, 'B'])}><Bold aria-hidden /></button>
+                  <button type="button" className="wr-icon" aria-pressed={!!fmt?.lean} disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('lean')} aria-label="Lean" {...tip('Lean', [KEY.mod, 'I'])}><Italic aria-hidden /></button>
+                  <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={() => run('underline')} aria-label="Underline" {...tip('Underline by hand', [KEY.mod, 'U'])}><Underline aria-hidden /></button>
+                  <button type="button" className="wr-icon wr-hl-tool" disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('highlight')} aria-label="Highlight" {...tip('Highlight', [KEY.shift, KEY.mod, 'E'])} style={{ '--hl': HIGHLIGHTERS.find((h) => h.id === highlighter)?.color } as React.CSSProperties}><Highlighter aria-hidden /></button>
+                  <button type="button" className="wr-icon" aria-pressed={fmt?.list === 'check'} disabled={isClean(current)} onPointerDown={keepPen} onClick={() => run('checklist')} aria-label="Checklist" {...tip('Checklist', [KEY.shift, KEY.mod, 'L'])}><ListTodo aria-hidden /></button>
                 </span>
               </div>
             )}
             <div className="wr-spacer" />
             <div className="wr-group">
               {writerButton}
-              <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={another} aria-label="Another writer" title="Another writer"><Shuffle aria-hidden /></button>
+              <button type="button" className="wr-icon" onPointerDown={keepPen} onClick={another} aria-label="Another writer" {...tip('Another writer')}><Shuffle aria-hidden /></button>
             </div>
             <div className="wr-group">
-              {!phone && <button type="button" className="wr-icon" onClick={() => setShareOpen(true)} aria-label="Share" title="Share as a picture"><Share aria-hidden /></button>}
+              {!phone && <button type="button" className="wr-icon" onClick={() => setShareOpen(true)} aria-label="Share" {...tip('Share as a picture')}><Share aria-hidden /></button>}
               {phone
                 ? <ActionSheet trigger={<button type="button" className="wr-icon" aria-label="More"><Ellipsis aria-hidden /></button>} title="More" entries={phoneMore} />
-                : menu(<button type="button" className="wr-icon" aria-label="More" title="More"><Ellipsis aria-hidden /></button>, <>{modeItems}<DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</>, 'end')}
+                : menu(<button type="button" className="wr-icon" aria-label="More" {...tip('More')}><Ellipsis aria-hidden /></button>, <>{modeItems}<DropdownMenu.Separator className="wr-menu-sep" />{noteItems}<DropdownMenu.Separator className="wr-menu-sep" />{moreItems}</>, 'end')}
             </div>
           </header>
 
@@ -829,6 +830,7 @@ export function WriteApp() {
         />
       )}
       <div className="sr-only" aria-live="polite">{said}</div>
+      <Tooltips />
       <Toaster position={phone ? 'top-center' : 'bottom-center'} />
     </div>
   );
