@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { DropdownMenu } from 'radix-ui';
-import { Bold, Check, ChevronLeft, Copy, Highlighter, Italic, ListTodo, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Trash2, Type, Undo2, WandSparkles } from 'lucide-react';
+import { Bold, Check, ChevronLeft, Contrast, Copy, Highlighter, Italic, ListTodo, Moon, Underline, Ellipsis, EyeOff, FileText, Image as ImageIcon, Keyboard, PanelLeft, Pin, PinOff, Share, Shuffle, SquarePen, Sun, Trash2, Type, Undo2, WandSparkles } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { ActionSheet, Sheet, type SheetEntry } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -28,7 +28,7 @@ import { WriterName, WriterPanel } from './WriterPanel';
 import { Shortcuts, shortcutGroups } from './Shortcuts';
 import { ShareDialog } from './ShareDialog';
 import { FormatPanel, HIGHLIGHTERS, styleName } from './FormatPanel';
-import { KEY, Tooltips, tip } from './controls';
+import { KEY, Keys, Segmented, Tooltips, tip, useIndicator } from './controls';
 import type { FormatCommand } from '@/components/PaperEditor';
 import type { InkFormat, InkHighlight } from '@/lib/ink';
 import {
@@ -40,7 +40,11 @@ const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(n
 const MOD = isMac() ? '⌘' : 'Ctrl+';
 type Appearance = 'auto' | 'light' | 'dark';
 const THEME_KEY = 'seedhand:write:theme';
-const APPEARANCES: { id: Appearance; label: string }[] = [{ id: 'auto', label: 'Automatic' }, { id: 'light', label: 'Light' }, { id: 'dark', label: 'Dark' }];
+const APPEARANCES: { id: Appearance; label: string; short: string; icon: React.ReactNode }[] = [
+  { id: 'auto', label: 'Automatic', short: 'Auto', icon: <Contrast aria-hidden /> },
+  { id: 'light', label: 'Light', short: 'Light', icon: <Sun aria-hidden /> },
+  { id: 'dark', label: 'Dark', short: 'Dark', icon: <Moon aria-hidden /> },
+];
 
 /** The way home: the site's mark, a link to If This Finds You (Rafael, 7 Nov: a favicon-like button, at the top of the
  *  notes when they're open, beside their button when they're shut) */
@@ -51,6 +55,69 @@ function HomeMark() {
     </a>
   );
 }
+/** The More menu's Appearance: one segmented row (Auto, Light, Dark) instead of three rows. Its three are the menu's
+ *  own radio items: one stop going up and down the menu (it lands on the one chosen), left and right move along it.
+ *  Choosing keeps the menu open, so the change is seen. */
+function MenuAppearance({ theme, onTheme }: { theme: Appearance; onTheme: (t: Appearance) => void }) {
+  const group = useRef<HTMLDivElement>(null);
+  const ind = useRef<HTMLSpanElement>(null);
+  useIndicator(group, ind, theme, 'appearance');
+  // (on each item, before the menu's own roving focus, which would go to the next of the three)
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const g = group.current;
+    if (!g) return;
+    const mine = [...g.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
+    const i = mine.indexOf(e.currentTarget);
+    let next: HTMLElement | undefined;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      // along the row, choosing (and wrapping)
+      next = mine[(i + (e.key === 'ArrowRight' ? 1 : -1) + mine.length) % mine.length];
+      next.focus();
+      next.click();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      // up and down leave the row: the item before it or after it
+      const all = [...(g.closest('[role="menu"]')?.querySelectorAll<HTMLElement>('[role^="menuitem"]:not([data-disabled])') ?? [])];
+      next = e.key === 'ArrowDown' ? all[all.indexOf(mine[mine.length - 1]) + 1] : all[all.indexOf(mine[0]) - 1];
+      next?.focus();
+    } else return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  // coming into the row by key from outside it: onto the one chosen (the pointer goes where it points)
+  const keyAt = useRef(-1e9);
+  useEffect(() => {
+    const k = () => { keyAt.current = performance.now(); };
+    document.addEventListener('keydown', k, true);
+    return () => document.removeEventListener('keydown', k, true);
+  }, []);
+  const onFocus = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (performance.now() - keyAt.current > 200 || e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    const on = e.currentTarget.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (on && on !== e.target) on.focus();
+  };
+  return (
+    <>
+      <DropdownMenu.Label className="wr-menu-label" id="wr-appearance">Appearance</DropdownMenu.Label>
+      <DropdownMenu.RadioGroup
+        ref={group}
+        value={theme}
+        aria-labelledby="wr-appearance"
+        className="wr-seg wr-menu-seg"
+        data-grid=""
+        style={{ '--cols': 3 } as React.CSSProperties}
+        onFocus={onFocus}
+      >
+        <span ref={ind} className="wr-seg-ind" aria-hidden />
+        {APPEARANCES.map((a) => (
+          <DropdownMenu.RadioItem key={a.id} value={a.id} className="wr-seg-item" onKeyDown={onKeyDown} onSelect={(e) => { e.preventDefault(); if (a.id !== theme) onTheme(a.id); }}>
+            <span>{a.icon}{a.short}</span>
+          </DropdownMenu.RadioItem>
+        ))}
+      </DropdownMenu.RadioGroup>
+    </>
+  );
+}
+
 /** the note being written, kept here too as the page goes (the database can't always finish in time) */
 const PENDING_KEY = 'seedhand:write:pending';
 const LIB_KEY = 'seedhand:write:library';
@@ -626,10 +693,18 @@ export function WriteApp() {
     { id: 'image', label: 'Save as an image', icon: <ImageIcon aria-hidden />, onSelect: () => void downloadImage() },
     { id: 'text', label: 'Save as text', icon: <FileText aria-hidden />, onSelect: downloadText },
     sep('s3'),
-    { id: 'throw', label: 'Throw away', icon: <Trash2 aria-hidden />, onSelect: () => throwAway(current.id) },
+    // (red here too, as in the menu)
+    { id: 'throw', label: <span className="wr-danger-label">Throw away</span>, icon: <Trash2 aria-hidden className="wr-danger-icon" />, onSelect: () => throwAway(current.id) },
     sep('s4'),
-    { kind: 'label', id: 'appearance', label: 'Appearance' },
-    ...APPEARANCES.map((a): SheetEntry => ({ id: `theme-${a.id}`, label: a.label, checked: theme === a.id, onSelect: () => setTheme(a.id) })),
+    { kind: 'label', id: 'appearance', label: <span id="wr-sheet-appearance">Appearance</span> },
+    // one segmented row, as in the menu; choosing keeps the sheet open
+    {
+      kind: 'label', id: 'appearance-row', label: (
+        <div className="wr-sheet-seg">
+          <Segmented<Appearance> aria-labelledby="wr-sheet-appearance" cols={3} value={theme} onChange={setTheme} options={APPEARANCES.map((a) => ({ value: a.id, label: a.short, icon: a.icon }))} />
+        </div>
+      ),
+    },
     sep('s5'),
     { kind: 'label', id: 'count', label: `${words} ${words === 1 ? 'word' : 'words'} · ${keptOk ? 'Kept on this device' : 'Not kept in this browser'}` },
   ];
@@ -661,33 +736,29 @@ export function WriteApp() {
   );
   const moreItems = (
     <>
-      {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setHideUi(true)}><EyeOff aria-hidden /> Hide the toolbar <kbd>{MOD}.</kbd></DropdownMenu.Item>}
-      {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setKeysOpen(true)}><Keyboard aria-hidden /> Keyboard shortcuts <kbd>{MOD}/</kbd></DropdownMenu.Item>}
+      {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setHideUi(true)} aria-keyshortcuts={`${isMac() ? 'Meta' : 'Control'}+.`}><EyeOff aria-hidden /> Hide the toolbar <Keys keys={[KEY.mod, '.']} /></DropdownMenu.Item>}
+      {!coarse && <DropdownMenu.Item className="wr-menu-item" onSelect={() => setKeysOpen(true)} aria-keyshortcuts={`${isMac() ? 'Meta' : 'Control'}+/`}><Keyboard aria-hidden /> Keyboard shortcuts <Keys keys={[KEY.mod, '/']} /></DropdownMenu.Item>}
       <DropdownMenu.Separator className="wr-menu-sep" />
-      <DropdownMenu.Label className="wr-menu-label wr-menu-head">Appearance</DropdownMenu.Label>
-      {APPEARANCES.map((a) => (
-        <DropdownMenu.Item key={a.id} className="wr-menu-item" onSelect={() => setTheme(a.id)}>
-          <span className="wr-menu-tick">{theme === a.id && <Check aria-hidden />}</span> {a.label}
-        </DropdownMenu.Item>
-      ))}
+      <MenuAppearance theme={theme} onTheme={setTheme} />
       <DropdownMenu.Separator className="wr-menu-sep" />
-      <DropdownMenu.Label className="wr-menu-label">
+      <DropdownMenu.Label className="wr-menu-foot">
         {words} {words === 1 ? 'word' : 'words'} · {keptOk ? 'Kept on this device' : 'Not kept in this browser'}
       </DropdownMenu.Label>
     </>
   );  // how this note is written, In ink or Clean: in the More menu (Rafael, 7 Nov: "the ink can be rolled into the more
   // button"); the page itself shows which it is
+  // (radio items: one of the two is on; its tick fades in)
   const modeItems = (
-    <>
-      <DropdownMenu.Item className="wr-menu-item wr-menu-mode" onSelect={() => setMode('ink')}>
-        <span className="wr-menu-tick">{!isClean(current) && <Check aria-hidden />}</span>
+    <DropdownMenu.RadioGroup value={isClean(current) ? 'clean' : 'ink'} aria-label="How this note is written">
+      <DropdownMenu.RadioItem value="ink" className="wr-menu-item wr-menu-mode" onSelect={() => setMode('ink')}>
+        <span className="wr-menu-tick"><Check aria-hidden /></span>
         <span><b>In ink</b><small>Mistakes are crossed out, never erased</small></span>
-      </DropdownMenu.Item>
-      <DropdownMenu.Item className="wr-menu-item wr-menu-mode" onSelect={() => setMode('clean')}>
-        <span className="wr-menu-tick">{isClean(current) && <Check aria-hidden />}</span>
+      </DropdownMenu.RadioItem>
+      <DropdownMenu.RadioItem value="clean" className="wr-menu-item wr-menu-mode" onSelect={() => setMode('clean')}>
+        <span className="wr-menu-tick"><Check aria-hidden /></span>
         <span><b>Clean</b><small>Edit freely, like a font. Crossings-out are tidied away</small></span>
-      </DropdownMenu.Item>
-    </>
+      </DropdownMenu.RadioItem>
+    </DropdownMenu.RadioGroup>
   );
 
 

@@ -276,14 +276,6 @@
 .wr-mode svg { width: 14px; height: 14px; color: var(--wr-muted); }
 @media (hover: hover) and (pointer: fine) { .wr-mode:hover { background: var(--wr-hover); } }
 @media (pointer: coarse) { .wr-mode { height: 44px; } }
-/* one class more than .wr-menu-item (later, same weight), or its centring and padding win: the tick on the label's line */
-.wr-menu-item.wr-menu-mode { align-items: flex-start; padding-top: 8px; padding-bottom: 8px; max-width: 300px; }
-.wr-menu-mode b { display: block; font-weight: 600; }
-.wr-menu-mode small { display: block; margin-top: 1px; font-size: 12px; color: var(--wr-muted); line-height: 1.3; }
-.wr-menu-tick { display: grid; place-items: center; width: 16px; height: 18px; flex: none; }
-/* a mode row's tick as tall as its label's line, so it sits on that line at any text size (phones set the label larger) */
-.wr-menu-mode .wr-menu-tick { height: 1lh; }
-
 /* Text style: one icon, the T, drawn like B I U beside it (Rafael, 7 Nov: the serif "Aa" and its "Body" didn't belong); the
    line's style is in its tooltip and the panel. A hairline divides it from the marks made on words */
 .wr-aa[data-state='open'] { background: var(--wr-hover-strong); }
@@ -621,12 +613,13 @@
 .wr-lib-bin span { margin-left: auto; font-variant-numeric: tabular-nums; }
 @media (hover: hover) and (pointer: fine) { .wr-lib-bin:hover, .wr-lib-back:hover { background: var(--wr-hover); color: var(--wr-text); } }
 
-/* ---------- menus and the writer panel ---------- */
+/* ---------- (e) menus: rows, a tick that fades in, a hint line, key chips ---------- */
 .wr-menu {
   z-index: 60;
-  min-width: 232px;
-  padding: 5px;
-  border-radius: 12px;
+  width: 288px;
+  max-width: calc(100vw - 24px);
+  padding: 6px;
+  border-radius: 14px;
   /* (nearly solid: no backdrop blur, which nobody would see and every frame would pay for) */
   background: var(--wr-pop-bg);
   box-shadow: var(--wr-pop-shadow);
@@ -645,21 +638,40 @@
   gap: 10px;
   min-height: 32px;
   padding: 0 10px;
-  border-radius: 7px;
+  border-radius: 8px;
   outline: none;
   cursor: default;
   user-select: none;
 }
 .wr-menu-item svg { width: 16px; height: 16px; color: var(--wr-muted); stroke-width: 1.75; }
-.wr-menu-item kbd { margin-left: auto; }
+/* the highlight shows at once (a menu follows the pointer; it doesn't fade after it) */
 .wr-menu-item[data-highlighted] { background: var(--wr-hover-strong); }
+.wr-menu-item[data-highlighted] svg { color: var(--wr-text); }
 .wr-menu-item[data-danger] { color: var(--wr-danger); }
 .wr-menu-item[data-danger] svg { color: currentColor; }
+.wr-menu-item[data-danger][data-highlighted] { background: color-mix(in srgb, var(--wr-danger) 11%, transparent); }
+.wr-menu-item > .wr-keys { margin-left: auto; }
+.wr-menu-item[data-highlighted] .wr-keys kbd { background: color-mix(in srgb, var(--wr-text) 9%, transparent); color: var(--wr-text); }
 .wr-menu-quiet { font-size: 12px; color: var(--wr-muted); }
 .wr-menu-label { padding: 6px 10px 4px; font-size: 12px; color: var(--wr-muted); }
-.wr-menu-sep { height: 1px; margin: 4px 8px; background: var(--wr-sep); }
+.wr-menu-foot { padding: 6px 10px 4px; font-size: 12px; color: var(--wr-faint); font-variant-numeric: tabular-nums; }
+.wr-menu-sep { height: 1px; margin: 5px 10px; border-radius: 1px; background: var(--wr-sep); }
+/* a row with a hint under its label (In ink, Clean): the tick in a 16 px slot on the label's line, fading in from .6 */
+.wr-menu-item.wr-menu-mode { align-items: flex-start; padding-top: 7px; padding-bottom: 7px; }
+.wr-menu-mode b { display: block; font-weight: 500; }
+.wr-menu-mode small { display: block; margin-top: 1px; font-size: 12px; line-height: 1.3; color: var(--wr-muted); }
+.wr-menu-tick { display: grid; place-items: center; width: 16px; height: 18px; flex: none; color: var(--wr-text); }
+/* (as tall as the label's line, so it sits on that line at any text size: phones set the label larger) */
+.wr-menu-mode .wr-menu-tick { height: 1lh; }
+.wr-menu-tick svg { width: 14px; height: 14px; stroke-width: 2.25; color: var(--wr-text); opacity: 0; transform: scale(0.6); transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
+.wr-menu-item[data-state='checked'] .wr-menu-tick svg { opacity: 1; transform: none; }
+/* Appearance: one row of three, the menu's own segmented control */
+.wr-menu-seg { margin: 0 4px 4px; }
 @media (pointer: coarse) { .wr-menu-item { min-height: 44px; font-size: 15px; } }
-@media (prefers-reduced-motion: reduce) { .wr-menu, .wr-menu[data-state='closed'] { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .wr-menu, .wr-menu[data-state='closed'] { animation: none; }
+  .wr-menu-tick svg { transform: none; }
+}
 
 /* a selected swatch's ring stands off the swatch by the surface's own colour (a popover's, or a phone sheet's) */
 :root[data-app='write'] { --wr-ring-gap: var(--wr-pop-bg); }
@@ -1155,6 +1167,10 @@
   .wr-sw-row:active > .wr-sw::after { width: 14px; }
   .wr-sw-row[aria-checked='true']:active > .wr-sw::after { transform: translateX(12px); }
 }
+
+/* the phone's More sheet: Throw away in red there too; Appearance as one segmented row */
+:root[data-app='write'] .sheet-surface .wr-danger-label, :root[data-app='write'] .sheet-surface .wr-danger-icon { color: var(--wr-danger); }
+.wr-sheet-seg { margin: 0 -4px; }
 
 /* ---------- phones: the bar above the keyboard ---------- */
 .wr-kbar {
