@@ -246,7 +246,8 @@
 .wr-aa[data-state='open'] { background: var(--wr-hover-strong); }
 .wr-bar-div { flex: none; align-self: center; width: 1px; height: 18px; margin: 0 4px; border-radius: 1px; background: var(--wr-sep); }
 .wr-bar-more { display: contents; }
-@media (max-width: 1179.98px) { .wr-bar-more { display: none; } }
+/* a narrow window: B I U and the rest go, and the divider after the T with them (it dangled there) */
+@media (max-width: 1179.98px) { .wr-bar-more, .wr-bar-div { display: none; } }
 .wr-icon:disabled { opacity: 0.35; }
 .wr-hl-tool { position: relative; }
 .wr-hl-tool::after { content: ''; position: absolute; left: 9px; right: 9px; bottom: 5px; height: 3px; border-radius: 2px; background: var(--hl); opacity: 0.9; }
