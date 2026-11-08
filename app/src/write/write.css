@@ -769,6 +769,222 @@
 .wr-size-a { font-size: 12px; color: var(--wr-muted); }
 .wr-size-big { font-size: 19px; }
 
+/* ---------- (b) the segmented control: a recessed well, a raised card that slides to the choice ---------- */
+.wr-seg {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--wr-well);
+  isolation: isolate;
+}
+.wr-seg[data-grid] { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+.wr-seg-item {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--wr-muted);
+  outline: none;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.wr-seg-item[data-span] { grid-column: span var(--span); }
+.wr-seg-item > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; transition: transform var(--dur-press) var(--ease-out); }
+.wr-seg-item:active > span { transform: scale(0.96); }
+.wr-seg-item[aria-checked='true'] { color: var(--wr-text); }
+.wr-seg-item svg { width: 14px; height: 14px; stroke-width: 1.75; }
+@media (hover: hover) and (pointer: fine) {
+  .wr-seg-item:hover { color: var(--wr-text); }
+  .wr-seg-item[aria-checked='false']:hover { background: color-mix(in srgb, var(--wr-text) 3.5%, transparent); }
+}
+.wr-seg-item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--wr-focus); }
+.wr-seg-ind {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  border-radius: 8px;
+  background: var(--wr-raised);
+  box-shadow: var(--wr-raised-shadow);
+  pointer-events: none;
+  opacity: 0;
+}
+/* it slides once it's been placed (never on the first paint) */
+.wr-seg[data-ready] > .wr-seg-ind {
+  transition: transform var(--dur-slide) var(--ease-out), width var(--dur-slide) var(--ease-out), height var(--dur-slide) var(--ease-out), scale var(--dur-press) var(--ease-out);
+}
+/* pressing the one that's chosen squeezes it */
+.wr-seg-ind[data-press] { scale: 0.97; }
+/* a finger: 36 px segments */
+@media (pointer: coarse) { .wr-seg-item { height: 36px; font-size: 14px; } }
+
+/* ---------- key chips: one per key ---------- */
+.wr-keys { display: inline-flex; flex: none; gap: 2px; }
+:is(.wr-keys, .wr-tip, .wr-sl-help, .wr-dialog, .wr-share-hint) kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: var(--wr-key-bg);
+  font: 500 11px/1 var(--wr-font);
+  color: var(--wr-muted);
+}
+/* (in a line of text: a hair smaller, on the line) */
+:is(.wr-sl-help, .wr-share-hint) kbd { min-width: 17px; height: 17px; padding: 0 3px; vertical-align: 1px; }
+
+/* ---------- (h) tooltips: the toolbar's words and keys (controls.tsx Tooltips) ---------- */
+.wr-tip {
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 8px;
+  background: var(--wr-tip-bg);
+  color: var(--wr-tip-text);
+  font: 500 12px/1 var(--wr-font);
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 4px 14px -4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(var(--from, -3px)) scale(0.98);
+  transition: opacity 80ms var(--ease-out), transform 80ms var(--ease-out);
+}
+.wr-tip[data-keys] { padding-right: 4px; }
+.wr-tip[data-open] { opacity: 1; transform: none; transition-duration: var(--dur-fast); }
+/* the next one along, within 400 ms: there at once */
+.wr-tip[data-instant] { transition: none; }
+.wr-tip-keys { display: inline-flex; gap: 2px; }
+.wr-tip kbd { background: var(--wr-tip-key); color: color-mix(in srgb, var(--wr-tip-text) 78%, transparent); }
+:root[data-app='write'][data-theme='dark'] .wr-tip { box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 6px 16px -4px rgba(0, 0, 0, 0.6); }
+@media (prefers-color-scheme: dark) {
+  :root[data-app='write']:not([data-theme='light']) .wr-tip { box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 6px 16px -4px rgba(0, 0, 0, 0.6); }
+}
+/* icon buttons: a press, and a focus ring inside the button (the group around it would clip one outside) */
+.wr-icon:active { transform: scale(0.94); }
+.wr-icon:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--wr-focus); }
+
+/* ---------- (g) buttons: primary and secondary, one height; feedback in place ---------- */
+.wr-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  outline: none;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.wr-button svg { width: 15px; height: 15px; stroke-width: 1.75; }
+.wr-button:active:not(:disabled) { transform: scale(0.97); }
+.wr-button:focus-visible { box-shadow: 0 0 0 2px var(--wr-ring-gap), 0 0 0 4px var(--wr-focus); }
+.wr-button-primary { background: var(--wr-on); color: var(--wr-on-text); box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.12); }
+.wr-button-secondary { background: var(--wr-hover); color: var(--wr-text); }
+@media (hover: hover) and (pointer: fine) {
+  .wr-button-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--wr-on) 86%, var(--wr-pop-bg)); }
+  .wr-button-secondary:hover:not(:disabled) { background: var(--wr-hover-strong); }
+}
+.wr-button-secondary:active:not(:disabled) { background: var(--wr-hover-strong); }
+/* off: plainly off, never faded */
+.wr-button:disabled { background: var(--wr-hover); color: var(--wr-faint); box-shadow: none; }
+.wr-button-sm { height: 28px; padding: 0 10px; gap: 6px; border-radius: 8px; font-size: 12.5px; }
+.wr-button-sm svg { width: 14px; height: 14px; }
+/* Copied: the icon swaps (out with a blur, in from 60%), the label says so */
+.wr-swap { position: relative; display: grid; flex: none; width: 15px; height: 15px; }
+.wr-swap svg { grid-area: 1 / 1; transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out), filter 150ms var(--ease-out); }
+.wr-swap svg:last-child { opacity: 0; transform: scale(0.6); filter: blur(2px); }
+[data-done] > .wr-swap svg:first-child { opacity: 0; transform: scale(0.6); filter: blur(2px); }
+[data-done] > .wr-swap svg:last-child { opacity: 1; transform: none; filter: none; }
+.wr-button-label { display: inline-grid; }
+.wr-button-label > span { grid-area: 1 / 1; text-align: center; }
+.wr-button-label > span:last-child, [data-done] > .wr-button-label > span:first-child { visibility: hidden; }
+[data-done] > .wr-button-label > span:last-child { visibility: visible; }
+@media (pointer: coarse) {
+  .wr-button { height: 44px; }
+  .wr-button-sm { height: 36px; }
+}
+
+/* ---------- (f) the switch, for later toggles: the whole row is the switch ---------- */
+.wr-sw-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 36px; padding: 0 10px; border-radius: 8px; text-align: left; outline: none; transition: background-color var(--dur-fast) var(--ease-out); }
+.wr-sw-text { display: grid; gap: 1px; min-width: 0; }
+.wr-sw-text small { font-size: 12px; color: var(--wr-muted); }
+@media (hover: hover) and (pointer: fine) { .wr-sw-row:not(:disabled):hover { background: var(--wr-hover); } }
+.wr-sw-row:focus-visible .wr-sw { box-shadow: 0 0 0 2px var(--wr-ring-gap), 0 0 0 4px var(--wr-focus); }
+.wr-sw-row:disabled { color: var(--wr-faint); }
+.wr-sw {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 18px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--wr-text) 16%, transparent);
+  transition: background-color var(--dur-slide) var(--ease-out);
+}
+.wr-sw::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--wr-knob);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.22);
+  transition: transform var(--dur-slide) var(--ease-out), width var(--dur-press) var(--ease-out), background-color var(--dur-slide) var(--ease-out);
+}
+[aria-checked='true'] > .wr-sw { background: var(--wr-on); }
+[aria-checked='true'] > .wr-sw::after { transform: translateX(12px); background: var(--wr-on-text); }
+/* held: the knob stretches toward where it will go */
+.wr-sw-row:active:not(:disabled) > .wr-sw::after { width: 17px; }
+.wr-sw-row[aria-checked='true']:active:not(:disabled) > .wr-sw::after { transform: translateX(9px); }
+@media (pointer: coarse) { .wr-sw-row { min-height: 44px; } }
+
+/* ---------- reduced motion: nothing moves or scales; colour and opacity still change ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .wr-seg[data-ready] > .wr-seg-ind, .wr-inks[data-ready] > .wr-ink-ring { transition: none; }
+  .wr-seg-ind[data-press], .wr-sl[data-held] .wr-sl-needle { scale: none; }
+  .wr-sl-fill, .wr-sl-needle, .wr-sl[data-glide] :is(.wr-sl-fill, .wr-sl-needle) { transition-property: opacity, background-color; }
+  .wr-sl[data-settle] .wr-sl-track { transition: none; }
+  .wr-sl-home { transition-property: background-color; }
+  .wr-ink path[data-draw] { animation: none; }
+  .wr-tip { transform: none; }
+  .wr-swap svg { transform: none !important; filter: none !important; }
+  :is(.wr-button, .wr-icon, .wr-size-a, .wr-search-clear, .wr-home):active, .wr-seg-item:active > span, .wr-ink:active svg,
+  .wr-paper:active .wr-paper-sheet, .wr-paper:hover .wr-paper-sheet { transform: none !important; }
+  .wr-sw::after { transition-property: background-color; }
+  .wr-sw-row:active > .wr-sw::after { width: 14px; }
+  .wr-sw-row[aria-checked='true']:active > .wr-sw::after { transform: translateX(12px); }
+}
+
 /* ---------- phones: the bar above the keyboard ---------- */
 .wr-kbar {
   position: fixed;
