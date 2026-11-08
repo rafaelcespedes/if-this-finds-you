@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Dialog } from 'radix-ui';
 import { toast } from 'sonner';
 import { Copy, Download, X } from 'lucide-react';
+import { PhoneSheet } from '@/components/ui/sheet';
 import type { SheetShot } from '@/lib/actions';
 import { fileSafe, saveBlob } from '@/lib/utils';
 import { SHARE_ADDRESS, SHARE_SHAPES, sharePicture, toPng, xIntent, type ShareShape } from './share';
@@ -36,10 +37,12 @@ interface Props {
   fileName: string;
   coarse: boolean;
   mod: string;
+  /** a phone: a sheet from the bottom, as More is, instead of a window in the middle */
+  sheet?: boolean;
 }
 type Pic = { blob: Blob; url: string };
 
-export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileName, coarse, mod }: Props) {
+export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileName, coarse, mod, sheet }: Props) {
   const [shape, setShapeNow] = useState<ShareShape>(() => {
     try { const s = localStorage.getItem(SHAPE_KEY); return SHARE_SHAPES.some((x) => x.id === s) ? (s as ShareShape) : 'square'; } catch { return 'square'; }
   });
@@ -138,39 +141,59 @@ export function ShareDialog({ open, onOpenChange, sheets, blank, writer, fileNam
   };
 
   const status = failed ?? (empty ? 'Nothing written yet.' : null);
+  const preview = (
+    <div className="wr-share-preview" data-shape={shape}>
+      {status ? <span className="wr-share-wait">{status}</span>
+        : shown ? <img src={shown.url} alt={ready ? 'The picture to share' : ''} data-making={ready ? undefined : ''} />
+          : <span className="wr-share-wait">Making the picture…</span>}
+    </div>
+  );
+  const choices = (
+    <>
+      <div>
+        <h3 className="wr-share-label" id="share-shape">Shape</h3>
+        <div className="wr-chips" role="radiogroup" aria-labelledby="share-shape">
+          {SHARE_SHAPES.map((s) => (
+            <button key={s.id} type="button" role="radio" aria-checked={shape === s.id} className="wr-chip" onClick={() => setShape(s.id)}>{s.label}</button>
+          ))}
+        </div>
+        {source && source.total > 1 && <p className="wr-share-hint">Page {source.shot.sheet + 1} of {source.total}.</p>}
+      </div>
+      <div className="wr-share-actions">
+        <button type="button" className="wr-share-post" disabled={!ready} onClick={post}><XMark /> Post on X</button>
+        <p className="wr-share-hint">{coarse ? 'Opens the share sheet with the picture in it: choose X.' : `Copies the picture and opens X. Paste it into your post (${mod}V).`}</p>
+        <div className="wr-share-row">
+          <button type="button" className="wr-btn" disabled={!ready} onClick={copyPicture}><Copy aria-hidden /> Copy picture</button>
+          <button type="button" className="wr-btn" disabled={!ready} onClick={save}><Download aria-hidden /> Save</button>
+        </div>
+      </div>
+      <p className="wr-share-note">Made on this device, and we keep no copy. The post links to the writing page, not to your note.</p>
+    </>
+  );
+
+  // a phone: a sheet from the bottom, as More is (Rafael, 7 Nov); its title is the sheet's, and a swipe down closes it
+  if (sheet) {
+    return (
+      <PhoneSheet title="Share this note" open={open} onOpenChange={onOpenChange}>
+        <div className="wr-share-sheet">
+          {preview}
+          <div className="wr-share-side">{choices}</div>
+        </div>
+      </PhoneSheet>
+    );
+  }
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="wr-dialog-scrim" />
         <Dialog.Content className="wr-dialog wr-share" aria-describedby={undefined} onOpenAutoFocus={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement).focus(); }}>
-          <div className="wr-share-preview" data-shape={shape}>
-            {status ? <span className="wr-share-wait">{status}</span>
-              : shown ? <img src={shown.url} alt={ready ? 'The picture to share' : ''} data-making={ready ? undefined : ''} />
-                : <span className="wr-share-wait">Making the picture…</span>}
-          </div>
+          {preview}
           <div className="wr-share-side">
             <div className="wr-dialog-head">
               <Dialog.Title>Share this note</Dialog.Title>
               <Dialog.Close className="wr-icon" aria-label="Close"><X aria-hidden /></Dialog.Close>
             </div>
-            <div>
-              <h3 className="wr-share-label" id="share-shape">Shape</h3>
-              <div className="wr-chips" role="radiogroup" aria-labelledby="share-shape">
-                {SHARE_SHAPES.map((s) => (
-                  <button key={s.id} type="button" role="radio" aria-checked={shape === s.id} className="wr-chip" onClick={() => setShape(s.id)}>{s.label}</button>
-                ))}
-              </div>
-              {source && source.total > 1 && <p className="wr-share-hint">Page {source.shot.sheet + 1} of {source.total}.</p>}
-            </div>
-            <div className="wr-share-actions">
-              <button type="button" className="wr-share-post" disabled={!ready} onClick={post}><XMark /> Post on X</button>
-              <p className="wr-share-hint">{coarse ? 'Opens the share sheet with the picture in it: choose X.' : `Copies the picture and opens X. Paste it into your post (${mod}V).`}</p>
-              <div className="wr-share-row">
-                <button type="button" className="wr-btn" disabled={!ready} onClick={copyPicture}><Copy aria-hidden /> Copy picture</button>
-                <button type="button" className="wr-btn" disabled={!ready} onClick={save}><Download aria-hidden /> Save</button>
-              </div>
-            </div>
-            <p className="wr-share-note">Made on this device, and we keep no copy. The post links to the writing page, not to your note.</p>
+            {choices}
           </div>
         </Dialog.Content>
       </Dialog.Portal>

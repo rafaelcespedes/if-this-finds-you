@@ -24,8 +24,12 @@
   --wr-danger: #c4302b;
   --wr-focus: #3478f6;
   /* the editor's red pencil (PaperEditor): the caret, the ‸, the selection, every mark that only shows what will
-     happen. A colour no ink uses, on every paper */
+     happen. A colour no ink uses, on every paper. It's drawn on the paper, which is light in both themes, so it stays
+     this red in dark mode too (the lighter red it had there fell to about 3:1 on the paper). Nothing in red pencil is
+     drawn on the dark desk itself */
   --wr-pencil: #c4402a;
+  /* the word count at the window's foot: 4.5:1 and more on the desk */
+  --wr-status: #5f5f64;
   --wr-group-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px -10px rgba(0, 0, 0, 0.18);
   --wr-pop-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.05), 0 18px 48px -16px rgba(0, 0, 0, 0.28);
   --wr-radius: 12px;
@@ -66,7 +70,7 @@
     --wr-on-text: #161618;
     --wr-danger: #ff6b63;
     --wr-focus: #4c8dff;
-    --wr-pencil: #e0664f;
+    --wr-status: #a0a0a6;
     --wr-group-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 6px 20px -10px rgba(0, 0, 0, 0.6);
     --wr-pop-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 18px 48px -16px rgba(0, 0, 0, 0.7);
     --panel: #2a2a2c;
@@ -92,7 +96,7 @@
     --wr-on-text: #161618;
     --wr-danger: #ff6b63;
     --wr-focus: #4c8dff;
-    --wr-pencil: #e0664f;
+    --wr-status: #a0a0a6;
     --wr-group-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 6px 20px -10px rgba(0, 0, 0, 0.6);
     --wr-pop-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 18px 48px -16px rgba(0, 0, 0, 0.7);
     --panel: #2a2a2c;
@@ -107,6 +111,8 @@
 :root[data-app='write'] .caret-blink { animation-delay: 500ms; }
 /* The loupe, while a finger drags the caret or a handle: the line under it, larger, above it */
 .wr-loupe {
+  /* (it grows up out of the finger) */
+  transform-origin: 50% 100%;
   border-radius: 50%;
   overflow: hidden;
   background: var(--wr-desk);
@@ -153,10 +159,12 @@
   pointer-events: none;
   /* the desk shows through above the sheet as it scrolls under: a soft fade, no line */
   background: linear-gradient(to bottom, var(--wr-desk) 45%, color-mix(in srgb, var(--wr-desk) 0%, transparent));
-  transition: opacity 240ms var(--ease-out);
+  transition: opacity 150ms var(--ease-out);
 }
 .wr-bar > * { pointer-events: auto; }
 .wr-app[data-away] .wr-bar { opacity: 0; }
+/* the chrome comes back quick and steps away calmly */
+.wr-app[data-away] :is(.wr-bar, .wr-side, .wr-status) { transition-duration: 300ms; }
 .wr-app[data-tight] .wr-bar { display: none; }
 .wr-app[data-away] .wr-bar > * { pointer-events: none; }
 .wr-group {
@@ -181,7 +189,7 @@
 }
 .wr-icon svg { width: 17px; height: 17px; stroke-width: 1.75; }
 .wr-icon[aria-pressed='true'] { background: var(--wr-hover-strong); }
-.wr-icon:active { transform: scale(0.94); }
+.wr-icon:active { transform: scale(0.95); }
 @media (hover: hover) and (pointer: fine) {
   .wr-icon:hover, .wr-title:hover, .wr-writer-chip:hover { background: var(--wr-hover); }
 }
@@ -242,34 +250,71 @@
 .wr-aa[data-state='open'] { background: var(--wr-hover-strong); }
 .wr-bar-div { flex: none; align-self: center; width: 1px; height: 18px; margin: 0 4px; border-radius: 1px; background: var(--wr-sep); }
 .wr-bar-more { display: contents; }
-@media (max-width: 1179.98px) { .wr-bar-more { display: none; } }
+/* a narrow window: B I U and the rest go, and the divider after the T with them (it dangled there) */
+@media (max-width: 1179.98px) { .wr-bar-more, .wr-bar-div { display: none; } }
 .wr-icon:disabled { opacity: 0.35; }
 .wr-hl-tool { position: relative; }
 .wr-hl-tool::after { content: ''; position: absolute; left: 9px; right: 9px; bottom: 5px; height: 3px; border-radius: 2px; background: var(--hl); opacity: 0.9; }
-.wr-format { display: grid; gap: 14px; width: 340px; padding: 12px; font-size: 13px; }
-.sheet-surface .wr-format { width: auto; padding: 4px 6px 10px; }
-.wr-styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.wr-style {
+/* The Format panel (FormatPanel.tsx; Rafael, 7 Nov: "fixing the spacing and the styling of all the little buttons"):
+   one grid of three columns on the 4/8/12/16 scale; every control a tile of one height and radius; what's on is
+   filled, as the writer panel's chips are; a tile that can't be used is plainly off, never filled */
+.wr-format { display: grid; gap: 16px; width: 340px; padding: 16px; font-size: 13px; }
+.sheet-surface .wr-format { width: auto; padding: 4px 4px 12px; }
+.wr-format-label { margin-bottom: 8px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
+.wr-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.wr-tiles + .wr-tiles { margin-top: 4px; }
+.wr-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
   height: 52px;
+  padding: 0 8px;
   border-radius: 10px;
   background: var(--wr-hover);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 14px;
-  transition: background-color 120ms var(--ease-out);
+  color: var(--wr-text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background-color 120ms var(--ease-out), transform var(--dur-press) var(--ease-out);
 }
-.wr-style-title { font-size: 20px; font-weight: 600; }
-.wr-style-heading { font-size: 16px; font-weight: 600; }
-.wr-style[aria-checked='true'] { background: var(--wr-on); color: var(--wr-on-text); }
-.wr-style:disabled, .wr-btn:disabled { opacity: 0.4; }
-.wr-lists { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.wr-btn[aria-pressed='true'] { background: var(--wr-on); color: var(--wr-on-text); }
-.wr-format-note { margin-top: 8px; font-size: 12px; color: var(--wr-muted); }
-.wr-hls { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.wr-hl-colors { display: flex; gap: 6px; }
-.wr-hl { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18); color: #1c1c1e; }
-.wr-hl svg { width: 14px; height: 14px; stroke-width: 2.5; }
-.wr-hl[aria-checked='true'] { box-shadow: 0 0 0 2px var(--wr-pop-bg), 0 0 0 3.5px var(--wr-on); }
-@media (pointer: coarse) { .wr-hl { width: 34px; height: 34px; } .wr-style { height: 56px; } }
+/* (the icons only: a writer's sample is an svg too) */
+.wr-tile > svg, .wr-tile-hl > svg { width: 18px; height: 18px; stroke-width: 1.75; }
+.wr-tile:not(:disabled):active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .wr-tile:not(:disabled):not([aria-checked='true']):not([aria-pressed='true']):hover { background: var(--wr-hover-strong); }
+}
+.wr-tile:is([aria-checked='true'], [aria-pressed='true']) { background: var(--wr-on); color: var(--wr-on-text); }
+/* off: muted, and never the filled look, even on the style the line already has */
+.wr-tile:disabled, .wr-tile:disabled:is([aria-checked='true'], [aria-pressed='true']) { background: var(--wr-hover); color: var(--wr-faint); opacity: 0.6; cursor: default; }
+/* Title, Heading and Body in the writer's hand, each at its size; the UI's type while the sample is written */
+.wr-tile-hand { display: flex; align-items: center; justify-content: center; max-width: 100%; height: calc(var(--em) * 1.7); }
+.wr-tile-sample { height: 100%; max-width: 100%; overflow: hidden; }
+.wr-tile-sample:empty { display: none; }
+.wr-tile-fallback { font-size: calc(var(--em) * 0.8); font-weight: 500; }
+.wr-tile-sample:not(:empty) + .wr-tile-fallback { display: none; }
+.wr-format-note { margin-top: 8px; font-size: 12px; line-height: 1.4; color: var(--wr-muted); }
+/* the highlighter: its colours as rings across two columns, the Highlight tile in the third */
+.wr-hl-colors { grid-column: span 2; display: flex; align-items: center; justify-content: space-evenly; }
+.wr-hl { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; }
+.wr-hl-dot { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18); color: #1c1c1e; transition: box-shadow 120ms var(--ease-out); }
+.wr-hl-dot svg { width: 14px; height: 14px; stroke-width: 2.5; }
+.wr-hl[aria-checked='true'] .wr-hl-dot { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18), 0 0 0 2px var(--wr-ring-gap), 0 0 0 3.5px var(--wr-on); }
+@media (hover: hover) and (pointer: fine) {
+  .wr-hl:not([aria-checked='true']):hover .wr-hl-dot { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18), 0 0 0 2px var(--wr-ring-gap), 0 0 0 3.5px var(--wr-hover-strong); }
+}
+.wr-tile-hl { position: relative; display: grid; }
+.wr-tile-hl::after { content: ''; position: absolute; left: 1px; right: 1px; bottom: -4px; height: 3px; border-radius: 2px; background: var(--hl); }
+/* a finger: 44 px and more */
+@media (pointer: coarse) {
+  .wr-tile { height: 56px; font-size: 13px; }
+  .wr-hl { width: 44px; height: 44px; }
+  .wr-hl-dot { width: 30px; height: 30px; }
+}
+.wr-btn:disabled { opacity: 0.4; }
 
 /* ---------- the desk and the sheet ---------- */
 .wr-desk {
@@ -312,9 +357,9 @@
   bottom: 14px;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  color: var(--wr-faint);
+  color: var(--wr-status);
   pointer-events: none;
-  transition: opacity 240ms var(--ease-out);
+  transition: opacity 150ms var(--ease-out);
 }
 .wr-app[data-away] .wr-status, .wr-app:has(.wr-start) .wr-status { opacity: 0; }
 
@@ -328,13 +373,34 @@
 @media (hover: hover) and (pointer: fine) { .wr-check:hover { background: rgba(0, 0, 0, 0.05); } }
 
 .wr-sheet { position: relative; }
+/* Dark: the paper a little dimmer, about 12% (Rafael, 7 Nov), so a lit sheet doesn't glare off the dark desk. A
+   veil over each sheet (LiveSheets' sheet, the one holding its ink), never a filter, which can soften the writing on
+   a phone; the red pencil and the selection are drawn over it (PaperEditor's own layer), at full strength */
+:root[data-app='write'][data-theme='dark'] .wr-sheet :has(> [data-sheet-ink])::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-app='write']:not([data-theme='light']) .wr-sheet :has(> [data-sheet-ink])::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+  }
+}
 /* a new note: the fresh sheet settles onto the desk (opacity and a few px only, so it's live and typable throughout) */
 .wr-sheet-fresh { animation: wr-sheet-fresh 200ms var(--ease-out); }
-@keyframes wr-sheet-fresh { from { opacity: 0.4; transform: translateY(-6px); } }
+@keyframes wr-sheet-fresh { from { opacity: 0.8; transform: translateY(-6px); } }
 /* the note just put away glows in the library for a moment */
 .wr-row[data-arrived] { animation: wr-row-arrived 900ms var(--ease-out); }
 @keyframes wr-row-arrived { 0%, 30% { background: color-mix(in srgb, var(--wr-focus) 16%, transparent); } }
-@media (prefers-reduced-motion: reduce) { .wr-sheet-fresh, .wr-row[data-arrived] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .wr-sheet-fresh { animation: none; } }
 /* a note from the hint ladder: a quiet line in the margin (MarginNote) */
 .wr-note { z-index: 4; font-family: var(--wr-font); font-size: 12px; line-height: 1.4; color: var(--wr-muted); pointer-events: none; }
 .wr-note kbd { margin: 0 2px; }
@@ -368,7 +434,7 @@
   height: 100dvh;
   background: var(--wr-side);
   box-shadow: 0.5px 0 0 var(--wr-sep);
-  transition: opacity 240ms var(--ease-out);
+  transition: opacity 150ms var(--ease-out);
 }
 .wr-app[data-away] .wr-side { opacity: 0.35; }
 /* a narrow window: the library over the page, the page dimmed a little behind it */
@@ -423,9 +489,13 @@
 .wr-search input:focus, .wr-search input:focus-visible { outline: none; box-shadow: none; }
 /* a computer: the search button at the head's right, and the field opening from it across the head */
 .wr-search-btn { margin-left: auto; color: var(--wr-muted); }
-.wr-search[data-opened] { transform-origin: right center; animation: wr-search-open 180ms var(--ease-out); }
-@keyframes wr-search-open { from { opacity: 0; clip-path: inset(0 0 0 calc(100% - 32px) round 9px); } }
-@media (prefers-reduced-motion: reduce) { .wr-search[data-opened] { animation: none; } }
+.wr-search[data-opened] { animation: wr-search-open var(--dur-pop) var(--ease-out); }
+/* (clip-path between two insets, so it interpolates; no fade, which blanked the first frame) */
+@keyframes wr-search-open { from { clip-path: inset(-2px -2px -2px calc(100% - 34px) round 11px); } to { clip-path: inset(-2px round 11px); } }
+/* the magnifier travels from the button's place to the field's start */
+.wr-search[data-opened] > svg { animation: wr-search-glyph var(--dur-pop) var(--ease-out); }
+@keyframes wr-search-glyph { from { transform: translateX(var(--wr-search-travel, 190px)); } }
+@media (prefers-reduced-motion: reduce) { .wr-search[data-opened], .wr-search[data-opened] > svg { animation: none; } }
 .wr-lib-back {
   display: inline-flex;
   align-items: center;
@@ -519,9 +589,8 @@
   min-width: 232px;
   padding: 5px;
   border-radius: 12px;
+  /* (nearly solid: no backdrop blur, which nobody would see and every frame would pay for) */
   background: var(--wr-pop-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  backdrop-filter: blur(24px) saturate(1.6);
   box-shadow: var(--wr-pop-shadow);
   font-family: var(--wr-font);
   font-size: 13px;
@@ -554,20 +623,34 @@
 @media (pointer: coarse) { .wr-menu-item { min-height: 44px; font-size: 15px; } }
 @media (prefers-reduced-motion: reduce) { .wr-menu, .wr-menu[data-state='closed'] { animation: none; } }
 
+/* a selected swatch's ring stands off the swatch by the surface's own colour (a popover's, or a phone sheet's) */
+:root[data-app='write'] { --wr-ring-gap: var(--wr-pop-bg); }
+:root[data-app='write'] .sheet-surface { --wr-ring-gap: var(--wr-side); }
 /* the writer's popover (desktop) and sheet (phones) take this frame, not the site's */
 .wr-pop.wr-pop {
   padding: 0;
   border: 0;
   border-radius: 14px;
   background: var(--wr-pop-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  backdrop-filter: blur(24px) saturate(1.6);
   box-shadow: var(--wr-pop-shadow);
   color: var(--wr-text);
   font-family: var(--wr-font);
 }
 :root[data-app='write'] .sheet-surface { background: var(--wr-side); border: 0; color: var(--wr-text); font-family: var(--wr-font); }
+/* the writer's popover fits the window, with room to spare around it (it was taller than a 900 px window) */
+.wr-pop.wr-pop-writer { max-height: min(var(--radix-popover-content-available-height, 100dvh), calc(100dvh - 120px)); }
 .wr-writer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; width: 380px; padding: 14px; font-size: 13px; }
+/* the fade at the panel's foot while there's more below (WriterPanel's ScrollFade); none at the end */
+.wr-fade {
+  position: sticky;
+  bottom: 0;
+  height: 24px;
+  margin-top: -24px;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--wr-ring-gap) 0%, transparent), var(--wr-ring-gap));
+  pointer-events: none;
+  transition: opacity 150ms var(--ease-out);
+}
+.wr-fade[data-end] { opacity: 0; }
 .wr-writer > * { min-width: 0; }
 .sheet-surface .wr-writer { width: auto; padding: 6px 6px 10px; }
 .wr-writer-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -618,11 +701,15 @@
   transition: background-color 120ms var(--ease-out);
 }
 .wr-chip[aria-checked='true'] { background: var(--wr-on); color: var(--wr-on-text); }
+/* a row's own name ("Tip", "Kind"), so its chips don't read as more of the row above */
+.wr-chips-label { align-self: center; min-width: 30px; margin-right: 2px; font-size: 11.5px; font-weight: 500; color: var(--wr-muted); }
 @media (pointer: coarse) { .wr-chip { height: 36px; padding: 0 12px; font-size: 14px; } }
-.wr-inks { display: flex; flex-wrap: wrap; gap: 4px; }
-.wr-ink { display: grid; place-items: center; width: 46px; height: 32px; border-radius: var(--wr-radius-sm); background: #fbf9f4; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
-.wr-ink svg { width: 34px; }
-.wr-ink[aria-checked='true'] { box-shadow: inset 0 0 0 2px var(--wr-on); }
+/* the eight inks on one row */
+.wr-inks { display: grid; grid-template-columns: repeat(8, minmax(0, 36px)); justify-content: space-between; gap: 4px; }
+.wr-ink { display: grid; place-items: center; width: 100%; aspect-ratio: 1; border-radius: var(--wr-radius-sm); background: #fbf9f4; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
+.wr-ink svg { width: 26px; }
+/* the one in use: a ring around the swatch, standing off it (an inset ring vanished on the light swatch in dark mode) */
+.wr-ink[aria-checked='true'] { box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0 0 2px var(--wr-ring-gap), 0 0 0 3.5px var(--wr-on); }
 .wr-papers { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 4px; }
 .wr-paper {
   display: grid;
@@ -682,14 +769,11 @@
 @keyframes wr-sheet-out { to { opacity: 0; transform: translateY(8px) scale(0.98); } }
 /* a computer: the rows stay out of it, and the sheet cross-fades in place, quick and quiet (moveSheets' swap) */
 html[data-swap] .wr-thumb { view-transition-name: none !important; }
-html[data-swap]::view-transition-old(*) { animation: wr-swap-out 120ms var(--ease-out) both; }
+/* (the old sheet stays opaque under the incoming one for 60 ms, so no grey shows between them on a dark desk) */
+html[data-swap]::view-transition-old(*) { animation: wr-swap-out 100ms var(--ease-out) 60ms both; }
 html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease-out) both; }
 @keyframes wr-swap-out { to { opacity: 0; } }
 @keyframes wr-swap-in { from { opacity: 0; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .wr-bar, .wr-side, .wr-status { transition: none; }
-}
 
 /* ---------- the shortcuts card ---------- */
 .wr-dialog-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.18); animation: wr-fade 160ms var(--ease-out); }
@@ -712,6 +796,12 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
   animation: wr-dialog-in var(--dur-pop) var(--ease-out);
 }
 @keyframes wr-dialog-in { from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); } }
+.wr-dialog[data-state='closed'] { animation: wr-dialog-out var(--dur-out) var(--ease-out) forwards; }
+.wr-dialog-scrim[data-state='closed'] { animation: wr-fade-out var(--dur-out) var(--ease-out) forwards; }
+@keyframes wr-dialog-out { to { opacity: 0; transform: translate(-50%, -50%) scale(0.98); } }
+@keyframes wr-fade-out { to { opacity: 0; } }
+/* a card that toggles on a key (⌘/, the shortcuts): there and gone at once */
+.wr-dialog[data-instant], .wr-dialog-scrim[data-instant] { animation: none; }
 .wr-dialog-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .wr-dialog-head h2 { font-size: 15px; font-weight: 600; }
 .wr-keys h3 { margin: 14px 0 6px; font-size: 11.5px; font-weight: 600; color: var(--wr-muted); }
@@ -719,7 +809,7 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
 .wr-keys dl > div { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: baseline; padding: 5px 0; }
 .wr-keys dt { display: flex; gap: 3px; flex-wrap: wrap; }
 .wr-keys dd { color: var(--wr-text); }
-@media (prefers-reduced-motion: reduce) { .wr-dialog, .wr-dialog-scrim { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .wr-dialog, .wr-dialog-scrim, .wr-dialog[data-state='closed'], .wr-dialog-scrim[data-state='closed'] { animation: none; } }
 
 /* a very narrow phone: the back button is a chevron, the writer's name shorter */
 @media (max-width: 359.98px) {
@@ -812,6 +902,10 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
   .wr-share { max-height: calc(100dvh - 24px); }
   .wr-share-preview { height: calc(100dvh - 120px); }
 }
+/* a phone: Share is a sheet from the bottom (ShareDialog's `sheet`), the preview over the choices */
+.wr-share-sheet { display: grid; gap: 4px; padding: 0 4px 4px; font-size: 13px; }
+.wr-share-sheet .wr-share-preview { height: min(38dvh, 340px); padding: 16px; border-radius: var(--wr-radius); }
+.wr-share-sheet .wr-share-side { padding: 12px 4px 4px; }
 /* the window itself takes the focus when it opens (no ring on its first button); it draws none of its own */
 .wr-dialog:focus { outline: none; }
 
@@ -819,7 +913,7 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
 .wr-home { display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 9px; transition: background-color 120ms var(--ease-out), transform var(--dur-press) var(--ease-out); }
 .wr-home img { width: 22px; height: 22px; border-radius: 5px; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12); }
 @media (hover: hover) and (pointer: fine) { .wr-home:hover { background: var(--wr-hover); } }
-.wr-home:active { transform: scale(0.94); }
+.wr-home:active { transform: scale(0.95); }
 .wr-home:focus-visible { outline: 2px solid var(--wr-focus); outline-offset: 2px; }
 .wr-lib-head:has(.wr-home) { display: flex; align-items: center; gap: 8px; }
 .wr-lib-head:has(.wr-home) > .wr-search, .wr-lib-head:has(.wr-home) > .wr-lib-back { flex: 1; min-width: 0; }

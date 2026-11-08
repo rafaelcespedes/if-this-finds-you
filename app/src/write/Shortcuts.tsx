@@ -49,8 +49,9 @@ export function Shortcuts({ open, onOpenChange, groups }: { open: boolean; onOpe
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="wr-dialog-scrim" />
-        <Dialog.Content className="wr-dialog" aria-describedby={undefined}>
+        {/* (a ⌘/ toggle: there and gone at once, no closing fade) */}
+        <Dialog.Overlay className="wr-dialog-scrim" data-instant />
+        <Dialog.Content className="wr-dialog" data-instant aria-describedby={undefined}>
           <div className="wr-dialog-head">
             <Dialog.Title>Keyboard shortcuts</Dialog.Title>
             <Dialog.Close className="wr-icon" aria-label="Close"><X aria-hidden /></Dialog.Close>

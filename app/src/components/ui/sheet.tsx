@@ -160,12 +160,14 @@ const sheetSurface =
   'sheet-surface fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] max-w-[640px] flex-col rounded-t-[20px] border-t border-border bg-panel pb-[calc(12px_+_env(safe-area-inset-bottom,0px))] shadow-[0_-1px_2px_rgba(60,45,20,0.05),0_-16px_44px_-16px_rgba(40,30,10,0.35)] outline-none';
 const sheetBackdrop = 'sheet-backdrop fixed inset-0 z-50 bg-[rgba(24,20,14,0.32)]';
 
-function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, children, describe, onOpenAutoFocus, onEscapeKeyDown }: { trigger: ReactElement; title: string; showTitle?: boolean; open?: boolean; onOpenChange?: (o: boolean) => void; children: ReactNode; describe?: string; onOpenAutoFocus?: (e: Event) => void; onEscapeKeyDown?: (e: KeyboardEvent) => void }) {
+/** A phone's bottom sheet. Without a trigger it's opened by its `open` alone (a window the page opens itself, as the
+ *  writing app's Share). */
+export function PhoneSheet({ trigger, title, showTitle = true, open, onOpenChange, children, describe, onOpenAutoFocus, onEscapeKeyDown }: { trigger?: ReactElement; title: string; showTitle?: boolean; open?: boolean; onOpenChange?: (o: boolean) => void; children: ReactNode; describe?: string; onOpenAutoFocus?: (e: Event) => void; onEscapeKeyDown?: (e: KeyboardEvent) => void }) {
   const surface = useRef<HTMLDivElement>(null);
   useBackCloses(!!open, () => onOpenChange?.(false));
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
-      <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>
+      {trigger && <Drawer.Trigger asChild>{trigger}</Drawer.Trigger>}
       <Drawer.Portal>
         <Drawer.Overlay className={sheetBackdrop} />
         <Drawer.Content

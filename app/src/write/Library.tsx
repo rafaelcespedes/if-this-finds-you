@@ -85,6 +85,7 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
                   key={n.id}
                   note={n}
                   open={n.id === current}
+                  screen={!!screen}
                   arrived={n.id === arrived}
                   binned={bin}
                   onOpen={() => onOpen(n.id)}
@@ -108,8 +109,8 @@ export function Library({ notes, current, onOpen, onPin, onThrow, onRestore, onD
   );
 }
 
-const Row = memo(function Row({ note, open, arrived, binned, onOpen, onPin, onThrow, onRestore, onDelete }: {
-  note: Note; open: boolean; arrived: boolean; binned: boolean; onOpen: () => void; onPin: () => void; onThrow: () => void; onRestore: () => void; onDelete: () => void;
+const Row = memo(function Row({ note, open, screen, arrived, binned, onOpen, onPin, onThrow, onRestore, onDelete }: {
+  note: Note; open: boolean; screen: boolean; arrived: boolean; binned: boolean; onOpen: () => void; onPin: () => void; onThrow: () => void; onRestore: () => void; onDelete: () => void;
 }) {
   const title = titleOf(note) || 'New note';
   const snippet = snippetOf(note);
@@ -122,7 +123,9 @@ const Row = memo(function Row({ note, open, arrived, binned, onOpen, onPin, onTh
         aria-current={open ? 'page' : undefined}
         disabled={binned}
       >
-        <Thumb note={note} named={!open} />
+        {/* (a phone: the open letter's sheet isn't on the page while its list is, so its row's picture takes the
+            sheet's name, and Back shrinks the sheet into it) */}
+        <Thumb note={note} named={!open || screen} />
         <span className="wr-row-text">
           <span className="wr-row-title">{title}</span>
           <span className="wr-row-meta">
