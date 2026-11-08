@@ -857,6 +857,10 @@ html[data-swap]::view-transition-new(*) { animation: wr-swap-in 160ms var(--ease
   .wr-share { max-height: calc(100dvh - 24px); }
   .wr-share-preview { height: calc(100dvh - 120px); }
 }
+/* a phone: Share is a sheet from the bottom (ShareDialog's `sheet`), the preview over the choices */
+.wr-share-sheet { display: grid; gap: 4px; padding: 0 4px 4px; font-size: 13px; }
+.wr-share-sheet .wr-share-preview { height: min(38dvh, 340px); padding: 16px; border-radius: var(--wr-radius); }
+.wr-share-sheet .wr-share-side { padding: 12px 4px 4px; }
 /* the window itself takes the focus when it opens (no ring on its first button); it draws none of its own */
 .wr-dialog:focus { outline: none; }
 

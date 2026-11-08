@@ -803,6 +803,7 @@ export function WriteApp() {
           fileName={fileName()}
           coarse={coarse}
           mod={MOD}
+          sheet={phone}
         />
       )}
       <div className="sr-only" aria-live="polite">{said}</div>
