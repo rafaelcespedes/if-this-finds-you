@@ -32,7 +32,7 @@ const easeOut = (u: number) => 1 - Math.pow(1 - clamp(u, 0, 1), 3);
 const OW = 1920, OH = 1080;
 const PW = R.width as number, PH = R.height as number; // the page, CSS px
 const TB = 40; // the window's title bar, page px
-const BAR_H = 92, BAR_Y = OH - 40 - BAR_H; // the caption, floating over everything
+const BAR_H = 92, BAR_Y = OH - 50 - BAR_H; // the caption, floating over everything, 50 px off the bottom
 const VIEW = { x: 0, y: 0, w: OW, h: OH - 120 }; // what the camera frames (the bar covers the rest)
 const S0 = (OW * 0.94) / PW;
 const WIN = { w: PW * S0, h: (PH + TB) * S0, x: (OW * 0.06) / 2, y: 36 };
