@@ -29,6 +29,45 @@ tools/trace/.venv/bin/python -I -m pip install numpy scipy scikit-image Pillow
 Downloaded scans are untrusted data: they live only in `tools/trace/raw/<source-id>/`, scripts stay in
 `tools/trace/`, and Python always runs with `-I`.
 
+## Try your own cursive
+
+From the repository root, make a blank alphabet sheet.
+
+```bash
+python3 -I tools/trace/personal_sheet.py > /tmp/cursive-sheet.svg
+```
+
+Open the SVG in a browser and print it in portrait on Letter or A4. Write each letter in its space
+with dark ink, keeping your usual lead-ins and tails. Empty spaces are fine. Write the sentence
+twice at your usual pace. It gives you a reference for how those letters meet in words.
+
+Photograph the page upright with all four black squares in view, or scan it. After the Python setup
+above, import the scan under a name of your choice.
+
+```bash
+tools/trace/.venv/bin/python -I tools/trace/trace.py personal robin ~/Downloads/my-sheet.jpg
+```
+
+The squares align the page. The tool labels the filled alphabet spaces, traces each one and writes
+side-by-side pictures of the ink and the strokes to `tools/trace/out/personal-robin/review-*.png`.
+The aligned scan and editable `hand.json` stay under `tools/trace/raw/personal-robin/`, ignored by Git.
+The sentence stays in the scan for comparison. Use the fixes below for loops, crossings, and letters
+where you lift the pen.
+
+To see new words in the hand, build its source and load it for one local preview.
+
+```bash
+tools/trace/.venv/bin/python -I tools/trace/trace.py build tools/trace/raw/personal-robin/hand.json
+node --import ./engine/sources/personal-robin.js tools/trace/preview.mjs personal-robin --seeds 1 --text "Write me a little more."
+```
+
+Open `tools/trace/out/preview.html` and compare it with the joined sentence on the sheet. The engine
+adds its own variation and borrows missing characters from its script hand. The build writes
+`engine/sources/personal-robin.js` into the source tree. To include it in a local app build, add
+`import './sources/personal-robin.js';` with the other source imports in `engine/index.js`.
+
+![A sample sheet filled with Palmer letters, its traced lowercase a, and a new sentence written with the imported letters.](review/personal-sheet-example.png)
+
 ## Adding a tradition (the quick path)
 
 1. **Rights first.** Open the item's page at the holding library, read its rights statement, and add
